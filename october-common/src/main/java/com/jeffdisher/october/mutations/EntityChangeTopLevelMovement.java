@@ -136,10 +136,14 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		// -verify collisions with walls/ceilings/floors when velocity drops very quickly
 		
 		// If there is a sub-action, run it (we require that any sub-action is also a success).
-		boolean subActionSuccess = true;
 		if (null != _subAction)
 		{
-			subActionSuccess = _subAction.applyChange(context, newEntity);
+			boolean subActionSuccess = _subAction.applyChange(context, newEntity);
+			if (!subActionSuccess)
+			{
+				_log("Fail0", newEntity);
+				forceFailure = true;
+			}
 		}
 		else
 		{
@@ -157,57 +161,40 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		ViscosityReader reader = new ViscosityReader(env, context.previousBlockLookUp);
 		
 		// Check the change is z-velocity from start-end.
-		float newZVelocity = _newVelocity.z();
-		float zVDelta = newZVelocity - startVelocity.z();
-		if (0.0f == zVDelta)
+		if (!forceFailure)
 		{
-			// We are either at terminal velocity or standing on solid ground.
-			boolean isTerminal = (newZVelocity == EntityMovementHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND);
-			// Flat ground - make sure that they are on solid ground.
-			boolean isOnGround = SpatialHelpers.isStandingOnGround(reader, startLocation, volume);
-			// Alternatively, they may be swimming (creatures can swim up at a sustained velocity).
-			boolean isSwimmable = (int)(startViscosity * 100.0f) >= BlockAspect.SWIMMABLE_VISCOSITY;
-			if (!isTerminal && !isOnGround && !isSwimmable)
+			float newZVelocity = _newVelocity.z();
+			float zVDelta = newZVelocity - startVelocity.z();
+			if (0.0f == zVDelta)
 			{
-				// Note that it is still possible that this is valid when running in the client where it may slice as narrowly as 1 ms.
-				float startEffectiveGravity = startInverseViscosity * EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND;
-				// We want to round the expected delta.
-				float expectedZDelta = EntityLocation.roundToHundredths(seconds * startEffectiveGravity);
-				if (0.0f != expectedZDelta)
+				forceFailure = _verifyZVelocityUnchanged(reader
+					, startLocation
+					, volume
+					, seconds
+					, startViscosity
+					, startInverseViscosity
+					, newZVelocity
+				);
+				if (forceFailure)
 				{
 					_log("Fail1", newEntity);
-					forceFailure = true;
 				}
 			}
-		}
-		else
-		{
-			float startEffectiveGravity = startInverseViscosity * EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND;
-			// We want to round the expected delta.
-			float expectedZDelta = EntityLocation.roundToHundredths(seconds * startEffectiveGravity);
-			boolean isValidFall = (zVDelta < (Z_VECTOR_ACCURACY_THRESHOLD * expectedZDelta));
-			if (!isValidFall)
+			else
 			{
-				// This was not a normal fall but it might still be valid if we hit the ground or passed into a different viscosity.
-				// (note that we may have started on the ground in our previous change and that would also count).
-				boolean didHitGround = (0.0f == _newVelocity.z())
-					&& (SpatialHelpers.isStandingOnGround(reader, _newLocation, volume) || SpatialHelpers.isStandingOnGround(reader, startLocation, volume))
-				;
-				if (!didHitGround)
+				forceFailure = _verifyZVelocityChange(context
+					, reader
+					, startLocation
+					, volume
+					, seconds
+					, startViscosity
+					, startInverseViscosity
+					, newZVelocity
+					, zVDelta
+				);
+				if (forceFailure)
 				{
-					// This is the more expensive check so see if their new velocity is between the extremes of 2 different viscosities.
-					float endViscosity = EntityMovementHelpers.maxViscosityInEntityBlocks(_newLocation, volume, context.previousBlockLookUp);
-					float startTerminal = (1.0f - startViscosity) * EntityMovementHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND;
-					float endTerminal = (1.0f - endViscosity) * EntityMovementHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND;
-					boolean isTransitionVelocity = ((endTerminal <= newZVelocity) && (newZVelocity <= startTerminal))
-						|| ((startTerminal <= newZVelocity) && (newZVelocity <= endTerminal))
-					;
-					if (!isTransitionVelocity)
-					{
-						// We still have no valid explanation for this.
-						_log("Fail2", newEntity);
-						forceFailure = true;
-					}
+					_log("Fail2", newEntity);
 				}
 			}
 		}
@@ -217,88 +204,54 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 			? newEntity.getType().blocksPerSecond()
 			: 0.0f
 		;
-		float maxXVelocity = Math.max(intensityVelocityPerSecond, Math.max(_newVelocity.x(), startVelocity.x()));
-		float minXVelocity = Math.min(-intensityVelocityPerSecond, Math.min(_newVelocity.x(), startVelocity.x()));
-		float maxYVelocity = Math.max(intensityVelocityPerSecond, Math.max(_newVelocity.y(), startVelocity.y()));
-		float minYVelocity = Math.min(-intensityVelocityPerSecond, Math.min(_newVelocity.y(), startVelocity.y()));
 		float deltaX = EntityLocation.roundToHundredths(_newLocation.x() - startLocation.x());
 		float deltaY = EntityLocation.roundToHundredths(_newLocation.y() - startLocation.y());
-		boolean isValidDistance = ((deltaX <= EntityLocation.roundToHundredths(seconds * maxXVelocity + HORIZONTAL_SINGLE_FUDGE)) && (deltaX >= EntityLocation.roundToHundredths(seconds * minXVelocity - HORIZONTAL_SINGLE_FUDGE)))
-				&& ((deltaY <= EntityLocation.roundToHundredths(seconds * maxYVelocity + HORIZONTAL_SINGLE_FUDGE)) && (deltaY >= EntityLocation.roundToHundredths(seconds * minYVelocity - HORIZONTAL_SINGLE_FUDGE)))
-		;
-		if (!isValidDistance)
+		if (!forceFailure)
 		{
-			_log("Fail3", newEntity);
-			forceFailure = true;
+			forceFailure = _verifyHorizontalMovement(startVelocity
+				, seconds
+				, intensityVelocityPerSecond
+				, deltaX
+				, deltaY
+			);
+			if (forceFailure)
+			{
+				_log("Fail3", newEntity);
+			}
 		}
 		
 		// Check that the final location is not in solid blocks (unless we aren't moving - they are allowed to stand in a solid block).
-		boolean isMoving = (0.0f != deltaX) || (0.0f != deltaY);
-		if (isMoving && !SpatialHelpers.canExistInLocation(reader, _newLocation, volume))
+		if (!forceFailure)
 		{
-			_log("Fail4", newEntity);
-			forceFailure = true;
+			forceFailure = _verifyFinalLocationValid(reader
+				, volume
+				, deltaX
+				, deltaY
+			);
+			if (forceFailure)
+			{
+				_log("Fail4", newEntity);
+			}
 		}
 		
 		// Check that their horizontal velocity change is acceptable within their intensity.
-		float xVDelta = Math.abs(_newVelocity.x() - startVelocity.x());
-		float yVDelta = Math.abs(_newVelocity.y() - startVelocity.y());
-		boolean isValidAcceleration = (xVDelta <= intensityVelocityPerSecond)
-			&& (yVDelta <= intensityVelocityPerSecond)
-		;
-		float deceleratedX = _velocityAfterViscosityAndCoast(startInverseViscosity, startVelocity.x());
-		float deceleratedY = _velocityAfterViscosityAndCoast(startInverseViscosity, startVelocity.y());
-		boolean isNaturalDeceleration = (deceleratedX == _newVelocity.x()) && (deceleratedY == _newVelocity.y());
-		if (!isValidAcceleration && !isNaturalDeceleration)
+		if (!forceFailure)
 		{
-			// We want to see if any of the cases related to immediate deceleration apply:  Touching the ground or hitting a wall.
-			EntityLocation ray = new EntityLocation(_newLocation.x() - startLocation.x()
-				, _newLocation.y() - startLocation.y()
-				, _newLocation.z() - startLocation.z()
+			forceFailure = _verifyHorizontalVelocity(reader
+				, startLocation
+				, startVelocity
+				, volume
+				, startInverseViscosity
+				, intensityVelocityPerSecond
 			);
-			boolean[] stopX = {false};
-			boolean[] stopY = {false};
-			if (SpatialHelpers.isStandingOnGround(reader, startLocation, volume))
-			{
-				stopX[0] = true;
-				stopY[0] = true;
-			}
-			EntityMovementHelpers.interactiveEntityMove(_newLocation, volume, ray, new EntityMovementHelpers.InteractiveHelper() {
-				@Override
-				public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
-				{
-					if (cancelX)
-					{
-						stopX[0] = true;
-					}
-					if (cancelY)
-					{
-						stopY[0] = true;
-					}
-					if (cancelZ && SpatialHelpers.isStandingOnGround(reader, _newLocation, volume))
-					{
-						stopX[0] = true;
-						stopY[0] = true;
-					}
-				}
-				@Override
-				public float getViscosityForBlockAtLocation(AbsoluteLocation location)
-				{
-					return reader.getViscosityFraction(location);
-				}
-			});
-			boolean touchingSurface = (((0.0f == _newVelocity.x()) == stopX[0])
-					&& ((0.0f == _newVelocity.y()) == stopY[0])
-			);
-			if (!touchingSurface)
+			if (forceFailure)
 			{
 				_log("Fail5", newEntity);
-				forceFailure = true;
 			}
 		}
 		
 		// If all checks pass, apply changes and energy cost.
-		if (!forceFailure && subActionSuccess)
+		if (!forceFailure)
 		{
 			newEntity.setLocation(_newLocation);
 			newEntity.setVelocityVector(_newVelocity);
@@ -310,9 +263,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 				newEntity.applyEnergyCost(EntityChangePeriodic.ENERGY_COST_PER_TICK_WALKING);
 			}
 		}
-		
-		// We will say that this succeeded if there was no reason for movement failure and the sub-action was a success.
-		return !forceFailure && subActionSuccess;
+		return !forceFailure;
 	}
 
 	@Override
@@ -370,6 +321,181 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	private void _log(String title, T newEntity)
 	{
 		System.out.printf("%s - (%s) against L(%s), V(%s)\n", title, this, newEntity.getLocation(), newEntity.getVelocityVector());
+	}
+
+	private boolean _verifyZVelocityUnchanged(ViscosityReader reader
+		, EntityLocation startLocation
+		, EntityVolume volume
+		, float seconds
+		, float startViscosity
+		, float startInverseViscosity
+		, float newZVelocity
+	)
+	{
+		boolean forceFailure = false;
+		// We are either at terminal velocity or standing on solid ground.
+		boolean isTerminal = (newZVelocity == EntityMovementHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND);
+		// Flat ground - make sure that they are on solid ground.
+		boolean isOnGround = SpatialHelpers.isStandingOnGround(reader, startLocation, volume);
+		// Alternatively, they may be swimming (creatures can swim up at a sustained velocity).
+		boolean isSwimmable = (int)(startViscosity * 100.0f) >= BlockAspect.SWIMMABLE_VISCOSITY;
+		if (!isTerminal && !isOnGround && !isSwimmable)
+		{
+			// Note that it is still possible that this is valid when running in the client where it may slice as narrowly as 1 ms.
+			float startEffectiveGravity = startInverseViscosity * EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND;
+			// We want to round the expected delta.
+			float expectedZDelta = EntityLocation.roundToHundredths(seconds * startEffectiveGravity);
+			if (0.0f != expectedZDelta)
+			{
+				forceFailure = true;
+			}
+		}
+		return forceFailure;
+	}
+
+	private boolean _verifyZVelocityChange(TickProcessingContext context
+			, ViscosityReader reader
+		, EntityLocation startLocation
+		, EntityVolume volume
+		, float seconds
+		, float startViscosity
+		, float startInverseViscosity
+		, float newZVelocity
+		, float zVDelta
+	)
+	{
+		boolean forceFailure = false;
+		float startEffectiveGravity = startInverseViscosity * EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND;
+		// We want to round the expected delta.
+		float expectedZDelta = EntityLocation.roundToHundredths(seconds * startEffectiveGravity);
+		boolean isValidFall = (zVDelta < (Z_VECTOR_ACCURACY_THRESHOLD * expectedZDelta));
+		if (!isValidFall)
+		{
+			// This was not a normal fall but it might still be valid if we hit the ground or passed into a different viscosity.
+			// (note that we may have started on the ground in our previous change and that would also count).
+			boolean didHitGround = (0.0f == _newVelocity.z())
+				&& (SpatialHelpers.isStandingOnGround(reader, _newLocation, volume) || SpatialHelpers.isStandingOnGround(reader, startLocation, volume))
+			;
+			if (!didHitGround)
+			{
+				// This is the more expensive check so see if their new velocity is between the extremes of 2 different viscosities.
+				float endViscosity = EntityMovementHelpers.maxViscosityInEntityBlocks(_newLocation, volume, context.previousBlockLookUp);
+				float startTerminal = (1.0f - startViscosity) * EntityMovementHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND;
+				float endTerminal = (1.0f - endViscosity) * EntityMovementHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND;
+				boolean isTransitionVelocity = ((endTerminal <= newZVelocity) && (newZVelocity <= startTerminal))
+					|| ((startTerminal <= newZVelocity) && (newZVelocity <= endTerminal))
+				;
+				if (!isTransitionVelocity)
+				{
+					// We still have no valid explanation for this.
+					forceFailure = true;
+				}
+			}
+		}
+		return forceFailure;
+	}
+
+	private boolean _verifyHorizontalMovement(EntityLocation startVelocity
+		, float seconds
+		, float intensityVelocityPerSecond
+		, float deltaX
+		, float deltaY
+	)
+	{
+		boolean forceFailure = false;
+		float maxXVelocity = Math.max(intensityVelocityPerSecond, Math.max(_newVelocity.x(), startVelocity.x()));
+		float minXVelocity = Math.min(-intensityVelocityPerSecond, Math.min(_newVelocity.x(), startVelocity.x()));
+		float maxYVelocity = Math.max(intensityVelocityPerSecond, Math.max(_newVelocity.y(), startVelocity.y()));
+		float minYVelocity = Math.min(-intensityVelocityPerSecond, Math.min(_newVelocity.y(), startVelocity.y()));
+		boolean isValidDistance = ((deltaX <= EntityLocation.roundToHundredths(seconds * maxXVelocity + HORIZONTAL_SINGLE_FUDGE)) && (deltaX >= EntityLocation.roundToHundredths(seconds * minXVelocity - HORIZONTAL_SINGLE_FUDGE)))
+			&& ((deltaY <= EntityLocation.roundToHundredths(seconds * maxYVelocity + HORIZONTAL_SINGLE_FUDGE)) && (deltaY >= EntityLocation.roundToHundredths(seconds * minYVelocity - HORIZONTAL_SINGLE_FUDGE)))
+		;
+		if (!isValidDistance)
+		{
+			forceFailure = true;
+		}
+		return forceFailure;
+	}
+
+	private boolean _verifyFinalLocationValid(ViscosityReader reader
+		, EntityVolume volume
+		, float deltaX
+		, float deltaY
+	)
+	{
+		boolean forceFailure = false;
+		boolean isMoving = (0.0f != deltaX) || (0.0f != deltaY);
+		if (isMoving && !SpatialHelpers.canExistInLocation(reader, _newLocation, volume))
+		{
+			forceFailure = true;
+		}
+		return forceFailure;
+	}
+
+	private boolean _verifyHorizontalVelocity(ViscosityReader reader
+		, EntityLocation startLocation
+		, EntityLocation startVelocity
+		, EntityVolume volume
+		, float startInverseViscosity
+		, float intensityVelocityPerSecond
+	)
+	{
+		boolean forceFailure = false;
+		float xVDelta = Math.abs(_newVelocity.x() - startVelocity.x());
+		float yVDelta = Math.abs(_newVelocity.y() - startVelocity.y());
+		boolean isValidAcceleration = (xVDelta <= intensityVelocityPerSecond)
+			&& (yVDelta <= intensityVelocityPerSecond)
+		;
+		float deceleratedX = _velocityAfterViscosityAndCoast(startInverseViscosity, startVelocity.x());
+		float deceleratedY = _velocityAfterViscosityAndCoast(startInverseViscosity, startVelocity.y());
+		boolean isNaturalDeceleration = (deceleratedX == _newVelocity.x()) && (deceleratedY == _newVelocity.y());
+		if (!isValidAcceleration && !isNaturalDeceleration)
+		{
+			// We want to see if any of the cases related to immediate deceleration apply:  Touching the ground or hitting a wall.
+			EntityLocation ray = new EntityLocation(_newLocation.x() - startLocation.x()
+				, _newLocation.y() - startLocation.y()
+				, _newLocation.z() - startLocation.z()
+			);
+			boolean[] stopX = {false};
+			boolean[] stopY = {false};
+			if (SpatialHelpers.isStandingOnGround(reader, startLocation, volume))
+			{
+				stopX[0] = true;
+				stopY[0] = true;
+			}
+			EntityMovementHelpers.interactiveEntityMove(_newLocation, volume, ray, new EntityMovementHelpers.InteractiveHelper() {
+				@Override
+				public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
+				{
+					if (cancelX)
+					{
+						stopX[0] = true;
+					}
+					if (cancelY)
+					{
+						stopY[0] = true;
+					}
+					if (cancelZ && SpatialHelpers.isStandingOnGround(reader, _newLocation, volume))
+					{
+						stopX[0] = true;
+						stopY[0] = true;
+					}
+				}
+				@Override
+				public float getViscosityForBlockAtLocation(AbsoluteLocation location)
+				{
+					return reader.getViscosityFraction(location);
+				}
+			});
+			boolean touchingSurface = (((0.0f == _newVelocity.x()) == stopX[0])
+					&& ((0.0f == _newVelocity.y()) == stopY[0])
+			);
+			if (!touchingSurface)
+			{
+				forceFailure = true;
+			}
+		}
+		return forceFailure;
 	}
 
 
