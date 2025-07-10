@@ -56,6 +56,15 @@ public class EntityChangeCraft implements IMutationEntity<IMutablePlayerEntity>
 			}
 		}
 		
+		// Make sure that this crafting operation is valid for this inventory.
+		if (null != existing)
+		{
+			if (!CraftAspect.canApplyMutable(existing.selectedCraft(), newEntity.accessMutableInventory()))
+			{
+				existing = null;
+			}
+		}
+		
 		boolean isValid;
 		if (null != existing)
 		{
@@ -68,20 +77,23 @@ public class EntityChangeCraft implements IMutationEntity<IMutablePlayerEntity>
 				// We can now apply this and clear it.
 				Environment env = Environment.getShared();
 				IMutableInventory mutableInventory = newEntity.accessMutableInventory();
+				
+				// We just checked this above so we expect this to craft.
 				boolean didCraft = CraftAspect.craft(env, existing.selectedCraft(), mutableInventory);
-				if (didCraft)
+				Assert.assertTrue(didCraft);
+				
+				// Make sure that this cleared the hotbar, if we used the last of them (we need to check all of the hotbar slots).
+				for (int key : newEntity.copyHotbar())
 				{
-					// Make sure that this cleared the hotbar, if we used the last of them (we need to check all of the hotbar slots).
-					for (int key : newEntity.copyHotbar())
+					// NOTE:  This assumes that inputs are ALWAYS stackable.
+					if ((Entity.NO_SELECTION != key) && (null == newEntity.accessMutableInventory().getStackForKey(key)))
 					{
-						// NOTE:  This assumes that inputs are ALWAYS stackable.
-						if ((Entity.NO_SELECTION != key) && (null == newEntity.accessMutableInventory().getStackForKey(key)))
-						{
-							// This needs to be cleared.
-							newEntity.clearHotBarWithKey(key);
-						}
+						// This needs to be cleared.
+						newEntity.clearHotBarWithKey(key);
 					}
 				}
+				
+				// Clear the current operation since we are done.
 				newEntity.setCurrentCraftingOperation(null);
 				isValid = didCraft;
 			}
@@ -94,8 +106,11 @@ public class EntityChangeCraft implements IMutationEntity<IMutablePlayerEntity>
 		}
 		else
 		{
+			// Nothing to run so we want to clear this, even though this may be redundant.
+			newEntity.setCurrentCraftingOperation(null);
 			isValid = false;
 		}
+		
 		if (isValid)
 		{
 			// Crafting expends energy.

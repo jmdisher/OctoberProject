@@ -251,6 +251,11 @@ public class CraftAspect
 		return _canApply(craft, new MutableInventory(inv));
 	}
 
+	public static boolean canApplyMutable(Craft craft, IMutableInventory inv)
+	{
+		return _canApply(craft, inv);
+	}
+
 	public static boolean craft(Environment env, Craft craft, IMutableInventory inv)
 	{
 		boolean didCraft = false;

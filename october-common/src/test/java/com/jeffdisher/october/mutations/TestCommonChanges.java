@@ -2439,6 +2439,33 @@ public class TestCommonChanges
 		Assert.assertEquals(newVelocity, newEntity.newVelocity);
 	}
 
+	@Test
+	public void invalidCraft() throws Throwable
+	{
+		Craft logToPlanks = ENV.crafting.getCraftById("op.log_to_planks");
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		
+		// We will create a bogus context which just says that they are standing in a wall so they don't try to move.
+		TickProcessingContext context = _createSimpleContext();
+		
+		// Craft some items to use these up and verify that the selection is cleared.
+		EntityChangeCraft craft = new EntityChangeCraft(logToPlanks);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> topLevel = new EntityChangeTopLevelMovement<>(newEntity.newLocation
+			, newEntity.newVelocity
+			, EntityChangeTopLevelMovement.Intensity.STANDING
+			, (byte)0
+			, (byte)0
+			, craft
+		);
+		Assert.assertFalse(topLevel.applyChange(context, newEntity));
+		
+		// Make sure that we aren't crafting and and nothing is selected.
+		Assert.assertNull(newEntity.newLocalCraftOperation);
+		Assert.assertEquals(0, newEntity.newInventory.getCurrentEncumbrance());
+		Assert.assertEquals(Entity.NO_SELECTION, newEntity.getSelectedKey());
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{
