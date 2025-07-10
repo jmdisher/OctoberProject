@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.utils.Assert;
 
 
 public class Deprecated_EntityChangeTimeSync implements IMutationEntity<IMutablePlayerEntity>
@@ -13,25 +12,20 @@ public class Deprecated_EntityChangeTimeSync implements IMutationEntity<IMutable
 
 	public static Deprecated_EntityChangeTimeSync deserializeFromBuffer(ByteBuffer buffer)
 	{
-		long millisInMotion = buffer.getLong();
-		return new Deprecated_EntityChangeTimeSync(millisInMotion);
+		buffer.getLong();
+		return new Deprecated_EntityChangeTimeSync();
 	}
 
 
-	private final long _millisInMotion;
-
 	@Deprecated
-	public Deprecated_EntityChangeTimeSync(long millisInMotion)
+	public Deprecated_EntityChangeTimeSync()
 	{
-		Assert.assertTrue(millisInMotion > 0L);
-		
-		_millisInMotion = millisInMotion;
 	}
 
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
-		// We do nothing but return success after consuming the time.
+		// This is deprecated so just do nothing (only exists to read old data).
 		return true;
 	}
 
@@ -44,7 +38,7 @@ public class Deprecated_EntityChangeTimeSync implements IMutationEntity<IMutable
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		buffer.putLong(_millisInMotion);
+		buffer.putLong(0L);
 	}
 
 	@Override
@@ -57,6 +51,6 @@ public class Deprecated_EntityChangeTimeSync implements IMutationEntity<IMutable
 	@Override
 	public String toString()
 	{
-		return "Time sync for " + _millisInMotion + " ms";
+		return "Time sync";
 	}
 }

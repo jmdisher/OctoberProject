@@ -38,14 +38,8 @@ public class Deprecated_EntityChangeSetOrientation<T extends IMutableMinimalEnti
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
-		// We don't want to apply this if it doesn't change anything (this is mostly to avoid a redundant check on the client-side).
-		boolean didApply = false;
-		if ((newEntity.getYaw() != _yaw) || (newEntity.getPitch() != _pitch))
-		{
-			newEntity.setOrientation(_yaw, _pitch);
-			didApply = true;
-		}
-		return didApply;
+		// This is deprecated so just do nothing (only exists to read old data).
+		return true;
 	}
 
 	@Override

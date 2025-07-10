@@ -2,11 +2,9 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
-import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -39,62 +37,8 @@ public class Deprecated_EntityChangeTakeDamage_V2<T extends IMutableMinimalEntit
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
-		// We will move the respawn into the next tick so that they don't keep taking damage from within this tick.
-		boolean didApply = false;
-		byte health = newEntity.getHealth();
-		if ((health > 0) && newEntity.updateDamageTimeoutIfValid(context.currentTickTimeMillis))
-		{
-			// Determine how much actual damage to apply by looking at target and armour.
-			byte damageToApply;
-			if (null != _target)
-			{
-				// This means an actual body part.
-				NonStackableItem armour = newEntity.getArmour(_target);
-				if (null != armour)
-				{
-					// We will reduce the damage by the armour amount, correcting to make sure at least 1 damage is taken, then apply this to the armour durability.
-					Environment env = Environment.getShared();
-					// (note that we consider the armour 100% effective, even if about to break).
-					int maxReduction = env.armour.getDamageReduction(armour.type());
-					int damageToAbsorb = Math.min(_damage - 1, maxReduction);
-					damageToApply = (byte)(_damage - damageToAbsorb);
-					if (damageToAbsorb > 0)
-					{
-						int durabilityRemaining = armour.durability() - damageToAbsorb;
-						if (durabilityRemaining > 0)
-						{
-							newEntity.setArmour(_target, new NonStackableItem(armour.type(), durabilityRemaining));
-						}
-						else
-						{
-							newEntity.setArmour(_target, null);
-						}
-					}
-				}
-				else
-				{
-					damageToApply = _damage;
-				}
-			}
-			else
-			{
-				// This means some kind of environmental damage (starvation, usually).
-				damageToApply = _damage;
-			}
-			byte finalHealth = (byte)(health - damageToApply);
-			if (finalHealth > 0)
-			{
-				// We can apply the damage.
-				newEntity.setHealth(finalHealth);
-			}
-			else
-			{
-				// The entity is dead so "respawn" them by resetting fields and dropping inventory onto the ground.
-				newEntity.handleEntityDeath(context);
-			}
-			didApply = true;
-		}
-		return didApply;
+		// This is deprecated so just do nothing (only exists to read old data).
+		return true;
 	}
 
 	@Override

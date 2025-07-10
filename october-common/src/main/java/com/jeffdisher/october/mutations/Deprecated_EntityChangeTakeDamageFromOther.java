@@ -2,10 +2,8 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.logic.DamageHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.BodyPart;
-import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -44,34 +42,8 @@ public class Deprecated_EntityChangeTakeDamageFromOther<T extends IMutableMinima
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
-		// We will move the respawn into the next tick so that they don't keep taking damage from within this tick.
-		boolean didApply = false;
-		byte health = newEntity.getHealth();
-		if ((health > 0) && newEntity.updateDamageTimeoutIfValid(context.currentTickTimeMillis))
-		{
-			// Determine how much actual damage to apply by looking at target and armour.
-			int damageToApply = CommonEntityMutationHelpers.damageToApplyAfterArmour(newEntity, _target, _damage);
-			EventRecord.Cause cause;
-			switch (_cause)
-			{
-			case CAUSE_STARVATION:
-				cause = EventRecord.Cause.STARVATION;
-				break;
-			case CAUSE_SUFFOCATION:
-				cause = EventRecord.Cause.SUFFOCATION;
-				break;
-			case CAUSE_FALL:
-				cause = EventRecord.Cause.FALL;
-				break;
-			default:
-				// This is an undefined type.
-				throw Assert.unreachable();
-			}
-			DamageHelpers.applyDamageDirectlyAndPostEvent(context, newEntity, (byte)damageToApply, cause);
-			
-			didApply = true;
-		}
-		return didApply;
+		// This is deprecated so just do nothing (only exists to read old data).
+		return true;
 	}
 
 	@Override

@@ -605,7 +605,7 @@ public class TestResourceLoader
 			, spawnLocation
 		);
 		@SuppressWarnings("deprecation")
-		Deprecated_EntityChangeMove<IMutablePlayerEntity> move = new Deprecated_EntityChangeMove<>(10L, 1.0f, Deprecated_EntityChangeMove.Direction.EAST);
+		Deprecated_EntityChangeMove<IMutablePlayerEntity> move = new Deprecated_EntityChangeMove<>(1.0f, Deprecated_EntityChangeMove.Direction.EAST);
 		
 		// Serialize to buffer.
 		ByteBuffer buffer = ByteBuffer.allocate(1024);

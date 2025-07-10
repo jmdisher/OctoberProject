@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.utils.Assert;
 
 
 public class Deprecated_EntityChangeAccelerate<T extends IMutableMinimalEntity> implements IMutationEntity<T>
@@ -23,24 +22,17 @@ public class Deprecated_EntityChangeAccelerate<T extends IMutableMinimalEntity> 
 
 	public static <T extends IMutableMinimalEntity> Deprecated_EntityChangeAccelerate<T> deserializeFromBuffer(ByteBuffer buffer)
 	{
-		long millisInMotion = buffer.getLong();
+		buffer.getLong();
 		Relative direction = Relative.values()[buffer.get()];
-		return new Deprecated_EntityChangeAccelerate<>(millisInMotion, direction);
+		return new Deprecated_EntityChangeAccelerate<>(direction);
 	}
 
 
-	private final long _millisInMotion;
 	private final Relative _direction;
 
 	@Deprecated
-	public Deprecated_EntityChangeAccelerate(long millisInMotion, Relative direction)
+	public Deprecated_EntityChangeAccelerate(Relative direction)
 	{
-		// Make sure that this is valid within our limits.
-		// TODO:  Define a better failure mode when the server deserializes these from the network.
-		Assert.assertTrue(millisInMotion > 0L);
-		Assert.assertTrue(millisInMotion <= LIMIT_COST_MILLIS);
-		
-		_millisInMotion = millisInMotion;
 		_direction = direction;
 	}
 
@@ -60,7 +52,7 @@ public class Deprecated_EntityChangeAccelerate<T extends IMutableMinimalEntity> 
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		buffer.putLong(_millisInMotion);
+		buffer.putLong(0L);
 		buffer.put((byte)_direction.ordinal());
 	}
 
@@ -74,7 +66,7 @@ public class Deprecated_EntityChangeAccelerate<T extends IMutableMinimalEntity> 
 	@Override
 	public String toString()
 	{
-		return "Accelerate " + _direction + " for " + _millisInMotion + " ms";
+		return "Accelerate " + _direction;
 	}
 
 
