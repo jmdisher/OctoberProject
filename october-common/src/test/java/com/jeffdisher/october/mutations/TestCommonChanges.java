@@ -61,6 +61,7 @@ public class TestCommonChanges
 	private static Item LOG_ITEM;
 	private static Item PLANK_ITEM;
 	private static Item CHARCOAL_ITEM;
+	private static Item IRON_SWORD_ITEM;
 	private static Block STONE;
 	private static Block WATER_SOURCE;
 	private static EntityType COW;
@@ -72,6 +73,7 @@ public class TestCommonChanges
 		LOG_ITEM = ENV.items.getItemById("op.log");
 		PLANK_ITEM = ENV.items.getItemById("op.plank");
 		CHARCOAL_ITEM = ENV.items.getItemById("op.charcoal");
+		IRON_SWORD_ITEM = ENV.items.getItemById("op.iron_sword");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
 		COW = ENV.creatures.getTypeById("op.cow");
@@ -2473,7 +2475,10 @@ public class TestCommonChanges
 	{
 		Craft logToPlanks = ENV.crafting.getCraftById("op.log_to_planks");
 		MutableEntity newEntity = MutableEntity.createForTest(1);
-		newEntity.newInventory.addAllItems(LOG_ITEM, 2);
+		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
+		newEntity.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(IRON_SWORD_ITEM, 5));
+		newEntity.newHotbar[0] = 1;
+		newEntity.newHotbar[1] = 2;
 		
 		// We will create a bogus context which just says that they are standing in a wall so they don't try to move.
 		TickProcessingContext context = _createSimpleContext();
@@ -2496,8 +2501,10 @@ public class TestCommonChanges
 		
 		// Verify that we completed this and what is left in our inventory.
 		Assert.assertNull(newEntity.newLocalCraftOperation);
-		Assert.assertEquals(1, newEntity.newInventory.getCount(LOG_ITEM));
+		Assert.assertEquals(0, newEntity.newInventory.getCount(LOG_ITEM));
 		Assert.assertEquals(2, newEntity.newInventory.getCount(PLANK_ITEM));
+		Assert.assertEquals(Entity.NO_SELECTION, newEntity.newHotbar[0]);
+		Assert.assertEquals(2, newEntity.newHotbar[1]);
 	}
 
 

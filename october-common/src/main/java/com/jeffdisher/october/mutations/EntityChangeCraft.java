@@ -100,8 +100,10 @@ public class EntityChangeCraft implements IMutationEntity<IMutablePlayerEntity>
 				// Make sure that this cleared the hotbar, if we used the last of them (we need to check all of the hotbar slots).
 				for (int key : newEntity.copyHotbar())
 				{
-					// NOTE:  This assumes that inputs are ALWAYS stackable.
-					if ((Entity.NO_SELECTION != key) && (null == newEntity.accessMutableInventory().getStackForKey(key)))
+					if ((Entity.NO_SELECTION != key)
+						&& (null == newEntity.accessMutableInventory().getStackForKey(key))
+						&& (null == newEntity.accessMutableInventory().getNonStackableForKey(key))
+					)
 					{
 						// This needs to be cleared.
 						newEntity.clearHotBarWithKey(key);
