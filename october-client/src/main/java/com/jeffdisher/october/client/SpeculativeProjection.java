@@ -29,6 +29,7 @@ import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.logic.WorldProcessor;
+import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
@@ -400,7 +401,7 @@ public class SpeculativeProjection
 	 * @param currentTickTimeMillis The current time, in milliseconds.
 	 * @return The local commit number for this change, 0L if it failed to applied and should be rejected.
 	 */
-	public long applyLocalChange(IMutationEntity<IMutablePlayerEntity> change, long currentTickTimeMillis)
+	public long applyLocalChange(EntityChangeTopLevelMovement<IMutablePlayerEntity> change, long currentTickTimeMillis)
 	{
 		// Create the new commit number although we will reverse this if we can merge.
 		long commitNumber = _nextLocalCommitNumber;
@@ -457,7 +458,7 @@ public class SpeculativeProjection
 		}
 	}
 
-	private _LocalActionWrapper _applyChangeToProjected(IMutationEntity<IMutablePlayerEntity> change
+	private _LocalActionWrapper _applyChangeToProjected(EntityChangeTopLevelMovement<IMutablePlayerEntity> change
 			, long commitNumber
 			, long currentTickTimeMillis
 	)
@@ -466,7 +467,6 @@ public class SpeculativeProjection
 		
 		// Only the server can apply ticks so just provide 0.
 		long gameTick = 0L;
-		long millisecondsBeforeChange = change.getTimeCostMillis();
 		
 		// We will collect our results from this sequence of iterations.
 		List<_LocalCallConsequences> consequences = new ArrayList<>();
@@ -476,7 +476,6 @@ public class SpeculativeProjection
 		List<IMutationBlock> blockMutationstoRun = List.of();
 		Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = Map.of();
 		Set<CuboidAddress> accumulatedLightingChangeCuboids = new HashSet<>();
-		long millisInTick = millisecondsBeforeChange;
 		boolean didFirstPass = true;
 		IEntityUpdate inlineUpdate = null;
 		for (int i = 0; (i <= MAX_FOLLOW_UP_TICKS) && didFirstPass && (!entityChangesToRun.isEmpty() || !blockMutationstoRun.isEmpty() || !potentialLightChangesByCuboid.isEmpty()); ++i)
@@ -488,7 +487,7 @@ public class SpeculativeProjection
 					, newMutationSink
 					, newChangeSink
 					, true
-					, millisInTick
+					, _serverMillisPerTick
 					, currentTickTimeMillis
 			);
 			
@@ -554,9 +553,6 @@ public class SpeculativeProjection
 				;
 				potentialLightChangesByCuboid = result.potentialLightChangesByCuboid;
 				accumulatedLightingChangeCuboids.addAll(result.potentialLightChangesByCuboid.keySet());
-				
-				// Follow-up ticks just use the fixed number of millis per tick.
-				millisInTick = _serverMillisPerTick;
 			}
 		}
 		

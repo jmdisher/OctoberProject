@@ -427,11 +427,14 @@ public class TestCommonChanges
 		TickProcessingContext context = _createSimpleContext();
 		
 		// Craft some items to use these up and verify that we also moved.
-		EntityChangeCraft craft = new EntityChangeCraft(logToPlanks, logToPlanks.millisPerCraft);
-		context = _createNextTick(context, craft.getTimeCostMillis());
-		Assert.assertTrue(craft.applyChange(context, newEntity));
-		_stand(context, newEntity);
-		TickUtils.endOfTick(context, newEntity);
+		for (long spent = 0L; spent < logToPlanks.millisPerCraft; spent += context.millisPerTick)
+		{
+			EntityChangeCraft craft = new EntityChangeCraft(logToPlanks, context.millisPerTick);
+			context = _createNextTick(context, context.millisPerTick);
+			Assert.assertTrue(craft.applyChange(context, newEntity));
+			_stand(context, newEntity);
+			TickUtils.endOfTick(context, newEntity);
+		}
 		Assert.assertEquals(15.1f, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(-9.8, newEntity.newVelocity.z(), 0.01f);
 	}
