@@ -219,7 +219,6 @@ public class TestServerStateManager
 			, OrientationHelpers.YAW_NORTH
 			, OrientationHelpers.PITCH_FLAT
 			, subAction
-			, 100L
 		);
 		Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(change, 1L);
 		callouts.peekHandler = (PacketFromClient toRemove) -> {

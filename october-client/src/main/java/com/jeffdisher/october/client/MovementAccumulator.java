@@ -223,7 +223,6 @@ public class MovementAccumulator
 				, _newYaw
 				, _newPitch
 				, _subAction
-				, _accumulationMillis
 			);
 			_runAccumulatedAction(toRun);
 		}
@@ -339,7 +338,6 @@ public class MovementAccumulator
 				, _newYaw
 				, _newPitch
 				, _subAction
-				, _millisPerTick
 			);
 		}
 		return result;
@@ -526,7 +524,7 @@ public class MovementAccumulator
 		boolean shouldClearAccumulation;
 		// Use the last sample time as the current time.
 		long currentTimeMillis = _lastSampleMillis;
-		OneOffRunner.StatePackage output = OneOffRunner.runOneChange(input, eventSink, _millisPerTick, currentTimeMillis, toRun);
+		OneOffRunner.StatePackage output = OneOffRunner.runOneChange(input, eventSink, _accumulationMillis, currentTimeMillis, toRun);
 		if (null != output)
 		{
 			// This was a success so send off listener updates.

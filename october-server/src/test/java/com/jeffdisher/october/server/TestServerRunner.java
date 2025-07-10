@@ -377,7 +377,7 @@ public class TestServerRunner
 		float speed = ENV.creatures.PLAYER.blocksPerSecond();
 		EntityLocation firstStep = new EntityLocation(-0.2f, 0.0f, 0.0f);
 		EntityLocation velocity = new EntityLocation(speed, 0.0f, 0.0f);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> move = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_WEST, OrientationHelpers.PITCH_FLAT, null, ServerRunner.DEFAULT_MILLIS_PER_TICK);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> move = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_WEST, OrientationHelpers.PITCH_FLAT, null);
 		network.receiveFromClient(clientId1, move, 1L);
 		
 		network.waitForCuboidRemovedCount(clientId1, 2);
@@ -658,7 +658,7 @@ public class TestServerRunner
 		EntityLocation firstStep = new EntityLocation(0.0f, 0.2f, 0.0f);
 		float speed = ENV.creatures.PLAYER.blocksPerSecond();
 		EntityLocation velocity = new EntityLocation(0.0f, speed, 0.0f);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> move = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_NORTH, OrientationHelpers.PITCH_FLAT, null, ServerRunner.DEFAULT_MILLIS_PER_TICK);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> move = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_NORTH, OrientationHelpers.PITCH_FLAT, null);
 		network.receiveFromClient(clientId1, move, 1L);
 		Object change0 = network.waitForUpdate(clientId1, 0);
 		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
@@ -809,7 +809,6 @@ public class TestServerRunner
 			, OrientationHelpers.YAW_NORTH
 			, OrientationHelpers.PITCH_FLAT
 			, subAction
-			, ServerRunner.DEFAULT_MILLIS_PER_TICK
 		);
 	}
 

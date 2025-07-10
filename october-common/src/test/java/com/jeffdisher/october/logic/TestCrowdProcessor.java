@@ -96,7 +96,6 @@ public class TestCrowdProcessor
 			, OrientationHelpers.YAW_NORTH
 			, OrientationHelpers.PITCH_FLAT
 			, null
-			, context.millisPerTick
 		);
 		ScheduledChange singleChange = new ScheduledChange(topLevel, 0L);
 		group = CrowdProcessor.processCrowdGroupParallel(thread

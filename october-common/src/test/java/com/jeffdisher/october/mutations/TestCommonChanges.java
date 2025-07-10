@@ -2355,7 +2355,6 @@ public class TestCommonChanges
 			, (byte)5
 			, (byte)6
 			, null
-			, context.millisPerTick
 		);
 		boolean didApply = action.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
@@ -2389,7 +2388,6 @@ public class TestCommonChanges
 			, (byte)5
 			, (byte)6
 			, null
-			, context.millisPerTick
 		);
 		boolean didApply = action.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
@@ -2410,6 +2408,7 @@ public class TestCommonChanges
 		newEntity.newVelocity = oldVelocity;
 		CuboidData air = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, -4, 0), ENV.special.AIR);
 		TickProcessingContext context = ContextBuilder.build()
+				.millisPerTick(17L)
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), air), null)
 				.finish()
 		;
@@ -2419,7 +2418,6 @@ public class TestCommonChanges
 			, (byte)5
 			, (byte)6
 			, null
-			, 17L
 		);
 		
 		boolean didApply = action.applyChange(context, newEntity);
@@ -2574,7 +2572,6 @@ public class TestCommonChanges
 			, (byte)0
 			, (byte)0
 			, null
-			, millis
 		);
 		Assert.assertTrue(stand.applyChange(context, mutableEntity));
 	}

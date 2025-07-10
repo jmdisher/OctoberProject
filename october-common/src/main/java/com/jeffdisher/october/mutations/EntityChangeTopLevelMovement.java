@@ -74,8 +74,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		byte yaw = buffer.get();
 		byte pitch = buffer.get();
 		IMutationEntity<T> subAction = CodecHelpers.readNullableNestedChange(buffer);
-		long millis = buffer.getLong();
-		return new EntityChangeTopLevelMovement<>(newLocation, newVelocity, intensity, yaw, pitch, subAction, millis);
+		return new EntityChangeTopLevelMovement<>(newLocation, newVelocity, intensity, yaw, pitch, subAction);
 	}
 
 	/**
@@ -98,7 +97,6 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	private final byte _yaw;
 	private final byte _pitch;
 	private final IMutationEntity<T> _subAction;
-	private final long _millis;
 
 	public EntityChangeTopLevelMovement(EntityLocation newLocation
 		, EntityLocation newVelocity
@@ -106,10 +104,8 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		, byte yaw
 		, byte pitch
 		, IMutationEntity<T> subAction
-		, long millis
 	)
 	{
-		Assert.assertTrue(millis > 0L);
 		Assert.assertTrue((null == subAction) || ALLOWED_TYPES.contains(subAction.getType()));
 		
 		_newLocation = newLocation;
@@ -118,7 +114,6 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		_yaw = yaw;
 		_pitch = pitch;
 		_subAction = subAction;
-		_millis = millis;
 	}
 
 	@Override
@@ -154,7 +149,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		EntityLocation startLocation = newEntity.getLocation();
 		EntityLocation startVelocity = newEntity.getVelocityVector();
 		EntityVolume volume = newEntity.getType().volume();
-		float seconds = ((float)_millis / 1000.0f);
+		float seconds = ((float)context.millisPerTick / 1000.0f);
 		float startViscosity = EntityMovementHelpers.maxViscosityInEntityBlocks(startLocation, volume, context.previousBlockLookUp);
 		float startInverseViscosity = 1.0f - startViscosity;
 		
@@ -335,7 +330,6 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		buffer.put(_yaw);
 		buffer.put(_pitch);
 		CodecHelpers.writeNullableNestedChange(buffer, _subAction);
-		buffer.putLong(_millis);
 	}
 
 	@Override
@@ -348,7 +342,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	@Override
 	public String toString()
 	{
-		return String.format("Top-Level(%s - %d ms), L(%s), V(%s), Sub: %s", _intensity, _millis, _newLocation, _newVelocity, _subAction);
+		return String.format("Top-Level(%s), L(%s), V(%s), Sub: %s", _intensity, _newLocation, _newVelocity, _subAction);
 	}
 
 	/**

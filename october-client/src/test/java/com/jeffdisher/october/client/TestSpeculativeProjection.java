@@ -918,13 +918,12 @@ public class TestSpeculativeProjection
 		
 		// Apply the 2 steps of the move, locally.
 		// (note that 0.4 is the limit for one tick)
-		EntityLocation firstStep = new EntityLocation(0.4f, 0.0f, 0.0f);
-		EntityLocation lastStep = new EntityLocation(0.8f, 0.0f, 0.0f);
+		EntityLocation firstStep = new EntityLocation(0.2f, 0.0f, 0.0f);
+		EntityLocation lastStep = new EntityLocation(0.4f, 0.0f, 0.0f);
 		float speed = ENV.creatures.PLAYER.blocksPerSecond();
-		long millisInStep = 100L;
 		EntityLocation velocity = new EntityLocation(speed, 0.0f, 0.0f);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> move1 = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT, null, millisInStep);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> move2 = new EntityChangeTopLevelMovement<>(lastStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT, null, millisInStep);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> move1 = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT, null);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> move2 = new EntityChangeTopLevelMovement<>(lastStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT, null);
 		long commit1 = projector.applyLocalChange(move1, currentTimeMillis);
 		long commit2 = projector.applyLocalChange(move2, currentTimeMillis);
 		Assert.assertEquals(1L, commit1);
@@ -1582,15 +1581,14 @@ public class TestSpeculativeProjection
 		
 		// Apply 3 steps, locally.
 		// (note that 0.4 is the limit for one tick)
-		EntityLocation firstStep = new EntityLocation(0.4f, 0.0f, 0.0f);
-		EntityLocation secondStep = new EntityLocation(0.8f, 0.0f, 0.0f);
-		EntityLocation lastStep = new EntityLocation(1.2f, 0.0f, 0.0f);
+		EntityLocation firstStep = new EntityLocation(0.2f, 0.0f, 0.0f);
+		EntityLocation secondStep = new EntityLocation(0.4f, 0.0f, 0.0f);
+		EntityLocation lastStep = new EntityLocation(0.6f, 0.0f, 0.0f);
 		float speed = ENV.creatures.PLAYER.blocksPerSecond();
-		long millisInStep = 100L;
 		EntityLocation velocity = new EntityLocation(speed, 0.0f, 0.0f);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> move1 = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT, null, millisInStep);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> move2 = new EntityChangeTopLevelMovement<>(secondStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT, null, millisInStep);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> move3 = new EntityChangeTopLevelMovement<>(lastStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT, null, millisInStep);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> move1 = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT, null);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> move2 = new EntityChangeTopLevelMovement<>(secondStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT, null);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> move3 = new EntityChangeTopLevelMovement<>(lastStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT, null);
 		long commit1 = projector.applyLocalChange(move1, currentTimeMillis);
 		long commit2 = projector.applyLocalChange(move2, currentTimeMillis);
 		long commit3 = projector.applyLocalChange(move3, currentTimeMillis);
@@ -1922,7 +1920,7 @@ public class TestSpeculativeProjection
 		byte pitch = 20;
 		EntityLocation targetLocation = new EntityLocation(0.24f, 0.22f, 0.0f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> move = new EntityChangeTopLevelMovement<>(targetLocation, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, yaw, pitch, null, 100L);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> move = new EntityChangeTopLevelMovement<>(targetLocation, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, yaw, pitch, null);
 		long commit1 = projector.applyLocalChange(move, currentTimeMillis);
 		Assert.assertEquals(1L, commit1);
 		
@@ -2495,7 +2493,6 @@ public class TestSpeculativeProjection
 			, (byte)0
 			, (byte)0
 			, change
-			, 1L
 		);
 		return projector.applyLocalChange(wrapper, currentTimeMillis);
 	}

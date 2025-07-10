@@ -69,14 +69,12 @@ public class TestMutationEntityCodec
 	{
 		EntityLocation newLocation = new EntityLocation(0.5f, 0.0f, 0.0f);
 		EntityLocation newVelocity = new EntityLocation(5.0f, 0.0f, 0.0f);
-		long millis = 100L;
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(newLocation
 			, newVelocity
 			, EntityChangeTopLevelMovement.Intensity.WALKING
 			, (byte)0
 			, (byte)0
 			, null
-			, millis
 		);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
@@ -94,7 +92,6 @@ public class TestMutationEntityCodec
 			, (byte)5
 			, (byte)6
 			, jump
-			, millis
 		);
 		
 		buffer = ByteBuffer.allocate(1024);

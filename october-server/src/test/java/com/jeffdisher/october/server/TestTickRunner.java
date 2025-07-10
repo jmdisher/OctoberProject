@@ -3208,7 +3208,6 @@ public class TestTickRunner
 			, (byte)5
 			, (byte)6
 			, null
-			, MILLIS_PER_TICK
 		);
 		runner.enqueueEntityChange(1, action, 1L);
 		runner.startNextTick();
@@ -3414,7 +3413,6 @@ public class TestTickRunner
 			, OrientationHelpers.YAW_NORTH
 			, OrientationHelpers.PITCH_FLAT
 			, subAction
-			, MILLIS_PER_TICK
 		);
 	}
 }
