@@ -143,8 +143,11 @@ public class TestCommonChanges
 		int logKey = newEntity.newInventory.getIdOfStackableType(LOG_ITEM);
 		
 		// Craft some items to use these up and verify that the selection is cleared.
-		EntityChangeCraft craft = new EntityChangeCraft(logToPlanks, logToPlanks.millisPerCraft);
-		Assert.assertTrue(craft.applyChange(context, newEntity));
+		for (long spent = 0L; spent < logToPlanks.millisPerCraft; spent += context.millisPerTick)
+		{
+			EntityChangeCraft craft = new EntityChangeCraft(logToPlanks);
+			Assert.assertTrue(craft.applyChange(context, newEntity));
+		}
 		Assert.assertEquals(Entity.NO_SELECTION, newEntity.getSelectedKey());
 		
 		// Actively select the type and verify it is selected.
@@ -429,7 +432,7 @@ public class TestCommonChanges
 		// Craft some items to use these up and verify that we also moved.
 		for (long spent = 0L; spent < logToPlanks.millisPerCraft; spent += context.millisPerTick)
 		{
-			EntityChangeCraft craft = new EntityChangeCraft(logToPlanks, context.millisPerTick);
+			EntityChangeCraft craft = new EntityChangeCraft(logToPlanks);
 			context = _createNextTick(context, context.millisPerTick);
 			Assert.assertTrue(craft.applyChange(context, newEntity));
 			_stand(context, newEntity);
@@ -1602,15 +1605,21 @@ public class TestCommonChanges
 		// We will create a bogus context which just says that they are standing in a wall so they don't try to move.
 		TickProcessingContext context = _createSimpleContext();
 		
-		EntityChangeCraft craft = new EntityChangeCraft(logToPlanks, logToPlanks.millisPerCraft);
-		Assert.assertTrue(craft.applyChange(context, newEntity));
+		for (long spent = 0L; spent < logToPlanks.millisPerCraft; spent += context.millisPerTick)
+		{
+			EntityChangeCraft craft = new EntityChangeCraft(logToPlanks);
+			Assert.assertTrue(craft.applyChange(context, newEntity));
+		}
 		Assert.assertEquals(Entity.NO_SELECTION, newEntity.newHotbar[0]);
 		Assert.assertEquals(2, newEntity.newHotbar[1]);
 		Assert.assertEquals(0, newEntity.newHotbarIndex);
 		newEntity.freeze();
 		
-		craft = new EntityChangeCraft(stoneToBrick, stoneToBrick.millisPerCraft);
-		Assert.assertTrue(craft.applyChange(context, newEntity));
+		for (long spent = 0L; spent < stoneToBrick.millisPerCraft; spent += context.millisPerTick)
+		{
+			EntityChangeCraft craft = new EntityChangeCraft(stoneToBrick);
+			Assert.assertTrue(craft.applyChange(context, newEntity));
+		}
 		Assert.assertEquals(Entity.NO_SELECTION, newEntity.newHotbar[0]);
 		Assert.assertEquals(Entity.NO_SELECTION, newEntity.newHotbar[1]);
 		Assert.assertEquals(0, newEntity.newHotbarIndex);

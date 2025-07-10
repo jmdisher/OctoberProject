@@ -27,21 +27,18 @@ public class EntityChangeCraft implements IMutationEntity<IMutablePlayerEntity>
 	public static EntityChangeCraft deserializeFromBuffer(ByteBuffer buffer)
 	{
 		Craft operation = CodecHelpers.readCraft(buffer);
-		long millisToApply = buffer.getLong();
-		return new EntityChangeCraft(operation, millisToApply);
+		buffer.getLong();
+		return new EntityChangeCraft(operation);
 	}
 
 
 	private final Craft _operation;
-	private final long _millisToApply;
 
-	public EntityChangeCraft(Craft operation, long millisToApply)
+	public EntityChangeCraft(Craft operation)
 	{
 		Assert.assertTrue(null != operation);
-		Assert.assertTrue(millisToApply > 0L);
 		
 		_operation = operation;
-		_millisToApply = millisToApply;
 	}
 
 	@Override
@@ -63,7 +60,7 @@ public class EntityChangeCraft implements IMutationEntity<IMutablePlayerEntity>
 		if (null != existing)
 		{
 			// Now, increment the time.
-			existing = new CraftOperation(existing.selectedCraft(), existing.completedMillis() + _millisToApply);
+			existing = new CraftOperation(existing.selectedCraft(), existing.completedMillis() + context.millisPerTick);
 			
 			// See if this is completed.
 			if (existing.isCompleted())
@@ -121,7 +118,7 @@ public class EntityChangeCraft implements IMutationEntity<IMutablePlayerEntity>
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeCraft(buffer, _operation);
-		buffer.putLong(_millisToApply);
+		buffer.putLong(0L); // millis no longer stored.
 	}
 
 	@Override
@@ -134,6 +131,6 @@ public class EntityChangeCraft implements IMutationEntity<IMutablePlayerEntity>
 	@Override
 	public String toString()
 	{
-		return "Craft " + _operation + " for " + _millisToApply + " ms";
+		return "Craft " + _operation;
 	}
 }

@@ -1008,9 +1008,14 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1L, commit1);
 		
 		// We will handle this as a single crafting operation to test the simpler case.
-		EntityChangeCraft craft = new EntityChangeCraft(logToPlanks, logToPlanks.millisPerCraft);
-		long commit2 = _wrapAndApply(projector, entity, currentTimeMillis, craft);
-		Assert.assertEquals(2L, commit2);
+		long nextCommit = 2L;
+		for (long spent = 0L; spent < logToPlanks.millisPerCraft; spent += MILLIS_PER_TICK)
+		{
+			EntityChangeCraft craft = new EntityChangeCraft(logToPlanks);
+			long commit2 = _wrapAndApply(projector, entity, currentTimeMillis, craft);
+			Assert.assertEquals(nextCommit, commit2);
+			nextCommit += 1L;
+		}
 		// Verify that we finished the craft (no longer in progress).
 		Assert.assertNull(listener.authoritativeEntityState.localCraftOperation());
 		Assert.assertNull(listener.thisEntityState.localCraftOperation());
@@ -1033,7 +1038,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of()
-				, commit2
+				, nextCommit - 1L
 				, currentTimeMillis
 		);
 		Assert.assertEquals(0, speculativeCount);
@@ -1075,17 +1080,26 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(stoneKey, entity.hotbarItems()[entity.hotbarIndex()]);
 		
 		// Do the craft and observe it takes multiple actions with no current activity.
-		EntityChangeCraft craft = new EntityChangeCraft(stoneToStoneBrick, 1000L);
-		long commit1 = _wrapAndApply(projector, entity, currentTimeMillis, craft);
-		Assert.assertEquals(1L, commit1);
-		Assert.assertEquals(1, listener.entityChangeCount);
+		long nextCommit = 1L;
+		for (long spent = 0L; spent < 1000L; spent += MILLIS_PER_TICK)
+		{
+			EntityChangeCraft craft = new EntityChangeCraft(stoneToStoneBrick);
+			long commit1 = _wrapAndApply(projector, entity, currentTimeMillis, craft);
+			Assert.assertEquals(nextCommit, commit1);
+			nextCommit += 1L;
+		}
+		Assert.assertEquals(nextCommit - 1L, listener.entityChangeCount);
 		Assert.assertNull(listener.authoritativeEntityState.localCraftOperation());
 		Assert.assertNotNull(listener.thisEntityState.localCraftOperation());
 		
-		craft = new EntityChangeCraft(stoneToStoneBrick, 1000L);
-		long commit2 = _wrapAndApply(projector, entity, currentTimeMillis, craft);
-		Assert.assertEquals(2L, commit2);
-		Assert.assertEquals(2, listener.entityChangeCount);
+		for (long spent = 0L; spent < 1000L; spent += MILLIS_PER_TICK)
+		{
+			EntityChangeCraft craft = new EntityChangeCraft(stoneToStoneBrick);
+			long commit2 = _wrapAndApply(projector, entity, currentTimeMillis, craft);
+			Assert.assertEquals(nextCommit, commit2);
+			nextCommit += 1L;
+		}
+		Assert.assertEquals(nextCommit - 1L, listener.entityChangeCount);
 		Assert.assertNull(listener.authoritativeEntityState.localCraftOperation());
 		Assert.assertNull(listener.thisEntityState.localCraftOperation());
 		
@@ -1276,7 +1290,7 @@ public class TestSpeculativeProjection
 		Assert.assertTrue(CraftAspect.canApply(stoneBricksToFurnace, inventory));
 		
 		// But verify that it fails when applied to the entity, directly (as it isn't "trivial").
-		EntityChangeCraft craft = new EntityChangeCraft(stoneBricksToFurnace, 100L);
+		EntityChangeCraft craft = new EntityChangeCraft(stoneBricksToFurnace);
 		long commit = _wrapAndApply(projector, entity, currentTimeMillis, craft);
 		// This should fail to apply.
 		Assert.assertEquals(0, commit);

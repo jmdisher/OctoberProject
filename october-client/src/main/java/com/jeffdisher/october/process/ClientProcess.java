@@ -295,7 +295,7 @@ public class ClientProcess
 	 */
 	public void craft(Craft operation, long currentTimeMillis)
 	{
-		EntityChangeCraft change = new EntityChangeCraft(operation, (short)_clientRunner.millisPerTick);
+		EntityChangeCraft change = new EntityChangeCraft(operation);
 		_clientRunner.commonApplyEntityAction(change, currentTimeMillis);
 		_runPendingCallbacks();
 	}

@@ -267,7 +267,7 @@ public class TestClientRunner
 		
 		// Start crafting, but not with enough time to complete it.
 		currentTimeMillis += 100L;
-		runner.commonApplyEntityAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.log_to_planks"), (short)runner.millisPerTick), currentTimeMillis);
+		runner.commonApplyEntityAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.log_to_planks")), currentTimeMillis);
 		runner.standStill(currentTimeMillis);
 		currentTimeMillis += 100L;
 		runner.standStill(currentTimeMillis);
