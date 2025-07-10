@@ -36,8 +36,8 @@ public class EntityChangeCraft implements IMutationEntity<IMutablePlayerEntity>
 
 	public EntityChangeCraft(Craft operation)
 	{
-		Assert.assertTrue(null != operation);
-		
+		// NOTE:  In storage version 6 or network version 8, this craft operation was not allowed to be null.
+		// In storage 7 and network 9, this was relaxed so that it can be null.
 		_operation = operation;
 	}
 
@@ -46,11 +46,26 @@ public class EntityChangeCraft implements IMutationEntity<IMutablePlayerEntity>
 	{
 		// See if there is an in-progress operation (replacing it or creating a new one, if none).
 		CraftOperation existing = newEntity.getCurrentCraftingOperation();
-		if ((null == existing) || (existing.selectedCraft() != _operation))
+		if (null != existing)
 		{
-			// We will start a new operation, here.
-			// We need to make sure that this is a crafting operations which can be performed in their inventory.
-			if (_operation.classification.equals(CraftAspect.BUILT_IN))
+			// There is something running so see if we should continue it or cancel it.
+			if ((null != _operation) && (existing.selectedCraft() != _operation))
+			{
+				// We want to change it so drop it and try the new one.
+				if (_operation.classification.equals(CraftAspect.BUILT_IN))
+				{
+					existing = new CraftOperation(_operation, 0L);
+				}
+				else
+				{
+					existing = null;
+				}
+			}
+		}
+		else
+		{
+			// There is nothing running so see if we provided a new one.
+			if ((null != _operation) && _operation.classification.equals(CraftAspect.BUILT_IN))
 			{
 				existing = new CraftOperation(_operation, 0L);
 			}

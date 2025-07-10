@@ -1614,6 +1614,7 @@ public class TestCommonChanges
 			EntityChangeCraft craft = new EntityChangeCraft(logToPlanks);
 			Assert.assertTrue(craft.applyChange(context, newEntity));
 		}
+		Assert.assertNull(newEntity.newLocalCraftOperation);
 		Assert.assertEquals(Entity.NO_SELECTION, newEntity.newHotbar[0]);
 		Assert.assertEquals(2, newEntity.newHotbar[1]);
 		Assert.assertEquals(0, newEntity.newHotbarIndex);
@@ -1624,6 +1625,7 @@ public class TestCommonChanges
 			EntityChangeCraft craft = new EntityChangeCraft(stoneToBrick);
 			Assert.assertTrue(craft.applyChange(context, newEntity));
 		}
+		Assert.assertNull(newEntity.newLocalCraftOperation);
 		Assert.assertEquals(Entity.NO_SELECTION, newEntity.newHotbar[0]);
 		Assert.assertEquals(Entity.NO_SELECTION, newEntity.newHotbar[1]);
 		Assert.assertEquals(0, newEntity.newHotbarIndex);
@@ -2464,6 +2466,38 @@ public class TestCommonChanges
 		Assert.assertNull(newEntity.newLocalCraftOperation);
 		Assert.assertEquals(0, newEntity.newInventory.getCurrentEncumbrance());
 		Assert.assertEquals(Entity.NO_SELECTION, newEntity.getSelectedKey());
+	}
+
+	@Test
+	public void craftOperationNullDefault() throws Throwable
+	{
+		Craft logToPlanks = ENV.crafting.getCraftById("op.log_to_planks");
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newInventory.addAllItems(LOG_ITEM, 2);
+		
+		// We will create a bogus context which just says that they are standing in a wall so they don't try to move.
+		TickProcessingContext context = _createSimpleContext();
+		
+		// We will only explicitly name the crafting operation the first time.
+		EntityChangeCraft craft = new EntityChangeCraft(logToPlanks);
+		Assert.assertTrue(craft.applyChange(context, newEntity));
+		Assert.assertNotNull(newEntity.newLocalCraftOperation);
+		
+		// ... and use null for the follow-ups.
+		for (long spent = context.millisPerTick; spent < logToPlanks.millisPerCraft; spent += context.millisPerTick)
+		{
+			craft = new EntityChangeCraft(null);
+			Assert.assertTrue(craft.applyChange(context, newEntity));
+		}
+		
+		// If nothing is selected, null should just fail.
+		craft = new EntityChangeCraft(null);
+		Assert.assertFalse(craft.applyChange(context, newEntity));
+		
+		// Verify that we completed this and what is left in our inventory.
+		Assert.assertNull(newEntity.newLocalCraftOperation);
+		Assert.assertEquals(1, newEntity.newInventory.getCount(LOG_ITEM));
+		Assert.assertEquals(2, newEntity.newInventory.getCount(PLANK_ITEM));
 	}
 
 
