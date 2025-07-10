@@ -415,7 +415,7 @@ public class TestClientRunner
 		
 		// Start crafting, but not with enough time to complete it (the table has 10x efficiency bonus).
 		currentTimeMillis += 50L;
-		runner.commonApplyEntityAction(new EntityChangeCraftInBlock(table, ENV.crafting.getCraftById("op.log_to_planks"), (short)runner.millisPerTick), currentTimeMillis);
+		runner.commonApplyEntityAction(new EntityChangeCraftInBlock(table, ENV.crafting.getCraftById("op.log_to_planks")), currentTimeMillis);
 		currentTimeMillis += 70L;
 		runner.standStill(currentTimeMillis);
 		currentTimeMillis += 80L;

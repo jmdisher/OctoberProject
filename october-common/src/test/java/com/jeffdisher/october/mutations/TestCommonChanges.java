@@ -1722,43 +1722,30 @@ public class TestCommonChanges
 		holder.mutation = null;
 		mutable.writeBack(cuboid);
 		
-		// Run the craft in a single operation.
-		EntityChangeCraftInBlock craft = new EntityChangeCraftInBlock(quern, grindFlour, grindFlour.millisPerCraft);
-		Assert.assertTrue(craft.applyChange(holder.context, newEntity));
-		Assert.assertTrue(holder.mutation instanceof MutationBlockCraft);
-		// Run the first crafting operation - we will need to run this again to "finish".
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
-		Assert.assertNull(mutable.getCrafting());
-		Inventory inv = mutable.getInventory();
-		Assert.assertEquals(1, inv.getCount(wheatItem));
-		Assert.assertEquals(1, inv.getCount(flour));
-		holder.mutation = null;
-		mutable.writeBack(cuboid);
-		
-		// Run the crafting operation in 2 iterations.
-		craft = new EntityChangeCraftInBlock(quern, grindFlour, grindFlour.millisPerCraft / 2);
-		Assert.assertTrue(craft.applyChange(holder.context, newEntity));
-		Assert.assertTrue(holder.mutation instanceof MutationBlockCraft);
-		// Run the first crafting operation - we will need to run this again to "finish".
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
-		Assert.assertNotNull(mutable.getCrafting());
-		inv = mutable.getInventory();
-		Assert.assertEquals(1, inv.getCount(wheatItem));
-		Assert.assertEquals(1, inv.getCount(flour));
-		holder.mutation = null;
-		mutable.writeBack(cuboid);
-		
-		// Run the follow-up to finish this.
-		Assert.assertTrue(craft.applyChange(holder.context, newEntity));
-		Assert.assertTrue(holder.mutation instanceof MutationBlockCraft);
-		// Run the first crafting operation - we will need to run this again to "finish".
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
-		Assert.assertNull(mutable.getCrafting());
-		inv = mutable.getInventory();
-		Assert.assertEquals(0, inv.getCount(wheatItem));
-		Assert.assertEquals(2, inv.getCount(flour));
-		holder.mutation = null;
-		mutable.writeBack(cuboid);
+		// Run the crafting operation.
+		for (long spent = 0L; spent < grindFlour.millisPerCraft; spent += holder.context.millisPerTick)
+		{
+			EntityChangeCraftInBlock craft = new EntityChangeCraftInBlock(quern, grindFlour);
+			Assert.assertTrue(craft.applyChange(holder.context, newEntity));
+			Assert.assertTrue(holder.mutation instanceof MutationBlockCraft);
+			Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
+			Inventory inv = mutable.getInventory();
+			boolean isLastIteration = (spent + holder.context.millisPerTick) >= grindFlour.millisPerCraft;
+			if (isLastIteration)
+			{
+				Assert.assertNull(mutable.getCrafting());
+				Assert.assertEquals(1, inv.getCount(wheatItem));
+				Assert.assertEquals(1, inv.getCount(flour));
+			}
+			else
+			{
+				Assert.assertNotNull(mutable.getCrafting());
+				Assert.assertEquals(2, inv.getCount(wheatItem));
+				Assert.assertEquals(0, inv.getCount(flour));
+			}
+			holder.mutation = null;
+			mutable.writeBack(cuboid);
+		}
 	}
 
 	@Test

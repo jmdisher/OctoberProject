@@ -311,7 +311,7 @@ public class ClientProcess
 	 */
 	public void craftInBlock(AbsoluteLocation block, Craft operation, long currentTimeMillis)
 	{
-		EntityChangeCraftInBlock change = new EntityChangeCraftInBlock(block, operation, (short)_clientRunner.millisPerTick);
+		EntityChangeCraftInBlock change = new EntityChangeCraftInBlock(block, operation);
 		_clientRunner.commonApplyEntityAction(change, currentTimeMillis);
 		_runPendingCallbacks();
 	}

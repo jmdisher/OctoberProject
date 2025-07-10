@@ -31,24 +31,21 @@ public class EntityChangeCraftInBlock implements IMutationEntity<IMutablePlayerE
 	{
 		AbsoluteLocation targetBlock = CodecHelpers.readAbsoluteLocation(buffer);
 		Craft craft = CodecHelpers.readCraft(buffer);
-		long millisToApply = buffer.getLong();
-		return new EntityChangeCraftInBlock(targetBlock, craft, millisToApply);
+		buffer.getLong();
+		return new EntityChangeCraftInBlock(targetBlock, craft);
 	}
 
 
 	private final AbsoluteLocation _targetBlock;
 	private final Craft _craft;
-	private final long _millisToApply;
 
-	public EntityChangeCraftInBlock(AbsoluteLocation targetBlock, Craft craft, long millisToApply)
+	public EntityChangeCraftInBlock(AbsoluteLocation targetBlock, Craft craft)
 	{
 		Assert.assertTrue(null != targetBlock);
 		// Note that craft can be null if it just means "continue".
-		Assert.assertTrue(millisToApply > 0L);
 		
 		_targetBlock = targetBlock;
 		_craft = craft;
-		_millisToApply = millisToApply;
 	}
 
 	@Override
@@ -67,7 +64,7 @@ public class EntityChangeCraftInBlock implements IMutationEntity<IMutablePlayerE
 		{
 			// Pass the mutation into the block.
 			// (note that we verify that this is valid for the block type in MutationBlockCraft)
-			MutationBlockCraft mutation = new MutationBlockCraft(_targetBlock, _craft, _millisToApply);
+			MutationBlockCraft mutation = new MutationBlockCraft(_targetBlock, _craft, context.millisPerTick);
 			context.mutationSink.next(mutation);
 			didApply = true;
 		}
@@ -94,7 +91,7 @@ public class EntityChangeCraftInBlock implements IMutationEntity<IMutablePlayerE
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _targetBlock);
 		CodecHelpers.writeCraft(buffer, _craft);
-		buffer.putLong(_millisToApply);
+		buffer.putLong(0L); // millis no longer stored.
 	}
 
 	@Override
@@ -107,6 +104,6 @@ public class EntityChangeCraftInBlock implements IMutationEntity<IMutablePlayerE
 	@Override
 	public String toString()
 	{
-		return "Craft " + _craft + " in block " + _targetBlock + " for " + _millisToApply + " ms";
+		return "Craft " + _craft + " in block " + _targetBlock;
 	}
 }

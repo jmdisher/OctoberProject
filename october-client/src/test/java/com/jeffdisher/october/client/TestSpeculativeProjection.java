@@ -1210,7 +1210,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(2L, commit2);
 		
 		// Now, craft against the table (it has 10x speed so we will do this in 2 shots).
-		EntityChangeCraftInBlock craft = new EntityChangeCraftInBlock(location, stoneToStoneBrick, 100L);
+		EntityChangeCraftInBlock craft = new EntityChangeCraftInBlock(location, stoneToStoneBrick);
 		long commit3 = _wrapAndApply(projector, entity, currentTimeMillis, craft);
 		Assert.assertEquals(3L, commit3);
 		
@@ -1223,7 +1223,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, listener.lastHeightMap.getHeight(1, 1));
 		
 		// Complete the craft and check the proxy.
-		craft = new EntityChangeCraftInBlock(location, null, 100L);
+		craft = new EntityChangeCraftInBlock(location, null);
 		long commit4 = _wrapAndApply(projector, entity, currentTimeMillis, craft);
 		Assert.assertEquals(4L, commit4);
 		proxy = new BlockProxy(blockLocation, listener.lastData);
