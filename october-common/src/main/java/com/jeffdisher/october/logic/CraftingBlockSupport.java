@@ -90,8 +90,20 @@ public class CraftingBlockSupport
 			if (classifications.contains(startCraft.classification) && CraftAspect.canApply(startCraft, inventory))
 			{
 				long effectiveMillis = craftingMultiplier * millisToApply;
-				CraftOperation updated = new CraftOperation(startCraft, effectiveMillis);
-				newBlock.setCrafting(updated);
+				
+				// See if this should be finished immediately or if it will take multiple calls.
+				if (effectiveMillis >= startCraft.millisPerCraft)
+				{
+					MutableInventory mutable = new MutableInventory(inventory);
+					CraftAspect.craft(env, startCraft, mutable);
+					newBlock.setInventory(mutable.freeze());
+					newBlock.setCrafting(null);
+				}
+				else
+				{
+					CraftOperation updated = new CraftOperation(startCraft, effectiveMillis);
+					newBlock.setCrafting(updated);
+				}
 				// We changed something so say we applied.
 				didApply = true;
 			}

@@ -1702,7 +1702,7 @@ public class TestCommonChanges
 		Item flour = ENV.items.getItemById("op.flour");
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
-		newEntity.newInventory.addAllItems(wheatItem, 1);
+		newEntity.newInventory.addAllItems(wheatItem, 2);
 		int wheatId = newEntity.newInventory.getIdOfStackableType(wheatItem);
 		AbsoluteLocation quern = new AbsoluteLocation(2, 0, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
@@ -1713,7 +1713,7 @@ public class TestCommonChanges
 		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
 		
 		// Place the wheat into the quern.
-		MutationEntityPushItems pushToInventory = new MutationEntityPushItems(quern, wheatId, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
+		MutationEntityPushItems pushToInventory = new MutationEntityPushItems(quern, wheatId, 2, Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(pushToInventory.applyChange(holder.context, newEntity));
 		Assert.assertNull(holder.change);
 		Assert.assertTrue(holder.mutation instanceof MutationBlockStoreItems);
@@ -1722,15 +1722,29 @@ public class TestCommonChanges
 		holder.mutation = null;
 		mutable.writeBack(cuboid);
 		
-		// Run the crafting operation.
+		// Run the craft in a single operation.
 		EntityChangeCraftInBlock craft = new EntityChangeCraftInBlock(quern, grindFlour, grindFlour.millisPerCraft);
 		Assert.assertTrue(craft.applyChange(holder.context, newEntity));
 		Assert.assertTrue(holder.mutation instanceof MutationBlockCraft);
 		// Run the first crafting operation - we will need to run this again to "finish".
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
-		Assert.assertNotNull(mutable.getCrafting());
+		Assert.assertNull(mutable.getCrafting());
 		Inventory inv = mutable.getInventory();
 		Assert.assertEquals(1, inv.getCount(wheatItem));
+		Assert.assertEquals(1, inv.getCount(flour));
+		holder.mutation = null;
+		mutable.writeBack(cuboid);
+		
+		// Run the crafting operation in 2 iterations.
+		craft = new EntityChangeCraftInBlock(quern, grindFlour, grindFlour.millisPerCraft / 2);
+		Assert.assertTrue(craft.applyChange(holder.context, newEntity));
+		Assert.assertTrue(holder.mutation instanceof MutationBlockCraft);
+		// Run the first crafting operation - we will need to run this again to "finish".
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
+		Assert.assertNotNull(mutable.getCrafting());
+		inv = mutable.getInventory();
+		Assert.assertEquals(1, inv.getCount(wheatItem));
+		Assert.assertEquals(1, inv.getCount(flour));
 		holder.mutation = null;
 		mutable.writeBack(cuboid);
 		
@@ -1742,7 +1756,7 @@ public class TestCommonChanges
 		Assert.assertNull(mutable.getCrafting());
 		inv = mutable.getInventory();
 		Assert.assertEquals(0, inv.getCount(wheatItem));
-		Assert.assertEquals(1, inv.getCount(flour));
+		Assert.assertEquals(2, inv.getCount(flour));
 		holder.mutation = null;
 		mutable.writeBack(cuboid);
 	}

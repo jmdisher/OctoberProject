@@ -420,18 +420,7 @@ public class TestClientRunner
 		runner.standStill(currentTimeMillis);
 		currentTimeMillis += 80L;
 		runner.standStill(currentTimeMillis);
-		// Verify that we now see this is in progress in the block.
 		BlockProxy proxy = projection.readBlock(table);
-		Assert.assertEquals(1000L, proxy.getCrafting().completedMillis());
-		
-		// Now, complete the craft.
-		currentTimeMillis += 50L;
-		runner.commonApplyEntityAction(new EntityChangeCraftInBlock(table, null, (short)runner.millisPerTick), currentTimeMillis);
-		currentTimeMillis += 70L;
-		runner.standStill(currentTimeMillis);
-		currentTimeMillis += 80L;
-		runner.standStill(currentTimeMillis);
-		proxy = projection.readBlock(table);
 		Assert.assertNull(proxy.getCrafting());
 		Assert.assertEquals(2, proxy.getInventory().getCount(PLANK_ITEM));
 		Assert.assertTrue(projection.events.isEmpty());
