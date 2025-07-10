@@ -146,8 +146,8 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		// -tighten checks on the change in z-vector to make sure that they are falling at a reasonable rate
 		// -verify collisions with walls/ceilings/floors when velocity drops very quickly
 		
-		// If there is a sub-action, run it, ignoring the result (its failure may not doom us).
-		boolean subActionSuccess = false;
+		// If there is a sub-action, run it (we require that any sub-action is also a success).
+		boolean subActionSuccess = true;
 		if (null != _subAction)
 		{
 			subActionSuccess = _subAction.applyChange(context, newEntity);
@@ -309,7 +309,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		}
 		
 		// If all checks pass, apply changes and energy cost.
-		if (!forceFailure)
+		if (!forceFailure && subActionSuccess)
 		{
 			newEntity.setLocation(_newLocation);
 			newEntity.setVelocityVector(_newVelocity);
@@ -322,8 +322,8 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 			}
 		}
 		
-		// We will say that this succeeded if either the sub-action or the top-level movement was a success.
-		return !forceFailure || subActionSuccess;
+		// We will say that this succeeded if there was no reason for movement failure and the sub-action was a success.
+		return !forceFailure && subActionSuccess;
 	}
 
 	@Override

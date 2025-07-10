@@ -1476,6 +1476,7 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation location = address.getBase().getRelative(0, 6, 7);
 		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(0, 0, -1).getBlockAddress(), DIRT_ITEM.number());
+		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(1, 0, -1).getBlockAddress(), DIRT_ITEM.number());
 		
 		int[] randomHolder = new int[] {0};
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
@@ -1649,6 +1650,7 @@ public class TestTickRunner
 		AbsoluteLocation dirtLocation = location.getRelative(0, 0, -1);
 		cuboid.setData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress(), TILLED_SOIL_ITEM.number());
 		cuboid.setData15(AspectRegistry.BLOCK, dirtLocation.getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
+		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(1, 0, -1).getBlockAddress(), STONE_ITEM.number());
 		
 		WorldConfig config = new WorldConfig();
 		TickRunner runner = _createTestRunnerWithConfig(config);
