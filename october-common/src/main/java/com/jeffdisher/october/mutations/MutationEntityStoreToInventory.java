@@ -46,13 +46,6 @@ public class MutationEntityStoreToInventory implements IMutationEntity<IMutableP
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		// We will currently assume that accepting items is instantaneous.
-		return 0L;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		// We will still try a best-efforts request if the inventory has changed (but drop anything else).

@@ -33,12 +33,6 @@ public class EntityChangeChangeHotbarSlot implements IMutationEntity<IMutablePla
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		return 0L;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		return newEntity.changeHotbarIndex(_index);

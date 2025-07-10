@@ -52,12 +52,6 @@ public class EntityChangeCraftInBlock implements IMutationEntity<IMutablePlayerE
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		return _millisToApply;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		Environment env = Environment.getShared();

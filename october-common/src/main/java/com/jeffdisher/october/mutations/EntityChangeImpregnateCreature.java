@@ -23,12 +23,6 @@ public class EntityChangeImpregnateCreature implements IMutationEntity<IMutableC
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		return 0L;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutableCreatureEntity newEntity)
 	{
 		// We will say that this worked if the logic helper says they were set pregnant.

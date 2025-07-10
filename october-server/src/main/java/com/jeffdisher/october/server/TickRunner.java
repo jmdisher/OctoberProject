@@ -280,7 +280,6 @@ public class TickRunner
 	{
 		// TODO:  We should validate these parameters closer to the decoding point.
 		Assert.assertTrue(entityId > 0);
-		Assert.assertTrue(_millisPerTick == change.getTimeCostMillis());
 		Assert.assertTrue(commitLevel > 0L);
 		
 		boolean didAdd;
@@ -318,8 +317,6 @@ public class TickRunner
 	{
 		// The entity might be missing, but the ID should be positive or OPERATOR_ENTITY_ID.
 		Assert.assertTrue((entityId > 0) || (CrowdProcessor.OPERATOR_ENTITY_ID == entityId));
-		// Operator events all take 0 ms.
-		Assert.assertTrue(0L == change.getTimeCostMillis());
 		
 		_sharedDataLock.lock();
 		try

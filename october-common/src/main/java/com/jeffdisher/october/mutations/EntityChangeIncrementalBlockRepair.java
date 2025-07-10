@@ -44,12 +44,6 @@ public class EntityChangeIncrementalBlockRepair implements IMutationEntity<IMuta
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		return _millisToApply;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		// Repairing a block requires a few things:

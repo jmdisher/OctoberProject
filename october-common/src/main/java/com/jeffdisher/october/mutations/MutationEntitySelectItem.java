@@ -32,12 +32,6 @@ public class MutationEntitySelectItem implements IMutationEntity<IMutablePlayerE
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		return 0L;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		boolean didApply = false;

@@ -54,13 +54,6 @@ public class MutationEntityRequestItemPickUp implements IMutationEntity<IMutable
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		// We will currently assume that accepting items is instantaneous.
-		return 0L;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		// See what this is, in the block's inventory, to make sure that we aren't trying to over-fetch.

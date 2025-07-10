@@ -28,13 +28,6 @@ public class EntityChangeSendItem implements IMutationEntity<IMutablePlayerEntit
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		// Just treat this as free.
-		return 0;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		int foundCount = _common(newEntity, context.newChangeSink);

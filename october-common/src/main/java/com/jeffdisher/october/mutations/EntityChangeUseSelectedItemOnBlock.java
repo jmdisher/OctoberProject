@@ -84,12 +84,6 @@ public class EntityChangeUseSelectedItemOnBlock implements IMutationEntity<IMuta
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		return 0L;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		// First, we want to make sure that we are not still busy doing something else.

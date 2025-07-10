@@ -121,13 +121,6 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		// TODO:  Eventually this will be removed as the changes become full-tick.
-		return _millis;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, T newEntity)
 	{
 		// For now, we will just verify the inputs relatively simply:

@@ -23,13 +23,6 @@ public class EntityChangeAcceptItems implements IMutationEntity<IMutablePlayerEn
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		// We will currently assume that accepting items is instantaneous.
-		return 0L;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		IMutableInventory entityInventory = newEntity.accessMutableInventory();

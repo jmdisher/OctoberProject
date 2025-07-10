@@ -29,12 +29,6 @@ public class Deprecated_EntityChangeTimeSync implements IMutationEntity<IMutable
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		return _millisInMotion;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		// We do nothing but return success after consuming the time.

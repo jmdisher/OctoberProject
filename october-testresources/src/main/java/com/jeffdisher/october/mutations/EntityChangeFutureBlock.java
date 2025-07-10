@@ -22,13 +22,6 @@ public class EntityChangeFutureBlock implements IMutationEntity<IMutablePlayerEn
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		// Just treat this as free.
-		return 0;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		context.mutationSink.future(_mutation, _millisDelay);

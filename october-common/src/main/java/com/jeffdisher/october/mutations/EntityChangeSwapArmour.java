@@ -41,12 +41,6 @@ public class EntityChangeSwapArmour implements IMutationEntity<IMutablePlayerEnt
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		return 0L;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		boolean didApply = false;

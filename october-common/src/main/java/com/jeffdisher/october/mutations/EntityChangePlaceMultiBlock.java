@@ -57,13 +57,6 @@ public class EntityChangePlaceMultiBlock implements IMutationEntity<IMutablePlay
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		// We will say that placing blocks is instantaneous.
-		return 0L;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		Environment env = Environment.getShared();

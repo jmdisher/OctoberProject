@@ -45,12 +45,6 @@ public class EntityChangeCraft implements IMutationEntity<IMutablePlayerEntity>
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		return _millisToApply;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		// See if there is an in-progress operation (replacing it or creating a new one, if none).

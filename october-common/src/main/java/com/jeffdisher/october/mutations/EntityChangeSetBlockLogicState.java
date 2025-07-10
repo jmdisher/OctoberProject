@@ -60,12 +60,6 @@ public class EntityChangeSetBlockLogicState implements IMutationEntity<IMutableP
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		return 0L;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		// Make sure that this is in range.

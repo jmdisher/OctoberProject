@@ -36,12 +36,6 @@ public class Deprecated_EntityChangeSetOrientation<T extends IMutableMinimalEnti
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		return 0L;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
 		// We don't want to apply this if it doesn't change anything (this is mostly to avoid a redundant check on the client-side).

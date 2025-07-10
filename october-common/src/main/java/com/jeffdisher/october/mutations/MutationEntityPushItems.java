@@ -57,13 +57,6 @@ public class MutationEntityPushItems implements IMutationEntity<IMutablePlayerEn
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		// We will currently assume that dropping items is instantaneous.
-		return 0L;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		boolean didApply = false;

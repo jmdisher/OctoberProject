@@ -45,12 +45,6 @@ public class Deprecated_EntityChangeAccelerate<T extends IMutableMinimalEntity> 
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		return _millisInMotion;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
 		// This is deprecated so just do nothing (only exists to read old data).

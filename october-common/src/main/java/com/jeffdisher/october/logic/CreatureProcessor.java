@@ -120,9 +120,6 @@ public class CreatureProcessor
 		for (IMutationEntity<IMutableCreatureEntity> change : changes)
 		{
 			processor.creatureChangesProcessed += 1;
-			// These external changes should all take 0 millis.
-			long millisInChange = change.getTimeCostMillis();
-			Assert.assertTrue(0L == millisInChange);
 			
 			// Note that we ignore this response since it can fail.
 			change.applyChange(context, mutable);

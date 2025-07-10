@@ -46,12 +46,6 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		return _millisToApply;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		Environment env = Environment.getShared();

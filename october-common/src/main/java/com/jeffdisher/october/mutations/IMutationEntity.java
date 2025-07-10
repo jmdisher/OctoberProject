@@ -18,18 +18,6 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public interface IMutationEntity<T extends IMutableMinimalEntity>
 {
 	/**
-	 * Determines how many milliseconds it takes to run this change.  Note that this "time" is considered more abstract
-	 * than physical, as the server will use its own inter-tick delay to determine what the maximum budget is.
-	 * This "budget" is how the server determines if the entity is "busy" and is how it allows long-running tasks to
-	 * occupy the entity until they are considered "done" and the corresponding change is executed.
-	 * The general assumption is that the server's tick rate is 1 tick every 100 ms but that may change in the future.
-	 * This is called during scheduling where the entity's time budget will limit how much is scheduled.
-	 * 
-	 * @return The number of milliseconds for which the entity should be considered occupied (must be >= 0L).
-	 */
-	long getTimeCostMillis();
-
-	/**
 	 * Applies the change to the given entity, returning true if it was a success (and should be transmitted to
 	 * clients) and false if it failed and should be rejected.
 	 * For context:  This call is made when a mutation is being applied authoritatively.  That is, it will NOT be

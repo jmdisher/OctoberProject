@@ -24,12 +24,6 @@ public class EntityChangeApplyItemToCreature implements IMutationEntity<IMutable
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		return 0L;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutableCreatureEntity newEntity)
 	{
 		// We will say that this worked if the logic helper says it applied.

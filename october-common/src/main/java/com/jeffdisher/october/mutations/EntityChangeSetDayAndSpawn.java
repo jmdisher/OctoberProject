@@ -37,13 +37,6 @@ public class EntityChangeSetDayAndSpawn implements IMutationEntity<IMutablePlaye
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		// We want this to take some time so just return a large constant.
-		return 100L;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		// Make sure that the target is a bed.

@@ -84,12 +84,6 @@ public class EntityChangePeriodic implements IMutationEntity<IMutablePlayerEntit
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		return 0L;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		newEntity.applyEnergyCost(ENERGY_COST_PER_PERIODIC);

@@ -21,13 +21,6 @@ public class EntityChangeMutation implements IMutationEntity<IMutablePlayerEntit
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		// Just treat this as free.
-		return 0;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		if (null != _contents)

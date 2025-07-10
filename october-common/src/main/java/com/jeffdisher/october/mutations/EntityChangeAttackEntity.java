@@ -46,14 +46,6 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		// This has no cost since it isn't considered a primary action (like walking or crafting).
-		// This is a secondary action, meaning it can be done while performing certain kinds of primary actions (like walking).
-		return 0L;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		// First, we want to make sure that we are not still busy doing something else.

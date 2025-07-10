@@ -46,13 +46,6 @@ public class EntityChangeTakeDamageFromEntity<T extends IMutableMinimalEntity> i
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		// Taking damage doesn't use any time.
-		return 0L;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
 		// We will move the respawn into the next tick so that they don't keep taking damage from within this tick.

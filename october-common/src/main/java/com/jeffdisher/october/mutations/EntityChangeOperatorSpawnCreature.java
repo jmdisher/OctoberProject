@@ -34,12 +34,6 @@ public class EntityChangeOperatorSpawnCreature implements IMutationEntity<IMutab
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		return 0L;
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		context.creatureSpawner.spawnCreature(_type, _location, _type.maxHealth());

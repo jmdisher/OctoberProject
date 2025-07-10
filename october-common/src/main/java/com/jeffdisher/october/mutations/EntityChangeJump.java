@@ -46,14 +46,6 @@ public class EntityChangeJump<T extends IMutableMinimalEntity> implements IMutat
 		return new EntityChangeJump<>();
 	}
 
-
-	@Override
-	public long getTimeCostMillis()
-	{
-		// Just changes force, so takes no time.
-		return 0L;
-	}
-
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
