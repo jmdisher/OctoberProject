@@ -23,8 +23,7 @@ public class TestMutationEntityCodec
 	public void repair() throws Throwable
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
-		short damage = 150;
-		EntityChangeIncrementalBlockRepair change = new EntityChangeIncrementalBlockRepair(location, damage);
+		EntityChangeIncrementalBlockRepair change = new EntityChangeIncrementalBlockRepair(location);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationEntityCodec.serializeToBuffer(buffer, change);

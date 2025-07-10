@@ -1992,25 +1992,24 @@ public class TestCommonChanges
 		cuboid.setData15(AspectRegistry.BLOCK, newEntity.newLocation.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), PLANK_ITEM.number());
 		
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
-		short repairMillis = 100;
 		
 		// Try too far.
-		EntityChangeIncrementalBlockRepair repairTooFar = new EntityChangeIncrementalBlockRepair(tooFar, repairMillis);
+		EntityChangeIncrementalBlockRepair repairTooFar = new EntityChangeIncrementalBlockRepair(tooFar);
 		Assert.assertFalse(repairTooFar.applyChange(holder.context, newEntity));
 		Assert.assertNull(holder.mutation);
 		
 		// Try wrong type.
-		EntityChangeIncrementalBlockRepair repairWrongType = new EntityChangeIncrementalBlockRepair(wrongType, repairMillis);
+		EntityChangeIncrementalBlockRepair repairWrongType = new EntityChangeIncrementalBlockRepair(wrongType);
 		Assert.assertFalse(repairWrongType.applyChange(holder.context, newEntity));
 		Assert.assertNull(holder.mutation);
 		
 		// Try undamaged
-		EntityChangeIncrementalBlockRepair repairUndamaged = new EntityChangeIncrementalBlockRepair(noDamage, repairMillis);
+		EntityChangeIncrementalBlockRepair repairUndamaged = new EntityChangeIncrementalBlockRepair(noDamage);
 		Assert.assertFalse(repairUndamaged.applyChange(holder.context, newEntity));
 		Assert.assertNull(holder.mutation);
 		
 		// Try valid
-		EntityChangeIncrementalBlockRepair repairValid = new EntityChangeIncrementalBlockRepair(valid, repairMillis);
+		EntityChangeIncrementalBlockRepair repairValid = new EntityChangeIncrementalBlockRepair(valid);
 		Assert.assertTrue(repairValid.applyChange(holder.context, newEntity));
 		Assert.assertTrue(holder.mutation instanceof MutationBlockIncrementalRepair);
 	}
@@ -2068,7 +2067,7 @@ public class TestCommonChanges
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
 		// Extinguish the fire.
-		EntityChangeIncrementalBlockRepair repair = new EntityChangeIncrementalBlockRepair(target, (short)50);
+		EntityChangeIncrementalBlockRepair repair = new EntityChangeIncrementalBlockRepair(target);
 		Assert.assertTrue(repair.applyChange(holder.context, newEntity));
 		Assert.assertNotNull(holder.mutation);
 		MutationBlockIncrementalRepair followUp = (MutationBlockIncrementalRepair) holder.mutation;

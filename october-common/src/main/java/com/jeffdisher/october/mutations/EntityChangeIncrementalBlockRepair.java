@@ -11,7 +11,6 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -26,21 +25,16 @@ public class EntityChangeIncrementalBlockRepair implements IMutationEntity<IMuta
 	public static EntityChangeIncrementalBlockRepair deserializeFromBuffer(ByteBuffer buffer)
 	{
 		AbsoluteLocation target = CodecHelpers.readAbsoluteLocation(buffer);
-		short millisToApply = buffer.getShort();
-		return new EntityChangeIncrementalBlockRepair(target, millisToApply);
+		buffer.getShort();
+		return new EntityChangeIncrementalBlockRepair(target);
 	}
 
 
 	private final AbsoluteLocation _targetBlock;
-	private final short _millisToApply;
 
-	public EntityChangeIncrementalBlockRepair(AbsoluteLocation targetBlock, short millisToApply)
+	public EntityChangeIncrementalBlockRepair(AbsoluteLocation targetBlock)
 	{
-		// Make sure that this is positive.
-		Assert.assertTrue(millisToApply > 0);
-		
 		_targetBlock = targetBlock;
-		_millisToApply = millisToApply;
 	}
 
 	@Override
@@ -75,9 +69,10 @@ public class EntityChangeIncrementalBlockRepair implements IMutationEntity<IMuta
 		boolean didApply = false;
 		if (canRepairSomething)
 		{
+			int breakingMillis = (int)context.millisPerTick;
 			// We can do something so send the mutation to the block (it will apply the change with bounds checks).
 			MultiBlockUtils.sendMutationToAll(context, (AbsoluteLocation location) -> {
-				MutationBlockIncrementalRepair mutation = new MutationBlockIncrementalRepair(location, _millisToApply);
+				MutationBlockIncrementalRepair mutation = new MutationBlockIncrementalRepair(location, (short)breakingMillis);
 				return mutation;
 			}, lookup);
 			didApply = true;
@@ -86,7 +81,7 @@ public class EntityChangeIncrementalBlockRepair implements IMutationEntity<IMuta
 			newEntity.setCurrentCraftingOperation(null);
 			
 			// Repairing a block expends energy proportional to repairing time.
-			newEntity.applyEnergyCost(_millisToApply);
+			newEntity.applyEnergyCost(breakingMillis);
 			
 			// While this is an action which is considered primary, it should actually delay secondary actions, too.
 			newEntity.setLastSpecialActionMillis(context.currentTickTimeMillis);
@@ -104,7 +99,7 @@ public class EntityChangeIncrementalBlockRepair implements IMutationEntity<IMuta
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _targetBlock);
-		buffer.putShort(_millisToApply);
+		buffer.putShort((short)0); // millis no longer stored.
 	}
 
 	@Override
@@ -117,6 +112,6 @@ public class EntityChangeIncrementalBlockRepair implements IMutationEntity<IMuta
 	@Override
 	public String toString()
 	{
-		return "Incremental break " + _targetBlock + " for " + _millisToApply + " ms";
+		return "Incremental break " + _targetBlock;
 	}
 }

@@ -262,7 +262,7 @@ public class ClientProcess
 	 */
 	public void repairBlock(AbsoluteLocation blockLocation, long currentTimeMillis)
 	{
-		EntityChangeIncrementalBlockRepair change = new EntityChangeIncrementalBlockRepair(blockLocation, (short)_clientRunner.millisPerTick);
+		EntityChangeIncrementalBlockRepair change = new EntityChangeIncrementalBlockRepair(blockLocation);
 		_clientRunner.commonApplyEntityAction(change, currentTimeMillis);
 		_runPendingCallbacks();
 	}

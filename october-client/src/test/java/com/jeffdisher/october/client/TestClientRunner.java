@@ -604,7 +604,7 @@ public class TestClientRunner
 		
 		// Run a repair call and observe the damage value change.
 		currentTimeMillis += 100L;
-		runner.commonApplyEntityAction(new EntityChangeIncrementalBlockRepair(changeLocation, (short)runner.millisPerTick), currentTimeMillis);
+		runner.commonApplyEntityAction(new EntityChangeIncrementalBlockRepair(changeLocation), currentTimeMillis);
 		runner.standStill(currentTimeMillis);
 		currentTimeMillis += 100L;
 		runner.standStill(currentTimeMillis);
