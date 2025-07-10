@@ -114,6 +114,12 @@ public class ClientRunner
 		}
 	}
 
+	/**
+	 * Sets the player's facing orientation.
+	 * 
+	 * @param yaw The left-right yaw.
+	 * @param pitch The up-down pitch.
+	 */
 	public void setOrientation(byte yaw, byte pitch)
 	{
 		_accumulator.setOrientation(yaw, pitch);

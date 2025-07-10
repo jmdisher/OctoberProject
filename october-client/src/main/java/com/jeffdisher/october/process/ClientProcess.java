@@ -16,10 +16,6 @@ import com.jeffdisher.october.data.CuboidCodec;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.EntityChangeCraft;
-import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
-import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
-import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockRepair;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.net.NetworkClient;
@@ -44,9 +40,7 @@ import com.jeffdisher.october.net.Packet_RemoveCuboid;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
 import com.jeffdisher.october.net.Packet_SendChatMessage;
 import com.jeffdisher.october.net.Packet_ServerSendConfigUpdate;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
-import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EventRecord;
@@ -240,33 +234,11 @@ public class ClientProcess
 	}
 
 	/**
-	 * Sends a single break block change, targeting the given block location.  Note that it typically takes many such
-	 * changes to break a block.
+	 * Sets the player's facing orientation.
 	 * 
-	 * @param blockLocation The location of the block to break.
-	 * @param currentTimeMillis The current time, in milliseconds.
+	 * @param yaw The left-right yaw.
+	 * @param pitch The up-down pitch.
 	 */
-	public void hitBlock(AbsoluteLocation blockLocation, long currentTimeMillis)
-	{
-		EntityChangeIncrementalBlockBreak change = new EntityChangeIncrementalBlockBreak(blockLocation);
-		_clientRunner.commonApplyEntityAction(change, currentTimeMillis);
-		_runPendingCallbacks();
-	}
-
-	/**
-	 * Sends a single repair block change, targeting the given block location.  Note that it may take many such
-	 * changes to fully repair a block.
-	 * 
-	 * @param blockLocation The location of the block to repair.
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 */
-	public void repairBlock(AbsoluteLocation blockLocation, long currentTimeMillis)
-	{
-		EntityChangeIncrementalBlockRepair change = new EntityChangeIncrementalBlockRepair(blockLocation);
-		_clientRunner.commonApplyEntityAction(change, currentTimeMillis);
-		_runPendingCallbacks();
-	}
-
 	public void setOrientation(byte yaw, byte pitch)
 	{
 		_clientRunner.setOrientation(yaw, pitch);
@@ -284,35 +256,6 @@ public class ClientProcess
 	public void walk(EntityChangeTopLevelMovement.Relative relativeDirection, long currentTimeMillis)
 	{
 		_clientRunner.walk(relativeDirection, currentTimeMillis);
-		_runPendingCallbacks();
-	}
-
-	/**
-	 * Requests a crafting operation start.
-	 * 
-	 * @param operation The crafting operation to run.
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 */
-	public void craft(Craft operation, long currentTimeMillis)
-	{
-		EntityChangeCraft change = new EntityChangeCraft(operation);
-		_clientRunner.commonApplyEntityAction(change, currentTimeMillis);
-		_runPendingCallbacks();
-	}
-
-	/**
-	 * Requests that we start or continue a crafting operation in a block.  Note that these calls must be made
-	 * explicitly and cannot be implicitly continued in "doNothing" the way some other crafting operations can be, since
-	 * we don't know what the user is looking at.
-	 * 
-	 * @param block The crafting station location.
-	 * @param operation The crafting operation to run (can be null if just continuing what is already happening).
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 */
-	public void craftInBlock(AbsoluteLocation block, Craft operation, long currentTimeMillis)
-	{
-		EntityChangeCraftInBlock change = new EntityChangeCraftInBlock(block, operation);
-		_clientRunner.commonApplyEntityAction(change, currentTimeMillis);
 		_runPendingCallbacks();
 	}
 

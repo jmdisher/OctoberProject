@@ -9,6 +9,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.OrientationHelpers;
+import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.MutationEntitySelectItem;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
@@ -144,7 +145,8 @@ public class AutoWalkingClient
 					// Do nothing special.
 					break;
 				case BREAK:
-					client.hitBlock(lastBlock.getRelative(0, 0, -1), currentTimeMillis);
+					EntityChangeIncrementalBlockBreak change = new EntityChangeIncrementalBlockBreak(lastBlock.getRelative(0, 0, -1));
+					client.sendAction(change, currentTimeMillis);
 					break;
 				case BRICK:
 				case LANTERN:
