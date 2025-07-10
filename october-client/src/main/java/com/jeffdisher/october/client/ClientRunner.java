@@ -134,7 +134,7 @@ public class ClientRunner
 	 * @param relativeDirection The direction to move, relative to current yaw.
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void walk(EntityChangeTopLevelMovement.Relative relativeDirection, long currentTimeMillis)
+	public void walk(MovementAccumulator.Relative relativeDirection, long currentTimeMillis)
 	{
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> complete = _accumulator.walk(currentTimeMillis, relativeDirection);
 		_endAction(complete, currentTimeMillis);

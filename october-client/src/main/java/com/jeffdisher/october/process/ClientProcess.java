@@ -11,6 +11,7 @@ import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.client.ClientRunner;
 import com.jeffdisher.october.client.IClientAdapter;
 import com.jeffdisher.october.client.IProjectionListener;
+import com.jeffdisher.october.client.MovementAccumulator;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidCodec;
 import com.jeffdisher.october.data.CuboidData;
@@ -253,7 +254,7 @@ public class ClientProcess
 	 * @param relativeDirection The direction to move, relative to current yaw.
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void walk(EntityChangeTopLevelMovement.Relative relativeDirection, long currentTimeMillis)
+	public void walk(MovementAccumulator.Relative relativeDirection, long currentTimeMillis)
 	{
 		_clientRunner.walk(relativeDirection, currentTimeMillis);
 		_runPendingCallbacks();

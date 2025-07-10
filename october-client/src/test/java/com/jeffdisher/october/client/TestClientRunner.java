@@ -277,7 +277,7 @@ public class TestClientRunner
 		// Now, walk off without re-issuing the craft command to see that we drop it.
 		currentTimeMillis += 100L;
 		runner.setOrientation(OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT);
-		runner.walk(EntityChangeTopLevelMovement.Relative.FORWARD, currentTimeMillis);
+		runner.walk(MovementAccumulator.Relative.FORWARD, currentTimeMillis);
 		// Verify that the craft operation was aborted and that we moved.
 		Assert.assertNull(projection.thisEntity.localCraftOperation());
 		Assert.assertEquals(2, projection.thisEntity.inventory().getCount(LOG_ITEM));
@@ -317,7 +317,7 @@ public class TestClientRunner
 		runner.commonApplyEntityAction(jumpChange, currentTimeMillis);
 		currentTimeMillis += 100L;
 		runner.setOrientation(OrientationHelpers.YAW_WEST, OrientationHelpers.PITCH_FLAT);
-		runner.walk(EntityChangeTopLevelMovement.Relative.FORWARD, currentTimeMillis);
+		runner.walk(MovementAccumulator.Relative.FORWARD, currentTimeMillis);
 		currentTimeMillis += 100L;
 		runner.standStill(currentTimeMillis);
 		
@@ -451,7 +451,7 @@ public class TestClientRunner
 		
 		// Walk east for 300 frames.
 		runner.setOrientation(OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT);
-		runner.walk(EntityChangeTopLevelMovement.Relative.FORWARD, currentTimeMillis);
+		runner.walk(MovementAccumulator.Relative.FORWARD, currentTimeMillis);
 		EntityLocation afterMove = projection.thisEntity.location();
 		long latestCommitIncluded = 0L;
 		for (int i = 0; i < 300; ++i)
@@ -461,7 +461,7 @@ public class TestClientRunner
 			// These values should be the same since the projection should be maintained on top.
 			Assert.assertEquals(afterMove, afterTick);
 			currentTimeMillis += 17L;
-			runner.walk(EntityChangeTopLevelMovement.Relative.FORWARD, currentTimeMillis);
+			runner.walk(MovementAccumulator.Relative.FORWARD, currentTimeMillis);
 			afterMove = projection.thisEntity.location();
 			if (null != network.toSend)
 			{
@@ -558,7 +558,7 @@ public class TestClientRunner
 		
 		// Set orientation and walk.
 		runner.setOrientation(OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT);
-		runner.walk(EntityChangeTopLevelMovement.Relative.LEFT, currentTimeMillis);
+		runner.walk(MovementAccumulator.Relative.LEFT, currentTimeMillis);
 		currentTimeMillis += 100L;
 		
 		EntityLocation location = projection.thisEntity.location();

@@ -6,11 +6,11 @@ import java.util.Set;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.client.MovementAccumulator;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
-import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.MutationEntitySelectItem;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.process.ClientProcess;
@@ -161,7 +161,7 @@ public class AutoWalkingClient
 			{
 				byte yaw = command.direction.yaw;
 				client.setOrientation(yaw, OrientationHelpers.PITCH_FLAT);
-				client.walk(EntityChangeTopLevelMovement.Relative.FORWARD, currentTimeMillis);
+				client.walk(MovementAccumulator.Relative.FORWARD, currentTimeMillis);
 			}
 		}
 		client.disconnect();
