@@ -43,9 +43,8 @@ public class EntityChangeAcceptItems implements IMutationEntity<IMutablePlayerEn
 	@Override
 	public MutationEntityType getType()
 	{
-		// NOTE:  This is only used in tests but is wrapped in EntityChangeTopLevelMovement so it needs a white-list
-		// type.  This one is picked at random.
-		return MutationEntityType.SELECT_ITEM;
+		// This is only used in testing (can't come from clients as it has no deserializer).
+		return MutationEntityType.TESTING_ONLY;
 	}
 
 	@Override

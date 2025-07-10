@@ -63,6 +63,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		MutationEntityType.SET_DAY_AND_SPAWN,
 		MutationEntityType.INCREMENTAL_REPAIR_BLOCK,
 		MutationEntityType.MULTI_BLOCK_PLACE,
+		MutationEntityType.TESTING_ONLY,
 	}).collect(Collectors.toSet());
 
 	public static <T extends IMutableMinimalEntity> EntityChangeTopLevelMovement<T> deserializeFromBuffer(ByteBuffer buffer)

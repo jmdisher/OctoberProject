@@ -81,6 +81,7 @@ public class MutationEntityCodec
 		_CODEC_TABLE[EntityChangeOperatorSpawnCreature.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeOperatorSpawnCreature.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[Deprecated_EntityChangeTimeSync.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityChangeTimeSync.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeTopLevelMovement.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeTopLevelMovement.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[MutationEntityType.TESTING_ONLY.ordinal()] = (ByteBuffer buffer) -> { throw Assert.unreachable(); };
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)
