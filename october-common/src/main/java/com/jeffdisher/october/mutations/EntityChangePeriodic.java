@@ -69,6 +69,10 @@ public class EntityChangePeriodic implements IMutationEntity<IMutablePlayerEntit
 	 */
 	public static final int ENERGY_COST_PER_TICK_WALKING = 10;
 	/**
+	 * The energy cost to move with running intensity, per tick.  We want this to be less efficient than walking.
+	 */
+	public static final int ENERGY_COST_PER_TICK_RUNNING = 30;
+	/**
 	 * The energy cost to passively regenerate 1 health point.
 	 */
 	public static final int ENERGY_COST_PER_HEALTH_HEAL = 100;

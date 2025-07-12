@@ -161,7 +161,7 @@ public class AutoWalkingClient
 			{
 				byte yaw = command.direction.yaw;
 				client.setOrientation(yaw, OrientationHelpers.PITCH_FLAT);
-				client.walk(MovementAccumulator.Relative.FORWARD, currentTimeMillis);
+				client.walk(MovementAccumulator.Relative.FORWARD, false, currentTimeMillis);
 			}
 		}
 		client.disconnect();

@@ -132,11 +132,12 @@ public class ClientRunner
 	 * least attempt to move in this way (and will send the change to the server).
 	 * 
 	 * @param relativeDirection The direction to move, relative to current yaw.
+	 * @param runningSpeed True if we should run, instead of walk.
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void walk(MovementAccumulator.Relative relativeDirection, long currentTimeMillis)
+	public void walk(MovementAccumulator.Relative relativeDirection, boolean runningSpeed, long currentTimeMillis)
 	{
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> complete = _accumulator.walk(currentTimeMillis, relativeDirection);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> complete = _accumulator.walk(currentTimeMillis, relativeDirection, runningSpeed);
 		_endAction(complete, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
 		_lastCallMillis = currentTimeMillis;

@@ -252,11 +252,12 @@ public class ClientProcess
 	 * least attempt to move in this way (and will send the change to the server).
 	 * 
 	 * @param relativeDirection The direction to move, relative to current yaw.
+	 * @param runningSpeed True if we should run, instead of walk.
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void walk(MovementAccumulator.Relative relativeDirection, long currentTimeMillis)
+	public void walk(MovementAccumulator.Relative relativeDirection, boolean runningSpeed, long currentTimeMillis)
 	{
-		_clientRunner.walk(relativeDirection, currentTimeMillis);
+		_clientRunner.walk(relativeDirection, runningSpeed, currentTimeMillis);
 		_runPendingCallbacks();
 	}
 

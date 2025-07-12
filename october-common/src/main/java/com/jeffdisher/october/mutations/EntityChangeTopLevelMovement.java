@@ -200,10 +200,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		}
 		
 		// Check that their movement was possible within their velocity (any of start/end/intensity).
-		float intensityVelocityPerSecond = (Intensity.WALKING == _intensity)
-			? newEntity.getType().blocksPerSecond()
-			: 0.0f
-		;
+		float intensityVelocityPerSecond = _intensity.speedMultipler * newEntity.getType().blocksPerSecond();
 		float deltaX = EntityLocation.roundToHundredths(_newLocation.x() - startLocation.x());
 		float deltaY = EntityLocation.roundToHundredths(_newLocation.y() - startLocation.y());
 		if (!forceFailure)
@@ -257,11 +254,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 			newEntity.setVelocityVector(_newVelocity);
 			newEntity.setOrientation(_yaw, _pitch);
 			
-			// We only use energy when walking (standing changes are often just dropped so they shouldn't cost anything - idle cost is already added in periodic).
-			if (Intensity.WALKING == _intensity)
-			{
-				newEntity.applyEnergyCost(EntityChangePeriodic.ENERGY_COST_PER_TICK_WALKING);
-			}
+			newEntity.applyEnergyCost(_intensity.energyCostPerTick);
 		}
 		return !forceFailure;
 	}
@@ -501,9 +494,17 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 
 	public static enum Intensity
 	{
-		STANDING,
-		WALKING,
+		STANDING(0.0f, 0),
+		WALKING(1.0f, EntityChangePeriodic.ENERGY_COST_PER_TICK_WALKING),
+		RUNNING(2.0f, EntityChangePeriodic.ENERGY_COST_PER_TICK_RUNNING),
 		;
+		public final float speedMultipler;
+		public final int energyCostPerTick;
+		private Intensity(float speedMultipler, int energyCostPerTick)
+		{
+			this.speedMultipler = speedMultipler;
+			this.energyCostPerTick = energyCostPerTick;
+		}
 		public static Intensity read(ByteBuffer buffer)
 		{
 			byte ordinal = buffer.get();

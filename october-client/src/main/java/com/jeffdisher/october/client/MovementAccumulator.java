@@ -147,14 +147,20 @@ public class MovementAccumulator
 	 * 
 	 * @param currentTimeMillis The current time.
 	 * @param relativeDirection Movement, relative to the current yaw direction.
+	 * @param runningSpeed True if we should run, instead of walk.
 	 * @return A completed change, if one was generated.
 	 */
-	public EntityChangeTopLevelMovement<IMutablePlayerEntity> walk(long currentTimeMillis, Relative relativeDirection)
+	public EntityChangeTopLevelMovement<IMutablePlayerEntity> walk(long currentTimeMillis, Relative relativeDirection, boolean runningSpeed)
 	{
 		if (0L == _accumulationMillis)
 		{
 			_initializeForNextTick();
 		}
+		
+		EntityChangeTopLevelMovement.Intensity intensity = runningSpeed
+			? EntityChangeTopLevelMovement.Intensity.RUNNING
+			: EntityChangeTopLevelMovement.Intensity.WALKING
+		;
 		
 		// This is the same as standing, except that we override the X/Y velocity vectors based on the type of movement.
 		float orientationRadians = OrientationHelpers.getYawRadians(_newYaw);
@@ -164,15 +170,18 @@ public class MovementAccumulator
 		
 		// Determine the X/Y velocity based on these components, fluid viscosity, and the walking type.
 		// TODO:  We probably want to apply a velocity change limit.
-		float maxSpeed = _env.creatures.PLAYER.blocksPerSecond();
+		float maxSpeed = _env.creatures.PLAYER.blocksPerSecond() * intensity.speedMultipler;
 		float speed = maxSpeed * relativeDirection.speedMultiplier;
 		float xVelocity = _startInverseViscosity * speed * xComponent;
 		float yVelocity = _startInverseViscosity * speed * yComponent;
 		_newVelocity = new EntityLocation(xVelocity, yVelocity, _newVelocity.z());
 		
 		// Whatever has happened so far, we need to bill this as walking.
-		_intensity = EntityChangeTopLevelMovement.Intensity.WALKING;
-		return _commonAccumulateMotion(currentTimeMillis, EntityChangeTopLevelMovement.Intensity.WALKING);
+		if (intensity.energyCostPerTick > _intensity.energyCostPerTick)
+		{
+			_intensity = intensity;
+		}
+		return _commonAccumulateMotion(currentTimeMillis, intensity);
 	}
 
 	/**
@@ -414,8 +423,8 @@ public class MovementAccumulator
 				// returned "toReturn" has been applied toSpeculativeProjection.
 				_overflow = new _OverflowData(overflowMillis
 					, thisStepIntensity
-					, (EntityChangeTopLevelMovement.Intensity.WALKING == thisStepIntensity) ? _newVelocity.x() : 0.0f
-					, (EntityChangeTopLevelMovement.Intensity.WALKING == thisStepIntensity) ? _newVelocity.y() : 0.0f
+					, (EntityChangeTopLevelMovement.Intensity.STANDING == thisStepIntensity) ? 0.0f : _newVelocity.x()
+					, (EntityChangeTopLevelMovement.Intensity.STANDING == thisStepIntensity) ? 0.0f : _newVelocity.y()
 				);
 			}
 		}

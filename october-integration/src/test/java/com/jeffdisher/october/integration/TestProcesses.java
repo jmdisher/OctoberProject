@@ -148,7 +148,7 @@ public class TestProcesses
 		while (millisRemaining > 0L)
 		{
 			Thread.sleep(MILLIS_PER_TICK);
-			client.walk(MovementAccumulator.Relative.FORWARD, System.currentTimeMillis());
+			client.walk(MovementAccumulator.Relative.FORWARD, false, System.currentTimeMillis());
 			millisRemaining -= MILLIS_PER_TICK;
 		}
 		long serverTick = server.waitForTicksToPass(2L);
@@ -313,9 +313,9 @@ public class TestProcesses
 			location1 = new EntityLocation(location1.x() + horizontalDistancePerTick, location1.y(), location1.z());
 			location2 = new EntityLocation(location2.x(), location2.y() - horizontalDistancePerTick, location2.z());
 			client1.setOrientation(OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT);
-			client1.walk(MovementAccumulator.Relative.FORWARD, currentTimeMillis[0]);
+			client1.walk(MovementAccumulator.Relative.FORWARD, false, currentTimeMillis[0]);
 			client2.setOrientation(OrientationHelpers.YAW_SOUTH, OrientationHelpers.PITCH_FLAT);
-			client2.walk(MovementAccumulator.Relative.FORWARD, currentTimeMillis[0]);
+			client2.walk(MovementAccumulator.Relative.FORWARD, false, currentTimeMillis[0]);
 			currentTimeMillis[0] += MILLIS_PER_TICK;
 		}
 		// We want client2 to walk further.
@@ -323,7 +323,7 @@ public class TestProcesses
 		{
 			location2 = new EntityLocation(location2.x(), location2.y() - horizontalDistancePerTick, location2.z());
 			client2.setOrientation(OrientationHelpers.YAW_SOUTH, OrientationHelpers.PITCH_FLAT);
-			client2.walk(MovementAccumulator.Relative.FORWARD, currentTimeMillis[0]);
+			client2.walk(MovementAccumulator.Relative.FORWARD, false, currentTimeMillis[0]);
 			currentTimeMillis[0] += MILLIS_PER_TICK;
 		}
 		

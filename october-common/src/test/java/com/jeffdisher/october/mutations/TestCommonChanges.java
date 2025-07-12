@@ -2507,6 +2507,32 @@ public class TestCommonChanges
 		Assert.assertEquals(2, newEntity.newHotbar[1]);
 	}
 
+	@Test
+	public void topLevelBasicRunning()
+	{
+		// We just show that the validation works for moving at double normal speed.
+		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		EntityLocation newLocation = new EntityLocation(0.8f, 0.0f, 0.0f);
+		EntityLocation newVelocity = new EntityLocation(8.0f, 0.0f, 0.0f);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = oldLocation;
+		TickProcessingContext context = _createSimpleContext();
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(newLocation
+			, newVelocity
+			, EntityChangeTopLevelMovement.Intensity.RUNNING
+			, (byte)5
+			, (byte)6
+			, null
+		);
+		boolean didApply = action.applyChange(context, newEntity);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(newLocation, newEntity.newLocation);
+		Assert.assertEquals(newVelocity, newEntity.newVelocity);
+		Assert.assertEquals(EntityChangePeriodic.ENERGY_COST_PER_TICK_RUNNING, newEntity.newEnergyDeficit);
+		Assert.assertEquals(5, newEntity.newYaw);
+		Assert.assertEquals(6, newEntity.newPitch);
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{
