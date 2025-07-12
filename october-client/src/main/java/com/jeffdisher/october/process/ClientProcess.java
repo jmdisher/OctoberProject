@@ -262,6 +262,18 @@ public class ClientProcess
 	}
 
 	/**
+	 * Similar to walk() but moves as a sneak:  Slower than walking but avoids slipping off of blocks.
+	 * 
+	 * @param relativeDirection The direction to move, relative to current yaw.
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void sneak(MovementAccumulator.Relative relativeDirection, long currentTimeMillis)
+	{
+		_clientRunner.sneak(relativeDirection, currentTimeMillis);
+		_runPendingCallbacks();
+	}
+
+	/**
 	 * Allows time to pass to account for things like falling, etc.
 	 * 
 	 * @param currentTimeMillis The current time, in milliseconds.

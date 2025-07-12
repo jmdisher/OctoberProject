@@ -52,6 +52,8 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class MovementAccumulator
 {
+	public static final float SNEAK_SPEED_MULTIPLIER = 0.5f;
+
 	private final Environment _env;
 	private final IProjectionListener _listener;
 	private final long _millisPerTick;
@@ -137,7 +139,7 @@ public class MovementAccumulator
 		}
 		
 		// When we are just standing, this basically means just "drift" as we currently are.
-		return _commonAccumulateMotion(currentTimeMillis, EntityChangeTopLevelMovement.Intensity.STANDING);
+		return _commonAccumulateMotion(currentTimeMillis, EntityChangeTopLevelMovement.Intensity.STANDING, null);
 	}
 
 	/**
@@ -162,26 +164,32 @@ public class MovementAccumulator
 			: EntityChangeTopLevelMovement.Intensity.WALKING
 		;
 		
-		// This is the same as standing, except that we override the X/Y velocity vectors based on the type of movement.
-		float orientationRadians = OrientationHelpers.getYawRadians(_newYaw);
-		float yawRadians = orientationRadians + relativeDirection.yawRadians;
-		float xComponent = OrientationHelpers.getEastYawComponent(yawRadians);
-		float yComponent = OrientationHelpers.getNorthYawComponent(yawRadians);
-		
-		// Determine the X/Y velocity based on these components, fluid viscosity, and the walking type.
-		// TODO:  We probably want to apply a velocity change limit.
-		float maxSpeed = _env.creatures.PLAYER.blocksPerSecond() * intensity.speedMultipler;
-		float speed = maxSpeed * relativeDirection.speedMultiplier;
-		float xVelocity = _startInverseViscosity * speed * xComponent;
-		float yVelocity = _startInverseViscosity * speed * yComponent;
-		_newVelocity = new EntityLocation(xVelocity, yVelocity, _newVelocity.z());
-		
-		// Whatever has happened so far, we need to bill this as walking.
-		if (intensity.energyCostPerTick > _intensity.energyCostPerTick)
+		return _commonWalking(currentTimeMillis, relativeDirection, intensity, 1.0f, false);
+	}
+
+	/**
+	 * Walks in the given relativeDirection up until the given time, but using a sneaking walking style.  Sneaking means
+	 * that they walk at half the speed, using the same energy as walking, but also won't slip off of a ledge.
+	 * NOTE:  applyLocalAccumulation() MUST be called after applying the returned action to SpeculativeProjection (or
+	 * called directly, if null was returned) in order for accumulated motion to be sent to the listener.
+	 * 
+	 * @param currentTimeMillis The current time.
+	 * @param relativeDirection Movement, relative to the current yaw direction.
+	 * @return A completed change, if one was generated.
+	 */
+	public EntityChangeTopLevelMovement<IMutablePlayerEntity> sneak(long currentTimeMillis, Relative relativeDirection)
+	{
+		if (0L == _accumulationMillis)
 		{
-			_intensity = intensity;
+			_initializeForNextTick();
 		}
-		return _commonAccumulateMotion(currentTimeMillis, intensity);
+		
+		// We will implement sneaking by telling the common walk path to discard location changes if it moves the entity
+		// off of the ground.  Note that, if we are already off the ground, we won't bother with any of this logic and
+		// it will just be slow walking.
+		boolean isStartingOnGround = SpatialHelpers.isStandingOnGround(_reader, _newLocation, _playerVolume);
+		
+		return _commonWalking(currentTimeMillis, relativeDirection, EntityChangeTopLevelMovement.Intensity.WALKING, SNEAK_SPEED_MULTIPLIER, isStartingOnGround);
 	}
 
 	/**
@@ -366,7 +374,7 @@ public class MovementAccumulator
 		_queuedSubAction = null;
 	}
 
-	private void _updateVelocityAndLocation(long millisToMove)
+	private void _updateVelocityAndLocation(long millisToMove, EntityLocation velocityToRestoreIfNotOnGround)
 	{
 		float secondsToPass = (float)millisToMove / 1000.0f;
 		_updateVelocityWithAccumulatedGravity(millisToMove);
@@ -375,12 +383,45 @@ public class MovementAccumulator
 			@Override
 			public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
 			{
-				_newLocation = finalLocation;
 				// We keep the velocity we proposed, except for any axes which were cancelled due to collision.
-				_newVelocity = new EntityLocation(cancelX ? 0.0f : _newVelocity.x()
+				EntityLocation collidedVelocity = new EntityLocation(cancelX ? 0.0f : _newVelocity.x()
 					, cancelY ? 0.0f : _newVelocity.y()
 					, cancelZ ? 0.0f : _newVelocity.z()
 				);
+				
+				// We need to check if we should write these back based on whether we are sneaking.
+				EntityLocation locationToRestore = finalLocation;
+				EntityLocation velocityToRestore = collidedVelocity;
+				if (null != velocityToRestoreIfNotOnGround)
+				{
+					// We are in sneaking mode so only change to the new location if it is on the ground.
+					boolean isEndingOnGround = SpatialHelpers.isStandingOnGround(_reader, finalLocation, _playerVolume);
+					if (!isEndingOnGround)
+					{
+						// We can't use the full change but see if we can take a single axis.
+						EntityLocation retainX = new EntityLocation(finalLocation.x(), _newLocation.y(), _newLocation.z());
+						EntityLocation retainY = new EntityLocation(_newLocation.x(), finalLocation.y(), _newLocation.z());
+						if (SpatialHelpers.isStandingOnGround(_reader, retainX, _playerVolume))
+						{
+							locationToRestore = retainX;
+							velocityToRestore = new EntityLocation(velocityToRestoreIfNotOnGround.x(), 0.0f, 0.0f);
+						}
+						else if (SpatialHelpers.isStandingOnGround(_reader, retainY, _playerVolume))
+						{
+							locationToRestore = retainY;
+							velocityToRestore = new EntityLocation(0.0f, velocityToRestoreIfNotOnGround.y(), 0.0f);
+						}
+						else
+						{
+							locationToRestore = _newLocation;
+							velocityToRestore = new EntityLocation(0.0f, 0.0f, 0.0f);
+						}
+					}
+				}
+				
+				// Apply new location and velocity, where required.
+				_newLocation = locationToRestore;
+				_newVelocity = velocityToRestore;
 			}
 			@Override
 			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
@@ -390,7 +431,10 @@ public class MovementAccumulator
 		});
 	}
 
-	private EntityChangeTopLevelMovement<IMutablePlayerEntity> _commonAccumulateMotion(long currentTimeMillis, EntityChangeTopLevelMovement.Intensity thisStepIntensity)
+	private EntityChangeTopLevelMovement<IMutablePlayerEntity> _commonAccumulateMotion(long currentTimeMillis
+		, EntityChangeTopLevelMovement.Intensity thisStepIntensity
+		, EntityLocation velocityToRestoreIfNotOnGround
+	)
 	{
 		// First, see if we will need to split this time interval.
 		long millisToAdd = (currentTimeMillis - _lastSampleMillis);
@@ -408,7 +452,7 @@ public class MovementAccumulator
 		{
 			// We need to carve off the existing accumulation.
 			long fillMillis = millisToAdd - overflowMillis;
-			_updateVelocityAndLocation(fillMillis);
+			_updateVelocityAndLocation(fillMillis, velocityToRestoreIfNotOnGround);
 			toReturn = _buildFromAccumulation();
 			
 			// Re-initialize our internal accumulation for the next tick.
@@ -431,7 +475,7 @@ public class MovementAccumulator
 		else
 		{
 			// The accumulation is not yet finished so just accumulate.
-			_updateVelocityAndLocation(millisToAdd);
+			_updateVelocityAndLocation(millisToAdd, velocityToRestoreIfNotOnGround);
 			_accumulationMillis = accumulated;
 			toReturn = null;
 		}
@@ -595,10 +639,42 @@ public class MovementAccumulator
 			{
 				_newVelocity = new EntityLocation(_overflow.velocityX, _overflow.velocityY, _newVelocity.z());
 			}
-			_updateVelocityAndLocation(_overflow.millis);
+			_updateVelocityAndLocation(_overflow.millis, null);
 			_accumulationMillis = _overflow.millis;
 			_overflow = null;
 		}
+	}
+
+	private EntityChangeTopLevelMovement<IMutablePlayerEntity> _commonWalking(long currentTimeMillis
+		, Relative relativeDirection
+		, EntityChangeTopLevelMovement.Intensity intensity
+		, float speedMultiplier
+		, boolean shouldRequireEndOnGround
+	)
+	{
+		// This is the same as standing, except that we override the X/Y velocity vectors based on the type of movement.
+		float orientationRadians = OrientationHelpers.getYawRadians(_newYaw);
+		float yawRadians = orientationRadians + relativeDirection.yawRadians;
+		float xComponent = OrientationHelpers.getEastYawComponent(yawRadians);
+		float yComponent = OrientationHelpers.getNorthYawComponent(yawRadians);
+		
+		// If we want to require that this end on the ground, we will need to capture the _newVelocity to restore later.
+		EntityLocation velocityToRestoreIfNotOnGround = shouldRequireEndOnGround ? _newVelocity : null;
+		
+		// Determine the X/Y velocity based on these components, fluid viscosity, and the walking type.
+		// TODO:  We probably want to apply a velocity change limit.
+		float maxSpeed = _env.creatures.PLAYER.blocksPerSecond() * intensity.speedMultipler * speedMultiplier;
+		float speed = maxSpeed * relativeDirection.speedMultiplier;
+		float xVelocity = _startInverseViscosity * speed * xComponent;
+		float yVelocity = _startInverseViscosity * speed * yComponent;
+		_newVelocity = new EntityLocation(xVelocity, yVelocity, _newVelocity.z());
+		
+		// Whatever has happened so far, we need to bill this as walking.
+		if (intensity.energyCostPerTick > _intensity.energyCostPerTick)
+		{
+			_intensity = intensity;
+		}
+		return _commonAccumulateMotion(currentTimeMillis, intensity, velocityToRestoreIfNotOnGround);
 	}
 
 

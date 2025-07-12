@@ -903,6 +903,51 @@ public class TestMovementAccumulator
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.1f), listener.thisEntity.velocity());
 	}
 
+	@Test
+	public void sneakingOnBlock() throws Throwable
+	{
+		// We will show that sneaking along the top of a block in an empty cuboid allows slow movement but prevents falling off.
+		long millisPerTick = 100L;
+		long currentTimeMillis = 1000L;
+		AbsoluteLocation solidBlock = new AbsoluteLocation(5, 5, 5);
+		EntityLocation startEntityLocation = new EntityLocation(5.8f, 5.8f, 6.0f);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, solidBlock.getBlockAddress(), STONE.item().number());
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Create the baseline data we need.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = startEntityLocation;
+		Entity entity = mutable.freeze();
+		accumulator.setThisEntity(entity);
+		listener.thisEntityDidLoad(entity);
+		accumulator.clearAccumulation();
+		accumulator.setCuboid(cuboid, HeightMapHelpers.buildHeightMap(cuboid));
+		
+		// Take a few steps and verify that we can move but not fall off.
+		// Start running and continue by walking.
+		currentTimeMillis += 50L;
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.sneak(currentTimeMillis, MovementAccumulator.Relative.FORWARD);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(5.8f, 5.9f, 6.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 2.0f, 0.0f), listener.thisEntity.velocity());
+		currentTimeMillis += 60L;
+		out = accumulator.sneak(currentTimeMillis, MovementAccumulator.Relative.FORWARD);
+		Assert.assertNotNull(out);
+		Assert.assertNull(out.test_getSubAction());
+		
+		// We should see that the sneak didn't move us, this time, since we would have fallen off.
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
+		Assert.assertEquals(new EntityLocation(5.8f, 5.9f, 6.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(5.8f, 5.9f, 6.0f), listener.thisEntity.location());
+		// Motion too little to detect collision.
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.1f), listener.thisEntity.velocity());
+	}
+
 
 	private Entity _runFallingTest(long millisPerMove, int iterationCount, CuboidData cuboid, Entity entity)
 	{

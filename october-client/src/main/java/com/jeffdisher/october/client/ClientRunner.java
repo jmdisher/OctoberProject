@@ -144,6 +144,20 @@ public class ClientRunner
 	}
 
 	/**
+	 * Similar to walk() but moves as a sneak:  Slower than walking but avoids slipping off of blocks.
+	 * 
+	 * @param relativeDirection The direction to move, relative to current yaw.
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void sneak(MovementAccumulator.Relative relativeDirection, long currentTimeMillis)
+	{
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> complete = _accumulator.sneak(currentTimeMillis, relativeDirection);
+		_endAction(complete, currentTimeMillis);
+		_runAllPendingCalls(currentTimeMillis);
+		_lastCallMillis = currentTimeMillis;
+	}
+
+	/**
 	 * Just passes time, standing still, allowing for things like falling or just time passing.
 	 * 
 	 * @param currentTimeMillis The current time, in milliseconds.
