@@ -53,7 +53,7 @@ public class EntityChangeCraftInBlock implements IMutationEntity<IMutablePlayerE
 	{
 		Environment env = Environment.getShared();
 		// Make sure that the block is within range and is a crafting table.
-		float distance = SpatialHelpers.distanceFromEyeToBlockSurface(newEntity, _targetBlock);
+		float distance = SpatialHelpers.distanceFromMutableEyeToBlockSurface(newEntity, _targetBlock);
 		boolean isLocationClose = (distance <= MiscConstants.REACH_BLOCK);
 		// Note that the cuboid could theoretically not be loaded (although this shouldn't happen in normal clients).
 		BlockProxy proxy = context.previousBlockLookUp.apply(_targetBlock);

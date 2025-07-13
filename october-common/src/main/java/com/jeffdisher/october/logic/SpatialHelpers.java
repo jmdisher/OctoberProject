@@ -152,9 +152,26 @@ public class SpatialHelpers
 	 * @param block The block we are targeting.
 	 * @return The diagonal distance from the eye to the nearest edge of the given block.
 	 */
-	public static float distanceFromEyeToBlockSurface(IMutablePlayerEntity eyeEntity, AbsoluteLocation block)
+	public static float distanceFromMutableEyeToBlockSurface(IMutablePlayerEntity eyeEntity, AbsoluteLocation block)
 	{
 		EntityLocation eye = _getEyeLocation(eyeEntity.getLocation(), eyeEntity.getType());
+		EntityLocation target = block.toEntityLocation();
+		EntityVolume cubeVolume = new EntityVolume(1.0f, 1.0f);
+		
+		return _distanceToTarget(eye, target, cubeVolume);
+	}
+
+	/**
+	 * Finds the distance from the eye of a player with base at eyeEntityBase to the nearest edge of the given block.
+	 * 
+	 * @param eyeEntityBase The base of the player whose eye we are looking through.
+	 * @param playerType The type to use when finding the eye of the player.
+	 * @param block The block we are targeting.
+	 * @return The diagonal distance from the eye to the nearest edge of the given block.
+	 */
+	public static float distanceFromPlayerEyeToBlockSurface(EntityLocation eyeEntityBase, EntityType playerType, AbsoluteLocation block)
+	{
+		EntityLocation eye = _getEyeLocation(eyeEntityBase, playerType);
 		EntityLocation target = block.toEntityLocation();
 		EntityVolume cubeVolume = new EntityVolume(1.0f, 1.0f);
 		

@@ -70,7 +70,7 @@ public class EntityChangePlaceMultiBlock implements IMutationEntity<IMutablePlay
 		// -are the target locations not colliding with the entity, itself?
 		
 		// Find the distance from the eye to the target.
-		float distance = SpatialHelpers.distanceFromEyeToBlockSurface(newEntity, _targetBlock);
+		float distance = SpatialHelpers.distanceFromMutableEyeToBlockSurface(newEntity, _targetBlock);
 		boolean isLocationClose = (distance <= MiscConstants.REACH_BLOCK);
 		
 		int selectedKey = newEntity.getSelectedKey();

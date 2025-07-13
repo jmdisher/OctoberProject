@@ -61,7 +61,7 @@ public class MutationEntityRequestItemPickUp implements IMutationEntity<IMutable
 		Inventory inv = _getInventory(target);
 		
 		// We also want to make sure that this is in range.
-		float distance = SpatialHelpers.distanceFromEyeToBlockSurface(newEntity, _blockLocation);
+		float distance = SpatialHelpers.distanceFromMutableEyeToBlockSurface(newEntity, _blockLocation);
 		boolean isInRange = (distance <= MiscConstants.REACH_BLOCK);
 		
 		boolean didApply = false;

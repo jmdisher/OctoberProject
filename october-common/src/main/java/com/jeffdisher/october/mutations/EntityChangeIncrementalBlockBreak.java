@@ -46,7 +46,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 		// We will just check that the block is in range and isn't air (we won't worry about whether or not it is breakable).
 		
 		// Find the distance from the eye to the target.
-		float distance = SpatialHelpers.distanceFromEyeToBlockSurface(newEntity, _targetBlock);
+		float distance = SpatialHelpers.distanceFromMutableEyeToBlockSurface(newEntity, _targetBlock);
 		boolean isLocationClose = (distance <= MiscConstants.REACH_BLOCK);
 		
 		MultiBlockUtils.Lookup lookup = isLocationClose

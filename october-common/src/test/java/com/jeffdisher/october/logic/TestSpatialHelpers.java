@@ -155,8 +155,10 @@ public class TestSpatialHelpers
 		
 		float entityDistance = SpatialHelpers.distanceFromMutableEyeToEntitySurface(entity1, entity2);
 		Assert.assertEquals(0.63f, entityDistance, 0.01f);
-		float blockDistance = SpatialHelpers.distanceFromEyeToBlockSurface(entity1, block1);
-		Assert.assertEquals(13.50f, blockDistance, 0.01f);
+		float blockDistanceMutable = SpatialHelpers.distanceFromMutableEyeToBlockSurface(entity1, block1);
+		Assert.assertEquals(13.50f, blockDistanceMutable, 0.01f);
+		float blockDistancePlayer = SpatialHelpers.distanceFromPlayerEyeToBlockSurface(entity1.newLocation, entity1.getType(), block1);
+		Assert.assertEquals(13.50f, blockDistancePlayer, 0.01f);
 	}
 
 	@Test

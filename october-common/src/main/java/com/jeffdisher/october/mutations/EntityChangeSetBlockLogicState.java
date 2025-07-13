@@ -63,7 +63,7 @@ public class EntityChangeSetBlockLogicState implements IMutationEntity<IMutableP
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		// Make sure that this is in range.
-		float distance = SpatialHelpers.distanceFromEyeToBlockSurface(newEntity, _targetBlock);
+		float distance = SpatialHelpers.distanceFromMutableEyeToBlockSurface(newEntity, _targetBlock);
 		boolean isLocationClose = (distance <= MiscConstants.REACH_BLOCK);
 		BlockProxy previous = context.previousBlockLookUp.apply(_targetBlock);
 		

@@ -49,7 +49,7 @@ public class EntityChangeIncrementalBlockRepair implements IMutationEntity<IMuta
 		boolean isHandEmpty = (Entity.NO_SELECTION == newEntity.getSelectedKey());
 		
 		// Find the distance from the eye to the target.
-		float distance = SpatialHelpers.distanceFromEyeToBlockSurface(newEntity, _targetBlock);
+		float distance = SpatialHelpers.distanceFromMutableEyeToBlockSurface(newEntity, _targetBlock);
 		boolean isReachable = (distance <= MiscConstants.REACH_BLOCK);
 		
 		// Note that the cuboid could theoretically not be loaded (although this shouldn't happen in normal clients).

@@ -47,7 +47,7 @@ public class EntityChangeSetDayAndSpawn implements IMutationEntity<IMutablePlaye
 		if (isBed)
 		{
 			// Find the distance from the eye to the bed.
-			float distance = SpatialHelpers.distanceFromEyeToBlockSurface(newEntity, _bedLocation);
+			float distance = SpatialHelpers.distanceFromMutableEyeToBlockSurface(newEntity, _bedLocation);
 			isInRange = (distance <= MiscConstants.REACH_BLOCK);
 		}
 		

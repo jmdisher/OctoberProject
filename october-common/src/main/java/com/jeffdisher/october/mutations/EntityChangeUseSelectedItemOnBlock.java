@@ -90,7 +90,7 @@ public class EntityChangeUseSelectedItemOnBlock implements IMutationEntity<IMuta
 		boolean isReady = ((newEntity.getLastSpecialActionMillis() + COOLDOWN_MILLIS) <= context.currentTickTimeMillis);
 		
 		// We also want to make sure that this is in range.
-		float distance = SpatialHelpers.distanceFromEyeToBlockSurface(newEntity, _target);
+		float distance = SpatialHelpers.distanceFromMutableEyeToBlockSurface(newEntity, _target);
 		boolean isInRange = (distance <= MiscConstants.REACH_BLOCK);
 		
 		boolean didApply = false;
