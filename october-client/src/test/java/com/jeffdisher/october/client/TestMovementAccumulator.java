@@ -948,6 +948,44 @@ public class TestMovementAccumulator
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.1f), listener.thisEntity.velocity());
 	}
 
+	@Test
+	public void benignSubActionFailure() throws Throwable
+	{
+		// Show that a sub-action failing doesn't break the entire top-level but is dropped from it.
+		long millisPerTick = 100L;
+		long currentTimeMillis = 1000L;
+		AbsoluteLocation solidBlock = new AbsoluteLocation(5, 5, 5);
+		EntityLocation startEntityLocation = new EntityLocation(5.8f, 5.8f, 6.0f);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, solidBlock.getBlockAddress(), STONE.item().number());
+		CuboidHeightMap cuboidMap = HeightMapHelpers.buildHeightMap(cuboid);
+		ColumnHeightMap columnMap = HeightMapHelpers.buildColumnMaps(Map.of(cuboid.getCuboidAddress(), cuboidMap
+		)).values().iterator().next();
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Create the baseline data we need.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = startEntityLocation;
+		Entity entity = mutable.freeze();
+		accumulator.setThisEntity(entity);
+		accumulator.setCuboid(cuboid, cuboidMap);
+		listener.thisEntityDidLoad(entity);
+		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
+		accumulator.clearAccumulation();
+		
+		// Enqueue an action which we know will fail and observe that the top-level is still produced and passes.
+		long millisPerMove = millisPerTick;
+		currentTimeMillis += millisPerMove;
+		accumulator.enqueueSubAction(new EntityChangeChangeHotbarSlot(0));
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.BACKWARD, false);
+		Assert.assertNotNull(out);
+		Assert.assertNull(out.test_getSubAction());
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(5.8f, 5.56f, 6.0f), entity.location());
+	}
+
 
 	private Entity _runFallingTest(long millisPerMove, int iterationCount, CuboidData cuboid, Entity entity)
 	{

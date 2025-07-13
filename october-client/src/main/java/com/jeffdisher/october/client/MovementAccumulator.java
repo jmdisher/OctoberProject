@@ -135,7 +135,7 @@ public class MovementAccumulator
 	{
 		if (0L == _accumulationMillis)
 		{
-			_initializeForNextTick();
+			_initializeForNextTick(currentTimeMillis);
 		}
 		
 		// When we are just standing, this basically means just "drift" as we currently are.
@@ -156,7 +156,7 @@ public class MovementAccumulator
 	{
 		if (0L == _accumulationMillis)
 		{
-			_initializeForNextTick();
+			_initializeForNextTick(currentTimeMillis);
 		}
 		
 		EntityChangeTopLevelMovement.Intensity intensity = runningSpeed
@@ -181,7 +181,7 @@ public class MovementAccumulator
 	{
 		if (0L == _accumulationMillis)
 		{
-			_initializeForNextTick();
+			_initializeForNextTick(currentTimeMillis);
 		}
 		
 		// We will implement sneaking by telling the common walk path to discard location changes if it moves the entity
@@ -227,7 +227,7 @@ public class MovementAccumulator
 	{
 		if (0L == _accumulationMillis)
 		{
-			_initializeForNextTick();
+			_initializeForNextTick(_lastSampleMillis);
 		}
 		
 		// This is called after any updates are made to the external SpeculativeProjection to apply local accumulation on top of that.
@@ -483,7 +483,7 @@ public class MovementAccumulator
 		return toReturn;
 	}
 
-	private boolean _runSubActionToStart(IMutationEntity<IMutablePlayerEntity> toRun)
+	private boolean _runSubActionToStart(IMutationEntity<IMutablePlayerEntity> toRun, long currentTimeMillis)
 	{
 		OneOffRunner.StatePackage input = new OneOffRunner.StatePackage(_thisEntity
 			, _world
@@ -494,8 +494,6 @@ public class MovementAccumulator
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
 			// TODO:  Come up with a way to relay these events without duplication in SpeculativeProjection since we likely need them immediately.
 		};
-		// Use the last sample time as the current time.
-		long currentTimeMillis = _lastSampleMillis;
 		OneOffRunner.StatePackage output = OneOffRunner.runOneChange(input, eventSink, _millisPerTick, currentTimeMillis, toRun);
 		if (null != output)
 		{
@@ -616,12 +614,16 @@ public class MovementAccumulator
 		_newVelocity = new EntityLocation(_newVelocity.x(), _newVelocity.y(), newZVelocity);
 	}
 
-	private void _initializeForNextTick()
+	private void _initializeForNextTick(long currentTimeMillis)
 	{
 		_startInverseViscosity = 1.0f - EntityMovementHelpers.maxViscosityInEntityBlocks(_newLocation, _playerVolume, _proxyLookup);
 		if (null != _subAction)
 		{
-			_runSubActionToStart(_subAction);
+			boolean isSubActionValid = _runSubActionToStart(_subAction, currentTimeMillis);
+			if (!isSubActionValid)
+			{
+				_subAction = null;
+			}
 		}
 		// Capture the Z after the sub-action, since cases like jumps change this.
 		_baselineZVector = _newVelocity.z();
