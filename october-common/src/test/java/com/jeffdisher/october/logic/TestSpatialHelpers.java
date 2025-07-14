@@ -228,6 +228,15 @@ public class TestSpatialHelpers
 		Assert.assertFalse(SpatialHelpers.canExistInLocation(reader, location, VOLUME));
 	}
 
+	@Test
+	public void floatFraction()
+	{
+		Assert.assertEquals(0.4f, SpatialHelpers.getPositiveFractionalComponent(1.4f), 0.01f);
+		Assert.assertEquals(0.8f, SpatialHelpers.getPositiveFractionalComponent(10.8f), 0.01f);
+		Assert.assertEquals(0.8f, SpatialHelpers.getPositiveFractionalComponent(-1.2f), 0.01f);
+		Assert.assertEquals(0.6f, SpatialHelpers.getPositiveFractionalComponent(-10.4f), 0.01f);
+	}
+
 
 	private static class _EndpointHelper implements EntityMovementHelpers.InteractiveHelper
 	{

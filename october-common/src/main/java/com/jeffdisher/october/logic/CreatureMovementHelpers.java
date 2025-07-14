@@ -198,7 +198,7 @@ public class CreatureMovementHelpers
 				subAction = new EntityChangeJump<>();
 				newVelocity = new EntityLocation(updatedVelocity.x(), updatedVelocity.y(), EntityChangeJump.JUMP_FORCE);
 			}
-			else if (isBlockSwimmable)
+			else if (isBlockSwimmable && (SpatialHelpers.getPositiveFractionalComponent(creatureLocation.z()) <= 0.5f))
 			{
 				// Swim.
 				subAction = new EntityChangeSwim<>();

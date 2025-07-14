@@ -7,6 +7,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
+import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
@@ -56,7 +57,11 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IMutat
 				, vector
 		))
 		{
-			newEntity.setVelocityVector(new EntityLocation(vector.x(), vector.y(), SWIM_FORCE));
+			float newZVector = vector.z() < 0.0f
+				? (vector.z() + SWIM_FORCE)
+				: SWIM_FORCE
+			;
+			newEntity.setVelocityVector(new EntityLocation(vector.x(), vector.y(), newZVector));
 			didApply = true;
 			
 			// Do other state reset.
@@ -99,9 +104,15 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IMutat
 			, EntityLocation vector
 	)
 	{
-		BlockProxy footBlock = previousBlockLookUp.apply(location.getBlockLocation());
-		Environment env = Environment.getShared();
-		boolean isActive = FlagsAspect.isSet(footBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
-		return env.blocks.canSwimInBlock(footBlock.getBlock(), isActive);
+		// We want to only consider swimming if the foot is in the bottom half of the block.
+		boolean canSwim = false;
+		if (SpatialHelpers.getPositiveFractionalComponent(location.z()) <= 0.5f)
+		{
+			BlockProxy footBlock = previousBlockLookUp.apply(location.getBlockLocation());
+			Environment env = Environment.getShared();
+			boolean isActive = FlagsAspect.isSet(footBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
+			canSwim = env.blocks.canSwimInBlock(footBlock.getBlock(), isActive);
+		}
+		return canSwim;
 	}
 }

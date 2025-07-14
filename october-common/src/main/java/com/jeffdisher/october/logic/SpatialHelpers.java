@@ -191,6 +191,20 @@ public class SpatialHelpers
 		return _distanceToTarget(start, targetBase, targetVolume);
 	}
 
+	/**
+	 * Returns the positive fractional component of a floating-point number (for X.YY, returns 0.YY).  Note that this
+	 * will always return a positive value so something like -6.7 will return 0.3.
+	 * This is used to determine how far from the base of a block a location is (hence the odd negative number
+	 * behaviour).
+	 * 
+	 * @param f The float to examine.
+	 * @return The positive fractional component (difference above floor).
+	 */
+	public static float getPositiveFractionalComponent(float f)
+	{
+		return f - (float)Math.floor(f);
+	}
+
 
 	private static boolean _isBlockAligned(float coord)
 	{
