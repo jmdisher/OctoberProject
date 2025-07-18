@@ -16,7 +16,8 @@ import com.jeffdisher.october.types.Item;
  */
 public class ToolRegistry
 {
-	public static final String FIELD_BLOCK_MATERIAL = "block_material";
+	public static final String FIELD_MATERIAL_MULTIPLIER = "material_multiplier";
+	public static final String FIELD_WEAPON_DAMAGE = "weapon_damage";
 
 	/**
 	 * Loads the tool registry from the tablist in the given stream, sourcing Items from the given items registry.
@@ -32,8 +33,7 @@ public class ToolRegistry
 	) throws IOException, TabListReader.TabListException
 	{
 		IValueTransformer<Item> keyTransformer = new IValueTransformer.ItemTransformer(items);
-		IValueTransformer<Integer> valueTransformer = new IValueTransformer.IntegerTransformer("speed");
-		IValueTransformer<BlockMaterial> materialTransformer = new IValueTransformer<>() {
+		IValueTransformer<BlockMaterial> valueTransformer = new IValueTransformer<>() {
 			@Override
 			public BlockMaterial transform(String value) throws TabListException
 			{
@@ -46,25 +46,29 @@ public class ToolRegistry
 			}
 		};
 		
-		SimpleTabListCallbacks<Item, Integer> callbacks = new SimpleTabListCallbacks<>(keyTransformer, valueTransformer);
-		SimpleTabListCallbacks.SubRecordCapture<Item, BlockMaterial> blockMaterials = callbacks.captureSubRecord(FIELD_BLOCK_MATERIAL, materialTransformer, true);
+		SimpleTabListCallbacks<Item, BlockMaterial> callbacks = new SimpleTabListCallbacks<>(keyTransformer, valueTransformer);
+		SimpleTabListCallbacks.SubRecordCapture<Item, Integer> materialMutliplers = callbacks.captureSubRecord(FIELD_MATERIAL_MULTIPLIER, new IValueTransformer.IntegerTransformer(FIELD_MATERIAL_MULTIPLIER), true);
+		SimpleTabListCallbacks.SubRecordCapture<Item, Integer> weaponDamage = callbacks.captureSubRecord(FIELD_WEAPON_DAMAGE, new IValueTransformer.IntegerTransformer(FIELD_WEAPON_DAMAGE), true);
 		
 		TabListReader.readEntireFile(callbacks, stream);
 		
 		// We can just pass these in, directly.
-		return new ToolRegistry(callbacks.topLevel, blockMaterials.recordData);
+		return new ToolRegistry(callbacks.topLevel, materialMutliplers.recordData, weaponDamage.recordData);
 	}
 
 
-	private final Map<Item, Integer> _speedValues;
 	private final Map<Item, BlockMaterial> _blockMaterials;
+	private final Map<Item, Integer> _materialMutliplers;
+	private final Map<Item, Integer> _weaponDamage;
 
-	private ToolRegistry(Map<Item, Integer> speedValues
-			, Map<Item, BlockMaterial> blockMaterials
+	private ToolRegistry(Map<Item, BlockMaterial> blockMaterials
+		, Map<Item, Integer> materialMutliplers
+		, Map<Item, Integer> weaponDamage
 	)
 	{
-		_speedValues = speedValues;
 		_blockMaterials = blockMaterials;
+		_materialMutliplers = materialMutliplers;
+		_weaponDamage = weaponDamage;
 	}
 
 	/**
@@ -75,7 +79,7 @@ public class ToolRegistry
 	 */
 	public int toolSpeedModifier(Item item)
 	{
-		Integer toolValue = _speedValues.get(item);
+		Integer toolValue = _materialMutliplers.get(item);
 		return (null != toolValue)
 				? toolValue.intValue()
 				: 1
@@ -95,6 +99,21 @@ public class ToolRegistry
 		return (null != value)
 				? value
 				: BlockMaterial.NO_MATERIAL
+		;
+	}
+
+	/**
+	 * Checks the damage applied by item when it is used as a weapon against another entity, or 1 if it isn't a weapon.
+	 * 
+	 * @param item The item to check.
+	 * @return The weapon or 1 if this is not a weapon.
+	 */
+	public int toolWeaponDamage(Item item)
+	{
+		Integer toolValue = _weaponDamage.get(item);
+		return (null != toolValue)
+				? toolValue.intValue()
+				: 1
 		;
 	}
 }

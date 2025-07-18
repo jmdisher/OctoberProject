@@ -62,6 +62,7 @@ public class TestCommonChanges
 	private static Item PLANK_ITEM;
 	private static Item CHARCOAL_ITEM;
 	private static Item IRON_SWORD_ITEM;
+	private static Item IRON_AXE_ITEM;
 	private static Block STONE;
 	private static Block WATER_SOURCE;
 	private static EntityType COW;
@@ -74,6 +75,7 @@ public class TestCommonChanges
 		PLANK_ITEM = ENV.items.getItemById("op.plank");
 		CHARCOAL_ITEM = ENV.items.getItemById("op.charcoal");
 		IRON_SWORD_ITEM = ENV.items.getItemById("op.iron_sword");
+		IRON_AXE_ITEM = ENV.items.getItemById("op.iron_axe");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
 		COW = ENV.creatures.getTypeById("op.cow");
@@ -2531,6 +2533,91 @@ public class TestCommonChanges
 		Assert.assertEquals(EntityChangePeriodic.ENERGY_COST_PER_TICK_RUNNING, newEntity.newEnergyDeficit);
 		Assert.assertEquals(5, newEntity.newYaw);
 		Assert.assertEquals(6, newEntity.newPitch);
+	}
+
+	@Test
+	public void weaponTypes() throws Throwable
+	{
+		// We just want to try attacking an entity with different weapons to see the different damage amounts.
+		int targetId = 1;
+		int swordAttackerId = 2;
+		int axeAttackerId = 3;
+		int stoneAttackerId = 4;
+		
+		MutableEntity target = MutableEntity.createForTest(targetId);
+		target.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
+		
+		MutableEntity swordAttacker = MutableEntity.createForTest(swordAttackerId);
+		swordAttacker.newLocation = new EntityLocation(11.0f, 10.0f, 0.0f);
+		swordAttacker.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(IRON_SWORD_ITEM, 100));
+		swordAttacker.setSelectedKey(1);
+		
+		MutableEntity axeAttacker = MutableEntity.createForTest(axeAttackerId);
+		axeAttacker.newLocation = new EntityLocation(10.0f, 11.0f, 0.0f);
+		axeAttacker.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(IRON_AXE_ITEM, 100));
+		axeAttacker.setSelectedKey(1);
+		
+		MutableEntity stoneAttacker = MutableEntity.createForTest(stoneAttackerId);
+		stoneAttacker.newLocation = new EntityLocation(9.0f, 10.0f, 0.0f);
+		stoneAttacker.newInventory.addAllItems(STONE_ITEM, 2);
+		stoneAttacker.setSelectedKey(1);
+		
+		Entity baselineTarget = target.freeze();
+		Map<Integer, Entity> targetsById = Map.of(targetId, baselineTarget);
+		List<EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>> changeHolder = new ArrayList<>();
+		int[] eventCounter = new int[1];
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(5L)
+			.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)))
+			.sinks(null, new TickProcessingContext.IChangeSink() {
+				@Override
+				public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+				{
+					Assert.assertEquals(targetId, targetEntityId);
+					Assert.assertTrue(change instanceof EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>);
+					changeHolder.add((EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>) change);
+				}
+				@Override
+				public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+				{
+					Assert.fail("Not expected in tets");
+				}
+				@Override
+				public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+				{
+					Assert.fail("Not expected in tets");
+				}
+			})
+			.eventSink(new TickProcessingContext.IEventSink()
+			{
+				@Override
+				public void post(EventRecord event)
+				{
+					eventCounter[0] += 1;
+				}
+			})
+			.finish()
+		;
+		
+		// Have all the attackers attack.
+		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, swordAttacker));
+		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, axeAttacker));
+		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, stoneAttacker));
+		Assert.assertEquals(3, changeHolder.size());
+		Assert.assertEquals(0, eventCounter[0]);
+		
+		// Check applying these to the entity to see the damage they do.
+		Assert.assertEquals(100, target.newHealth);
+		target = MutableEntity.existing(baselineTarget);
+		Assert.assertTrue(changeHolder.remove(0).applyChange(context, target));
+		Assert.assertEquals(90, target.newHealth);
+		target = MutableEntity.existing(baselineTarget);
+		Assert.assertTrue(changeHolder.remove(0).applyChange(context, target));
+		Assert.assertEquals(96, target.newHealth);
+		target = MutableEntity.existing(baselineTarget);
+		Assert.assertTrue(changeHolder.remove(0).applyChange(context, target));
+		Assert.assertEquals(99, target.newHealth);
+		Assert.assertEquals(3, eventCounter[0]);
 	}
 
 

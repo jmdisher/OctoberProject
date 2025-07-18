@@ -27,8 +27,4 @@ public enum BlockMaterial
 	 * Things like wood which must be split.
 	 */
 	AXE,
-	/**
-	 * Things like entities which must be cut.
-	 */
-	SWORD,
 }

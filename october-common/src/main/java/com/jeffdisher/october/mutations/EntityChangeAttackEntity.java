@@ -2,7 +2,6 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.BlockMaterial;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.logic.SpatialHelpers;
@@ -76,17 +75,9 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 					: null
 			;
 			Environment env = Environment.getShared();
-			int damageToApply;
-			if (BlockMaterial.SWORD == env.tools.toolTargetMaterial(toolType))
-			{
-				int toolSpeedMultiplier = env.tools.toolSpeedModifier(toolType);
-				Assert.assertTrue(toolSpeedMultiplier <= Byte.MAX_VALUE);
-				damageToApply = (byte) toolSpeedMultiplier;
-			}
-			else
-			{
-				damageToApply = 1;
-			}
+			int damageToApply = env.tools.toolWeaponDamage(toolType);
+			Assert.assertTrue(damageToApply <= Byte.MAX_VALUE);
+			
 			// Choose the target body part at random.
 			int index = context.randomInt.applyAsInt(BodyPart.values().length);
 			BodyPart target = BodyPart.values()[index];

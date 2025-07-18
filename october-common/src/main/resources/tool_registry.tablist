@@ -1,30 +1,38 @@
 # Entries here have the form:
-# ID<TAB>number
-# <TAB>block_material<TAB>material
-# <TAB>durability<TAB>int
+# ID<TAB>material
+# <TAB>material_multiplier<TAB>int
+# <TAB>weapon_damage<TAB>int
 # 
-# The given number is non-negative and represents the break blocking speed modifier when using this tool (damage
-# multiplier when used on a weapon).
-# block_material is a constant enum of BlockMaterial type (use NO_MATERIAL if the multiplier should always be ignored).
+# The given material describes what kind of tool this is in terms of the block_material in block_aspect (BlockMaterial
+# enum type - NO_MATERIAL to ignore).  When the tool is used on a block which matches this type, the damage done is
+# multiplied by material_multiplier (whereas other tools, or none at all, use a multiplier of 1).
+# When used against an entity, weapon_damage is used as the damage, whereas non-tools apply a damage of 1.
 # Note that the ID is from item_registry.tablist.
-# Durability is a number which must be non-negative (0 means unbreakable).  Durability is the measurement of
-# milliseconds for which the tool can be used before it breaks.
 
-op.iron_pickaxe	10
-	block_material	PICKAXE
-op.iron_shovel	10
-	block_material	SHOVEL
-op.iron_axe	10
-	block_material	AXE
-op.iron_sword	10
-	block_material	SWORD
-op.club	3
-	block_material	SWORD
-op.stone_knife	4
-	block_material	SWORD
-op.stone_hatchet	4
-	block_material	AXE
-op.wooden_chisel	4
-	block_material	PICKAXE
-op.digging_stick	6
-	block_material	SHOVEL
+op.iron_pickaxe	PICKAXE
+	material_multiplier	10
+	weapon_damage	2
+op.iron_shovel	SHOVEL
+	material_multiplier	10
+	weapon_damage	2
+op.iron_axe	AXE
+	material_multiplier	10
+	weapon_damage	4
+op.iron_sword	NO_MATERIAL
+	material_multiplier	1
+	weapon_damage	10
+op.club	NO_MATERIAL
+	material_multiplier	2
+	weapon_damage	3
+op.stone_knife	NO_MATERIAL
+	material_multiplier	1
+	weapon_damage	4
+op.stone_hatchet	AXE
+	material_multiplier	4
+	weapon_damage	2
+op.wooden_chisel	PICKAXE
+	material_multiplier	4
+	weapon_damage	1
+op.digging_stick	SHOVEL
+	material_multiplier	6
+	weapon_damage	1
