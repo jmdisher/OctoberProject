@@ -85,3 +85,4 @@ op.and_gate	AND Gate
 op.or_gate	OR Gate
 op.not_gate	NOT Gate
 op.sensor_inventory	Inventory Sensor
+op.ladder	Ladder

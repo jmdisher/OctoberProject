@@ -256,7 +256,7 @@ public class TestSpatialHelpers
 			Assert.assertEquals(_isOnGround, cancelZ);
 		}
 		@Override
-		public float getViscosityForBlockAtLocation(AbsoluteLocation l)
+		public float getViscosityForBlockAtLocation(AbsoluteLocation l, boolean fromAbove)
 		{
 			float viscosity;
 			if (((1 == l.x()) && (1 == l.y())) || (l.z() >= 2))

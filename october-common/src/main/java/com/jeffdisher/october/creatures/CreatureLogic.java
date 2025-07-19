@@ -313,7 +313,8 @@ public class CreatureLogic
 	{
 		Assert.assertTrue(!existingPlan.isEmpty());
 		
-		float viscosity = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp).getViscosityFraction(mutable.newLocation.getBlockLocation());
+		boolean fromAbove = false;
+		float viscosity = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp).getViscosityFraction(mutable.newLocation.getBlockLocation(), fromAbove);
 		boolean isIdleMovement = (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.newTargetEntityId);
 		
 		// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.

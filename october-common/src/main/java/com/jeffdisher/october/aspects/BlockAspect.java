@@ -47,6 +47,7 @@ public class BlockAspect
 	private static final String FLAG_IS_FIRE_SOURCE = "is_fire_source";
 	private static final String FLAG_STOPS_FIRE = "stops_fire";
 	private static final String FLAG_IS_MULTIBLOCK = "is_multiblock";
+	private static final String FLAG_IS_LADDER = "is_ladder";
 	private static final String SUB_PLACED_FROM = "placed_from";
 	private static final String SUB_REQUIRES_SUPPORT = "requires_support";
 	private static final String SUB_SPECIAL_DROP = "special_drop";
@@ -108,6 +109,7 @@ public class BlockAspect
 				, parser.specialBlockPlacement
 				, parser.specialBlockBreak
 				, parser.blockMaterials
+				, parser.isLadder
 		);
 	}
 
@@ -125,6 +127,7 @@ public class BlockAspect
 	private final Map<Item, Block> _specialBlockPlacement;
 	private final Map<Block, _DropChance[]> _specialBlockBreak;
 	private final Map<Block, BlockMaterial> _blockMaterials;
+	private final Set<Block> _ladderType;
 
 	private BlockAspect(ItemRegistry items
 			, Block[] blocksByType
@@ -141,6 +144,7 @@ public class BlockAspect
 			, Map<Item, Block> specialBlockPlacement
 			, Map<Block, _DropChance[]> specialBlockBreak
 			, Map<Block, BlockMaterial> blockMaterials
+			, Set<Block> ladderType
 	)
 	{
 		_blocksByItemNumber = blocksByType;
@@ -158,6 +162,7 @@ public class BlockAspect
 		_specialBlockPlacement = Collections.unmodifiableMap(specialBlockPlacement);
 		_specialBlockBreak = Collections.unmodifiableMap(specialBlockBreak);
 		_blockMaterials = Collections.unmodifiableMap(blockMaterials);
+		_ladderType = Collections.unmodifiableSet(ladderType);
 	}
 
 	/**
@@ -293,15 +298,26 @@ public class BlockAspect
 	 * 
 	 * @param block The block to check.
 	 * @param isActive True if the active variant should be consulted, instead.
+	 * @param fromAbove True if this is viscosity when falling in, false for other collisions.
 	 * @return A fractional value in the range of [0.0f .. 1.0f].
 	 */
-	public float getViscosityFraction(Block block, boolean isActive)
+	public float getViscosityFraction(Block block, boolean isActive, boolean fromAbove)
 	{
-		Map<Block, Integer> nonSolidViscosity = _nonSolidViscosityMap(isActive);
-		return (nonSolidViscosity.containsKey(block))
+		float viscosity;
+		if (_ladderType.contains(block))
+		{
+			// Ladders are solid from above, since they stop us from falling, but are otherwise empty.
+			viscosity = fromAbove ? 1.0f : 0.0f;
+		}
+		else
+		{
+			Map<Block, Integer> nonSolidViscosity = _nonSolidViscosityMap(isActive);
+			viscosity = (nonSolidViscosity.containsKey(block))
 				? ((float)nonSolidViscosity.get(block) / 100.0f)
 				: 1.0f
-		;
+			;
+		}
+		return viscosity;
 	}
 
 	/**
@@ -456,6 +472,7 @@ public class BlockAspect
 		public Set<Block> isFireSource = new HashSet<>();
 		public Set<Block> stopsFire = new HashSet<>();
 		public Set<Block> isMultiBlock = new HashSet<>();
+		public Set<Block> isLadder  = new HashSet<>();
 		public Map<Block, Integer> nonSolidViscosity = new HashMap<>();
 		public Map<Block, Integer> blockDamage = new HashMap<>();
 		public Map<Block, Set<Block>> specialBlockSupport = new HashMap<>();
@@ -511,6 +528,10 @@ public class BlockAspect
 				else if (FLAG_IS_MULTIBLOCK.equals(value))
 				{
 					this.isMultiBlock.add(_currentBlock);
+				}
+				else if (FLAG_IS_LADDER.equals(value))
+				{
+					this.isLadder.add(_currentBlock);
 				}
 				else
 				{

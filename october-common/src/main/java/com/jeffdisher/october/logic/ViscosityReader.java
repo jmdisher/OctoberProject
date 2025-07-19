@@ -23,25 +23,25 @@ public class ViscosityReader
 		_blockLookup = blockLookup;
 	}
 
-	public float getViscosityFraction(AbsoluteLocation location)
+	public float getViscosityFraction(AbsoluteLocation location, boolean fromAbove)
 	{
-		return _getViscosity(location);
+		return _getViscosity(location, fromAbove);
 	}
 
-	public float getInverseViscosity(AbsoluteLocation location)
+	public float getInverseViscosity(AbsoluteLocation location, boolean fromAbove)
 	{
-		return 1.0f - _getViscosity(location);
+		return 1.0f - _getViscosity(location, fromAbove);
 	}
 
 
-	private float _getViscosity(AbsoluteLocation location)
+	private float _getViscosity(AbsoluteLocation location, boolean fromAbove)
 	{
 		BlockProxy proxy = _blockLookup.apply(location);
 		float viscosity;
 		if (null != proxy)
 		{
 			// Find the viscosity based on block type.
-			viscosity = _env.blocks.getViscosityFraction(proxy.getBlock(), FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE));
+			viscosity = _env.blocks.getViscosityFraction(proxy.getBlock(), FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE), fromAbove);
 		}
 		else
 		{

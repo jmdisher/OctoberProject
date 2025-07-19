@@ -53,7 +53,7 @@ public class TestEntityMovementHelpers
 				Assert.assertTrue(cancelZ);
 			}
 			@Override
-			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
+			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
 			{
 				int x = location.x();
 				int y = location.y();
@@ -82,7 +82,7 @@ public class TestEntityMovementHelpers
 				Assert.assertTrue(cancelZ);
 			}
 			@Override
-			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
+			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
 			{
 				int x = location.x();
 				int y = location.y();
@@ -111,7 +111,7 @@ public class TestEntityMovementHelpers
 				Assert.assertFalse(cancelZ);
 			}
 			@Override
-			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
+			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
 			{
 				return 0.0f;
 			}
@@ -169,9 +169,32 @@ public class TestEntityMovementHelpers
 				Assert.assertTrue(cancelZ);
 			}
 			@Override
-			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
+			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
 			{
 				return 1.0f;
+			}
+		});
+	}
+
+	@Test
+	public void walkOnLadders()
+	{
+		EntityLocation location = new EntityLocation(0.1f, 0.2f, 0.3f);
+		EntityVolume volume = new EntityVolume(0.8f, 1.7f);
+		EntityLocation velocity = new EntityLocation(-1.0f, 2.0f, -3.0f);
+		EntityMovementHelpers.interactiveEntityMove(location, volume, velocity, new EntityMovementHelpers.InteractiveHelper() {
+			@Override
+			public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
+			{
+				Assert.assertEquals(new EntityLocation(-0.9f, 2.2f, 0.3f), finalLocation);
+				Assert.assertFalse(cancelX);
+				Assert.assertFalse(cancelY);
+				Assert.assertTrue(cancelZ);
+			}
+			@Override
+			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
+			{
+				return fromAbove ? 1.0f : 0.0f;
 			}
 		});
 	}

@@ -302,9 +302,9 @@ public class SpatialHelpers
 			_reader = reader;
 		}
 		@Override
-		public float getViscosityForBlockAtLocation(AbsoluteLocation location)
+		public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
 		{
-			return _reader.getViscosityFraction(location);
+			return _reader.getViscosityFraction(location, fromAbove);
 		}
 		@Override
 		public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)

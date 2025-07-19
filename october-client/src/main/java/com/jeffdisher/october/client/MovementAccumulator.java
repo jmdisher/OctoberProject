@@ -424,9 +424,9 @@ public class MovementAccumulator
 				_newVelocity = velocityToRestore;
 			}
 			@Override
-			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
+			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
 			{
-				return _reader.getViscosityFraction(location);
+				return _reader.getViscosityFraction(location, fromAbove);
 			}
 		});
 	}

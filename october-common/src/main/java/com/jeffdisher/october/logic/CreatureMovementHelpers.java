@@ -419,9 +419,9 @@ public class CreatureMovementHelpers
 					);
 				}
 				@Override
-				public float getViscosityForBlockAtLocation(AbsoluteLocation location)
+				public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
 				{
-					return _supplier.getViscosityFraction(location);
+					return _supplier.getViscosityFraction(location, fromAbove);
 				}
 			});
 			

@@ -475,9 +475,9 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 					}
 				}
 				@Override
-				public float getViscosityForBlockAtLocation(AbsoluteLocation location)
+				public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
 				{
-					return reader.getViscosityFraction(location);
+					return reader.getViscosityFraction(location, fromAbove);
 				}
 			});
 			boolean touchingSurface = (((0.0f == _newVelocity.x()) == stopX[0])

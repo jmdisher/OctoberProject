@@ -196,3 +196,7 @@ op.sensor_inventory	COMMON
 	input	op.stone	op.emitter	op.diode
 	output	op.sensor_inventory
 	millis	16000
+op.ladder	COMMON
+	input	op.stick	op.stick	op.stick
+	output	op.ladder
+	millis	2000

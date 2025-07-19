@@ -69,9 +69,9 @@ public class EntityMovementHelpers
 		Environment env = Environment.getShared();
 		InteractiveHelper helper = new InteractiveHelper() {
 			@Override
-			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
+			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
 			{
-				return new ViscosityReader(env, blockLookup).getViscosityFraction(location);
+				return new ViscosityReader(env, blockLookup).getViscosityFraction(location, fromAbove);
 			}
 			@Override
 			public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
@@ -80,7 +80,9 @@ public class EntityMovementHelpers
 				throw Assert.unreachable();
 			}
 		};
-		return _maxViscosityInEntityBlocks(entityBase, volume, helper);
+		// In this case, we are just check where we stand, not falling.
+		boolean fromAbove = false;
+		return _maxViscosityInEntityBlocks(entityBase, volume, helper, fromAbove);
 	}
 
 	/**
@@ -107,14 +109,14 @@ public class EntityMovementHelpers
 	}
 
 
-	private static boolean _canOccupyLocation(EntityLocation movingStart, EntityVolume volume, InteractiveHelper helper)
+	private static boolean _canOccupyLocation(EntityLocation movingStart, EntityVolume volume, InteractiveHelper helper, boolean fromAbove)
 	{
-		float maxViscosity = _maxViscosityInEntityBlocks(movingStart, volume, helper);
+		float maxViscosity = _maxViscosityInEntityBlocks(movingStart, volume, helper, fromAbove);
 		boolean canOccupy = (maxViscosity < 1.0f);
 		return canOccupy;
 	}
 
-	private static float _maxViscosityInEntityBlocks(EntityLocation entityBase, EntityVolume volume, InteractiveHelper helper)
+	private static float _maxViscosityInEntityBlocks(EntityLocation entityBase, EntityVolume volume, InteractiveHelper helper, boolean fromAbove)
 	{
 		EntityLocation entityEdge = new EntityLocation(entityBase.x() + volume.width()
 			, entityBase.y() + volume.width()
@@ -126,13 +128,13 @@ public class EntityMovementHelpers
 		float maxViscosity = 0.0f;
 		for (AbsoluteLocation loc : new _VolumeIterator(baseBlock, edgeBlock))
 		{
-			float viscosity = helper.getViscosityForBlockAtLocation(loc);
+			float viscosity = helper.getViscosityForBlockAtLocation(loc, fromAbove);
 			maxViscosity = Math.max(maxViscosity, viscosity);
 		}
 		return maxViscosity;
 	}
 
-	private static void _interactiveEntityMoveNotStuck(EntityLocation start, EntityVolume volume, EntityLocation vectorToMove, InteractiveHelper helper)
+	private static void _interactiveEntityMoveNotStuck(EntityLocation start, EntityVolume volume, EntityLocation vectorToMove, InteractiveHelper helper, boolean failZ)
 	{
 		// We will move in the direction of vectorToMove, biased by viscosity, one block at a time until the move is complete or blocked in all movement directions.
 		// Note that, for now at least, we will only compute the viscosity at the beginning of the move, as the move is rarely multiple blocks (falling at terminal velocity being an outlier example).
@@ -165,7 +167,7 @@ public class EntityMovementHelpers
 		// If we didn't collide, we are done.
 		boolean cancelX = false;
 		boolean cancelY = false;
-		boolean cancelZ = false;
+		boolean cancelZ = failZ;
 		while (null != collision)
 		{
 			// Move us over by the collision distance, check the block viscosities, and loop.
@@ -194,7 +196,7 @@ public class EntityMovementHelpers
 			case X: {
 				float dirX = (effectiveX > 0.0f) ? POSITIVE_EDGE_COLLISION_FUDGE_FACTOR : -POSITIVE_EDGE_COLLISION_FUDGE_FACTOR;
 				EntityLocation adjacent = new EntityLocation(movingStart.x() + moveX + dirX, movingStart.y() + moveY, movingStart.z() + moveZ);
-				if (_canOccupyLocation(adjacent, volume, helper))
+				if (_canOccupyLocation(adjacent, volume, helper, false))
 				{
 					moveX += dirX;
 				}
@@ -208,7 +210,7 @@ public class EntityMovementHelpers
 			case Y: {
 				float dirY = (effectiveY > 0.0f) ? POSITIVE_EDGE_COLLISION_FUDGE_FACTOR : -POSITIVE_EDGE_COLLISION_FUDGE_FACTOR;
 				EntityLocation adjacent = new EntityLocation(movingStart.x() + moveX, movingStart.y() + moveY + dirY, movingStart.z() + moveZ);
-				if (_canOccupyLocation(adjacent, volume, helper))
+				if (_canOccupyLocation(adjacent, volume, helper, false))
 				{
 					moveY += dirY;
 				}
@@ -222,7 +224,8 @@ public class EntityMovementHelpers
 			case Z: {
 				float dirZ = (effectiveZ > 0.0f) ? POSITIVE_EDGE_COLLISION_FUDGE_FACTOR : -POSITIVE_EDGE_COLLISION_FUDGE_FACTOR;
 				EntityLocation adjacent = new EntityLocation(movingStart.x() + moveX, movingStart.y() + moveY, movingStart.z() + moveZ + dirZ);
-				if (_canOccupyLocation(adjacent, volume, helper))
+				boolean fromAbove = (dirZ < 0.0f);
+				if (_canOccupyLocation(adjacent, volume, helper, fromAbove))
 				{
 					moveZ += dirZ;
 				}
@@ -278,10 +281,19 @@ public class EntityMovementHelpers
 	{
 		// We want to handle the degenerate case of being stuck in a block first, because it avoids some setup and the 
 		// common code assumes it isn't happening so will only report a partial collision.
-		if (_canOccupyLocation(start, volume, helper))
+		boolean fromAbove = true;
+		boolean failZ = false;
+		if ((vectorToMove.z() < 0.0f) && !_canOccupyLocation(start, volume, helper, fromAbove))
+		{
+			// Cancel the z-movement.
+			vectorToMove = new EntityLocation(vectorToMove.x(), vectorToMove.y(), 0.0f);
+			failZ = true;
+		}
+		fromAbove = false;
+		if (_canOccupyLocation(start, volume, helper, fromAbove))
 		{
 			// We aren't stuck so use the common case.
-			_interactiveEntityMoveNotStuck(start, volume, vectorToMove, helper);
+			_interactiveEntityMoveNotStuck(start, volume, vectorToMove, helper, failZ);
 		}
 		else
 		{
@@ -302,9 +314,11 @@ public class EntityMovementHelpers
 		 * fully solid).
 		 * 
 		 * @param location The location to check.
+		 * @param fromAbove True if we are asking for viscosity while falling into the block, false for other
+		 * collisions.
 		 * @return The viscosity fraction (1.0f being solid).
 		 */
-		public float getViscosityForBlockAtLocation(AbsoluteLocation location);
+		public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove);
 		/**
 		 * The call issued by the interactive call to return all results instead of returning some kind of tuple.
 		 * 
