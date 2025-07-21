@@ -1,13 +1,13 @@
 package com.jeffdisher.october.logic;
 
-import com.jeffdisher.october.mutations.EntityChangeJump;
-import com.jeffdisher.october.mutations.EntityChangeSwim;
-import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
-import com.jeffdisher.october.mutations.IEntitySubAction;
+import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.subactions.EntityChangeJump;
+import com.jeffdisher.october.subactions.EntityChangeSwim;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 
 

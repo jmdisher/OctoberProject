@@ -12,13 +12,13 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.actions.EntityChangeOperatorSpawnCreature;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.CrowdProcessor;
-import com.jeffdisher.october.mutations.EntityChangeOperatorSpawnCreature;
-import com.jeffdisher.october.mutations.IEntityAction;
 import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.server.TickRunner;
 import com.jeffdisher.october.types.Difficulty;
+import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.WorldConfig;
 

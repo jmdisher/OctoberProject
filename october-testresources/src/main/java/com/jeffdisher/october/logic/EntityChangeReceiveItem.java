@@ -3,7 +3,7 @@ package com.jeffdisher.october.logic;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.EntityActionType;
-import com.jeffdisher.october.mutations.IEntityAction;
+import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;

@@ -3,7 +3,7 @@ package com.jeffdisher.october.net;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
-import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 
 

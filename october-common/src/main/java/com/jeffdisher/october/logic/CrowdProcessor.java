@@ -5,10 +5,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.jeffdisher.october.mutations.IEntityAction;
 import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EventRecord;
+import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;

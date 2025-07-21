@@ -3,8 +3,8 @@ package com.jeffdisher.october.client;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.EntityActionType;
-import com.jeffdisher.october.mutations.IEntityAction;
-import com.jeffdisher.october.mutations.IEntitySubAction;
+import com.jeffdisher.october.types.IEntityAction;
+import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;

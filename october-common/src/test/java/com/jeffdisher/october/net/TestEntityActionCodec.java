@@ -5,13 +5,13 @@ import java.nio.ByteBuffer;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.october.mutations.EntityChangeJump;
-import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromEntity;
-import com.jeffdisher.october.mutations.Deprecated_EntityChangeTakeDamageFromOther;
-import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
-import com.jeffdisher.october.mutations.IEntityAction;
+import com.jeffdisher.october.actions.Deprecated_EntityChangeTakeDamageFromOther;
+import com.jeffdisher.october.actions.EntityChangeTakeDamageFromEntity;
+import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.subactions.EntityChangeJump;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 
 

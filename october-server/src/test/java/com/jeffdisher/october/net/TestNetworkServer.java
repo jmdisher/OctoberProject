@@ -17,8 +17,8 @@ import java.util.function.LongSupplier;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.actions.EntityChangePeriodic;
 import com.jeffdisher.october.aspects.MiscConstants;
-import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.net.NetworkServer.ConnectingClientDescription;
 
 

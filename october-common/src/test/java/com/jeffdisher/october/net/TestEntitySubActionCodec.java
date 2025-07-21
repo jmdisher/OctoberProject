@@ -5,9 +5,9 @@ import java.nio.ByteBuffer;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockRepair;
-import com.jeffdisher.october.mutations.IEntitySubAction;
+import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockRepair;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 
 

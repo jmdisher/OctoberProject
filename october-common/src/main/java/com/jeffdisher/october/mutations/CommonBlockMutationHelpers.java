@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.util.List;
 
+import com.jeffdisher.october.actions.MutationEntityStoreToInventory;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;

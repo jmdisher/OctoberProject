@@ -1,7 +1,7 @@
 package com.jeffdisher.october.client;
 
+import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;

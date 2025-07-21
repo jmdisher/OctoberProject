@@ -9,12 +9,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.jeffdisher.october.actions.EntityChangeOperatorSetCreative;
+import com.jeffdisher.october.actions.EntityChangeOperatorSetLocation;
+import com.jeffdisher.october.actions.EntityChangeOperatorSpawnCreature;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.PropagationHelpers;
-import com.jeffdisher.october.mutations.EntityChangeOperatorSetCreative;
-import com.jeffdisher.october.mutations.EntityChangeOperatorSetLocation;
-import com.jeffdisher.october.mutations.EntityChangeOperatorSpawnCreature;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
 import com.jeffdisher.october.server.MonitoringAgent;

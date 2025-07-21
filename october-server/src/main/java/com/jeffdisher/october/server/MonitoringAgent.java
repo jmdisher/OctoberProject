@@ -4,9 +4,9 @@ import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.jeffdisher.october.mutations.IEntityAction;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
+import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.utils.Assert;
 

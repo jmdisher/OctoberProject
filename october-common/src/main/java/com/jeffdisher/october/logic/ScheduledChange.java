@@ -1,6 +1,6 @@
 package com.jeffdisher.october.logic;
 
-import com.jeffdisher.october.mutations.IEntityAction;
+import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 
 
