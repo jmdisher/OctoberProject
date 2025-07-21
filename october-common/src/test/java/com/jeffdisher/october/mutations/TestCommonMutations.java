@@ -695,18 +695,18 @@ public class TestCommonMutations
 				}, null)
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 					@Override
-					public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+					public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 					{
 						Assert.assertNull(holder[0]);
 						holder[0] = (Deprecated_EntityChangeTakeDamageFromOther<IMutablePlayerEntity>) change;
 					}
 					@Override
-					public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+					public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 					{
 						Assert.fail();
 					}
 					@Override
-					public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+					public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 					{
 						Assert.fail();
 					}
@@ -1546,7 +1546,7 @@ public class TestCommonMutations
 	{
 		public IMutationBlock nextMutation;
 		public int nextTargetEntityId;
-		public IMutationEntity<IMutablePlayerEntity> nextChange;
+		public IEntityAction<IMutablePlayerEntity> nextChange;
 		public final _Events events = new _Events();
 		
 		public TickProcessingContext createBoundContext(CuboidData cuboid)
@@ -1569,7 +1569,7 @@ public class TestCommonMutations
 						}
 						, new TickProcessingContext.IChangeSink() {
 							@Override
-							public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+							public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 							{
 								Assert.assertEquals(0, ProcessingSinks.this.nextTargetEntityId);
 								Assert.assertNull(ProcessingSinks.this.nextChange);
@@ -1577,12 +1577,12 @@ public class TestCommonMutations
 								ProcessingSinks.this.nextChange = change;
 							}
 							@Override
-							public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+							public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 							{
 								Assert.fail("Not expected in tets");
 							}
 							@Override
-							public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+							public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 							{
 								Assert.fail("Not expected in tets");
 							}

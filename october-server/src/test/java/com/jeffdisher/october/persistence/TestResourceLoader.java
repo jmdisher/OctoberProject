@@ -30,7 +30,7 @@ import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
-import com.jeffdisher.october.mutations.EntityChangeAttackEntity;
+import com.jeffdisher.october.mutations.Deprecated_EntityActionAttackEntity;
 import com.jeffdisher.october.mutations.Deprecated_EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
@@ -40,7 +40,7 @@ import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationEntityStoreToInventory;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.net.MutationEntityCodec;
+import com.jeffdisher.october.net.EntityActionCodec;
 import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV1;
 import com.jeffdisher.october.persistence.legacy.LegacyEntityV1;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -442,7 +442,9 @@ public class TestResourceLoader
 		
 		// Create the entity changes we want.
 		MutationEntityStoreToInventory persistentChange  = new MutationEntityStoreToInventory(new Items(STONE.item(), 2), null);
-		EntityChangeAttackEntity ephemeralChange = new EntityChangeAttackEntity(targetId);
+		// (note that we still use this deprecated action since it is convenient but should be changed in the future)
+		@SuppressWarnings("deprecation")
+		Deprecated_EntityActionAttackEntity ephemeralChange = new Deprecated_EntityActionAttackEntity(targetId);
 		
 		// Create the cuboid mutations we want.
 		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
@@ -612,7 +614,7 @@ public class TestResourceLoader
 		buffer.putInt(ResourceLoader.VERSION_ENTITY_V1);
 		legacy.test_writeToBuffer(buffer);
 		buffer.putLong(500L);
-		MutationEntityCodec.serializeToBuffer(buffer, move);
+		EntityActionCodec.serializeToBuffer(buffer, move);
 		buffer.flip();
 		
 		// Write the file.

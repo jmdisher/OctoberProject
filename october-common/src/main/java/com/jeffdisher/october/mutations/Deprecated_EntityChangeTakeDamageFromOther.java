@@ -9,9 +9,9 @@ import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
 
-public class Deprecated_EntityChangeTakeDamageFromOther<T extends IMutableMinimalEntity> implements IMutationEntity<T>
+public class Deprecated_EntityChangeTakeDamageFromOther<T extends IMutableMinimalEntity> implements IEntityAction<T>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.DEPRECATED_TAKE_DAMAGE_FROM_OTHER_V4;
+	public static final EntityActionType TYPE = EntityActionType.DEPRECATED_TAKE_DAMAGE_FROM_OTHER_V4;
 	public static final byte CAUSE_STARVATION = 1;
 	public static final byte CAUSE_SUFFOCATION = 2;
 	public static final byte CAUSE_FALL = 3;
@@ -47,7 +47,7 @@ public class Deprecated_EntityChangeTakeDamageFromOther<T extends IMutableMinima
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntityActionType getType()
 	{
 		return TYPE;
 	}

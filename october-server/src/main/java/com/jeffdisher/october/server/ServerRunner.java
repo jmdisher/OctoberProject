@@ -9,8 +9,8 @@ import java.util.function.LongSupplier;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.mutations.IEntityAction;
 import com.jeffdisher.october.mutations.IEntityUpdate;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.net.NetworkLayer;
@@ -127,7 +127,7 @@ public class ServerRunner
 		_monitoringAgent.setOperatorCommandSink(new MonitoringAgent.OperatorCommandSink()
 		{
 			@Override
-			public void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command)
+			public void submitEntityMutation(int clientId, IEntityAction<IMutablePlayerEntity> command)
 			{
 				_tickRunner.enqueueOperatorMutation(clientId, command);
 			}

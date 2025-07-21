@@ -4,7 +4,7 @@ import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.IEntityAction;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -83,7 +83,7 @@ public class MonitoringAgent
 
 	public static interface OperatorCommandSink
 	{
-		void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command);
+		void submitEntityMutation(int clientId, IEntityAction<IMutablePlayerEntity> command);
 		void requestConfigBroadcast();
 		void sendChatMessage(int targetId, String message);
 		void installSampler(Sampler sampler);

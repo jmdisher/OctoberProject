@@ -6,9 +6,9 @@ import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
-public class Deprecated_EntityChangeTimeSync implements IMutationEntity<IMutablePlayerEntity>
+public class Deprecated_EntityChangeTimeSync implements IEntityAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.DEPRECATED_TIME_SYNC_NOOP;
+	public static final EntityActionType TYPE = EntityActionType.DEPRECATED_TIME_SYNC_NOOP;
 
 	public static Deprecated_EntityChangeTimeSync deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -30,7 +30,7 @@ public class Deprecated_EntityChangeTimeSync implements IMutationEntity<IMutable
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntityActionType getType()
 	{
 		return TYPE;
 	}

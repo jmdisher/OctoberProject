@@ -12,9 +12,9 @@ import com.jeffdisher.october.utils.Assert;
  * An entity mutation for local use by an operator at the server console to teleport a player entity to a specific
  * location (also resets velocity).
  */
-public class EntityChangeOperatorSetLocation implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeOperatorSetLocation implements IEntityAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.OPERATOR_SET_LOCATION;
+	public static final EntityActionType TYPE = EntityActionType.OPERATOR_SET_LOCATION;
 
 	public static EntityChangeOperatorSetLocation deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -39,7 +39,7 @@ public class EntityChangeOperatorSetLocation implements IMutationEntity<IMutable
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntityActionType getType()
 	{
 		return TYPE;
 	}

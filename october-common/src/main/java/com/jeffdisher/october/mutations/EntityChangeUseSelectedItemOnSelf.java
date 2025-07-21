@@ -15,9 +15,9 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * Handles the "right-click with selection" case for specific items.
  * An example of this is a piece of bread being used in order to eat it.
  */
-public class EntityChangeUseSelectedItemOnSelf implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeUseSelectedItemOnSelf implements IEntitySubAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.USE_SELECTED_ITEM_ON_SELF;
+	public static final EntitySubActionType TYPE = EntitySubActionType.USE_SELECTED_ITEM_ON_SELF;
 	public static final long COOLDOWN_MILLIS = 250L;
 
 	public static EntityChangeUseSelectedItemOnSelf deserializeFromBuffer(ByteBuffer buffer)
@@ -64,7 +64,7 @@ public class EntityChangeUseSelectedItemOnSelf implements IMutationEntity<IMutab
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		return TYPE;
 	}

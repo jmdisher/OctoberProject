@@ -13,9 +13,9 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * Selects the given item type if it exists in the entity's inventory.  Fails if it is already selected or is not in the
  * inventory.
  */
-public class MutationEntitySelectItem implements IMutationEntity<IMutablePlayerEntity>
+public class MutationEntitySelectItem implements IEntitySubAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.SELECT_ITEM;
+	public static final EntitySubActionType TYPE = EntitySubActionType.SELECT_ITEM;
 
 	public static MutationEntitySelectItem deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -51,7 +51,7 @@ public class MutationEntitySelectItem implements IMutationEntity<IMutablePlayerE
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		return TYPE;
 	}

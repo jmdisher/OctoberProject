@@ -30,9 +30,9 @@ import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.logic.WorldProcessor;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.mutations.IEntityAction;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
@@ -472,7 +472,7 @@ public class SpeculativeProjection
 		List<_LocalCallConsequences> consequences = new ArrayList<>();
 		
 		// We will handle the initial call inline with the follow-ups since they have the same shape, just some different parameters.
-		List<IMutationEntity<IMutablePlayerEntity>> entityChangesToRun = List.of(change);
+		List<IEntityAction<IMutablePlayerEntity>> entityChangesToRun = List.of(change);
 		List<IMutationBlock> blockMutationstoRun = List.of();
 		Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = Map.of();
 		Set<CuboidAddress> accumulatedLightingChangeCuboids = new HashSet<>();
@@ -630,9 +630,9 @@ public class SpeculativeProjection
 		return new _ApplicationResult(outputModifiedBlocks, outputPotentialLightChangesByCuboid);
 	}
 
-	private List<IMutationEntity<IMutablePlayerEntity>> _onlyImmediateChanges(List<ScheduledChange> thisChanges)
+	private List<IEntityAction<IMutablePlayerEntity>> _onlyImmediateChanges(List<ScheduledChange> thisChanges)
 	{
-		List<IMutationEntity<IMutablePlayerEntity>> list = thisChanges.stream().filter(
+		List<IEntityAction<IMutablePlayerEntity>> list = thisChanges.stream().filter(
 				(ScheduledChange change) -> (0L == change.millisUntilReady())
 		).map(
 				(ScheduledChange change) -> change.change()
@@ -649,7 +649,7 @@ public class SpeculativeProjection
 		).toList();
 	}
 
-	private static Entity[] _runChangesOnEntity(ProcessorElement processor, TickProcessingContext context, int entityId, Entity entity, List<IMutationEntity<IMutablePlayerEntity>> entityMutations)
+	private static Entity[] _runChangesOnEntity(ProcessorElement processor, TickProcessingContext context, int entityId, Entity entity, List<IEntityAction<IMutablePlayerEntity>> entityMutations)
 	{
 		List<ScheduledChange> scheduled = _scheduledChangeList(entityMutations);
 		CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(processor
@@ -663,10 +663,10 @@ public class SpeculativeProjection
 		;
 	}
 
-	private static List<ScheduledChange> _scheduledChangeList(List<IMutationEntity<IMutablePlayerEntity>> changes)
+	private static List<ScheduledChange> _scheduledChangeList(List<IEntityAction<IMutablePlayerEntity>> changes)
 	{
 		return changes.stream().map(
-				(IMutationEntity<IMutablePlayerEntity> change) -> new ScheduledChange(change, 0L)
+				(IEntityAction<IMutablePlayerEntity> change) -> new ScheduledChange(change, 0L)
 		).toList();
 	}
 

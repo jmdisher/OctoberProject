@@ -5,8 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.jeffdisher.october.mutations.IEntityAction;
 import com.jeffdisher.october.mutations.TickUtils;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -89,7 +89,7 @@ public class CrowdProcessor
 					for (ScheduledChange scheduled : changes)
 					{
 						long millisUntilReady = scheduled.millisUntilReady();
-						IMutationEntity<IMutablePlayerEntity> change = scheduled.change();
+						IEntityAction<IMutablePlayerEntity> change = scheduled.change();
 						if (0L == millisUntilReady)
 						{
 							processor.entityChangesProcessed += 1;

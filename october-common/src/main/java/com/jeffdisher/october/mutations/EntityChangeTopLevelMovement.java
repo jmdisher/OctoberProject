@@ -25,9 +25,9 @@ import com.jeffdisher.october.utils.Assert;
  * NOTE:  As this class is how the server applies movement, this is the most likely attack vector for most forms of
  * "cheating" in the game.
  */
-public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> implements IMutationEntity<T>
+public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> implements IEntityAction<T>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.TOP_LEVEL_MOVEMENT;
+	public static final EntityActionType TYPE = EntityActionType.TOP_LEVEL_MOVEMENT;
 	/**
 	 * We will require that the change in z-vector is within 90% of what gravity dictates (rounding errors, etc).
 	 */
@@ -43,27 +43,27 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	/**
 	 * The white-list of sub-actions which can be sent by a client.
 	 */
-	public static final Set<MutationEntityType> ALLOWED_TYPES = Arrays.stream(new MutationEntityType[] {
-		MutationEntityType.JUMP,
-		MutationEntityType.SWIM,
-		MutationEntityType.BLOCK_PLACE,
-		MutationEntityType.CRAFT,
-		MutationEntityType.SELECT_ITEM,
-		MutationEntityType.ITEMS_REQUEST_PUSH,
-		MutationEntityType.ITEMS_REQUEST_PULL,
-		MutationEntityType.INCREMENTAL_BREAK_BLOCK,
-		MutationEntityType.CRAFT_IN_BLOCK,
-		MutationEntityType.ATTACK_ENTITY,
-		MutationEntityType.USE_SELECTED_ITEM_ON_SELF,
-		MutationEntityType.USE_SELECTED_ITEM_ON_BLOCK,
-		MutationEntityType.USE_SELECTED_ITEM_ON_ENTITY,
-		MutationEntityType.CHANGE_HOTBAR_SLOT,
-		MutationEntityType.SWAP_ARMOUR,
-		MutationEntityType.SET_BLOCK_LOGIC_STATE,
-		MutationEntityType.SET_DAY_AND_SPAWN,
-		MutationEntityType.INCREMENTAL_REPAIR_BLOCK,
-		MutationEntityType.MULTI_BLOCK_PLACE,
-		MutationEntityType.TESTING_ONLY,
+	public static final Set<EntitySubActionType> ALLOWED_TYPES = Arrays.stream(new EntitySubActionType[] {
+		EntitySubActionType.JUMP,
+		EntitySubActionType.SWIM,
+		EntitySubActionType.BLOCK_PLACE,
+		EntitySubActionType.CRAFT,
+		EntitySubActionType.SELECT_ITEM,
+		EntitySubActionType.ITEMS_REQUEST_PUSH,
+		EntitySubActionType.ITEMS_REQUEST_PULL,
+		EntitySubActionType.INCREMENTAL_BREAK_BLOCK,
+		EntitySubActionType.CRAFT_IN_BLOCK,
+		EntitySubActionType.ATTACK_ENTITY,
+		EntitySubActionType.USE_SELECTED_ITEM_ON_SELF,
+		EntitySubActionType.USE_SELECTED_ITEM_ON_BLOCK,
+		EntitySubActionType.USE_SELECTED_ITEM_ON_ENTITY,
+		EntitySubActionType.CHANGE_HOTBAR_SLOT,
+		EntitySubActionType.SWAP_ARMOUR,
+		EntitySubActionType.SET_BLOCK_LOGIC_STATE,
+		EntitySubActionType.SET_DAY_AND_SPAWN,
+		EntitySubActionType.INCREMENTAL_REPAIR_BLOCK,
+		EntitySubActionType.MULTI_BLOCK_PLACE,
+		EntitySubActionType.TESTING_ONLY,
 	}).collect(Collectors.toSet());
 
 	public static <T extends IMutableMinimalEntity> EntityChangeTopLevelMovement<T> deserializeFromBuffer(ByteBuffer buffer)
@@ -73,7 +73,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		Intensity intensity = Intensity.read(buffer);
 		byte yaw = buffer.get();
 		byte pitch = buffer.get();
-		IMutationEntity<T> subAction = CodecHelpers.readNullableNestedChange(buffer);
+		IEntitySubAction<T> subAction = CodecHelpers.readNullableNestedChange(buffer);
 		return new EntityChangeTopLevelMovement<>(newLocation, newVelocity, intensity, yaw, pitch, subAction);
 	}
 
@@ -96,14 +96,14 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	private final Intensity _intensity;
 	private final byte _yaw;
 	private final byte _pitch;
-	private final IMutationEntity<T> _subAction;
+	private final IEntitySubAction<T> _subAction;
 
 	public EntityChangeTopLevelMovement(EntityLocation newLocation
 		, EntityLocation newVelocity
 		, Intensity intensity
 		, byte yaw
 		, byte pitch
-		, IMutationEntity<T> subAction
+		, IEntitySubAction<T> subAction
 	)
 	{
 		Assert.assertTrue((null == subAction) || ALLOWED_TYPES.contains(subAction.getType()));
@@ -260,7 +260,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntityActionType getType()
 	{
 		return TYPE;
 	}
@@ -295,7 +295,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	 * 
 	 * @return The sub-action.
 	 */
-	public IMutationEntity<T> test_getSubAction()
+	public IEntitySubAction<T> test_getSubAction()
 	{
 		return _subAction;
 	}

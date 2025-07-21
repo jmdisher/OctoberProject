@@ -20,9 +20,9 @@ import com.jeffdisher.october.utils.Assert;
  * Note that this is meant to be used incrementally - multiple calls to this mutation will eventually complete the
  * craft.
  */
-public class EntityChangeCraft implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeCraft implements IEntitySubAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.CRAFT;
+	public static final EntitySubActionType TYPE = EntitySubActionType.CRAFT;
 
 	public static EntityChangeCraft deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -141,7 +141,7 @@ public class EntityChangeCraft implements IMutationEntity<IMutablePlayerEntity>
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		return TYPE;
 	}

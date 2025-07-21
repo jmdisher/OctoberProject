@@ -19,14 +19,14 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * This is how the user jumps - if they are standing on the ground, this gives them an upward movement vector.
  * Note that this doesn't move them or take time, just changes the vector.
  */
-public class EntityChangeJump<T extends IMutableMinimalEntity> implements IMutationEntity<T>
+public class EntityChangeJump<T extends IMutableMinimalEntity> implements IEntitySubAction<T>
 {
 	/**
 	 * We will make the jump force 0.5x the force of gravity (this was experimentally shown to jump just over 1 block
 	 * and has a relatively "quick" feel in play testing).
 	 */
 	public static final float JUMP_FORCE = -0.5f * EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND;
-	public static final MutationEntityType TYPE = MutationEntityType.JUMP;
+	public static final EntitySubActionType TYPE = EntitySubActionType.JUMP;
 
 	public static boolean canJump(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
 			, EntityLocation location
@@ -73,7 +73,7 @@ public class EntityChangeJump<T extends IMutableMinimalEntity> implements IMutat
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		return TYPE;
 	}

@@ -19,7 +19,7 @@ import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.logic.WorldProcessor;
-import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.IEntityAction;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -52,7 +52,7 @@ public class OneOffRunner
 			, TickProcessingContext.IEventSink eventSink
 			, long millisPerTick
 			, long currentTickTimeMillis 
-			, IMutationEntity<IMutablePlayerEntity> mutation
+			, IEntityAction<IMutablePlayerEntity> mutation
 	)
 	{
 		// Setup components.

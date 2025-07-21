@@ -39,7 +39,7 @@ import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.logic.WorldProcessor;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
-import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.IEntityAction;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
@@ -313,7 +313,7 @@ public class TickRunner
 	 * @param entityId The entity where the change should be scheduled (CrowdProcessor.OPERATOR_ENTITY_ID for no entity).
 	 * @param change The change to schedule.
 	 */
-	public void enqueueOperatorMutation(int entityId, IMutationEntity<IMutablePlayerEntity> change)
+	public void enqueueOperatorMutation(int entityId, IEntityAction<IMutablePlayerEntity> change)
 	{
 		// The entity might be missing, but the ID should be positive or OPERATOR_ENTITY_ID.
 		Assert.assertTrue((entityId > 0) || (CrowdProcessor.OPERATOR_ENTITY_ID == entityId));
@@ -569,7 +569,7 @@ public class TickRunner
 			Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = new HashMap<>();
 			Map<CuboidAddress, Map<BlockAddress, Long>> snapshotPeriodicMutations = new HashMap<>();
 			Map<Integer, List<ScheduledChange>> snapshotEntityMutations = new HashMap<>();
-			Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> nextCreatureChanges = new HashMap<>();
+			Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> nextCreatureChanges = new HashMap<>();
 			List<EventRecord> postedEvents = new ArrayList<>();
 			
 			// We will create new mutable maps from the previous materials and modify them based on the changes in the fragments.
@@ -620,7 +620,7 @@ public class TickRunner
 				{
 					_scheduleChangesForEntity(snapshotEntityMutations, container.getKey(), container.getValue());
 				}
-				for (Map.Entry<Integer, List<IMutationEntity<IMutableCreatureEntity>>> container : fragment.newlyScheduledCreatureChanges().entrySet())
+				for (Map.Entry<Integer, List<IEntityAction<IMutableCreatureEntity>>> container : fragment.newlyScheduledCreatureChanges().entrySet())
 				{
 					_scheduleChangesForEntity(nextCreatureChanges, container.getKey(), container.getValue());
 				}
@@ -1243,7 +1243,7 @@ public class TickRunner
 			, Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationMillis
 			// The entity mutations to run in this tick (by ID).
 			, Map<Integer, List<ScheduledChange>> changesToRun
-			, Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> creatureChanges
+			, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureChanges
 			// The blocks modified in the last tick, represented as a list per cuboid where they originate.
 			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
 			// The blocks which were modified in such a way that they may require a lighting update.
@@ -1283,7 +1283,7 @@ public class TickRunner
 	/**
 	 * A wrapper over the IMutationEntity with associated entity ID.
 	 */
-	private static record _OperatorMutationWrapper(int entityId, IMutationEntity<IMutablePlayerEntity> mutation) {}
+	private static record _OperatorMutationWrapper(int entityId, IEntityAction<IMutablePlayerEntity> mutation) {}
 
 	/**
 	 * A wrapper over the per-thread partial data which we hand-off at synchronization.
@@ -1294,7 +1294,7 @@ public class TickRunner
 			, List<CreatureEntity> spawnedCreatures
 			, List<ScheduledMutation> newlyScheduledMutations
 			, Map<Integer, List<ScheduledChange>> newlyScheduledChanges
-			, Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> newlyScheduledCreatureChanges
+			, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> newlyScheduledCreatureChanges
 			, List<EventRecord> postedEvents
 			, Map<Integer, Long> commitLevels
 	) {}

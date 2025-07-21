@@ -20,9 +20,9 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * An example of this is feeding wheat to a cow.
  * Note that this is NOT the same as "hitting" an entity.
  */
-public class EntityChangeUseSelectedItemOnEntity implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeUseSelectedItemOnEntity implements IEntitySubAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.USE_SELECTED_ITEM_ON_ENTITY;
+	public static final EntitySubActionType TYPE = EntitySubActionType.USE_SELECTED_ITEM_ON_ENTITY;
 	public static final long COOLDOWN_MILLIS = 250L;
 
 	public static EntityChangeUseSelectedItemOnEntity deserializeFromBuffer(ByteBuffer buffer)
@@ -98,7 +98,7 @@ public class EntityChangeUseSelectedItemOnEntity implements IMutationEntity<IMut
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		return TYPE;
 	}

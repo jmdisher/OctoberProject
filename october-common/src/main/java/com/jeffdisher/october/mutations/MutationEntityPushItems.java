@@ -24,9 +24,9 @@ import com.jeffdisher.october.utils.Assert;
  * inventory.
  * Note that races here can result in items being destroyed (if the same block is over-filled in one tick).
  */
-public class MutationEntityPushItems implements IMutationEntity<IMutablePlayerEntity>
+public class MutationEntityPushItems implements IEntitySubAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.ITEMS_REQUEST_PUSH;
+	public static final EntitySubActionType TYPE = EntitySubActionType.ITEMS_REQUEST_PUSH;
 
 	public static MutationEntityPushItems deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -128,7 +128,7 @@ public class MutationEntityPushItems implements IMutationEntity<IMutablePlayerEn
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		return TYPE;
 	}

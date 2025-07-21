@@ -14,7 +14,7 @@ import com.jeffdisher.october.utils.Assert;
  * The item should be checked that this is valid before creating the change object so this will fail if it has become
  * invalid in the interim (doesn't attempt to return the item, for example).
  */
-public class EntityChangeApplyItemToCreature implements IMutationEntity<IMutableCreatureEntity>
+public class EntityChangeApplyItemToCreature implements IEntityAction<IMutableCreatureEntity>
 {
 	private final Item _itemType;
 
@@ -31,7 +31,7 @@ public class EntityChangeApplyItemToCreature implements IMutationEntity<IMutable
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntityActionType getType()
 	{
 		// Not in creature-only types.
 		throw Assert.unreachable();

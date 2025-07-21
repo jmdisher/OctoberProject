@@ -9,7 +9,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
-import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.IEntityAction;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
@@ -45,7 +45,7 @@ public class CreatureProcessor
 			, Map<Integer, CreatureEntity> creaturesById
 			, TickProcessingContext context
 			, EntityCollection entityCollection
-			, Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun
+			, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun
 	)
 	{
 		Map<Integer, CreatureEntity> updatedCreatures = new HashMap<>();
@@ -63,7 +63,7 @@ public class CreatureProcessor
 				float startZVelocity = mutable.newVelocity.z();
 				
 				// Determine if we need to schedule movements.
-				List<IMutationEntity<IMutableCreatureEntity>> changes = changesToRun.get(id);
+				List<IEntityAction<IMutableCreatureEntity>> changes = changesToRun.get(id);
 				if (null != changes)
 				{
 					_runExternalChanges(processor, context, mutable, changes);
@@ -114,10 +114,10 @@ public class CreatureProcessor
 	private static void _runExternalChanges(ProcessorElement processor
 			, TickProcessingContext context
 			, MutableCreature mutable
-			, List<IMutationEntity<IMutableCreatureEntity>> changes
+			, List<IEntityAction<IMutableCreatureEntity>> changes
 	)
 	{
-		for (IMutationEntity<IMutableCreatureEntity> change : changes)
+		for (IEntityAction<IMutableCreatureEntity> change : changes)
 		{
 			processor.creatureChangesProcessed += 1;
 			

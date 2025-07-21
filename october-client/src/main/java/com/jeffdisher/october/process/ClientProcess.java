@@ -18,7 +18,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
-import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.IEntitySubAction;
 import com.jeffdisher.october.net.NetworkClient;
 import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.PacketFromClient;
@@ -118,7 +118,7 @@ public class ClientProcess
 	 * @param change The change to apply.
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void sendAction(IMutationEntity<IMutablePlayerEntity> change, long currentTimeMillis)
+	public void sendAction(IEntitySubAction<IMutablePlayerEntity> change, long currentTimeMillis)
 	{
 		_clientRunner.commonApplyEntityAction(change, currentTimeMillis);
 		_runPendingCallbacks();

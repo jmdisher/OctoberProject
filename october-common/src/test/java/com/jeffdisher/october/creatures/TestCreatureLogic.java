@@ -20,7 +20,7 @@ import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromEntity;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
-import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.IEntityAction;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.ContextBuilder;
@@ -171,7 +171,7 @@ public class TestCreatureLogic
 				, mutable
 		);
 		Assert.assertFalse(didTakeAction);
-		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
+		IEntityAction<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
 				, mutable
 				, 100L
 		);
@@ -270,7 +270,7 @@ public class TestCreatureLogic
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
-		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
+		IEntityAction<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
 				, mutableOrc
 				, 100L
 		);
@@ -400,21 +400,21 @@ public class TestCreatureLogic
 		creatures.put(mother.id(), mother);
 		
 		int[] targetId = new int[1];
-		IMutationEntity<?>[] message = new IMutationEntity<?>[1];
+		IEntityAction<?>[] message = new IEntityAction<?>[1];
 		TickProcessingContext context = ContextBuilder.build()
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 					@Override
-					public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+					public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 					{
 						Assert.fail();
 					}
 					@Override
-					public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+					public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 					{
 						Assert.fail();
 					}
 					@Override
-					public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+					public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 					{
 						Assert.assertEquals(0, targetId[0]);
 						Assert.assertNull(message[0]);
@@ -598,10 +598,10 @@ public class TestCreatureLogic
 		};
 		int[] ref_targetEntityId = new int[1];
 		@SuppressWarnings("unchecked")
-		IMutationEntity<IMutablePlayerEntity>[] ref_change = new IMutationEntity[1];
+		IEntityAction<IMutablePlayerEntity>[] ref_change = new IEntityAction[1];
 		TickProcessingContext.IChangeSink changeSink = new TickProcessingContext.IChangeSink() {
 			@Override
-			public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+			public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 			{
 				Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, ref_targetEntityId[0]);
 				ref_targetEntityId[0] = targetEntityId;
@@ -609,12 +609,12 @@ public class TestCreatureLogic
 				ref_change[0] = change;
 			}
 			@Override
-			public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+			public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 			{
 				Assert.fail();
 			}
 			@Override
-			public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+			public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 			{
 				Assert.fail();
 			}
@@ -809,18 +809,18 @@ public class TestCreatureLogic
 				.lookups(previousBlockLookUp, previousEntityLookUp)
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 					@Override
-					public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+					public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 					{
 						Assert.assertEquals(entityId, targetEntityId);
 						out[0] = true;
 					}
 					@Override
-					public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+					public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 					{
 						Assert.fail();
 					}
 					@Override
-					public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+					public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 					{
 						Assert.fail();
 					}

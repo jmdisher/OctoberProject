@@ -13,7 +13,7 @@ import com.jeffdisher.october.utils.Assert;
  * Tells a creature that it should enter a "pregnant" mode if in love mode and not already pregnant.  The location of
  * the "sire" is also passed for consideration in where the offspring should spawn.
  */
-public class EntityChangeImpregnateCreature implements IMutationEntity<IMutableCreatureEntity>
+public class EntityChangeImpregnateCreature implements IEntityAction<IMutableCreatureEntity>
 {
 	private final EntityLocation _sireLocation;
 
@@ -30,7 +30,7 @@ public class EntityChangeImpregnateCreature implements IMutationEntity<IMutableC
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntityActionType getType()
 	{
 		// Not in creature-only types.
 		throw Assert.unreachable();

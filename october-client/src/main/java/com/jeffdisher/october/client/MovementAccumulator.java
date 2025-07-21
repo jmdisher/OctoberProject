@@ -22,7 +22,7 @@ import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
-import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.IEntitySubAction;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
@@ -74,12 +74,12 @@ public class MovementAccumulator
 	private EntityLocation _newVelocity;
 	private byte _newYaw;
 	private byte _newPitch;
-	private IMutationEntity<IMutablePlayerEntity> _subAction;
+	private IEntitySubAction<IMutablePlayerEntity> _subAction;
 	private EntityChangeTopLevelMovement.Intensity _intensity;
 	private Entity _lastNotifiedEntity;
 
 	// Some information is queued for the "next" accumulation after this current action has been returned.
-	private IMutationEntity<IMutablePlayerEntity> _queuedSubAction;
+	private IEntitySubAction<IMutablePlayerEntity> _queuedSubAction;
 	private _OverflowData _overflow;
 
 	public MovementAccumulator(IProjectionListener listener
@@ -199,7 +199,7 @@ public class MovementAccumulator
 	 * @param subAction The sub-action to enqueue.
 	 * @return True if the action was enqueued, false if there is already one waiting.
 	 */
-	public boolean enqueueSubAction(IMutationEntity<IMutablePlayerEntity> subAction)
+	public boolean enqueueSubAction(IEntitySubAction<IMutablePlayerEntity> subAction)
 	{
 		// This is applied directly to the current accumulation, unless there already is a sub-action.
 		boolean didApply = false;
@@ -483,7 +483,7 @@ public class MovementAccumulator
 		return toReturn;
 	}
 
-	private boolean _runSubActionToStart(IMutationEntity<IMutablePlayerEntity> toRun, long currentTimeMillis)
+	private boolean _runSubActionToStart(IEntitySubAction<IMutablePlayerEntity> toRun, long currentTimeMillis)
 	{
 		OneOffRunner.StatePackage input = new OneOffRunner.StatePackage(_thisEntity
 			, _world
@@ -494,7 +494,8 @@ public class MovementAccumulator
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
 			// TODO:  Come up with a way to relay these events without duplication in SpeculativeProjection since we likely need them immediately.
 		};
-		OneOffRunner.StatePackage output = OneOffRunner.runOneChange(input, eventSink, _millisPerTick, currentTimeMillis, toRun);
+		OneOffSubActionWrapper wrapper = new OneOffSubActionWrapper(toRun);
+		OneOffRunner.StatePackage output = OneOffRunner.runOneChange(input, eventSink, _millisPerTick, currentTimeMillis, wrapper);
 		if (null != output)
 		{
 			// This was a success so send off listener updates.

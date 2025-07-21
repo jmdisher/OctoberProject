@@ -8,7 +8,7 @@ import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
-import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.IEntitySubAction;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BodyPart;
@@ -475,22 +475,22 @@ public class CodecHelpers
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T extends IMutableMinimalEntity> IMutationEntity<T> readNullableNestedChange(ByteBuffer buffer)
+	public static <T extends IMutableMinimalEntity> IEntitySubAction<T> readNullableNestedChange(ByteBuffer buffer)
 	{
 		byte nullBit = buffer.get();
 		return (NULL_BYTE == nullBit)
 				? null
-				: (IMutationEntity<T>) MutationEntityCodec.parseAndSeekFlippedBuffer(buffer)
+				: (IEntitySubAction<T>) EntitySubActionCodec.parseAndSeekFlippedBuffer(buffer)
 		;
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T extends IMutableMinimalEntity> void writeNullableNestedChange(ByteBuffer buffer, IMutationEntity<T> nested)
+	public static <T extends IMutableMinimalEntity> void writeNullableNestedChange(ByteBuffer buffer, IEntitySubAction<T> nested)
 	{
 		if (null != nested)
 		{
 			buffer.put(NON_NULL_BYTE);
-			MutationEntityCodec.serializeToBuffer(buffer, (IMutationEntity<IMutablePlayerEntity>) nested);
+			EntitySubActionCodec.serializeToBuffer(buffer, (IEntitySubAction<IMutablePlayerEntity>) nested);
 		}
 		else
 		{

@@ -3,7 +3,7 @@ package com.jeffdisher.october.logic;
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeSwim;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
-import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.IEntitySubAction;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -190,7 +190,7 @@ public class CreatureMovementHelpers
 		if (targetBlock.z() > creatureLocation.z())
 		{
 			// We need to go up so see if we should jump, swim, or hope our momentum will get us there.
-			IMutationEntity<IMutableCreatureEntity> subAction;
+			IEntitySubAction<IMutableCreatureEntity> subAction;
 			EntityLocation newVelocity;
 			if (SpatialHelpers.isBlockAligned(creatureLocation.z()))
 			{
@@ -399,7 +399,7 @@ public class CreatureMovementHelpers
 			, byte yaw
 			, byte pitch
 			, long timeLimitMillis
-			, IMutationEntity<IMutableCreatureEntity> subAction
+			, IEntitySubAction<IMutableCreatureEntity> subAction
 		)
 		{
 			float secondsToMove = (float)timeLimitMillis / 1000.0f;

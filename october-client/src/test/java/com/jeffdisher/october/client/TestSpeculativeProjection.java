@@ -39,8 +39,8 @@ import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.EntityChangePlaceMultiBlock;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.mutations.IEntitySubAction;
 import com.jeffdisher.october.mutations.IMutationBlock;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
@@ -734,7 +734,7 @@ public class TestSpeculativeProjection
 		int speculativeCount = projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, FakeUpdateFactories.entityUpdate(Map.of(), listener.authoritativeEntityState, send)
+				, FakeUpdateFactories.entityUpdate(Map.of(), listener.authoritativeEntityState, _wrap(entity, send))
 				, Map.of()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -2182,7 +2182,7 @@ public class TestSpeculativeProjection
 		speculativeCount = projector.applyChangesForServerTick(gameTick
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, FakeUpdateFactories.entityUpdate(Map.of(address, serverCuboid), listener.thisEntityState, new MutationPlaceSelectedBlock(dirtLocation, dirtLocation))
+				, FakeUpdateFactories.entityUpdate(Map.of(address, serverCuboid), listener.thisEntityState, _wrap(listener.thisEntityState, new MutationPlaceSelectedBlock(dirtLocation, dirtLocation)))
 				, Map.of()
 				, List.of()
 				, Collections.emptyList()
@@ -2536,15 +2536,20 @@ public class TestSpeculativeProjection
 	}
 
 
-	private static long _wrapAndApply(SpeculativeProjection projector, Entity entity, long currentTimeMillis, IMutationEntity<IMutablePlayerEntity> change)
+	private static EntityChangeTopLevelMovement<IMutablePlayerEntity> _wrap(Entity entity, IEntitySubAction<IMutablePlayerEntity> change)
 	{
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> wrapper = new EntityChangeTopLevelMovement<>(entity.location()
+		return new EntityChangeTopLevelMovement<>(entity.location()
 			, entity.velocity()
 			, EntityChangeTopLevelMovement.Intensity.STANDING
 			, (byte)0
 			, (byte)0
 			, change
 		);
+	}
+
+	private static long _wrapAndApply(SpeculativeProjection projector, Entity entity, long currentTimeMillis, IEntitySubAction<IMutablePlayerEntity> change)
+	{
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> wrapper = _wrap(entity, change);
 		return projector.applyLocalChange(wrapper, currentTimeMillis);
 	}
 

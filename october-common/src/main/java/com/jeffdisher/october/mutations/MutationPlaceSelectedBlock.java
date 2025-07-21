@@ -27,9 +27,9 @@ import com.jeffdisher.october.utils.CuboidGenerator;
  * Places the block currently selected in the entity's inventory into the world if it is currently air.  This emits a
  * MutationBlockOverwrite if it is consistent.
  */
-public class MutationPlaceSelectedBlock implements IMutationEntity<IMutablePlayerEntity>
+public class MutationPlaceSelectedBlock implements IEntitySubAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.BLOCK_PLACE;
+	public static final EntitySubActionType TYPE = EntitySubActionType.BLOCK_PLACE;
 
 	public static MutationPlaceSelectedBlock deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -125,7 +125,7 @@ public class MutationPlaceSelectedBlock implements IMutationEntity<IMutablePlaye
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		return TYPE;
 	}

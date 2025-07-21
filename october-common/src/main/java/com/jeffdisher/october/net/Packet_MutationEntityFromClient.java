@@ -17,7 +17,7 @@ public class Packet_MutationEntityFromClient extends PacketFromClient
 	public static void register(Function<ByteBuffer, Packet>[] opcodeTable)
 	{
 		opcodeTable[TYPE.ordinal()] = (ByteBuffer buffer) -> {
-			EntityChangeTopLevelMovement<IMutablePlayerEntity> mutation = (EntityChangeTopLevelMovement<IMutablePlayerEntity>) MutationEntityCodec.parseAndSeekFlippedBuffer(buffer);
+			EntityChangeTopLevelMovement<IMutablePlayerEntity> mutation = (EntityChangeTopLevelMovement<IMutablePlayerEntity>) EntityActionCodec.parseAndSeekFlippedBuffer(buffer);
 			long commitLevel = buffer.getLong();
 			return new Packet_MutationEntityFromClient(mutation, commitLevel);
 		};
@@ -38,7 +38,7 @@ public class Packet_MutationEntityFromClient extends PacketFromClient
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		MutationEntityCodec.serializeToBuffer(buffer, this.mutation);
+		EntityActionCodec.serializeToBuffer(buffer, this.mutation);
 		buffer.putLong(this.commitLevel);
 	}
 }

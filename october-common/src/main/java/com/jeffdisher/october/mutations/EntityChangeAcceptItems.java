@@ -13,7 +13,7 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * Stores the given items into the entity's inventory.
  */
-public class EntityChangeAcceptItems implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeAcceptItems implements IEntitySubAction<IMutablePlayerEntity>
 {
 	private final Items _items;
 
@@ -41,10 +41,10 @@ public class EntityChangeAcceptItems implements IMutationEntity<IMutablePlayerEn
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		// This is only used in testing (can't come from clients as it has no deserializer).
-		return MutationEntityType.TESTING_ONLY;
+		return EntitySubActionType.TESTING_ONLY;
 	}
 
 	@Override

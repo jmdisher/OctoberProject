@@ -634,25 +634,25 @@ public class TestCommonChanges
 		Map<Integer, Entity> targetsById = Map.of(targetId, target.freeze(), missId, miss.freeze());
 		int[] targetHolder = new int[1];
 		@SuppressWarnings("unchecked")
-		IMutationEntity<IMutablePlayerEntity>[] changeHolder = new IMutationEntity[1];
+		IEntityAction<IMutablePlayerEntity>[] changeHolder = new IEntityAction[1];
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
 				.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)))
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 						@Override
-						public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+						public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 						{
 							Assert.assertNull(changeHolder[0]);
 							targetHolder[0] = targetEntityId;
 							changeHolder[0] = change;
 						}
 						@Override
-						public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+						public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 						{
 							Assert.fail("Not expected in tets");
 						}
 						@Override
-						public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+						public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 						{
 							Assert.fail("Not expected in tets");
 						}
@@ -785,26 +785,26 @@ public class TestCommonChanges
 		Map<Integer, Entity> targetsById = Map.of(targetId, target.freeze());
 		int[] targetHolder = new int[1];
 		@SuppressWarnings("unchecked")
-		IMutationEntity<IMutablePlayerEntity>[] changeHolder = new IMutationEntity[1];
+		IEntityAction<IMutablePlayerEntity>[] changeHolder = new IEntityAction[1];
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
 				.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)))
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 						@Override
-						public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+						public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 						{
 							Assert.assertNull(changeHolder[0]);
 							targetHolder[0] = targetEntityId;
 							changeHolder[0] = change;
 						}
 						@Override
-						public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+						public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 						{
 							Assert.fail("Not expected in tets");
 						}
 						@Override
-						public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+						public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 						{
 							Assert.fail("Not expected in tets");
 						}
@@ -1303,11 +1303,11 @@ public class TestCommonChanges
 		
 		// Attack and verify that we see damage come through the creature path.
 		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, attacker));
-		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> creatureChanges = changeSink.takeExportedCreatureChanges();
+		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureChanges = changeSink.takeExportedCreatureChanges();
 		Assert.assertEquals(1, creatureChanges.size());
-		List<IMutationEntity<IMutableCreatureEntity>> list = creatureChanges.get(targetId);
+		List<IEntityAction<IMutableCreatureEntity>> list = creatureChanges.get(targetId);
 		Assert.assertEquals(1, list.size());
-		IMutationEntity<IMutableCreatureEntity> change = list.get(0);
+		IEntityAction<IMutableCreatureEntity> change = list.get(0);
 		Assert.assertTrue(change instanceof EntityChangeTakeDamageFromEntity<IMutableCreatureEntity>);
 	}
 
@@ -1365,11 +1365,11 @@ public class TestCommonChanges
 		Assert.assertTrue(new EntityChangeUseSelectedItemOnEntity(targetId).applyChange(context, entity));
 		Entity updatedEntty = entity.freeze();
 		Assert.assertEquals(0, updatedEntty.inventory().currentEncumbrance);
-		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> creatureChanges = changeSink.takeExportedCreatureChanges();
+		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureChanges = changeSink.takeExportedCreatureChanges();
 		Assert.assertEquals(1, creatureChanges.size());
-		List<IMutationEntity<IMutableCreatureEntity>> list = creatureChanges.get(targetId);
+		List<IEntityAction<IMutableCreatureEntity>> list = creatureChanges.get(targetId);
 		Assert.assertEquals(1, list.size());
-		IMutationEntity<IMutableCreatureEntity> change = list.get(0);
+		IEntityAction<IMutableCreatureEntity> change = list.get(0);
 		Assert.assertTrue(change instanceof EntityChangeApplyItemToCreature);
 		
 		// Verify that the apply works.
@@ -1923,15 +1923,15 @@ public class TestCommonChanges
 		TickProcessingContext context = ContextBuilder.build()
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 					@Override
-					public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+					public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 					{
 					}
 					@Override
-					public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+					public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 					{
 					}
 					@Override
-					public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+					public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 					{
 					}})
 				.finish()
@@ -2119,18 +2119,18 @@ public class TestCommonChanges
 					}
 				}, new TickProcessingContext.IChangeSink() {
 					@Override
-					public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+					public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 					{
 						Assert.assertNull(out_store[0]);
 						out_store[0] = (MutationEntityStoreToInventory) change;
 					}
 					@Override
-					public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+					public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 					{
 						Assert.fail("Not in test");
 					}
 					@Override
-					public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+					public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 					{
 						Assert.fail("Not in test");
 					}
@@ -2571,19 +2571,19 @@ public class TestCommonChanges
 			.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)))
 			.sinks(null, new TickProcessingContext.IChangeSink() {
 				@Override
-				public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+				public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 				{
 					Assert.assertEquals(targetId, targetEntityId);
 					Assert.assertTrue(change instanceof EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>);
 					changeHolder.add((EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>) change);
 				}
 				@Override
-				public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+				public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 				{
 					Assert.fail("Not expected in tets");
 				}
 				@Override
-				public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+				public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 				{
 					Assert.fail("Not expected in tets");
 				}
@@ -2775,7 +2775,7 @@ public class TestCommonChanges
 	private static class _ContextHolder
 	{
 		public final TickProcessingContext context;
-		public IMutationEntity<IMutablePlayerEntity> change;
+		public IEntityAction<IMutablePlayerEntity> change;
 		public IMutationBlock mutation;
 		public final _Events events = new _Events();
 		
@@ -2799,18 +2799,18 @@ public class TestCommonChanges
 						} : null
 						, allowEntityChange ? new TickProcessingContext.IChangeSink() {
 							@Override
-							public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+							public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 							{
 								Assert.assertNull(_ContextHolder.this.change);
 								_ContextHolder.this.change = change;
 							}
 							@Override
-							public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+							public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 							{
 								Assert.fail("Not expected in tets");
 							}
 							@Override
-							public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+							public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 							{
 								Assert.fail("Not expected in tets");
 							}

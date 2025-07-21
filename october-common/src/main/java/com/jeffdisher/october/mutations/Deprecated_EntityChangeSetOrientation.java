@@ -8,9 +8,9 @@ import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
 
-public class Deprecated_EntityChangeSetOrientation<T extends IMutableMinimalEntity> implements IMutationEntity<T>
+public class Deprecated_EntityChangeSetOrientation<T extends IMutableMinimalEntity> implements IEntityAction<T>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.DEPRECATED_SET_ORIENTATION;
+	public static final EntityActionType TYPE = EntityActionType.DEPRECATED_SET_ORIENTATION;
 
 	public static <T extends IMutableMinimalEntity> Deprecated_EntityChangeSetOrientation<T> deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -43,7 +43,7 @@ public class Deprecated_EntityChangeSetOrientation<T extends IMutableMinimalEnti
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntityActionType getType()
 	{
 		return TYPE;
 	}

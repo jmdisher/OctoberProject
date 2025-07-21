@@ -6,9 +6,9 @@ import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
-public class Deprecated_EntityChangeMove<T extends IMutableMinimalEntity> implements IMutationEntity<T>
+public class Deprecated_EntityChangeMove<T extends IMutableMinimalEntity> implements IEntityAction<T>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.DEPRECATED_MOVE;
+	public static final EntityActionType TYPE = EntityActionType.DEPRECATED_MOVE;
 
 	/**
 	 * We limit the time cost of a single movement to 100 ms.  This is typically the setting for a single server-side
@@ -43,7 +43,7 @@ public class Deprecated_EntityChangeMove<T extends IMutableMinimalEntity> implem
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntityActionType getType()
 	{
 		return TYPE;
 	}

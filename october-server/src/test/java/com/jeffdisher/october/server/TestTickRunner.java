@@ -38,8 +38,8 @@ import com.jeffdisher.october.mutations.EntityChangeOperatorSpawnCreature;
 import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.mutations.EntityChangeSetBlockLogicState;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.mutations.IEntitySubAction;
 import com.jeffdisher.october.mutations.IMutationBlock;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
@@ -3404,7 +3404,7 @@ public class TestTickRunner
 		return _wrapSubAction(entity, wrapper);
 	}
 
-	private static EntityChangeTopLevelMovement<IMutablePlayerEntity> _wrapSubAction(Entity entity, IMutationEntity<IMutablePlayerEntity> subAction)
+	private static EntityChangeTopLevelMovement<IMutablePlayerEntity> _wrapSubAction(Entity entity, IEntitySubAction<IMutablePlayerEntity> subAction)
 	{
 		return new EntityChangeTopLevelMovement<>(entity.location()
 			, entity.velocity()

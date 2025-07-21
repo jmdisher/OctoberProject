@@ -10,7 +10,7 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * An entity mutation which just requests that a block mutation be scheduled in the future.
  */
-public class EntityChangeFutureBlock implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeFutureBlock implements IEntitySubAction<IMutablePlayerEntity>
 {
 	private final IMutationBlock _mutation;
 	private final long _millisDelay;
@@ -29,10 +29,10 @@ public class EntityChangeFutureBlock implements IMutationEntity<IMutablePlayerEn
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		// This is only used in testing (can't come from clients as it has no deserializer).
-		return MutationEntityType.TESTING_ONLY;
+		return EntitySubActionType.TESTING_ONLY;
 	}
 
 	@Override

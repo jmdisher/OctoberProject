@@ -4,8 +4,8 @@ import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.mutations.IEntityAction;
 import com.jeffdisher.october.mutations.IMutationBlock;
-import com.jeffdisher.october.mutations.IMutationEntity;
 
 
 /**
@@ -147,7 +147,7 @@ public class TickProcessingContext
 		 * @param targetEntityId The ID of the entity which should run the change.
 		 * @param change The change to schedule.
 		 */
-		void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change);
+		void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change);
 		/**
 		 * Requests that an entity change be scheduled in the future.
 		 * 
@@ -155,14 +155,14 @@ public class TickProcessingContext
 		 * @param change The change to schedule.
 		 * @param millisToDelay Milliseconds to delay before running the mutation.
 		 */
-		void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay);
+		void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay);
 		/**
 		 * Requests that the given change be scheduled against this creature in the next tick.
 		 * 
 		 * @param targetCreatureId The ID of the creature which should run the change.
 		 * @param change The change to run.
 		 */
-		void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change);
+		void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change);
 	}
 
 

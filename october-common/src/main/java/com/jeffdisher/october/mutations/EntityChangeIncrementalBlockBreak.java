@@ -20,9 +20,9 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * Note that we typically use a long to apply time values but the underlying damage being changed is a short so we use
  * that instead.
  */
-public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeIncrementalBlockBreak implements IEntitySubAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.INCREMENTAL_BREAK_BLOCK;
+	public static final EntitySubActionType TYPE = EntitySubActionType.INCREMENTAL_BREAK_BLOCK;
 
 	public static EntityChangeIncrementalBlockBreak deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -130,7 +130,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		return TYPE;
 	}

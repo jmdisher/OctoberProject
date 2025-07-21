@@ -31,8 +31,8 @@ import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeSwim;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.mutations.IEntityAction;
 import com.jeffdisher.october.mutations.IMutationBlock;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -1018,7 +1018,7 @@ public class TestMovementAccumulator
 			, long currentTickTimeMillis
 			, List<IReadOnlyCuboidData> cuboids
 			, Entity inputEntity
-			, IMutationEntity<IMutablePlayerEntity> action
+			, IEntityAction<IMutablePlayerEntity> action
 			, MovementAccumulator accumulator
 			, _ProjectionListener listener
 	)
@@ -1038,7 +1038,7 @@ public class TestMovementAccumulator
 			, long currentTickTimeMillis
 			, IReadOnlyCuboidData cuboid
 			, Entity inputEntity
-			, IMutationEntity<IMutablePlayerEntity> action
+			, IEntityAction<IMutablePlayerEntity> action
 			, MovementAccumulator accumulator
 			, _ProjectionListener listener
 	)

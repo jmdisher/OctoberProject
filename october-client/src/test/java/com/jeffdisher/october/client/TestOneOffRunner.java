@@ -67,7 +67,7 @@ public class TestOneOffRunner
 				, stoneAddress, HeightMapHelpers.buildHeightMap(stoneCuboid)
 		), null, Map.of());
 		_Events catcher = new _Events();
-		OneOffRunner.StatePackage end = OneOffRunner.runOneChange(start, catcher, MILLIS_PER_TICK, 1L, place);
+		OneOffRunner.StatePackage end = OneOffRunner.runOneChange(start, catcher, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(place));
 		
 		Assert.assertEquals(EventRecord.Type.BLOCK_PLACED, catcher.event.type());
 		Assert.assertTrue(start.world().get(stoneAddress) == end.world().get(stoneAddress));
@@ -98,7 +98,7 @@ public class TestOneOffRunner
 				, stoneAddress, HeightMapHelpers.buildHeightMap(stoneCuboid)
 		), null, Map.of());
 		_Events catcher = new _Events();
-		OneOffRunner.StatePackage end = OneOffRunner.runOneChange(start, catcher, MILLIS_PER_TICK, 1L, place);
+		OneOffRunner.StatePackage end = OneOffRunner.runOneChange(start, catcher, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(place));
 		Assert.assertNull(end);
 	}
 
@@ -132,7 +132,7 @@ public class TestOneOffRunner
 			, Map.of()
 		);
 		_Events catcher = new _Events();
-		OneOffRunner.StatePackage end = OneOffRunner.runOneChange(start, catcher, MILLIS_PER_TICK, 1L, place);
+		OneOffRunner.StatePackage end = OneOffRunner.runOneChange(start, catcher, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(place));
 		
 		Assert.assertEquals(EventRecord.Type.BLOCK_PLACED, catcher.event.type());
 		Assert.assertEquals(DIRT_ITEM.number(), end.world().get(address).getData15(AspectRegistry.BLOCK, target.getBlockAddress()));

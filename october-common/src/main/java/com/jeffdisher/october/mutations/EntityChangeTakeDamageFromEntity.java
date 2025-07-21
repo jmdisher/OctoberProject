@@ -17,9 +17,9 @@ import com.jeffdisher.october.utils.Assert;
  * Note that the entity may no longer exist when this is processed so care must be taken in resolving it (it could have
  * died in the same tick where it sent this).
  */
-public class EntityChangeTakeDamageFromEntity<T extends IMutableMinimalEntity> implements IMutationEntity<T>
+public class EntityChangeTakeDamageFromEntity<T extends IMutableMinimalEntity> implements IEntityAction<T>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.TAKE_DAMAGE_FROM_ENTITY;
+	public static final EntityActionType TYPE = EntityActionType.TAKE_DAMAGE_FROM_ENTITY;
 
 	public static <T extends IMutableMinimalEntity> EntityChangeTakeDamageFromEntity<T> deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -84,7 +84,7 @@ public class EntityChangeTakeDamageFromEntity<T extends IMutableMinimalEntity> i
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntityActionType getType()
 	{
 		return TYPE;
 	}

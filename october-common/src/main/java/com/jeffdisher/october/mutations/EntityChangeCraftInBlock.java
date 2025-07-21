@@ -23,9 +23,9 @@ import com.jeffdisher.october.utils.Assert;
  * entities within the same tick (since that could result in one entity completing the operation while another starts
  * another one, instead of also helping to complete it).
  */
-public class EntityChangeCraftInBlock implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeCraftInBlock implements IEntitySubAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.CRAFT_IN_BLOCK;
+	public static final EntitySubActionType TYPE = EntitySubActionType.CRAFT_IN_BLOCK;
 
 	public static EntityChangeCraftInBlock deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -81,7 +81,7 @@ public class EntityChangeCraftInBlock implements IMutationEntity<IMutablePlayerE
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		return TYPE;
 	}

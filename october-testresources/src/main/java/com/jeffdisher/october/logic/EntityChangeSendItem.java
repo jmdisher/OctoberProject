@@ -2,8 +2,8 @@ package com.jeffdisher.october.logic;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.mutations.IMutationEntity;
-import com.jeffdisher.october.mutations.MutationEntityType;
+import com.jeffdisher.october.mutations.EntitySubActionType;
+import com.jeffdisher.october.mutations.IEntitySubAction;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -16,7 +16,7 @@ import com.jeffdisher.october.utils.Assert;
  * A test of IEntityChange:  This change extracts all items of a given type from the entity's inventory and, if it is
  * more than 0, creates a new change to pass it to another entity.
  */
-public class EntityChangeSendItem implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeSendItem implements IEntitySubAction<IMutablePlayerEntity>
 {
 	private final int _targetId;
 	private final Item _itemType;
@@ -57,10 +57,10 @@ public class EntityChangeSendItem implements IMutationEntity<IMutablePlayerEntit
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		// This is only used in testing (can't come from clients as it has no deserializer).
-		return MutationEntityType.TESTING_ONLY;
+		return EntitySubActionType.TESTING_ONLY;
 	}
 
 	@Override

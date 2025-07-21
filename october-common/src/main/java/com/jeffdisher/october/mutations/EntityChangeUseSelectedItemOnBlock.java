@@ -24,9 +24,9 @@ import com.jeffdisher.october.utils.Assert;
  * An example of this is a bucket being used on a water block.
  * Note that this is NOT the same as "hitting" a block.
  */
-public class EntityChangeUseSelectedItemOnBlock implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.USE_SELECTED_ITEM_ON_BLOCK;
+	public static final EntitySubActionType TYPE = EntitySubActionType.USE_SELECTED_ITEM_ON_BLOCK;
 	public static final String FERTILIZER = "op.fertilizer";
 	public static final String STONE_HOE = "op.stone_hoe";
 	public static final String DIRT = "op.dirt";
@@ -108,7 +108,7 @@ public class EntityChangeUseSelectedItemOnBlock implements IMutationEntity<IMuta
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		return TYPE;
 	}

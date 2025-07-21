@@ -10,9 +10,9 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * An entity mutation for local use by an operator at the server console to set or clear the creative flag on an Entity.
  */
-public class EntityChangeOperatorSetCreative implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeOperatorSetCreative implements IEntityAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.OPERATOR_SET_CREATIVE;
+	public static final EntityActionType TYPE = EntityActionType.OPERATOR_SET_CREATIVE;
 
 	public static EntityChangeOperatorSetCreative deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -44,7 +44,7 @@ public class EntityChangeOperatorSetCreative implements IMutationEntity<IMutable
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntityActionType getType()
 	{
 		return TYPE;
 	}

@@ -21,8 +21,8 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.mutations.EntityChangeApplyItemToCreature;
 import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromEntity;
+import com.jeffdisher.october.mutations.IEntityAction;
 import com.jeffdisher.october.mutations.IMutationBlock;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -85,7 +85,7 @@ public class TestCreatureProcessor
 		TickProcessingContext context = _createContextWithEvents(events);
 		int sourceId = 1;
 		EntityChangeTakeDamageFromEntity<IMutableCreatureEntity> change = new EntityChangeTakeDamageFromEntity<>(BodyPart.FEET, 10, sourceId);
-		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of(creature.id(), List.of(change));
+		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of(creature.id(), List.of(change));
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
@@ -130,7 +130,7 @@ public class TestCreatureProcessor
 		;
 		int sourceId = 1;
 		EntityChangeTakeDamageFromEntity<IMutableCreatureEntity> change = new EntityChangeTakeDamageFromEntity<>(BodyPart.FEET, 120, sourceId);
-		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of(creature.id(), List.of(change));
+		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of(creature.id(), List.of(change));
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_KILLED, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
@@ -154,7 +154,7 @@ public class TestCreatureProcessor
 		CreatureEntity creature = CreatureEntity.create(-1, COW, startLocation, (byte)100);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
-		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
+		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -175,7 +175,7 @@ public class TestCreatureProcessor
 		CreatureEntity creature = CreatureEntity.create(-1, ORC, startLocation, (byte)50);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContextWithOptions(Difficulty.PEACEFUL, null);
-		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
+		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -219,7 +219,7 @@ public class TestCreatureProcessor
 		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
-		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
+		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -266,7 +266,7 @@ public class TestCreatureProcessor
 		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
-		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
+		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -317,7 +317,7 @@ public class TestCreatureProcessor
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), AIR);
 		_setCuboidLayer(cuboid, (byte)0, STONE.item().number());
 		TickProcessingContext context = _createSingleCuboidContext(cuboid);
-		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
+		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
 		
 		// We expect that there will be 2 moves to make to get into the right place to _begin_ moving into the new block.
 		for (int i = 0; i < 2; ++i)
@@ -361,7 +361,7 @@ public class TestCreatureProcessor
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		_Events events = new _Events();
 		TickProcessingContext context = _createContextWithEvents(events);
-		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
+		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -406,7 +406,7 @@ public class TestCreatureProcessor
 		Entity closeWheat = _createEntity(2, new EntityLocation(3.0f, 0.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
 		Entity nonWheat = _createEntity(3, new EntityLocation(2.0f, 0.0f, 0.0f), null, new NonStackableItem(ENV.items.getItemById("op.iron_pickaxe"), 100));
 		TickProcessingContext context = _createContext();
-		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
+		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -454,7 +454,7 @@ public class TestCreatureProcessor
 		Entity player = _createEntity(1, new EntityLocation(5.0f, 1.0f, 0.0f), null, null);
 		TickProcessingContext context = _createContext();
 		context = _updateContextWithPlayerAndCreatures(context, player, creaturesById);
-		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
+		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -514,7 +514,7 @@ public class TestCreatureProcessor
 		Entity closeWheat = _createEntity(1, new EntityLocation(3.0f, 0.0f, 0.0f), new Items(wheat_item, 2), null);
 		TickProcessingContext context = _createContext();
 		context = _updateContextWithPlayerAndCreatures(context, null, creaturesById);
-		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
+		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, Map.of(fedCow.id(), fedCow)
 				, context
@@ -604,20 +604,20 @@ public class TestCreatureProcessor
 		Assert.assertEquals(cow1.id(), creaturesById.get(cow2.id()).ephemeral().targetEntityId());
 		
 		// Nothing should have happened yet, as they just found their mating partners so run the next tick.
-		Map<Integer, IMutationEntity<IMutableCreatureEntity>> changes = new HashMap<>();
+		Map<Integer, IEntityAction<IMutableCreatureEntity>> changes = new HashMap<>();
 		context = _updateContextWithCreatures(context, creaturesById.values(), new IChangeSink() {
 			@Override
-			public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+			public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 			{
 				throw new AssertionError("Not in test");
 			}
 			@Override
-			public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+			public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 			{
 				throw new AssertionError("Not in test");
 			}
 			@Override
-			public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+			public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 			{
 				Assert.assertFalse(changes.containsKey(targetCreatureId));
 				changes.put(targetCreatureId, change);
@@ -679,7 +679,7 @@ public class TestCreatureProcessor
 		CreatureEntity creature = CreatureEntity.create(-1, ORC, startLocation, (byte)100);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createSingleCuboidContext(cuboid);
-		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
+		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -765,7 +765,7 @@ public class TestCreatureProcessor
 		);
 		long millisPerTick = 100L;
 		
-		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
+		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
 		for (int i = 0; i < 10; ++i)
 		{
 			Map<Integer, MinimalEntity> minimalEntitiesById = Map.of(waterTarget.id(), MinimalEntity.fromEntity(waterTarget)
@@ -825,7 +825,7 @@ public class TestCreatureProcessor
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		long millisPerTick = 100L;
 		
-		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
+		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
 		for (int i = 0; i < 5; ++i)
 		{
 			TickProcessingContext context = ContextBuilder.build()

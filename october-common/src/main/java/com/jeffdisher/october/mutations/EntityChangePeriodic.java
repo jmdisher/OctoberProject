@@ -15,9 +15,9 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * -healing
  * -digesting food
  */
-public class EntityChangePeriodic implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangePeriodic implements IEntityAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.PERIODIC;
+	public static final EntityActionType TYPE = EntityActionType.PERIODIC;
 
 	/**
 	 * How often we run the periodic entity update:  We will run this every second.
@@ -99,7 +99,7 @@ public class EntityChangePeriodic implements IMutationEntity<IMutablePlayerEntit
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntityActionType getType()
 	{
 		return TYPE;
 	}

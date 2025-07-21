@@ -35,11 +35,11 @@ import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.EntityChangePeriodic;
+import com.jeffdisher.october.mutations.IEntityAction;
 import com.jeffdisher.october.mutations.IMutationBlock;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.net.MutationEntityCodec;
+import com.jeffdisher.october.net.EntityActionCodec;
 import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV1;
 import com.jeffdisher.october.persistence.legacy.LegacyEntityV1;
 import com.jeffdisher.october.types.BlockAddress;
@@ -1030,7 +1030,7 @@ public class ResourceLoader
 		{
 			// Read the parts of the suspended data.
 			long millisUntilReady = buffer.getLong();
-			IMutationEntity<IMutablePlayerEntity> change = MutationEntityCodec.parseAndSeekFlippedBuffer(buffer);
+			IEntityAction<IMutablePlayerEntity> change = EntityActionCodec.parseAndSeekFlippedBuffer(buffer);
 			suspended.add(new ScheduledChange(change, millisUntilReady));
 		}
 		return suspended;
@@ -1056,7 +1056,7 @@ public class ResourceLoader
 			{
 				// Write the parts of the data.
 				_backround_serializationBuffer.putLong(scheduled.millisUntilReady());
-				MutationEntityCodec.serializeToBuffer(_backround_serializationBuffer, scheduled.change());
+				EntityActionCodec.serializeToBuffer(_backround_serializationBuffer, scheduled.change());
 			}
 		}
 		_backround_serializationBuffer.flip();

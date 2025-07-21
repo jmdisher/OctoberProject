@@ -20,9 +20,9 @@ import com.jeffdisher.october.utils.Assert;
  * This calls MutationBlockSetLogicState to change the logic state of the underlying block.
  * This is typically used for things like setting a door to the open or closed state.
  */
-public class EntityChangeSetBlockLogicState implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeSetBlockLogicState implements IEntitySubAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.SET_BLOCK_LOGIC_STATE;
+	public static final EntitySubActionType TYPE = EntitySubActionType.SET_BLOCK_LOGIC_STATE;
 
 	public static EntityChangeSetBlockLogicState deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -88,7 +88,7 @@ public class EntityChangeSetBlockLogicState implements IMutationEntity<IMutableP
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		return TYPE;
 	}

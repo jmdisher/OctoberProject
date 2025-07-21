@@ -17,9 +17,9 @@ import com.jeffdisher.october.utils.Assert;
  * Note that swapping the armour into the inventory will create a new key and only armour non-stackable items can be
  * swapped from the inventory.
  */
-public class EntityChangeSwapArmour implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeSwapArmour implements IEntitySubAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.SWAP_ARMOUR;
+	public static final EntitySubActionType TYPE = EntitySubActionType.SWAP_ARMOUR;
 
 	public static EntityChangeSwapArmour deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -71,7 +71,7 @@ public class EntityChangeSwapArmour implements IMutationEntity<IMutablePlayerEnt
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		return TYPE;
 	}

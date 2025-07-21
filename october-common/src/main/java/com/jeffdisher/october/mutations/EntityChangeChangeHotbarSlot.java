@@ -11,9 +11,9 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * Changes the currently-selected hotbar slot for this entity.
  */
-public class EntityChangeChangeHotbarSlot implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeChangeHotbarSlot implements IEntitySubAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.CHANGE_HOTBAR_SLOT;
+	public static final EntitySubActionType TYPE = EntitySubActionType.CHANGE_HOTBAR_SLOT;
 
 	public static EntityChangeChangeHotbarSlot deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -39,7 +39,7 @@ public class EntityChangeChangeHotbarSlot implements IMutationEntity<IMutablePla
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		return TYPE;
 	}

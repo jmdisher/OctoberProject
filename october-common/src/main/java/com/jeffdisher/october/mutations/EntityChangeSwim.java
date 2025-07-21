@@ -19,14 +19,14 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * It is very similar to EntityChangeJump but has different conditions and potentially different force magnitudes.
  * Note that this doesn't move them or take time, just changes the vector.
  */
-public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IMutationEntity<T>
+public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IEntitySubAction<T>
 {
 	/**
 	 * We will make the swim force 0.5x the force of gravity since that is the current jump force but this will change
 	 * with experimentation and "play feel" later on.
 	 */
 	public static final float SWIM_FORCE = -0.5f * EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND;
-	public static final MutationEntityType TYPE = MutationEntityType.SWIM;
+	public static final EntitySubActionType TYPE = EntitySubActionType.SWIM;
 
 	public static boolean canSwim(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
 			, EntityLocation location
@@ -74,7 +74,7 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IMutat
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		return TYPE;
 	}

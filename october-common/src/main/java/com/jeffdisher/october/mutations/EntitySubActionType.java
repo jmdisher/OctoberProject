@@ -1,0 +1,47 @@
+package com.jeffdisher.october.mutations;
+
+
+/**
+ * Note that this was split out from EntityActionType, at one point, so there are "UNUSED_" variants where overlap used
+ * to occur.
+ */
+public enum EntitySubActionType
+{
+	ERROR,
+	
+	UNUSED_MOVE,
+	JUMP,
+	SWIM,
+	BLOCK_PLACE,
+	CRAFT,
+	SELECT_ITEM,
+	ITEMS_REQUEST_PUSH,
+	ITEMS_REQUEST_PULL,
+	UNUSED_ITEMS_STORE_TO_INVENTORY,
+	INCREMENTAL_BREAK_BLOCK,
+	CRAFT_IN_BLOCK,
+	ATTACK_ENTITY,
+	UNUSED_TAKE_DAMAGE_V2,
+	UNUSED_PERIODIC,
+	USE_SELECTED_ITEM_ON_SELF,
+	USE_SELECTED_ITEM_ON_BLOCK,
+	USE_SELECTED_ITEM_ON_ENTITY,
+	CHANGE_HOTBAR_SLOT,
+	SWAP_ARMOUR,
+	SET_BLOCK_LOGIC_STATE,
+	UNUSED_OPERATOR_SET_CREATIVE,
+	UNUSED_OPERATOR_SET_LOCATION,
+	SET_DAY_AND_SPAWN,
+	UNUSED_SET_ORIENTATION,
+	UNUSED_ACCELERATE,
+	INCREMENTAL_REPAIR_BLOCK,
+	UNUSED_TAKE_DAMAGE_FROM_ENTITY,
+	UNUSED_TAKE_DAMAGE_FROM_OTHER_V4,
+	MULTI_BLOCK_PLACE,
+	
+	/**
+	 * This testing type is never serialized so it should be kept at the end of the list.
+	 */
+	TESTING_ONLY,
+	END_OF_LIST,
+}

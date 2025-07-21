@@ -22,9 +22,9 @@ import com.jeffdisher.october.utils.Assert;
  * change to check the range on the sender side (here), in the future.
  * In the future, we will need this to have some time cost but this is just to get the first step working.
  */
-public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.ATTACK_ENTITY;
+	public static final EntitySubActionType TYPE = EntitySubActionType.ATTACK_ENTITY;
 	public static final long ATTACK_COOLDOWN_MILLIS = 500L;
 
 	public static EntityChangeAttackEntity deserializeFromBuffer(ByteBuffer buffer)
@@ -127,7 +127,7 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		return TYPE;
 	}

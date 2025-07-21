@@ -15,7 +15,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * 3) New entity joins
  * 4) Changes enqueued by the external calls
  */
-public interface IMutationEntity<T extends IMutableMinimalEntity>
+public interface IEntitySubAction<T extends IMutableMinimalEntity>
 {
 	/**
 	 * Applies the change to the given entity, returning true if it was a success (and should be transmitted to
@@ -35,7 +35,7 @@ public interface IMutationEntity<T extends IMutableMinimalEntity>
 	 * 
 	 * @return The type for entity serialization.
 	 */
-	MutationEntityType getType();
+	EntitySubActionType getType();
 
 	/**
 	 * Called during serialization to serialize any internal instance variables of the mutation to the given buffer.

@@ -16,9 +16,9 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * Called to reset the day and set the spawn for the entity.
  */
-public class EntityChangeSetDayAndSpawn implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeSetDayAndSpawn implements IEntitySubAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.SET_DAY_AND_SPAWN;
+	public static final EntitySubActionType TYPE = EntitySubActionType.SET_DAY_AND_SPAWN;
 
 	public static EntityChangeSetDayAndSpawn deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -66,7 +66,7 @@ public class EntityChangeSetDayAndSpawn implements IMutationEntity<IMutablePlaye
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		return TYPE;
 	}

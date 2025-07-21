@@ -13,9 +13,9 @@ import com.jeffdisher.october.utils.Assert;
  * An entity mutation for local use by an operator at the server console to spawn a specific creature in a specific
  * location (with default health).
  */
-public class EntityChangeOperatorSpawnCreature implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeOperatorSpawnCreature implements IEntityAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.OPERATOR_SPAWN_CREATURE;
+	public static final EntityActionType TYPE = EntityActionType.OPERATOR_SPAWN_CREATURE;
 
 	public static EntityChangeOperatorSpawnCreature deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -41,7 +41,7 @@ public class EntityChangeOperatorSpawnCreature implements IMutationEntity<IMutab
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntityActionType getType()
 	{
 		return TYPE;
 	}

@@ -8,8 +8,8 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.mutations.IEntityAction;
 import com.jeffdisher.october.mutations.IMutationBlock;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.mutations.TickUtils;
@@ -51,7 +51,7 @@ public class FakeUpdateFactories
 		return MutationBlockSetBlock.extractFromProxy(ByteBuffer.allocate(1024), mutable);
 	}
 
-	public static MutationEntitySetEntity entityUpdate(Map<CuboidAddress, IReadOnlyCuboidData> loadedCuboids, Entity entity, IMutationEntity<IMutablePlayerEntity> mutation)
+	public static MutationEntitySetEntity entityUpdate(Map<CuboidAddress, IReadOnlyCuboidData> loadedCuboids, Entity entity, IEntityAction<IMutablePlayerEntity> mutation)
 	{
 		TickProcessingContext context = _createFakeContext(loadedCuboids);
 		
@@ -93,16 +93,16 @@ public class FakeUpdateFactories
 				}
 			, new TickProcessingContext.IChangeSink() {
 				@Override
-				public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+				public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 				{
 				}
 				@Override
-				public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+				public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 				{
 					throw Assert.unreachable();
 				}
 				@Override
-				public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+				public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 				{
 					throw Assert.unreachable();
 				}

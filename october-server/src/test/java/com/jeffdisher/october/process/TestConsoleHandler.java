@@ -15,7 +15,7 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.mutations.EntityChangeOperatorSpawnCreature;
-import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.IEntityAction;
 import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.server.TickRunner;
 import com.jeffdisher.october.types.Difficulty;
@@ -125,7 +125,7 @@ public class TestConsoleHandler
 		monitoringAgent.setOperatorCommandSink(new _TestCommandSink()
 		{
 			@Override
-			public void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command)
+			public void submitEntityMutation(int clientId, IEntityAction<IMutablePlayerEntity> command)
 			{
 				Assert.assertEquals(123, clientId);
 				Assert.assertNotNull(command);
@@ -164,7 +164,7 @@ public class TestConsoleHandler
 		monitoringAgent.setOperatorCommandSink(new _TestCommandSink()
 		{
 			@Override
-			public void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command)
+			public void submitEntityMutation(int clientId, IEntityAction<IMutablePlayerEntity> command)
 			{
 				Assert.assertEquals(123, clientId);
 				Assert.assertNotNull(command);
@@ -292,7 +292,7 @@ public class TestConsoleHandler
 		monitoringAgent.setOperatorCommandSink(new _TestCommandSink()
 		{
 			@Override
-			public void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command)
+			public void submitEntityMutation(int clientId, IEntityAction<IMutablePlayerEntity> command)
 			{
 				Assert.assertEquals(CrowdProcessor.OPERATOR_ENTITY_ID, clientId);
 				Assert.assertTrue(command instanceof EntityChangeOperatorSpawnCreature);
@@ -310,7 +310,7 @@ public class TestConsoleHandler
 	private static class _TestCommandSink implements MonitoringAgent.OperatorCommandSink
 	{
 		@Override
-		public void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command)
+		public void submitEntityMutation(int clientId, IEntityAction<IMutablePlayerEntity> command)
 		{
 			throw new AssertionError("submitEntityMutation");
 		}

@@ -21,9 +21,9 @@ import com.jeffdisher.october.utils.Assert;
  * If the inventory can't fit all the items, those which overflow are dropped onto the ground where the entity is with
  * MutationBlockStoreItems.
  */
-public class MutationEntityStoreToInventory implements IMutationEntity<IMutablePlayerEntity>
+public class MutationEntityStoreToInventory implements IEntityAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.ITEMS_STORE_TO_INVENTORY;
+	public static final EntityActionType TYPE = EntityActionType.ITEMS_STORE_TO_INVENTORY;
 
 	public static MutationEntityStoreToInventory deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -97,7 +97,7 @@ public class MutationEntityStoreToInventory implements IMutationEntity<IMutableP
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntityActionType getType()
 	{
 		return TYPE;
 	}

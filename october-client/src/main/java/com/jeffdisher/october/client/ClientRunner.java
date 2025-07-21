@@ -15,8 +15,8 @@ import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.mutations.IEntitySubAction;
 import com.jeffdisher.october.mutations.IEntityUpdate;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -90,7 +90,7 @@ public class ClientRunner
 	 * @param change The change to run.
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void commonApplyEntityAction(IMutationEntity<IMutablePlayerEntity> change, long currentTimeMillis)
+	public void commonApplyEntityAction(IEntitySubAction<IMutablePlayerEntity> change, long currentTimeMillis)
 	{
 		// Note that this might fail.
 		_accumulator.enqueueSubAction(change);

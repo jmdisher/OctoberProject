@@ -11,7 +11,7 @@ import com.jeffdisher.october.utils.Assert;
  * The current version of IEntityChange is just a stop-gap to allow updates to existing logic elsewhere and this class
  * is part of that stop-gap:  It just contains a mutation which it delivers to SpeculativeProjection.
  */
-public class EntityChangeMutation implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeMutation implements IEntitySubAction<IMutablePlayerEntity>
 {
 	private final IMutationBlock _contents;
 
@@ -31,10 +31,10 @@ public class EntityChangeMutation implements IMutationEntity<IMutablePlayerEntit
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		// This is only used in testing (can't come from clients as it has no deserializer).
-		return MutationEntityType.TESTING_ONLY;
+		return EntitySubActionType.TESTING_ONLY;
 	}
 
 	@Override

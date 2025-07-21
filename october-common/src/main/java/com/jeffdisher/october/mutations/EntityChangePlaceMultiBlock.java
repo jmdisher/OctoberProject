@@ -35,9 +35,9 @@ import com.jeffdisher.october.utils.CuboidGenerator;
  * follow-up mutations to each of the block locations in order to verify consistency in the following tick.
  * If this consistency is violated, all of the blocks will revert to what they replaced.
  */
-public class EntityChangePlaceMultiBlock implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangePlaceMultiBlock implements IEntitySubAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.MULTI_BLOCK_PLACE;
+	public static final EntitySubActionType TYPE = EntitySubActionType.MULTI_BLOCK_PLACE;
 
 	public static EntityChangePlaceMultiBlock deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -130,7 +130,7 @@ public class EntityChangePlaceMultiBlock implements IMutationEntity<IMutablePlay
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		return TYPE;
 	}

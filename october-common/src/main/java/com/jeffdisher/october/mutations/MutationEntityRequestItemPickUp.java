@@ -26,9 +26,9 @@ import com.jeffdisher.october.utils.Assert;
  * -MutationBlockExtractItems - run against the block to extract the items
  * -MutationEntityStoreToInventory - run against the entity to store the extracted items
  */
-public class MutationEntityRequestItemPickUp implements IMutationEntity<IMutablePlayerEntity>
+public class MutationEntityRequestItemPickUp implements IEntitySubAction<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.ITEMS_REQUEST_PULL;
+	public static final EntitySubActionType TYPE = EntitySubActionType.ITEMS_REQUEST_PULL;
 
 	public static MutationEntityRequestItemPickUp deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -111,7 +111,7 @@ public class MutationEntityRequestItemPickUp implements IMutationEntity<IMutable
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntitySubActionType getType()
 	{
 		return TYPE;
 	}

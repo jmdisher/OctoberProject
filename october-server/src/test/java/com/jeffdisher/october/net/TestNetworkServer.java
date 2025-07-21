@@ -252,7 +252,7 @@ public class TestNetworkServer
 		// (this requires that we manually build the buffer, since the code normally rejects this).
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		buffer.position(PacketCodec.HEADER_BYTES);
-		MutationEntityCodec.serializeToBuffer(buffer, new EntityChangePeriodic());
+		EntityActionCodec.serializeToBuffer(buffer, new EntityChangePeriodic());
 		buffer.putLong(1L);
 		int size = buffer.position();
 		

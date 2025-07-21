@@ -11,7 +11,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeSwim;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
-import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.IEntityAction;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -46,7 +46,7 @@ public class TestCreatureMovementHelpers
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = _createCow(location);
 		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
-		IMutationEntity<IMutableCreatureEntity> change = CreatureMovementHelpers.prepareForMove(reader, creature.location(), creature.velocity(), creature.type(), location.getBlockLocation(), 100L, 0.0f, false);
+		IEntityAction<IMutableCreatureEntity> change = CreatureMovementHelpers.prepareForMove(reader, creature.location(), creature.velocity(), creature.type(), location.getBlockLocation(), 100L, 0.0f, false);
 		Assert.assertNull(change);
 		
 		location = new EntityLocation(-1.0f, -1.0f, 1.0f);
@@ -61,7 +61,7 @@ public class TestCreatureMovementHelpers
 		EntityLocation location = new EntityLocation(1.9f, 1.9f, 1.0f);
 		CreatureEntity creature = _createCow(location);
 		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
-		IMutationEntity<IMutableCreatureEntity> change = CreatureMovementHelpers.prepareForMove(reader, creature.location(), creature.velocity(), creature.type(), location.getBlockLocation(), 100L, 0.0f, false);
+		IEntityAction<IMutableCreatureEntity> change = CreatureMovementHelpers.prepareForMove(reader, creature.location(), creature.velocity(), creature.type(), location.getBlockLocation(), 100L, 0.0f, false);
 		Assert.assertNotNull(change);
 		
 		location = new EntityLocation(-1.1f, -1.1f, 1.0f);
@@ -77,7 +77,7 @@ public class TestCreatureMovementHelpers
 		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(1, 2, 1);
 		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
-		IMutationEntity<IMutableCreatureEntity> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, false, false);
+		IEntityAction<IMutableCreatureEntity> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, false, false);
 		Assert.assertNotNull(change);
 	}
 
@@ -88,7 +88,7 @@ public class TestCreatureMovementHelpers
 		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(0, 1, 1);
 		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
-		IMutationEntity<IMutableCreatureEntity> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, false, false);
+		IEntityAction<IMutableCreatureEntity> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, false, false);
 		// Deliberate movement is 0.2/move.
 		Assert.assertNotNull(change);
 	}
@@ -100,7 +100,7 @@ public class TestCreatureMovementHelpers
 		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(0, 1, 1);
 		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
-		IMutationEntity<IMutableCreatureEntity> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, true, false);
+		IEntityAction<IMutableCreatureEntity> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, true, false);
 		// Idle movement is 0.1/move and we are moving 0.8 (width) plus a fudge factor (which is rounded down, here).
 		Assert.assertNotNull(change);
 	}
@@ -137,7 +137,7 @@ public class TestCreatureMovementHelpers
 		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(1, 2, 2);
 		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
-		IMutationEntity<IMutableCreatureEntity> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, false, false);
+		IEntityAction<IMutableCreatureEntity> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, false, false);
 		Assert.assertNotNull(change);
 	}
 
@@ -148,7 +148,7 @@ public class TestCreatureMovementHelpers
 		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 0);
 		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
-		IMutationEntity<IMutableCreatureEntity> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, true, false);
+		IEntityAction<IMutableCreatureEntity> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, true, false);
 		Assert.assertNull(change);
 	}
 
@@ -175,7 +175,7 @@ public class TestCreatureMovementHelpers
 		// Now, check that we can handle hints in all 6 directions for centring.
 		// NORTH
 		AbsoluteLocation directionHint = new AbsoluteLocation(1, 2, 1);
-		IMutationEntity<IMutableCreatureEntity> change = CreatureMovementHelpers.prepareForMove(reader, creature.location(), creature.velocity(), creature.type(), directionHint, 100L, 0.0f, false);
+		IEntityAction<IMutableCreatureEntity> change = CreatureMovementHelpers.prepareForMove(reader, creature.location(), creature.velocity(), creature.type(), directionHint, 100L, 0.0f, false);
 		// 3 WEST
 		Assert.assertNotNull(change);
 		

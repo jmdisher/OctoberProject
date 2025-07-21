@@ -28,8 +28,8 @@ import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeOperatorSetLocation;
 import com.jeffdisher.october.mutations.EntityChangeSetDayAndSpawn;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.mutations.IEntitySubAction;
 import com.jeffdisher.october.mutations.IEntityUpdate;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationEntityRequestItemPickUp;
@@ -801,7 +801,7 @@ public class TestServerRunner
 		cuboidLoader.preload(cuboid);
 	}
 
-	private static EntityChangeTopLevelMovement<IMutablePlayerEntity> _wrapSubAction(Entity entity, IMutationEntity<IMutablePlayerEntity> subAction)
+	private static EntityChangeTopLevelMovement<IMutablePlayerEntity> _wrapSubAction(Entity entity, IEntitySubAction<IMutablePlayerEntity> subAction)
 	{
 		return new EntityChangeTopLevelMovement<>(entity.location()
 			, entity.velocity()
