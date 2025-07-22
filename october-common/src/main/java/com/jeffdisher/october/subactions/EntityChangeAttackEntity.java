@@ -103,8 +103,8 @@ public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayer
 				int totalDurability = env.durability.getDurability(toolType);
 				if (totalDurability > 0)
 				{
-					// For now, we will just apply whatever the damage was as the durability loss, but this should change later.
-					int newDurability = nonStack.durability() - damageToApply;
+					// No matter what they hit, this counts as one "weapon use".
+					int newDurability = nonStack.durability() - 1;
 					int selectedKey = newEntity.getSelectedKey();
 					if (newDurability > 0)
 					{

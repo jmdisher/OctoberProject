@@ -98,13 +98,13 @@ public class EntityChangeIncrementalBlockBreak implements IEntitySubAction<IMuta
 				return mutation;
 			}, lookup);
 			
-			// If we have a tool with finite durability equipped, apply this amount of time to wear it down.
+			// If we have a tool with finite durability equipped, decrement its durability by one.
 			if ((null != selected) && !newEntity.isCreativeMode())
 			{
 				int totalDurability = env.durability.getDurability(selected.type());
 				if (totalDurability > 0)
 				{
-					int newDurability = selected.durability() - breakingMillis;
+					int newDurability = selected.durability() - 1;
 					if (newDurability > 0)
 					{
 						// Write this back.

@@ -495,9 +495,10 @@ public class TestTickRunner
 		Inventory entityInventory = entity.inventory();
 		Assert.assertEquals(1, entityInventory.getCount(STONE_ITEM));
 		
-		// We should also see the durability loss on our tool (2 x 100ms).
+		// We should also see the durability loss on our tool (one for each committed action).
 		int updatedDurability = entityInventory.getNonStackableForKey(entity.hotbarItems()[entity.hotbarIndex()]).durability();
-		Assert.assertEquals(2 * 100, (startDurability - updatedDurability));
+		int toolUses = (int)nextCommit - 1;
+		Assert.assertEquals(toolUses, (startDurability - updatedDurability));
 		
 		runner.shutdown();
 	}

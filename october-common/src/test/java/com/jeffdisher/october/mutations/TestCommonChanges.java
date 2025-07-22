@@ -851,7 +851,7 @@ public class TestCommonChanges
 		Assert.assertEquals(targetId, targetHolder[0]);
 		Assert.assertTrue(changeHolder[0] instanceof EntityChangeTakeDamageFromEntity);
 		int endDurability = attacker.newInventory.getNonStackableForKey(attacker.getSelectedKey()).durability();
-		Assert.assertEquals(10, (startDurability - endDurability));
+		Assert.assertEquals(1, (startDurability - endDurability));
 		
 		// Apply the hit and verify that the target health changed.
 		EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> change = (EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>) changeHolder[0];
@@ -1038,7 +1038,7 @@ public class TestCommonChanges
 		MutableBlockProxy proxy = new MutableBlockProxy(targetStone, cuboid);
 		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(startDurability - duration, newEntity.newInventory.getNonStackableForKey(1).durability());
+		Assert.assertEquals(startDurability - 1, newEntity.newInventory.getNonStackableForKey(1).durability());
 		Assert.assertEquals(10 * duration, cuboid.getData15(AspectRegistry.DAMAGE, targetStone.getBlockAddress()));
 		
 		// Now, do the same to the plank and observe the difference.
@@ -1050,7 +1050,7 @@ public class TestCommonChanges
 		proxy = new MutableBlockProxy(targetLog, cuboid);
 		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(startDurability - (2 * duration), newEntity.newInventory.getNonStackableForKey(1).durability());
+		Assert.assertEquals(startDurability - 2, newEntity.newInventory.getNonStackableForKey(1).durability());
 		Assert.assertEquals(duration, cuboid.getData15(AspectRegistry.DAMAGE, targetLog.getBlockAddress()));
 	}
 
