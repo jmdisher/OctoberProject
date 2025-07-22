@@ -67,6 +67,8 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		EntitySubActionType.SET_DAY_AND_SPAWN,
 		EntitySubActionType.INCREMENTAL_REPAIR_BLOCK,
 		EntitySubActionType.MULTI_BLOCK_PLACE,
+		EntitySubActionType.LADDER_ASCEND,
+		EntitySubActionType.LADDER_DESCEND,
 		EntitySubActionType.TESTING_ONLY,
 	}).collect(Collectors.toSet());
 

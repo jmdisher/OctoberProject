@@ -38,6 +38,8 @@ public enum EntitySubActionType
 	UNUSED_TAKE_DAMAGE_FROM_ENTITY,
 	UNUSED_TAKE_DAMAGE_FROM_OTHER_V4,
 	MULTI_BLOCK_PLACE,
+	LADDER_ASCEND,
+	LADDER_DESCEND,
 	
 	/**
 	 * This testing type is never serialized so it should be kept at the end of the list.

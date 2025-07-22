@@ -19,6 +19,8 @@ import com.jeffdisher.october.subactions.EntityChangeSwim;
 import com.jeffdisher.october.subactions.EntityChangeUseSelectedItemOnBlock;
 import com.jeffdisher.october.subactions.EntityChangeUseSelectedItemOnEntity;
 import com.jeffdisher.october.subactions.EntityChangeUseSelectedItemOnSelf;
+import com.jeffdisher.october.subactions.EntitySubActionLadderAscend;
+import com.jeffdisher.october.subactions.EntitySubActionLadderDescend;
 import com.jeffdisher.october.subactions.MutationEntityPushItems;
 import com.jeffdisher.october.subactions.MutationEntityRequestItemPickUp;
 import com.jeffdisher.october.subactions.MutationEntitySelectItem;
@@ -65,6 +67,8 @@ public class EntitySubActionCodec
 		_CODEC_TABLE[EntitySubActionType.UNUSED_TAKE_DAMAGE_FROM_ENTITY.ordinal()] = (ByteBuffer buffer) -> { throw Assert.unreachable(); };
 		_CODEC_TABLE[EntitySubActionType.UNUSED_TAKE_DAMAGE_FROM_OTHER_V4.ordinal()] = (ByteBuffer buffer) -> { throw Assert.unreachable(); };
 		_CODEC_TABLE[EntityChangePlaceMultiBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangePlaceMultiBlock.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[EntitySubActionLadderAscend.TYPE.ordinal()] = (ByteBuffer buffer) -> EntitySubActionLadderAscend.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[EntitySubActionLadderDescend.TYPE.ordinal()] = (ByteBuffer buffer) -> EntitySubActionLadderDescend.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntitySubActionType.TESTING_ONLY.ordinal()] = (ByteBuffer buffer) -> { throw Assert.unreachable(); };
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).

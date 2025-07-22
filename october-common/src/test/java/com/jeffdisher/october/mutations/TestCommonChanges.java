@@ -50,6 +50,8 @@ import com.jeffdisher.october.subactions.EntityChangeSwim;
 import com.jeffdisher.october.subactions.EntityChangeUseSelectedItemOnBlock;
 import com.jeffdisher.october.subactions.EntityChangeUseSelectedItemOnEntity;
 import com.jeffdisher.october.subactions.EntityChangeUseSelectedItemOnSelf;
+import com.jeffdisher.october.subactions.EntitySubActionLadderAscend;
+import com.jeffdisher.october.subactions.EntitySubActionLadderDescend;
 import com.jeffdisher.october.subactions.MutationEntityPushItems;
 import com.jeffdisher.october.subactions.MutationEntityRequestItemPickUp;
 import com.jeffdisher.october.subactions.MutationEntitySelectItem;
@@ -94,6 +96,7 @@ public class TestCommonChanges
 	private static Item IRON_AXE_ITEM;
 	private static Block STONE;
 	private static Block WATER_SOURCE;
+	private static Block LADDER;
 	private static EntityType COW;
 	@BeforeClass
 	public static void setup()
@@ -107,6 +110,7 @@ public class TestCommonChanges
 		IRON_AXE_ITEM = ENV.items.getItemById("op.iron_axe");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		LADDER = ENV.blocks.fromItem(ENV.items.getItemById("op.ladder"));
 		COW = ENV.creatures.getTypeById("op.cow");
 	}
 	@AfterClass
@@ -2647,6 +2651,62 @@ public class TestCommonChanges
 		Assert.assertTrue(changeHolder.remove(0).applyChange(context, target));
 		Assert.assertEquals(99, target.newHealth);
 		Assert.assertEquals(3, eventCounter[0]);
+	}
+
+	@Test
+	public void ladderMovement()
+	{
+		// We want to test that ascending and descending work as expected, but only when intersecting with a ladder.
+		EntityLocation location1 = new EntityLocation(1.0f, 1.0f, 0.0f);
+		EntityLocation location2 = new EntityLocation(5.0f, 5.0f, 0.5f);
+		EntityLocation location3 = new EntityLocation(5.0f, 5.0f, 1.0f);
+		MutableEntity mutable1 = MutableEntity.createForTest(1);
+		MutableEntity mutable2 = MutableEntity.createForTest(2);
+		MutableEntity mutable3 = MutableEntity.createForTest(3);
+		mutable1.newLocation = location1;
+		mutable2.newLocation = location2;
+		mutable3.newLocation = location3;
+		CuboidData air = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		air.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 5, 0), LADDER.item().number());
+		CuboidData stone = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		TickProcessingContext context = ContextBuilder.build()
+			.millisPerTick(50L)
+			.lookups((AbsoluteLocation location) -> {
+				return location.getCuboidAddress().equals(air.getCuboidAddress())
+					? new BlockProxy(location.getBlockAddress(), air)
+					: new BlockProxy(location.getBlockAddress(), stone)
+				;
+			}, null)
+			.finish()
+		;
+		EntitySubActionLadderAscend<IMutablePlayerEntity> ascend = new EntitySubActionLadderAscend<>();
+		EntitySubActionLadderDescend<IMutablePlayerEntity> descend = new EntitySubActionLadderDescend<>();
+		Assert.assertFalse(ascend.applyChange(context, mutable1));
+		Assert.assertEquals(location1, mutable1.newLocation);
+		Assert.assertFalse(descend.applyChange(context, mutable1));
+		Assert.assertEquals(location1, mutable1.newLocation);
+		
+		Assert.assertTrue(ascend.applyChange(context, mutable2));
+		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 0.6f), mutable2.newLocation);
+		Assert.assertTrue(descend.applyChange(context, mutable2));
+		Assert.assertEquals(location2, mutable2.newLocation);
+		
+		Assert.assertFalse(ascend.applyChange(context, mutable3));
+		Assert.assertEquals(location3, mutable3.newLocation);
+		Assert.assertTrue(descend.applyChange(context, mutable3));
+		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 0.9f), mutable3.newLocation);
+		
+		// Show that this still works as a sub-action.
+		EntityLocation newLocation = new EntityLocation(5.0f, 5.1f, 0.8f);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> topLevel = new EntityChangeTopLevelMovement<>(newLocation
+			, new EntityLocation(0.0f, 2.0f, 0.0f)
+			, EntityChangeTopLevelMovement.Intensity.WALKING
+			, (byte)5
+			, (byte)6
+			, descend
+		);
+		Assert.assertTrue(topLevel.applyChange(context, mutable3));
+		Assert.assertEquals(newLocation, mutable3.newLocation);
 	}
 
 
