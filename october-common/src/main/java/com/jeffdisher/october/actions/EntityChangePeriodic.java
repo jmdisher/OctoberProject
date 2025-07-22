@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.logic.DamageHelpers;
 import com.jeffdisher.october.mutations.EntityActionType;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -79,7 +80,7 @@ public class EntityChangePeriodic implements IEntityAction<IMutablePlayerEntity>
 	 */
 	public static final int ENERGY_COST_PER_HEALTH_HEAL = 100;
 
-	public static EntityChangePeriodic deserializeFromBuffer(ByteBuffer buffer)
+	public static EntityChangePeriodic deserialize(DeserializationContext context)
 	{
 		return new EntityChangePeriodic();
 	}

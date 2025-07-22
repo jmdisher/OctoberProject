@@ -3,6 +3,7 @@ package com.jeffdisher.october.actions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.EntityActionType;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -15,7 +16,7 @@ public class Deprecated_EntityActionJump<T extends IMutableMinimalEntity> implem
 {
 	public static final EntityActionType TYPE = EntityActionType.DEPRECATED_JUMP;
 
-	public static <T extends IMutableMinimalEntity> Deprecated_EntityActionJump<T> deserializeFromBuffer(ByteBuffer buffer)
+	public static <T extends IMutableMinimalEntity> Deprecated_EntityActionJump<T> deserialize(DeserializationContext context)
 	{
 		return new Deprecated_EntityActionJump<>();
 	}

@@ -6,6 +6,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
@@ -26,8 +27,9 @@ public class MutationBlockPushToBlock implements IMutationBlock
 {
 	public static final MutationBlockType TYPE = MutationBlockType.PUSH_ITEMS_TO_BLOCK;
 
-	public static MutationBlockPushToBlock deserializeFromBuffer(ByteBuffer buffer)
+	public static MutationBlockPushToBlock deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		int blockInventoryKey = buffer.getInt();
 		int countRequested = buffer.getInt();

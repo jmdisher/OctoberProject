@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.function.Function;
 
 import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 
 
@@ -17,7 +18,12 @@ public class Packet_MutationEntityFromClient extends PacketFromClient
 	public static void register(Function<ByteBuffer, Packet>[] opcodeTable)
 	{
 		opcodeTable[TYPE.ordinal()] = (ByteBuffer buffer) -> {
-			EntityChangeTopLevelMovement<IMutablePlayerEntity> mutation = (EntityChangeTopLevelMovement<IMutablePlayerEntity>) EntityActionCodec.parseAndSeekFlippedBuffer(buffer);
+			Environment env = Environment.getShared();
+			DeserializationContext context = new DeserializationContext(env
+				, buffer
+			);
+			
+			EntityChangeTopLevelMovement<IMutablePlayerEntity> mutation = (EntityChangeTopLevelMovement<IMutablePlayerEntity>) EntityActionCodec.parseAndSeekContext(context);
 			long commitLevel = buffer.getLong();
 			return new Packet_MutationEntityFromClient(mutation, commitLevel);
 		};

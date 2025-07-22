@@ -6,6 +6,7 @@ import com.jeffdisher.october.aspects.DamageAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.EventRecord;
@@ -24,8 +25,9 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 	 */
 	public static final int NO_STORAGE_ENTITY = 0;
 
-	public static MutationBlockIncrementalBreak deserializeFromBuffer(ByteBuffer buffer)
+	public static MutationBlockIncrementalBreak deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		short damageToApply = buffer.getShort();
 		int optionalEntityForStorage = buffer.getInt();

@@ -6,6 +6,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.CraftingBlockSupport;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -19,8 +20,9 @@ public class MutationBlockFurnaceCraft implements IMutationBlock
 {
 	public static final MutationBlockType TYPE = MutationBlockType.CRAFT_IN_FURNACE;
 
-	public static MutationBlockFurnaceCraft deserializeFromBuffer(ByteBuffer buffer)
+	public static MutationBlockFurnaceCraft deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		return new MutationBlockFurnaceCraft(location);
 	}

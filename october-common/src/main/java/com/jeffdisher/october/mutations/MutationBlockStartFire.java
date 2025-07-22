@@ -6,6 +6,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.FireHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -22,8 +23,9 @@ public class MutationBlockStartFire implements IMutationBlock
 	 */
 	public static final long IGNITION_DELAY_MILLIS = 2_000L;
 
-	public static MutationBlockStartFire deserializeFromBuffer(ByteBuffer buffer)
+	public static MutationBlockStartFire deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		return new MutationBlockStartFire(location);
 	}

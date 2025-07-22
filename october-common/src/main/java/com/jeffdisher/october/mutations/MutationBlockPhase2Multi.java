@@ -8,6 +8,7 @@ import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -25,9 +26,10 @@ public class MutationBlockPhase2Multi implements IMutationBlock
 {
 	public static final MutationBlockType TYPE = MutationBlockType.MULTI_PHASE2;
 
-	public static MutationBlockPhase2Multi deserializeFromBuffer(ByteBuffer buffer)
+	public static MutationBlockPhase2Multi deserialize(DeserializationContext context)
 	{
-		Environment env = Environment.getShared();
+		Environment env = context.env();
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		AbsoluteLocation rootLocation = CodecHelpers.readAbsoluteLocation(buffer);
 		OrientationAspect.Direction orientation = CodecHelpers.readOrientation(buffer);

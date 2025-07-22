@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -14,8 +15,9 @@ public class Deprecated_EntityActionBlockPlace implements IEntityAction<IMutable
 {
 	public static final EntityActionType TYPE = EntityActionType.DEPRECATED_BLOCK_PLACE;
 
-	public static Deprecated_EntityActionBlockPlace deserializeFromBuffer(ByteBuffer buffer)
+	public static Deprecated_EntityActionBlockPlace deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation target = CodecHelpers.readAbsoluteLocation(buffer);
 		AbsoluteLocation blockOutput = CodecHelpers.readAbsoluteLocation(buffer);
 		return new Deprecated_EntityActionBlockPlace(target, blockOutput);

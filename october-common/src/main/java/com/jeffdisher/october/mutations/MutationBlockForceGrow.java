@@ -6,6 +6,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.PlantHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -20,8 +21,9 @@ public class MutationBlockForceGrow implements IMutationBlock
 	public static final long MILLIS_BETWEEN_GROWTH_CALLS = 10_000L;
 	public static final byte MIN_LIGHT = 5;
 
-	public static MutationBlockForceGrow deserializeFromBuffer(ByteBuffer buffer)
+	public static MutationBlockForceGrow deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		return new MutationBlockForceGrow(location);
 	}

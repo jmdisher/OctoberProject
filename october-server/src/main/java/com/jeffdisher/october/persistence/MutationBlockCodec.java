@@ -28,6 +28,7 @@ import com.jeffdisher.october.mutations.MutationBlockStartFire;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationBlockType;
 import com.jeffdisher.october.mutations.MutationBlockUpdate;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -37,34 +38,34 @@ import com.jeffdisher.october.utils.Assert;
 public class MutationBlockCodec
 {
 	@SuppressWarnings("unchecked")
-	private static Function<ByteBuffer, IMutationBlock>[] _CODEC_TABLE = new Function[MutationBlockType.END_OF_LIST.ordinal()];
+	private static Function<DeserializationContext, IMutationBlock>[] _CODEC_TABLE = new Function[MutationBlockType.END_OF_LIST.ordinal()];
 
 	// We specifically request that all the mutation types which can be serialized for the network are registered here.
 	static
 	{
-		_CODEC_TABLE[MutationBlockOverwriteInternal.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockOverwriteInternal.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockExtractItems.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockExtractItems.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockStoreItems.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockStoreItems.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockIncrementalBreak.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockIncrementalBreak.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockCraft.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockCraft.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockFurnaceCraft.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockFurnaceCraft.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockUpdate.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockUpdate.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockForceGrow.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockForceGrow.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockReplace.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockReplace.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockPushToBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockPushToBlock.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockLogicChange.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockLogicChange.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockPeriodic.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockPeriodic.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockIncrementalRepair.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockIncrementalRepair.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockOverwriteByEntity_V5.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockOverwriteByEntity_V5.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockLiquidFlowInto.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockLiquidFlowInto.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockStartFire.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockStartFire.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockBurnDown.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockBurnDown.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockSetLogicState.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockSetLogicState.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockPlaceMultiBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockPlaceMultiBlock.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockPhase2Multi.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockPhase2Multi.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockGrowGroundCover.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockGrowGroundCover.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockInternalSetLogicState.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockInternalSetLogicState.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockOverwriteByEntity.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockOverwriteByEntity.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[MutationBlockOverwriteInternal.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockOverwriteInternal.deserialize(context);
+		_CODEC_TABLE[MutationBlockExtractItems.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockExtractItems.deserialize(context);
+		_CODEC_TABLE[MutationBlockStoreItems.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockStoreItems.deserialize(context);
+		_CODEC_TABLE[MutationBlockIncrementalBreak.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockIncrementalBreak.deserialize(context);
+		_CODEC_TABLE[MutationBlockCraft.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockCraft.deserialize(context);
+		_CODEC_TABLE[MutationBlockFurnaceCraft.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockFurnaceCraft.deserialize(context);
+		_CODEC_TABLE[MutationBlockUpdate.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockUpdate.deserialize(context);
+		_CODEC_TABLE[MutationBlockForceGrow.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockForceGrow.deserialize(context);
+		_CODEC_TABLE[MutationBlockReplace.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockReplace.deserialize(context);
+		_CODEC_TABLE[MutationBlockPushToBlock.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockPushToBlock.deserialize(context);
+		_CODEC_TABLE[MutationBlockLogicChange.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockLogicChange.deserialize(context);
+		_CODEC_TABLE[MutationBlockPeriodic.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockPeriodic.deserialize(context);
+		_CODEC_TABLE[MutationBlockIncrementalRepair.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockIncrementalRepair.deserialize(context);
+		_CODEC_TABLE[MutationBlockOverwriteByEntity_V5.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockOverwriteByEntity_V5.deserialize(context);
+		_CODEC_TABLE[MutationBlockLiquidFlowInto.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockLiquidFlowInto.deserialize(context);
+		_CODEC_TABLE[MutationBlockStartFire.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockStartFire.deserialize(context);
+		_CODEC_TABLE[MutationBlockBurnDown.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockBurnDown.deserialize(context);
+		_CODEC_TABLE[MutationBlockSetLogicState.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockSetLogicState.deserialize(context);
+		_CODEC_TABLE[MutationBlockPlaceMultiBlock.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockPlaceMultiBlock.deserialize(context);
+		_CODEC_TABLE[MutationBlockPhase2Multi.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockPhase2Multi.deserialize(context);
+		_CODEC_TABLE[MutationBlockGrowGroundCover.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockGrowGroundCover.deserialize(context);
+		_CODEC_TABLE[MutationBlockInternalSetLogicState.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockInternalSetLogicState.deserialize(context);
+		_CODEC_TABLE[MutationBlockOverwriteByEntity.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockOverwriteByEntity.deserialize(context);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)
@@ -74,15 +75,16 @@ public class MutationBlockCodec
 	}
 
 
-	public static IMutationBlock parseAndSeekFlippedBuffer(ByteBuffer buffer)
+	public static IMutationBlock parseAndSeekContext(DeserializationContext context)
 	{
 		IMutationBlock parsed = null;
+		ByteBuffer buffer = context.buffer();
 		// We only use a single byte to describe the type.
 		if (buffer.remaining() >= 1)
 		{
 			byte opcode = buffer.get();
 			MutationBlockType type = MutationBlockType.values()[opcode];
-			parsed = _CODEC_TABLE[type.ordinal()].apply(buffer);
+			parsed = _CODEC_TABLE[type.ordinal()].apply(context);
 		}
 		return parsed;
 	}

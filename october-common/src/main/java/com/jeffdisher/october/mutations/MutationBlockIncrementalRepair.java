@@ -7,6 +7,7 @@ import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.FireHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -19,8 +20,9 @@ public class MutationBlockIncrementalRepair implements IMutationBlock
 {
 	public static final MutationBlockType TYPE = MutationBlockType.INCREMENTAL_REPAIR_BLOCK;
 
-	public static MutationBlockIncrementalRepair deserializeFromBuffer(ByteBuffer buffer)
+	public static MutationBlockIncrementalRepair deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		short damageToRepair = buffer.getShort();
 		return new MutationBlockIncrementalRepair(location, damageToRepair);

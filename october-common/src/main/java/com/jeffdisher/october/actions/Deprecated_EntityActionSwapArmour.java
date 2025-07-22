@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -15,8 +16,9 @@ public class Deprecated_EntityActionSwapArmour implements IEntityAction<IMutable
 {
 	public static final EntityActionType TYPE = EntityActionType.DEPRECATED_SWAP_ARMOUR;
 
-	public static Deprecated_EntityActionSwapArmour deserializeFromBuffer(ByteBuffer buffer)
+	public static Deprecated_EntityActionSwapArmour deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		BodyPart slot = CodecHelpers.readBodyPart(buffer);
 		int inventoryId = buffer.getInt();
 		return new Deprecated_EntityActionSwapArmour(slot, inventoryId);

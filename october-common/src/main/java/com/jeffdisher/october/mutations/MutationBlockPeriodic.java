@@ -7,6 +7,7 @@ import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.logic.PlantHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -24,9 +25,10 @@ public class MutationBlockPeriodic implements IMutationBlock
 	public static final long MILLIS_BETWEEN_GROWTH_CALLS = 10_000L;
 	public static final long MILLIS_BETWEEN_HOPPER_CALLS = 1_000L;
 
-	public static MutationBlockPeriodic deserializeFromBuffer(ByteBuffer buffer)
+	public static MutationBlockPeriodic deserialize(DeserializationContext context)
 	{
 		// We don't normally need to deserialize these, since they are never stored, but pre-V4 cuboid storage contains them.
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		return new MutationBlockPeriodic(location);
 	}

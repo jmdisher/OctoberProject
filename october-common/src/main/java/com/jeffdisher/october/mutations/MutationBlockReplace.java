@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Inventory;
@@ -21,9 +22,10 @@ public class MutationBlockReplace implements IMutationBlock
 {
 	public static final MutationBlockType TYPE = MutationBlockType.REPLACE_BLOCK;
 
-	public static MutationBlockReplace deserializeFromBuffer(ByteBuffer buffer)
+	public static MutationBlockReplace deserialize(DeserializationContext context)
 	{
-		Environment env = Environment.getShared();
+		Environment env = context.env();
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		Block originalType = env.blocks.getAsPlaceableBlock(CodecHelpers.readItem(buffer));
 		Block newType = env.blocks.getAsPlaceableBlock(CodecHelpers.readItem(buffer));

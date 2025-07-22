@@ -22,6 +22,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.PlantHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -392,7 +393,7 @@ public class TestCommonMutations
 		ByteBuffer buffer = ByteBuffer.allocate(64);
 		replace.serializeToBuffer(buffer);
 		buffer.flip();
-		MutationBlockReplace test = MutationBlockReplace.deserializeFromBuffer(buffer);
+		MutationBlockReplace test = MutationBlockReplace.deserialize(new DeserializationContext(ENV, buffer));
 		Assert.assertNotNull(test);
 	}
 

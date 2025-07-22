@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -19,9 +20,10 @@ public class MutationBlockOverwriteByEntity_V5 implements IMutationBlock
 {
 	public static final MutationBlockType TYPE = MutationBlockType.DEPRECATED_OVERWRITE_BLOCK_BY_ENTITY;
 
-	public static MutationBlockOverwriteByEntity_V5 deserializeFromBuffer(ByteBuffer buffer)
+	public static MutationBlockOverwriteByEntity_V5 deserialize(DeserializationContext context)
 	{
-		Environment env = Environment.getShared();
+		Environment env = context.env();
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		Block blockType = env.blocks.getAsPlaceableBlock(CodecHelpers.readItem(buffer));
 		int entityId = buffer.getInt();

@@ -13,6 +13,7 @@ import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
@@ -72,8 +73,9 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		EntitySubActionType.TESTING_ONLY,
 	}).collect(Collectors.toSet());
 
-	public static <T extends IMutableMinimalEntity> EntityChangeTopLevelMovement<T> deserializeFromBuffer(ByteBuffer buffer)
+	public static <T extends IMutableMinimalEntity> EntityChangeTopLevelMovement<T> deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		EntityLocation newLocation = CodecHelpers.readEntityLocation(buffer);
 		EntityLocation newVelocity = CodecHelpers.readEntityLocation(buffer);
 		Intensity intensity = Intensity.read(buffer);

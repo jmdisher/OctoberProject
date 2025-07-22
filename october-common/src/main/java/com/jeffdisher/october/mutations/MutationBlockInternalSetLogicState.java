@@ -7,6 +7,7 @@ import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -23,8 +24,9 @@ public class MutationBlockInternalSetLogicState implements IMutationBlock
 {
 	public static final MutationBlockType TYPE = MutationBlockType.INTERNAL_SET_LOGIC_STATE;
 
-	public static MutationBlockInternalSetLogicState deserializeFromBuffer(ByteBuffer buffer)
+	public static MutationBlockInternalSetLogicState deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		boolean setHigh = CodecHelpers.readBoolean(buffer);
 		return new MutationBlockInternalSetLogicState(location, setHigh);

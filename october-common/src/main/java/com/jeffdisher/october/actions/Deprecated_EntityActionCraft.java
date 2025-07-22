@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -14,8 +15,9 @@ public class Deprecated_EntityActionCraft implements IEntityAction<IMutablePlaye
 {
 	public static final EntityActionType TYPE = EntityActionType.DEPRECATED_CRAFT;
 
-	public static Deprecated_EntityActionCraft deserializeFromBuffer(ByteBuffer buffer)
+	public static Deprecated_EntityActionCraft deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		Craft operation = CodecHelpers.readCraft(buffer);
 		buffer.getLong();
 		return new Deprecated_EntityActionCraft(operation);

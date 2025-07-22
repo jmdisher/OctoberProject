@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -15,8 +16,9 @@ public class Deprecated_EntityActionSetDayAndSpawn implements IEntityAction<IMut
 {
 	public static final EntityActionType TYPE = EntityActionType.DEPRECATED_SET_DAY_AND_SPAWN;
 
-	public static Deprecated_EntityActionSetDayAndSpawn deserializeFromBuffer(ByteBuffer buffer)
+	public static Deprecated_EntityActionSetDayAndSpawn deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation bedLocation = CodecHelpers.readAbsoluteLocation(buffer);
 		return new Deprecated_EntityActionSetDayAndSpawn(bedLocation);
 	}

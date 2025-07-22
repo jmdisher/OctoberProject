@@ -3,6 +3,7 @@ package com.jeffdisher.october.actions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.EntityActionType;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -13,8 +14,9 @@ public class Deprecated_EntityActionAttackEntity implements IEntityAction<IMutab
 {
 	public static final EntityActionType TYPE = EntityActionType.DEPRECATED_ATTACK_ENTITY;
 
-	public static Deprecated_EntityActionAttackEntity deserializeFromBuffer(ByteBuffer buffer)
+	public static Deprecated_EntityActionAttackEntity deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		int targetEntityId = buffer.getInt();
 		return new Deprecated_EntityActionAttackEntity(targetEntityId);
 	}

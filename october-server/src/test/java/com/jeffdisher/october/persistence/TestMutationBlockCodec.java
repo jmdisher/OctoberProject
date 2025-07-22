@@ -16,6 +16,7 @@ import com.jeffdisher.october.mutations.MutationBlockIncrementalRepair;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.Inventory;
@@ -47,7 +48,7 @@ public class TestMutationBlockCodec
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);
 		buffer.flip();
-		IMutationBlock read = MutationBlockCodec.parseAndSeekFlippedBuffer(buffer);
+		IMutationBlock read = MutationBlockCodec.parseAndSeekContext(new DeserializationContext(ENV, buffer));
 		Assert.assertTrue(read instanceof MutationBlockOverwriteInternal);
 		Assert.assertEquals(0, buffer.remaining());
 	}
@@ -62,7 +63,7 @@ public class TestMutationBlockCodec
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);
 		buffer.flip();
-		IMutationBlock read = MutationBlockCodec.parseAndSeekFlippedBuffer(buffer);
+		IMutationBlock read = MutationBlockCodec.parseAndSeekContext(new DeserializationContext(ENV, buffer));
 		Assert.assertTrue(read instanceof MutationBlockOverwriteByEntity);
 		Assert.assertEquals(0, buffer.remaining());
 	}
@@ -79,7 +80,7 @@ public class TestMutationBlockCodec
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);
 		buffer.flip();
-		IMutationBlock read = MutationBlockCodec.parseAndSeekFlippedBuffer(buffer);
+		IMutationBlock read = MutationBlockCodec.parseAndSeekContext(new DeserializationContext(ENV, buffer));
 		Assert.assertTrue(read instanceof MutationBlockExtractItems);
 		Assert.assertEquals(0, buffer.remaining());
 	}
@@ -95,7 +96,7 @@ public class TestMutationBlockCodec
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);
 		buffer.flip();
-		IMutationBlock read = MutationBlockCodec.parseAndSeekFlippedBuffer(buffer);
+		IMutationBlock read = MutationBlockCodec.parseAndSeekContext(new DeserializationContext(ENV, buffer));
 		Assert.assertTrue(read instanceof MutationBlockStoreItems);
 		Assert.assertEquals(0, buffer.remaining());
 	}
@@ -111,7 +112,7 @@ public class TestMutationBlockCodec
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);
 		buffer.flip();
-		IMutationBlock read = MutationBlockCodec.parseAndSeekFlippedBuffer(buffer);
+		IMutationBlock read = MutationBlockCodec.parseAndSeekContext(new DeserializationContext(ENV, buffer));
 		Assert.assertTrue(read instanceof MutationBlockStoreItems);
 		Assert.assertEquals(0, buffer.remaining());
 	}
@@ -126,7 +127,7 @@ public class TestMutationBlockCodec
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);
 		buffer.flip();
-		IMutationBlock read = MutationBlockCodec.parseAndSeekFlippedBuffer(buffer);
+		IMutationBlock read = MutationBlockCodec.parseAndSeekContext(new DeserializationContext(ENV, buffer));
 		Assert.assertTrue(read instanceof MutationBlockIncrementalBreak);
 		Assert.assertEquals(0, buffer.remaining());
 	}
@@ -142,7 +143,7 @@ public class TestMutationBlockCodec
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);
 		buffer.flip();
-		IMutationBlock read = MutationBlockCodec.parseAndSeekFlippedBuffer(buffer);
+		IMutationBlock read = MutationBlockCodec.parseAndSeekContext(new DeserializationContext(ENV, buffer));
 		Assert.assertTrue(read instanceof MutationBlockCraft);
 		Assert.assertEquals(0, buffer.remaining());
 	}
@@ -157,7 +158,7 @@ public class TestMutationBlockCodec
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);
 		buffer.flip();
-		IMutationBlock read = MutationBlockCodec.parseAndSeekFlippedBuffer(buffer);
+		IMutationBlock read = MutationBlockCodec.parseAndSeekContext(new DeserializationContext(ENV, buffer));
 		Assert.assertTrue(read instanceof MutationBlockIncrementalRepair);
 		Assert.assertEquals(0, buffer.remaining());
 	}

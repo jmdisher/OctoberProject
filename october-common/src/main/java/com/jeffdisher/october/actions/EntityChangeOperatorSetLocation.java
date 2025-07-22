@@ -3,6 +3,7 @@ package com.jeffdisher.october.actions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.EntityActionType;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -18,7 +19,7 @@ public class EntityChangeOperatorSetLocation implements IEntityAction<IMutablePl
 {
 	public static final EntityActionType TYPE = EntityActionType.OPERATOR_SET_LOCATION;
 
-	public static EntityChangeOperatorSetLocation deserializeFromBuffer(ByteBuffer buffer)
+	public static EntityChangeOperatorSetLocation deserialize(DeserializationContext context)
 	{
 		// This is never serialized.
 		throw Assert.unreachable();

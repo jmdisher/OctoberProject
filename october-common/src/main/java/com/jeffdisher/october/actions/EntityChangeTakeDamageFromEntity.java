@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.mutations.CommonEntityMutationHelpers;
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.EventRecord;
@@ -24,8 +25,9 @@ public class EntityChangeTakeDamageFromEntity<T extends IMutableMinimalEntity> i
 {
 	public static final EntityActionType TYPE = EntityActionType.TAKE_DAMAGE_FROM_ENTITY;
 
-	public static <T extends IMutableMinimalEntity> EntityChangeTakeDamageFromEntity<T> deserializeFromBuffer(ByteBuffer buffer)
+	public static <T extends IMutableMinimalEntity> EntityChangeTakeDamageFromEntity<T> deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		BodyPart target = CodecHelpers.readBodyPart(buffer);
 		int damage = buffer.getInt();
 		int sourceEntityId = buffer.getInt();

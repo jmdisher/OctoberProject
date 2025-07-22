@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
@@ -15,8 +16,9 @@ public class Deprecated_EntityChangeTakeDamage_V2<T extends IMutableMinimalEntit
 {
 	public static final EntityActionType TYPE = EntityActionType.DEPRECATED_TAKE_DAMAGE_V2;
 
-	public static <T extends IMutableMinimalEntity> Deprecated_EntityChangeTakeDamage_V2<T> deserializeFromBuffer(ByteBuffer buffer)
+	public static <T extends IMutableMinimalEntity> Deprecated_EntityChangeTakeDamage_V2<T> deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		BodyPart target = CodecHelpers.readBodyPart(buffer);
 		byte damage = buffer.get();
 		return new Deprecated_EntityChangeTakeDamage_V2<>(target, damage);

@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -14,8 +15,9 @@ public class Deprecated_EntityActionUseSelectedItemOnBlock implements IEntityAct
 {
 	public static final EntityActionType TYPE = EntityActionType.DEPRECATED_USE_SELECTED_ITEM_ON_BLOCK;
 
-	public static Deprecated_EntityActionUseSelectedItemOnBlock deserializeFromBuffer(ByteBuffer buffer)
+	public static Deprecated_EntityActionUseSelectedItemOnBlock deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation target = CodecHelpers.readAbsoluteLocation(buffer);
 		return new Deprecated_EntityActionUseSelectedItemOnBlock(target);
 	}

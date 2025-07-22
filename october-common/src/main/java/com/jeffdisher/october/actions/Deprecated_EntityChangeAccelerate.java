@@ -3,6 +3,7 @@ package com.jeffdisher.october.actions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.EntityActionType;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -22,8 +23,9 @@ public class Deprecated_EntityChangeAccelerate<T extends IMutableMinimalEntity> 
 	public static final float MULTIPLIER_STRAFE = 0.8f;
 	public static final float MULTIPLIER_BACKWARD = 0.6f;
 
-	public static <T extends IMutableMinimalEntity> Deprecated_EntityChangeAccelerate<T> deserializeFromBuffer(ByteBuffer buffer)
+	public static <T extends IMutableMinimalEntity> Deprecated_EntityChangeAccelerate<T> deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		buffer.getLong();
 		Relative direction = Relative.values()[buffer.get()];
 		return new Deprecated_EntityChangeAccelerate<>(direction);

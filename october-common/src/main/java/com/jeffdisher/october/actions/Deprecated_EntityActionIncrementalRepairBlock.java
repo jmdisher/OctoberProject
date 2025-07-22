@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -14,8 +15,9 @@ public class Deprecated_EntityActionIncrementalRepairBlock implements IEntityAct
 {
 	public static final EntityActionType TYPE = EntityActionType.DEPRECATED_INCREMENTAL_REPAIR_BLOCK;
 
-	public static Deprecated_EntityActionIncrementalRepairBlock deserializeFromBuffer(ByteBuffer buffer)
+	public static Deprecated_EntityActionIncrementalRepairBlock deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation target = CodecHelpers.readAbsoluteLocation(buffer);
 		buffer.getShort();
 		return new Deprecated_EntityActionIncrementalRepairBlock(target);

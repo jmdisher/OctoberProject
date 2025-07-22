@@ -12,6 +12,7 @@ import com.jeffdisher.october.logic.FireHelpers;
 import com.jeffdisher.october.logic.GroundCoverHelpers;
 import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.MutableInventory;
@@ -26,8 +27,9 @@ public class MutationBlockUpdate implements IMutationBlock
 {
 	public static final MutationBlockType TYPE = MutationBlockType.UPDATE;
 
-	public static MutationBlockUpdate deserializeFromBuffer(ByteBuffer buffer)
+	public static MutationBlockUpdate deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		return new MutationBlockUpdate(location);
 	}

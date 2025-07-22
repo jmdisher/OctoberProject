@@ -3,6 +3,7 @@ package com.jeffdisher.october.actions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.EntityActionType;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -12,8 +13,9 @@ public class Deprecated_EntityActionChangeHotbarSlot implements IEntityAction<IM
 {
 	public static final EntityActionType TYPE = EntityActionType.DEPRECATED_CHANGE_HOTBAR_SLOT;
 
-	public static Deprecated_EntityActionChangeHotbarSlot deserializeFromBuffer(ByteBuffer buffer)
+	public static Deprecated_EntityActionChangeHotbarSlot deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		int index = buffer.getInt();
 		return new Deprecated_EntityActionChangeHotbarSlot(index);
 	}

@@ -44,44 +44,44 @@ import com.jeffdisher.october.utils.Assert;
 public class EntityActionCodec
 {
 	@SuppressWarnings("unchecked")
-	private static Function<ByteBuffer, IEntityAction<IMutablePlayerEntity>>[] _CODEC_TABLE = new Function[EntityActionType.END_OF_LIST.ordinal()];
+	private static Function<DeserializationContext, IEntityAction<IMutablePlayerEntity>>[] _CODEC_TABLE = new Function[EntityActionType.END_OF_LIST.ordinal()];
 
 	// We specifically request that all the mutation types which can be serialized for the network are registered here.
 	static
 	{
-		_CODEC_TABLE[Deprecated_EntityChangeMove.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityChangeMove.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityActionJump.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityActionJump.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityActionSwim.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityActionSwim.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityActionBlockPlace.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityActionBlockPlace.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityActionCraft.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityActionCraft.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityActionSelectItem.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityActionSelectItem.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityActionItemsRequestPush.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityActionItemsRequestPush.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityActionItemsRequestPull.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityActionItemsRequestPull.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationEntityStoreToInventory.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationEntityStoreToInventory.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityActionIncrementalBreakBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityActionIncrementalBreakBlock.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityActionCraftInBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityActionCraftInBlock.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityActionAttackEntity.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityActionAttackEntity.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityChangeTakeDamage_V2.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityChangeTakeDamage_V2.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntityChangePeriodic.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangePeriodic.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityActionUseSelectedItemOnSelf.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityActionUseSelectedItemOnSelf.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityActionUseSelectedItemOnBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityActionUseSelectedItemOnBlock.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityActionUseSelectedItemOnEntity.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityActionUseSelectedItemOnEntity.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityActionChangeHotbarSlot.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityActionChangeHotbarSlot.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityActionSwapArmour.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityActionSwapArmour.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityActionSetBlockLogicState.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityActionSetBlockLogicState.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntityChangeOperatorSetCreative.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeOperatorSetCreative.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntityChangeOperatorSetLocation.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeOperatorSetLocation.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityActionSetDayAndSpawn.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityActionSetDayAndSpawn.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityChangeSetOrientation.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityChangeSetOrientation.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityChangeAccelerate.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityChangeAccelerate.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityActionIncrementalRepairBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityActionIncrementalRepairBlock.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntityChangeTakeDamageFromEntity.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeTakeDamageFromEntity.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityChangeTakeDamageFromOther.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityChangeTakeDamageFromOther.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityActionMultiBlockPlace.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityActionMultiBlockPlace.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntityChangeOperatorSpawnCreature.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeOperatorSpawnCreature.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[Deprecated_EntityChangeTimeSync.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityChangeTimeSync.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntityChangeTopLevelMovement.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeTopLevelMovement.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntityActionType.TESTING_ONLY.ordinal()] = (ByteBuffer buffer) -> { throw Assert.unreachable(); };
+		_CODEC_TABLE[Deprecated_EntityChangeMove.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityChangeMove.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityActionJump.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityActionJump.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityActionSwim.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityActionSwim.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityActionBlockPlace.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityActionBlockPlace.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityActionCraft.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityActionCraft.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityActionSelectItem.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityActionSelectItem.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityActionItemsRequestPush.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityActionItemsRequestPush.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityActionItemsRequestPull.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityActionItemsRequestPull.deserialize(context);
+		_CODEC_TABLE[MutationEntityStoreToInventory.TYPE.ordinal()] = (DeserializationContext context) -> MutationEntityStoreToInventory.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityActionIncrementalBreakBlock.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityActionIncrementalBreakBlock.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityActionCraftInBlock.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityActionCraftInBlock.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityActionAttackEntity.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityActionAttackEntity.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityChangeTakeDamage_V2.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityChangeTakeDamage_V2.deserialize(context);
+		_CODEC_TABLE[EntityChangePeriodic.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangePeriodic.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityActionUseSelectedItemOnSelf.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityActionUseSelectedItemOnSelf.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityActionUseSelectedItemOnBlock.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityActionUseSelectedItemOnBlock.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityActionUseSelectedItemOnEntity.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityActionUseSelectedItemOnEntity.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityActionChangeHotbarSlot.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityActionChangeHotbarSlot.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityActionSwapArmour.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityActionSwapArmour.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityActionSetBlockLogicState.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityActionSetBlockLogicState.deserialize(context);
+		_CODEC_TABLE[EntityChangeOperatorSetCreative.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeOperatorSetCreative.deserialize(context);
+		_CODEC_TABLE[EntityChangeOperatorSetLocation.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeOperatorSetLocation.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityActionSetDayAndSpawn.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityActionSetDayAndSpawn.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityChangeSetOrientation.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityChangeSetOrientation.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityChangeAccelerate.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityChangeAccelerate.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityActionIncrementalRepairBlock.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityActionIncrementalRepairBlock.deserialize(context);
+		_CODEC_TABLE[EntityChangeTakeDamageFromEntity.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeTakeDamageFromEntity.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityChangeTakeDamageFromOther.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityChangeTakeDamageFromOther.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityActionMultiBlockPlace.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityActionMultiBlockPlace.deserialize(context);
+		_CODEC_TABLE[EntityChangeOperatorSpawnCreature.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeOperatorSpawnCreature.deserialize(context);
+		_CODEC_TABLE[Deprecated_EntityChangeTimeSync.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityChangeTimeSync.deserialize(context);
+		_CODEC_TABLE[EntityChangeTopLevelMovement.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeTopLevelMovement.deserialize(context);
+		_CODEC_TABLE[EntityActionType.TESTING_ONLY.ordinal()] = (DeserializationContext context) -> { throw Assert.unreachable(); };
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)
@@ -91,15 +91,16 @@ public class EntityActionCodec
 	}
 
 
-	public static IEntityAction<IMutablePlayerEntity> parseAndSeekFlippedBuffer(ByteBuffer buffer)
+	public static IEntityAction<IMutablePlayerEntity> parseAndSeekContext(DeserializationContext context)
 	{
 		IEntityAction<IMutablePlayerEntity> parsed = null;
+		ByteBuffer buffer = context.buffer();
 		// We only use a single byte to describe the type.
 		if (buffer.remaining() >= 1)
 		{
 			byte opcode = buffer.get();
 			EntityActionType type = EntityActionType.values()[opcode];
-			parsed = _CODEC_TABLE[type.ordinal()].apply(buffer);
+			parsed = _CODEC_TABLE[type.ordinal()].apply(context);
 		}
 		return parsed;
 	}

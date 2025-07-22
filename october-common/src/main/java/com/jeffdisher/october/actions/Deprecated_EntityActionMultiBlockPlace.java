@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -15,8 +16,9 @@ public class Deprecated_EntityActionMultiBlockPlace implements IEntityAction<IMu
 {
 	public static final EntityActionType TYPE = EntityActionType.DEPRECATED_MULTI_BLOCK_PLACE;
 
-	public static Deprecated_EntityActionMultiBlockPlace deserializeFromBuffer(ByteBuffer buffer)
+	public static Deprecated_EntityActionMultiBlockPlace deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation target = CodecHelpers.readAbsoluteLocation(buffer);
 		OrientationAspect.Direction orientation = CodecHelpers.readOrientation(buffer);
 		return new Deprecated_EntityActionMultiBlockPlace(target, orientation);

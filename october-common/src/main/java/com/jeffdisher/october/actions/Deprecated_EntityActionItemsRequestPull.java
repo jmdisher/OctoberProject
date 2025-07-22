@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -14,8 +15,9 @@ public class Deprecated_EntityActionItemsRequestPull implements IEntityAction<IM
 {
 	public static final EntityActionType TYPE = EntityActionType.DEPRECATED_ITEMS_REQUEST_PULL;
 
-	public static Deprecated_EntityActionItemsRequestPull deserializeFromBuffer(ByteBuffer buffer)
+	public static Deprecated_EntityActionItemsRequestPull deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation blockLocation = CodecHelpers.readAbsoluteLocation(buffer);
 		int blockInventoryKey = buffer.getInt();
 		int countRequested = buffer.getInt();

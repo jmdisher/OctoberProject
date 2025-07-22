@@ -3,6 +3,7 @@ package com.jeffdisher.october.actions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.EntityActionType;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -16,7 +17,7 @@ public class EntityChangeOperatorSetCreative implements IEntityAction<IMutablePl
 {
 	public static final EntityActionType TYPE = EntityActionType.OPERATOR_SET_CREATIVE;
 
-	public static EntityChangeOperatorSetCreative deserializeFromBuffer(ByteBuffer buffer)
+	public static EntityChangeOperatorSetCreative deserialize(DeserializationContext context)
 	{
 		// This is never serialized.
 		throw Assert.unreachable();

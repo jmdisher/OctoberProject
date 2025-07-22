@@ -38,6 +38,7 @@ import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.net.EntityActionCodec;
 import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV1;
 import com.jeffdisher.october.persistence.legacy.LegacyEntityV1;
@@ -443,6 +444,12 @@ public class ResourceLoader
 			// Verify the version is one we can understand.
 			int version = buffer.getInt();
 			
+			// We want to create the decoder context here since we have version data.
+			Environment env = Environment.getShared();
+			DeserializationContext context = new DeserializationContext(env
+				, buffer
+			);
+			
 			Supplier<SuspendedCuboid<CuboidData>> dataReader;
 			if (VERSION_CUBOID == version)
 			{
@@ -453,7 +460,7 @@ public class ResourceLoader
 					List<CreatureEntity> creatures = _background_readCreatures(buffer);
 					
 					// Now, load any suspended mutations.
-					List<ScheduledMutation> pendingMutations = _background_readMutations(buffer);
+					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
 					// ... and any periodic mutations.
 					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
 					
@@ -479,7 +486,7 @@ public class ResourceLoader
 					List<CreatureEntity> creatures = _background_readCreatures(buffer);
 					
 					// Now, load any suspended mutations.
-					List<ScheduledMutation> pendingMutations = _background_readMutations(buffer);
+					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
 					// ... and any periodic mutations.
 					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
 					
@@ -506,7 +513,7 @@ public class ResourceLoader
 					List<CreatureEntity> creatures = _background_readCreatures(buffer);
 					
 					// Now, load any suspended mutations.
-					List<ScheduledMutation> pendingMutations = _background_readMutations(buffer);
+					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
 					// ... and any periodic mutations.
 					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
 					
@@ -533,7 +540,7 @@ public class ResourceLoader
 					List<CreatureEntity> creatures = _background_readCreatures(buffer);
 					
 					// Now, load any suspended mutations.
-					List<ScheduledMutation> pendingMutations = _background_readMutations(buffer);
+					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
 					// ... and any periodic mutations.
 					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
 					
@@ -560,7 +567,7 @@ public class ResourceLoader
 					List<CreatureEntity> creatures = _background_readCreatures(buffer);
 					
 					// Now, load any suspended mutations.
-					List<ScheduledMutation> pendingMutations = _background_readMutations(buffer);
+					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
 					// ... and any periodic mutations.
 					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
 					
@@ -589,7 +596,7 @@ public class ResourceLoader
 					// Now, load any suspended mutations.
 					List<ScheduledMutation> pendingMutations = new ArrayList<>();
 					Map<BlockAddress, Long> periodicMutations = new HashMap<>();
-					_background_splitMutations(pendingMutations, periodicMutations, buffer);
+					_background_splitMutations(pendingMutations, periodicMutations, context);
 					
 					// This should be fully read.
 					Assert.assertTrue(!buffer.hasRemaining());
@@ -623,7 +630,7 @@ public class ResourceLoader
 					// Now, load any suspended mutations.
 					List<ScheduledMutation> pendingMutations = new ArrayList<>();
 					Map<BlockAddress, Long> periodicMutations = new HashMap<>();
-					_background_splitMutations(pendingMutations, periodicMutations, buffer);
+					_background_splitMutations(pendingMutations, periodicMutations, context);
 					
 					// This should be fully read.
 					Assert.assertTrue(!buffer.hasRemaining());
@@ -820,10 +827,10 @@ public class ResourceLoader
 
 	private void _background_splitMutations(List<ScheduledMutation> out_pendingMutations
 			, Map<BlockAddress, Long> out_periodicMutations
-			, MappedByteBuffer buffer
+			, DeserializationContext context
 	)
 	{
-		for (ScheduledMutation scheduledMutation : _background_readMutations(buffer))
+		for (ScheduledMutation scheduledMutation : _background_readMutations(context))
 		{
 			IMutationBlock mutation = scheduledMutation.mutation();
 			if (mutation instanceof MutationBlockPeriodic)
@@ -838,15 +845,16 @@ public class ResourceLoader
 		}
 	}
 
-	private List<ScheduledMutation> _background_readMutations(MappedByteBuffer buffer)
+	private List<ScheduledMutation> _background_readMutations(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		int mutationCount = buffer.getInt();
 		List<ScheduledMutation> suspended = new ArrayList<>();
 		for (int i = 0; i < mutationCount; ++i)
 		{
 			// Read the parts of the suspended data.
 			long millisUntilReady = buffer.getLong();
-			IMutationBlock mutation = MutationBlockCodec.parseAndSeekFlippedBuffer(buffer);
+			IMutationBlock mutation = MutationBlockCodec.parseAndSeekContext(context);
 			suspended.add(new ScheduledMutation(mutation, millisUntilReady));
 		}
 		return suspended;
@@ -972,6 +980,12 @@ public class ResourceLoader
 			// Verify the version is one we can understand.
 			int version = buffer.getInt();
 			
+			// We want to create the decoder context here since we have version data.
+			Environment env = Environment.getShared();
+			DeserializationContext context = new DeserializationContext(env
+				, buffer
+			);
+			
 			Supplier<SuspendedEntity> dataReader;
 			if ((VERSION_ENTITY == version)
 					|| (VERSION_ENTITY_V2 == version)
@@ -987,7 +1001,7 @@ public class ResourceLoader
 					Entity entity = CodecHelpers.readEntity(buffer);
 					
 					// Now, load any suspended changes.
-					List<ScheduledChange> suspended = _background_readSuspendedMutations(buffer);
+					List<ScheduledChange> suspended = _background_readSuspendedMutations(context);
 					return new SuspendedEntity(entity, suspended);
 				};
 			}
@@ -996,11 +1010,11 @@ public class ResourceLoader
 				// The V1 entity is has less data.
 				dataReader = () -> {
 					// Read the legacy data.
-					LegacyEntityV1 legacy = LegacyEntityV1.load(buffer);
+					LegacyEntityV1 legacy = LegacyEntityV1.load(context);
 					Entity entity = legacy.toEntity();
 					
 					// Now, load any suspended changes.
-					List<ScheduledChange> suspended = _background_readSuspendedMutations(buffer);
+					List<ScheduledChange> suspended = _background_readSuspendedMutations(context);
 					return new SuspendedEntity(entity, suspended);
 				};
 			}
@@ -1023,14 +1037,15 @@ public class ResourceLoader
 		return result;
 	}
 
-	private List<ScheduledChange> _background_readSuspendedMutations(ByteBuffer buffer)
+	private List<ScheduledChange> _background_readSuspendedMutations(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		List<ScheduledChange> suspended = new ArrayList<>();
 		while (buffer.hasRemaining())
 		{
 			// Read the parts of the suspended data.
 			long millisUntilReady = buffer.getLong();
-			IEntityAction<IMutablePlayerEntity> change = EntityActionCodec.parseAndSeekFlippedBuffer(buffer);
+			IEntityAction<IMutablePlayerEntity> change = EntityActionCodec.parseAndSeekContext(context);
 			suspended.add(new ScheduledChange(change, millisUntilReady));
 		}
 		return suspended;

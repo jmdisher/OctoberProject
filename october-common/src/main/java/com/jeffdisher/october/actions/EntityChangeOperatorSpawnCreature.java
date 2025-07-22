@@ -3,6 +3,7 @@ package com.jeffdisher.october.actions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.EntityActionType;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IEntityAction;
@@ -19,7 +20,7 @@ public class EntityChangeOperatorSpawnCreature implements IEntityAction<IMutable
 {
 	public static final EntityActionType TYPE = EntityActionType.OPERATOR_SPAWN_CREATURE;
 
-	public static EntityChangeOperatorSpawnCreature deserializeFromBuffer(ByteBuffer buffer)
+	public static EntityChangeOperatorSpawnCreature deserialize(DeserializationContext context)
 	{
 		// This is never serialized.
 		throw Assert.unreachable();

@@ -3,6 +3,7 @@ package com.jeffdisher.october.actions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.EntityActionType;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -12,8 +13,9 @@ public class Deprecated_EntityActionUseSelectedItemOnEntity implements IEntityAc
 {
 	public static final EntityActionType TYPE = EntityActionType.DEPRECATED_USE_SELECTED_ITEM_ON_ENTITY;
 
-	public static Deprecated_EntityActionUseSelectedItemOnEntity deserializeFromBuffer(ByteBuffer buffer)
+	public static Deprecated_EntityActionUseSelectedItemOnEntity deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		int entityId = buffer.getInt();
 		return new Deprecated_EntityActionUseSelectedItemOnEntity(entityId);
 	}

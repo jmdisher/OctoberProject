@@ -2,12 +2,15 @@ package com.jeffdisher.october.net;
 
 import java.nio.ByteBuffer;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.actions.Deprecated_EntityChangeTakeDamageFromOther;
 import com.jeffdisher.october.actions.EntityChangeTakeDamageFromEntity;
 import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.subactions.EntityChangeJump;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.EntityLocation;
@@ -17,6 +20,18 @@ import com.jeffdisher.october.types.IMutablePlayerEntity;
 
 public class TestEntityActionCodec
 {
+	private static Environment ENV;
+	@BeforeClass
+	public static void setup()
+	{
+		ENV = Environment.createSharedInstance();
+	}
+	@AfterClass
+	public static void tearDown()
+	{
+		Environment.clearSharedInstance();
+	}
+
 	@Test
 	public void takeDamageEntity() throws Throwable
 	{
@@ -27,7 +42,7 @@ public class TestEntityActionCodec
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		EntityActionCodec.serializeToBuffer(buffer, change);
 		buffer.flip();
-		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekFlippedBuffer(buffer);
+		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV, buffer));
 		Assert.assertTrue(read instanceof EntityChangeTakeDamageFromEntity);
 		Assert.assertEquals(0, buffer.remaining());
 	}
@@ -42,7 +57,7 @@ public class TestEntityActionCodec
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		EntityActionCodec.serializeToBuffer(buffer, change);
 		buffer.flip();
-		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekFlippedBuffer(buffer);
+		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV, buffer));
 		Assert.assertTrue(read instanceof Deprecated_EntityChangeTakeDamageFromOther);
 		Assert.assertEquals(0, buffer.remaining());
 	}
@@ -63,7 +78,7 @@ public class TestEntityActionCodec
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		EntityActionCodec.serializeToBuffer(buffer, action);
 		buffer.flip();
-		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekFlippedBuffer(buffer);
+		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV, buffer));
 		Assert.assertTrue(read instanceof EntityChangeTopLevelMovement);
 		Assert.assertNull(((EntityChangeTopLevelMovement<?>)read).test_getSubAction());
 		Assert.assertEquals(0, buffer.remaining());
@@ -80,7 +95,7 @@ public class TestEntityActionCodec
 		buffer = ByteBuffer.allocate(1024);
 		EntityActionCodec.serializeToBuffer(buffer, action);
 		buffer.flip();
-		read = EntityActionCodec.parseAndSeekFlippedBuffer(buffer);
+		read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV, buffer));
 		Assert.assertTrue(read instanceof EntityChangeTopLevelMovement);
 		Assert.assertTrue(((EntityChangeTopLevelMovement<?>)read).test_getSubAction() instanceof EntityChangeJump);
 		Assert.assertEquals(0, buffer.remaining());

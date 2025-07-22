@@ -3,6 +3,7 @@ package com.jeffdisher.october.persistence.legacy;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.Entity;
@@ -33,9 +34,10 @@ public record LegacyEntityV1(int id
 {
 	public static final int HOTBAR_SIZE = 9;
 
-	public static LegacyEntityV1 load(ByteBuffer buffer)
+	public static LegacyEntityV1 load(DeserializationContext context)
 	{
 		// We just use the logic which was used in CodecHelpers to load this in V1.
+		ByteBuffer buffer = context.buffer();
 		int id = buffer.getInt();
 		boolean isCreativeMode = CodecHelpers.readBoolean(buffer);
 		EntityLocation location = CodecHelpers.readEntityLocation(buffer);

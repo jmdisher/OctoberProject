@@ -6,6 +6,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.GroundCoverHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -24,8 +25,9 @@ public class MutationBlockGrowGroundCover implements IMutationBlock
 	 */
 	public static final long SPREAD_DELAY_MILLIS = 10_000L;
 
-	public static MutationBlockGrowGroundCover deserializeFromBuffer(ByteBuffer buffer)
+	public static MutationBlockGrowGroundCover deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		Block groundCoverType = CodecHelpers.readBlock(buffer);
 		return new MutationBlockGrowGroundCover(location, groundCoverType);

@@ -3,6 +3,7 @@ package com.jeffdisher.october.actions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.EntityActionType;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -18,8 +19,9 @@ public class Deprecated_EntityChangeMove<T extends IMutableMinimalEntity> implem
 	 */
 	public static final long LIMIT_COST_MILLIS = 100L;
 
-	public static <T extends IMutableMinimalEntity> Deprecated_EntityChangeMove<T> deserializeFromBuffer(ByteBuffer buffer)
+	public static <T extends IMutableMinimalEntity> Deprecated_EntityChangeMove<T> deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		buffer.getLong();
 		float speedMultiplier = buffer.getFloat();
 		Direction direction = Direction.values()[buffer.get()];

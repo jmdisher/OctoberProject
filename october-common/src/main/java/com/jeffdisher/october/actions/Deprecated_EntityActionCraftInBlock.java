@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.IEntityAction;
@@ -16,8 +17,9 @@ public class Deprecated_EntityActionCraftInBlock implements IEntityAction<IMutab
 {
 	public static final EntityActionType TYPE = EntityActionType.DEPRECATED_CRAFT_IN_BLOCK;
 
-	public static Deprecated_EntityActionCraftInBlock deserializeFromBuffer(ByteBuffer buffer)
+	public static Deprecated_EntityActionCraftInBlock deserialize(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation targetBlock = CodecHelpers.readAbsoluteLocation(buffer);
 		Craft craft = CodecHelpers.readCraft(buffer);
 		buffer.getLong();
