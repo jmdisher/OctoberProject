@@ -448,6 +448,17 @@ public class BlockAspect
 		return _blocksWithActiveState.contains(block);
 	}
 
+	/**
+	 * Checks if the given block is a ladder type.
+	 * 
+	 * @param block The block to check.
+	 * @return True if this block is a ladder type.
+	 */
+	public boolean isLadderType(Block block)
+	{
+		return _ladderType.contains(block);
+	}
+
 
 	private Map<Block, Integer> _nonSolidViscosityMap(boolean isActive)
 	{

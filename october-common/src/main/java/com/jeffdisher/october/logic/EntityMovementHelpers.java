@@ -2,6 +2,7 @@ package com.jeffdisher.october.logic;
 
 import java.util.Iterator;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
@@ -108,6 +109,30 @@ public class EntityMovementHelpers
 		return newZVelocity;
 	}
 
+	/**
+	 * Used to check if there is a ladder intersecting with the entity at entityBase of the given volume.
+	 * 
+	 * @param entityBase The base south-west-down corner of the space to check.
+	 * @param volume The volume of the space to check.
+	 * @param ladderSupplier Returns true if there is a ladder block in the requested location.
+	 * @return True if there is a ladder intersecting with this entity, in any block.
+	 */
+	public static boolean isInLadder(EntityLocation entityBase, EntityVolume volume, Predicate<AbsoluteLocation> ladderSupplier)
+	{
+		_VolumeIterator iterator = _iteratorForEntity(entityBase, volume);
+		
+		boolean isLadder = false;
+		for (AbsoluteLocation loc : iterator)
+		{
+			if (ladderSupplier.test(loc))
+			{
+				isLadder = true;
+				break;
+			}
+		}
+		return isLadder;
+	}
+
 
 	private static boolean _canOccupyLocation(EntityLocation movingStart, EntityVolume volume, InteractiveHelper helper, boolean fromAbove)
 	{
@@ -118,15 +143,10 @@ public class EntityMovementHelpers
 
 	private static float _maxViscosityInEntityBlocks(EntityLocation entityBase, EntityVolume volume, InteractiveHelper helper, boolean fromAbove)
 	{
-		EntityLocation entityEdge = new EntityLocation(entityBase.x() + volume.width()
-			, entityBase.y() + volume.width()
-			, entityBase.z() + volume.height()
-		);
-		AbsoluteLocation baseBlock = entityBase.getBlockLocation();
-		AbsoluteLocation edgeBlock = entityEdge.getBlockLocation();
+		_VolumeIterator iterator = _iteratorForEntity(entityBase, volume);
 		
 		float maxViscosity = 0.0f;
-		for (AbsoluteLocation loc : new _VolumeIterator(baseBlock, edgeBlock))
+		for (AbsoluteLocation loc : iterator)
 		{
 			float viscosity = helper.getViscosityForBlockAtLocation(loc, fromAbove);
 			maxViscosity = Math.max(maxViscosity, viscosity);
@@ -300,6 +320,18 @@ public class EntityMovementHelpers
 			// We are already stuck here so just fail out without moving, colliding on all axes.
 			helper.setLocationAndCancelVelocity(start, true, true, true);
 		}
+	}
+
+	private static _VolumeIterator _iteratorForEntity(EntityLocation entityBase, EntityVolume volume)
+	{
+		EntityLocation entityEdge = new EntityLocation(entityBase.x() + volume.width()
+			, entityBase.y() + volume.width()
+			, entityBase.z() + volume.height()
+		);
+		AbsoluteLocation baseBlock = entityBase.getBlockLocation();
+		AbsoluteLocation edgeBlock = entityEdge.getBlockLocation();
+		
+		return new _VolumeIterator(baseBlock, edgeBlock);
 	}
 
 

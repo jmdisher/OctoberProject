@@ -2,17 +2,20 @@ package com.jeffdisher.october.logic;
 
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
@@ -24,12 +27,14 @@ public class TestEntityMovementHelpers
 	private static Environment ENV;
 	private static Block STONE;
 	private static Block WATER_SOURCE;
+	private static Block LADDER;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
 		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		LADDER = ENV.blocks.fromItem(ENV.items.getItemById("op.ladder"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -197,5 +202,27 @@ public class TestEntityMovementHelpers
 				return fromAbove ? 1.0f : 0.0f;
 			}
 		});
+	}
+
+	@Test
+	public void isLadder()
+	{
+		// Check the intersection rules with a ladder.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 5, 5), LADDER.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 6, 5), STONE.item().number());
+		Predicate<AbsoluteLocation> lookup = (AbsoluteLocation location) -> {
+			Block block = new BlockProxy(location.getBlockAddress(), cuboid).getBlock();
+			return ENV.blocks.isLadderType(block);
+		};
+		
+		EntityVolume volume = new EntityVolume(2.2f, 1.7f);
+		EntityLocation airLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		EntityLocation ladderAirLocation = new EntityLocation(5.0f, 3.5f, 4.5f);
+		EntityLocation ladderStoneLocation = new EntityLocation(5.0f, 5.0f, 4.5f);
+		
+		Assert.assertFalse(EntityMovementHelpers.isInLadder(airLocation, volume, lookup));
+		Assert.assertTrue(EntityMovementHelpers.isInLadder(ladderAirLocation, volume, lookup));
+		Assert.assertTrue(EntityMovementHelpers.isInLadder(ladderStoneLocation, volume, lookup));
 	}
 }
