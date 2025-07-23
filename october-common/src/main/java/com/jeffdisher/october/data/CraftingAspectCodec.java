@@ -15,9 +15,8 @@ public class CraftingAspectCodec implements IAspectCodec<CraftOperation>
 	}
 
 	@Override
-	public void storeData(ByteBuffer buffer, Object object)
+	public void storeData(ByteBuffer buffer, CraftOperation object)
 	{
-		CraftOperation op = (CraftOperation) object;
-		CodecHelpers.writeCraftOperation(buffer, op);
+		CodecHelpers.writeCraftOperation(buffer, object);
 	}
 }

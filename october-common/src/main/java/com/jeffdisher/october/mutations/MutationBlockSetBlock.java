@@ -359,8 +359,7 @@ public class MutationBlockSetBlock
 		}
 		else
 		{
-			Object value = _readSpecial((Aspect<?, ?>) type, reader);
-			type.codec().storeData(writer, value);
+			_copyObject(writer, reader, type);
 		}
 	}
 
@@ -404,5 +403,11 @@ public class MutationBlockSetBlock
 			doMatch = (first == second) || ((null != first) && first.equals(second));
 		}
 		return doMatch;
+	}
+
+	private static <T> void _copyObject(ByteBuffer writer, ByteBuffer reader, Aspect<T, ?> type)
+	{
+		T value = _readSpecial(type, reader);
+		type.codec().storeData(writer, value);
 	}
 }

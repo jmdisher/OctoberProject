@@ -21,7 +21,7 @@ import com.jeffdisher.october.utils.Encoding;
  * top-level is somewhat special since it is the only place where a null can be found - also the only place where a "0"
  * length can be written.
  */
-public class OctreeInflatedByte implements IOctree
+public class OctreeInflatedByte implements IOctree<Byte>
 {
 	public static OctreeInflatedByte empty()
 	{
@@ -38,7 +38,7 @@ public class OctreeInflatedByte implements IOctree
 	}
 
 	@Override
-	public <T, O extends IOctree> T getData(Aspect<T, O> type, BlockAddress address)
+	public <O extends IOctree<Byte>> Byte getData(Aspect<Byte, O> type, BlockAddress address)
 	{
 		byte value;
 		if (null == _zyxData)
@@ -72,7 +72,7 @@ public class OctreeInflatedByte implements IOctree
 	}
 
 	@Override
-	public <T> void setData(BlockAddress address, T value)
+	public void setData(BlockAddress address, Byte value)
 	{
 		byte correct = ((Byte)value).byteValue();
 		// The value cannot be negative.
@@ -158,11 +158,9 @@ public class OctreeInflatedByte implements IOctree
 	}
 
 	@Override
-	public <T> void walkData(IWalkerCallback<T> callback, T valueToSkip)
+	public void walkData(IWalkerCallback<Byte> callback, Byte valueToSkip)
 	{
-		byte skip = ((Byte)valueToSkip).byteValue();
-		@SuppressWarnings("unchecked")
-		IWalkerCallback<Byte> castCallback = (IWalkerCallback<Byte>) callback;
+		byte skip = valueToSkip.byteValue();
 		
 		// This variant only allows skipping 0 since that is how it is structured.
 		Assert.assertTrue(0 == skip);
@@ -184,7 +182,7 @@ public class OctreeInflatedByte implements IOctree
 								if (skip != value)
 								{
 									BlockAddress address = new BlockAddress(x, y, z);
-									castCallback.visit(address, (byte)1, value);
+									callback.visit(address, (byte)1, value);
 								}
 							}
 						}
@@ -195,7 +193,7 @@ public class OctreeInflatedByte implements IOctree
 	}
 
 	@Override
-	public Object serializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<?> codec)
+	public Object serializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<Byte> codec)
 	{
 		// NOTE:  For serializing, we just pass a 3-element byte[] back:  zLength, zIndex, yIndex.
 		byte[] ourState = (byte[]) lastCallState;
@@ -271,7 +269,7 @@ public class OctreeInflatedByte implements IOctree
 	}
 
 	@Override
-	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<?> codec)
+	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<Byte> codec)
 	{
 		// NOTE:  For serializing, we just pass a Short back:  It is the byte-combination of the z-y array to next copy.
 		byte[] ourState = (byte[]) lastCallState;

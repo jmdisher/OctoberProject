@@ -15,9 +15,8 @@ public class FuelledAspectCodec implements IAspectCodec<FuelState>
 	}
 
 	@Override
-	public void storeData(ByteBuffer buffer, Object object)
+	public void storeData(ByteBuffer buffer, FuelState object)
 	{
-		FuelState op = (FuelState) object;
-		CodecHelpers.writeFuelState(buffer, op);
+		CodecHelpers.writeFuelState(buffer, object);
 	}
 }

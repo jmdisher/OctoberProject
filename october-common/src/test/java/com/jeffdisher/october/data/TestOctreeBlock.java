@@ -330,7 +330,7 @@ public class TestOctreeBlock
 	public void walkObject()
 	{
 		// Put a few instances into the object tree and walk them.
-		OctreeObject test = OctreeObject.create();
+		OctreeObject<Integer> test = OctreeObject.create();
 		test.setData(BlockAddress.fromInt(28, 29, 7), Integer.valueOf(1));
 		test.setData(BlockAddress.fromInt(0, 0, 0), Integer.valueOf(2));
 		

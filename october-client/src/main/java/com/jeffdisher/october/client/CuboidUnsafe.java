@@ -13,15 +13,15 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
  */
 public class CuboidUnsafe
 {
-	public static IReadOnlyCuboidData cloneWithReplacement(IReadOnlyCuboidData raw, Aspect<?, ?> type, IOctree octree)
+	public static IReadOnlyCuboidData cloneWithReplacement(IReadOnlyCuboidData raw, Aspect<?, ?> type, IOctree<?> octree)
 	{
 		CuboidData original = (CuboidData)raw;
-		IOctree[] copy = original.unsafeDataAccess().clone();
+		IOctree<?>[] copy = original.unsafeDataAccess().clone();
 		copy[type.index()] = octree;
 		return CuboidData.createNew(raw.getCuboidAddress(), copy);
 	}
 
-	public static <O extends IOctree> O getAspectUnsafe(IReadOnlyCuboidData raw, Aspect<?, O> type)
+	public static <O extends IOctree<?>> O getAspectUnsafe(IReadOnlyCuboidData raw, Aspect<?, O> type)
 	{
 		CuboidData original = (CuboidData)raw;
 		return type.octreeType().cast(original.unsafeDataAccess()[type.index()]);

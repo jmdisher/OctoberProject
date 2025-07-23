@@ -32,15 +32,15 @@ public class CuboidGenerator
 	private static CuboidData _createFilledCuboid(CuboidAddress cuboidAddress, Block fillBlock)
 	{
 		OctreeShort blockData = OctreeShort.create(fillBlock.item().number());
-		OctreeObject inventoryData = OctreeObject.create();
+		OctreeObject<?> inventoryData = OctreeObject.create();
 		OctreeShort damageData = OctreeShort.create((short) 0);
-		OctreeObject craftingData = OctreeObject.create();
-		OctreeObject fuelledData = OctreeObject.create();
+		OctreeObject<?> craftingData = OctreeObject.create();
+		OctreeObject<?> fuelledData = OctreeObject.create();
 		OctreeInflatedByte lightData = OctreeInflatedByte.empty();
 		OctreeInflatedByte logicData = OctreeInflatedByte.empty();
 		OctreeInflatedByte flagsData = OctreeInflatedByte.empty();
 		OctreeInflatedByte orientationData = OctreeInflatedByte.empty();
-		OctreeObject multiBlockRootData = OctreeObject.create();
+		OctreeObject<?> multiBlockRootData = OctreeObject.create();
 		return CuboidData.createNew(cuboidAddress, new IOctree[] { blockData
 				, inventoryData
 				, damageData

@@ -16,10 +16,9 @@ public class MultiBlockRootAspectCodec implements IAspectCodec<AbsoluteLocation>
 	}
 
 	@Override
-	public void storeData(ByteBuffer buffer, Object object)
+	public void storeData(ByteBuffer buffer, AbsoluteLocation object)
 	{
 		// These can be null in the case of over-write.
-		AbsoluteLocation op = (AbsoluteLocation) object;
-		CodecHelpers.writeNullableAbsoluteLocation(buffer, op);
+		CodecHelpers.writeNullableAbsoluteLocation(buffer, object);
 	}
 }

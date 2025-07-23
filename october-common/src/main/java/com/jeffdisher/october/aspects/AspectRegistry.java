@@ -41,10 +41,10 @@ public class AspectRegistry
 	/**
 	 * Inventory objects, usually null.
 	 */
-	public static final Aspect<Inventory, OctreeObject> INVENTORY = registerAspect(Inventory.class
-			, OctreeObject.class
+	public static final Aspect<Inventory, OctreeObject<Inventory>> INVENTORY = registerAspect(Inventory.class
+			, OctreeObject.getDecoratedClass()
 			, () -> OctreeObject.create()
-			, (OctreeObject original) -> {
+			, (OctreeObject<Inventory> original) -> {
 				// Inventories are now immutable so just make a clone of the map.
 				return original.cloneMapShallow();
 			}
@@ -68,10 +68,10 @@ public class AspectRegistry
 	/**
 	 * CraftOperation objects, usually null.  Note that these must be combined with Inventory aspect in order to craft.
 	 */
-	public static final Aspect<CraftOperation, OctreeObject> CRAFTING = registerAspect(CraftOperation.class
-			, OctreeObject.class
+	public static final Aspect<CraftOperation, OctreeObject<CraftOperation>> CRAFTING = registerAspect(CraftOperation.class
+			, OctreeObject.getDecoratedClass()
 			, () -> OctreeObject.create()
-			, (OctreeObject original) -> {
+			, (OctreeObject<CraftOperation> original) -> {
 				// These are immutable so create the shallow clone.
 				return original.cloneMapShallow();
 			}
@@ -81,10 +81,10 @@ public class AspectRegistry
 	 * FuelState objects, usually null.  These are used by things like furnaces to perform fuel-based crafting
 	 * operations.
 	 */
-	public static final Aspect<FuelState, OctreeObject> FUELLED = registerAspect(FuelState.class
-			, OctreeObject.class
+	public static final Aspect<FuelState, OctreeObject<FuelState>> FUELLED = registerAspect(FuelState.class
+			, OctreeObject.getDecoratedClass()
 			, () -> OctreeObject.create()
-			, (OctreeObject original) -> {
+			, (OctreeObject<FuelState> original) -> {
 				// These are immutable so create the shallow clone.
 				return original.cloneMapShallow();
 			}
@@ -144,10 +144,10 @@ public class AspectRegistry
 	/**
 	 * The root block location reference for multi-block arrangements but null for all other block types.
 	 */
-	public static final Aspect<AbsoluteLocation, OctreeObject> MULTI_BLOCK_ROOT = registerAspect(AbsoluteLocation.class
-			, OctreeObject.class
+	public static final Aspect<AbsoluteLocation, OctreeObject<AbsoluteLocation>> MULTI_BLOCK_ROOT = registerAspect(AbsoluteLocation.class
+			, OctreeObject.getDecoratedClass()
 			, () -> OctreeObject.create()
-			, (OctreeObject original) -> {
+			, (OctreeObject<AbsoluteLocation> original) -> {
 				// These are immutable so create the shallow clone.
 				return original.cloneMapShallow();
 			}
@@ -187,7 +187,7 @@ public class AspectRegistry
 	}
 
 
-	public static <T, O extends IOctree> Aspect<T, O> registerAspect(Class<T> type
+	public static <T, O extends IOctree<T>> Aspect<T, O> registerAspect(Class<T> type
 			, Class<O> octreeType
 			, Supplier<O> emptyTreeSupplier
 			, Function<O, O> deepMutableClone

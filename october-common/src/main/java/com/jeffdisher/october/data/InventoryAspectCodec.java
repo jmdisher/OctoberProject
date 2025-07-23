@@ -15,9 +15,8 @@ public class InventoryAspectCodec implements IAspectCodec<Inventory>
 	}
 
 	@Override
-	public void storeData(ByteBuffer buffer, Object object)
+	public void storeData(ByteBuffer buffer, Inventory object)
 	{
-		Inventory inv = (Inventory) object;
-		CodecHelpers.writeInventory(buffer, inv);
+		CodecHelpers.writeInventory(buffer, object);
 	}
 }

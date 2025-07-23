@@ -12,46 +12,58 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.utils.Assert;
 
 
-public class OctreeObject implements IOctree
+public class OctreeObject<T> implements IOctree<T>
 {
-	public static <T> OctreeObject load(ByteBuffer raw, IAspectCodec<T> codec)
+	public static <T> OctreeObject<T> load(ByteBuffer raw, IAspectCodec<T> codec)
 	{
 		// We encode these as the number of elements in a single cuboid (which is a short - at most 15 bits of elements).
 		short count = raw.getShort();
-		Map<Short, Object> data = new HashMap<>();
+		Map<Short, T> data = new HashMap<>();
 		// Each of these elements is a pair of Short and abstract data for some object.
 		for (short i = 0; i < count; ++i)
 		{
 			short key = raw.getShort();
-			Object value = codec.loadData(raw);
+			T value = codec.loadData(raw);
 			data.put(key, value);
 		}
-		return new OctreeObject(data);
+		return new OctreeObject<>(data);
 	}
 
-	public static OctreeObject create()
+	public static <T> OctreeObject<T> create()
 	{
 		// Just start with an empty map.
-		return new OctreeObject(new HashMap<>());
+		return new OctreeObject<>(new HashMap<>());
+	}
+
+	/**
+	 * A helper used to create the correct type binding for aspect registry.
+	 * 
+	 * @param <T> The type to wrap into the octree.
+	 * @return The class for this decorated octree type.
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> Class<OctreeObject<T>> getDecoratedClass()
+	{
+		return (Class<OctreeObject<T>>) new OctreeObject<>(null).getClass();
 	}
 
 
-	private final Map<Short, Object> _data;
+	private final Map<Short, T> _data;
 
-	private OctreeObject(Map<Short, Object> data)
+	private OctreeObject(Map<Short, T> data)
 	{
 		_data = data;
 	}
 
 	@Override
-	public <T, O extends IOctree> T getData(Aspect<T, O> type, BlockAddress address)
+	public <O extends IOctree<T>> T getData(Aspect<T, O> type, BlockAddress address)
 	{
 		short hash = _buildHash(address);
 		return type.type().cast(_data.get(hash));
 	}
 
 	@Override
-	public <T> void setData(BlockAddress address, T value)
+	public void setData(BlockAddress address, T value)
 	{
 		short hash = _buildHash(address);
 		if (null != value)
@@ -65,13 +77,13 @@ public class OctreeObject implements IOctree
 	}
 
 	@Override
-	public <T> void walkData(IWalkerCallback<T> callback, T valueToSkip)
+	public void walkData(IWalkerCallback<T> callback, T valueToSkip)
 	{
 		// In this implementation, it is only appropriate to skip null values (since we can't evaluate equality and have no other use-case).
 		Assert.assertTrue(null == valueToSkip);
 		
 		byte size = 1;
-		for (Map.Entry<Short, Object> elt : _data.entrySet())
+		for (Map.Entry<Short, T> elt : _data.entrySet())
 		{
 			short hash = elt.getKey();
 			Object value = elt.getValue();
@@ -89,7 +101,7 @@ public class OctreeObject implements IOctree
 	}
 
 	@Override
-	public Object serializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<?> codec)
+	public Object serializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<T> codec)
 	{
 		int keysToSkip = (null != lastCallState)
 				? (Integer) lastCallState
@@ -123,7 +135,7 @@ public class OctreeObject implements IOctree
 		{
 			int keysCopied = keysToSkip;
 			// Note that we store every tuple together so make sure that they both fit or wind the buffer back.
-			for (Map.Entry<Short, Object> elt : _data.entrySet())
+			for (Map.Entry<Short, T> elt : _data.entrySet())
 			{
 				if (keysToSkip > 0)
 				{
@@ -136,7 +148,7 @@ public class OctreeObject implements IOctree
 					{
 						short key = elt.getKey();
 						buffer.putShort(key);
-						Object value = elt.getValue();
+						T value = elt.getValue();
 						codec.storeData(buffer, value);
 						canFail = true;
 						keysCopied += 1;
@@ -156,7 +168,7 @@ public class OctreeObject implements IOctree
 	}
 
 	@Override
-	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<?> codec)
+	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<T> codec)
 	{
 		// NOTE:  For deserializing, we just pass an Integer back:  Size is always in the first packet so just the number of pairs we still need.
 		
@@ -182,7 +194,7 @@ public class OctreeObject implements IOctree
 			try
 			{
 				short key = buffer.getShort();
-				Object value = codec.loadData(buffer);
+				T value = codec.loadData(buffer);
 				_data.put(key, value);
 				canFail = true;
 			}
@@ -198,16 +210,16 @@ public class OctreeObject implements IOctree
 		return resumeToken;
 	}
 
-	public <T> OctreeObject cloneData(Class<T> type, Function<T, T> valueCopier)
+	public OctreeObject<T> cloneData(Class<T> type, Function<T, T> valueCopier)
 	{
-		Map<Short, Object> newMap = new HashMap<>();
-		for (Map.Entry<Short, Object> elt : _data.entrySet())
+		Map<Short, T> newMap = new HashMap<>();
+		for (Map.Entry<Short, T> elt : _data.entrySet())
 		{
 			T original = type.cast(elt.getValue());
 			T copy = valueCopier.apply(original);
 			newMap.put(elt.getKey(), copy);
 		}
-		return new OctreeObject(newMap);
+		return new OctreeObject<>(newMap);
 	}
 
 	/**
@@ -217,9 +229,9 @@ public class OctreeObject implements IOctree
 	 * 
 	 * @return A new instance with a new data map, yet containing the same key and value instances as the original.
 	 */
-	public OctreeObject cloneMapShallow()
+	public OctreeObject<T> cloneMapShallow()
 	{
-		return new OctreeObject(new HashMap<>(_data));
+		return new OctreeObject<>(new HashMap<>(_data));
 	}
 
 

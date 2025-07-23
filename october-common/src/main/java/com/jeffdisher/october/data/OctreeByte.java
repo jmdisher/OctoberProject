@@ -27,7 +27,7 @@ import com.jeffdisher.october.utils.Assert;
  * -1, 1, 0
  * -1, 1, 1
  */
-public class OctreeByte implements IOctree
+public class OctreeByte implements IOctree<Byte>
 {
 	public static final byte SUBTREE_HEADER = (byte)0xFF;
 
@@ -279,7 +279,7 @@ public class OctreeByte implements IOctree
 	}
 
 	@Override
-	public <T, O extends IOctree> T getData(Aspect<T, O> type, BlockAddress address)
+	public <O extends IOctree<Byte>> Byte getData(Aspect<Byte, O> type, BlockAddress address)
 	{
 		byte value;
 		if (null != _topLevelTrees)
@@ -301,7 +301,7 @@ public class OctreeByte implements IOctree
 	}
 
 	@Override
-	public <T> void setData(BlockAddress address, T value)
+	public void setData(BlockAddress address, Byte value)
 	{
 		byte correct = ((Byte)value).byteValue();
 		// The value cannot be negative.
@@ -373,11 +373,9 @@ public class OctreeByte implements IOctree
 	}
 
 	@Override
-	public <T> void walkData(IWalkerCallback<T> callback, T valueToSkip)
+	public void walkData(IWalkerCallback<Byte> callback, Byte valueToSkip)
 	{
-		byte skip = ((Byte)valueToSkip).byteValue();
-		@SuppressWarnings("unchecked")
-		IWalkerCallback<Byte> castCallback = (IWalkerCallback<Byte>) callback;
+		byte skip = valueToSkip.byteValue();
 		if (null != _topLevelTrees)
 		{
 			// Walk the sub-trees.
@@ -387,7 +385,7 @@ public class OctreeByte implements IOctree
 				byte x = (byte)((i & 0x4) * 4);
 				byte y = (byte)((i & 0x2) * 8);
 				byte z = (byte)((i & 0x1) * 16);
-				_walkData(ByteBuffer.wrap(_topLevelTrees[i]), x, y, z, size, castCallback, skip);
+				_walkData(ByteBuffer.wrap(_topLevelTrees[i]), x, y, z, size, callback, skip);
 			}
 		}
 		else
@@ -396,13 +394,13 @@ public class OctreeByte implements IOctree
 			if (skip != _inlineCompact)
 			{
 				byte size = 32;
-				castCallback.visit(BlockAddress.fromInt(0, 0, 0), size, _inlineCompact);
+				callback.visit(BlockAddress.fromInt(0, 0, 0), size, _inlineCompact);
 			}
 		}
 	}
 
 	@Override
-	public Object serializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<?> codec)
+	public Object serializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<Byte> codec)
 	{
 		// NOTE:  For serializing, we just pass an Integer back:  Just the offset where we need to resume copying.
 		
@@ -479,7 +477,7 @@ public class OctreeByte implements IOctree
 	}
 
 	@Override
-	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<?> codec)
+	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<Byte> codec)
 	{
 		// NOTE:  For deserializing, we just pass an Integer back:  The number of bytes we have already processed.
 		

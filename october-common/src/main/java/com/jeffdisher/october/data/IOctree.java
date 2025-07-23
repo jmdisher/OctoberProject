@@ -6,7 +6,7 @@ import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.types.BlockAddress;
 
 
-public interface IOctree
+public interface IOctree<T>
 {
 	/**
 	 * Fetches a single data element from the octree.
@@ -17,7 +17,7 @@ public interface IOctree
 	 * @param address The address of the block to read.
 	 * @return The data element at this address.
 	 */
-	<T, O extends IOctree> T getData(Aspect<T, O> type, BlockAddress address);
+	<O extends IOctree<T>> T getData(Aspect<T, O> type, BlockAddress address);
 
 	/**
 	 * Stores a single element into the octree, modifying it.
@@ -26,7 +26,7 @@ public interface IOctree
 	 * @param address The address of the block to update.
 	 * @param value The new value to store.
 	 */
-	<T> void setData(BlockAddress address, T value);
+	void setData(BlockAddress address, T value);
 
 	/**
 	 * Walks the tree, issuing callbacks for every data entry found (in no particular order), so long as it isn't
@@ -36,7 +36,7 @@ public interface IOctree
 	 * @param callback The callback to use for every tree entry walked.
 	 * @param valueToSkip The callback will be skipped if the value equals this.
 	 */
-	<T> void walkData(IWalkerCallback<T> callback, T valueToSkip);
+	void walkData(IWalkerCallback<T> callback, T valueToSkip);
 
 	/**
 	 * Called to request serialization of the octree.  An implementation is expected to serialize as much as it can into
@@ -48,7 +48,7 @@ public interface IOctree
 	 * @param codec The codec to use when serializing object data elements.
 	 * @return The state to resume on the next call, or null if the serialization was completed.
 	 */
-	Object serializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<?> codec);
+	Object serializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<T> codec);
 
 	/**
 	 * Called to request deserialization of the octree.  An implementation is expected to deserialize as much as it can
@@ -60,7 +60,7 @@ public interface IOctree
 	 * @param codec The codec to use when deserializing object data elements.
 	 * @return The state to resume on the next call, or null if the deserialization was completed.
 	 */
-	Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<?> codec);
+	Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<T> codec);
 
 	/**
 	 * Used to receive callbacks from the walkData() calls.  Note that this will receive callbacks for all data,

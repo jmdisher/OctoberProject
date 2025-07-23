@@ -698,7 +698,7 @@ public class ResourceLoader
 	public void _background_convertCuboid_V5toV6(CuboidData cuboid)
 	{
 		// Version 6 changed the definition of the LOGIC layer which requires that it be cleared and all switches and lamps set to "off".
-		IOctree[] rawOctrees = cuboid.unsafeDataAccess();
+		IOctree<?>[] rawOctrees = cuboid.unsafeDataAccess();
 		rawOctrees[AspectRegistry.LOGIC.index()] = AspectRegistry.LOGIC.emptyTreeSupplier().get();
 		
 		Environment env = Environment.getShared();

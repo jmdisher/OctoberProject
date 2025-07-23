@@ -23,5 +23,5 @@ public interface IAspectCodec<T>
 	 * @param object The object to serialize and store.
 	 * @throws BufferOverflowException If the buffer doesn't have enough space to hold the object.
 	 */
-	void storeData(ByteBuffer buffer, Object object) throws BufferOverflowException;
+	void storeData(ByteBuffer buffer, T object) throws BufferOverflowException;
 }

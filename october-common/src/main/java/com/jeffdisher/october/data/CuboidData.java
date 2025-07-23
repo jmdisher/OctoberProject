@@ -25,7 +25,7 @@ public class CuboidData implements IReadOnlyCuboidData
 	public static CuboidData mutableClone(IReadOnlyCuboidData raw)
 	{
 		CuboidData original = (CuboidData)raw;
-		IOctree[] newer = new IOctree[original._data.length];
+		IOctree<?>[] newer = new IOctree[original._data.length];
 		for (int i = 0; i < newer.length; ++i)
 		{
 			newer[i] = _cloneOneOctree(AspectRegistry.ALL_ASPECTS[i], original._data[i]);
@@ -33,7 +33,7 @@ public class CuboidData implements IReadOnlyCuboidData
 		return new CuboidData(original._cuboidAddress, newer);
 	}
 
-	public static CuboidData createNew(CuboidAddress cuboidAddress, IOctree[] data)
+	public static CuboidData createNew(CuboidAddress cuboidAddress, IOctree<?>[] data)
 	{
 		// We expect that there is a data plane for every aspect.
 		Assert.assertTrue(AspectRegistry.ALL_ASPECTS.length == data.length);
@@ -42,7 +42,7 @@ public class CuboidData implements IReadOnlyCuboidData
 
 	public static CuboidData createEmpty(CuboidAddress cuboidAddress)
 	{
-		IOctree[] data = new IOctree[AspectRegistry.ALL_ASPECTS.length];
+		IOctree<?>[] data = new IOctree[AspectRegistry.ALL_ASPECTS.length];
 		for (int i = 0; i < data.length; ++i)
 		{
 			data[i] = AspectRegistry.ALL_ASPECTS[i].emptyTreeSupplier().get();
@@ -50,7 +50,7 @@ public class CuboidData implements IReadOnlyCuboidData
 		return new CuboidData(cuboidAddress, data);
 	}
 
-	private static <O extends IOctree> IOctree _cloneOneOctree(Aspect<?,O> aspect, IOctree rawOriginal)
+	private static <T, O extends IOctree<T>> IOctree<T> _cloneOneOctree(Aspect<T,O> aspect, IOctree<?> rawOriginal)
 	{
 		O original = aspect.octreeType().cast(rawOriginal);
 		return aspect.deepMutableClone().apply(original);
@@ -58,9 +58,9 @@ public class CuboidData implements IReadOnlyCuboidData
 
 
 	private final CuboidAddress _cuboidAddress;
-	private final IOctree[] _data;
+	private final IOctree<?>[] _data;
 
-	private CuboidData(CuboidAddress cuboidAddress, IOctree[] data)
+	private CuboidData(CuboidAddress cuboidAddress, IOctree<?>[] data)
 	{
 		_cuboidAddress = cuboidAddress;
 		_data = data;
@@ -75,40 +75,47 @@ public class CuboidData implements IReadOnlyCuboidData
 	@Override
 	public byte getData7(Aspect<Byte, ?> type, BlockAddress address)
 	{
-		return _data[type.index()].getData(type, address);
+		IOctree<Byte> tree = type.octreeType().cast(_data[type.index()]);
+		return tree.getData(type, address);
 	}
 
 	public void setData7(Aspect<Byte, ?> type, BlockAddress address, byte value)
 	{
-		_data[type.index()].setData(address, value);
+		IOctree<Byte> tree = type.octreeType().cast(_data[type.index()]);
+		tree.setData(address, value);
 	}
 
 	@Override
 	public short getData15(Aspect<Short, ?> type, BlockAddress address)
 	{
-		return _data[type.index()].getData(type, address);
+		IOctree<Short> tree = type.octreeType().cast(_data[type.index()]);
+		return tree.getData(type, address);
 	}
 
 	public void setData15(Aspect<Short, ?> type, BlockAddress address, short value)
 	{
-		_data[type.index()].setData(address, value);
+		IOctree<Short> tree = type.octreeType().cast(_data[type.index()]);
+		tree.setData(address, value);
 	}
 
 	@Override
 	public <T> T getDataSpecial(Aspect<T, ?> type, BlockAddress address)
 	{
-		return _data[type.index()].getData(type, address);
+		IOctree<T> tree = type.octreeType().cast(_data[type.index()]);
+		return tree.getData(type, address);
 	}
 
 	public <T> void setDataSpecial(Aspect<T, ?> type, BlockAddress address, T value)
 	{
-		_data[type.index()].setData(address, value);
+		IOctree<T> tree = type.octreeType().cast(_data[type.index()]);
+		tree.setData(address, value);
 	}
 
 	@Override
 	public <T> void walkData(Aspect<T, ?> type, IOctree.IWalkerCallback<T> callback, T valueToSkip)
 	{
-		_data[type.index()].walkData(callback, valueToSkip);
+		IOctree<T> tree = type.octreeType().cast(_data[type.index()]);
+		tree.walkData(callback, valueToSkip);
 	}
 
 	@Override
@@ -133,7 +140,7 @@ public class CuboidData implements IReadOnlyCuboidData
 			if (buffer.remaining() >= MINIMUM_ASPECT_BUFFER_BYTES)
 			{
 				Aspect<?, ?> type = AspectRegistry.ALL_ASPECTS[i];
-				Object octreeResume = _data[i].serializeResumable(octreeState, buffer, type.codec());
+				Object octreeResume = _serializeSafe(buffer, octreeState, type);
 				if (null != octreeResume)
 				{
 					resume = new _ResumableState(i, octreeResume);
@@ -170,7 +177,7 @@ public class CuboidData implements IReadOnlyCuboidData
 	 * 
 	 * @return A reference the internal data octrees of the receiver.
 	 */
-	public IOctree[] unsafeDataAccess()
+	public IOctree<?>[] unsafeDataAccess()
 	{
 		return _data;
 	}
@@ -193,7 +200,7 @@ public class CuboidData implements IReadOnlyCuboidData
 			if (buffer.hasRemaining())
 			{
 				Aspect<?, ?> type = AspectRegistry.ALL_ASPECTS[i];
-				Object octreeResume = _data[i].deserializeResumable(octreeState, buffer, type.codec());
+				Object octreeResume = _deserializeSafe(buffer, octreeState, type);
 				if (null != octreeResume)
 				{
 					resume = new _ResumableState(i, octreeResume);
@@ -208,6 +215,20 @@ public class CuboidData implements IReadOnlyCuboidData
 			}
 		}
 		return resume;
+	}
+
+	private <S> Object _serializeSafe(ByteBuffer buffer, Object octreeState, Aspect<S, ?> type)
+	{
+		IOctree<S> tree = type.octreeType().cast(_data[type.index()]);
+		Object octreeResume = tree.serializeResumable(octreeState, buffer, type.codec());
+		return octreeResume;
+	}
+
+	private <S> Object _deserializeSafe(ByteBuffer buffer, Object octreeState, Aspect<S, ?> type)
+	{
+		IOctree<S> tree = type.octreeType().cast(_data[type.index()]);
+		Object octreeResume = tree.deserializeResumable(octreeState, buffer, type.codec());
+		return octreeResume;
 	}
 
 

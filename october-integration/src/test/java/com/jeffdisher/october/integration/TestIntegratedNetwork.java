@@ -20,7 +20,7 @@ import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.CuboidCodec;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IOctree;
-import com.jeffdisher.october.data.OctreeByte;
+import com.jeffdisher.october.data.OctreeInflatedByte;
 import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.net.NetworkClient;
@@ -265,10 +265,10 @@ public class TestIntegratedNetwork
 				, OctreeShort.create((short)0)
 				, OctreeObject.create()
 				, OctreeObject.create()
-				, OctreeByte.create((byte)0)
-				, OctreeByte.create((byte)0)
-				, OctreeByte.create((byte)0)
-				, OctreeByte.create((byte)0)
+				, OctreeInflatedByte.empty()
+				, OctreeInflatedByte.empty()
+				, OctreeInflatedByte.empty()
+				, OctreeInflatedByte.empty()
 				, OctreeObject.create()
 		});
 		

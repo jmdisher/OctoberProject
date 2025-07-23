@@ -273,8 +273,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 				}
 				else
 				{
-					Object value = _getDataSpecial(type);
-					type.codec().storeData(buffer, value);
+					_storeSafe(buffer, type);
 				}
 			}
 		}
@@ -600,5 +599,11 @@ public class MutableBlockProxy implements IMutableBlockProxy
 			changeBits |= LogicLayerHelpers.LOGIC_BIT_DOWN;
 		}
 		return changeBits;
+	}
+
+	private <T> void _storeSafe(ByteBuffer buffer, Aspect<T, ?> type)
+	{
+		T value = _getDataSpecial(type);
+		type.codec().storeData(buffer, value);
 	}
 }
