@@ -193,7 +193,7 @@ public class OctreeInflatedByte implements IOctree<Byte>
 	}
 
 	@Override
-	public Object serializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<Byte> codec)
+	public Object serializeResumable(Object lastCallState, ByteBuffer buffer, IObjectCodec<Byte> codec)
 	{
 		// NOTE:  For serializing, we just pass a 3-element byte[] back:  zLength, zIndex, yIndex.
 		byte[] ourState = (byte[]) lastCallState;
@@ -269,7 +269,7 @@ public class OctreeInflatedByte implements IOctree<Byte>
 	}
 
 	@Override
-	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<Byte> codec)
+	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IObjectCodec<Byte> codec)
 	{
 		// NOTE:  For serializing, we just pass a Short back:  It is the byte-combination of the z-y array to next copy.
 		byte[] ourState = (byte[]) lastCallState;

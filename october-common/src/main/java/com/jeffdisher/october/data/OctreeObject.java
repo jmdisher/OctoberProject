@@ -14,7 +14,7 @@ import com.jeffdisher.october.utils.Assert;
 
 public class OctreeObject<T> implements IOctree<T>
 {
-	public static <T> OctreeObject<T> load(ByteBuffer raw, IAspectCodec<T> codec)
+	public static <T> OctreeObject<T> load(ByteBuffer raw, IObjectCodec<T> codec)
 	{
 		// We encode these as the number of elements in a single cuboid (which is a short - at most 15 bits of elements).
 		short count = raw.getShort();
@@ -101,7 +101,7 @@ public class OctreeObject<T> implements IOctree<T>
 	}
 
 	@Override
-	public Object serializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<T> codec)
+	public Object serializeResumable(Object lastCallState, ByteBuffer buffer, IObjectCodec<T> codec)
 	{
 		int keysToSkip = (null != lastCallState)
 				? (Integer) lastCallState
@@ -168,7 +168,7 @@ public class OctreeObject<T> implements IOctree<T>
 	}
 
 	@Override
-	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<T> codec)
+	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IObjectCodec<T> codec)
 	{
 		// NOTE:  For deserializing, we just pass an Integer back:  Size is always in the first packet so just the number of pairs we still need.
 		

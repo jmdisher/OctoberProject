@@ -6,7 +6,7 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.CraftOperation;
 
 
-public class CraftingAspectCodec implements IAspectCodec<CraftOperation>
+public class CraftingAspectCodec implements IObjectCodec<CraftOperation>
 {
 	@Override
 	public CraftOperation loadData(ByteBuffer buffer)

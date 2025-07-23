@@ -48,7 +48,7 @@ public interface IOctree<T>
 	 * @param codec The codec to use when serializing object data elements.
 	 * @return The state to resume on the next call, or null if the serialization was completed.
 	 */
-	Object serializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<T> codec);
+	Object serializeResumable(Object lastCallState, ByteBuffer buffer, IObjectCodec<T> codec);
 
 	/**
 	 * Called to request deserialization of the octree.  An implementation is expected to deserialize as much as it can
@@ -60,7 +60,7 @@ public interface IOctree<T>
 	 * @param codec The codec to use when deserializing object data elements.
 	 * @return The state to resume on the next call, or null if the deserialization was completed.
 	 */
-	Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<T> codec);
+	Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IObjectCodec<T> codec);
 
 	/**
 	 * Used to receive callbacks from the walkData() calls.  Note that this will receive callbacks for all data,

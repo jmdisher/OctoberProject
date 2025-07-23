@@ -405,7 +405,7 @@ public class OctreeShort implements IOctree<Short>
 	}
 
 	@Override
-	public Object serializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<Short> codec)
+	public Object serializeResumable(Object lastCallState, ByteBuffer buffer, IObjectCodec<Short> codec)
 	{
 		// NOTE:  For serializing, we just pass an Integer back:  Just the offset where we need to resume copying.
 		
@@ -481,7 +481,7 @@ public class OctreeShort implements IOctree<Short>
 	}
 
 	@Override
-	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<Short> codec)
+	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IObjectCodec<Short> codec)
 	{
 		// NOTE:  For deserializing, we just pass an Integer back:  The number of bytes we have already processed.
 		

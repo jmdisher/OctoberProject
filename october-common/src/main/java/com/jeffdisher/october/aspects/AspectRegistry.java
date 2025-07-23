@@ -5,7 +5,7 @@ import java.util.function.Supplier;
 
 import com.jeffdisher.october.data.CraftingAspectCodec;
 import com.jeffdisher.october.data.FuelledAspectCodec;
-import com.jeffdisher.october.data.IAspectCodec;
+import com.jeffdisher.october.data.IObjectCodec;
 import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.InventoryAspectCodec;
 import com.jeffdisher.october.data.MultiBlockRootAspectCodec;
@@ -191,7 +191,7 @@ public class AspectRegistry
 			, Class<O> octreeType
 			, Supplier<O> emptyTreeSupplier
 			, Function<O, O> deepMutableClone
-			, IAspectCodec<T> codec
+			, IObjectCodec<T> codec
 	)
 	{
 		int index = _nextIndex;

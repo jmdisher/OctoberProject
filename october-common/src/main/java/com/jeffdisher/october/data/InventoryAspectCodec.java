@@ -6,7 +6,7 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Inventory;
 
 
-public class InventoryAspectCodec implements IAspectCodec<Inventory>
+public class InventoryAspectCodec implements IObjectCodec<Inventory>
 {
 	@Override
 	public Inventory loadData(ByteBuffer buffer)

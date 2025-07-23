@@ -3,7 +3,7 @@ package com.jeffdisher.october.aspects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.jeffdisher.october.data.IAspectCodec;
+import com.jeffdisher.october.data.IObjectCodec;
 import com.jeffdisher.october.data.IOctree;
 
 
@@ -16,7 +16,7 @@ public record Aspect<T, O extends IOctree<T>> (int index
 		, Class<O> octreeType
 		, Supplier<O> emptyTreeSupplier
 		, Function<O, O> deepMutableClone
-		, IAspectCodec<T> codec
+		, IObjectCodec<T> codec
 )
 {
 }

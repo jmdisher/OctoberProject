@@ -6,7 +6,7 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 
 
-public class MultiBlockRootAspectCodec implements IAspectCodec<AbsoluteLocation>
+public class MultiBlockRootAspectCodec implements IObjectCodec<AbsoluteLocation>
 {
 	@Override
 	public AbsoluteLocation loadData(ByteBuffer buffer)

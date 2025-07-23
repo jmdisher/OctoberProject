@@ -5,7 +5,12 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
 
-public interface IAspectCodec<T>
+/**
+ * The interface for a common serializer/deserializer implementation used by many components.
+ * 
+ * @param <T> The type to serialize/deserialize.
+ */
+public interface IObjectCodec<T>
 {
 	/**
 	 * Loads a single data object from the buffer, throwing if not all of the object was in the buffer.

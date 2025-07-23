@@ -27,7 +27,7 @@ import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
-import com.jeffdisher.october.data.IAspectCodec;
+import com.jeffdisher.october.data.IObjectCodec;
 import com.jeffdisher.october.data.OctreeInflatedByte;
 import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
@@ -694,13 +694,13 @@ public class TestResourceLoader
 		buffer.putInt(ResourceLoader.VERSION_CUBOID_V1);
 		
 		// We want to manually write the cuboid in V1 shape.
-		Assert.assertNull(blockData.serializeResumable(null, buffer, (IAspectCodec<Short>) AspectRegistry.ALL_ASPECTS[0].codec()));
-		Assert.assertNull(inventoryData.serializeResumable(null, buffer, (IAspectCodec<Inventory>) AspectRegistry.ALL_ASPECTS[1].codec()));
-		Assert.assertNull(damageData.serializeResumable(null, buffer, (IAspectCodec<Short>) AspectRegistry.ALL_ASPECTS[2].codec()));
-		Assert.assertNull(craftingData.serializeResumable(null, buffer, (IAspectCodec<CraftOperation>) AspectRegistry.ALL_ASPECTS[3].codec()));
-		Assert.assertNull(fuelledData.serializeResumable(null, buffer, (IAspectCodec<FuelState>) AspectRegistry.ALL_ASPECTS[4].codec()));
-		Assert.assertNull(lightData.serializeResumable(null, buffer, (IAspectCodec<Byte>) AspectRegistry.ALL_ASPECTS[5].codec()));
-		Assert.assertNull(logicData.serializeResumable(null, buffer, (IAspectCodec<Byte>) AspectRegistry.ALL_ASPECTS[6].codec()));
+		Assert.assertNull(blockData.serializeResumable(null, buffer, (IObjectCodec<Short>) AspectRegistry.ALL_ASPECTS[0].codec()));
+		Assert.assertNull(inventoryData.serializeResumable(null, buffer, (IObjectCodec<Inventory>) AspectRegistry.ALL_ASPECTS[1].codec()));
+		Assert.assertNull(damageData.serializeResumable(null, buffer, (IObjectCodec<Short>) AspectRegistry.ALL_ASPECTS[2].codec()));
+		Assert.assertNull(craftingData.serializeResumable(null, buffer, (IObjectCodec<CraftOperation>) AspectRegistry.ALL_ASPECTS[3].codec()));
+		Assert.assertNull(fuelledData.serializeResumable(null, buffer, (IObjectCodec<FuelState>) AspectRegistry.ALL_ASPECTS[4].codec()));
+		Assert.assertNull(lightData.serializeResumable(null, buffer, (IObjectCodec<Byte>) AspectRegistry.ALL_ASPECTS[5].codec()));
+		Assert.assertNull(logicData.serializeResumable(null, buffer, (IObjectCodec<Byte>) AspectRegistry.ALL_ASPECTS[6].codec()));
 		
 		// Now, proceed to write creatures and mutations.
 		buffer.putInt(1);
@@ -779,13 +779,13 @@ public class TestResourceLoader
 		buffer.putInt(ResourceLoader.VERSION_CUBOID_V3);
 		
 		// We want to manually write the cuboid in V3 shape.
-		Assert.assertNull(blockData.serializeResumable(null, buffer, (IAspectCodec<Short>) AspectRegistry.ALL_ASPECTS[0].codec()));
-		Assert.assertNull(inventoryData.serializeResumable(null, buffer, (IAspectCodec<Inventory>) AspectRegistry.ALL_ASPECTS[1].codec()));
-		Assert.assertNull(damageData.serializeResumable(null, buffer, (IAspectCodec<Short>) AspectRegistry.ALL_ASPECTS[2].codec()));
-		Assert.assertNull(craftingData.serializeResumable(null, buffer, (IAspectCodec<CraftOperation>) AspectRegistry.ALL_ASPECTS[3].codec()));
-		Assert.assertNull(fuelledData.serializeResumable(null, buffer, (IAspectCodec<FuelState>) AspectRegistry.ALL_ASPECTS[4].codec()));
-		Assert.assertNull(lightData.serializeResumable(null, buffer, (IAspectCodec<Byte>) AspectRegistry.ALL_ASPECTS[5].codec()));
-		Assert.assertNull(logicData.serializeResumable(null, buffer, (IAspectCodec<Byte>) AspectRegistry.ALL_ASPECTS[6].codec()));
+		Assert.assertNull(blockData.serializeResumable(null, buffer, (IObjectCodec<Short>) AspectRegistry.ALL_ASPECTS[0].codec()));
+		Assert.assertNull(inventoryData.serializeResumable(null, buffer, (IObjectCodec<Inventory>) AspectRegistry.ALL_ASPECTS[1].codec()));
+		Assert.assertNull(damageData.serializeResumable(null, buffer, (IObjectCodec<Short>) AspectRegistry.ALL_ASPECTS[2].codec()));
+		Assert.assertNull(craftingData.serializeResumable(null, buffer, (IObjectCodec<CraftOperation>) AspectRegistry.ALL_ASPECTS[3].codec()));
+		Assert.assertNull(fuelledData.serializeResumable(null, buffer, (IObjectCodec<FuelState>) AspectRegistry.ALL_ASPECTS[4].codec()));
+		Assert.assertNull(lightData.serializeResumable(null, buffer, (IObjectCodec<Byte>) AspectRegistry.ALL_ASPECTS[5].codec()));
+		Assert.assertNull(logicData.serializeResumable(null, buffer, (IObjectCodec<Byte>) AspectRegistry.ALL_ASPECTS[6].codec()));
 		
 		// 0 creatures.
 		buffer.putInt(0);

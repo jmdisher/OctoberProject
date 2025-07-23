@@ -6,7 +6,7 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.FuelState;
 
 
-public class FuelledAspectCodec implements IAspectCodec<FuelState>
+public class FuelledAspectCodec implements IObjectCodec<FuelState>
 {
 	@Override
 	public FuelState loadData(ByteBuffer buffer)

@@ -400,7 +400,7 @@ public class OctreeByte implements IOctree<Byte>
 	}
 
 	@Override
-	public Object serializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<Byte> codec)
+	public Object serializeResumable(Object lastCallState, ByteBuffer buffer, IObjectCodec<Byte> codec)
 	{
 		// NOTE:  For serializing, we just pass an Integer back:  Just the offset where we need to resume copying.
 		
@@ -477,7 +477,7 @@ public class OctreeByte implements IOctree<Byte>
 	}
 
 	@Override
-	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<Byte> codec)
+	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IObjectCodec<Byte> codec)
 	{
 		// NOTE:  For deserializing, we just pass an Integer back:  The number of bytes we have already processed.
 		
