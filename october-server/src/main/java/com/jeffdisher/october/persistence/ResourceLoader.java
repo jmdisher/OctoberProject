@@ -29,6 +29,7 @@ import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
@@ -38,7 +39,6 @@ import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.net.EntityActionCodec;
 import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV1;
 import com.jeffdisher.october.persistence.legacy.LegacyEntityV1;
@@ -454,7 +454,7 @@ public class ResourceLoader
 			if (VERSION_CUBOID == version)
 			{
 				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboid(address, buffer);
+					CuboidData cuboid = _background_readCuboid(address, context);
 					
 					// Load any creatures associated with the cuboid.
 					List<CreatureEntity> creatures = _background_readCreatures(buffer);
@@ -480,7 +480,7 @@ public class ResourceLoader
 			else if (VERSION_CUBOID_V7 == version)
 			{
 				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboid(address, buffer);
+					CuboidData cuboid = _background_readCuboid(address, context);
 					
 					// Load any creatures associated with the cuboid.
 					List<CreatureEntity> creatures = _background_readCreatures(buffer);
@@ -507,7 +507,7 @@ public class ResourceLoader
 			{
 				// V6 just adds data so this is to avoid going backward.
 				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboid(address, buffer);
+					CuboidData cuboid = _background_readCuboid(address, context);
 					
 					// Load any creatures associated with the cuboid.
 					List<CreatureEntity> creatures = _background_readCreatures(buffer);
@@ -534,7 +534,7 @@ public class ResourceLoader
 			{
 				// V5 requires that the logic aspect be cleared and all switches be turned off.
 				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboidV5(address, buffer);
+					CuboidData cuboid = _background_readCuboidV5(address, context);
 					
 					// Load any creatures associated with the cuboid.
 					List<CreatureEntity> creatures = _background_readCreatures(buffer);
@@ -561,7 +561,7 @@ public class ResourceLoader
 			{
 				// V4 needs to re-write for orientation aspects.
 				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboidPre5(address, buffer);
+					CuboidData cuboid = _background_readCuboidPre5(address, context);
 					
 					// Load any creatures associated with the cuboid.
 					List<CreatureEntity> creatures = _background_readCreatures(buffer);
@@ -588,7 +588,7 @@ public class ResourceLoader
 			{
 				// V2 is a subset of V3 so do nothing special - just stops old versions from being broken.
 				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboidPre5(address, buffer);
+					CuboidData cuboid = _background_readCuboidPre5(address, context);
 					
 					// Load any creatures associated with the cuboid.
 					List<CreatureEntity> creatures = _background_readCreatures(buffer);
@@ -615,7 +615,7 @@ public class ResourceLoader
 			{
 				// The V1 entity is has less data.
 				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboidPre5(address, buffer);
+					CuboidData cuboid = _background_readCuboidPre5(address, context);
 					
 					// Load any creatures associated with the cuboid.
 					int creatureCount = buffer.getInt();
@@ -664,31 +664,31 @@ public class ResourceLoader
 		return result;
 	}
 
-	private CuboidData _background_readCuboid(CuboidAddress address, MappedByteBuffer buffer)
+	private CuboidData _background_readCuboid(CuboidAddress address, DeserializationContext context)
 	{
 		CuboidData cuboid = CuboidData.createEmpty(address);
-		cuboid.deserializeSomeAspectsFully(buffer, AspectRegistry.ALL_ASPECTS.length);
+		cuboid.deserializeSomeAspectsFully(context, AspectRegistry.ALL_ASPECTS.length);
 		return cuboid;
 	}
 
-	private CuboidData _background_readCuboidPre5(CuboidAddress address, MappedByteBuffer buffer)
+	private CuboidData _background_readCuboidPre5(CuboidAddress address, DeserializationContext context)
 	{
 		CuboidData cuboid = CuboidData.createEmpty(address);
 		
 		// Prior to version 5, only the aspects up to and including LOGIC were included.
 		int aspectCount = 7;
-		cuboid.deserializeSomeAspectsFully(buffer, aspectCount);
+		cuboid.deserializeSomeAspectsFully(context, aspectCount);
 		
 		// This is now a V5 cuboid so convert it to V6.
 		_background_convertCuboid_V5toV6(cuboid);
 		return cuboid;
 	}
 
-	private CuboidData _background_readCuboidV5(CuboidAddress address, MappedByteBuffer buffer)
+	private CuboidData _background_readCuboidV5(CuboidAddress address, DeserializationContext context)
 	{
 		// Start by just loaded the data, normally.
 		CuboidData cuboid = CuboidData.createEmpty(address);
-		cuboid.deserializeSomeAspectsFully(buffer, AspectRegistry.ALL_ASPECTS.length);
+		cuboid.deserializeSomeAspectsFully(context, AspectRegistry.ALL_ASPECTS.length);
 		
 		_background_convertCuboid_V5toV6(cuboid);
 		
@@ -998,7 +998,7 @@ public class ResourceLoader
 			{
 				// Do nothing special - just stops old versions from being broken.
 				dataReader = () -> {
-					Entity entity = CodecHelpers.readEntity(buffer);
+					Entity entity = CodecHelpers.readEntity(context);
 					
 					// Now, load any suspended changes.
 					List<ScheduledChange> suspended = _background_readSuspendedMutations(context);

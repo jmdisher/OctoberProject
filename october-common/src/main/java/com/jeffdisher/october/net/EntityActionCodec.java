@@ -35,6 +35,7 @@ import com.jeffdisher.october.actions.EntityChangePeriodic;
 import com.jeffdisher.october.actions.EntityChangeTakeDamageFromEntity;
 import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.actions.MutationEntityStoreToInventory;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;

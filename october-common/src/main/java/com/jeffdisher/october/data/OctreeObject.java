@@ -14,8 +14,9 @@ import com.jeffdisher.october.utils.Assert;
 
 public class OctreeObject<T> implements IOctree<T>
 {
-	public static <T> OctreeObject<T> load(ByteBuffer raw, IObjectCodec<T> codec)
+	public static <T> OctreeObject<T> load(DeserializationContext context, IObjectCodec<T> codec)
 	{
+		ByteBuffer raw = context.buffer();
 		// We encode these as the number of elements in a single cuboid (which is a short - at most 15 bits of elements).
 		short count = raw.getShort();
 		Map<Short, T> data = new HashMap<>();
@@ -23,7 +24,7 @@ public class OctreeObject<T> implements IOctree<T>
 		for (short i = 0; i < count; ++i)
 		{
 			short key = raw.getShort();
-			T value = codec.loadData(raw);
+			T value = codec.loadData(context);
 			data.put(key, value);
 		}
 		return new OctreeObject<>(data);
@@ -168,8 +169,10 @@ public class OctreeObject<T> implements IOctree<T>
 	}
 
 	@Override
-	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IObjectCodec<T> codec)
+	public Object deserializeResumable(Object lastCallState, DeserializationContext context, IObjectCodec<T> codec)
 	{
+		ByteBuffer buffer = context.buffer();
+		
 		// NOTE:  For deserializing, we just pass an Integer back:  Size is always in the first packet so just the number of pairs we still need.
 		
 		int pairsRemaining;
@@ -194,7 +197,7 @@ public class OctreeObject<T> implements IOctree<T>
 			try
 			{
 				short key = buffer.getShort();
-				T value = codec.loadData(buffer);
+				T value = codec.loadData(context);
 				_data.put(key, value);
 				canFail = true;
 			}

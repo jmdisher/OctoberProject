@@ -1,4 +1,4 @@
-package com.jeffdisher.october.net;
+package com.jeffdisher.october.data;
 
 import java.nio.ByteBuffer;
 

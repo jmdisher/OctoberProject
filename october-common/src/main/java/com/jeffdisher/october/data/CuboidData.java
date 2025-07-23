@@ -157,15 +157,15 @@ public class CuboidData implements IReadOnlyCuboidData
 		return resume;
 	}
 
-	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer)
+	public Object deserializeResumable(Object lastCallState, DeserializationContext context)
 	{
 		_ResumableState previousCall = (_ResumableState) lastCallState;
-		return _deserializeResumablePartial(previousCall, buffer, AspectRegistry.ALL_ASPECTS.length);
+		return _deserializeResumablePartial(previousCall, context, AspectRegistry.ALL_ASPECTS.length);
 	}
 
-	public void deserializeSomeAspectsFully(ByteBuffer buffer, int aspectCount)
+	public void deserializeSomeAspectsFully(DeserializationContext context, int aspectCount)
 	{
-		_ResumableState resume = _deserializeResumablePartial(null, buffer, aspectCount);
+		_ResumableState resume = _deserializeResumablePartial(null, context, aspectCount);
 		// This is only used when reading from disk, when the buffer is fully mapped.
 		Assert.assertTrue(null == resume);
 	}
@@ -183,8 +183,9 @@ public class CuboidData implements IReadOnlyCuboidData
 	}
 
 
-	private _ResumableState _deserializeResumablePartial(_ResumableState previousCall, ByteBuffer buffer, int aspectCount)
+	private _ResumableState _deserializeResumablePartial(_ResumableState previousCall, DeserializationContext context, int aspectCount)
 	{
+		ByteBuffer buffer = context.buffer();
 		int startIndex = (null != previousCall)
 				? previousCall.currentAspectIndex
 				: 0
@@ -200,7 +201,7 @@ public class CuboidData implements IReadOnlyCuboidData
 			if (buffer.hasRemaining())
 			{
 				Aspect<?, ?> type = AspectRegistry.ALL_ASPECTS[i];
-				Object octreeResume = _deserializeSafe(buffer, octreeState, type);
+				Object octreeResume = _deserializeSafe(context, octreeState, type);
 				if (null != octreeResume)
 				{
 					resume = new _ResumableState(i, octreeResume);
@@ -224,10 +225,10 @@ public class CuboidData implements IReadOnlyCuboidData
 		return octreeResume;
 	}
 
-	private <S> Object _deserializeSafe(ByteBuffer buffer, Object octreeState, Aspect<S, ?> type)
+	private <S> Object _deserializeSafe(DeserializationContext context, Object octreeState, Aspect<S, ?> type)
 	{
 		IOctree<S> tree = type.octreeType().cast(_data[type.index()]);
-		Object octreeResume = tree.deserializeResumable(octreeState, buffer, type.codec());
+		Object octreeResume = tree.deserializeResumable(octreeState, context, type.codec());
 		return octreeResume;
 	}
 

@@ -9,8 +9,9 @@ import com.jeffdisher.october.types.CraftOperation;
 public class CraftingAspectCodec implements IObjectCodec<CraftOperation>
 {
 	@Override
-	public CraftOperation loadData(ByteBuffer buffer)
+	public CraftOperation loadData(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		return CodecHelpers.readCraftOperation(buffer);
 	}
 

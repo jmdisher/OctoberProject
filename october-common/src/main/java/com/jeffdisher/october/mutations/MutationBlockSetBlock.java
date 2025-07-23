@@ -7,7 +7,9 @@ import java.util.Set;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -334,7 +336,11 @@ public class MutationBlockSetBlock
 
 	private static <T> T _readSpecial(Aspect<T, ?> type, ByteBuffer buffer)
 	{
-		return type.codec().loadData(buffer);
+		// This is an in-memory copy so we can just use no special rules.
+		DeserializationContext context = new DeserializationContext(Environment.getShared()
+			, buffer
+		);
+		return type.codec().loadData(context);
 	}
 
 	private static byte _readIndexOrNegOne(ByteBuffer readThis)

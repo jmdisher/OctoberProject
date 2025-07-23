@@ -477,8 +477,10 @@ public class OctreeByte implements IOctree<Byte>
 	}
 
 	@Override
-	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IObjectCodec<Byte> codec)
+	public Object deserializeResumable(Object lastCallState, DeserializationContext context, IObjectCodec<Byte> codec)
 	{
+		ByteBuffer buffer = context.buffer();
+		
 		// NOTE:  For deserializing, we just pass an Integer back:  The number of bytes we have already processed.
 		
 		int startOffset;

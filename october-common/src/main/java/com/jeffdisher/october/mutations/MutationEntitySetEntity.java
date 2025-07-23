@@ -2,6 +2,8 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.MutableEntity;
@@ -16,7 +18,11 @@ public class MutationEntitySetEntity implements IEntityUpdate
 
 	public static MutationEntitySetEntity deserializeFromNetworkBuffer(ByteBuffer buffer)
 	{
-		Entity entity = CodecHelpers.readEntity(buffer);
+		// This is always coming in from the network so it has no version-specific considerations.
+		DeserializationContext context = new DeserializationContext(Environment.getShared()
+			, buffer
+		);
+		Entity entity = CodecHelpers.readEntity(context);
 		return new MutationEntitySetEntity(entity);
 	}
 

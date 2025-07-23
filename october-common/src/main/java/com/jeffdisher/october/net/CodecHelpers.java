@@ -8,6 +8,7 @@ import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -74,9 +75,9 @@ public class CodecHelpers
 		buffer.putShort(value.z());
 	}
 
-	public static Inventory readInventory(ByteBuffer buffer)
+	public static Inventory readInventory(DeserializationContext context)
 	{
-		return _readInventory(buffer);
+		return _readInventory(context);
 	}
 
 	public static void writeInventory(ByteBuffer buffer, Inventory inventory)
@@ -194,15 +195,16 @@ public class CodecHelpers
 		_writeCraft(buffer, operation);
 	}
 
-	public static Entity readEntity(ByteBuffer buffer)
+	public static Entity readEntity(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		int id = buffer.getInt();
 		boolean isCreativeMode = _readBoolean(buffer);
 		EntityLocation location = _readEntityLocation(buffer);
 		EntityLocation velocity = _readEntityLocation(buffer);
 		byte yaw = buffer.get();
 		byte pitch = buffer.get();
-		Inventory inventory = _readInventory(buffer);
+		Inventory inventory = _readInventory(context);
 		int[] hotbar = new int[Entity.HOTBAR_SIZE];
 		for (int i = 0; i < hotbar.length; ++i)
 		{
@@ -212,7 +214,7 @@ public class CodecHelpers
 		NonStackableItem[] armour = new NonStackableItem[BodyPart.values().length];
 		for (int i = 0; i < armour.length; ++i)
 		{
-			armour[i] = _readNonStackableItem(buffer);
+			armour[i] = _readNonStackableItem(context);
 		}
 		CraftOperation localCraftOperation = _readCraftOperation(buffer);
 		byte health = buffer.get();
@@ -374,15 +376,17 @@ public class CodecHelpers
 		_writeCraftOperation(buffer, operation);
 	}
 
-	public static FuelState readFuelState(ByteBuffer buffer)
+	public static FuelState readFuelState(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
+		
 		// We will use -1 as the "null".
 		int millisFuelled = buffer.getInt();
 		FuelState result;
 		if (millisFuelled >= 0)
 		{
 			Item currentFuel = _readItem(buffer);
-			Inventory fuelInventory = _readInventory(buffer);
+			Inventory fuelInventory = _readInventory(context);
 			result = new FuelState(millisFuelled, currentFuel, fuelInventory);
 		}
 		else
@@ -408,9 +412,9 @@ public class CodecHelpers
 		}
 	}
 
-	public static NonStackableItem readNonStackableItem(ByteBuffer buffer)
+	public static NonStackableItem readNonStackableItem(DeserializationContext context)
 	{
-		return _readNonStackableItem(buffer);
+		return _readNonStackableItem(context);
 	}
 
 	public static void writeNonStackableItem(ByteBuffer buffer, NonStackableItem item)
@@ -550,9 +554,10 @@ public class CodecHelpers
 		}
 	}
 
-	private static Inventory _readInventory(ByteBuffer buffer)
+	private static Inventory _readInventory(DeserializationContext context)
 	{
 		Environment env = Environment.getShared();
+		ByteBuffer buffer = context.buffer();
 		Inventory parsed;
 		int maxEncumbrance = buffer.getInt();
 		if (maxEncumbrance > 0)
@@ -578,8 +583,8 @@ public class CodecHelpers
 				}
 				else
 				{
-					int durability = buffer.getInt();
-					NonStackableItem item = PropertyHelpers.newItem(type, durability);
+					// Use the standard helper for the non-stackable remainder.
+					NonStackableItem item = _readNonStackableRemainder(type, context);
 					nonStackableItems.put(keyValue, item);
 					currentEncumbrance += env.encumbrance.getEncumbrance(item.type());
 				}
@@ -716,20 +721,28 @@ public class CodecHelpers
 		}
 	}
 
-	private static NonStackableItem _readNonStackableItem(ByteBuffer buffer)
+	private static NonStackableItem _readNonStackableItem(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		Item item = _readItem(buffer);
 		NonStackableItem nonStack;
 		if (null != item)
 		{
-			int durability = buffer.getInt();
-			nonStack = PropertyHelpers.newItem(item, durability);
+			nonStack = _readNonStackableRemainder(item, context);
 		}
 		else
 		{
 			nonStack = null;
 		}
 		return nonStack;
+	}
+
+	private static NonStackableItem _readNonStackableRemainder(Item item, DeserializationContext context)
+	{
+		// This is split out since some NonStackableItem instances are read after interpreting the item type.
+		ByteBuffer buffer = context.buffer();
+		int durability = buffer.getInt();
+		return PropertyHelpers.newItem(item, durability);
 	}
 
 	private static void _writeNonStackableItem(ByteBuffer buffer, NonStackableItem item)

@@ -3,6 +3,7 @@ package com.jeffdisher.october.persistence;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockBurnDown;
 import com.jeffdisher.october.mutations.MutationBlockCraft;
@@ -28,7 +29,6 @@ import com.jeffdisher.october.mutations.MutationBlockStartFire;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationBlockType;
 import com.jeffdisher.october.mutations.MutationBlockUpdate;
-import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.utils.Assert;
 
 

@@ -3,6 +3,8 @@ package com.jeffdisher.october.net;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
+import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.types.Entity;
 
 
@@ -13,7 +15,11 @@ public class Packet_Entity extends PacketFromServer
 	public static void register(Function<ByteBuffer, Packet>[] opcodeTable)
 	{
 		opcodeTable[TYPE.ordinal()] = (ByteBuffer buffer) -> {
-			Entity entity = CodecHelpers.readEntity(buffer);
+			// This is network so we don't need version-specific decoding.
+			DeserializationContext context = new DeserializationContext(Environment.getShared()
+				, buffer
+			);
+			Entity entity = CodecHelpers.readEntity(context);
 			return new Packet_Entity(entity);
 		};
 	}

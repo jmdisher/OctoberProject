@@ -9,8 +9,10 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 public class MultiBlockRootAspectCodec implements IObjectCodec<AbsoluteLocation>
 {
 	@Override
-	public AbsoluteLocation loadData(ByteBuffer buffer)
+	public AbsoluteLocation loadData(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
+		
 		// These can be null in the case of over-write.
 		return CodecHelpers.readNullableAbsoluteLocation(buffer);
 	}

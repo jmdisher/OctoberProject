@@ -5,12 +5,12 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.CraftingBlockSupport;
 import com.jeffdisher.october.logic.FireHelpers;
 import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FuelState;
@@ -37,7 +37,7 @@ public class MutationBlockStoreItems implements IMutationBlock
 		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		Items stackable = CodecHelpers.readItems(buffer);
-		NonStackableItem nonStackable = CodecHelpers.readNonStackableItem(buffer);
+		NonStackableItem nonStackable = CodecHelpers.readNonStackableItem(context);
 		byte inventoryAspect = buffer.get();
 		return new MutationBlockStoreItems(location, stackable, nonStackable, inventoryAspect);
 	}

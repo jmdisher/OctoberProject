@@ -2,10 +2,10 @@ package com.jeffdisher.october.actions;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableInventory;
@@ -33,7 +33,7 @@ public class MutationEntityStoreToInventory implements IEntityAction<IMutablePla
 	{
 		ByteBuffer buffer = context.buffer();
 		Items stack = CodecHelpers.readItems(buffer);
-		NonStackableItem nonStack = CodecHelpers.readNonStackableItem(buffer);
+		NonStackableItem nonStack = CodecHelpers.readNonStackableItem(context);
 		return new MutationEntityStoreToInventory(stack, nonStack);
 	}
 

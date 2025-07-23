@@ -375,7 +375,10 @@ public class TestOctreeBlock
 		buffer.flip();
 		Assert.assertEquals(1, buffer.remaining());
 		OctreeInflatedByte test = OctreeInflatedByte.empty();
-		state = test.deserializeResumable(null, buffer, null);
+		DeserializationContext context = new DeserializationContext(Environment.getShared()
+			, buffer
+		);
+		state = test.deserializeResumable(null, context, null);
 		Assert.assertNull(state);
 		
 		// Verify that we can safely walk the empty inflated byte.
@@ -390,7 +393,10 @@ public class TestOctreeBlock
 		buffer.flip();
 		Assert.assertEquals(36, buffer.remaining());
 		OctreeInflatedByte test2 = OctreeInflatedByte.empty();
-		state = test2.deserializeResumable(null, buffer, null);
+		context = new DeserializationContext(Environment.getShared()
+			, buffer
+		);
+		state = test2.deserializeResumable(null, context, null);
 		Assert.assertNull(state);
 		Assert.assertEquals((byte)5, test2.getData(aspect, blockAddress).byteValue());
 		Assert.assertEquals((byte)0, test2.getData(aspect, BlockAddress.fromInt(13, 14, 15)).byteValue());
@@ -415,7 +421,10 @@ public class TestOctreeBlock
 		
 		buffer.flip();
 		OctreeShort output = OctreeShort.empty();
-		state = output.deserializeResumable(null, buffer, null);
+		DeserializationContext context = new DeserializationContext(Environment.getShared()
+			, buffer
+		);
+		state = output.deserializeResumable(null, context, null);
 		Assert.assertNull(state);
 		Assert.assertFalse(buffer.hasRemaining());
 		return output;
@@ -456,7 +465,10 @@ public class TestOctreeBlock
 		
 		buffer.flip();
 		OctreeByte output = OctreeByte.empty();
-		state = output.deserializeResumable(null, buffer, null);
+		DeserializationContext context = new DeserializationContext(Environment.getShared()
+			, buffer
+		);
+		state = output.deserializeResumable(null, context, null);
 		Assert.assertNull(state);
 		Assert.assertFalse(buffer.hasRemaining());
 		return output;

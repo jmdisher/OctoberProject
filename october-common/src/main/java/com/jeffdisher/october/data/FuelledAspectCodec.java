@@ -9,9 +9,9 @@ import com.jeffdisher.october.types.FuelState;
 public class FuelledAspectCodec implements IObjectCodec<FuelState>
 {
 	@Override
-	public FuelState loadData(ByteBuffer buffer)
+	public FuelState loadData(DeserializationContext context)
 	{
-		return CodecHelpers.readFuelState(buffer);
+		return CodecHelpers.readFuelState(context);
 	}
 
 	@Override

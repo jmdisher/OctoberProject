@@ -1,11 +1,11 @@
-package com.jeffdisher.october.data;
+package com.jeffdisher.october.net;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.net.PacketCodec;
-import com.jeffdisher.october.net.PacketFromServer;
-import com.jeffdisher.october.net.Packet_CuboidFragment;
-import com.jeffdisher.october.net.Packet_CuboidStart;
+import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.DeserializationContext;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
 
 
 /**
@@ -68,7 +68,11 @@ public class CuboidCodec
 		public CuboidData processPacket(Packet_CuboidFragment fragment)
 		{
 			ByteBuffer buffer = ByteBuffer.wrap(fragment.payload);
-			_state = _cuboid.deserializeResumable(_state, buffer);
+			// This is network related so we can just use no special rules.
+			DeserializationContext context = new DeserializationContext(Environment.getShared()
+				, buffer
+			);
+			_state = _cuboid.deserializeResumable(_state, context);
 			// We return the cuboid if this is the last fragment.
 			return (null == _state)
 					? _cuboid

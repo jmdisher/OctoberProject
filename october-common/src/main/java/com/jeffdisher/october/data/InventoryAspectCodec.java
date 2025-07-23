@@ -9,9 +9,9 @@ import com.jeffdisher.october.types.Inventory;
 public class InventoryAspectCodec implements IObjectCodec<Inventory>
 {
 	@Override
-	public Inventory loadData(ByteBuffer buffer)
+	public Inventory loadData(DeserializationContext context)
 	{
-		return CodecHelpers.readInventory(buffer);
+		return CodecHelpers.readInventory(context);
 	}
 
 	@Override

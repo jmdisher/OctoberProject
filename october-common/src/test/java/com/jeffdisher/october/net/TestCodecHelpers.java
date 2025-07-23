@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -77,7 +78,10 @@ public class TestCodecHelpers
 		;
 		CodecHelpers.writeInventory(buffer, test);
 		buffer.flip();
-		Inventory output = CodecHelpers.readInventory(buffer);
+		DeserializationContext context = new DeserializationContext(Environment.getShared()
+			, buffer
+		);
+		Inventory output = CodecHelpers.readInventory(context);
 		// Inventory has not .equals so check some internal data.
 		Assert.assertEquals(50, output.maxEncumbrance);
 		Assert.assertEquals(2, output.sortedKeys().size());
@@ -92,7 +96,10 @@ public class TestCodecHelpers
 		Inventory test = null;
 		CodecHelpers.writeInventory(buffer, test);
 		buffer.flip();
-		Inventory output = CodecHelpers.readInventory(buffer);
+		DeserializationContext context = new DeserializationContext(Environment.getShared()
+			, buffer
+		);
+		Inventory output = CodecHelpers.readInventory(context);
 		Assert.assertNull(output);
 	}
 
@@ -175,7 +182,7 @@ public class TestCodecHelpers
 		Entity test = MutableEntity.createForTest(1).freeze();
 		CodecHelpers.writeEntity(buffer, test);
 		buffer.flip();
-		Entity output = CodecHelpers.readEntity(buffer);
+		Entity output = CodecHelpers.readEntity(new DeserializationContext(ENV, buffer));
 		// Entity contains Inventory, which has no .equals, so compare other parts.
 		Assert.assertEquals(test.id(), output.id());
 		Assert.assertEquals(test.location(), output.location());
@@ -192,7 +199,7 @@ public class TestCodecHelpers
 		Entity test = mutable.freeze();
 		CodecHelpers.writeEntity(buffer, test);
 		buffer.flip();
-		Entity output = CodecHelpers.readEntity(buffer);
+		Entity output = CodecHelpers.readEntity(new DeserializationContext(ENV, buffer));
 		
 		Assert.assertEquals(test.id(), output.id());
 		Assert.assertEquals(test.localCraftOperation(), output.localCraftOperation());
@@ -216,7 +223,10 @@ public class TestCodecHelpers
 		FuelState test = new FuelState(0, null, Inventory.start(10).addStackable(STONE_ITEM, 1).finish());
 		CodecHelpers.writeFuelState(buffer, test);
 		buffer.flip();
-		FuelState output = CodecHelpers.readFuelState(buffer);
+		DeserializationContext context = new DeserializationContext(Environment.getShared()
+			, buffer
+		);
+		FuelState output = CodecHelpers.readFuelState(context);
 		Assert.assertEquals(test.millisFuelled(), output.millisFuelled());
 		Assert.assertEquals(test.currentFuel(), output.currentFuel());
 		Assert.assertEquals(test.fuelInventory().getCount(STONE_ITEM), output.fuelInventory().getCount(STONE_ITEM));
@@ -226,7 +236,10 @@ public class TestCodecHelpers
 		test = null;
 		CodecHelpers.writeFuelState(buffer, test);
 		buffer.flip();
-		output = CodecHelpers.readFuelState(buffer);
+		context = new DeserializationContext(Environment.getShared()
+			, buffer
+		);
+		output = CodecHelpers.readFuelState(context);
 		Assert.assertNull(output);
 	}
 
@@ -237,13 +250,13 @@ public class TestCodecHelpers
 		NonStackableItem test = PropertyHelpers.newItem(STONE_ITEM, 10);
 		CodecHelpers.writeNonStackableItem(buffer, test);
 		buffer.flip();
-		NonStackableItem output = CodecHelpers.readNonStackableItem(buffer);
+		NonStackableItem output = CodecHelpers.readNonStackableItem(new DeserializationContext(ENV, buffer));
 		Assert.assertEquals(test, output);
 		
 		buffer.clear();
 		CodecHelpers.writeNonStackableItem(buffer, null);
 		buffer.flip();
-		output = CodecHelpers.readNonStackableItem(buffer);
+		output = CodecHelpers.readNonStackableItem(new DeserializationContext(ENV, buffer));
 		Assert.assertNull(output);
 	}
 

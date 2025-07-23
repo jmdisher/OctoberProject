@@ -4,6 +4,7 @@ import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IObjectCodec;
 import com.jeffdisher.october.utils.Assert;
 
@@ -22,8 +23,9 @@ public class PropertyRegistry
 		, new IObjectCodec<Integer>()
 		{
 			@Override
-			public Integer loadData(ByteBuffer buffer) throws BufferUnderflowException
+			public Integer loadData(DeserializationContext context) throws BufferUnderflowException
 			{
+				ByteBuffer buffer = context.buffer();
 				return buffer.getInt();
 			}
 			@Override

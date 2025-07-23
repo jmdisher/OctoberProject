@@ -15,11 +15,11 @@ public interface IObjectCodec<T>
 	/**
 	 * Loads a single data object from the buffer, throwing if not all of the object was in the buffer.
 	 * 
-	 * @param buffer The buffer to read.
+	 * @param context Contains the buffer to read.
 	 * @return The object.
 	 * @throws BufferUnderflowException If the buffer didn't contain the entire object.
 	 */
-	T loadData(ByteBuffer buffer) throws BufferUnderflowException;
+	T loadData(DeserializationContext context) throws BufferUnderflowException;
 
 	/**
 	 * Stores a single data object into the buffer, throwing if there isn't enough space to store it.

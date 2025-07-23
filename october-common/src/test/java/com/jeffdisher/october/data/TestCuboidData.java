@@ -46,7 +46,10 @@ public class TestCuboidData
 		buffer.flip();
 		
 		CuboidData output = CuboidData.createEmpty(cuboidAddress);
-		resume = output.deserializeResumable(null, buffer);
+		DeserializationContext context = new DeserializationContext(Environment.getShared()
+			, buffer
+		);
+		resume = output.deserializeResumable(null, context);
 		Assert.assertNull(resume);
 		BlockAddress testAddress = BlockAddress.fromInt(0, 0, 0);
 		Assert.assertEquals((short) 0, output.getData15(AspectRegistry.BLOCK, testAddress));
@@ -68,7 +71,10 @@ public class TestCuboidData
 		buffer.flip();
 		
 		CuboidData output = CuboidData.createEmpty(cuboidAddress);
-		resume = output.deserializeResumable(null, buffer);
+		DeserializationContext context = new DeserializationContext(Environment.getShared()
+			, buffer
+		);
+		resume = output.deserializeResumable(null, context);
 		Assert.assertNull(resume);
 		Assert.assertEquals((short) 1, output.getData15(AspectRegistry.BLOCK, testAddress));
 		Inventory inv = output.getDataSpecial(AspectRegistry.INVENTORY, testAddress);
@@ -96,7 +102,10 @@ public class TestCuboidData
 		{
 			resumeSerialize = input.serializeResumable(resumeSerialize, buffer);
 			buffer.flip();
-			resumeDeserialize = output.deserializeResumable(resumeDeserialize, buffer);
+			DeserializationContext context = new DeserializationContext(Environment.getShared()
+				, buffer
+			);
+			resumeDeserialize = output.deserializeResumable(resumeDeserialize, context);
 			buffer.clear();
 		}
 		// We should throw an assertion error due to making no progress.
@@ -122,7 +131,10 @@ public class TestCuboidData
 		{
 			resumeSerialize = input.serializeResumable(resumeSerialize, buffer);
 			buffer.flip();
-			resumeDeserialize = output.deserializeResumable(resumeDeserialize, buffer);
+			DeserializationContext context = new DeserializationContext(Environment.getShared()
+				, buffer
+			);
+			resumeDeserialize = output.deserializeResumable(resumeDeserialize, context);
 			buffer.clear();
 		} while (null != resumeSerialize);
 		Assert.assertNull(resumeDeserialize);

@@ -12,17 +12,20 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.function.LongSupplier;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
-import com.jeffdisher.october.data.CuboidCodec;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.OctreeInflatedByte;
 import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
+import com.jeffdisher.october.net.CuboidCodec;
 import com.jeffdisher.october.net.NetworkClient;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
@@ -42,6 +45,17 @@ public class TestIntegratedNetwork
 {
 	public static final LongSupplier TIME_SUPPLIER = () -> 1L;
 	public static final long MILLIS_PER_TICK = 100L;
+
+	@BeforeClass
+	public static void setup()
+	{
+		Environment.createSharedInstance();
+	}
+	@AfterClass
+	public static void tearDown()
+	{
+		Environment.clearSharedInstance();
+	}
 
 	@Test
 	public void basicHandshakeDisconnect() throws Throwable

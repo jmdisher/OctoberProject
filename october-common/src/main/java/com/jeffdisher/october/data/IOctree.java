@@ -56,11 +56,11 @@ public interface IOctree<T>
 	 * fully deserialized.
 	 * 
 	 * @param lastCallState The state to resume from a previous call.
-	 * @param buffer The buffer to read.
+	 * @param context The context containing the buffer and decoding rules.
 	 * @param codec The codec to use when deserializing object data elements.
 	 * @return The state to resume on the next call, or null if the deserialization was completed.
 	 */
-	Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IObjectCodec<T> codec);
+	Object deserializeResumable(Object lastCallState, DeserializationContext context, IObjectCodec<T> codec);
 
 	/**
 	 * Used to receive callbacks from the walkData() calls.  Note that this will receive callbacks for all data,

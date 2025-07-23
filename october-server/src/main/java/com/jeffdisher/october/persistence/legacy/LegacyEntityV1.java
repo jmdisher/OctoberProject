@@ -2,8 +2,8 @@ package com.jeffdisher.october.persistence.legacy;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.Entity;
@@ -42,7 +42,7 @@ public record LegacyEntityV1(int id
 		boolean isCreativeMode = CodecHelpers.readBoolean(buffer);
 		EntityLocation location = CodecHelpers.readEntityLocation(buffer);
 		EntityLocation velocity = CodecHelpers.readEntityLocation(buffer);
-		Inventory inventory = CodecHelpers.readInventory(buffer);
+		Inventory inventory = CodecHelpers.readInventory(context);
 		int[] hotbar = new int[HOTBAR_SIZE];
 		for (int i = 0; i < hotbar.length; ++i)
 		{
@@ -52,7 +52,7 @@ public record LegacyEntityV1(int id
 		NonStackableItem[] armour = new NonStackableItem[BodyPart.values().length];
 		for (int i = 0; i < armour.length; ++i)
 		{
-			armour[i] = CodecHelpers.readNonStackableItem(buffer);
+			armour[i] = CodecHelpers.readNonStackableItem(context);
 		}
 		CraftOperation localCraftOperation = CodecHelpers.readCraftOperation(buffer);
 		byte health = buffer.get();

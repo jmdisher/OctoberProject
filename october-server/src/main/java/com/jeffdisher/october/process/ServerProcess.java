@@ -7,11 +7,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.LongSupplier;
 
-import com.jeffdisher.october.data.CuboidCodec;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.net.CuboidCodec;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
 import com.jeffdisher.october.net.PacketFromClient;
