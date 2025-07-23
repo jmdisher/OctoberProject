@@ -48,6 +48,7 @@ public class TestCuboidData
 		CuboidData output = CuboidData.createEmpty(cuboidAddress);
 		DeserializationContext context = new DeserializationContext(Environment.getShared()
 			, buffer
+			, false
 		);
 		resume = output.deserializeResumable(null, context);
 		Assert.assertNull(resume);
@@ -73,6 +74,7 @@ public class TestCuboidData
 		CuboidData output = CuboidData.createEmpty(cuboidAddress);
 		DeserializationContext context = new DeserializationContext(Environment.getShared()
 			, buffer
+			, false
 		);
 		resume = output.deserializeResumable(null, context);
 		Assert.assertNull(resume);
@@ -104,6 +106,7 @@ public class TestCuboidData
 			buffer.flip();
 			DeserializationContext context = new DeserializationContext(Environment.getShared()
 				, buffer
+				, false
 			);
 			resumeDeserialize = output.deserializeResumable(resumeDeserialize, context);
 			buffer.clear();
@@ -133,6 +136,7 @@ public class TestCuboidData
 			buffer.flip();
 			DeserializationContext context = new DeserializationContext(Environment.getShared()
 				, buffer
+				, false
 			);
 			resumeDeserialize = output.deserializeResumable(resumeDeserialize, context);
 			buffer.clear();

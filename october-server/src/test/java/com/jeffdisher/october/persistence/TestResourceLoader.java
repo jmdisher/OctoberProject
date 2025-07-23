@@ -71,6 +71,7 @@ public class TestResourceLoader
 	public static TemporaryFolder DIRECTORY = new TemporaryFolder();
 	private static Environment ENV;
 	private static Item STONE_ITEM;
+	private static Item IRON_SWORD;
 	private static Block STONE;
 	private static EntityType COW;
 	@BeforeClass
@@ -78,6 +79,7 @@ public class TestResourceLoader
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");
+		IRON_SWORD = ENV.items.getItemById("op.iron_sword");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 		COW = ENV.creatures.getTypeById("op.cow");
 	}
@@ -942,6 +944,56 @@ public class TestResourceLoader
 		Assert.assertEquals(MutableEntity.TESTING_LOCATION, entity.location());
 		Assert.assertTrue(entity.isCreativeMode());
 		loader.shutdown();
+	}
+
+	@Test
+	public void cuboidNonStackableV7() throws Throwable
+	{
+		// This is a pre-serialized V7 cuboid with an iron_sword of 103 durability stored in block 2,3,4 of an air cuboid at 3,-5,0.
+		byte[] preSerializedV7 = new byte[] {0, 0, 0, 7, -128, 0, 0, 0, 0, 1, 8, 100, 0, 0, 0, 10, 1, 0, 0, 0, 1, 0, 28, 0, 0, 0, 103, -128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+			// (creature count)
+			, 0, 0, 0, 0
+			// (suspended mutations)
+			, 0, 0, 0, 0
+			// (periodic mutations)
+			, 0, 0, 0, 0
+		};
+		CuboidAddress address = CuboidAddress.fromInt(3, -5, 0);
+		BlockAddress blockLocation = BlockAddress.fromInt(2, 3, 4);
+		File worldDirectory = DIRECTORY.newFolder();
+		
+		// Write the file.
+		String fileName = "cuboid_" + address.x() + "_" + address.y() + "_" + address.z() + ".cuboid";
+		try (
+				RandomAccessFile aFile = new RandomAccessFile(new File(worldDirectory, fileName), "rw");
+				FileChannel outChannel = aFile.getChannel();
+		)
+		{
+			int written = outChannel.write(ByteBuffer.wrap(preSerializedV7));
+			outChannel.truncate((long)written);
+			Assert.assertEquals(preSerializedV7.length, written);
+		}
+		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
+		
+		// Now, read this and make sure it contains what we serialized.
+		ResourceLoader loader = new ResourceLoader(worldDirectory, null, new WorldConfig());
+		List<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
+		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of());
+		for (int i = 0; (i < 10) && results.isEmpty(); ++i)
+		{
+			Thread.sleep(10L);
+			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of());
+		}
+		Assert.assertEquals(1, results.size());
+		SuspendedCuboid<CuboidData> result = results.get(0);
+		CuboidData cuboid = result.cuboid();
+		
+		// Verify our assumptions.
+		Inventory inv = cuboid.getDataSpecial(AspectRegistry.INVENTORY, blockLocation);
+		Assert.assertEquals(10, inv.maxEncumbrance);
+		Assert.assertEquals(4, inv.currentEncumbrance);
+		Assert.assertEquals(IRON_SWORD, inv.getNonStackableForKey(1).type());
+		Assert.assertEquals(103, inv.getNonStackableForKey(1).durability().value().intValue());
 	}
 
 

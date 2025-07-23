@@ -11,6 +11,8 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.PropertyHelpers;
+import com.jeffdisher.october.properties.Property;
+import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BodyPart;
@@ -32,12 +34,14 @@ public class TestCodecHelpers
 	private static Environment ENV;
 	private static Item STONE_ITEM;
 	private static Item PLANK_ITEM;
+	private static Item IRON_SWORD_ITEM;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");
 		PLANK_ITEM = ENV.items.getItemById("op.plank");
+		IRON_SWORD_ITEM = ENV.items.getItemById("op.iron_sword");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -71,22 +75,29 @@ public class TestCodecHelpers
 	public void inventory() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		NonStackableItem sword = new NonStackableItem(IRON_SWORD_ITEM, new Property<>(PropertyRegistry.DURABILITY, 103));
 		Inventory test = Inventory.start(50)
 				.addStackable(STONE_ITEM, 2)
 				.addStackable(PLANK_ITEM, 4)
+				.addNonStackable(sword)
 				.finish()
 		;
 		CodecHelpers.writeInventory(buffer, test);
 		buffer.flip();
 		DeserializationContext context = new DeserializationContext(Environment.getShared()
 			, buffer
+			, false
 		);
 		Inventory output = CodecHelpers.readInventory(context);
 		// Inventory has not .equals so check some internal data.
 		Assert.assertEquals(50, output.maxEncumbrance);
-		Assert.assertEquals(2, output.sortedKeys().size());
+		Assert.assertEquals(20, output.currentEncumbrance);
+		Assert.assertEquals(3, output.sortedKeys().size());
 		Assert.assertEquals(2, output.getCount(STONE_ITEM));
 		Assert.assertEquals(4, output.getCount(PLANK_ITEM));
+		NonStackableItem nonStack = output.getNonStackableForKey(3);
+		Assert.assertEquals(IRON_SWORD_ITEM, nonStack.type());
+		Assert.assertEquals(103, nonStack.durability().value().intValue());
 	}
 
 	@Test
@@ -98,6 +109,7 @@ public class TestCodecHelpers
 		buffer.flip();
 		DeserializationContext context = new DeserializationContext(Environment.getShared()
 			, buffer
+			, false
 		);
 		Inventory output = CodecHelpers.readInventory(context);
 		Assert.assertNull(output);
@@ -182,7 +194,10 @@ public class TestCodecHelpers
 		Entity test = MutableEntity.createForTest(1).freeze();
 		CodecHelpers.writeEntity(buffer, test);
 		buffer.flip();
-		Entity output = CodecHelpers.readEntity(new DeserializationContext(ENV, buffer));
+		Entity output = CodecHelpers.readEntity(new DeserializationContext(ENV
+			, buffer
+			, false
+		));
 		// Entity contains Inventory, which has no .equals, so compare other parts.
 		Assert.assertEquals(test.id(), output.id());
 		Assert.assertEquals(test.location(), output.location());
@@ -199,7 +214,10 @@ public class TestCodecHelpers
 		Entity test = mutable.freeze();
 		CodecHelpers.writeEntity(buffer, test);
 		buffer.flip();
-		Entity output = CodecHelpers.readEntity(new DeserializationContext(ENV, buffer));
+		Entity output = CodecHelpers.readEntity(new DeserializationContext(ENV
+			, buffer
+			, false
+		));
 		
 		Assert.assertEquals(test.id(), output.id());
 		Assert.assertEquals(test.localCraftOperation(), output.localCraftOperation());
@@ -225,6 +243,7 @@ public class TestCodecHelpers
 		buffer.flip();
 		DeserializationContext context = new DeserializationContext(Environment.getShared()
 			, buffer
+			, false
 		);
 		FuelState output = CodecHelpers.readFuelState(context);
 		Assert.assertEquals(test.millisFuelled(), output.millisFuelled());
@@ -238,6 +257,7 @@ public class TestCodecHelpers
 		buffer.flip();
 		context = new DeserializationContext(Environment.getShared()
 			, buffer
+			, false
 		);
 		output = CodecHelpers.readFuelState(context);
 		Assert.assertNull(output);
@@ -250,13 +270,19 @@ public class TestCodecHelpers
 		NonStackableItem test = PropertyHelpers.newItem(STONE_ITEM, 10);
 		CodecHelpers.writeNonStackableItem(buffer, test);
 		buffer.flip();
-		NonStackableItem output = CodecHelpers.readNonStackableItem(new DeserializationContext(ENV, buffer));
+		NonStackableItem output = CodecHelpers.readNonStackableItem(new DeserializationContext(ENV
+			, buffer
+			, false
+		));
 		Assert.assertEquals(test, output);
 		
 		buffer.clear();
 		CodecHelpers.writeNonStackableItem(buffer, null);
 		buffer.flip();
-		output = CodecHelpers.readNonStackableItem(new DeserializationContext(ENV, buffer));
+		output = CodecHelpers.readNonStackableItem(new DeserializationContext(ENV
+			, buffer
+			, false
+		));
 		Assert.assertNull(output);
 	}
 

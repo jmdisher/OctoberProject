@@ -13,6 +13,7 @@ import com.jeffdisher.october.aspects.Environment;
  */
 public record DeserializationContext(Environment env
 	, ByteBuffer buffer
+	, boolean usePreV8NonStackableDecoding
 )
 {
 }

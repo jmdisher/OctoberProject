@@ -18,6 +18,7 @@ public class Packet_Entity extends PacketFromServer
 			// This is network so we don't need version-specific decoding.
 			DeserializationContext context = new DeserializationContext(Environment.getShared()
 				, buffer
+				, false
 			);
 			Entity entity = CodecHelpers.readEntity(context);
 			return new Packet_Entity(entity);

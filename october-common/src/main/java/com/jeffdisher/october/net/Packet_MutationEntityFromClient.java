@@ -19,9 +19,11 @@ public class Packet_MutationEntityFromClient extends PacketFromClient
 	public static void register(Function<ByteBuffer, Packet>[] opcodeTable)
 	{
 		opcodeTable[TYPE.ordinal()] = (ByteBuffer buffer) -> {
+			// This is network so we don't need version-specific decoding.
 			Environment env = Environment.getShared();
 			DeserializationContext context = new DeserializationContext(env
 				, buffer
+				, false
 			);
 			
 			EntityChangeTopLevelMovement<IMutablePlayerEntity> mutation = (EntityChangeTopLevelMovement<IMutablePlayerEntity>) EntityActionCodec.parseAndSeekContext(context);

@@ -21,6 +21,7 @@ public class MutationEntitySetEntity implements IEntityUpdate
 		// This is always coming in from the network so it has no version-specific considerations.
 		DeserializationContext context = new DeserializationContext(Environment.getShared()
 			, buffer
+			, false
 		);
 		Entity entity = CodecHelpers.readEntity(context);
 		return new MutationEntitySetEntity(entity);

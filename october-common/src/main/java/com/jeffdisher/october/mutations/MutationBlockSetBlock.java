@@ -339,6 +339,7 @@ public class MutationBlockSetBlock
 		// This is an in-memory copy so we can just use no special rules.
 		DeserializationContext context = new DeserializationContext(Environment.getShared()
 			, buffer
+			, false
 		);
 		return type.codec().loadData(context);
 	}

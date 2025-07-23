@@ -43,7 +43,10 @@ public class TestEntityActionCodec
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		EntityActionCodec.serializeToBuffer(buffer, change);
 		buffer.flip();
-		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV, buffer));
+		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV
+			, buffer
+			, false
+		));
 		Assert.assertTrue(read instanceof EntityChangeTakeDamageFromEntity);
 		Assert.assertEquals(0, buffer.remaining());
 	}
@@ -58,7 +61,10 @@ public class TestEntityActionCodec
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		EntityActionCodec.serializeToBuffer(buffer, change);
 		buffer.flip();
-		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV, buffer));
+		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV
+			, buffer
+			, false
+		));
 		Assert.assertTrue(read instanceof Deprecated_EntityChangeTakeDamageFromOther);
 		Assert.assertEquals(0, buffer.remaining());
 	}
@@ -79,7 +85,10 @@ public class TestEntityActionCodec
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		EntityActionCodec.serializeToBuffer(buffer, action);
 		buffer.flip();
-		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV, buffer));
+		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV
+			, buffer
+			, false
+		));
 		Assert.assertTrue(read instanceof EntityChangeTopLevelMovement);
 		Assert.assertNull(((EntityChangeTopLevelMovement<?>)read).test_getSubAction());
 		Assert.assertEquals(0, buffer.remaining());
@@ -96,7 +105,10 @@ public class TestEntityActionCodec
 		buffer = ByteBuffer.allocate(1024);
 		EntityActionCodec.serializeToBuffer(buffer, action);
 		buffer.flip();
-		read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV, buffer));
+		read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV
+			, buffer
+			, false
+		));
 		Assert.assertTrue(read instanceof EntityChangeTopLevelMovement);
 		Assert.assertTrue(((EntityChangeTopLevelMovement<?>)read).test_getSubAction() instanceof EntityChangeJump);
 		Assert.assertEquals(0, buffer.remaining());

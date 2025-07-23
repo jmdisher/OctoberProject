@@ -446,8 +446,10 @@ public class ResourceLoader
 			
 			// We want to create the decoder context here since we have version data.
 			Environment env = Environment.getShared();
+			boolean usePreV8NonStackableDecoding = (version <= VERSION_CUBOID_V7);
 			DeserializationContext context = new DeserializationContext(env
 				, buffer
+				, usePreV8NonStackableDecoding
 			);
 			
 			Supplier<SuspendedCuboid<CuboidData>> dataReader;
@@ -982,8 +984,10 @@ public class ResourceLoader
 			
 			// We want to create the decoder context here since we have version data.
 			Environment env = Environment.getShared();
+			boolean usePreV8NonStackableDecoding = (version <= VERSION_CUBOID_V7);
 			DeserializationContext context = new DeserializationContext(env
 				, buffer
+				, usePreV8NonStackableDecoding
 			);
 			
 			Supplier<SuspendedEntity> dataReader;
