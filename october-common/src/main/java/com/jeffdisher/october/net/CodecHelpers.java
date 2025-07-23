@@ -8,6 +8,7 @@ import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
+import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BodyPart;
@@ -578,7 +579,7 @@ public class CodecHelpers
 				else
 				{
 					int durability = buffer.getInt();
-					NonStackableItem item = new NonStackableItem(type, durability);
+					NonStackableItem item = PropertyHelpers.newItem(type, durability);
 					nonStackableItems.put(keyValue, item);
 					currentEncumbrance += env.encumbrance.getEncumbrance(item.type());
 				}
@@ -622,7 +623,7 @@ public class CodecHelpers
 				{
 					NonStackableItem nonStackable = inventory.getNonStackableForKey(key);
 					_writeItem(buffer, nonStackable.type());
-					buffer.putInt(nonStackable.durability());
+					buffer.putInt(nonStackable.durability().value());
 				}
 			}
 		}
@@ -722,7 +723,7 @@ public class CodecHelpers
 		if (null != item)
 		{
 			int durability = buffer.getInt();
-			nonStack = new NonStackableItem(item, durability);
+			nonStack = PropertyHelpers.newItem(item, durability);
 		}
 		else
 		{
@@ -740,7 +741,7 @@ public class CodecHelpers
 		_writeItem(buffer, underlying);
 		if (null != item)
 		{
-			buffer.putInt(item.durability());
+			buffer.putInt(item.durability().value());
 		}
 	}
 

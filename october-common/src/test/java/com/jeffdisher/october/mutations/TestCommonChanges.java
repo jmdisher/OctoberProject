@@ -33,6 +33,7 @@ import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.logic.PropagationHelpers;
+import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.subactions.EntityChangeAcceptItems;
 import com.jeffdisher.october.subactions.EntityChangeAttackEntity;
@@ -349,7 +350,7 @@ public class TestCommonChanges
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
-		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, ENV.durability.getDurability(pickItem)));
+		mutable.newInventory.addNonStackableBestEfforts(PropertyHelpers.newItem(pickItem, ENV.durability.getDurability(pickItem)));
 		int idOfPick = 1;
 		mutable.setSelectedKey(idOfPick);
 		Entity original = mutable.freeze();
@@ -808,7 +809,7 @@ public class TestCommonChanges
 		attacker.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
 		Item swordType = ENV.items.getItemById("op.iron_sword");
 		int startDurability = 100;
-		attacker.newInventory.addNonStackableBestEfforts(new NonStackableItem(swordType, startDurability));
+		attacker.newInventory.addNonStackableBestEfforts(PropertyHelpers.newItem(swordType, startDurability));
 		attacker.setSelectedKey(1);
 		MutableEntity target = MutableEntity.createForTest(targetId);
 		target.newLocation = new EntityLocation(9.0f, 9.0f, 0.0f);
@@ -850,7 +851,7 @@ public class TestCommonChanges
 		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, attacker));
 		Assert.assertEquals(targetId, targetHolder[0]);
 		Assert.assertTrue(changeHolder[0] instanceof EntityChangeTakeDamageFromEntity);
-		int endDurability = attacker.newInventory.getNonStackableForKey(attacker.getSelectedKey()).durability();
+		int endDurability = attacker.newInventory.getNonStackableForKey(attacker.getSelectedKey()).durability().value();
 		Assert.assertEquals(1, (startDurability - endDurability));
 		
 		// Apply the hit and verify that the target health changed.
@@ -937,7 +938,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
 		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
-		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, 1));
+		newEntity.newInventory.addNonStackableBestEfforts(PropertyHelpers.newItem(pickItem, 1));
 		// We assume that this is 1.
 		newEntity.setSelectedKey(1);
 		
@@ -1017,7 +1018,7 @@ public class TestCommonChanges
 		
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
-		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe, startDurability));
+		newEntity.newInventory.addNonStackableBestEfforts(PropertyHelpers.newItem(pickaxe, startDurability));
 		newEntity.setSelectedKey(1);
 		
 		AbsoluteLocation targetStone = new AbsoluteLocation(6, 0, 10);
@@ -1038,7 +1039,7 @@ public class TestCommonChanges
 		MutableBlockProxy proxy = new MutableBlockProxy(targetStone, cuboid);
 		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(startDurability - 1, newEntity.newInventory.getNonStackableForKey(1).durability());
+		Assert.assertEquals(startDurability - 1, newEntity.newInventory.getNonStackableForKey(1).durability().value().intValue());
 		Assert.assertEquals(10 * duration, cuboid.getData15(AspectRegistry.DAMAGE, targetStone.getBlockAddress()));
 		
 		// Now, do the same to the plank and observe the difference.
@@ -1050,7 +1051,7 @@ public class TestCommonChanges
 		proxy = new MutableBlockProxy(targetLog, cuboid);
 		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(startDurability - 2, newEntity.newInventory.getNonStackableForKey(1).durability());
+		Assert.assertEquals(startDurability - 2, newEntity.newInventory.getNonStackableForKey(1).durability().value().intValue());
 		Assert.assertEquals(duration, cuboid.getData15(AspectRegistry.DAMAGE, targetLog.getBlockAddress()));
 	}
 
@@ -1067,8 +1068,8 @@ public class TestCommonChanges
 		
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
-		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(waterBucket, 0));
-		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(lavaBucket, 0));
+		newEntity.newInventory.addNonStackableBestEfforts(PropertyHelpers.newItem(waterBucket, 0));
+		newEntity.newInventory.addNonStackableBestEfforts(PropertyHelpers.newItem(lavaBucket, 0));
 		// Start with the water.
 		newEntity.setSelectedKey(1);
 		
@@ -1139,7 +1140,7 @@ public class TestCommonChanges
 		Item swordType = ENV.items.getItemById("op.iron_sword");
 		int startDurability = 100;
 		int swordId = 2;
-		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(swordType, startDurability));
+		mutable.newInventory.addNonStackableBestEfforts(PropertyHelpers.newItem(swordType, startDurability));
 		
 		// We should default to slot 0.
 		Assert.assertEquals(0, mutable.newHotbarIndex);
@@ -1168,7 +1169,7 @@ public class TestCommonChanges
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		Item helmetType = ENV.items.getItemById("op.iron_helmet");
 		int startDurability = 15;
-		mutable.newArmour[BodyPart.HEAD.ordinal()] = new NonStackableItem(helmetType, startDurability);
+		mutable.newArmour[BodyPart.HEAD.ordinal()] = PropertyHelpers.newItem(helmetType, startDurability);
 		_Events events = new _Events();
 		TickProcessingContext context = _createSimpleContextWithEvents(events);
 		
@@ -1182,14 +1183,14 @@ public class TestCommonChanges
 		context = ContextBuilder.nextTick(context, MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK).finish();
 		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.HEAD, 1, attackerId).applyChange(context,  mutable));
 		Assert.assertEquals((byte)89, mutable.newHealth);
-		Assert.assertEquals(startDurability, mutable.newArmour[BodyPart.HEAD.ordinal()].durability());
+		Assert.assertEquals(startDurability, mutable.newArmour[BodyPart.HEAD.ordinal()].durability().value().intValue());
 		
 		// Hit them in the head with 10 damage (what the armour blocks) see the durability loss and damage reduced.
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, mutable.newLocation.getBlockLocation(), entityId, attackerId));
 		context = ContextBuilder.nextTick(context, MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK).finish();
 		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.HEAD, 10, attackerId).applyChange(context,  mutable));
 		Assert.assertEquals((byte)88, mutable.newHealth);
-		Assert.assertEquals(6, mutable.newArmour[BodyPart.HEAD.ordinal()].durability());
+		Assert.assertEquals(6, mutable.newArmour[BodyPart.HEAD.ordinal()].durability().value().intValue());
 		
 		// Hit them in the head with 10 damage, again to see the armour break and damage reduced.
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, mutable.newLocation.getBlockLocation(), entityId, attackerId));
@@ -1209,10 +1210,10 @@ public class TestCommonChanges
 		Item helmetType = ENV.items.getItemById("op.iron_helmet");
 		int helmet1Durability = 15;
 		int helmet1Id = 1;
-		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(helmetType, helmet1Durability));
+		mutable.newInventory.addNonStackableBestEfforts(PropertyHelpers.newItem(helmetType, helmet1Durability));
 		int helmet2Durability = 2000;
 		int helmet2Id = 2;
-		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(helmetType, helmet2Durability));
+		mutable.newInventory.addNonStackableBestEfforts(PropertyHelpers.newItem(helmetType, helmet2Durability));
 		int dirtId = 3;
 		mutable.newInventory.addItemsBestEfforts(dirtType, 1);
 		Assert.assertEquals(10, mutable.newInventory.getCurrentEncumbrance());
@@ -1229,12 +1230,12 @@ public class TestCommonChanges
 		
 		// Show that we can wear the helmet.
 		Assert.assertTrue(new EntityChangeSwapArmour(BodyPart.HEAD, helmet1Id).applyChange(null,  mutable));
-		Assert.assertEquals(helmet1Durability, mutable.newArmour[BodyPart.HEAD.ordinal()].durability());
+		Assert.assertEquals(helmet1Durability, mutable.newArmour[BodyPart.HEAD.ordinal()].durability().value().intValue());
 		Assert.assertEquals(6, mutable.newInventory.getCurrentEncumbrance());
 		
 		// Show that we can swap to the other helmet.
 		Assert.assertTrue(new EntityChangeSwapArmour(BodyPart.HEAD, helmet2Id).applyChange(null,  mutable));
-		Assert.assertEquals(helmet2Durability, mutable.newArmour[BodyPart.HEAD.ordinal()].durability());
+		Assert.assertEquals(helmet2Durability, mutable.newArmour[BodyPart.HEAD.ordinal()].durability().value().intValue());
 		Assert.assertEquals(6, mutable.newInventory.getCurrentEncumbrance());
 		
 		// Show that we can swap out with nothing.
@@ -1987,7 +1988,7 @@ public class TestCommonChanges
 		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
 		newEntity.isCreativeMode = true;
 		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
-		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, 1));
+		newEntity.newInventory.addNonStackableBestEfforts(PropertyHelpers.newItem(pickItem, 1));
 		// We assume that this is 1.
 		newEntity.setSelectedKey(1);
 		
@@ -2005,7 +2006,7 @@ public class TestCommonChanges
 		Assert.assertNotNull(holder.mutation);
 		// We should still see the item in the inventory.
 		Assert.assertEquals(1, newEntity.getSelectedKey());
-		Assert.assertEquals(1, newEntity.newInventory.freeze().getNonStackableForKey(1).durability());
+		Assert.assertEquals(1, newEntity.newInventory.freeze().getNonStackableForKey(1).durability().value().intValue());
 	}
 
 	@Test
@@ -2064,7 +2065,7 @@ public class TestCommonChanges
 		
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
-		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(lavaBucket, 0));
+		newEntity.newInventory.addNonStackableBestEfforts(PropertyHelpers.newItem(lavaBucket, 0));
 		newEntity.setSelectedKey(1);
 		
 		AbsoluteLocation target = new AbsoluteLocation(6, 0, 10);
@@ -2357,10 +2358,10 @@ public class TestCommonChanges
 		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
 		Item hoeItem = ENV.items.getItemById("op.stone_hoe");
 		Item dirtItem = ENV.items.getItemById("op.dirt");
-		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(hoeItem, 2));
+		newEntity.newInventory.addNonStackableBestEfforts(PropertyHelpers.newItem(hoeItem, 2));
 		// We assume that this is 1.
 		newEntity.setSelectedKey(1);
-		Assert.assertEquals(2, newEntity.newInventory.getNonStackableForKey(newEntity.getSelectedKey()).durability());
+		Assert.assertEquals(2, newEntity.newInventory.getNonStackableForKey(newEntity.getSelectedKey()).durability().value().intValue());
 		
 		AbsoluteLocation target0 = newEntity.newLocation.getBlockLocation().getRelative(1, 0, 0);
 		AbsoluteLocation target1 = newEntity.newLocation.getBlockLocation().getRelative(1, 1, 0);
@@ -2377,7 +2378,7 @@ public class TestCommonChanges
 		Assert.assertTrue(use0.applyChange(holder.context, newEntity));
 		Assert.assertTrue(holder.mutation instanceof MutationBlockReplace);
 		holder.mutation = null;
-		Assert.assertEquals(1, newEntity.newInventory.getNonStackableForKey(newEntity.getSelectedKey()).durability());
+		Assert.assertEquals(1, newEntity.newInventory.getNonStackableForKey(newEntity.getSelectedKey()).durability().value().intValue());
 		Assert.assertEquals(1, newEntity.newInventory.freeze().sortedKeys().size());
 		
 		// This counts as a special action so reset that.
@@ -2511,7 +2512,7 @@ public class TestCommonChanges
 		Craft logToPlanks = ENV.crafting.getCraftById("op.log_to_planks");
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
-		newEntity.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(IRON_SWORD_ITEM, 5));
+		newEntity.newInventory.addNonStackableAllowingOverflow(PropertyHelpers.newItem(IRON_SWORD_ITEM, 5));
 		newEntity.newHotbar[0] = 1;
 		newEntity.newHotbar[1] = 2;
 		
@@ -2582,12 +2583,12 @@ public class TestCommonChanges
 		
 		MutableEntity swordAttacker = MutableEntity.createForTest(swordAttackerId);
 		swordAttacker.newLocation = new EntityLocation(11.0f, 10.0f, 0.0f);
-		swordAttacker.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(IRON_SWORD_ITEM, 100));
+		swordAttacker.newInventory.addNonStackableAllowingOverflow(PropertyHelpers.newItem(IRON_SWORD_ITEM, 100));
 		swordAttacker.setSelectedKey(1);
 		
 		MutableEntity axeAttacker = MutableEntity.createForTest(axeAttackerId);
 		axeAttacker.newLocation = new EntityLocation(10.0f, 11.0f, 0.0f);
-		axeAttacker.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(IRON_AXE_ITEM, 100));
+		axeAttacker.newInventory.addNonStackableAllowingOverflow(PropertyHelpers.newItem(IRON_AXE_ITEM, 100));
 		axeAttacker.setSelectedKey(1);
 		
 		MutableEntity stoneAttacker = MutableEntity.createForTest(stoneAttackerId);

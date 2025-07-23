@@ -6,6 +6,7 @@ import com.jeffdisher.october.actions.EntityChangePeriodic;
 import com.jeffdisher.october.actions.EntityChangeTakeDamageFromEntity;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
+import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.BodyPart;
@@ -104,12 +105,12 @@ public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayer
 				if (totalDurability > 0)
 				{
 					// No matter what they hit, this counts as one "weapon use".
-					int newDurability = nonStack.durability() - 1;
+					int newDurability = nonStack.durability().value() - 1;
 					int selectedKey = newEntity.getSelectedKey();
 					if (newDurability > 0)
 					{
 						// Write this back.
-						NonStackableItem updated = new NonStackableItem(toolType, newDurability);
+						NonStackableItem updated = PropertyHelpers.withReplacedDurability(nonStack, newDurability);
 						mutableInventory.replaceNonStackable(selectedKey, updated);
 					}
 					else

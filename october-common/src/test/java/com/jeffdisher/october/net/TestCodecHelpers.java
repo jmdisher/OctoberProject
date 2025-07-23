@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
+import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BodyPart;
@@ -233,7 +234,7 @@ public class TestCodecHelpers
 	public void nonStackable() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		NonStackableItem test = new NonStackableItem(STONE_ITEM, 10);
+		NonStackableItem test = PropertyHelpers.newItem(STONE_ITEM, 10);
 		CodecHelpers.writeNonStackableItem(buffer, test);
 		buffer.flip();
 		NonStackableItem output = CodecHelpers.readNonStackableItem(buffer);

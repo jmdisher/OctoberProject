@@ -30,6 +30,7 @@ import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.EntityChangeSendItem;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
+import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.ShockwaveMutation;
 import com.jeffdisher.october.mutations.DropItemMutation;
@@ -70,7 +71,6 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
-import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.Encoding;
@@ -436,7 +436,7 @@ public class TestTickRunner
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		Item pickaxe = ENV.items.getItemById("op.iron_pickaxe");
 		int startDurability = ENV.durability.getDurability(pickaxe);
-		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe, startDurability));
+		mutable.newInventory.addNonStackableBestEfforts(PropertyHelpers.newItem(pickaxe, startDurability));
 		mutable.setSelectedKey(1);
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
@@ -496,7 +496,7 @@ public class TestTickRunner
 		Assert.assertEquals(1, entityInventory.getCount(STONE_ITEM));
 		
 		// We should also see the durability loss on our tool (one for each committed action).
-		int updatedDurability = entityInventory.getNonStackableForKey(entity.hotbarItems()[entity.hotbarIndex()]).durability();
+		int updatedDurability = entityInventory.getNonStackableForKey(entity.hotbarItems()[entity.hotbarIndex()]).durability().value();
 		int toolUses = (int)nextCommit - 1;
 		Assert.assertEquals(toolUses, (startDurability - updatedDurability));
 		
@@ -1744,7 +1744,7 @@ public class TestTickRunner
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = entityLocation;
-		mutable.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(ENV.items.getItemById("op.iron_sword"), 1000));
+		mutable.newInventory.addNonStackableAllowingOverflow(PropertyHelpers.newItem(ENV.items.getItemById("op.iron_sword"), 1000));
 		mutable.setSelectedKey(1);
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(creature), List.of(), Map.of())

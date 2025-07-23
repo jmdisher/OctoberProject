@@ -22,7 +22,6 @@ import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
@@ -57,7 +56,7 @@ public class TestHopperHelpers
 		
 		MutableBlockProxy proxy = new MutableBlockProxy(topLocation, cuboid);
 		proxy.setBlockAndClear(chest);
-		proxy.setInventory(Inventory.start(10).addStackable(charcoal, 3).addNonStackable(new NonStackableItem(sword, 10)).finish());
+		proxy.setInventory(Inventory.start(10).addStackable(charcoal, 3).addNonStackable(PropertyHelpers.newItem(sword, 10)).finish());
 		proxy.writeBack(cuboid);
 		
 		// We will start with an item in the hopper to see it take 2 actions.

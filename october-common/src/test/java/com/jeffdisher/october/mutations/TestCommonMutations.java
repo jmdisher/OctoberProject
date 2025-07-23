@@ -22,6 +22,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.PlantHelpers;
+import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.net.DeserializationContext;
 import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -40,7 +41,6 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
-import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
@@ -181,7 +181,7 @@ public class TestCommonMutations
 		int clientId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(clientId);
 		Item pickaxe = ENV.items.getItemById("op.iron_pickaxe");
-		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe, ENV.durability.getDurability(pickaxe)));
+		mutable.newInventory.addNonStackableBestEfforts(PropertyHelpers.newItem(pickaxe, ENV.durability.getDurability(pickaxe)));
 		mutable.setSelectedKey(1);
 		Entity entity = mutable.freeze();
 		

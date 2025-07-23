@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
+import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.mutations.MultiBlockUtils;
@@ -104,11 +105,11 @@ public class EntityChangeIncrementalBlockBreak implements IEntitySubAction<IMuta
 				int totalDurability = env.durability.getDurability(selected.type());
 				if (totalDurability > 0)
 				{
-					int newDurability = selected.durability() - 1;
+					int newDurability = selected.durability().value() - 1;
 					if (newDurability > 0)
 					{
 						// Write this back.
-						NonStackableItem updated = new NonStackableItem(selected.type(), newDurability);
+						NonStackableItem updated = PropertyHelpers.withReplacedDurability(selected, newDurability);
 						mutableInventory.replaceNonStackable(selectedKey, updated);
 					}
 					else

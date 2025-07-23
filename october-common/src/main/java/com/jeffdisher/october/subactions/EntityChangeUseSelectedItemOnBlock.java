@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.mutations.MutationBlockForceGrow;
@@ -168,7 +169,7 @@ public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMut
 			Assert.assertTrue(null != outputBucket);
 			Assert.assertTrue(null != outputBlock);
 			// We can place down the bucket.
-			mutableInventory.replaceNonStackable(selectedKey, new NonStackableItem(outputBucket, 0));
+			mutableInventory.replaceNonStackable(selectedKey, PropertyHelpers.newItem(outputBucket, 0));
 			context.mutationSink.next(new MutationBlockReplace(_target, block, outputBlock));
 			didApply = true;
 		}
@@ -186,10 +187,10 @@ public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMut
 		else if ((stoneHoe == type) && ((dirtItem == block.item()) || (grassItem == block.item())))
 		{
 			// We will decrement the durability of the hoe and replace the target block with tilled soil.
-			int durability = nonStack.durability();
+			int durability = nonStack.durability().value();
 			if (durability > 1)
 			{
-				mutableInventory.replaceNonStackable(selectedKey, new NonStackableItem(type, durability - 1));
+				mutableInventory.replaceNonStackable(selectedKey, PropertyHelpers.withReplacedDurability(nonStack, durability - 1));
 			}
 			else
 			{

@@ -1,6 +1,7 @@
 package com.jeffdisher.october.types;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -42,7 +43,7 @@ public class CreativeInventory implements IMutableInventory
 			}
 			else
 			{
-				NonStackableItem nonStackable = new NonStackableItem(item, env.durability.getDurability(item));
+				NonStackableItem nonStackable = PropertyHelpers.newItem(item, env.durability.getDurability(item));
 				builder.addNonStackable(nonStackable);
 			}
 		}

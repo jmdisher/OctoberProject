@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.jeffdisher.october.config.TabListReader;
+import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.Inventory;
@@ -277,7 +278,8 @@ public class CraftAspect
 				else
 				{
 					int startingDurability = env.durability.getDurability(item);
-					didAdd = inv.addNonStackableBestEfforts(new NonStackableItem(item, startingDurability));
+					NonStackableItem newItem = PropertyHelpers.newItem(item, startingDurability);
+					didAdd = inv.addNonStackableBestEfforts(newItem);
 				}
 				// We can't fail to add here.
 				Assert.assertTrue(didAdd);

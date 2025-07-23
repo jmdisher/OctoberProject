@@ -1,6 +1,7 @@
 package com.jeffdisher.october.mutations;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.NonStackableItem;
@@ -37,10 +38,10 @@ public class CommonEntityMutationHelpers
 				damageToApply = damage - damageToAbsorb;
 				if (damageToAbsorb > 0)
 				{
-					int durabilityRemaining = armour.durability() - damageToAbsorb;
+					int durabilityRemaining = armour.durability().value() - damageToAbsorb;
 					if (durabilityRemaining > 0)
 					{
-						newEntity.setArmour(target, new NonStackableItem(armour.type(), durabilityRemaining));
+						newEntity.setArmour(target, PropertyHelpers.withReplacedDurability(armour, durabilityRemaining));
 					}
 					else
 					{

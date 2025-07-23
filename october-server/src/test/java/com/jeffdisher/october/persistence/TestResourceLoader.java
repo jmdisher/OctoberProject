@@ -33,6 +33,7 @@ import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
+import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
@@ -583,7 +584,7 @@ public class TestResourceLoader
 		boolean isCreativeMode = true;
 		EntityLocation location = new EntityLocation(1.0f, 2.0f, 3.0f);
 		EntityLocation velocity = new EntityLocation(4.0f, 5.0f, 6.0f);
-		Inventory inventory = Inventory.start(20).addStackable(STONE_ITEM, 1).addNonStackable(new NonStackableItem(swordItem, 5)).finish();
+		Inventory inventory = Inventory.start(20).addStackable(STONE_ITEM, 1).addNonStackable(PropertyHelpers.newItem(swordItem, 5)).finish();
 		int[] hotbarItems = new int[LegacyEntityV1.HOTBAR_SIZE];
 		int hotbarIndex = 3;
 		NonStackableItem[] armourSlots = new NonStackableItem[BodyPart.values().length];
