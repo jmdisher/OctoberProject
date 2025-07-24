@@ -78,42 +78,6 @@ public record LegacyEntityV1(int id
 		);
 	}
 
-	public void test_writeToBuffer(ByteBuffer buffer)
-	{
-		// NOTE:  This is just for testing.
-		// We just use the logic which was used in CodecHelpers to load this in V1.
-		int id = this.id();
-		boolean isCreativeMode = this.isCreativeMode();
-		EntityLocation location = this.location();
-		EntityLocation velocity = this.velocity();
-		Inventory inventory = this.inventory();
-		int[] hotbar = this.hotbarItems();
-		int hotbarIndex = this.hotbarIndex();
-		NonStackableItem[] armour = this.armourSlots();
-		CraftOperation localCraftOperation = this.localCraftOperation();
-		
-		buffer.putInt(id);
-		CodecHelpers.writeBoolean(buffer, isCreativeMode);
-		CodecHelpers.writeEntityLocation(buffer, location);
-		CodecHelpers.writeEntityLocation(buffer, velocity);
-		CodecHelpers.writeInventory(buffer, inventory);
-		for (int key : hotbar)
-		{
-			buffer.putInt(key);
-		}
-		buffer.putInt(hotbarIndex);
-		for (NonStackableItem piece : armour)
-		{
-			CodecHelpers.writeNonStackableItem(buffer, piece);
-		}
-		CodecHelpers.writeCraftOperation(buffer, localCraftOperation);
-		buffer.put(this.health());
-		buffer.put(this.food());
-		buffer.put(this.breath());
-		buffer.putInt(this.energyDeficit());
-		CodecHelpers.writeEntityLocation(buffer, this.spawnLocation());
-	}
-
 	public Entity toEntity()
 	{
 		byte yaw = 0;

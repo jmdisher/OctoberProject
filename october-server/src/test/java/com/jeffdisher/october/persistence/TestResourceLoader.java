@@ -33,7 +33,6 @@ import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
-import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
@@ -42,9 +41,7 @@ import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.net.EntityActionCodec;
 import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV1;
-import com.jeffdisher.october.persistence.legacy.LegacyEntityV1;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -57,12 +54,10 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.FuelState;
-import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
-import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.Encoding;
@@ -576,50 +571,14 @@ public class TestResourceLoader
 	@Test
 	public void writeAndReadEntityV1() throws Throwable
 	{
-		Item swordItem = ENV.items.getItemById("op.iron_sword");
 		File worldDirectory = DIRECTORY.newFolder();
 		
 		// This is a test of our ability to read the V1 entity data.  We manually write a file and then attempt to read it, verifying the result is sensible.
+		// Note that, since we no longer want to support writing old versions, we use a capture of an old version.
+		byte[] version1SerializedData = new byte[] {0, 0, 0, 1, 0, 0, 0, 1, 1, 63, -128, 0, 0, 64, 0, 0, 0, 64, 64, 0, 0, 64, -128, 0, 0, 64, -96, 0, 0, 64, -64, 0, 0, 0, 0, 0, 20, 2, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 2, 0, 28, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, -1, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 50, 12, 98, 0, 0, 1, -12, -64, -96, 0, 0, -64, -64, 0, 0, -64, -32, 0, 0, 0, 0, 0, 0, 0, 0, 1, -12, 1, 0, 0, 0, 0, 0, 0, 0, 0, 63, -128, 0, 0, 1};
 		int id = 1;
-		boolean isCreativeMode = true;
 		EntityLocation location = new EntityLocation(1.0f, 2.0f, 3.0f);
-		EntityLocation velocity = new EntityLocation(4.0f, 5.0f, 6.0f);
-		Inventory inventory = Inventory.start(20).addStackable(STONE_ITEM, 1).addNonStackable(PropertyHelpers.newItem(swordItem, 5)).finish();
-		int[] hotbarItems = new int[LegacyEntityV1.HOTBAR_SIZE];
-		int hotbarIndex = 3;
-		NonStackableItem[] armourSlots = new NonStackableItem[BodyPart.values().length];
-		CraftOperation localCraftOperation = null;
-		byte health = 50;
-		byte food = 12;
-		byte breath = 98;
-		int energyDeficit = 500;
-		EntityLocation spawnLocation = new EntityLocation(-5.0f, -6.0f, -7.0f);
-		LegacyEntityV1 legacy = new LegacyEntityV1(id
-			, isCreativeMode
-			, location
-			, velocity
-			, inventory
-			, hotbarItems
-			, hotbarIndex
-			, armourSlots
-			, localCraftOperation
-			, health
-			, food
-			, breath
-			, energyDeficit
-			, spawnLocation
-		);
-		@SuppressWarnings("deprecation")
-		Deprecated_EntityChangeMove<IMutablePlayerEntity> move = new Deprecated_EntityChangeMove<>(1.0f, Deprecated_EntityChangeMove.Direction.EAST);
-		
-		// Serialize to buffer.
-		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		buffer.putInt(ResourceLoader.VERSION_ENTITY_V1);
-		legacy.test_writeToBuffer(buffer);
-		buffer.putLong(500L);
-		EntityActionCodec.serializeToBuffer(buffer, move);
-		buffer.flip();
-		
+
 		// Write the file.
 		String fileName = "entity_" + id + ".entity";
 		try (
@@ -627,6 +586,7 @@ public class TestResourceLoader
 				FileChannel outChannel = aFile.getChannel();
 		)
 		{
+			ByteBuffer buffer = ByteBuffer.wrap(version1SerializedData);
 			int written = outChannel.write(buffer);
 			outChannel.truncate((long)written);
 		}
