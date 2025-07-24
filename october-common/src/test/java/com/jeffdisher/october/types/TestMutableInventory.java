@@ -1,5 +1,7 @@
 package com.jeffdisher.october.types;
 
+import java.util.List;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -7,7 +9,6 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.StationRegistry;
-import com.jeffdisher.october.logic.PropertyHelpers;
 
 
 public class TestMutableInventory
@@ -176,18 +177,18 @@ public class TestMutableInventory
 	{
 		// Show that non-stackable items are handled correctly.
 		Inventory original = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY)
-				.addNonStackable(PropertyHelpers.newItem(STONE_ITEM, 0))
+				.addNonStackable(new NonStackableItem(STONE_ITEM, List.of()))
 				.addStackable(STONE_ITEM, 1)
-				.addNonStackable(PropertyHelpers.newItem(PLANK_ITEM, 0))
+				.addNonStackable(new NonStackableItem(PLANK_ITEM, List.of()))
 				.addStackable(STONE_ITEM, 1)
 				.finish();
 		MutableInventory inv = new MutableInventory(original);
 		inv.addAllItems(STONE_ITEM, 1);
-		inv.addNonStackableBestEfforts(PropertyHelpers.newItem(DIRT_ITEM, 0));
+		inv.addNonStackableBestEfforts(new NonStackableItem(DIRT_ITEM, List.of()));
 		// Items are added in the order they are given to the builder (first stackable added counts).
 		int firstNonStackableItem = 1;
 		inv.removeNonStackableItems(firstNonStackableItem);
-		inv.addNonStackableAllowingOverflow(PropertyHelpers.newItem(LOG_ITEM, 0));
+		inv.addNonStackableAllowingOverflow(new NonStackableItem(LOG_ITEM, List.of()));
 		
 		Inventory frozen = inv.freeze();
 		Assert.assertEquals(0, frozen.getCount(LOG_ITEM));

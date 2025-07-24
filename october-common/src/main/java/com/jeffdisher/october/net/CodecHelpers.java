@@ -2,6 +2,8 @@ package com.jeffdisher.october.net;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,7 +11,6 @@ import java.util.Map;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.properties.Property;
 import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.properties.PropertyType;
@@ -748,21 +749,22 @@ public class CodecHelpers
 		{
 			// This version was pre-Properties so we just had a durability and that is all.
 			int durability = buffer.getInt();
-			nonStack = PropertyHelpers.newItem(item, durability);
+			Property<Integer> prop = new Property<>(PropertyRegistry.DURABILITY, durability);
+			nonStack = new NonStackableItem(item, List.of(prop));
 		}
 		else
 		{
 			// This uses the new property encoding so read those.
 			int propertyCount = Byte.toUnsignedInt(buffer.get());
-			// TODO:  Remove this check when we add more.
-			Assert.assertTrue(1 == propertyCount);
-			// Read the type of the first.
-			PropertyType<?> type = PropertyRegistry.ALL_PROPERTIES[Byte.toUnsignedInt(buffer.get())];
-			Property<?> property = _instantiateProperty(type, context);
-			// TODO:  Remove this cast when there are more.
-			@SuppressWarnings("unchecked")
-			Property<Integer> cast = (Property<Integer>)property;
-			nonStack = new NonStackableItem(item, cast);
+			List<Property<?>> props = new ArrayList<>();
+			for (int i = 0; i < propertyCount; ++i)
+			{
+				// Read the type of the first.
+				PropertyType<?> type = PropertyRegistry.ALL_PROPERTIES[Byte.toUnsignedInt(buffer.get())];
+				Property<?> property = _readPropertyValue(context, type);
+				props.add(property);
+			}
+			nonStack = new NonStackableItem(item, Collections.unmodifiableList(props));
 		}
 		return nonStack;
 	}
@@ -777,12 +779,16 @@ public class CodecHelpers
 		if (null != item)
 		{
 			// Write the number of properties.
+			int propertyCount = item.properties().size();
 			// TODO:  Remove this hard-coding when we add more.
-			buffer.put((byte)1);
-			// Write the type of the property.
-			buffer.put((byte)item.durability().type().index());
-			// Write the value.
-			item.durability().type().codec().storeData(buffer, item.durability().value());
+			buffer.put((byte)propertyCount);
+			for (Property<?> prop : item.properties())
+			{
+				// Write the type of the property.
+				int index = prop.type().index();
+				buffer.put((byte)index);
+				_writePropertyValue(buffer, prop);
+			}
 		}
 	}
 
@@ -815,9 +821,14 @@ public class CodecHelpers
 		buffer.putInt(location.z());
 	}
 
-	private static <T> Property<T> _instantiateProperty(PropertyType<T> type, DeserializationContext context)
+	private static <T> Property<T> _readPropertyValue(DeserializationContext context, PropertyType<T> type)
 	{
 		T value = type.codec().loadData(context);
 		return new Property<>(type, value);
+	}
+
+	private static <T> void _writePropertyValue(ByteBuffer buffer, Property<T> prop)
+	{
+		prop.type().codec().storeData(buffer, prop.value());
 	}
 }

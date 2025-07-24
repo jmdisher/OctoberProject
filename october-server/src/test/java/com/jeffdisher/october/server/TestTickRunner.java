@@ -49,6 +49,8 @@ import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.mutations.SaturatingDamage;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
+import com.jeffdisher.october.properties.Property;
+import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.subactions.EntityChangeAttackEntity;
 import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.subactions.EntityChangeSetBlockLogicState;
@@ -71,6 +73,7 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.Encoding;
@@ -436,7 +439,7 @@ public class TestTickRunner
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		Item pickaxe = ENV.items.getItemById("op.iron_pickaxe");
 		int startDurability = ENV.durability.getDurability(pickaxe);
-		mutable.newInventory.addNonStackableBestEfforts(PropertyHelpers.newItem(pickaxe, startDurability));
+		mutable.newInventory.addNonStackableBestEfforts(PropertyHelpers.newItemWithDefaults(ENV, pickaxe));
 		mutable.setSelectedKey(1);
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
@@ -496,7 +499,7 @@ public class TestTickRunner
 		Assert.assertEquals(1, entityInventory.getCount(STONE_ITEM));
 		
 		// We should also see the durability loss on our tool (one for each committed action).
-		int updatedDurability = entityInventory.getNonStackableForKey(entity.hotbarItems()[entity.hotbarIndex()]).durability().value();
+		int updatedDurability = PropertyHelpers.getDurability(entityInventory.getNonStackableForKey(entity.hotbarItems()[entity.hotbarIndex()]));
 		int toolUses = (int)nextCommit - 1;
 		Assert.assertEquals(toolUses, (startDurability - updatedDurability));
 		
@@ -1744,7 +1747,7 @@ public class TestTickRunner
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = entityLocation;
-		mutable.newInventory.addNonStackableAllowingOverflow(PropertyHelpers.newItem(ENV.items.getItemById("op.iron_sword"), 1000));
+		mutable.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(ENV.items.getItemById("op.iron_sword"), List.of(new Property<>(PropertyRegistry.DURABILITY, 1000))));
 		mutable.setSelectedKey(1);
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(creature), List.of(), Map.of())

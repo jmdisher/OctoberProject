@@ -404,7 +404,7 @@ public class TestCreatureProcessor
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		Entity farWheat = _createEntity(1, new EntityLocation(5.0f, 0.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
 		Entity closeWheat = _createEntity(2, new EntityLocation(3.0f, 0.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
-		Entity nonWheat = _createEntity(3, new EntityLocation(2.0f, 0.0f, 0.0f), null, PropertyHelpers.newItem(ENV.items.getItemById("op.iron_pickaxe"), 100));
+		Entity nonWheat = _createEntity(3, new EntityLocation(2.0f, 0.0f, 0.0f), null, PropertyHelpers.newItemWithDefaults(ENV, ENV.items.getItemById("op.iron_pickaxe")));
 		TickProcessingContext context = _createContext();
 		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread

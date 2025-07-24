@@ -43,7 +43,7 @@ public class CreativeInventory implements IMutableInventory
 			}
 			else
 			{
-				NonStackableItem nonStackable = PropertyHelpers.newItem(item, env.durability.getDurability(item));
+				NonStackableItem nonStackable = PropertyHelpers.newItemWithDefaults(env, item);
 				builder.addNonStackable(nonStackable);
 			}
 		}

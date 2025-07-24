@@ -38,15 +38,8 @@ public class CommonEntityMutationHelpers
 				damageToApply = damage - damageToAbsorb;
 				if (damageToAbsorb > 0)
 				{
-					int durabilityRemaining = armour.durability().value() - damageToAbsorb;
-					if (durabilityRemaining > 0)
-					{
-						newEntity.setArmour(target, PropertyHelpers.withReplacedDurability(armour, durabilityRemaining));
-					}
-					else
-					{
-						newEntity.setArmour(target, null);
-					}
+					// This will change to null if broken.
+					newEntity.setArmour(target, PropertyHelpers.reduceDurabilityOrBreak(armour, damageToAbsorb));
 				}
 			}
 			else

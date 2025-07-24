@@ -1,6 +1,7 @@
 package com.jeffdisher.october.net;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -75,7 +76,7 @@ public class TestCodecHelpers
 	public void inventory() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		NonStackableItem sword = new NonStackableItem(IRON_SWORD_ITEM, new Property<>(PropertyRegistry.DURABILITY, 103));
+		NonStackableItem sword = new NonStackableItem(IRON_SWORD_ITEM, List.of(new Property<>(PropertyRegistry.DURABILITY, 103)));
 		Inventory test = Inventory.start(50)
 				.addStackable(STONE_ITEM, 2)
 				.addStackable(PLANK_ITEM, 4)
@@ -97,7 +98,7 @@ public class TestCodecHelpers
 		Assert.assertEquals(4, output.getCount(PLANK_ITEM));
 		NonStackableItem nonStack = output.getNonStackableForKey(3);
 		Assert.assertEquals(IRON_SWORD_ITEM, nonStack.type());
-		Assert.assertEquals(103, nonStack.durability().value().intValue());
+		Assert.assertEquals(103, PropertyHelpers.getDurability(nonStack));
 	}
 
 	@Test
@@ -267,7 +268,7 @@ public class TestCodecHelpers
 	public void nonStackable() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		NonStackableItem test = PropertyHelpers.newItem(STONE_ITEM, 10);
+		NonStackableItem test = new NonStackableItem(STONE_ITEM, List.of(new Property<>(PropertyRegistry.DURABILITY, 10)));
 		CodecHelpers.writeNonStackableItem(buffer, test);
 		buffer.flip();
 		NonStackableItem output = CodecHelpers.readNonStackableItem(new DeserializationContext(ENV

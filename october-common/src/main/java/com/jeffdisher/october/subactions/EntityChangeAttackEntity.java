@@ -105,12 +105,11 @@ public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayer
 				if (totalDurability > 0)
 				{
 					// No matter what they hit, this counts as one "weapon use".
-					int newDurability = nonStack.durability().value() - 1;
 					int selectedKey = newEntity.getSelectedKey();
-					if (newDurability > 0)
+					NonStackableItem updated = PropertyHelpers.reduceDurabilityOrBreak(nonStack, 1);
+					if (null != updated)
 					{
 						// Write this back.
-						NonStackableItem updated = PropertyHelpers.withReplacedDurability(nonStack, newDurability);
 						mutableInventory.replaceNonStackable(selectedKey, updated);
 					}
 					else

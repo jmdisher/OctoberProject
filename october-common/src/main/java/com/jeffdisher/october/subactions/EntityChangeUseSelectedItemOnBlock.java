@@ -169,7 +169,7 @@ public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMut
 			Assert.assertTrue(null != outputBucket);
 			Assert.assertTrue(null != outputBlock);
 			// We can place down the bucket.
-			mutableInventory.replaceNonStackable(selectedKey, PropertyHelpers.newItem(outputBucket, 0));
+			mutableInventory.replaceNonStackable(selectedKey, PropertyHelpers.newItemWithDefaults(env, outputBucket));
 			context.mutationSink.next(new MutationBlockReplace(_target, block, outputBlock));
 			didApply = true;
 		}
@@ -187,13 +187,15 @@ public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMut
 		else if ((stoneHoe == type) && ((dirtItem == block.item()) || (grassItem == block.item())))
 		{
 			// We will decrement the durability of the hoe and replace the target block with tilled soil.
-			int durability = nonStack.durability().value();
-			if (durability > 1)
+			NonStackableItem newItem = PropertyHelpers.reduceDurabilityOrBreak(nonStack, 1);
+			if (null != newItem)
 			{
-				mutableInventory.replaceNonStackable(selectedKey, PropertyHelpers.withReplacedDurability(nonStack, durability - 1));
+				// Normal wear.
+				mutableInventory.replaceNonStackable(selectedKey, newItem);
 			}
 			else
 			{
+				// Broken.
 				mutableInventory.removeNonStackableItems(selectedKey);
 				newEntity.setSelectedKey(Entity.NO_SELECTION);
 			}

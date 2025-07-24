@@ -277,8 +277,7 @@ public class CraftAspect
 				}
 				else
 				{
-					int startingDurability = env.durability.getDurability(item);
-					NonStackableItem newItem = PropertyHelpers.newItem(item, startingDurability);
+					NonStackableItem newItem = PropertyHelpers.newItemWithDefaults(env, item);
 					didAdd = inv.addNonStackableBestEfforts(newItem);
 				}
 				// We can't fail to add here.

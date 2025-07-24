@@ -10,6 +10,8 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.CraftAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.PropertyHelpers;
+import com.jeffdisher.october.properties.Property;
+import com.jeffdisher.october.properties.PropertyRegistry;
 
 
 public class TestCreativeInventory
@@ -55,7 +57,7 @@ public class TestCreativeInventory
 		Assert.assertTrue(swordKey > 0);
 		NonStackableItem nonStack = inv.getNonStackableForKey(swordKey);
 		Assert.assertEquals(SWORD_ITEM, nonStack.type());
-		Assert.assertEquals(ENV.durability.getDurability(SWORD_ITEM), nonStack.durability().value().intValue());
+		Assert.assertEquals(ENV.durability.getDurability(SWORD_ITEM), PropertyHelpers.getDurability(nonStack));
 		
 		Assert.assertEquals(CreativeInventory.STACK_SIZE, inv.getCount(STONE_ITEM));
 		
@@ -65,11 +67,11 @@ public class TestCreativeInventory
 		
 		inv.addItemsAllowingOverflow(STONE_ITEM, 100);
 		
-		Assert.assertTrue(inv.addNonStackableBestEfforts(PropertyHelpers.newItem(SWORD_ITEM, 100)));
+		Assert.assertTrue(inv.addNonStackableBestEfforts(new NonStackableItem(SWORD_ITEM, List.of(new Property<>(PropertyRegistry.DURABILITY, 100)))));
 		
-		inv.addNonStackableAllowingOverflow(PropertyHelpers.newItem(SWORD_ITEM, 100));
+		inv.addNonStackableAllowingOverflow(new NonStackableItem(SWORD_ITEM, List.of(new Property<>(PropertyRegistry.DURABILITY, 100))));
 		
-		inv.replaceNonStackable(swordKey, PropertyHelpers.newItem(SWORD_ITEM, 100));
+		inv.replaceNonStackable(swordKey, new NonStackableItem(SWORD_ITEM, List.of(new Property<>(PropertyRegistry.DURABILITY, 100))));
 		
 		Assert.assertEquals(Integer.MAX_VALUE, inv.maxVacancyForItem(STONE_ITEM));
 		Assert.assertEquals(Integer.MAX_VALUE, inv.maxVacancyForItem(SWORD_ITEM));
@@ -111,7 +113,7 @@ public class TestCreativeInventory
 			{
 				NonStackableItem nonStackable = inv.getNonStackableForKey(nextKey);
 				Assert.assertEquals(item, nonStackable.type());
-				Assert.assertEquals(ENV.durability.getDurability(item), nonStackable.durability().value().intValue());
+				Assert.assertEquals(ENV.durability.getDurability(item), PropertyHelpers.getDurability(nonStackable));
 				encumbrance += ENV.encumbrance.getEncumbrance(item);
 				nextKey += 1;
 			}
@@ -126,7 +128,7 @@ public class TestCreativeInventory
 		IMutableInventory inv = new CreativeInventory();
 		Item emptyBucket = ENV.items.getItemById("op.bucket_empty");
 		Item fullBucket = ENV.items.getItemById("op.bucket_water");
-		inv.replaceNonStackable(emptyBucket.number(), PropertyHelpers.newItem(fullBucket, 0));
+		inv.replaceNonStackable(emptyBucket.number(), new NonStackableItem(fullBucket, List.of(new Property<>(PropertyRegistry.DURABILITY, 0))));
 	}
 
 	@Test

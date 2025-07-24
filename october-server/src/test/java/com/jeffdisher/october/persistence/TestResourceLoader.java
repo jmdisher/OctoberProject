@@ -33,6 +33,7 @@ import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
+import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
@@ -993,7 +994,7 @@ public class TestResourceLoader
 		Assert.assertEquals(10, inv.maxEncumbrance);
 		Assert.assertEquals(4, inv.currentEncumbrance);
 		Assert.assertEquals(IRON_SWORD, inv.getNonStackableForKey(1).type());
-		Assert.assertEquals(103, inv.getNonStackableForKey(1).durability().value().intValue());
+		Assert.assertEquals(103, PropertyHelpers.getDurability(inv.getNonStackableForKey(1)));
 	}
 
 

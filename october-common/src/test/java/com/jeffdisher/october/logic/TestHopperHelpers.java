@@ -56,7 +56,7 @@ public class TestHopperHelpers
 		
 		MutableBlockProxy proxy = new MutableBlockProxy(topLocation, cuboid);
 		proxy.setBlockAndClear(chest);
-		proxy.setInventory(Inventory.start(10).addStackable(charcoal, 3).addNonStackable(PropertyHelpers.newItem(sword, 10)).finish());
+		proxy.setInventory(Inventory.start(10).addStackable(charcoal, 3).addNonStackable(PropertyHelpers.newItemWithDefaults(ENV, sword)).finish());
 		proxy.writeBack(cuboid);
 		
 		// We will start with an item in the hopper to see it take 2 actions.
