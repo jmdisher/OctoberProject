@@ -1,6 +1,7 @@
 package com.jeffdisher.october.types;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -10,7 +11,6 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.CraftAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.PropertyHelpers;
-import com.jeffdisher.october.properties.Property;
 import com.jeffdisher.october.properties.PropertyRegistry;
 
 
@@ -67,11 +67,11 @@ public class TestCreativeInventory
 		
 		inv.addItemsAllowingOverflow(STONE_ITEM, 100);
 		
-		Assert.assertTrue(inv.addNonStackableBestEfforts(new NonStackableItem(SWORD_ITEM, List.of(new Property<>(PropertyRegistry.DURABILITY, 100)))));
+		Assert.assertTrue(inv.addNonStackableBestEfforts(new NonStackableItem(SWORD_ITEM, Map.of(PropertyRegistry.DURABILITY, 100))));
 		
-		inv.addNonStackableAllowingOverflow(new NonStackableItem(SWORD_ITEM, List.of(new Property<>(PropertyRegistry.DURABILITY, 100))));
+		inv.addNonStackableAllowingOverflow(new NonStackableItem(SWORD_ITEM, Map.of(PropertyRegistry.DURABILITY, 100)));
 		
-		inv.replaceNonStackable(swordKey, new NonStackableItem(SWORD_ITEM, List.of(new Property<>(PropertyRegistry.DURABILITY, 100))));
+		inv.replaceNonStackable(swordKey, new NonStackableItem(SWORD_ITEM, Map.of(PropertyRegistry.DURABILITY, 100)));
 		
 		Assert.assertEquals(Integer.MAX_VALUE, inv.maxVacancyForItem(STONE_ITEM));
 		Assert.assertEquals(Integer.MAX_VALUE, inv.maxVacancyForItem(SWORD_ITEM));
@@ -128,7 +128,7 @@ public class TestCreativeInventory
 		IMutableInventory inv = new CreativeInventory();
 		Item emptyBucket = ENV.items.getItemById("op.bucket_empty");
 		Item fullBucket = ENV.items.getItemById("op.bucket_water");
-		inv.replaceNonStackable(emptyBucket.number(), new NonStackableItem(fullBucket, List.of(new Property<>(PropertyRegistry.DURABILITY, 0))));
+		inv.replaceNonStackable(emptyBucket.number(), new NonStackableItem(fullBucket, Map.of(PropertyRegistry.DURABILITY, 0)));
 	}
 
 	@Test

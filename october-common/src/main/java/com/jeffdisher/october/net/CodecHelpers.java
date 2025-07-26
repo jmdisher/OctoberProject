@@ -2,7 +2,6 @@ package com.jeffdisher.october.net;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -11,7 +10,6 @@ import java.util.Map;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.properties.Property;
 import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.properties.PropertyType;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -749,22 +747,21 @@ public class CodecHelpers
 		{
 			// This version was pre-Properties so we just had a durability and that is all.
 			int durability = buffer.getInt();
-			Property<Integer> prop = new Property<>(PropertyRegistry.DURABILITY, durability);
-			nonStack = new NonStackableItem(item, List.of(prop));
+			nonStack = new NonStackableItem(item, Map.of(PropertyRegistry.DURABILITY, durability));
 		}
 		else
 		{
 			// This uses the new property encoding so read those.
 			int propertyCount = Byte.toUnsignedInt(buffer.get());
-			List<Property<?>> props = new ArrayList<>();
+			Map<PropertyType<?>, Object> props = new HashMap<>();
 			for (int i = 0; i < propertyCount; ++i)
 			{
 				// Read the type of the first.
 				PropertyType<?> type = PropertyRegistry.ALL_PROPERTIES[Byte.toUnsignedInt(buffer.get())];
-				Property<?> property = _readPropertyValue(context, type);
-				props.add(property);
+				Object value = type.codec().loadData(context);
+				props.put(type, value);
 			}
-			nonStack = new NonStackableItem(item, Collections.unmodifiableList(props));
+			nonStack = new NonStackableItem(item, Collections.unmodifiableMap(props));
 		}
 		return nonStack;
 	}
@@ -780,14 +777,13 @@ public class CodecHelpers
 		{
 			// Write the number of properties.
 			int propertyCount = item.properties().size();
-			// TODO:  Remove this hard-coding when we add more.
 			buffer.put((byte)propertyCount);
-			for (Property<?> prop : item.properties())
+			for (Map.Entry<PropertyType<?>, Object> elt : item.properties().entrySet())
 			{
-				// Write the type of the property.
-				int index = prop.type().index();
+				PropertyType<?> type = elt.getKey();
+				int index = type.index();
 				buffer.put((byte)index);
-				_writePropertyValue(buffer, prop);
+				_writePropertyValue(buffer, type, elt.getValue());
 			}
 		}
 	}
@@ -821,14 +817,8 @@ public class CodecHelpers
 		buffer.putInt(location.z());
 	}
 
-	private static <T> Property<T> _readPropertyValue(DeserializationContext context, PropertyType<T> type)
+	private static <T> void _writePropertyValue(ByteBuffer buffer, PropertyType<T> type, Object value)
 	{
-		T value = type.codec().loadData(context);
-		return new Property<>(type, value);
-	}
-
-	private static <T> void _writePropertyValue(ByteBuffer buffer, Property<T> prop)
-	{
-		prop.type().codec().storeData(buffer, prop.value());
+		type.codec().storeData(buffer, type.type().cast(value));
 	}
 }

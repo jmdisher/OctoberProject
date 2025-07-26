@@ -1,13 +1,13 @@
 package com.jeffdisher.october.types;
 
-import java.util.List;
+import java.util.Map;
 
-import com.jeffdisher.october.properties.Property;
+import com.jeffdisher.october.properties.PropertyType;
 
 
 /**
  * A non-stackable item.  This can be considered a peer to the Items object
  */
 public record NonStackableItem (Item type
-		, List<Property<?>> properties
+		, Map<PropertyType<?>, Object> properties
 ) {}

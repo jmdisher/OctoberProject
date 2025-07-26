@@ -35,7 +35,6 @@ import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
-import com.jeffdisher.october.properties.Property;
 import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.subactions.EntityChangeAcceptItems;
 import com.jeffdisher.october.subactions.EntityChangeAttackEntity;
@@ -811,7 +810,7 @@ public class TestCommonChanges
 		attacker.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
 		Item swordType = ENV.items.getItemById("op.iron_sword");
 		int startDurability = 100;
-		attacker.newInventory.addNonStackableBestEfforts(new NonStackableItem(swordType, List.of(new Property<>(PropertyRegistry.DURABILITY, startDurability))));
+		attacker.newInventory.addNonStackableBestEfforts(new NonStackableItem(swordType, Map.of(PropertyRegistry.DURABILITY, startDurability)));
 		attacker.setSelectedKey(1);
 		MutableEntity target = MutableEntity.createForTest(targetId);
 		target.newLocation = new EntityLocation(9.0f, 9.0f, 0.0f);
@@ -940,7 +939,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
 		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
-		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, List.of(new Property<>(PropertyRegistry.DURABILITY, 1))));
+		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, Map.of(PropertyRegistry.DURABILITY, 1)));
 		// We assume that this is 1.
 		newEntity.setSelectedKey(1);
 		
@@ -1020,7 +1019,7 @@ public class TestCommonChanges
 		
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
-		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe, List.of(new Property<>(PropertyRegistry.DURABILITY, startDurability))));
+		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe, Map.of(PropertyRegistry.DURABILITY, startDurability)));
 		newEntity.setSelectedKey(1);
 		
 		AbsoluteLocation targetStone = new AbsoluteLocation(6, 0, 10);
@@ -1070,8 +1069,8 @@ public class TestCommonChanges
 		
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
-		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(waterBucket, List.of(new Property<>(PropertyRegistry.DURABILITY, 0))));
-		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(lavaBucket, List.of(new Property<>(PropertyRegistry.DURABILITY, 0))));
+		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(waterBucket, Map.of(PropertyRegistry.DURABILITY, 0)));
+		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(lavaBucket, Map.of(PropertyRegistry.DURABILITY, 0)));
 		// Start with the water.
 		newEntity.setSelectedKey(1);
 		
@@ -1142,7 +1141,7 @@ public class TestCommonChanges
 		Item swordType = ENV.items.getItemById("op.iron_sword");
 		int startDurability = 100;
 		int swordId = 2;
-		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(swordType, List.of(new Property<>(PropertyRegistry.DURABILITY, startDurability))));
+		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(swordType, Map.of(PropertyRegistry.DURABILITY, startDurability)));
 		
 		// We should default to slot 0.
 		Assert.assertEquals(0, mutable.newHotbarIndex);
@@ -1171,7 +1170,7 @@ public class TestCommonChanges
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		Item helmetType = ENV.items.getItemById("op.iron_helmet");
 		int startDurability = 15;
-		mutable.newArmour[BodyPart.HEAD.ordinal()] = new NonStackableItem(helmetType, List.of(new Property<>(PropertyRegistry.DURABILITY, startDurability)));
+		mutable.newArmour[BodyPart.HEAD.ordinal()] = new NonStackableItem(helmetType, Map.of(PropertyRegistry.DURABILITY, startDurability));
 		_Events events = new _Events();
 		TickProcessingContext context = _createSimpleContextWithEvents(events);
 		
@@ -1212,10 +1211,10 @@ public class TestCommonChanges
 		Item helmetType = ENV.items.getItemById("op.iron_helmet");
 		int helmet1Durability = 15;
 		int helmet1Id = 1;
-		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(helmetType, List.of(new Property<>(PropertyRegistry.DURABILITY, helmet1Durability))));
+		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(helmetType, Map.of(PropertyRegistry.DURABILITY, helmet1Durability)));
 		int helmet2Durability = 2000;
 		int helmet2Id = 2;
-		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(helmetType, List.of(new Property<>(PropertyRegistry.DURABILITY, helmet2Durability))));
+		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(helmetType, Map.of(PropertyRegistry.DURABILITY, helmet2Durability)));
 		int dirtId = 3;
 		mutable.newInventory.addItemsBestEfforts(dirtType, 1);
 		Assert.assertEquals(10, mutable.newInventory.getCurrentEncumbrance());
@@ -1990,7 +1989,7 @@ public class TestCommonChanges
 		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
 		newEntity.isCreativeMode = true;
 		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
-		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, List.of(new Property<>(PropertyRegistry.DURABILITY, 1))));
+		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, Map.of(PropertyRegistry.DURABILITY, 1)));
 		// We assume that this is 1.
 		newEntity.setSelectedKey(1);
 		
@@ -2067,7 +2066,7 @@ public class TestCommonChanges
 		
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
-		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(lavaBucket, List.of(new Property<>(PropertyRegistry.DURABILITY, 0))));
+		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(lavaBucket, Map.of(PropertyRegistry.DURABILITY, 0)));
 		newEntity.setSelectedKey(1);
 		
 		AbsoluteLocation target = new AbsoluteLocation(6, 0, 10);
@@ -2360,7 +2359,7 @@ public class TestCommonChanges
 		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
 		Item hoeItem = ENV.items.getItemById("op.stone_hoe");
 		Item dirtItem = ENV.items.getItemById("op.dirt");
-		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(hoeItem, List.of(new Property<>(PropertyRegistry.DURABILITY, 2))));
+		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(hoeItem, Map.of(PropertyRegistry.DURABILITY, 2)));
 		// We assume that this is 1.
 		newEntity.setSelectedKey(1);
 		Assert.assertEquals(2, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(newEntity.getSelectedKey())));
@@ -2514,7 +2513,7 @@ public class TestCommonChanges
 		Craft logToPlanks = ENV.crafting.getCraftById("op.log_to_planks");
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
-		newEntity.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(IRON_SWORD_ITEM, List.of(new Property<>(PropertyRegistry.DURABILITY, 5))));
+		newEntity.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(IRON_SWORD_ITEM, Map.of(PropertyRegistry.DURABILITY, 5)));
 		newEntity.newHotbar[0] = 1;
 		newEntity.newHotbar[1] = 2;
 		
@@ -2585,12 +2584,12 @@ public class TestCommonChanges
 		
 		MutableEntity swordAttacker = MutableEntity.createForTest(swordAttackerId);
 		swordAttacker.newLocation = new EntityLocation(11.0f, 10.0f, 0.0f);
-		swordAttacker.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(IRON_SWORD_ITEM, List.of(new Property<>(PropertyRegistry.DURABILITY, 100))));
+		swordAttacker.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(IRON_SWORD_ITEM, Map.of(PropertyRegistry.DURABILITY, 100)));
 		swordAttacker.setSelectedKey(1);
 		
 		MutableEntity axeAttacker = MutableEntity.createForTest(axeAttackerId);
 		axeAttacker.newLocation = new EntityLocation(10.0f, 11.0f, 0.0f);
-		axeAttacker.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(IRON_AXE_ITEM, List.of(new Property<>(PropertyRegistry.DURABILITY, 100))));
+		axeAttacker.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(IRON_AXE_ITEM, Map.of(PropertyRegistry.DURABILITY, 100)));
 		axeAttacker.setSelectedKey(1);
 		
 		MutableEntity stoneAttacker = MutableEntity.createForTest(stoneAttackerId);

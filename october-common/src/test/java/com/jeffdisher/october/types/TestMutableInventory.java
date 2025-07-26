@@ -1,6 +1,6 @@
 package com.jeffdisher.october.types;
 
-import java.util.List;
+import java.util.Map;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -177,18 +177,18 @@ public class TestMutableInventory
 	{
 		// Show that non-stackable items are handled correctly.
 		Inventory original = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY)
-				.addNonStackable(new NonStackableItem(STONE_ITEM, List.of()))
+				.addNonStackable(new NonStackableItem(STONE_ITEM, Map.of()))
 				.addStackable(STONE_ITEM, 1)
-				.addNonStackable(new NonStackableItem(PLANK_ITEM, List.of()))
+				.addNonStackable(new NonStackableItem(PLANK_ITEM, Map.of()))
 				.addStackable(STONE_ITEM, 1)
 				.finish();
 		MutableInventory inv = new MutableInventory(original);
 		inv.addAllItems(STONE_ITEM, 1);
-		inv.addNonStackableBestEfforts(new NonStackableItem(DIRT_ITEM, List.of()));
+		inv.addNonStackableBestEfforts(new NonStackableItem(DIRT_ITEM, Map.of()));
 		// Items are added in the order they are given to the builder (first stackable added counts).
 		int firstNonStackableItem = 1;
 		inv.removeNonStackableItems(firstNonStackableItem);
-		inv.addNonStackableAllowingOverflow(new NonStackableItem(LOG_ITEM, List.of()));
+		inv.addNonStackableAllowingOverflow(new NonStackableItem(LOG_ITEM, Map.of()));
 		
 		Inventory frozen = inv.freeze();
 		Assert.assertEquals(0, frozen.getCount(LOG_ITEM));

@@ -1,6 +1,6 @@
 package com.jeffdisher.october.logic;
 
-import java.util.List;
+import java.util.Map;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -8,7 +8,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.properties.Property;
 import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.NonStackableItem;
@@ -47,20 +46,20 @@ public class TestPropertyHelpers
 		Assert.assertEquals(IRON_SWORD.name(), PropertyHelpers.getName(item));
 		
 		String name = "custom name";
-		item = new NonStackableItem(IRON_SWORD, List.of(new Property<>(PropertyRegistry.NAME, name)));
+		item = new NonStackableItem(IRON_SWORD, Map.of(PropertyRegistry.NAME, name));
 		Assert.assertEquals(name, PropertyHelpers.getName(item));
 		
 		String tooLong = "this name is too long and will be rejected";
-		item = new NonStackableItem(IRON_SWORD, List.of(new Property<>(PropertyRegistry.NAME, tooLong)));
+		item = new NonStackableItem(IRON_SWORD, Map.of(PropertyRegistry.NAME, tooLong));
 		Assert.assertEquals(IRON_SWORD.name(), PropertyHelpers.getName(item));
 	}
 
 	@Test
 	public void enchantedDurability()
 	{
-		Property<Integer> durability = new Property<>(PropertyRegistry.DURABILITY, ENV.durability.getDurability(IRON_SWORD));
-		Property<Byte> enchantment = new Property<>(PropertyRegistry.ENCHANT_DURABILITY, (byte)1);
-		NonStackableItem item = new NonStackableItem(IRON_SWORD, List.of(durability, enchantment));
+		NonStackableItem item = new NonStackableItem(IRON_SWORD, Map.of(PropertyRegistry.DURABILITY, ENV.durability.getDurability(IRON_SWORD)
+			, PropertyRegistry.ENCHANT_DURABILITY, (byte)1
+		));
 		Assert.assertEquals(ENV.durability.getDurability(IRON_SWORD), PropertyHelpers.getDurability(item));
 		
 		item = PropertyHelpers.reduceDurabilityOrBreak(item, 5, 3);
