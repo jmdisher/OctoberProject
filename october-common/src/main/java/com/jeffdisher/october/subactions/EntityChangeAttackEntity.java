@@ -15,7 +15,6 @@ import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
-import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -75,12 +74,14 @@ public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayer
 			// TODO:  Filter this based on some kind of target type so a sword hits harder than a pick-axe.
 			IMutableInventory mutableInventory = newEntity.accessMutableInventory();
 			NonStackableItem nonStack = mutableInventory.getNonStackableForKey(newEntity.getSelectedKey());
-			Item toolType = (null != nonStack)
-					? nonStack.type()
-					: null
-			;
 			Environment env = Environment.getShared();
-			int damageToApply = env.tools.toolWeaponDamage(toolType);
+			
+			// Stackable or empty hand default to 1 damage.
+			int damageToApply = 1;
+			if (null != nonStack)
+			{
+				damageToApply = PropertyHelpers.getWeaponMeleeDamage(env, nonStack);
+			}
 			Assert.assertTrue(damageToApply <= Byte.MAX_VALUE);
 			
 			// Choose the target body part at random.
@@ -101,7 +102,7 @@ public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayer
 			// If we have a tool with finite durability equipped, apply this amount of time to wear it down.
 			if (null != nonStack)
 			{
-				int totalDurability = env.durability.getDurability(toolType);
+				int totalDurability = env.durability.getDurability(nonStack.type());
 				if (totalDurability > 0)
 				{
 					// No matter what they hit, this counts as one "weapon use".

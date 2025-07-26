@@ -2578,6 +2578,7 @@ public class TestCommonChanges
 		int swordAttackerId = 2;
 		int axeAttackerId = 3;
 		int stoneAttackerId = 4;
+		int enchantedSwordAttackerId = 5;
 		
 		MutableEntity target = MutableEntity.createForTest(targetId);
 		target.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
@@ -2596,6 +2597,13 @@ public class TestCommonChanges
 		stoneAttacker.newLocation = new EntityLocation(9.0f, 10.0f, 0.0f);
 		stoneAttacker.newInventory.addAllItems(STONE_ITEM, 2);
 		stoneAttacker.setSelectedKey(1);
+		
+		MutableEntity enchantedSwordAttacker = MutableEntity.createForTest(enchantedSwordAttackerId);
+		enchantedSwordAttacker.newLocation = new EntityLocation(10.0f, 9.0f, 0.0f);
+		enchantedSwordAttacker.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(IRON_SWORD_ITEM, Map.of(PropertyRegistry.DURABILITY, 100
+			, PropertyRegistry.ENCHANT_WEAPON_MELEE, (byte)3
+		)));
+		enchantedSwordAttacker.setSelectedKey(1);
 		
 		Entity baselineTarget = target.freeze();
 		Map<Integer, Entity> targetsById = Map.of(targetId, baselineTarget);
@@ -2638,7 +2646,8 @@ public class TestCommonChanges
 		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, swordAttacker));
 		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, axeAttacker));
 		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, stoneAttacker));
-		Assert.assertEquals(3, changeHolder.size());
+		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, enchantedSwordAttacker));
+		Assert.assertEquals(4, changeHolder.size());
 		Assert.assertEquals(0, eventCounter[0]);
 		
 		// Check applying these to the entity to see the damage they do.
@@ -2652,7 +2661,10 @@ public class TestCommonChanges
 		target = MutableEntity.existing(baselineTarget);
 		Assert.assertTrue(changeHolder.remove(0).applyChange(context, target));
 		Assert.assertEquals(99, target.newHealth);
-		Assert.assertEquals(3, eventCounter[0]);
+		target = MutableEntity.existing(baselineTarget);
+		Assert.assertTrue(changeHolder.remove(0).applyChange(context, target));
+		Assert.assertEquals(87, target.newHealth);
+		Assert.assertEquals(4, eventCounter[0]);
 	}
 
 	@Test

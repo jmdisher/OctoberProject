@@ -103,6 +103,19 @@ public class PropertyHelpers
 		return name;
 	}
 
+	public static int getWeaponMeleeDamage(Environment env, NonStackableItem weapon)
+	{
+		// Start with the basic damage.
+		int baseDamage = env.tools.toolWeaponDamage(weapon.type());
+		int enchantment = _getValue(weapon.properties(), PropertyRegistry.ENCHANT_WEAPON_MELEE, (byte)0);
+		
+		// We just add them together (could be different in the future).
+		int damage = baseDamage + enchantment;
+		
+		// Clamp this at byte max.
+		return Math.min(damage, Byte.MAX_VALUE);
+	}
+
 
 	private static <T> T _getValue(Map<PropertyType<?>, Object> properties, PropertyType<T> type, T missingValue)
 	{

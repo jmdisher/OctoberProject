@@ -81,6 +81,28 @@ public class PropertyRegistry
 			}
 		}
 	);
+	/**
+	 * An enchantment to increase effective damage of a melee weapon by the "level" of enchantment.  The level is in
+	 * the range of [1..127] and this value is added to the weapon damage before accounting for armour.
+	 */
+	public static final PropertyType<Byte> ENCHANT_WEAPON_MELEE = registerProperty(Byte.class
+		, new IObjectCodec<Byte>()
+		{
+			@Override
+			public Byte loadData(DeserializationContext context) throws BufferUnderflowException
+			{
+				ByteBuffer buffer = context.buffer();
+				return buffer.get();
+			}
+			@Override
+			public void storeData(ByteBuffer buffer, Byte object) throws BufferOverflowException
+			{
+				byte val = object.byteValue();
+				Assert.assertTrue(val > 0);
+				buffer.put(val);
+			}
+		}
+	);
 
 
 	private static int _nextIndex = 0;
@@ -90,12 +112,14 @@ public class PropertyRegistry
 		Assert.assertTrue(0 == DURABILITY.index());
 		Assert.assertTrue(1 == NAME.index());
 		Assert.assertTrue(2 == ENCHANT_DURABILITY.index());
+		Assert.assertTrue(3 == ENCHANT_WEAPON_MELEE.index());
 		
 		// Create the finished array, in-order.
 		ALL_PROPERTIES = new PropertyType<?>[] {
 			DURABILITY,
 			NAME,
 			ENCHANT_DURABILITY,
+			ENCHANT_WEAPON_MELEE,
 		};
 	}
 

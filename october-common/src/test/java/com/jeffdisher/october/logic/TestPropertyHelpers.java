@@ -68,4 +68,13 @@ public class TestPropertyHelpers
 		item = PropertyHelpers.reduceDurabilityOrBreak(item, 5, 2);
 		Assert.assertEquals(ENV.durability.getDurability(IRON_SWORD) - 5, PropertyHelpers.getDurability(item));
 	}
+
+	@Test
+	public void enchantedWeaponMeleeDamage()
+	{
+		NonStackableItem item = new NonStackableItem(IRON_SWORD, Map.of(PropertyRegistry.DURABILITY, ENV.durability.getDurability(IRON_SWORD)
+			, PropertyRegistry.ENCHANT_WEAPON_MELEE, (byte)5
+		));
+		Assert.assertEquals(15, PropertyHelpers.getWeaponMeleeDamage(ENV, item));
+	}
 }
