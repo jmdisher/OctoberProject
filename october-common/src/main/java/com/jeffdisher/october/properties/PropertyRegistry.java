@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IObjectCodec;
+import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -35,6 +36,25 @@ public class PropertyRegistry
 			}
 		}
 	);
+	/**
+	 * A custom name to attach to the NonStackableItem.
+	 */
+	public static final PropertyType<String> NAME = registerProperty(String.class
+		, new IObjectCodec<String>()
+		{
+			@Override
+			public String loadData(DeserializationContext context) throws BufferUnderflowException
+			{
+				ByteBuffer buffer = context.buffer();
+				return CodecHelpers.readString(buffer);
+			}
+			@Override
+			public void storeData(ByteBuffer buffer, String object) throws BufferOverflowException
+			{
+				CodecHelpers.writeString(buffer, object);
+			}
+		}
+	);
 
 
 	private static int _nextIndex = 0;
@@ -42,10 +62,12 @@ public class PropertyRegistry
 	static {
 		// Just verify indices are assigned as expected.
 		Assert.assertTrue(0 == DURABILITY.index());
+		Assert.assertTrue(1 == NAME.index());
 		
 		// Create the finished array, in-order.
 		ALL_PROPERTIES = new PropertyType<?>[] {
 			DURABILITY,
+			NAME,
 		};
 	}
 

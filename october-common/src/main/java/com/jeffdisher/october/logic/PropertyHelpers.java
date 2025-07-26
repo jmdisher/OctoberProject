@@ -17,6 +17,11 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class PropertyHelpers
 {
+	/**
+	 * The maximum length of a NAME property (they will be discarded if the string is greater than this).
+	 */
+	public static final int NAME_MAX_LENGTH = 32;
+
 	public static NonStackableItem newItemWithDefaults(Environment env, Item item)
 	{
 		// Can only be called for non-stackable.
@@ -102,5 +107,28 @@ public class PropertyHelpers
 			}
 		}
 		return durability;
+	}
+
+	public static String getName(NonStackableItem item)
+	{
+		// We default to the type name.
+		String name = item.type().name();
+		for (Property<?> prop : item.properties())
+		{
+			if (PropertyRegistry.NAME == prop.type())
+			{
+				String newName = PropertyRegistry.NAME.type().cast(prop.value());
+				if ((0 == newName.length()) || (newName.length() > NAME_MAX_LENGTH))
+				{
+					// This is invalid so just ignore it.
+				}
+				else
+				{
+					name = newName;
+				}
+				break;
+			}
+		}
+		return name;
 	}
 }
