@@ -17,11 +17,13 @@ public class TestPropertyHelpers
 {
 	private static Environment ENV;
 	private static Item IRON_SWORD;
+	private static Item IRON_PICKAXE;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
 		IRON_SWORD = ENV.items.getItemById("op.iron_sword");
+		IRON_PICKAXE = ENV.items.getItemById("op.iron_pickaxe");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -76,5 +78,14 @@ public class TestPropertyHelpers
 			, PropertyRegistry.ENCHANT_WEAPON_MELEE, (byte)5
 		));
 		Assert.assertEquals(15, PropertyHelpers.getWeaponMeleeDamage(ENV, item));
+	}
+
+	@Test
+	public void enchantedToolMaterialMultipler()
+	{
+		NonStackableItem item = new NonStackableItem(IRON_PICKAXE, Map.of(PropertyRegistry.DURABILITY, ENV.durability.getDurability(IRON_PICKAXE)
+			, PropertyRegistry.ENCHANT_TOOL_EFFICIENCY, (byte)5
+		));
+		Assert.assertEquals(15, PropertyHelpers.getToolMaterialEfficiency(ENV, item));
 	}
 }

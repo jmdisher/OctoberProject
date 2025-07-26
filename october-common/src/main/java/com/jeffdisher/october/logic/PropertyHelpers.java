@@ -116,6 +116,19 @@ public class PropertyHelpers
 		return Math.min(damage, Byte.MAX_VALUE);
 	}
 
+	public static int getToolMaterialEfficiency(Environment env, NonStackableItem tool)
+	{
+		// Start with the basic damage.
+		int baseMultiplier = env.tools.toolSpeedModifier(tool.type());
+		int enchantment = _getValue(tool.properties(), PropertyRegistry.ENCHANT_TOOL_EFFICIENCY, (byte)0);
+		
+		// We just add them together (could be different in the future).
+		int damage = baseMultiplier + enchantment;
+		
+		// Clamp this at byte max.
+		return Math.min(damage, Byte.MAX_VALUE);
+	}
+
 
 	private static <T> T _getValue(Map<PropertyType<?>, Object> properties, PropertyType<T> type, T missingValue)
 	{

@@ -85,7 +85,7 @@ public class EntityChangeIncrementalBlockBreak implements IEntitySubAction<IMuta
 				if (env.blocks.getBlockMaterial(lookup.rootProxy().getBlock()) == env.tools.toolTargetMaterial(selectedItem))
 				{
 					// The tool material matches so set the multiplier.
-					speedMultiplier = env.tools.toolSpeedModifier(selectedItem);
+					speedMultiplier = PropertyHelpers.getToolMaterialEfficiency(env, selected);
 				}
 				else
 				{

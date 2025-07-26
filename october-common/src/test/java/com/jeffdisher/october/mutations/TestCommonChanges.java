@@ -2723,6 +2723,39 @@ public class TestCommonChanges
 		Assert.assertEquals(newLocation, mutable3.newLocation);
 	}
 
+	@Test
+	public void enchantedTool() throws Throwable
+	{
+		Item pickaxe = ENV.items.getItemById("op.iron_pickaxe");
+		int startDurability = 300;
+		
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
+		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe, Map.of(PropertyRegistry.DURABILITY, startDurability
+				, PropertyRegistry.ENCHANT_TOOL_EFFICIENCY, (byte)5
+		)));
+		newEntity.setSelectedKey(1);
+		
+		AbsoluteLocation targetStone = new AbsoluteLocation(6, 0, 10);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, targetStone.getBlockAddress(), STONE_ITEM.number());
+		
+		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
+		
+		// Apply a tick to the stone and observe that the damage accounts for enchantment.
+		short duration = (short) holder.context.millisPerTick;
+		EntityChangeIncrementalBlockBreak breakStone = new EntityChangeIncrementalBlockBreak(targetStone);
+		Assert.assertTrue(breakStone.applyChange(holder.context, newEntity));
+		Assert.assertNotNull(holder.mutation);
+		MutationBlockIncrementalBreak breaking = (MutationBlockIncrementalBreak) holder.mutation;
+		holder.mutation = null;
+		MutableBlockProxy proxy = new MutableBlockProxy(targetStone, cuboid);
+		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(startDurability - 1, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(1)));
+		Assert.assertEquals((10 + 5) * duration, cuboid.getData15(AspectRegistry.DAMAGE, targetStone.getBlockAddress()));
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{
