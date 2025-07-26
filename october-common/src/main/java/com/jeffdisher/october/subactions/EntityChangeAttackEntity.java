@@ -106,7 +106,8 @@ public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayer
 				{
 					// No matter what they hit, this counts as one "weapon use".
 					int selectedKey = newEntity.getSelectedKey();
-					NonStackableItem updated = PropertyHelpers.reduceDurabilityOrBreak(nonStack, 1);
+					int randomNumberTo255 = context.randomInt.applyAsInt(256);
+					NonStackableItem updated = PropertyHelpers.reduceDurabilityOrBreak(nonStack, 1, randomNumberTo255);
 					if (null != updated)
 					{
 						// Write this back.

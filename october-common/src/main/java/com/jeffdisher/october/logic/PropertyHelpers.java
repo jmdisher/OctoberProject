@@ -37,57 +37,70 @@ public class PropertyHelpers
 		return new NonStackableItem(item, properties);
 	}
 
-	public static NonStackableItem reduceDurabilityOrBreak(NonStackableItem old, int durabilityToRemove)
+	public static NonStackableItem reduceDurabilityOrBreak(NonStackableItem old, int durabilityToRemove, int randomNumberTo255)
 	{
 		// First, find the durability (if there isn't one, this can't be broken).
 		NonStackableItem newItem;
-		// TODO: Generalize this once we have multiple types.
-		if (0 == old.properties().size())
+		
+		// We will walk the list of properties to check for durability and enchantments, then apply them at the end.
+		// Any other properties will just be added to the new list.
+		int durability = 0;
+		int enchantmentLevel = 0;
+		List<Property<?>> props = new ArrayList<>();
+		for (Property<?> prop : old.properties())
 		{
-			// This is unbreakable.
-			newItem = old;
-		}
-		else
-		{
-			// We will rebuild the list as we go but set it to null if this should break.
-			List<Property<?>> props = new ArrayList<>();
-			for (Property<?> prop : old.properties())
+			if (PropertyRegistry.DURABILITY == prop.type())
 			{
-				if (PropertyRegistry.DURABILITY == prop.type())
-				{
-					int durability = PropertyRegistry.DURABILITY.type().cast(prop.value());
-					// If there is a durability, it must be > 0.
-					Assert.assertTrue(durability > 0);
-					if (durability > durabilityToRemove)
-					{
-						// Normal wear.
-						Property<Integer> newProp = new Property<Integer>(PropertyRegistry.DURABILITY, durability - durabilityToRemove);
-						props.add(newProp);
-					}
-					else
-					{
-						// Broken.
-						props = null;
-						break;
-					}
-				}
-				else
-				{
-					// Just add this to the list.
-					props.add(prop);
-				}
+				durability = PropertyRegistry.DURABILITY.type().cast(prop.value());
+				// If there is a durability, it must be > 0.
+				Assert.assertTrue(durability > 0);
 			}
-			
-			if (null != props)
+			else if (PropertyRegistry.ENCHANT_DURABILITY == prop.type())
 			{
-				// Normal wear.
-				newItem = new NonStackableItem(old.type(), Collections.unmodifiableList(props));
+				enchantmentLevel = PropertyRegistry.ENCHANT_DURABILITY.type().cast(prop.value());
+				// This level must be > 0.
+				Assert.assertTrue(enchantmentLevel > 0);
+				// We re-add this since it isn't changing.
+				props.add(prop);
 			}
 			else
 			{
-				// Broke.
-				newItem = null;
+				// Just add this to the list.
+				props.add(prop);
 			}
+		}
+		
+		// Check to see if this even can be damaged.
+		if (durability > 0)
+		{
+			// Now, check to see if the enchantment should be applied.
+			int sample = Math.floorMod(randomNumberTo255, 1 + enchantmentLevel);
+			if (0 == sample)
+			{
+				// Apply this change
+				if (durability > durabilityToRemove)
+				{
+					// Normal wear.
+					Property<Integer> newProp = new Property<Integer>(PropertyRegistry.DURABILITY, durability - durabilityToRemove);
+					props.add(newProp);
+					newItem = new NonStackableItem(old.type(), Collections.unmodifiableList(props));
+				}
+				else
+				{
+					// Broken.
+					newItem = null;
+				}
+			}
+			else
+			{
+				// No change.
+				newItem = old;
+			}
+		}
+		else
+		{
+			// No durability for this type.
+			newItem = old;
 		}
 		return newItem;
 	}

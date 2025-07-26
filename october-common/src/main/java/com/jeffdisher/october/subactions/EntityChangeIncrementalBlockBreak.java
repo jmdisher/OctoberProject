@@ -105,7 +105,8 @@ public class EntityChangeIncrementalBlockBreak implements IEntitySubAction<IMuta
 				int totalDurability = env.durability.getDurability(selected.type());
 				if (totalDurability > 0)
 				{
-					NonStackableItem updated = PropertyHelpers.reduceDurabilityOrBreak(selected, 1);
+					int randomNumberTo255 = context.randomInt.applyAsInt(256);
+					NonStackableItem updated = PropertyHelpers.reduceDurabilityOrBreak(selected, 1, randomNumberTo255);
 					if (null != updated)
 					{
 						// Write this back.

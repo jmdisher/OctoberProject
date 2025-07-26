@@ -36,7 +36,7 @@ public class TestPropertyHelpers
 		NonStackableItem item = PropertyHelpers.newItemWithDefaults(ENV, IRON_SWORD);
 		Assert.assertEquals(ENV.durability.getDurability(IRON_SWORD), PropertyHelpers.getDurability(item));
 		
-		item = PropertyHelpers.reduceDurabilityOrBreak(item, 5);
+		item = PropertyHelpers.reduceDurabilityOrBreak(item, 5, 100);
 		Assert.assertEquals(ENV.durability.getDurability(IRON_SWORD) - 5, PropertyHelpers.getDurability(item));
 	}
 
@@ -53,5 +53,20 @@ public class TestPropertyHelpers
 		String tooLong = "this name is too long and will be rejected";
 		item = new NonStackableItem(IRON_SWORD, List.of(new Property<>(PropertyRegistry.NAME, tooLong)));
 		Assert.assertEquals(IRON_SWORD.name(), PropertyHelpers.getName(item));
+	}
+
+	@Test
+	public void enchantedDurability()
+	{
+		Property<Integer> durability = new Property<>(PropertyRegistry.DURABILITY, ENV.durability.getDurability(IRON_SWORD));
+		Property<Byte> enchantment = new Property<>(PropertyRegistry.ENCHANT_DURABILITY, (byte)1);
+		NonStackableItem item = new NonStackableItem(IRON_SWORD, List.of(durability, enchantment));
+		Assert.assertEquals(ENV.durability.getDurability(IRON_SWORD), PropertyHelpers.getDurability(item));
+		
+		item = PropertyHelpers.reduceDurabilityOrBreak(item, 5, 3);
+		Assert.assertEquals(ENV.durability.getDurability(IRON_SWORD), PropertyHelpers.getDurability(item));
+		
+		item = PropertyHelpers.reduceDurabilityOrBreak(item, 5, 2);
+		Assert.assertEquals(ENV.durability.getDurability(IRON_SWORD) - 5, PropertyHelpers.getDurability(item));
 	}
 }

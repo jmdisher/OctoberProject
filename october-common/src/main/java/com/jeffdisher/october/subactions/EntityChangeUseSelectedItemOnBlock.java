@@ -187,7 +187,8 @@ public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMut
 		else if ((stoneHoe == type) && ((dirtItem == block.item()) || (grassItem == block.item())))
 		{
 			// We will decrement the durability of the hoe and replace the target block with tilled soil.
-			NonStackableItem newItem = PropertyHelpers.reduceDurabilityOrBreak(nonStack, 1);
+			int randomNumberTo255 = context.randomInt.applyAsInt(256);
+			NonStackableItem newItem = PropertyHelpers.reduceDurabilityOrBreak(nonStack, 1, randomNumberTo255);
 			if (null != newItem)
 			{
 				// Normal wear.

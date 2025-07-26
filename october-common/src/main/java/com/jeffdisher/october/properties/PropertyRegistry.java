@@ -55,6 +55,32 @@ public class PropertyRegistry
 			}
 		}
 	);
+	/**
+	 * An enchantment to increase effective durability with a value being the "level" of enchantment.  The level is in
+	 * the range of [1..127] and a random number is used to calculate durability loss according to this expression:
+	 * if (0 == (random([0..255]) mod (1 + level))) -> decrement durability.
+	 * This means that without this enchantment, the level is effectively "0", so the "mod 1" will always be zero,
+	 * meaning always decrement.  At level 1, this means that damage is only applied 1/2 of the time.  At level 127,
+	 * damage would be applied 1/128 of the time.
+	 */
+	public static final PropertyType<Byte> ENCHANT_DURABILITY = registerProperty(Byte.class
+		, new IObjectCodec<Byte>()
+		{
+			@Override
+			public Byte loadData(DeserializationContext context) throws BufferUnderflowException
+			{
+				ByteBuffer buffer = context.buffer();
+				return buffer.get();
+			}
+			@Override
+			public void storeData(ByteBuffer buffer, Byte object) throws BufferOverflowException
+			{
+				byte val = object.byteValue();
+				Assert.assertTrue(val > 0);
+				buffer.put(val);
+			}
+		}
+	);
 
 
 	private static int _nextIndex = 0;
@@ -63,11 +89,13 @@ public class PropertyRegistry
 		// Just verify indices are assigned as expected.
 		Assert.assertTrue(0 == DURABILITY.index());
 		Assert.assertTrue(1 == NAME.index());
+		Assert.assertTrue(2 == ENCHANT_DURABILITY.index());
 		
 		// Create the finished array, in-order.
 		ALL_PROPERTIES = new PropertyType<?>[] {
 			DURABILITY,
 			NAME,
+			ENCHANT_DURABILITY,
 		};
 	}
 

@@ -59,7 +59,7 @@ public class EntityChangeTakeDamageFromEntity<T extends IMutableMinimalEntity> i
 		if ((health > 0) && newEntity.updateDamageTimeoutIfValid(context.currentTickTimeMillis))
 		{
 			// Determine how much actual damage to apply by looking at target and armour.
-			int damageToApply = CommonEntityMutationHelpers.damageToApplyAfterArmour(newEntity, _target, _damage);
+			int damageToApply = CommonEntityMutationHelpers.damageToApplyAfterArmour(context, newEntity, _target, _damage);
 			int finalHealth = health - damageToApply;
 			AbsoluteLocation startLocation = newEntity.getLocation().getBlockLocation();
 			EventRecord.Type type;

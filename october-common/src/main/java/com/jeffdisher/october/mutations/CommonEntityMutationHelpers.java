@@ -5,6 +5,7 @@ import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.NonStackableItem;
+import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -14,12 +15,13 @@ public class CommonEntityMutationHelpers
 	 * Accounts for damage being applied to an entity, modifying any armour it passes through before returning the total
 	 * damage to apply.
 	 * 
+	 * @param context The current tick.
 	 * @param newEntity The entity taking damage (will be modified).
 	 * @param target The body part taking damage (could be null).
 	 * @param damage The amount of damage to apply (must be positive).
 	 * @return The damage to actually pass to the entity after accounting for armour.
 	 */
-	public static int damageToApplyAfterArmour(IMutableMinimalEntity newEntity, BodyPart target, int damage)
+	public static int damageToApplyAfterArmour(TickProcessingContext context, IMutableMinimalEntity newEntity, BodyPart target, int damage)
 	{
 		Assert.assertTrue(damage > 0);
 	
@@ -39,7 +41,8 @@ public class CommonEntityMutationHelpers
 				if (damageToAbsorb > 0)
 				{
 					// This will change to null if broken.
-					newEntity.setArmour(target, PropertyHelpers.reduceDurabilityOrBreak(armour, damageToAbsorb));
+					int randomNumberTo255 = context.randomInt.applyAsInt(256);
+					newEntity.setArmour(target, PropertyHelpers.reduceDurabilityOrBreak(armour, damageToAbsorb, randomNumberTo255));
 				}
 			}
 			else
