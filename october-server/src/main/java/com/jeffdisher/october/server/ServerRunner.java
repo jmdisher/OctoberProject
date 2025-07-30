@@ -55,6 +55,7 @@ public class ServerRunner
 
 	// General and configuration variables.
 	private final long _millisPerTick;
+	private final int _clientViewDistanceMaximum;
 	private final IServerAdapter _network;
 	private final ResourceLoader _loader;
 	private final TickRunner _tickRunner;
@@ -83,6 +84,7 @@ public class ServerRunner
 	)
 	{
 		_millisPerTick = millisPerTick;
+		_clientViewDistanceMaximum = config.clientViewDistanceMaximum;
 		NetworkListener networkListener = new NetworkListener();
 		network.readyAndStartListening(networkListener);
 		_network = network;
@@ -116,7 +118,7 @@ public class ServerRunner
 		
 		_tickAdvancer = new _TickAdvancer(config);
 		// Note:  We don't allow the view distance to change after start-up so capture it here to make that clear.
-		_stateManager = new ServerStateManager(new _Callouts(config.clientViewDistanceMaximum));
+		_stateManager = new ServerStateManager(new _Callouts());
 		
 		// We want to prime the state manager's thread check.
 		_messages.enqueue(() -> {
@@ -431,11 +433,6 @@ public class ServerRunner
 
 	private final class _Callouts implements ServerStateManager.ICallouts
 	{
-		private final int _clientViewDistanceMaximum;
-		public _Callouts(int clientViewDistanceMaximum)
-		{
-			_clientViewDistanceMaximum = clientViewDistanceMaximum;
-		}
 		@Override
 		public void resources_writeToDisk(Collection<PackagedCuboid> cuboids,Collection<SuspendedEntity> entities)
 		{
@@ -548,18 +545,9 @@ public class ServerRunner
 		@Override
 		public void handleClientUpdateOptions(int clientId, int clientViewDistance)
 		{
+			Assert.assertTrue(clientViewDistance >= 0);
 			_messages.enqueue(() -> {
-				// We will just clamp the option by our defined bounds (since that is probably what the user expects).
-				int limit = _clientViewDistanceMaximum;
-				int viewDistance = clientViewDistance;
-				if (viewDistance < 0)
-				{
-					viewDistance = 0;
-				}
-				else if (viewDistance > limit)
-				{
-					viewDistance = limit;
-				}
+				int viewDistance = Math.min(clientViewDistance, _clientViewDistanceMaximum);
 				_stateManager.setClientViewDistance(clientId, viewDistance);
 			});
 		}

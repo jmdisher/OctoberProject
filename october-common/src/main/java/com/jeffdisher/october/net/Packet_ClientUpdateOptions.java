@@ -3,6 +3,8 @@ package com.jeffdisher.october.net;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
+import com.jeffdisher.october.utils.Assert;
+
 
 /**
  * Sent by a client to the server.  This contains a list of per-client options.
@@ -15,6 +17,8 @@ public class Packet_ClientUpdateOptions extends PacketFromClient
 	{
 		opcodeTable[TYPE.ordinal()] = (ByteBuffer buffer) -> {
 			int clientViewDistance = buffer.getInt();
+			// This cannot be negative.
+			Assert.assertTrue(clientViewDistance >= 0);
 			return new Packet_ClientUpdateOptions(clientViewDistance);
 		};
 	}
