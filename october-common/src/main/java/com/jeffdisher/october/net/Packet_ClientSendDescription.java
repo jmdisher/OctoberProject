@@ -34,19 +34,23 @@ public class Packet_ClientSendDescription extends PacketFromClient
 			int version = buffer.getInt();
 			String name = CodecHelpers.readString(buffer);
 			Assert.assertTrue(null != name);
-			return new Packet_ClientSendDescription(version, name);
+			int cuboidViewDistance = buffer.getInt();
+			Assert.assertTrue(cuboidViewDistance >= 0);
+			return new Packet_ClientSendDescription(version, name, cuboidViewDistance);
 		};
 	}
 
 
 	public final int version;
 	public final String name;
+	public final int cuboidViewDistance;
 
-	public Packet_ClientSendDescription(int version, String name)
+	public Packet_ClientSendDescription(int version, String name, int cuboidViewDistance)
 	{
 		super(TYPE);
 		this.version = version;
 		this.name = name;
+		this.cuboidViewDistance = cuboidViewDistance;
 	}
 
 	@Override
@@ -54,5 +58,6 @@ public class Packet_ClientSendDescription extends PacketFromClient
 	{
 		buffer.putInt(this.version);
 		CodecHelpers.writeString(buffer, this.name);
+		buffer.putInt(this.cuboidViewDistance);
 	}
 }

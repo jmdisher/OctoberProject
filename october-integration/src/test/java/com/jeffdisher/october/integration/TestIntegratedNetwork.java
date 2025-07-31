@@ -66,7 +66,7 @@ public class TestIntegratedNetwork
 		{
 			Map<Integer, String> _joinNames = new HashMap<>();
 			@Override
-			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name)
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
 			{
 				// We might not see these if we connect/disconnect too quickly but we shouldn't see duplication.
 				int id = name.hashCode();
@@ -123,7 +123,7 @@ public class TestIntegratedNetwork
 			NetworkLayer.PeerToken _firstPeer = null;
 			private boolean _isReady1 = false;
 			@Override
-			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name)
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
 			{
 				// If this is the first peer, hold on to it.
 				if (null == _firstPeer)
@@ -198,7 +198,7 @@ public class TestIntegratedNetwork
 				// Should not happen in this test.
 				Assert.fail();
 			}
-		}, InetAddress.getLocalHost(), port, "Client 1");
+		}, InetAddress.getLocalHost(), port, "Client 1", 1);
 		CyclicBarrier readyBarrier = new CyclicBarrier(2);
 		NetworkClient client2 = new NetworkClient(new NetworkClient.IListener()
 		{
@@ -228,7 +228,7 @@ public class TestIntegratedNetwork
 				// Should not happen in this test.
 				Assert.fail();
 			}
-		}, InetAddress.getLocalHost(), port, "Client 2");
+		}, InetAddress.getLocalHost(), port, "Client 2", 1);
 		
 		// Send messages from client 2 to 1.
 		for (int i = 0; i < 10; ++i)
@@ -302,7 +302,7 @@ public class TestIntegratedNetwork
 		{
 			int _nextIndex = 0;
 			@Override
-			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name)
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
 			{
 				// We will sent the message once the network is ready.
 				return new NetworkServer.ConnectingClientDescription<>(name.hashCode(), token);
@@ -367,7 +367,7 @@ public class TestIntegratedNetwork
 				// Should not happen in this test.
 				Assert.fail();
 			}
-		}, InetAddress.getLocalHost(), port, "test");
+		}, InetAddress.getLocalHost(), port, "test", 1);
 		
 		// Wait to receive these and then stitch them together.
 		latch.await();
@@ -451,7 +451,7 @@ public class TestIntegratedNetwork
 				// Should not happen in this test.
 				Assert.fail();
 			}
-		}, InetAddress.getLocalHost(), port, name);
+		}, InetAddress.getLocalHost(), port, name, 1);
 		int clientId = client.getClientId();
 		client.stop();
 		return clientId;
@@ -462,7 +462,7 @@ public class TestIntegratedNetwork
 		return new NetworkServer<>(new NetworkServer.IListener<>()
 		{
 			@Override
-			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name)
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
 			{
 				throw new AssertionError("Not called");
 			}

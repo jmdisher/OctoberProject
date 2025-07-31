@@ -137,7 +137,7 @@ public class ServerProcess
 		this.notifyAll();
 	}
 
-	private synchronized NetworkServer.ConnectingClientDescription<ClientBuffer> _createClient(NetworkLayer.PeerToken token, String name)
+	private synchronized NetworkServer.ConnectingClientDescription<ClientBuffer> _createClient(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
 	{
 		// For now, we will just hash the string and use that as the ID (Java's string hash is reasonable).  We still want the number to be positive, though.
 		// In the future, we probably want an in-memory whitelist so this can remain synchronous.
@@ -158,7 +158,7 @@ public class ServerProcess
 			// This is valid so install it.
 			ClientBuffer buffer = new ClientBuffer(token, hash);
 			_clientsById.put(hash, buffer);
-			_serverListener.clientConnected(hash, token, name);
+			_serverListener.clientConnected(hash, token, name, cuboidViewDistance);
 			result = new NetworkServer.ConnectingClientDescription<>(hash, buffer);
 			
 			// In a last step, before we return, we want to pre-seed the ClientBuffer with configuration data.
@@ -284,9 +284,9 @@ public class ServerProcess
 	private class _NetworkListener implements NetworkServer.IListener<ClientBuffer>
 	{
 		@Override
-		public NetworkServer.ConnectingClientDescription<ClientBuffer> userJoined(NetworkLayer.PeerToken token, String name)
+		public NetworkServer.ConnectingClientDescription<ClientBuffer> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
 		{
-			return _createClient(token, name);
+			return _createClient(token, name, cuboidViewDistance);
 		}
 		@Override
 		public void userLeft(ClientBuffer buffer)

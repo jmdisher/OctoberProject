@@ -15,7 +15,6 @@ import java.util.stream.Collectors;
 
 import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.ScheduledChange;
@@ -75,10 +74,10 @@ public class ServerStateManager
 
 	private final ICallouts _callouts;
 	private final Map<Integer, ClientState> _connectedClients;
-	private final Map<Integer, String> _newClients;
+	private final Map<Integer, _ConnectingClient> _newClients;
 	private final Queue<Integer> _removedClients;
 	private final Set<Integer> _clientsToRead;
-	private final Map<Integer, String> _clientsPendingLoad;
+	private final Map<Integer, _ConnectingClient> _clientsPendingLoad;
 	private Thread _ownerThread;
 
 	// It could take several ticks for a cuboid to be loaded/generated and we don't want to redundantly load them so track what is pending.
@@ -125,14 +124,14 @@ public class ServerStateManager
 		_ownerThread = Thread.currentThread();
 	}
 
-	public void clientConnected(int clientId, String name)
+	public void clientConnected(int clientId, String name, int cuboidViewDistance)
 	{
 		Assert.assertTrue(Thread.currentThread() == _ownerThread);
 		// We don't want to allow non-positive entity IDs (since those will be reserved for errors or future uses).
 		Assert.assertTrue(clientId > 0);
 		
 		// Add this to the list of new clients (we will send them the snapshot and inject them after the the current tick is done tick).
-		_newClients.put(clientId, name);
+		_newClients.put(clientId, new _ConnectingClient(name, cuboidViewDistance));
 		System.out.println("Client connected: " + clientId);
 	}
 
@@ -412,8 +411,8 @@ public class ServerStateManager
 			// This client is now connected and can receive events.
 			Entity newEntity = suspended.entity();
 			int clientId = newEntity.id();
-			String clientName = _clientsPendingLoad.remove(clientId);
-			Assert.assertTrue(null != clientName);
+			_ConnectingClient clientData = _clientsPendingLoad.remove(clientId);
+			Assert.assertTrue(null != clientData);
 			
 			// Notify the other clients that they joined and tell them about the other clients.
 			for (Map.Entry<Integer, ClientState> existingClient : _connectedClients.entrySet())
@@ -423,13 +422,13 @@ public class ServerStateManager
 				Assert.assertTrue(null != existingClientName);
 				
 				// Tell the old client about the new client.
-				_callouts.network_sendClientJoined(existingClientId, clientId, clientName);
+				_callouts.network_sendClientJoined(existingClientId, clientId, clientData.name);
 				// Tell the new client about the old client.
 				_callouts.network_sendClientJoined(clientId, existingClientId, existingClientName);
 			}
 			
 			// We can now add them to the fully-connected clients.
-			_connectedClients.put(clientId, new ClientState(clientName, newEntity.location()));
+			_connectedClients.put(clientId, new ClientState(clientData.name, newEntity.location(), clientData.cuboidViewDistance));
 		}
 	}
 
@@ -964,6 +963,10 @@ public class ServerStateManager
 			, Collection<Integer> entitiesToUnload
 	) {}
 
+	private static final record _ConnectingClient(String name
+		, int cuboidViewDistance
+	) {}
+
 	private static final class ClientState
 	{
 		public final String name;
@@ -977,13 +980,13 @@ public class ServerStateManager
 		public final List<CuboidAddress> priorityMissingCuboids;
 		public final List<CuboidAddress> outerMissingCuboids;
 		
-		public ClientState(String name, EntityLocation initialLocation)
+		public ClientState(String name, EntityLocation initialLocation, int cuboidViewDistance)
 		{
 			this.name = name;
 			this.location = initialLocation;
+			this.cuboidViewDistance = cuboidViewDistance;
 			
 			// Create empty containers for what this client has observed.
-			this.cuboidViewDistance = MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE;
 			this.lastComputedAddress = null;
 			this.knownEntities = new HashSet<>();
 			this.knownCuboids = new HashSet<>();

@@ -127,8 +127,8 @@ public class TestServerRunner
 		int clientId2 = 2;
 		network.prepareForClient(clientId1);
 		network.prepareForClient(clientId2);
-		server.clientConnected(clientId1, null, "name1");
-		server.clientConnected(clientId2, null, "name1");
+		server.clientConnected(clientId1, null, "name1", 1);
+		server.clientConnected(clientId2, null, "name1", 1);
 		Entity entity1_1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1_1);
 		PartialEntity entity1_2 = network.waitForPeerEntity(clientId1, clientId2);
@@ -169,7 +169,7 @@ public class TestServerRunner
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId = 1;
 		network.prepareForClient(clientId);
-		server.clientConnected(clientId, null, "name");
+		server.clientConnected(clientId, null, "name", 1);
 		Entity entity = network.waitForThisEntity(clientId);
 		Assert.assertNotNull(entity);
 		// (we also want to wait until the server has loaded the cuboids, since this change reads them)
@@ -227,7 +227,7 @@ public class TestServerRunner
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId = 1;
 		network.prepareForClient(clientId);
-		server.clientConnected(clientId, null, "name");
+		server.clientConnected(clientId, null, "name", 1);
 		Entity entity = network.waitForThisEntity(clientId);
 		Assert.assertNotNull(entity);
 		
@@ -271,7 +271,7 @@ public class TestServerRunner
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId = 1;
 		network.prepareForClient(clientId);
-		server.clientConnected(clientId, null, "name");
+		server.clientConnected(clientId, null, "name", 1);
 		Entity entity = network.waitForThisEntity(clientId);
 		Assert.assertNotNull(entity);
 		EntityLocation start = entity.location();
@@ -315,8 +315,8 @@ public class TestServerRunner
 		int clientId2 = 2;
 		network.prepareForClient(clientId1);
 		network.prepareForClient(clientId2);
-		server.clientConnected(clientId1, null, "name1");
-		server.clientConnected(clientId2, null, "name2");
+		server.clientConnected(clientId1, null, "name1", 1);
+		server.clientConnected(clientId2, null, "name2", 1);
 		Assert.assertEquals("name2", network.waitForClientJoin(clientId1, clientId2));
 		Assert.assertEquals("name1", network.waitForClientJoin(clientId2, clientId1));
 		Entity entity1_1 = network.waitForThisEntity(clientId1);
@@ -366,7 +366,7 @@ public class TestServerRunner
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
 		network.prepareForClient(clientId1);
-		server.clientConnected(clientId1, null, "name");
+		server.clientConnected(clientId1, null, "name", 1);
 		Entity entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		
@@ -410,7 +410,7 @@ public class TestServerRunner
 		
 		// Connect.
 		network.prepareForClient(clientId1);
-		server.clientConnected(clientId1, null, "name");
+		server.clientConnected(clientId1, null, "name", 1);
 		Entity entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		Assert.assertEquals(0, entity1.hotbarIndex());
@@ -427,7 +427,7 @@ public class TestServerRunner
 		
 		// Reconnect and verify that the change is visible.
 		network.prepareForClient(clientId1);
-		server.clientConnected(clientId1, null, "name");
+		server.clientConnected(clientId1, null, "name", 1);
 		entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		Assert.assertEquals(1, entity1.hotbarIndex());
@@ -462,7 +462,7 @@ public class TestServerRunner
 		
 		// Connect.
 		network.prepareForClient(clientId1);
-		server.clientConnected(clientId1, null, "name");
+		server.clientConnected(clientId1, null, "name", 1);
 		Entity entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		
@@ -477,7 +477,7 @@ public class TestServerRunner
 		
 		// Reconnect and verify that the creatures are the same but with different IDs.
 		network.prepareForClient(clientId1);
-		server.clientConnected(clientId1, null, "name");
+		server.clientConnected(clientId1, null, "name", 1);
 		entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		
@@ -517,7 +517,7 @@ public class TestServerRunner
 		// We need to attach a single client.
 		int clientId1 = 1;
 		network.prepareForClient(clientId1);
-		server.clientConnected(clientId1, null, "name");
+		server.clientConnected(clientId1, null, "name", 1);
 		Entity entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		
@@ -559,14 +559,14 @@ public class TestServerRunner
 		// Connect 1.
 		int clientId1 = 1;
 		network.prepareForClient(clientId1);
-		server.clientConnected(clientId1, null, "client1");
+		server.clientConnected(clientId1, null, "client1", 1);
 		Entity entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		
 		// Connect 2.
 		int clientId2 = 2;
 		network.prepareForClient(clientId2);
-		server.clientConnected(clientId2, null, "client2");
+		server.clientConnected(clientId2, null, "client2", 1);
 		Entity entity2 = network.waitForThisEntity(clientId2);
 		Assert.assertNotNull(entity2);
 		
@@ -650,7 +650,7 @@ public class TestServerRunner
 		// We need to attach a single client.
 		int clientId1 = 1;
 		network.prepareForClient(clientId1);
-		server.clientConnected(clientId1, null, "name");
+		server.clientConnected(clientId1, null, "name", 1);
 		Entity entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		
@@ -709,8 +709,8 @@ public class TestServerRunner
 		int clientId2 = 2;
 		network.prepareForClient(clientId1);
 		network.prepareForClient(clientId2);
-		server.clientConnected(clientId1, null, "name1");
-		server.clientConnected(clientId2, null, "name2");
+		server.clientConnected(clientId1, null, "name1", 1);
+		server.clientConnected(clientId2, null, "name2", 1);
 		Assert.assertEquals("name2", network.waitForClientJoin(clientId1, clientId2));
 		Assert.assertEquals("name1", network.waitForClientJoin(clientId2, clientId1));
 		Entity entity1_1 = network.waitForThisEntity(clientId1);
@@ -771,7 +771,7 @@ public class TestServerRunner
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId = 1;
 		network.prepareForClient(clientId);
-		server.clientConnected(clientId, null, "name");
+		server.clientConnected(clientId, null, "name", 1);
 		Entity entity = network.waitForThisEntity(clientId);
 		Assert.assertNotNull(entity);
 		network.waitForCuboidAddedCount(clientId, 2);

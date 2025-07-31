@@ -24,9 +24,10 @@ public class NetworkClient
 	 * @param host The remote host to contact.
 	 * @param port The port to use when connecting to the remote host.
 	 * @param clientName The name to send to the server to identify ourselves.
+	 * @param cuboidViewDistance The client's preferred view distance.
 	 * @throws IOException An error occurred while configuring the network.
 	 */
-	public NetworkClient(IListener listener, InetAddress host, int port, String clientName) throws IOException
+	public NetworkClient(IListener listener, InetAddress host, int port, String clientName, int cuboidViewDistance) throws IOException
 	{
 		_listener = listener;
 		_network = NetworkLayer.connectToServer(new NetworkLayer.IListener()
@@ -96,7 +97,7 @@ public class NetworkClient
 		Assert.assertTrue(null != _token);
 		
 		// The connection starts writable so kick-off the handshake.
-		_network.sendMessage(_token.token, new Packet_ClientSendDescription(Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION, clientName));
+		_network.sendMessage(_token.token, new Packet_ClientSendDescription(Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION, clientName, cuboidViewDistance));
 	}
 
 	/**

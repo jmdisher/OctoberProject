@@ -6,6 +6,7 @@ import java.util.Set;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.client.MovementAccumulator;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -81,7 +82,7 @@ public class AutoWalkingClient
 	{
 		Environment.createSharedInstance();
 		_Listener listener = new _Listener();
-		ClientProcess client = new ClientProcess(listener, serverAddress.getAddress(), serverAddress.getPort(), clientName);
+		ClientProcess client = new ClientProcess(listener, serverAddress.getAddress(), serverAddress.getPort(), clientName, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		client.waitForLocalEntity(System.currentTimeMillis());
 		
 		// Wait until we get a command.

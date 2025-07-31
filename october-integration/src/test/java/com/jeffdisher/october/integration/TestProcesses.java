@@ -78,7 +78,7 @@ public class TestProcesses
 	public void noConnectClient() throws Throwable
 	{
 		_ClientListener listener = new _ClientListener();
-		new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
+		new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test", 1);
 	}
 
 	@Test
@@ -96,7 +96,7 @@ public class TestProcesses
 				, new WorldConfig()
 		);
 		_ClientListener listener = new _ClientListener();
-		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
+		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test", 1);
 		
 		// Wait until we see the entity arrive.
 		long startTick = client.waitForLocalEntity(System.currentTimeMillis());
@@ -130,7 +130,7 @@ public class TestProcesses
 		
 		// Connect the client.
 		_ClientListener listener = new _ClientListener();
-		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
+		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test", 1);
 		
 		// Let some time pass and verify the data is loaded.
 		long startTick = client.waitForLocalEntity(System.currentTimeMillis());
@@ -181,7 +181,7 @@ public class TestProcesses
 		
 		// Connect the client.
 		_ClientListener listener = new _ClientListener();
-		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
+		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test", 1);
 		
 		// Let some time pass and verify the data is loaded.
 		long startTick = client.waitForLocalEntity(System.currentTimeMillis());
@@ -234,7 +234,7 @@ public class TestProcesses
 		
 		// Connect a client and wait to receive their entity.
 		_ClientListener listener = new _ClientListener();
-		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
+		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test", 1);
 		long tick = client.waitForLocalEntity(currentTimeMillis);
 		currentTimeMillis += 100L;
 		// Wait until we have received the entity and cuboid.
@@ -273,13 +273,13 @@ public class TestProcesses
 		
 		// Create the first client.
 		_ClientListener listener1 = new _ClientListener();
-		ClientProcess client1 = new ClientProcess(listener1, InetAddress.getLocalHost(), PORT, "Client 1");
+		ClientProcess client1 = new ClientProcess(listener1, InetAddress.getLocalHost(), PORT, "Client 1", 1);
 		client1.waitForLocalEntity(currentTimeMillis[0]);
 		int clientId1 = client1.waitForClientId();
 		
 		// Create the second client.
 		_ClientListener listener2 = new _ClientListener();
-		ClientProcess client2 = new ClientProcess(listener2, InetAddress.getLocalHost(), PORT, "Client 2");
+		ClientProcess client2 = new ClientProcess(listener2, InetAddress.getLocalHost(), PORT, "Client 2", 1);
 		client2.waitForLocalEntity(currentTimeMillis[0]);
 		int clientId2 = client2.waitForClientId();
 		
@@ -389,7 +389,8 @@ public class TestProcesses
 		// Connect a client and wait to receive their entity.
 		_ClientListener listener = new _ClientListener();
 		String clientName = "test";
-		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, clientName);
+		int cuboidViewDistance = 1;
+		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, clientName, cuboidViewDistance);
 		long tick = client.waitForLocalEntity(currentTimeMillis);
 		currentTimeMillis += 100L;
 		// Wait until we have received the entity and cuboid.
@@ -443,13 +444,13 @@ public class TestProcesses
 		
 		// Create the first client.
 		_ClientListener listener1 = new _ClientListener();
-		ClientProcess client1 = new ClientProcess(listener1, InetAddress.getLocalHost(), PORT, "Client 1");
+		ClientProcess client1 = new ClientProcess(listener1, InetAddress.getLocalHost(), PORT, "Client 1", 1);
 		client1.waitForLocalEntity(currentTimeMillis[0]);
 		int clientId1 = client1.waitForClientId();
 		
 		// Create the second client.
 		_ClientListener listener2 = new _ClientListener();
-		ClientProcess client2 = new ClientProcess(listener2, InetAddress.getLocalHost(), PORT, "Client 2");
+		ClientProcess client2 = new ClientProcess(listener2, InetAddress.getLocalHost(), PORT, "Client 2", 1);
 		client2.waitForLocalEntity(currentTimeMillis[0]);
 		int clientId2 = client2.waitForClientId();
 		

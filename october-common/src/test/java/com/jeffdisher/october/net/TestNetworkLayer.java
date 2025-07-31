@@ -64,7 +64,7 @@ public class TestNetworkLayer
 		
 		// Now, both sides should be able to send a message, right away (we will just use the ID assignment, since it is simple).
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		PacketCodec.serializeToBuffer(buffer, new Packet_ClientSendDescription(0, "test"));
+		PacketCodec.serializeToBuffer(buffer, new Packet_ClientSendDescription(0, "test", 1));
 		buffer.flip();
 		client.write(buffer);
 		
@@ -140,7 +140,7 @@ public class TestNetworkLayer
 		buffer.flip();
 		server.write(buffer);
 		
-		client.sendMessage(tokenHolder[0], new Packet_ClientSendDescription(0, "test"));
+		client.sendMessage(tokenHolder[0], new Packet_ClientSendDescription(0, "test", 1));
 		
 		// Verify that we received both.
 		receiveLatch.await();

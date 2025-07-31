@@ -280,10 +280,12 @@ public class ServerRunner
 	private class NetworkListener implements IServerAdapter.IListener
 	{
 		@Override
-		public void clientConnected(int clientId, NetworkLayer.PeerToken token, String name)
+		public void clientConnected(int clientId, NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
 		{
+			Assert.assertTrue(cuboidViewDistance >= 0);
 			_messages.enqueue(() -> {
-				_stateManager.clientConnected(clientId, name);
+				int viewDistance = Math.min(cuboidViewDistance, _clientViewDistanceMaximum);
+				_stateManager.clientConnected(clientId, name, viewDistance);
 				
 				_monitoringAgent.clientConnected(clientId, token, name);
 			});

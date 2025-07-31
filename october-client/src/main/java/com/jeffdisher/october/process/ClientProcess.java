@@ -85,9 +85,10 @@ public class ClientProcess
 	 * @param address The address of the server.
 	 * @param port The port number of the server.
 	 * @param clientName The name the client should use to identify itself.
+	 * @param cuboidViewDistance The client's preferred view distance.
 	 * @throws IOException There was a network error connecting to the server.
 	 */
-	public ClientProcess(IListener listener, InetAddress address, int port, String clientName) throws IOException
+	public ClientProcess(IListener listener, InetAddress address, int port, String clientName, int cuboidViewDistance) throws IOException
 	{
 		_listener = listener;
 		_pendingCallbacks = new _LockingList();
@@ -96,7 +97,7 @@ public class ClientProcess
 		Assert.assertTrue(null != _messagesToClientRunner);
 		
 		// Create the connection (note that this will return when the connection is accepted but the handshake completes in the background).
-		_client = new NetworkClient(new _NetworkClientListener(), address, port, clientName);
+		_client = new NetworkClient(new _NetworkClientListener(), address, port, clientName, cuboidViewDistance);
 		
 		_networkBufferLock = new ReentrantLock();
 		_networkReady = false;

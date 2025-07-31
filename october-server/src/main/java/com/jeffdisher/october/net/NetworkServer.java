@@ -145,7 +145,7 @@ public class NetworkServer<L>
 				if (Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION == safe.version)
 				{
 					// Make sure that we can resolve this user (and that they aren't already here).
-					ConnectingClientDescription<L> description = _listener.userJoined(token, safe.name);
+					ConnectingClientDescription<L> description = _listener.userJoined(token, safe.name, safe.cuboidViewDistance);
 					if (null != description)
 					{
 						state.data = description.data;
@@ -286,9 +286,10 @@ public class NetworkServer<L>
 		 * 
 		 * @param token The token to use when interacting with the network.
 		 * @param name The client's human name.
+		 * @param cuboidViewDistance The client's preferred view distance.
 		 * @return The description of the client, null if the connection should be rejected.
 		 */
-		ConnectingClientDescription<T> userJoined(NetworkLayer.PeerToken token, String name);
+		ConnectingClientDescription<T> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance);
 		/**
 		 * Called when a user has disconnected.
 		 * 

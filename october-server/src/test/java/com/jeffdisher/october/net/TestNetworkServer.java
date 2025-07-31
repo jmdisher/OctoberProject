@@ -36,7 +36,7 @@ public class TestNetworkServer
 		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
 		{
 			@Override
-			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name)
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
 			{
 				int id = name.hashCode();
 				Assert.assertFalse(joinNames.containsKey(id));
@@ -94,7 +94,7 @@ public class TestNetworkServer
 			NetworkLayer.PeerToken _firstPeer = null;
 			private boolean _isReady1 = false;
 			@Override
-			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name)
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
 			{
 				// If this is the first peer, hold on to it.
 				if (null == _firstPeer)
@@ -323,7 +323,7 @@ public class TestNetworkServer
 		
 		// Send the first step of the handshake.
 		int bogusVersion = Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION + 1;
-		PacketCodec.serializeToBuffer(buffer, new Packet_ClientSendDescription(bogusVersion, "version fail"));
+		PacketCodec.serializeToBuffer(buffer, new Packet_ClientSendDescription(bogusVersion, "version fail", MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE));
 		buffer.flip();
 		client.write(buffer);
 		Assert.assertFalse(buffer.hasRemaining());
@@ -348,7 +348,7 @@ public class TestNetworkServer
 		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
 		{
 			@Override
-			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name)
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
 			{
 				joinLeaveCounts[0] += 1;
 				return new NetworkServer.ConnectingClientDescription<>(joinLeaveCounts[0], token);
@@ -461,7 +461,7 @@ public class TestNetworkServer
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		
 		// Send the first step of the handshake.
-		PacketCodec.serializeToBuffer(buffer, new Packet_ClientSendDescription(Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION, name));
+		PacketCodec.serializeToBuffer(buffer, new Packet_ClientSendDescription(Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION, name, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE));
 		buffer.flip();
 		client.write(buffer);
 		Assert.assertFalse(buffer.hasRemaining());
@@ -482,7 +482,7 @@ public class TestNetworkServer
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		
 		// Send the first step of the handshake.
-		PacketCodec.serializeToBuffer(buffer, new Packet_ClientSendDescription(Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION, name));
+		PacketCodec.serializeToBuffer(buffer, new Packet_ClientSendDescription(Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION, name, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE));
 		buffer.flip();
 		client.write(buffer);
 		Assert.assertFalse(buffer.hasRemaining());
@@ -501,7 +501,7 @@ public class TestNetworkServer
 	private static class _ServerListener implements NetworkServer.IListener<NetworkLayer.PeerToken>
 	{
 		@Override
-		public ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name)
+		public ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
 		{
 			return new NetworkServer.ConnectingClientDescription<>(name.hashCode(), token);
 		}

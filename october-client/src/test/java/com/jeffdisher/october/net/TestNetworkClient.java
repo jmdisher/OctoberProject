@@ -52,9 +52,9 @@ public class TestNetworkClient
 			}
 		};
 		
-		NetworkClient client1 = new NetworkClient(emptyListener, InetAddress.getLocalHost(), port, "test");
+		NetworkClient client1 = new NetworkClient(emptyListener, InetAddress.getLocalHost(), port, "test", 1);
 		SocketChannel connection1 = _serverHandshake(server, 1);
-		NetworkClient client2 = new NetworkClient(emptyListener, InetAddress.getLocalHost(), port, "test");
+		NetworkClient client2 = new NetworkClient(emptyListener, InetAddress.getLocalHost(), port, "test", 1);
 		SocketChannel connection2 = _serverHandshake(server, 2);
 		
 		client1.stop();
@@ -108,9 +108,9 @@ public class TestNetworkClient
 			}
 		};
 		
-		NetworkClient client1 = new NetworkClient(emptyListener, InetAddress.getLocalHost(), port, "test");
+		NetworkClient client1 = new NetworkClient(emptyListener, InetAddress.getLocalHost(), port, "test", 1);
 		SocketChannel connection1 = _serverHandshake(server, 1);
-		NetworkClient client2 = new NetworkClient(emptyListener, InetAddress.getLocalHost(), port, "test");
+		NetworkClient client2 = new NetworkClient(emptyListener, InetAddress.getLocalHost(), port, "test", 1);
 		SocketChannel connection2 = _serverHandshake(server, 2);
 		
 		connection1.close();
@@ -162,7 +162,7 @@ public class TestNetworkClient
 			}
 		};
 		
-		NetworkClient client1 = new NetworkClient(emptyListener, InetAddress.getLocalHost(), port, "test");
+		NetworkClient client1 = new NetworkClient(emptyListener, InetAddress.getLocalHost(), port, "test", 1);
 		SocketChannel connection1 = _serverHandshake(server, 1);
 		latch.await();
 		
@@ -190,7 +190,7 @@ public class TestNetworkClient
 		ServerSocketChannel server = ServerSocketChannel.open();
 		server.bind(address);
 		
-		NetworkClient client1 = new NetworkClient(new _ClientListener(), InetAddress.getLocalHost(), port, "test");
+		NetworkClient client1 = new NetworkClient(new _ClientListener(), InetAddress.getLocalHost(), port, "test", 1);
 		SocketChannel connection1 = _serverHandshake(server, 1);
 		
 		// Fill the socket with corrupt data (something which looks like a small but invalid packet):  size 0x10, ordinal 0.
@@ -223,7 +223,7 @@ public class TestNetworkClient
 		ServerSocketChannel server = ServerSocketChannel.open();
 		server.bind(address);
 		
-		NetworkClient client1 = new NetworkClient(new _ClientListener(), InetAddress.getLocalHost(), port, "test");
+		NetworkClient client1 = new NetworkClient(new _ClientListener(), InetAddress.getLocalHost(), port, "test", 1);
 		SocketChannel connection1 = _serverHandshake(server, 1);
 		
 		// We will send the "send chat" packet, since that is only intended to be TO a client, not from one.

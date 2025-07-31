@@ -97,7 +97,7 @@ public class TestServerStateManager
 		manager.setOwningThread();
 		int clientId = 1;
 		String clientName = "client";
-		manager.clientConnected(clientId, clientName);
+		manager.clientConnected(clientId, clientName, 1);
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
 		
 		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot);
@@ -205,7 +205,7 @@ public class TestServerStateManager
 		manager.setOwningThread();
 		int clientId = 1;
 		String clientName = "client";
-		manager.clientConnected(clientId, clientName);
+		manager.clientConnected(clientId, clientName, 1);
 		boolean[] connectedRef = new boolean[] {true};
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
 		manager.setupNextTickAfterCompletion(snapshot);
@@ -243,8 +243,8 @@ public class TestServerStateManager
 		String clientName1 = "client1";
 		int clientId2 = 2;
 		String clientName2 = "client2";
-		manager.clientConnected(clientId1, clientName1);
-		manager.clientConnected(clientId2, clientName2);
+		manager.clientConnected(clientId1, clientName1, 1);
+		manager.clientConnected(clientId2, clientName2, 1);
 		
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
 		manager.setupNextTickAfterCompletion(snapshot);
@@ -273,7 +273,7 @@ public class TestServerStateManager
 		ServerStateManager manager = new ServerStateManager(callouts);
 		manager.setOwningThread();
 		int clientId = 1;
-		manager.clientConnected(clientId, "client");
+		manager.clientConnected(clientId, "client", 1);
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
 		
 		// We need to run a tick so that the client load request is made.
@@ -352,8 +352,8 @@ public class TestServerStateManager
 		String clientName1 = "client1";
 		int clientId2 = 2;
 		String clientName2 = "client2";
-		manager.clientConnected(clientId1, clientName1);
-		manager.clientConnected(clientId2, clientName2);
+		manager.clientConnected(clientId1, clientName1, 1);
+		manager.clientConnected(clientId2, clientName2, 1);
 		
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
 		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot);
@@ -464,7 +464,7 @@ public class TestServerStateManager
 		ServerStateManager manager = new ServerStateManager(callouts);
 		manager.setOwningThread();
 		int clientId = 1;
-		manager.clientConnected(clientId, "client");
+		manager.clientConnected(clientId, "client", 1);
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
 		
 		// We need to run a tick so that the client load request is made.
@@ -531,7 +531,7 @@ public class TestServerStateManager
 		ServerStateManager manager = new ServerStateManager(callouts);
 		manager.setOwningThread();
 		int clientId = 1;
-		manager.clientConnected(clientId, "client");
+		manager.clientConnected(clientId, "client", 1);
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
 		
 		// We need to run a tick so that the client load request is made.
@@ -616,6 +616,38 @@ public class TestServerStateManager
 		Assert.assertEquals(1, callouts.cuboidsSentToClient.get(clientId).size());
 		
 		callouts.cuboidsToWrite.clear();
+		manager.shutdown();
+	}
+
+	@Test
+	public void cuboidRadiusStart()
+	{
+		// Show that we can connect with a higher than default view distance.
+		_Callouts callouts = new _Callouts();
+		ServerStateManager manager = new ServerStateManager(callouts);
+		manager.setOwningThread();
+		int clientId = 1;
+		int requestedRaduis = 2;
+		manager.clientConnected(clientId, "client", requestedRaduis);
+		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		
+		// We need to run a tick so that the client load request is made.
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(1, callouts.requestedEntityIds.size());
+		
+		// Allow the client load to be acknowledged.
+		EntityLocation entityLocation = new EntityLocation(-101.2f, 678.1f, 55.0f);
+		MutableEntity mutable = MutableEntity.createForTest(clientId);
+		mutable.newLocation = entityLocation;
+		Entity entity = mutable.freeze();
+		callouts.loadedEntities.add(new SuspendedEntity(entity, List.of()));
+		manager.setupNextTickAfterCompletion(snapshot);
+		
+		// We shouldn't see the cuboid load request until the next tick.
+		Assert.assertEquals(0, callouts.requestedCuboidAddresses.size());
+		manager.setupNextTickAfterCompletion(snapshot);
+		// (we should now see that the 5x5x5 is requested since we asked for a radius of 2)
+		Assert.assertEquals(125, callouts.requestedCuboidAddresses.size());
 		manager.shutdown();
 	}
 
