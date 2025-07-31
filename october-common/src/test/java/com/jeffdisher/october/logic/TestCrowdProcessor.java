@@ -81,12 +81,13 @@ public class TestCrowdProcessor
 		
 		// We will run an iteration with no top-level events, to emulate lag, to show that nothing happens.
 		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(thread
-			, Map.of(entityId, entity)
 			, context
-			, Map.of()
+			, Map.of(entityId, new CrowdProcessor.InputEntity(entity, List.of()))
 			, List.of()
 		);
-		Assert.assertEquals(0, group.updatedEntities().size());
+		// We should see the one output (since we processed this) but it should have a null updated instance.
+		Assert.assertEquals(1, group.entityOutput().size());
+		Assert.assertNull(group.entityOutput().get(entityId).entity());
 		
 		// Then, we will run another call with a standing change, and show that the fall damage is applied.
 		EntityLocation fallTarget = new EntityLocation(16.8f, 16.8f, 16.0f);
@@ -100,12 +101,12 @@ public class TestCrowdProcessor
 		);
 		ScheduledChange singleChange = new ScheduledChange(topLevel, 0L);
 		group = CrowdProcessor.processCrowdGroupParallel(thread
-			, Map.of(entityId, entity)
 			, context
-			, Map.of(entityId, List.of(singleChange))
+			, Map.of(entityId, new CrowdProcessor.InputEntity(entity, List.of(singleChange)))
 			, List.of()
 		);
-		entity = group.updatedEntities().get(entityId);
+		Assert.assertEquals(1, group.entityOutput().size());
+		entity = group.entityOutput().get(entityId).entity();
 		
 		Assert.assertTrue(events.didPost());
 		Assert.assertEquals(fallTarget, entity.location());

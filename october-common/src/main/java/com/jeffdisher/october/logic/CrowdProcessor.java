@@ -41,22 +41,18 @@ public class CrowdProcessor
 	 * and the union of all of them will entirely cover the key space defined by changesToRun.
 	 * 
 	 * @param processor The current thread.
-	 * @param entitiesById The map of all read-only entities from the previous tick.
 	 * @param context The context used for running changes.
-	 * @param changesToRun The map of changes to run in this tick, keyed by the ID of the entity on which they are
-	 * scheduled.
+	 * @param entitiesById The map of all read-only entities and scheduled changes (may not be ready).
 	 * @param operatorChanges The changes to run as the operator.
-	 * @return The subset of the changesToRun work which was completed by this thread.
+	 * @return The OutputEntity instances for InputEntity instances processed by this thread.
 	 */
 	public static ProcessedGroup processCrowdGroupParallel(ProcessorElement processor
-			, Map<Integer, Entity> entitiesById
 			, TickProcessingContext context
-			, Map<Integer, List<ScheduledChange>> changesToRun
+			, Map<Integer, InputEntity> entitiesById
 			, List<IEntityAction<IMutablePlayerEntity>> operatorChanges
 	)
 	{
-		Map<Integer, Entity> updatedEntities = new HashMap<>();
-		Map<Integer, List<ScheduledChange>> delayedChanges = new HashMap<>();
+		Map<Integer, OutputEntity> processedEntities = new HashMap<>();
 		int committedMutationCount = 0;
 		
 		// We need to check the operator as a special-case since it isn't a real entity.
@@ -69,47 +65,41 @@ public class CrowdProcessor
 				change.applyChange(context, null);
 			}
 		}
-		for (Map.Entry<Integer, Entity> elt : entitiesById.entrySet())
+		for (Map.Entry<Integer, InputEntity> elt : entitiesById.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
 			{
 				// This is our element.
 				Integer id = elt.getKey();
-				Entity entity = elt.getValue();
+				InputEntity input = elt.getValue();
+				Entity entity = input.entity;
 				processor.entitiesProcessed += 1;
 				
 				MutableEntity mutable = MutableEntity.existing(entity);
 				float startZVelocity = mutable.newVelocity.z();
-				List<ScheduledChange> changes = changesToRun.get(id);
-				if (null != changes)
+				List<ScheduledChange> changes = input.scheduledChanges;
+				List<ScheduledChange> notYetReadyChanges = new ArrayList<>();
+				for (ScheduledChange scheduled : changes)
 				{
-					for (ScheduledChange scheduled : changes)
+					long millisUntilReady = scheduled.millisUntilReady();
+					IEntityAction<IMutablePlayerEntity> change = scheduled.change();
+					if (0L == millisUntilReady)
 					{
-						long millisUntilReady = scheduled.millisUntilReady();
-						IEntityAction<IMutablePlayerEntity> change = scheduled.change();
-						if (0L == millisUntilReady)
+						processor.entityChangesProcessed += 1;
+						boolean didApply = change.applyChange(context, mutable);
+						if (didApply)
 						{
-							processor.entityChangesProcessed += 1;
-							boolean didApply = change.applyChange(context, mutable);
-							if (didApply)
-							{
-								committedMutationCount += 1;
-							}
+							committedMutationCount += 1;
 						}
-						else
+					}
+					else
+					{
+						long updatedMillis = millisUntilReady - context.millisPerTick;
+						if (updatedMillis < 0L)
 						{
-							long updatedMillis = millisUntilReady - context.millisPerTick;
-							if (updatedMillis < 0L)
-							{
-								updatedMillis = 0L;
-							}
-							if (!delayedChanges.containsKey(id))
-							{
-								delayedChanges.put(id, new ArrayList<>());
-							}
-							List<ScheduledChange> list = delayedChanges.get(id);
-							list.add(new ScheduledChange(change, updatedMillis));
+							updatedMillis = 0L;
 						}
+						notYetReadyChanges.add(new ScheduledChange(change, updatedMillis));
 					}
 				}
 				
@@ -124,22 +114,31 @@ public class CrowdProcessor
 				// If there was a change, we want to send it back so that the snapshot can be updated and clients can be informed.
 				// This freeze() call will return the original instance if it is identical.
 				Entity newEntity = mutable.freeze();
-				if (newEntity != entity)
-				{
-					updatedEntities.put(id, newEntity);
-				}
+				Entity entityToReturn = (newEntity != entity)
+					? newEntity
+					: null
+				;
+				processedEntities.put(id, new OutputEntity(entityToReturn, notYetReadyChanges));
 			}
 		}
 		return new ProcessedGroup(committedMutationCount
-				, delayedChanges
-				, updatedEntities
+			, processedEntities
 		);
 	}
 
 
 	public static record ProcessedGroup(int committedMutationCount
-			, Map<Integer, List<ScheduledChange>> notYetReadyChanges
-			// Note that we will only pass back a new Entity object if it changed.
-			, Map<Integer, Entity> updatedEntities
+		// We will pass back an OutputEntity for every InputEntity processed by this thread, even if no changes.
+		, Map<Integer, OutputEntity> entityOutput
+	) {}
+
+	// Note that NEITHER of these will be NULL and scheduledChanges MUST not be empty.
+	public static record InputEntity(Entity entity
+		, List<ScheduledChange> scheduledChanges
+	) {}
+
+	// Note that "entity" will be NULL if unchanged and notYetReadyChanges will NEVER be NULL but may be empty.
+	public static record OutputEntity(Entity entity
+		, List<ScheduledChange> notYetReadyChanges
 	) {}
 }

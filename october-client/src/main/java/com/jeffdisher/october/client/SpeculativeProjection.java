@@ -653,13 +653,12 @@ public class SpeculativeProjection
 	{
 		List<ScheduledChange> scheduled = _scheduledChangeList(entityMutations);
 		CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(processor
-				, (null != entity) ? Map.of(entityId, entity) : Map.of()
 				, context
-				, Map.of(entityId, scheduled)
+				, (null != entity) ? Map.of(entityId, new CrowdProcessor.InputEntity(entity, scheduled)) : Map.of()
 				, List.of()
 		);
 		return (innerGroup.committedMutationCount() > 0)
-				? new Entity[] { innerGroup.updatedEntities().get(entityId) }
+				? new Entity[] { innerGroup.entityOutput().get(entityId).entity() }
 				: null
 		;
 	}

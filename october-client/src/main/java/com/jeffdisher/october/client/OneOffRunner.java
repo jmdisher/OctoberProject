@@ -65,14 +65,13 @@ public class OneOffRunner
 		int thisEntityId = state.thisEntity().id();
 		ScheduledChange scheduled = new ScheduledChange(mutation, 0L);
 		CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(singleThreadElement
-				, Map.of(thisEntityId, state.thisEntity())
 				, context
-				, Map.of(thisEntityId, List.of(scheduled))
+				, Map.of(thisEntityId, new CrowdProcessor.InputEntity(state.thisEntity(), List.of(scheduled)))
 				, List.of()
 		);
 		boolean wasSuccess = (innerGroup.committedMutationCount() > 0);
 		Entity updatedEntity = wasSuccess
-				? innerGroup.updatedEntities().get(thisEntityId)
+				? innerGroup.entityOutput().get(thisEntityId).entity()
 				: null
 		;
 		List<ScheduledMutation> immediateMutations = newMutationSink.takeExportedMutations().stream()

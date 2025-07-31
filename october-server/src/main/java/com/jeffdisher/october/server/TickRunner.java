@@ -379,7 +379,7 @@ public class TickRunner
 				// mutableCreatureState
 				, Collections.emptyMap()
 				, new _PartialHandoffData(new WorldProcessor.ProcessedFragment(Map.of(), Map.of(), List.of(), Map.of(), Map.of(), 0)
-						, new CrowdProcessor.ProcessedGroup(0, Map.of(), Map.of())
+						, new CrowdProcessor.ProcessedGroup(0, Map.of())
 						, new CreatureProcessor.CreatureGroup(false, Map.of(), List.of())
 						, List.of()
 						, List.of()
@@ -482,7 +482,6 @@ public class TickRunner
 			
 			long startCrowd = System.currentTimeMillis();
 			CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(thisThread
-					, materials.completedEntities
 					, context
 					, materials.changesToRun
 					, materials.operatorChanges
@@ -588,11 +587,11 @@ public class TickRunner
 				mutableWorldState.putAll(fragment.world.stateFragment());
 				mergedChangedHeightMaps.putAll(fragment.world.heightFragment());
 				// Similarly, collect the results of the changed entities for the snapshot.
-				Map<Integer, Entity> entitiesChangedInFragment = fragment.crowd.updatedEntities();
+				Map<Integer, CrowdProcessor.OutputEntity> entitiesProcessedInFragment = fragment.crowd.entityOutput();
 				Map<Integer, CreatureEntity> creaturesChangedInFragment = fragment.creatures.updatedCreatures();
 				List<CreatureEntity> creaturesSpawnedInFragment = fragment.spawnedCreatures();
 				List<Integer> creaturesKilledInFragment = fragment.creatures.deadCreatureIds();
-				mutableCrowdState.putAll(entitiesChangedInFragment);
+				
 				// Creatures are like entities, but in their own collection.
 				mutableCreatureState.putAll(creaturesChangedInFragment);
 				for (Integer creatureId : creaturesKilledInFragment)
@@ -606,7 +605,6 @@ public class TickRunner
 				
 				// We will also collect all the per-client commit levels.
 				combinedCommitLevels.putAll(fragment.commitLevels);
-				updatedEntities.putAll(entitiesChangedInFragment);
 				updatedCreatures.putAll(creaturesChangedInFragment);
 				committedEntityMutationCount += fragment.crowd.committedMutationCount();
 				blockChangesByCuboid.putAll(fragment.world.blockChangesByCuboid());
@@ -639,10 +637,27 @@ public class TickRunner
 					Assert.assertTrue(null == old);
 				}
 				
-				// Crowd data.
-				for (Map.Entry<Integer, List<ScheduledChange>> container : fragment.crowd.notYetReadyChanges().entrySet())
+				// Add any updated entities into the right maps and schedule not yet ready actions.
+				for (Map.Entry<Integer, CrowdProcessor.OutputEntity> processed : entitiesProcessedInFragment.entrySet())
 				{
-					_scheduleChangesForEntity(snapshotEntityMutations, container.getKey(), container.getValue());
+					Integer key = processed.getKey();
+					CrowdProcessor.OutputEntity value = processed.getValue();
+					Entity updated = value.entity();
+					
+					// Note that this is documented to be null if nothing changed.
+					if (null != updated)
+					{
+						mutableCrowdState.put(key, updated);
+						Entity old = updatedEntities.put(key, updated);
+						Assert.assertTrue(null == old);
+					}
+					
+					// We want to schedule anything which wasn't yet ready.
+					List<ScheduledChange> notYetReadyChanges = value.notYetReadyChanges();
+					if (!notYetReadyChanges.isEmpty())
+					{
+						_scheduleChangesForEntity(snapshotEntityMutations, key, notYetReadyChanges);
+					}
 				}
 				
 				_partial[i] = null;
@@ -993,9 +1008,24 @@ public class TickRunner
 					// Given that these can only be scheduled against loaded cuboids, which can only be explicitly unloaded above, anything remaining must still be present.
 					Assert.assertTrue(mutableWorldState.containsKey(key));
 				}
-				for (Integer id : nextTickChanges.keySet())
+				
+				// Convert this raw next tick action accumulation into the CrowdProcessor input.
+				Map<Integer, CrowdProcessor.InputEntity> changesToRun = new HashMap<>();
+				// We shouldn't have put operator changes into this common map.
+				Assert.assertTrue(!nextTickChanges.containsKey(CrowdProcessor.OPERATOR_ENTITY_ID));
+				for (Map.Entry<Integer, List<ScheduledChange>> oneEntity : nextTickChanges.entrySet())
 				{
-					if ((CrowdProcessor.OPERATOR_ENTITY_ID != id) && !mutableCrowdState.containsKey(id))
+					Integer id = oneEntity.getKey();
+					Entity entity = mutableCrowdState.get(id);
+					if (null != entity)
+					{
+						List<ScheduledChange> list = oneEntity.getValue();
+						// If this is in the map, it can't be empty.
+						Assert.assertTrue(!list.isEmpty());
+						CrowdProcessor.InputEntity input = new CrowdProcessor.InputEntity(entity, Collections.unmodifiableList(list));
+						changesToRun.put(id, input);
+					}
+					else
 					{
 						System.out.println("WARNING: missing entity " + id);
 					}
@@ -1070,7 +1100,7 @@ public class TickRunner
 						
 						, pendingMutations
 						, periodicMutations
-						, nextTickChanges
+						, Collections.unmodifiableMap(changesToRun)
 						, operatorChanges
 						// creatureChanges
 						, nextCreatureChanges
@@ -1248,8 +1278,9 @@ public class TickRunner
 			, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
 			// We handle "periodic" mutations differently since they saturate for a given location.
 			, Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationMillis
-			// The entity mutations to run in this tick (by ID).
-			, Map<Integer, List<ScheduledChange>> changesToRun
+			// Note that we only add of of these inputs if the entity has some mutations scheduled against it (may not
+			// be ready, though).
+			, Map<Integer, CrowdProcessor.InputEntity> changesToRun
 			// Never null but typically empty.
 			, List<IEntityAction<IMutablePlayerEntity>> operatorChanges
 			, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureChanges
