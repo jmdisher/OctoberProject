@@ -24,23 +24,31 @@ public class Packet_ServerSendClientId extends PacketFromServer
 			Assert.assertTrue(id > 0);
 			// We want the server's millis/tick (so we can properly fake future ticks).
 			long millisPerTick = buffer.getLong();
-			// Since the default view distance is 1, the maximum must be at least that.
+			int currentViewDistance = buffer.getInt();
+			Assert.assertTrue(currentViewDistance >= 0);
+			// We have a rule that the maximum distance must be at least 1 (0 is a valid distance but can't actually be used).
 			int viewDistanceMaximum = buffer.getInt();
 			Assert.assertTrue(viewDistanceMaximum >= MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
-			return new Packet_ServerSendClientId(id, millisPerTick, viewDistanceMaximum);
+			return new Packet_ServerSendClientId(id, millisPerTick, currentViewDistance, viewDistanceMaximum);
 		};
 	}
 
 
 	public final int clientId;
 	public final long millisPerTick;
+	public final int currentViewDistance;
 	public final int viewDistanceMaximum;
 
-	public Packet_ServerSendClientId(int id, long millisPerTick, int viewDistanceMaximum)
+	public Packet_ServerSendClientId(int id
+		, long millisPerTick
+		, int currentViewDistance
+		, int viewDistanceMaximum
+	)
 	{
 		super(TYPE);
 		this.clientId = id;
 		this.millisPerTick = millisPerTick;
+		this.currentViewDistance = currentViewDistance;
 		this.viewDistanceMaximum = viewDistanceMaximum;
 	}
 
@@ -49,6 +57,7 @@ public class Packet_ServerSendClientId extends PacketFromServer
 	{
 		buffer.putInt(this.clientId);
 		buffer.putLong(this.millisPerTick);
+		buffer.putInt(this.currentViewDistance);
 		buffer.putInt(this.viewDistanceMaximum);
 	}
 }

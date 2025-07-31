@@ -180,7 +180,7 @@ public class TestIntegratedNetwork
 		NetworkClient client1 = new NetworkClient(new NetworkClient.IListener()
 		{
 			@Override
-			public void handshakeCompleted(int assignedId, long millisPerTick, int viewDistanceMaximum)
+			public void handshakeCompleted(int assignedId, long millisPerTick, int currentViewDistance, int viewDistanceMaximum)
 			{
 			}
 			@Override
@@ -203,7 +203,7 @@ public class TestIntegratedNetwork
 		NetworkClient client2 = new NetworkClient(new NetworkClient.IListener()
 		{
 			@Override
-			public void handshakeCompleted(int assignedId, long millisPerTick, int viewDistanceMaximum)
+			public void handshakeCompleted(int assignedId, long millisPerTick, int currentViewDistance, int viewDistanceMaximum)
 			{
 			}
 			@Override
@@ -343,7 +343,7 @@ public class TestIntegratedNetwork
 		{
 			int _nextIndex = 0;
 			@Override
-			public void handshakeCompleted(int assignedId, long millisPerTick, int viewDistanceMaximum)
+			public void handshakeCompleted(int assignedId, long millisPerTick, int currentViewDistance, int viewDistanceMaximum)
 			{
 			}
 			@Override
@@ -434,7 +434,7 @@ public class TestIntegratedNetwork
 		NetworkClient client = new NetworkClient(new NetworkClient.IListener()
 		{
 			@Override
-			public void handshakeCompleted(int assignedId, long millisPerTick, int viewDistanceMaximum)
+			public void handshakeCompleted(int assignedId, long millisPerTick, int currentViewDistance, int viewDistanceMaximum)
 			{
 			}
 			@Override

@@ -81,7 +81,7 @@ public class NetworkClient
 						Packet_ServerSendClientId safe = (Packet_ServerSendClientId) packet;
 						int assignedId = safe.clientId;
 						_token.setHandshakeCompleted(assignedId);
-						_listener.handshakeCompleted(assignedId, safe.millisPerTick, safe.viewDistanceMaximum);
+						_listener.handshakeCompleted(assignedId, safe.millisPerTick, safe.currentViewDistance, safe.viewDistanceMaximum);
 						
 						// See if the network is ready yet (since there was likely a race here).
 						if (_token.networkIsReady)
@@ -147,9 +147,10 @@ public class NetworkClient
 		 * 
 		 * @param assignedId The ID the server assigned to this client's entity.
 		 * @param millisPerTick The server's tick rate.
+		 * @param currentViewDistance The starting view distance for this client.
 		 * @param viewDistanceMaximum The maximum view distance a client can request (as a new client defaults to "1").
 		 */
-		void handshakeCompleted(int assignedId, long millisPerTick, int viewDistanceMaximum);
+		void handshakeCompleted(int assignedId, long millisPerTick, int currentViewDistance, int viewDistanceMaximum);
 		/**
 		 * Called when the network is free to send more messages to the server.  Note that this is first called once the
 		 * handshake with the server is complete.

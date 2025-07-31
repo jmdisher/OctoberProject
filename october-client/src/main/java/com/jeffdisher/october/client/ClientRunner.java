@@ -269,7 +269,7 @@ public class ClientRunner
 		private List<EventRecord> _events = new ArrayList<>();
 		
 		@Override
-		public void adapterConnected(int assignedId, long millisPerTick, int viewDistanceMaximum)
+		public void adapterConnected(int assignedId, long millisPerTick, int currentViewDistance, int viewDistanceMaximum)
 		{
 			_callsFromNetworkToApply.enqueue((long currentTimeMillis) -> {
 				// We create the projection here.
@@ -280,7 +280,7 @@ public class ClientRunner
 				_serverMaximumViewDistance = viewDistanceMaximum;
 				ClientRunner.this.millisPerTick = millisPerTick;
 				// Notify the listener that we were assigned an ID.
-				_clientListener.clientDidConnectAndLogin(assignedId);
+				_clientListener.clientDidConnectAndLogin(assignedId, currentViewDistance);
 			});
 		}
 		@Override
@@ -545,8 +545,9 @@ public class ClientRunner
 		 * The client has contacted the server and the handshake completed.
 		 * 
 		 * @param assignedLocalEntityId The ID assigned to this client by the server.
+		 * @param currentViewDistance The player's starting view distance (for populating UI, etc).
 		 */
-		void clientDidConnectAndLogin(int assignedLocalEntityId);
+		void clientDidConnectAndLogin(int assignedLocalEntityId, int currentViewDistance);
 		/**
 		 * The connection to the server has been closed by some external factor (NOT an explicit disconnect on the
 		 * client side).  This would mean a server-initiated disconnect or a more general connection timeout.

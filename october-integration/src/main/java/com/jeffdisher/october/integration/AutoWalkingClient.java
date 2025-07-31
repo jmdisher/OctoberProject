@@ -201,7 +201,7 @@ public class AutoWalkingClient
 		public String lastCommandFromServer;
 		
 		@Override
-		public void connectionEstablished(int assignedEntityId)
+		public void connectionEstablished(int assignedEntityId, int currentViewDistance)
 		{
 			System.out.println("Connected as " + assignedEntityId);
 			this.thisAssignedId = assignedEntityId;

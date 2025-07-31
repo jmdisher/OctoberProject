@@ -412,9 +412,9 @@ public class ClientProcess
 		private CuboidCodec.Deserializer _deserializer = null;
 		
 		@Override
-		public void handshakeCompleted(int assignedId, long millisPerTick, int viewDistanceMaximum)
+		public void handshakeCompleted(int assignedId, long millisPerTick, int currentViewDistance, int viewDistanceMaximum)
 		{
-			_messagesToClientRunner.adapterConnected(assignedId, millisPerTick, viewDistanceMaximum);
+			_messagesToClientRunner.adapterConnected(assignedId, millisPerTick, currentViewDistance, viewDistanceMaximum);
 			_background_setClientId(assignedId);
 		}
 		@Override
@@ -654,10 +654,10 @@ public class ClientProcess
 	private class _RunnerListener implements ClientRunner.IListener
 	{
 		@Override
-		public void clientDidConnectAndLogin(int assignedLocalEntityId)
+		public void clientDidConnectAndLogin(int assignedLocalEntityId, int currentViewDistance)
 		{
 			_pendingCallbacks.add(() -> {
-				_listener.connectionEstablished(assignedLocalEntityId);
+				_listener.connectionEstablished(assignedLocalEntityId, currentViewDistance);
 			});
 		}
 		@Override
@@ -724,8 +724,9 @@ public class ClientProcess
 		 * Only called once per instance.
 		 * 
 		 * @param assignedEntityId The ID of this client's entity (>0).
+		 * @param currentViewDistance The player's starting view distance (for populating UI, etc).
 		 */
-		void connectionEstablished(int assignedEntityId);
+		void connectionEstablished(int assignedEntityId, int currentViewDistance);
 		/**
 		 * Called when the server connection is closed.  The ClientProcess will have to be discarded and recreated to
 		 * re-establish the connection.

@@ -151,7 +151,9 @@ public class NetworkServer<L>
 						state.data = description.data;
 						
 						// Send out description and consider the handshake completed.
-						_network.sendMessage(token, new Packet_ServerSendClientId(description.clientId, serverMillisPerTick, viewDistanceMaximum));
+						// (we will assume the initial view distance will be the min of what they requested and the maximum.
+						int currentViewDistance = Math.min(safe.cuboidViewDistance, viewDistanceMaximum);
+						_network.sendMessage(token, new Packet_ServerSendClientId(description.clientId, serverMillisPerTick, currentViewDistance, viewDistanceMaximum));
 					}
 					else
 					{

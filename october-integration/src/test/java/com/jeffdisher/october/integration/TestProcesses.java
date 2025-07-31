@@ -420,6 +420,7 @@ public class TestProcesses
 		
 		// Verify that we did see a config update packet at some point here.
 		Assert.assertEquals(WorldConfig.DEFAULT_TICKS_PER_DAY, listener.ticksPerDay);
+		Assert.assertEquals(cuboidViewDistance, listener.currentViewDistance);
 	}
 
 	@Test
@@ -517,6 +518,7 @@ public class TestProcesses
 		private Entity _thisEntity = null;
 		public final Map<Integer, PartialEntity> otherEntities = new HashMap<>();
 		public int assignedEntityId;
+		public int currentViewDistance;
 		public long lastTickCompleted = 0L;
 		public int ticksPerDay;
 		public final Map<Integer, String> otherClients = new HashMap<>();
@@ -529,11 +531,15 @@ public class TestProcesses
 		}
 		
 		@Override
-		public void connectionEstablished(int assignedEntityId)
+		public void connectionEstablished(int assignedEntityId, int currentViewDistance)
 		{
 			Assert.assertEquals(0, this.assignedEntityId);
 			Assert.assertTrue(assignedEntityId > 0);
 			this.assignedEntityId = assignedEntityId;
+			
+			Assert.assertEquals(0, this.currentViewDistance);
+			Assert.assertTrue(currentViewDistance >= 0);
+			this.currentViewDistance = currentViewDistance;
 		}
 		@Override
 		public void connectionClosed()

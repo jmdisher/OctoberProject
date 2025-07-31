@@ -83,7 +83,7 @@ public class TestClientRunner
 		
 		// Connect them.
 		int clientId = 1;
-		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		int ticksPerDay = 1000;
 		network.client.receivedConfigUpdate(ticksPerDay, 0);
 		runner.runPendingCalls(currentTimeMillis);
@@ -120,7 +120,7 @@ public class TestClientRunner
 		// Connect them.
 		long currentTimeMillis = 100L;
 		int clientId = 1;
-		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
@@ -161,7 +161,7 @@ public class TestClientRunner
 		int clientId = 1;
 		long currentTimeMillis = 1000L;
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
-		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
@@ -252,7 +252,7 @@ public class TestClientRunner
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
 		long currentTimeMillis = 100L;
-		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
@@ -298,7 +298,7 @@ public class TestClientRunner
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
 		long currentTimeMillis = 100L;
-		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
@@ -340,7 +340,7 @@ public class TestClientRunner
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
 		long currentTimeMillis = 100L;
-		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
@@ -388,7 +388,7 @@ public class TestClientRunner
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
 		long currentTimeMillis = 100L;
-		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
@@ -438,7 +438,7 @@ public class TestClientRunner
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
 		long currentTimeMillis = 100L;
-		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
@@ -487,7 +487,7 @@ public class TestClientRunner
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
 		long currentTimeMillis = 100L;
-		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
@@ -545,7 +545,7 @@ public class TestClientRunner
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
 		long currentTimeMillis = 100L;
-		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
@@ -588,7 +588,7 @@ public class TestClientRunner
 		// Connect them.
 		int clientId = 1;
 		long currentTimeMillis = 1000L;
-		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
@@ -647,13 +647,15 @@ public class TestClientRunner
 		
 		// Connect them.
 		int clientId = 1;
+		int currentViewDistance = 1;
 		int viewDistanceLimit = 3;
-		network.client.adapterConnected(clientId, MILLIS_PER_TICK, viewDistanceLimit);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK, currentViewDistance, viewDistanceLimit);
 		int ticksPerDay = 1000;
 		network.client.receivedConfigUpdate(ticksPerDay, 0);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
+		Assert.assertEquals(currentViewDistance, clientListener.currentViewDistance);
 		Assert.assertEquals(ticksPerDay, clientListener.ticksPerDay);
 		
 		// Send the updated options a few different ways and verify we get the right responses.
@@ -694,7 +696,7 @@ public class TestClientRunner
 		long currentTimeMillis = 100L;
 		long tick = 1L;
 		long serverCommit = 0L;
-		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
@@ -872,13 +874,16 @@ public class TestClientRunner
 	private static class ClientListener implements ClientRunner.IListener
 	{
 		public int assignedLocalEntityId = 0;
+		public int currentViewDistance = 0;
 		public int ticksPerDay = 0;
 		public final Map<Integer, String> otherClients = new HashMap<>();
 		@Override
-		public void clientDidConnectAndLogin(int assignedLocalEntityId)
+		public void clientDidConnectAndLogin(int assignedLocalEntityId, int currentViewDistance)
 		{
 			Assert.assertEquals(0, this.assignedLocalEntityId);
+			Assert.assertEquals(0, this.currentViewDistance);
 			this.assignedLocalEntityId = assignedLocalEntityId;
+			this.currentViewDistance = currentViewDistance;
 		}
 		@Override
 		public void clientDisconnected()
