@@ -485,6 +485,7 @@ public class TickRunner
 					, materials.completedEntities
 					, context
 					, materials.changesToRun
+					, materials.operatorChanges
 			);
 			// There is always a returned group (even if it has no content).
 			Assert.assertTrue(null != group);
@@ -888,12 +889,17 @@ public class TickRunner
 				}
 				
 				// Add any operator mutations.
+				List<IEntityAction<IMutablePlayerEntity>> operatorChanges = new ArrayList<>();
 				if (null != operatorMutations)
 				{
 					for (_OperatorMutationWrapper wrapper : operatorMutations)
 					{
 						// The operator mutations must be run against a connected entity or OPERATOR_ENTITY_ID.
-						if ((CrowdProcessor.OPERATOR_ENTITY_ID == wrapper.entityId) || mutableCrowdState.containsKey(wrapper.entityId))
+						if (CrowdProcessor.OPERATOR_ENTITY_ID == wrapper.entityId)
+						{
+							operatorChanges.add(wrapper.mutation);
+						}
+						else if (mutableCrowdState.containsKey(wrapper.entityId))
 						{
 							List<ScheduledChange> mutableChanges = nextTickChanges.get(wrapper.entityId);
 							if (null == mutableChanges)
@@ -1065,6 +1071,7 @@ public class TickRunner
 						, pendingMutations
 						, periodicMutations
 						, nextTickChanges
+						, operatorChanges
 						// creatureChanges
 						, nextCreatureChanges
 						, updatedBlockLocationsByCuboid
@@ -1243,6 +1250,8 @@ public class TickRunner
 			, Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationMillis
 			// The entity mutations to run in this tick (by ID).
 			, Map<Integer, List<ScheduledChange>> changesToRun
+			// Never null but typically empty.
+			, List<IEntityAction<IMutablePlayerEntity>> operatorChanges
 			, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureChanges
 			// The blocks modified in the last tick, represented as a list per cuboid where they originate.
 			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress

@@ -84,6 +84,7 @@ public class TestCrowdProcessor
 			, Map.of(entityId, entity)
 			, context
 			, Map.of()
+			, List.of()
 		);
 		Assert.assertEquals(0, group.updatedEntities().size());
 		
@@ -102,6 +103,7 @@ public class TestCrowdProcessor
 			, Map.of(entityId, entity)
 			, context
 			, Map.of(entityId, List.of(singleChange))
+			, List.of()
 		);
 		entity = group.updatedEntities().get(entityId);
 		

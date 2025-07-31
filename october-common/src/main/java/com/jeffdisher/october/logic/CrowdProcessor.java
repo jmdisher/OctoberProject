@@ -45,13 +45,14 @@ public class CrowdProcessor
 	 * @param context The context used for running changes.
 	 * @param changesToRun The map of changes to run in this tick, keyed by the ID of the entity on which they are
 	 * scheduled.
-	 * design where this is done in EntityChangeTopLevelMovement).
+	 * @param operatorChanges The changes to run as the operator.
 	 * @return The subset of the changesToRun work which was completed by this thread.
 	 */
 	public static ProcessedGroup processCrowdGroupParallel(ProcessorElement processor
 			, Map<Integer, Entity> entitiesById
 			, TickProcessingContext context
 			, Map<Integer, List<ScheduledChange>> changesToRun
+			, List<IEntityAction<IMutablePlayerEntity>> operatorChanges
 	)
 	{
 		Map<Integer, Entity> updatedEntities = new HashMap<>();
@@ -61,15 +62,11 @@ public class CrowdProcessor
 		// We need to check the operator as a special-case since it isn't a real entity.
 		if (processor.handleNextWorkUnit())
 		{
-			List<ScheduledChange> operatorMessages = changesToRun.get(OPERATOR_ENTITY_ID);
-			if (null != operatorMessages)
+			// Verify that this isn't redundantly described.
+			Assert.assertTrue(!entitiesById.containsKey(OPERATOR_ENTITY_ID));
+			for (IEntityAction<IMutablePlayerEntity> change : operatorChanges)
 			{
-				for (ScheduledChange change : operatorMessages)
-				{
-					// These messages are expected to be run immediately.
-					Assert.assertTrue(0L == change.millisUntilReady());
-					change.change().applyChange(context, null);
-				}
+				change.applyChange(context, null);
 			}
 		}
 		for (Map.Entry<Integer, Entity> elt : entitiesById.entrySet())
@@ -133,23 +130,8 @@ public class CrowdProcessor
 				}
 			}
 		}
-		Map<Integer, List<ScheduledChange>> notYetReadyChanges = new HashMap<>();
-		for (Map.Entry<Integer, List<ScheduledChange>> elt : delayedChanges.entrySet())
-		{
-			Integer id = elt.getKey();
-			List<ScheduledChange> incoming = elt.getValue();
-			List<ScheduledChange> existing = notYetReadyChanges.get(id);
-			if (null == existing)
-			{
-				notYetReadyChanges.put(id, incoming);
-			}
-			else
-			{
-				existing.addAll(incoming);
-			}
-		}
 		return new ProcessedGroup(committedMutationCount
-				, notYetReadyChanges
+				, delayedChanges
 				, updatedEntities
 		);
 	}
