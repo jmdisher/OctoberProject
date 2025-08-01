@@ -475,6 +475,20 @@ public class TestServerRunner
 		// (remove this manually since we can't be there to see ourselves be removed).
 		network.resetClient(clientId1);
 		
+		// Reconnect immediately to verify that the creature still has the same ID (due to cuboid keep-alive).
+		network.prepareForClient(clientId1);
+		server.clientConnected(clientId1, null, "name", 1);
+		entity1 = network.waitForThisEntity(clientId1);
+		Assert.assertNotNull(entity1);
+		cow = network.waitForPeerEntity(clientId1, -1);
+		Assert.assertEquals(COW, cow.type());
+		
+		// Now, disconnect and wait for the keep-alive timer to expire to show that the same entity now has a new ID.
+		server.clientDisconnected(clientId1);
+		network.resetClient(clientId1);
+		// (wait for the keep-alive timeout to expire)
+		network.waitForServer(ServerStateManager.CUBOID_KEEP_ALIVE_TICKS);
+		
 		// Reconnect and verify that the creatures are the same but with different IDs.
 		network.prepareForClient(clientId1);
 		server.clientConnected(clientId1, null, "name", 1);

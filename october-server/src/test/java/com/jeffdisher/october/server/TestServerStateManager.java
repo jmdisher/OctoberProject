@@ -181,6 +181,16 @@ public class TestServerStateManager
 				, _convertToCuboidHeightMap(changes.newCuboids())
 		);
 		
+		// Stall until the keep-alive timeout.
+		for (int i = 0; i < (ServerStateManager.CUBOID_KEEP_ALIVE_TICKS - 1); ++i)
+		{
+			changes = manager.setupNextTickAfterCompletion(snapshot);
+			Assert.assertTrue(changes.newCuboids().isEmpty());
+			Assert.assertEquals(0, changes.cuboidsToUnload().size());
+			// (in this test, we aren't interested in periodic write-back).
+			callouts.cuboidsToTryWrite.clear();
+		}
+		
 		// In another call, it should appear as unloaded.
 		changes = manager.setupNextTickAfterCompletion(snapshot);
 		Assert.assertTrue(changes.newCuboids().isEmpty());
@@ -303,14 +313,39 @@ public class TestServerStateManager
 		);
 		
 		// Note that we will try to unload far and write-back everything else due to the tick number.
+		manager.test_setAlreadyAlive(snapshot.cuboids().keySet());
+		manager.setupNextTickAfterCompletion(snapshot);
+		
+		// Note that we will need to wait for the keep-alive timeout to drop this.
+		Assert.assertEquals(0, callouts.cuboidsToWrite.size());
+		Assert.assertTrue(callouts.entitiesToWrite.isEmpty());
+		Assert.assertEquals(2, callouts.cuboidsToTryWrite.size());
+		Assert.assertEquals(1, callouts.entitiesToTryWrite.size());
+		callouts.cuboidsToWrite.clear();
+		callouts.entitiesToWrite.clear();
+		callouts.cuboidsToTryWrite.clear();
+		callouts.entitiesToTryWrite.clear();
+		for (int i = 0; i < (ServerStateManager.CUBOID_KEEP_ALIVE_TICKS - 2); ++i)
+		{
+			manager.setupNextTickAfterCompletion(snapshot);
+			Assert.assertTrue(callouts.cuboidsToWrite.isEmpty());
+			Assert.assertTrue(callouts.entitiesToWrite.isEmpty());
+			callouts.cuboidsToWrite.clear();
+			callouts.entitiesToWrite.clear();
+			callouts.cuboidsToTryWrite.clear();
+			callouts.entitiesToTryWrite.clear();
+		}
 		manager.setupNextTickAfterCompletion(snapshot);
 		Assert.assertEquals(1, callouts.cuboidsToWrite.size());
 		Assert.assertTrue(callouts.entitiesToWrite.isEmpty());
 		Assert.assertEquals(1, callouts.cuboidsToTryWrite.size());
 		Assert.assertEquals(1, callouts.entitiesToTryWrite.size());
 		callouts.cuboidsToWrite.clear();
+		callouts.entitiesToWrite.clear();
 		callouts.cuboidsToTryWrite.clear();
 		callouts.entitiesToTryWrite.clear();
+		
+		// Now, proceed with the next updated snapshot.
 		snapshot = _modifySnapshot(snapshot
 				, Map.of(
 						near, new TickRunner.SnapshotCuboid(nearCuboid, null, List.of(), Map.of())
@@ -505,6 +540,7 @@ public class TestServerStateManager
 						twoCuboid.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(twoCuboid), twoCuboid.getCuboidAddress()).freeze()
 				)
 		);
+		manager.test_setAlreadyAlive(snapshot.cuboids().keySet());
 		manager.setupNextTickAfterCompletion(snapshot);
 		Assert.assertEquals(2, callouts.cuboidsSentToClient.get(clientId).size());
 		
@@ -586,6 +622,7 @@ public class TestServerStateManager
 		);
 		// Saturate the network to block the next cuboid.
 		callouts.isNetworkWriteReady = false;
+		manager.test_setAlreadyAlive(snapshot.cuboids().keySet());
 		manager.setupNextTickAfterCompletion(snapshot);
 		Assert.assertNull(callouts.cuboidsSentToClient.get(clientId));
 		Assert.assertEquals(27, callouts.requestedCuboidAddresses.size());

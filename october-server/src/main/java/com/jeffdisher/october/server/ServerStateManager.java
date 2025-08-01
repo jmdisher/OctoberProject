@@ -71,6 +71,10 @@ public class ServerStateManager
 	 * Cuboids within this distance of an entity will be considered "high priority" and aggressively sent.
 	 */
 	public static final int PRIORITY_CUBOID_VIEW_DISTANCE = 1;
+	/**
+	 * How many ticks an unreferenced cuboid should still remain actively loaded and processed before being unloaded.
+	 */
+	public static final int CUBOID_KEEP_ALIVE_TICKS = 20;
 
 	private final ICallouts _callouts;
 	private final Map<Integer, ClientState> _connectedClients;
@@ -82,6 +86,8 @@ public class ServerStateManager
 
 	// It could take several ticks for a cuboid to be loaded/generated and we don't want to redundantly load them so track what is pending.
 	private Set<CuboidAddress> _requestedCuboids;
+	// The keep-alive counters for loaded cuboids are decremented whenever a tick ends but reset to CUBOID_KEEP_ALIVE_TICKS when referenced in a tick.
+	private Map<CuboidAddress, Integer> _cuboidKeepAlive;
 	
 	// We store the elements we need from the most recent TickRunner.Snapshot locally.
 	private long _tickNumber;
@@ -107,6 +113,7 @@ public class ServerStateManager
 		
 		_tickNumber = 0L;
 		_requestedCuboids = new HashSet<>();
+		_cuboidKeepAlive = Collections.emptyMap();
 		_completedCuboids = Collections.emptyMap();
 		_scheduledBlockMutations = Collections.emptyMap();
 		_periodicBlockMutations = Collections.emptyMap();
@@ -220,12 +227,54 @@ public class ServerStateManager
 		
 		Set<CuboidAddress> completedCuboidAddresses = _completedCuboids.keySet();
 		
-		// Remove any of the cuboids in the snapshot from any that we had requested.
-		_requestedCuboids.removeAll(completedCuboidAddresses);
-		
 		// We want to create a set of all the cuboids which are actually required, based on the entities.
 		// (we will use this for load/unload decisions)
 		Set<CuboidAddress> referencedCuboids = _findReferencedCuboids(_connectedClients.values());
+		
+		// Update our keep-alive timers for cuboids.
+		// (we assume that we are always tracking the keep-alive for all completed cuboids)
+		Assert.assertTrue(_completedCuboids.size() == _cuboidKeepAlive.size());
+		Set<CuboidAddress> cuboidsToLoad = new HashSet<>();
+		Set<CuboidAddress> cuboidsToUnload = new HashSet<>();
+		Map<CuboidAddress, Integer> oldCounters = _cuboidKeepAlive;
+		_cuboidKeepAlive = new HashMap<>();
+		for (CuboidAddress address : referencedCuboids)
+		{
+			// We will set the keep-alive if loaded, or request that it be loaded.
+			if (completedCuboidAddresses.contains(address))
+			{
+				_cuboidKeepAlive.put(address, CUBOID_KEEP_ALIVE_TICKS);
+			}
+			else
+			{
+				// Not yet loaded.
+				if (!_requestedCuboids.contains(address))
+				{
+					cuboidsToLoad.add(address);
+				}
+			}
+		}
+		for (Map.Entry<CuboidAddress, Integer> elt : oldCounters.entrySet())
+		{
+			CuboidAddress address = elt.getKey();
+			
+			// These shouldn't have been unloaded yet.
+			Assert.assertTrue(completedCuboidAddresses.contains(address));
+			
+			if (!_cuboidKeepAlive.containsKey(address))
+			{
+				// Decrement count and keep-alive or schedule for unload.
+				int count = elt.getValue();
+				if (count > 1)
+				{
+					_cuboidKeepAlive.put(address, count - 1);
+				}
+				else
+				{
+					cuboidsToUnload.add(address);
+				}
+			}
+		}
 		
 		for (Map.Entry<Integer, ClientState> elt : _connectedClients.entrySet())
 		{
@@ -256,28 +305,25 @@ public class ServerStateManager
 		Collection<Integer> removedClients = new ArrayList<>(_removedClients);
 		_removedClients.clear();
 		
-		// Determine what we should unload.
-		// -start with the currently loaded cuboids
-		Set<CuboidAddress> orphanedCuboids = new HashSet<>(completedCuboidAddresses);
-		// -remove any which we referenced via entities
-		orphanedCuboids.removeAll(referencedCuboids);
-		// -remove any which we already know are pending loads
-		orphanedCuboids.removeAll(_requestedCuboids);
-		
-		// Determine what cuboids were referenced which are not yet loaded.
-		Set<CuboidAddress> cuboidsToLoad = new HashSet<>(referencedCuboids);
-		// -remove those we already requested
-		cuboidsToLoad.removeAll(_requestedCuboids);
-		// -remove those which are already loaded.
-		cuboidsToLoad.removeAll(completedCuboidAddresses);
-		
 		// Request that we save back anything we are unloading before we request that anything new be loaded.
-		_handleEndOfTickWriteBack(removedClients, orphanedCuboids);
+		_handleEndOfTickWriteBack(removedClients, cuboidsToUnload);
 		
 		// Request any missing cuboids or new entities and see what we got back from last time.
 		Collection<SuspendedCuboid<CuboidData>> newlyLoadedCuboids = new ArrayList<>();
 		Collection<SuspendedEntity> newlyLoadedEntities = new ArrayList<>();
 		_handleResourceLoading(newlyLoadedCuboids, newlyLoadedEntities, cuboidsToLoad);
+		_requestedCuboids.addAll(cuboidsToLoad);
+		
+		// Any cuboids we just loaded, we want to set their keep-alive.
+		for (SuspendedCuboid<CuboidData> loaded : newlyLoadedCuboids)
+		{
+			CuboidAddress address = loaded.cuboid().getCuboidAddress();
+			Object old = _cuboidKeepAlive.put(address, CUBOID_KEEP_ALIVE_TICKS);
+			// This shouldn't already be here since we just loaded it.
+			Assert.assertTrue(null == old);
+			boolean didRemove = _requestedCuboids.remove(address);
+			Assert.assertTrue(didRemove);
+		}
 		
 		// Walk through any new clients, adding them to the world.
 		_handleConnectingClientsForNewEntities(newlyLoadedEntities);
@@ -291,7 +337,7 @@ public class ServerStateManager
 		// Feed in any new data from the network.
 		_drainAllClientPacketsAndUpdateClients();
 		
-		return new TickChanges(readOnlyCuboids, orphanedCuboids, newlyLoadedEntities, removedClients);
+		return new TickChanges(readOnlyCuboids, cuboidsToUnload, newlyLoadedEntities, removedClients);
 	}
 
 	public void broadcastConfig(WorldConfig config)
@@ -323,6 +369,22 @@ public class ServerStateManager
 			// Set the distance and clear the latest address so we rebuild it.
 			state.cuboidViewDistance = distance;
 			state.lastComputedAddress = null;
+		}
+	}
+
+	/**
+	 * Provided only for tests so that they can directly set up a testing state without waiting for the back-and-forth
+	 * of cuboid loading using the normal path.
+	 * 
+	 * @param preLiving The set of cuboids which should be set alive.
+	 */
+	public void test_setAlreadyAlive(Set<CuboidAddress> preLiving)
+	{
+		Assert.assertTrue(_cuboidKeepAlive.isEmpty());
+		
+		for (CuboidAddress address : preLiving)
+		{
+			_cuboidKeepAlive.put(address, CUBOID_KEEP_ALIVE_TICKS);
 		}
 	}
 
