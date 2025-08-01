@@ -19,6 +19,7 @@ import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
@@ -123,6 +124,7 @@ public class TestServerStateManager
 				, _convertToEntityMap(changes.newEntities())
 				, snapshot.creatures()
 				, _convertToCuboidHeightMap(changes.newCuboids())
+				, Set.of()
 		);
 		
 		// Verify that we see the surrounding cuboid load requests on the next tick.
@@ -155,6 +157,7 @@ public class TestServerStateManager
 				, Collections.emptyMap()
 				, snapshot.creatures()
 				, snapshot.completedHeightMaps()
+				, Set.of()
 		);
 		
 		// Load one of the requested cuboids and verify it appears as loaded.
@@ -179,6 +182,7 @@ public class TestServerStateManager
 				, snapshot.entities()
 				, snapshot.creatures()
 				, _convertToCuboidHeightMap(changes.newCuboids())
+				, Set.of()
 		);
 		
 		// Stall until the keep-alive timeout.
@@ -310,6 +314,7 @@ public class TestServerStateManager
 						near.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(nearCuboid), near).freeze(),
 						far.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(farCuboid), far).freeze()
 				)
+				, Set.of()
 		);
 		
 		// Note that we will try to unload far and write-back everything else due to the tick number.
@@ -355,6 +360,7 @@ public class TestServerStateManager
 				, Map.of(
 						near.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(nearCuboid), near).freeze()
 				)
+				, Set.of()
 		);
 		
 		// The next tick shouldn't do anything.
@@ -438,6 +444,7 @@ public class TestServerStateManager
 				, snapshot.creatures()
 				, Map.of(
 				)
+				, Set.of()
 		);
 		changes = manager.setupNextTickAfterCompletion(snapshot);
 		Assert.assertEquals(2, changes.newCuboids().size());
@@ -459,6 +466,7 @@ public class TestServerStateManager
 						nearCuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(nearCuboid),
 						farCuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(farCuboid)
 				))
+				, Set.of()
 		);
 		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
 		Assert.assertEquals(0, changes.newCuboids().size());
@@ -477,6 +485,7 @@ public class TestServerStateManager
 						farCreature.id(), new TickRunner.SnapshotCreature(farCreature, null)
 				)
 				, snapshot.completedHeightMaps()
+				, Set.of()
 		);
 		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
 		Assert.assertEquals(0, changes.newCuboids().size());
@@ -539,6 +548,7 @@ public class TestServerStateManager
 						oneCuboid.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(oneCuboid), oneCuboid.getCuboidAddress()).freeze(),
 						twoCuboid.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(twoCuboid), twoCuboid.getCuboidAddress()).freeze()
 				)
+				, Set.of()
 		);
 		manager.test_setAlreadyAlive(snapshot.cuboids().keySet());
 		manager.setupNextTickAfterCompletion(snapshot);
@@ -552,6 +562,7 @@ public class TestServerStateManager
 				, Map.of(clientId, new TickRunner.SnapshotEntity(entity, 1L, null, List.of()))
 				, snapshot.creatures()
 				, snapshot.completedHeightMaps()
+				, Set.of()
 		), 1L);
 		manager.setupNextTickAfterCompletion(snapshot);
 		Assert.assertEquals(1, callouts.cuboidsSentToClient.get(clientId).size());
@@ -619,6 +630,7 @@ public class TestServerStateManager
 						cuboid2.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(cuboid2), cuboid2.getCuboidAddress()).freeze(),
 						cuboid3.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(cuboid3), cuboid3.getCuboidAddress()).freeze()
 				)
+				, Set.of()
 		);
 		// Saturate the network to block the next cuboid.
 		callouts.isNetworkWriteReady = false;
@@ -688,6 +700,91 @@ public class TestServerStateManager
 		manager.shutdown();
 	}
 
+	@Test
+	public void cuboidInternalKeepAlive()
+	{
+		// Show that an internal keep-alive in the snapshot causes a load request.
+		_Callouts callouts = new _Callouts();
+		ServerStateManager manager = new ServerStateManager(callouts);
+		manager.setOwningThread();
+		CuboidAddress internalAddress = CuboidAddress.fromInt(-5, 7, 0);
+		TickRunner.Snapshot snapshot = _modifySnapshot(_createEmptySnapshot()
+			, Map.of()
+			, Map.of()
+			, Map.of()
+			, Map.of()
+			, Set.of(internalAddress)
+		);
+		
+		// Show that the cuboid is requested.
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(1, callouts.requestedCuboidAddresses.size());
+		Assert.assertEquals(internalAddress, callouts.requestedCuboidAddresses.iterator().next());
+		callouts.requestedCuboidAddresses.clear();
+		
+		// Load this cuboid and wait for it to timeout and be unloaded.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(internalAddress, ENV.special.AIR);
+		CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
+		callouts.loadedCuboids.add(new SuspendedCuboid<CuboidData>(cuboid
+			, heightMap
+			, List.of()
+			, List.of()
+			, Map.of()
+		));
+		snapshot = _modifySnapshot(_advanceSnapshot(snapshot, 1)
+			, Map.of()
+			, Map.of()
+			, Map.of()
+			, Map.of()
+			, Set.of()
+		);
+		manager.setupNextTickAfterCompletion(snapshot);
+		
+		// Now, just show them loaded.
+		snapshot = _modifySnapshot(snapshot
+			, Map.of(
+				internalAddress, new TickRunner.SnapshotCuboid(cuboid, null, List.of(), Map.of())
+			)
+			, Map.of()
+			, snapshot.creatures()
+			, Map.of(
+				internalAddress.getColumn(), ColumnHeightMap.build().consume(heightMap, internalAddress).freeze()
+			)
+			, Set.of()
+		);
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(0, callouts.requestedCuboidAddresses.size());
+		Assert.assertEquals(0, callouts.cuboidsToWrite.size());
+		Assert.assertEquals(0, callouts.cuboidsToTryWrite.size());
+		
+		// Nothing should happen while waiting for timeout.
+		for (int i = 0; i < (ServerStateManager.CUBOID_KEEP_ALIVE_TICKS - 2); ++i)
+		{
+			manager.setupNextTickAfterCompletion(snapshot);
+			Assert.assertEquals(0, callouts.cuboidsToWrite.size());
+			Assert.assertEquals(0, callouts.cuboidsToTryWrite.size());
+		}
+		
+		// Now, we should see the unload since it has timed out.
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(1, callouts.cuboidsToWrite.size());
+		Assert.assertEquals(0, callouts.cuboidsToTryWrite.size());
+		callouts.cuboidsToWrite.clear();
+		
+		snapshot = _modifySnapshot(_advanceSnapshot(snapshot, 1)
+			, Map.of()
+			, Map.of()
+			, Map.of()
+			, Map.of()
+			, Set.of()
+		);
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(0, callouts.cuboidsToWrite.size());
+		Assert.assertEquals(0, callouts.cuboidsToTryWrite.size());
+		
+		manager.shutdown();
+	}
+
 
 	private TickRunner.Snapshot _createEmptySnapshot()
 	{
@@ -699,6 +796,8 @@ public class TestServerStateManager
 				, Collections.emptyMap()
 				
 				, List.of()
+				// internallyMarkedAlive
+				, Set.of()
 				
 				// Information related to tick behaviour and performance statistics.
 				, new TickRunner.TickStats(0L
@@ -717,6 +816,7 @@ public class TestServerStateManager
 			, Map<Integer, TickRunner.SnapshotEntity> entities
 			, Map<Integer, TickRunner.SnapshotCreature> completedCreatures
 			, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
+			, Set<CuboidAddress> internallyMarkedAlive
 	)
 	{
 		TickRunner.TickStats stats = snapshot.stats();
@@ -727,6 +827,7 @@ public class TestServerStateManager
 				, completedHeightMaps
 				
 				, snapshot.postedEvents()
+				, internallyMarkedAlive
 				
 				// Information related to tick behaviour and performance statistics.
 				, stats
@@ -743,6 +844,7 @@ public class TestServerStateManager
 				, snapshot.completedHeightMaps()
 				
 				, snapshot.postedEvents()
+				, snapshot.internallyMarkedAlive()
 				
 				// Information related to tick behaviour and performance statistics.
 				, stats

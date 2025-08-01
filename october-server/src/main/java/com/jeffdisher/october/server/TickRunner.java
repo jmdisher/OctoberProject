@@ -171,6 +171,8 @@ public class TickRunner
 				
 				// postedEvents
 				, List.of()
+				// internallyMarkedAlive
+				, Set.of()
 				
 				// Information related to tick behaviour and performance statistics.
 				, new TickStats(0L
@@ -758,6 +760,8 @@ public class TickRunner
 					
 					// postedEvents
 					, postedEvents
+					// internallyMarkedAlive
+					, Set.of()
 					
 					// Stats.
 					, new TickStats(_nextTick
@@ -1200,6 +1204,7 @@ public class TickRunner
 			, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
 			
 			, List<EventRecord> postedEvents
+			, Set<CuboidAddress> internallyMarkedAlive
 			
 			, TickStats stats
 	)

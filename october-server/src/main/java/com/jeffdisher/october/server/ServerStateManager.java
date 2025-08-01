@@ -230,6 +230,7 @@ public class ServerStateManager
 		// We want to create a set of all the cuboids which are actually required, based on the entities.
 		// (we will use this for load/unload decisions)
 		Set<CuboidAddress> referencedCuboids = _findReferencedCuboids(_connectedClients.values());
+		referencedCuboids.addAll(snapshot.internallyMarkedAlive());
 		
 		// Update our keep-alive timers for cuboids.
 		// (we assume that we are always tracking the keep-alive for all completed cuboids)
