@@ -68,7 +68,7 @@ public class TestServerStateManager
 	public void shutdown()
 	{
 		_Callouts callouts = new _Callouts();
-		ServerStateManager manager = new ServerStateManager(callouts);
+		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
 		manager.setOwningThread();
 		manager.shutdown();
 	}
@@ -77,7 +77,7 @@ public class TestServerStateManager
 	public void runEmptyTick()
 	{
 		_Callouts callouts = new _Callouts();
-		ServerStateManager manager = new ServerStateManager(callouts);
+		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
 		manager.setOwningThread();
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
 		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot);
@@ -94,7 +94,7 @@ public class TestServerStateManager
 	public void connectClient()
 	{
 		_Callouts callouts = new _Callouts();
-		ServerStateManager manager = new ServerStateManager(callouts);
+		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
 		manager.setOwningThread();
 		int clientId = 1;
 		String clientName = "client";
@@ -186,7 +186,7 @@ public class TestServerStateManager
 		);
 		
 		// Stall until the keep-alive timeout.
-		for (int i = 0; i < (ServerStateManager.CUBOID_KEEP_ALIVE_TICKS - 1); ++i)
+		for (int i = 0; i < (manager.test_getCuboidKeepAliveTicks() - 1); ++i)
 		{
 			changes = manager.setupNextTickAfterCompletion(snapshot);
 			Assert.assertTrue(changes.newCuboids().isEmpty());
@@ -215,7 +215,7 @@ public class TestServerStateManager
 	{
 		// Connect a client, mark them as readable, then disconnect them, finally end a tick.
 		_Callouts callouts = new _Callouts();
-		ServerStateManager manager = new ServerStateManager(callouts);
+		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
 		manager.setOwningThread();
 		int clientId = 1;
 		String clientName = "client";
@@ -251,7 +251,7 @@ public class TestServerStateManager
 	{
 		// We just want to connect 2 clients and verify that they see each other join and the first one to disconnect is seen.
 		_Callouts callouts = new _Callouts();
-		ServerStateManager manager = new ServerStateManager(callouts);
+		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
 		manager.setOwningThread();
 		int clientId1 = 1;
 		String clientName1 = "client1";
@@ -284,7 +284,7 @@ public class TestServerStateManager
 	{
 		// Create a snapshot with an entity and some cuboids, showing what write-backs are requested based on different situations and tick numbers.
 		_Callouts callouts = new _Callouts();
-		ServerStateManager manager = new ServerStateManager(callouts);
+		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
 		manager.setOwningThread();
 		int clientId = 1;
 		manager.clientConnected(clientId, "client", 1);
@@ -330,7 +330,7 @@ public class TestServerStateManager
 		callouts.entitiesToWrite.clear();
 		callouts.cuboidsToTryWrite.clear();
 		callouts.entitiesToTryWrite.clear();
-		for (int i = 0; i < (ServerStateManager.CUBOID_KEEP_ALIVE_TICKS - 2); ++i)
+		for (int i = 0; i < (manager.test_getCuboidKeepAliveTicks() - 2); ++i)
 		{
 			manager.setupNextTickAfterCompletion(snapshot);
 			Assert.assertTrue(callouts.cuboidsToWrite.isEmpty());
@@ -387,7 +387,7 @@ public class TestServerStateManager
 	{
 		// Connect 2 clients, each near a creature, verify that each only sees the closer one, then show that one of them dying is only observed by the nearer.
 		_Callouts callouts = new _Callouts();
-		ServerStateManager manager = new ServerStateManager(callouts);
+		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
 		manager.setOwningThread();
 		int clientId1 = 1;
 		String clientName1 = "client1";
@@ -505,7 +505,7 @@ public class TestServerStateManager
 	{
 		// This test demonstrates how cuboid loading is done around a player.
 		_Callouts callouts = new _Callouts();
-		ServerStateManager manager = new ServerStateManager(callouts);
+		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
 		manager.setOwningThread();
 		int clientId = 1;
 		manager.clientConnected(clientId, "client", 1);
@@ -575,7 +575,7 @@ public class TestServerStateManager
 	{
 		// This shows how changing the view distance around a player will cause its known cuboids to be reconsidered.
 		_Callouts callouts = new _Callouts();
-		ServerStateManager manager = new ServerStateManager(callouts);
+		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
 		manager.setOwningThread();
 		int clientId = 1;
 		manager.clientConnected(clientId, "client", 1);
@@ -673,7 +673,7 @@ public class TestServerStateManager
 	{
 		// Show that we can connect with a higher than default view distance.
 		_Callouts callouts = new _Callouts();
-		ServerStateManager manager = new ServerStateManager(callouts);
+		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
 		manager.setOwningThread();
 		int clientId = 1;
 		int requestedRaduis = 2;
@@ -705,7 +705,7 @@ public class TestServerStateManager
 	{
 		// Show that an internal keep-alive in the snapshot causes a load request.
 		_Callouts callouts = new _Callouts();
-		ServerStateManager manager = new ServerStateManager(callouts);
+		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
 		manager.setOwningThread();
 		CuboidAddress internalAddress = CuboidAddress.fromInt(-5, 7, 0);
 		TickRunner.Snapshot snapshot = _modifySnapshot(_createEmptySnapshot()
@@ -758,7 +758,7 @@ public class TestServerStateManager
 		Assert.assertEquals(0, callouts.cuboidsToTryWrite.size());
 		
 		// Nothing should happen while waiting for timeout.
-		for (int i = 0; i < (ServerStateManager.CUBOID_KEEP_ALIVE_TICKS - 2); ++i)
+		for (int i = 0; i < (manager.test_getCuboidKeepAliveTicks() - 2); ++i)
 		{
 			manager.setupNextTickAfterCompletion(snapshot);
 			Assert.assertEquals(0, callouts.cuboidsToWrite.size());

@@ -118,7 +118,7 @@ public class ServerRunner
 		
 		_tickAdvancer = new _TickAdvancer(config);
 		// Note:  We don't allow the view distance to change after start-up so capture it here to make that clear.
-		_stateManager = new ServerStateManager(new _Callouts());
+		_stateManager = new ServerStateManager(new _Callouts(), _millisPerTick);
 		
 		// We want to prime the state manager's thread check.
 		_messages.enqueue(() -> {

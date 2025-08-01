@@ -59,4 +59,8 @@ public class MiscConstants
 	 * initial value assumed by clients and servers when they first connect.
 	 */
 	public static final int DEFAULT_CUBOID_VIEW_DISTANCE = 1;
+	/**
+	 * How many milliseconds an unreferenced cuboid should still remain actively loaded and processed before being unloaded.
+	 */
+	public static final int CUBOID_KEEP_ALIVE_MILLIS = 1000;
 }

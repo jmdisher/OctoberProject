@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.ScheduledChange;
@@ -71,12 +72,9 @@ public class ServerStateManager
 	 * Cuboids within this distance of an entity will be considered "high priority" and aggressively sent.
 	 */
 	public static final int PRIORITY_CUBOID_VIEW_DISTANCE = 1;
-	/**
-	 * How many ticks an unreferenced cuboid should still remain actively loaded and processed before being unloaded.
-	 */
-	public static final int CUBOID_KEEP_ALIVE_TICKS = 20;
 
 	private final ICallouts _callouts;
+	private final int _cuboidKeepAliveTicks;
 	private final Map<Integer, ClientState> _connectedClients;
 	private final Map<Integer, _ConnectingClient> _newClients;
 	private final Queue<Integer> _removedClients;
@@ -102,9 +100,10 @@ public class ServerStateManager
 	private Map<Integer, CreatureEntity> _visiblyChangedCreatures;
 	private Map<CuboidAddress, List<MutationBlockSetBlock>> _blockChanges;
 
-	public ServerStateManager(ICallouts callouts)
+	public ServerStateManager(ICallouts callouts, long millisPerTick)
 	{
 		_callouts = callouts;
+		_cuboidKeepAliveTicks = (int)((MiscConstants.CUBOID_KEEP_ALIVE_MILLIS + millisPerTick - 1L) / millisPerTick);
 		_connectedClients = new HashMap<>();
 		_newClients = new HashMap<>();
 		_removedClients = new LinkedList<>();
@@ -244,7 +243,7 @@ public class ServerStateManager
 			// We will set the keep-alive if loaded, or request that it be loaded.
 			if (completedCuboidAddresses.contains(address))
 			{
-				_cuboidKeepAlive.put(address, CUBOID_KEEP_ALIVE_TICKS);
+				_cuboidKeepAlive.put(address, _cuboidKeepAliveTicks);
 			}
 			else
 			{
@@ -319,7 +318,7 @@ public class ServerStateManager
 		for (SuspendedCuboid<CuboidData> loaded : newlyLoadedCuboids)
 		{
 			CuboidAddress address = loaded.cuboid().getCuboidAddress();
-			Object old = _cuboidKeepAlive.put(address, CUBOID_KEEP_ALIVE_TICKS);
+			Object old = _cuboidKeepAlive.put(address, _cuboidKeepAliveTicks);
 			// This shouldn't already be here since we just loaded it.
 			Assert.assertTrue(null == old);
 			boolean didRemove = _requestedCuboids.remove(address);
@@ -385,8 +384,18 @@ public class ServerStateManager
 		
 		for (CuboidAddress address : preLiving)
 		{
-			_cuboidKeepAlive.put(address, CUBOID_KEEP_ALIVE_TICKS);
+			_cuboidKeepAlive.put(address, _cuboidKeepAliveTicks);
 		}
+	}
+
+	/**
+	 * Provided only for tests so that they use the same cuboid keep-alive logic as the internal implementation.
+	 * 
+	 * @return The number of ticks a cuboid will stay loaded an active, since that seen, until being unloaded.
+	 */
+	public int test_getCuboidKeepAliveTicks()
+	{
+		return _cuboidKeepAliveTicks;
 	}
 
 	public void shutdown()

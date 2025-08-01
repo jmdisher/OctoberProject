@@ -19,6 +19,7 @@ import com.jeffdisher.october.actions.EntityChangeOperatorSetLocation;
 import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -487,7 +488,8 @@ public class TestServerRunner
 		server.clientDisconnected(clientId1);
 		network.resetClient(clientId1);
 		// (wait for the keep-alive timeout to expire)
-		network.waitForServer(ServerStateManager.CUBOID_KEEP_ALIVE_TICKS);
+		int cuboidKeepAliveTicks = (int)(MiscConstants.CUBOID_KEEP_ALIVE_MILLIS / ServerRunner.DEFAULT_MILLIS_PER_TICK);
+		network.waitForServer(cuboidKeepAliveTicks);
 		
 		// Reconnect and verify that the creatures are the same but with different IDs.
 		network.prepareForClient(clientId1);
