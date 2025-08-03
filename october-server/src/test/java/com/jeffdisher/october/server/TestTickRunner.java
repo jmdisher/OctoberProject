@@ -100,6 +100,7 @@ public class TestTickRunner
 	private static Item WATER_STRONG;
 	private static Block STONE;
 	private static Block WATER_SOURCE;
+	private static Block CUBOID_LOADER;
 	private static EntityType COW;
 	@BeforeClass
 	public static void setup()
@@ -123,6 +124,7 @@ public class TestTickRunner
 		WATER_STRONG = ENV.items.getItemById("op.water_strong");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		CUBOID_LOADER = ENV.blocks.fromItem(ENV.items.getItemById("op.cuboid_loader"));
 		COW = ENV.creatures.getTypeById("op.cow");
 	}
 	@AfterClass
@@ -3219,6 +3221,47 @@ public class TestTickRunner
 		Assert.assertEquals(newLocation, newEntity.location());
 		Assert.assertEquals(newVelocity, newEntity.velocity());
 		Assert.assertEquals(EntityChangePeriodic.ENERGY_COST_PER_TICK_WALKING, newEntity.energyDeficit());
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void activateCuboidLoader()
+	{
+		// We just want to show that a cuboid loader can be activated without issue.
+		CuboidData cuboid = _zeroAirCuboidWithBase();
+		AbsoluteLocation target = cuboid.getCuboidAddress().getBase().getRelative(5, 6, 7);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), CUBOID_LOADER.item().number());
+		int entityId = 1;
+		MutableEntity entity1 = MutableEntity.createForTest(entityId);
+		entity1.newLocation = target.getRelative(0, 0, 1).toEntityLocation();
+		
+		// Create the runner and load all test data.
+		TickRunner runner = _createTestRunner();
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
+				, null
+				, List.of(new SuspendedEntity(entity1.freeze(), List.of())
+				)
+				, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		
+		// Submit the action to activate the cuboid loader.
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(entity1.newLocation
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, EntityChangeTopLevelMovement.Intensity.STANDING
+			, (byte)5
+			, (byte)6
+			, new EntityChangeSetBlockLogicState(target, true)
+		);
+		runner.enqueueEntityChange(1, action, 1L);
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		
+		Assert.assertEquals(1, snapshot.internallyMarkedAlive().size());
 		
 		runner.shutdown();
 	}

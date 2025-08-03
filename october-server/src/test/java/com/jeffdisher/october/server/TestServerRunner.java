@@ -37,6 +37,7 @@ import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.subactions.EntityChangeChangeHotbarSlot;
 import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;
+import com.jeffdisher.october.subactions.EntityChangeSetBlockLogicState;
 import com.jeffdisher.october.subactions.EntityChangeSetDayAndSpawn;
 import com.jeffdisher.october.subactions.MutationEntityRequestItemPickUp;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -69,6 +70,7 @@ public class TestServerRunner
 	private static Environment ENV;
 	private static Item STONE_ITEM;
 	private static Block STONE;
+	private static Block CUBOID_LOADER;
 	private static EntityType COW;
 	@BeforeClass
 	public static void setup()
@@ -76,6 +78,7 @@ public class TestServerRunner
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
+		CUBOID_LOADER = ENV.blocks.fromItem(ENV.items.getItemById("op.cuboid_loader"));
 		COW = ENV.creatures.getTypeById("op.cow");
 	}
 	@AfterClass
@@ -805,6 +808,104 @@ public class TestServerRunner
 		// Just verify that another few ticks are produced.
 		network.waitForServer(2L);
 		
+		runner.shutdown();
+	}
+
+	@Test
+	public void clientRejoinCuboidLoader() throws Throwable
+	{
+		// Connect a client, turn on a cucoib loader and observe the creatures, then reconnect after a while to see that their IDs have not changed (not unloaded).
+		TestAdapter network = new TestAdapter();
+		// We will use a special cuboid generator which only generates the one cuboid with a well-defined population of creatures.
+		IWorldGenerator cuboidGenerator = new IWorldGenerator() {
+			@Override
+			public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
+			{
+				SuspendedCuboid<CuboidData> data;
+				CuboidData raw = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+				if (address.equals(CuboidAddress.fromInt(0, 0, 0)))
+				{
+					for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
+					{
+						for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
+						{
+							raw.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, 0), STONE.item().number());
+						}
+					}
+					raw.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 1, 1), CUBOID_LOADER.item().number());
+					CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(raw);
+					EntityLocation base = address.getBase().toEntityLocation();
+					CreatureEntity cow = CreatureEntity.create(creatureIdAssigner.next()
+							, COW
+							, new EntityLocation(base.x() + 30.0f, base.y() + 0.0f, base.z() + 1.0f)
+							, (byte)100
+					);
+					data = new SuspendedCuboid<>(raw, heightMap, List.of(cow), List.of(), Map.of());
+				}
+				else
+				{
+					CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(raw);
+					data = new SuspendedCuboid<>(raw, heightMap, List.of(), List.of(), Map.of());
+				}
+				return data;
+			}
+			@Override
+			public EntityLocation getDefaultSpawnLocation()
+			{
+				// Only called by main.
+				throw new AssertionError();
+			}};
+		WorldConfig config = new WorldConfig();
+		config.worldSpawn = new AbsoluteLocation(1, 1, 1);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), cuboidGenerator, config);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		// We use peaceful here so that the behaviour is deterministic (no dynamic spawning).
+		config.difficulty = Difficulty.PEACEFUL;
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, network
+				, cuboidLoader
+				, () -> System.currentTimeMillis()
+				, monitoringAgent
+				, config
+		);
+		IServerAdapter.IListener server = network.waitForServer(1);
+		int clientId1 = 1;
+		
+		// Connect.
+		network.prepareForClient(clientId1);
+		server.clientConnected(clientId1, null, "name", 1);
+		Entity entity1 = network.waitForThisEntity(clientId1);
+		Assert.assertNotNull(entity1);
+		
+		// We expect to see a cow.
+		PartialEntity cow = network.waitForPeerEntity(clientId1, -1);
+		Assert.assertEquals(COW, cow.type());
+		
+		// Activate the loader.
+		EntityChangeSetBlockLogicState setLogic = new EntityChangeSetBlockLogicState(new AbsoluteLocation(0, 1, 1), true);
+		network.receiveFromClient(clientId1, _wrapSubAction(entity1, setLogic), 1L);
+		Object mutation = network.waitForUpdate(clientId1, 0);
+		Assert.assertTrue(mutation instanceof MutationBlockSetBlock);
+		
+		// Disconnect.
+		server.clientDisconnected(clientId1);
+		// (remove this manually since we can't be there to see ourselves be removed).
+		network.resetClient(clientId1);
+		
+		// Wait until this should have unloaded.
+		int cuboidKeepAliveTicks = (int)(MiscConstants.CUBOID_KEEP_ALIVE_MILLIS / ServerRunner.DEFAULT_MILLIS_PER_TICK);
+		network.waitForServer(cuboidKeepAliveTicks + 1);
+		
+		// Reconnect to verify that the creature still has the same ID (due to cuboid keep-alive).
+		network.prepareForClient(clientId1);
+		server.clientConnected(clientId1, null, "name", 1);
+		entity1 = network.waitForThisEntity(clientId1);
+		Assert.assertNotNull(entity1);
+		cow = network.waitForPeerEntity(clientId1, -1);
+		Assert.assertEquals(COW, cow.type());
+		
+		server.clientDisconnected(clientId1);
+		network.resetClient(clientId1);
 		runner.shutdown();
 	}
 

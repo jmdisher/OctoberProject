@@ -584,6 +584,7 @@ public class TickRunner
 			Map<CuboidAddress, CuboidHeightMap> mergedChangedHeightMaps = new HashMap<>();
 			Map<Integer, Entity> mutableCrowdState = new HashMap<>(completedCrowdState);
 			Map<Integer, CreatureEntity> mutableCreatureState = new HashMap<>(completedCreatureState);
+			Set<CuboidAddress> internallyMarkedAlive = new HashSet<>();
 			
 			for (int i = 0; i < _partial.length; ++i)
 			{
@@ -630,8 +631,7 @@ public class TickRunner
 					_scheduleChangesForEntity(nextCreatureChanges, container.getKey(), container.getValue());
 				}
 				postedEvents.addAll(fragment.postedEvents);
-				// TODO:  Collect these once they are used.
-				Assert.assertTrue(fragment.internallyMarkedAlive.isEmpty());
+				internallyMarkedAlive.addAll(fragment.internallyMarkedAlive);
 				
 				// World data.
 				for (ScheduledMutation scheduledMutation : fragment.world.notYetReadyMutations())
@@ -767,7 +767,7 @@ public class TickRunner
 					// postedEvents
 					, postedEvents
 					// internallyMarkedAlive
-					, Set.of()
+					, internallyMarkedAlive
 					
 					// Stats.
 					, new TickStats(_nextTick

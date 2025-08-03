@@ -6,6 +6,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IMutableBlockProxy;
+import com.jeffdisher.october.logic.SpecialLogicChangeHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -58,11 +59,19 @@ public class MutationBlockSetLogicState implements IMutationBlock
 			boolean isActive = FlagsAspect.isSet(flags, FlagsAspect.FLAG_ACTIVE);
 			if (_setHigh != isActive)
 			{
-				flags = _setHigh
+				if (env.logic.hasSpecialChangeLogic(previousBlock))
+				{
+					// We need special-cases here for various blocks (these probably can't be generalized but might be extracted elsewhere to be formalized).
+					SpecialLogicChangeHelpers.handleSpecialLogicChange(context, newBlock, _location, previousBlock, flags, _setHigh);
+				}
+				else
+				{
+					flags = _setHigh
 						? FlagsAspect.set(flags, FlagsAspect.FLAG_ACTIVE)
 						: FlagsAspect.clear(flags, FlagsAspect.FLAG_ACTIVE)
-				;
-				newBlock.setFlags(flags);
+					;
+					newBlock.setFlags(flags);
+				}
 				didApply = true;
 			}
 		}

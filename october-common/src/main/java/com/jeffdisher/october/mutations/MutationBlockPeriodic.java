@@ -7,6 +7,7 @@ import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.logic.PlantHelpers;
+import com.jeffdisher.october.logic.SpecialLogicChangeHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -62,6 +63,12 @@ public class MutationBlockPeriodic implements IMutationBlock
 			{
 				newBlock.requestFutureMutation(MILLIS_BETWEEN_GROWTH_CALLS);
 			}
+			didApply = true;
+		}
+		else if (env.logic.hasSpecialChangeLogic(block))
+		{
+			byte flags = newBlock.getFlags();
+			SpecialLogicChangeHelpers.periodicUpdate(context, newBlock, _location, block, flags);
 			didApply = true;
 		}
 		else if (HopperHelpers.isHopper(_location, newBlock))
