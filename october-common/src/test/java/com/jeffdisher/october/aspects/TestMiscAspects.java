@@ -114,4 +114,16 @@ public class TestMiscAspects
 		Assert.assertTrue(ENV.logic.isManual(switchBlock));
 		Assert.assertFalse(ENV.logic.isManual(stoneBlock));
 	}
+
+	@Test
+	public void logicSpecialChange() throws Throwable
+	{
+		Block switchBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.switch"));
+		Block loaderBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.cuboid_loader"));
+		
+		Assert.assertTrue(ENV.logic.isManual(switchBlock));
+		Assert.assertTrue(ENV.logic.isManual(loaderBlock));
+		Assert.assertFalse(ENV.logic.hasSpecialChangeLogic(switchBlock));
+		Assert.assertTrue(ENV.logic.hasSpecialChangeLogic(loaderBlock));
+	}
 }

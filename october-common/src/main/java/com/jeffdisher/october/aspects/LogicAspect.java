@@ -171,6 +171,18 @@ public class LogicAspect
 	}
 
 	/**
+	 * Used to check if this block requires some special logic for state change which can't be generically captured.
+	 * 
+	 * @param block The block type.
+	 * @return True if a change in logic state needs to be specially handled.
+	 */
+	public boolean hasSpecialChangeLogic(Block block)
+	{
+		_Role role = _roles.get(block);
+		return (_Role.OFFLINE_MANUAL == role);
+	}
+
+	/**
 	 * Used to check if this block type can be a conduit for logic signals (that is, they can pass through it and
 	 * degrade).
 	 * 
@@ -195,6 +207,7 @@ public class LogicAspect
 		OR_GATE(true, LogicSpecialRegistry.OR_SINK, null, LogicSpecialRegistry.OR_SINK, false),
 		NOT_GATE(true, LogicSpecialRegistry.NOT_SINK, null, LogicSpecialRegistry.NOT_SINK, false),
 		SENSOR_INVENTORY(true, LogicSpecialRegistry.SENSOR_INVENTORY, LogicSpecialRegistry.SENSOR_INVENTORY, null, false),
+		OFFLINE_MANUAL(false, null, null, null, true),
 		;
 		
 		public static IValueTransformer<_Role> transformer = new IValueTransformer<>() {

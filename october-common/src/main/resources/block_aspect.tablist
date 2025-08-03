@@ -134,3 +134,4 @@ op.not_gate
 op.sensor_inventory
 op.ladder	is_ladder
 	block_material	AXE
+op.cuboid_loader
