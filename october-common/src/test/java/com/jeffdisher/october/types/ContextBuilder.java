@@ -1,6 +1,7 @@
 package com.jeffdisher.october.types;
 
 import java.util.Random;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 
@@ -46,6 +47,7 @@ public class ContextBuilder
 	public TickProcessingContext.ICreatureSpawner creatureSpawner;
 	public IntUnaryOperator randomInt;
 	public TickProcessingContext.IEventSink eventSink;
+	public Consumer<CuboidAddress> keepAliveSink;
 	public WorldConfig config;
 	public long millisPerTick;
 
@@ -111,6 +113,12 @@ public class ContextBuilder
 		return this;
 	}
 
+	public ContextBuilder keepAliveSink(Consumer<CuboidAddress> keepAliveSink)
+	{
+		this.keepAliveSink = keepAliveSink;
+		return this;
+	}
+
 	public ContextBuilder boundedRandom(int value)
 	{
 		this.randomInt = (int bound) -> {
@@ -145,6 +153,7 @@ public class ContextBuilder
 				, this.creatureSpawner
 				, this.randomInt
 				, this.eventSink
+				, this.keepAliveSink
 				, this.config
 				, this.millisPerTick
 				, (this.currentTick * this.millisPerTick)

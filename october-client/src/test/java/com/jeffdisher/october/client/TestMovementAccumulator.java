@@ -1120,6 +1120,7 @@ public class TestMovementAccumulator
 				// For now, we will just drop these but may want them in the future.
 			}
 			, null
+			, null
 			, millisPerTick
 			, currentTickTimeMillis
 		);

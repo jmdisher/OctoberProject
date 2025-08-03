@@ -699,6 +699,7 @@ public class SpeculativeProjection
 				// We need a random number generator for a few cases (like attack) but the server will send us the authoritative result.
 				, (int bound) -> 0
 				, eventSink
+				, (CuboidAddress address) -> {}
 				// By default, we run in hostile mode.
 				, new WorldConfig()
 				, millisPerTick

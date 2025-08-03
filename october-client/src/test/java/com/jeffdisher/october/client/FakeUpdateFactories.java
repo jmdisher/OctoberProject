@@ -111,6 +111,7 @@ public class FakeUpdateFactories
 			// We will just use 0 as a fixed random value.
 			, (int limit) -> 0
 			, (EventRecord record) -> {}
+			, (CuboidAddress address) -> {}
 			, new WorldConfig()
 			, 100L
 			, 0L

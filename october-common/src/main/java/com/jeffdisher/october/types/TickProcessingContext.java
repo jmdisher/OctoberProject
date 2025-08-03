@@ -1,5 +1,6 @@
 package com.jeffdisher.october.types;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 
@@ -67,6 +68,12 @@ public class TickProcessingContext
 	public final IEventSink eventSink;
 
 	/**
+	 * Called in some special cases to request that a cuboid either be loaded or remain loaded for the keep-alive
+	 * interval.
+	 */
+	public final Consumer<CuboidAddress> keepAliveSink;
+
+	/**
 	 * The server's config object.
 	 */
 	public final WorldConfig config;
@@ -92,6 +99,7 @@ public class TickProcessingContext
 			, ICreatureSpawner creatureSpawner
 			, IntUnaryOperator randomInt
 			, IEventSink eventSink
+			, Consumer<CuboidAddress> keepAliveSink
 			, WorldConfig config
 			, long millisPerTick
 			, long currentTickTimeMillis
@@ -106,6 +114,7 @@ public class TickProcessingContext
 		this.creatureSpawner = creatureSpawner;
 		this.randomInt = randomInt;
 		this.eventSink = eventSink;
+		this.keepAliveSink = keepAliveSink;
 		this.config = config;
 		this.millisPerTick = millisPerTick;
 		this.currentTickTimeMillis = currentTickTimeMillis;

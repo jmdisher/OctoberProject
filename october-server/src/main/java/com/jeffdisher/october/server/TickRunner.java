@@ -388,6 +388,7 @@ public class TickRunner
 						, Map.of()
 						, Map.of()
 						, List.of()
+						, Set.of()
 						, Map.of()
 				)
 				, 0L
@@ -422,6 +423,7 @@ public class TickRunner
 			
 			// On the server, we just generate the tick time as purely abstract monotonic value.
 			long currentTickTimeMillis = (materials.thisGameTick * _millisPerTick);
+			Set<CuboidAddress> internallyMarkedAlive = new HashSet<>();
 			TickProcessingContext context = new TickProcessingContext(materials.thisGameTick
 					, cachingLoader
 					, (Integer entityId) -> (entityId > 0)
@@ -454,6 +456,7 @@ public class TickRunner
 					, spawnConsumer
 					, _random
 					, (EventRecord event) -> events.add(event)
+					, (CuboidAddress address) -> internallyMarkedAlive.add(address)
 					, config
 					, _millisPerTick
 					, currentTickTimeMillis
@@ -525,6 +528,7 @@ public class TickRunner
 							, newChangeSink.takeExportedChanges()
 							, newChangeSink.takeExportedCreatureChanges()
 							, events
+							, internallyMarkedAlive
 							, materials.commitLevels
 					)
 					, materials.millisInTickPreamble
@@ -626,6 +630,8 @@ public class TickRunner
 					_scheduleChangesForEntity(nextCreatureChanges, container.getKey(), container.getValue());
 				}
 				postedEvents.addAll(fragment.postedEvents);
+				// TODO:  Collect these once they are used.
+				Assert.assertTrue(fragment.internallyMarkedAlive.isEmpty());
 				
 				// World data.
 				for (ScheduledMutation scheduledMutation : fragment.world.notYetReadyMutations())
@@ -1341,6 +1347,7 @@ public class TickRunner
 			, Map<Integer, List<ScheduledChange>> newlyScheduledChanges
 			, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> newlyScheduledCreatureChanges
 			, List<EventRecord> postedEvents
+			, Set<CuboidAddress> internallyMarkedAlive
 			, Map<Integer, Long> commitLevels
 	) {}
 }
