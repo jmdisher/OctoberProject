@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IMutableBlockProxy;
+import com.jeffdisher.october.logic.CompositeHelpers;
 import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.logic.PlantHelpers;
 import com.jeffdisher.october.logic.SpecialLogicChangeHelpers;
@@ -75,6 +76,11 @@ public class MutationBlockPeriodic implements IMutationBlock
 		{
 			HopperHelpers.tryProcessHopper(context, _location, newBlock);
 			newBlock.requestFutureMutation(MILLIS_BETWEEN_HOPPER_CALLS);
+		}
+		else if (env.blocks.isCompositionCornerstone(block))
+		{
+			// See if we need to change the state of the composite.
+			CompositeHelpers.processCornerstoneUpdate(env, context, _location, newBlock);
 		}
 		return didApply;
 	}

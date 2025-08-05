@@ -98,9 +98,11 @@ public class TestTickRunner
 	private static Item WHEAT_YOUNG_ITEM;
 	private static Item WHEAT_MATURE_ITEM;
 	private static Item WATER_STRONG;
+	private static Item VOID_LAMP_ITEM;
 	private static Block STONE;
 	private static Block WATER_SOURCE;
 	private static Block CUBOID_LOADER;
+	private static Block VOID_STONE;
 	private static EntityType COW;
 	@BeforeClass
 	public static void setup()
@@ -122,9 +124,11 @@ public class TestTickRunner
 		WHEAT_YOUNG_ITEM = ENV.items.getItemById("op.wheat_young");
 		WHEAT_MATURE_ITEM = ENV.items.getItemById("op.wheat_mature");
 		WATER_STRONG = ENV.items.getItemById("op.water_strong");
+		VOID_LAMP_ITEM = ENV.items.getItemById("op.void_lamp");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
 		CUBOID_LOADER = ENV.blocks.fromItem(ENV.items.getItemById("op.cuboid_loader"));
+		VOID_STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.void_stone"));
 		COW = ENV.creatures.getTypeById("op.cow");
 	}
 	@AfterClass
@@ -3262,6 +3266,71 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		
 		Assert.assertEquals(1, snapshot.internallyMarkedAlive().size());
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void placeVoidLamp()
+	{
+		// Show that a void lamp composition is active when placed on a void stone.
+		CuboidData cuboid = _zeroAirCuboidWithBase();
+		AbsoluteLocation step = cuboid.getCuboidAddress().getBase().getRelative(5, 6, 7);
+		AbsoluteLocation stand = step.getRelative(1, 0, 0);
+		cuboid.setData15(AspectRegistry.BLOCK, step.getBlockAddress(), STONE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, stand.getBlockAddress(), VOID_STONE.item().number());
+		int entityId = 1;
+		MutableEntity entity1 = MutableEntity.createForTest(entityId);
+		entity1.newLocation = step.getRelative(0, 0, 1).toEntityLocation();
+		entity1.newInventory.addAllItems(VOID_LAMP_ITEM, 2);
+		entity1.setSelectedKey(1);
+		
+		// Create the runner and load all test data.
+		TickRunner runner = _createTestRunner();
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
+				, null
+				, List.of(new SuspendedEntity(entity1.freeze(), List.of())
+				)
+				, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		
+		// Submit actions to place down both lamps.
+		AbsoluteLocation onLamp  = stand.getRelative(0, 0, 1);
+		AbsoluteLocation offLamp = stand.getRelative(0, 1, 1);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> onAction = new EntityChangeTopLevelMovement<>(entity1.newLocation
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, EntityChangeTopLevelMovement.Intensity.STANDING
+			, (byte)5
+			, (byte)6
+			, new MutationPlaceSelectedBlock(onLamp, onLamp.getRelative(0, 0, -1))
+		);
+		runner.enqueueEntityChange(entityId, onAction, 1L);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> offAction = new EntityChangeTopLevelMovement<>(entity1.newLocation
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, EntityChangeTopLevelMovement.Intensity.STANDING
+			, (byte)5
+			, (byte)6
+			, new MutationPlaceSelectedBlock(offLamp, offLamp.getRelative(0, 0, -1))
+		);
+		runner.enqueueEntityChange(entityId, offAction, 2L);
+		
+		// We take 2 ticks to place and each block mutation completes in the following tick.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(VOID_LAMP_ITEM.number(), snapshot.cuboids().get(onLamp.getCuboidAddress()).completed().getData15(AspectRegistry.BLOCK, onLamp.getBlockAddress()));
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, snapshot.cuboids().get(onLamp.getCuboidAddress()).completed().getData7(AspectRegistry.FLAGS, onLamp.getBlockAddress()));
+		
+		// In the next tick, we should see the "off" get placed and also the light from the "on" flow.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(VOID_LAMP_ITEM.number(), snapshot.cuboids().get(offLamp.getCuboidAddress()).completed().getData15(AspectRegistry.BLOCK, offLamp.getBlockAddress()));
+		Assert.assertEquals(0x0, snapshot.cuboids().get(offLamp.getCuboidAddress()).completed().getData7(AspectRegistry.FLAGS, offLamp.getBlockAddress()));
+		Assert.assertEquals(LightAspect.MAX_LIGHT, snapshot.cuboids().get(onLamp.getCuboidAddress()).completed().getData7(AspectRegistry.LIGHT, onLamp.getBlockAddress()));
+		Assert.assertEquals(LightAspect.MAX_LIGHT - 1, snapshot.cuboids().get(onLamp.getRelative(0, 0, 1).getCuboidAddress()).completed().getData7(AspectRegistry.LIGHT, onLamp.getRelative(0, 0, 1).getBlockAddress()));
 		
 		runner.shutdown();
 	}

@@ -10,6 +10,7 @@ import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IBlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
+import com.jeffdisher.october.logic.CompositeHelpers;
 import com.jeffdisher.october.logic.FireHelpers;
 import com.jeffdisher.october.logic.GroundCoverHelpers;
 import com.jeffdisher.october.logic.HopperHelpers;
@@ -319,20 +320,6 @@ public class CommonBlockMutationHelpers
 		}
 	}
 
-	/**
-	 * Sets the block in proxy to newType, preserving any multi-block meta-data if the oldType and newType are both
-	 * multi-blocks.
-	 * 
-	 * @param env The environment.
-	 * @param proxy The block to modify.
-	 * @param oldType The original block type (since we always have it in the callers).
-	 * @param newType The new type to assign to proxy.
-	 */
-	public static void setBlockKeepMultiBlock(Environment env, IMutableBlockProxy proxy, Block oldType, Block newType)
-	{
-		_setBlockKeepMultiBlock(env, proxy, oldType, newType);
-	}
-
 
 	private static void _combineInventory(MutableInventory mutable, Inventory oldInventory)
 	{
@@ -568,6 +555,12 @@ public class CommonBlockMutationHelpers
 				MutationBlockGrowGroundCover grow = new MutationBlockGrowGroundCover(location, shouldBecome);
 				context.mutationSink.future(grow, MutationBlockGrowGroundCover.SPREAD_DELAY_MILLIS);
 			}
+		}
+		
+		// If this is the cornerstone of a composition, check the composition state and schedule a periodic update.
+		if (env.blocks.isCompositionCornerstone(newType))
+		{
+			CompositeHelpers.processCornerstoneUpdate(env, context, location, proxy);
 		}
 	}
 
