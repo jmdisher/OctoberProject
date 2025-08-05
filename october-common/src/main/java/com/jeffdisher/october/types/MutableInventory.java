@@ -14,8 +14,7 @@ import com.jeffdisher.october.utils.Assert;
 public class MutableInventory implements IMutableInventory
 {
 	private final Inventory _original;
-	private final Map<Integer, Items> _stackable;
-	private final Map<Integer, NonStackableItem> _nonStackable;
+	private final Map<Integer, ItemSlot> _slots;
 	private int _currentEncumbrance;
 	private int _nextAddressId;
 
@@ -27,19 +26,18 @@ public class MutableInventory implements IMutableInventory
 	public MutableInventory(Inventory original)
 	{
 		_original = original;
-		_stackable = new HashMap<>();
-		_nonStackable = new HashMap<>();
+		_slots = new HashMap<>();
 		int lastId = 0;
 		for (Integer key : original.sortedKeys())
 		{
 			Items stackable = original.getStackForKey(key);
 			if (null != stackable)
 			{
-				_stackable.put(key, stackable);
+				_slots.put(key, ItemSlot.fromStack(stackable));
 			}
 			else
 			{
-				_nonStackable.put(key, original.getNonStackableForKey(key));
+				_slots.put(key, ItemSlot.fromNonStack(original.getNonStackableForKey(key)));
 			}
 			lastId = key;
 		}
@@ -70,7 +68,11 @@ public class MutableInventory implements IMutableInventory
 	@Override
 	public Items getStackForKey(int key)
 	{
-		return _stackable.get(key);
+		ItemSlot slot = _slots.get(key);
+		return (null != slot)
+			? slot.stack
+			: null
+		;
 	}
 
 	/**
@@ -82,7 +84,11 @@ public class MutableInventory implements IMutableInventory
 	@Override
 	public NonStackableItem getNonStackableForKey(int key)
 	{
-		return _nonStackable.get(key);
+		ItemSlot slot = _slots.get(key);
+		return (null != slot)
+			? slot.nonStackable
+			: null
+		;
 	}
 
 	/**
@@ -98,7 +104,8 @@ public class MutableInventory implements IMutableInventory
 		Assert.assertTrue(null != type);
 		
 		int id = _getKeyForStackableType(type);
-		Items existing = _stackable.get(id);
+		ItemSlot slot = _slots.get(id);
+		Items existing = (null != slot) ? slot.stack : null;
 		int count;
 		if (null != existing)
 		{
@@ -107,7 +114,7 @@ public class MutableInventory implements IMutableInventory
 		else
 		{
 			// This should not be called if the item is non-stackable.
-			Assert.assertTrue(!_nonStackable.containsKey(id));
+			Assert.assertTrue(null == slot);
 			count = 0;
 		}
 		return count;
@@ -202,7 +209,7 @@ public class MutableInventory implements IMutableInventory
 		boolean didAdd = false;
 		if (itemEncumbrance <= availableEncumbrance)
 		{
-			_nonStackable.put(_nextAddressId, nonStackable);
+			_slots.put(_nextAddressId, ItemSlot.fromNonStack(nonStackable));
 			_nextAddressId += 1;
 			_currentEncumbrance += itemEncumbrance;
 			didAdd = true;
@@ -222,7 +229,7 @@ public class MutableInventory implements IMutableInventory
 		
 		Environment env = Environment.getShared();
 		int itemEncumbrance = env.encumbrance.getEncumbrance(nonStackable.type());
-		_nonStackable.put(_nextAddressId, nonStackable);
+		_slots.put(_nextAddressId, ItemSlot.fromNonStack(nonStackable));
 		_nextAddressId += 1;
 		_currentEncumbrance += itemEncumbrance;
 	}
@@ -239,9 +246,9 @@ public class MutableInventory implements IMutableInventory
 		Assert.assertTrue(key > 0);
 		Assert.assertTrue(null != updated);
 		
-		NonStackableItem old = _nonStackable.put(key, updated);
-		// We expect it was already here.
-		Assert.assertTrue(null != old);
+		ItemSlot old = _slots.put(key, ItemSlot.fromNonStack(updated));
+		// We expect it was already here and non-stackable.
+		Assert.assertTrue(null != old.nonStackable);
 	}
 
 	/**
@@ -281,19 +288,19 @@ public class MutableInventory implements IMutableInventory
 		
 		Environment env = Environment.getShared();
 		// We assume that someone checked before calling this in order to make a decision.
-		Integer id = _getKeyForStackableType(type);
-		Items existing = _stackable.get(id);
+		int id = _getKeyForStackableType(type);
+		Items existing = _slots.get(id).stack;
 		int startCount = existing.count();
 		Assert.assertTrue(startCount >= count);
 		
 		int newCount = startCount - count;
 		if (newCount > 0)
 		{
-			_stackable.put(id, new Items(type, newCount));
+			_slots.put(id, ItemSlot.fromStack(new Items(type, newCount)));
 		}
 		else
 		{
-			_stackable.remove(id);
+			_slots.remove(id);
 		}
 		int removedEncumbrance = env.encumbrance.getEncumbrance(type) * count;
 		_currentEncumbrance = _currentEncumbrance - removedEncumbrance;
@@ -310,9 +317,9 @@ public class MutableInventory implements IMutableInventory
 		Assert.assertTrue(key > 0);
 		
 		Environment env = Environment.getShared();
-		NonStackableItem removed = _nonStackable.remove(key);
-		Assert.assertTrue(null != removed);
-		_currentEncumbrance -= env.encumbrance.getEncumbrance(removed.type());
+		ItemSlot removed = _slots.remove(key);
+		Assert.assertTrue(null != removed.nonStackable);
+		_currentEncumbrance -= env.encumbrance.getEncumbrance(removed.nonStackable.type());
 	}
 
 	/**
@@ -332,8 +339,7 @@ public class MutableInventory implements IMutableInventory
 	 */
 	public void clearInventory(Inventory replacement)
 	{
-		_stackable.clear();
-		_nonStackable.clear();
+		_slots.clear();
 		_currentEncumbrance = 0;
 		_nextAddressId = 1;
 		
@@ -348,11 +354,11 @@ public class MutableInventory implements IMutableInventory
 				Items stackable = replacement.getStackForKey(key);
 				if (null != stackable)
 				{
-					_stackable.put(key, stackable);
+					_slots.put(key, ItemSlot.fromStack(stackable));
 				}
 				else
 				{
-					_nonStackable.put(key, replacement.getNonStackableForKey(key));
+					_slots.put(key, ItemSlot.fromNonStack(replacement.getNonStackableForKey(key)));
 				}
 				lastId = key;
 			}
@@ -371,28 +377,19 @@ public class MutableInventory implements IMutableInventory
 	{
 		// Compare this to the original (which is somewhat expensive).
 		List<Integer> originalKeyList = _original.sortedKeys();
-		boolean doMatch = (_currentEncumbrance == _original.currentEncumbrance) && ((_stackable.size() + _nonStackable.size()) == originalKeyList.size());
+		boolean doMatch = (_currentEncumbrance == _original.currentEncumbrance) && (_slots.size() == originalKeyList.size());
 		if (doMatch)
 		{
 			for (Integer key : originalKeyList)
 			{
-				Items newItems = _stackable.get(key);
-				if (null != newItems)
+				ItemSlot newSlot = _slots.get(key);
+				if (null != newSlot)
 				{
-					Items originalItems = _original.getStackForKey(key);
-					if ((newItems.type() != originalItems.type()) || (newItems.count() != originalItems.count()))
+					Items newItems = newSlot.stack;
+					if (null != newItems)
 					{
-						doMatch = false;
-						break;
-					}
-				}
-				else
-				{
-					NonStackableItem nonStackable = _nonStackable.get(key);
-					NonStackableItem originalNonStackable = _original.getNonStackableForKey(key);
-					if ((null != nonStackable) && (null != originalNonStackable))
-					{
-						if (!nonStackable.equals(originalNonStackable))
+						Items originalItems = _original.getStackForKey(key);
+						if ((newItems.type() != originalItems.type()) || (newItems.count() != originalItems.count()))
 						{
 							doMatch = false;
 							break;
@@ -400,15 +397,33 @@ public class MutableInventory implements IMutableInventory
 					}
 					else
 					{
-						doMatch = false;
-						break;
+						NonStackableItem nonStackable = newSlot.nonStackable;
+						NonStackableItem originalNonStackable = _original.getNonStackableForKey(key);
+						if (null != originalNonStackable)
+						{
+							if (!nonStackable.equals(originalNonStackable))
+							{
+								doMatch = false;
+								break;
+							}
+						}
+						else
+						{
+							doMatch = false;
+							break;
+						}
 					}
+				}
+				else
+				{
+					doMatch = false;
+					break;
 				}
 			}
 		}
 		return doMatch
 				? _original
-				: Inventory.build(_original.maxEncumbrance, _stackable, _nonStackable, _currentEncumbrance)
+				: Inventory.build(_original.maxEncumbrance, _slots, _currentEncumbrance)
 		;
 	}
 
@@ -423,7 +438,7 @@ public class MutableInventory implements IMutableInventory
 		int id = _getKeyForStackableType(type);
 		if (id > 0)
 		{
-			Items existing = _stackable.get(id);
+			Items existing = _slots.get(id).stack;
 			newCount = existing.count() + count;
 		}
 		else
@@ -433,16 +448,17 @@ public class MutableInventory implements IMutableInventory
 			newCount = count;
 		}
 		Items updated = new Items(type, newCount);
-		_stackable.put(id, updated);
+		_slots.put(id, ItemSlot.fromStack(updated));
 		_currentEncumbrance = updatedEncumbrance;
 	}
 
 	private int _getKeyForStackableType(Item type)
 	{
 		int id = 0;
-		for (Map.Entry<Integer, Items> elt : _stackable.entrySet())
+		for (Map.Entry<Integer, ItemSlot> elt : _slots.entrySet())
 		{
-			if (elt.getValue().type() == type)
+			Items stack = elt.getValue().stack;
+			if ((null != stack) && (stack.type() == type))
 			{
 				id = elt.getKey();
 				break;

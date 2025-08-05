@@ -1,11 +1,9 @@
 package com.jeffdisher.october.types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.utils.Assert;
@@ -26,18 +24,16 @@ public class Inventory
 	 * Builds a new immutable inventory with the given state.
 	 * 
 	 * @param maxEncumbrance The encumbrance limit for this inventory.
-	 * @param stackable The map of stackable items in this inventory.
-	 * @param nonStackable The map of non-stackable items in this inventory.
+	 * @param slots The map of all item slots in this inventory.
 	 * @param currentEncumbrance The current encumbrance represented by the items.
 	 * @return A new immutable Inventory object.
 	 */
 	public static Inventory build(int maxEncumbrance
-			, Map<Integer, Items> stackable
-			, Map<Integer, NonStackableItem> nonStackable
+			, Map<Integer, ItemSlot> slots
 			, int currentEncumbrance
 	)
 	{
-		return new Inventory(maxEncumbrance, stackable, nonStackable, currentEncumbrance);
+		return new Inventory(maxEncumbrance, slots, currentEncumbrance);
 	}
 
 	/**
@@ -52,13 +48,11 @@ public class Inventory
 	}
 
 	public final int maxEncumbrance;
-	private final Map<Integer, Items> _stackable;
-	private final Map<Integer, NonStackableItem> _nonStackable;
+	private final Map<Integer, ItemSlot> _slots;
 	public final int currentEncumbrance;
 
 	private Inventory(int maxEncumbrance
-			, Map<Integer, Items> stackable
-			, Map<Integer, NonStackableItem> nonStackable
+			, Map<Integer, ItemSlot> slots
 			, int currentEncumbrance
 	)
 	{
@@ -66,14 +60,12 @@ public class Inventory
 		// We will create this as empty if there is an overflow in encumbrance.
 		if (currentEncumbrance >= 0)
 		{
-			_stackable = Collections.unmodifiableMap(stackable);
-			_nonStackable = Collections.unmodifiableMap(nonStackable);
+			_slots = Collections.unmodifiableMap(slots);
 			this.currentEncumbrance = currentEncumbrance;
 		}
 		else
 		{
-			_stackable = Collections.emptyMap();
-			_nonStackable = Collections.emptyMap();
+			_slots = Collections.emptyMap();
 			this.currentEncumbrance = 0;
 		}
 	}
@@ -86,7 +78,11 @@ public class Inventory
 	 */
 	public Items getStackForKey(int key)
 	{
-		return _stackable.get(key);
+		ItemSlot slot = _slots.get(key);
+		return (null != slot)
+			? slot.stack
+			: null
+		;
 	}
 
 	/**
@@ -97,7 +93,22 @@ public class Inventory
 	 */
 	public NonStackableItem getNonStackableForKey(int key)
 	{
-		return _nonStackable.get(key);
+		ItemSlot slot = _slots.get(key);
+		return (null != slot)
+			? slot.nonStackable
+			: null
+		;
+	}
+
+	/**
+	 * Looks up the slot for the given identifier key.
+	 * 
+	 * @param key The identifier key.
+	 * @return The slot for whatever is stored in this key (null if the key isn't in the receiver).
+	 */
+	public ItemSlot getSlotForKey(int key)
+	{
+		return _slots.get(key);
 	}
 
 	/**
@@ -110,7 +121,8 @@ public class Inventory
 	public int getCount(Item type)
 	{
 		int id = _getKeyForStackableType(type);
-		Items existing = _stackable.get(id);
+		ItemSlot slot = _slots.get(id);
+		Items existing = (null != slot) ? slot.stack : null;
 		int count;
 		if (null != existing)
 		{
@@ -119,7 +131,7 @@ public class Inventory
 		else
 		{
 			// This should not be called if the item is non-stackable.
-			Assert.assertTrue(!_nonStackable.containsKey(id));
+			Assert.assertTrue(null == slot);
 			count = 0;
 		}
 		return count;
@@ -148,17 +160,11 @@ public class Inventory
 	public String toString()
 	{
 		StringBuilder builder = new StringBuilder();
-		builder.append("Inventory: " + this.currentEncumbrance + " / " + this.maxEncumbrance + " with stackable items: " + _stackable.size() + " and non-stackable: " + _nonStackable.size() + "\n");
+		builder.append("Inventory: " + this.currentEncumbrance + " / " + this.maxEncumbrance + " with slot count: " + _slots.size() + "\n");
 		for (Integer key : _allSortedKeys())
 		{
-			if (_stackable.containsKey(key))
-			{
-				builder.append("\t" + key + " -> " + _stackable.get(key) + "\n");
-			}
-			if (_nonStackable.containsKey(key))
-			{
-				builder.append("\t" + key + " -> " + _nonStackable.get(key) + "\n");
-			}
+			ItemSlot slot = _slots.get(key);
+			builder.append("\t" + key + " -> " + slot + "\n");
 		}
 		return builder.toString();
 	}
@@ -168,9 +174,10 @@ public class Inventory
 	{
 		// NOTE:  We don't currently keep a parallel look-up structure for the types since this structure is always very small but that may change in the future.
 		int id = 0;
-		for (Map.Entry<Integer, Items> elt : _stackable.entrySet())
+		for (Map.Entry<Integer, ItemSlot> elt : _slots.entrySet())
 		{
-			if (elt.getValue().type() == type)
+			Items stack = elt.getValue().stack;
+			if ((null != stack) && (stack.type() == type))
 			{
 				id = elt.getKey();
 				break;
@@ -181,7 +188,7 @@ public class Inventory
 
 	private List<Integer> _allSortedKeys()
 	{
-		return Stream.concat(_stackable.keySet().stream(), _nonStackable.keySet().stream()).sorted((Integer one, Integer two) -> (one.intValue() > two.intValue()) ? 1 : -1).toList();
+		return _slots.keySet().stream().sorted((Integer one, Integer two) -> (one.intValue() > two.intValue()) ? 1 : -1).toList();
 	}
 
 
@@ -191,28 +198,34 @@ public class Inventory
 	public static class Builder
 	{
 		private final int _maxEncumbrance;
-		private final List<_Pair> _order;
-		private final Map<Item, Integer> _stackable;
+		private final Map<Integer, ItemSlot> _slots;
+		private final Map<Item, Integer> _stackableKeys;
 		private int _currentEncumbrance;
 		
 		private Builder(int maxEncumbrance)
 		{
 			_maxEncumbrance = maxEncumbrance;
-			_order = new ArrayList<>();
-			_stackable = new HashMap<>();
+			_slots = new HashMap<>();
+			_stackableKeys = new HashMap<>();
 		}
 		public Builder addStackable(Item type, int count)
 		{
 			Environment env = Environment.getShared();
 			Assert.assertTrue(count > 0);
 			
-			if (!_stackable.containsKey(type))
+			Integer key = _stackableKeys.get(type);
+			int oldSize = 0;
+			if (null != key)
 			{
-				_order.add(new _Pair(type, null));
+				oldSize = _slots.get(key).stack.count();
 			}
-			int current = _stackable.containsKey(type) ? _stackable.get(type) : 0;
-			current += count;
-			_stackable.put(type, current);
+			int newSize = count + oldSize;
+			if (null == key)
+			{
+				key = _slots.size() + 1;
+				_stackableKeys.put(type, key);
+			}
+			_slots.put(key, ItemSlot.fromStack(new Items(type, newSize)));
 			_currentEncumbrance += env.encumbrance.getEncumbrance(type) * count;
 			return this;
 		}
@@ -220,36 +233,17 @@ public class Inventory
 		{
 			Environment env = Environment.getShared();
 			
-			_order.add(new _Pair(null, item));
+			Integer key = _slots.size() + 1;
+			_slots.put(key, ItemSlot.fromNonStack(item));
 			_currentEncumbrance += env.encumbrance.getEncumbrance(item.type());
 			return this;
 		}
 		public Inventory finish()
 		{
-			Map<Integer, Items> stackable = new HashMap<>();
-			Map<Integer, NonStackableItem> nonStackable = new HashMap<>();
-			int nextAddressId = 1;
-			for (_Pair pair : _order)
-			{
-				if (null != pair.stackable)
-				{
-					int count = _stackable.get(pair.stackable);
-					stackable.put(nextAddressId, new Items(pair.stackable, count));
-				}
-				else
-				{
-					Assert.assertTrue(null != pair.nonStackable);
-					nonStackable.put(nextAddressId, pair.nonStackable);
-				}
-				nextAddressId += 1;
-			}
 			return new Inventory(_maxEncumbrance
-					, stackable
-					, nonStackable
-					, _currentEncumbrance
+				, _slots
+				, _currentEncumbrance
 			);
 		}
 	}
-
-	private static record _Pair(Item stackable, NonStackableItem nonStackable) {}
 }

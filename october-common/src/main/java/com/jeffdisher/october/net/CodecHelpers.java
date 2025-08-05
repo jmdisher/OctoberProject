@@ -28,6 +28,7 @@ import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.PartialEntity;
@@ -505,6 +506,16 @@ public class CodecHelpers
 		}
 	}
 
+	public static ItemSlot readSlot(DeserializationContext context)
+	{
+		return _readSlot(context);
+	}
+
+	public static void writeSlot(ByteBuffer buffer, ItemSlot slot)
+	{
+		_writeSlot(buffer, slot);
+	}
+
 
 	private static Item _readItem(ByteBuffer buffer)
 	{
@@ -564,8 +575,7 @@ public class CodecHelpers
 		int maxEncumbrance = buffer.getInt();
 		if (maxEncumbrance > 0)
 		{
-			Map<Integer, Items> stackableItems = new HashMap<>();
-			Map<Integer, NonStackableItem> nonStackableItems = new HashMap<>();
+			Map<Integer, ItemSlot> slots = new HashMap<>();
 			int currentEncumbrance = 0;
 			
 			int itemsToLoad = Byte.toUnsignedInt(buffer.get());
@@ -573,25 +583,12 @@ public class CodecHelpers
 			{
 				int keyValue = buffer.getInt();
 				Assert.assertTrue(keyValue > 0);
-				// We will need to manually read this type in order to determine if this is stackable or not.
-				Item type = _readItem(buffer);
-				// NOTE:  We will inline the rest of the data since we are overlapping with types.
-				if (env.durability.isStackable(type))
-				{
-					int count = buffer.getInt();
-					Items items = new Items(type, count);
-					stackableItems.put(keyValue, items);
-					currentEncumbrance += env.encumbrance.getEncumbrance(items.type()) * items.count();
-				}
-				else
-				{
-					// Use the standard helper for the non-stackable remainder.
-					NonStackableItem item = _readNonStackableRemainder(type, context);
-					nonStackableItems.put(keyValue, item);
-					currentEncumbrance += env.encumbrance.getEncumbrance(item.type());
-				}
+				
+				ItemSlot slot = _readSlot(context);
+				slots.put(keyValue, slot);
+				currentEncumbrance += env.encumbrance.getEncumbrance(slot.getType()) * slot.getCount();
 			}
-			parsed = Inventory.build(maxEncumbrance, stackableItems, nonStackableItems, currentEncumbrance);
+			parsed = Inventory.build(maxEncumbrance, slots, currentEncumbrance);
 		}
 		else
 		{
@@ -618,19 +615,8 @@ public class CodecHelpers
 			for (Integer key : keys)
 			{
 				buffer.putInt(key.intValue());
-				// See if this is a stackable or not.
-				// NOTE:  We will inline the rest of the data since we are overlapping with types.
-				Items stackable = inventory.getStackForKey(key);
-				if (null != stackable)
-				{
-					_writeItem(buffer, stackable.type());
-					buffer.putInt(stackable.count());
-				}
-				else
-				{
-					NonStackableItem nonStackable = inventory.getNonStackableForKey(key);
-					_writeNonStackableItem(buffer, nonStackable);
-				}
+				ItemSlot slot = inventory.getSlotForKey(key);
+				_writeSlot(buffer, slot);
 			}
 		}
 		else
@@ -820,5 +806,44 @@ public class CodecHelpers
 	private static <T> void _writePropertyValue(ByteBuffer buffer, PropertyType<T> type, Object value)
 	{
 		type.codec().storeData(buffer, type.type().cast(value));
+	}
+
+	private static ItemSlot _readSlot(DeserializationContext context)
+	{
+		ByteBuffer buffer = context.buffer();
+		
+		// We will need to manually read this type in order to determine if this is stackable or not.
+		Item type = _readItem(buffer);
+		// NOTE:  We will inline the rest of the data since we are overlapping with types.
+		ItemSlot slot;
+		if (context.env().durability.isStackable(type))
+		{
+			int count = buffer.getInt();
+			Items items = new Items(type, count);
+			slot = ItemSlot.fromStack(items);
+		}
+		else
+		{
+			// Use the standard helper for the non-stackable remainder.
+			NonStackableItem item = _readNonStackableRemainder(type, context);
+			slot = ItemSlot.fromNonStack(item);
+		}
+		return slot;
+	}
+
+	private static void _writeSlot(ByteBuffer buffer, ItemSlot slot)
+	{
+		// See if this is a stackable or not.
+		// NOTE:  We will inline the rest of the data since we are overlapping with types.
+		Items stackable = slot.stack;
+		if (null != stackable)
+		{
+			_writeItem(buffer, stackable.type());
+			buffer.putInt(stackable.count());
+		}
+		else
+		{
+			_writeNonStackableItem(buffer, slot.nonStackable);
+		}
 	}
 }

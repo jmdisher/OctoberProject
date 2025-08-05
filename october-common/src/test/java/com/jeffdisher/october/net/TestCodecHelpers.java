@@ -24,6 +24,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
@@ -319,5 +320,31 @@ public class TestCodecHelpers
 		output = CodecHelpers.readOrientation(buffer);
 		Assert.assertTrue(missing == output);
 		Assert.assertEquals(0, buffer.remaining());
+	}
+
+	@Test
+	public void slots() throws Throwable
+	{
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		NonStackableItem sword = new NonStackableItem(IRON_SWORD_ITEM, Map.of(PropertyRegistry.DURABILITY, 103));
+		CodecHelpers.writeSlot(buffer, ItemSlot.fromNonStack(sword));
+		buffer.flip();
+		DeserializationContext context = new DeserializationContext(Environment.getShared()
+			, buffer
+			, false
+		);
+		ItemSlot output = CodecHelpers.readSlot(context);
+		Assert.assertEquals(sword, output.nonStackable);
+		
+		buffer.clear();
+		Items stack = new Items(STONE_ITEM, 5);
+		CodecHelpers.writeSlot(buffer, ItemSlot.fromStack(stack));
+		buffer.flip();
+		context = new DeserializationContext(Environment.getShared()
+			, buffer
+			, false
+		);
+		output = CodecHelpers.readSlot(context);
+		Assert.assertEquals(stack, output.stack);
 	}
 }
