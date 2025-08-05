@@ -3,3 +3,4 @@
 # If the block is NOT listed here, the defaults from light_sources.tablist will be used even when in active state.
 
 op.lamp	15
+op.void_lamp	15

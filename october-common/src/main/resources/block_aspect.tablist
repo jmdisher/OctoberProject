@@ -135,3 +135,7 @@ op.sensor_inventory
 op.ladder	is_ladder
 	block_material	AXE
 op.cuboid_loader
+op.void_stone
+	block_material	PICKAXE
+op.void_lamp
+	block_material	PICKAXE
