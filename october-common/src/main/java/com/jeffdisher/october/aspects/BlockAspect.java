@@ -48,6 +48,7 @@ public class BlockAspect
 	private static final String FLAG_STOPS_FIRE = "stops_fire";
 	private static final String FLAG_IS_MULTIBLOCK = "is_multiblock";
 	private static final String FLAG_IS_LADDER = "is_ladder";
+	private static final String FLAG_IS_COMPOSITION = "is_composition";
 	private static final String SUB_PLACED_FROM = "placed_from";
 	private static final String SUB_REQUIRES_SUPPORT = "requires_support";
 	private static final String SUB_SPECIAL_DROP = "special_drop";
@@ -110,6 +111,7 @@ public class BlockAspect
 				, parser.specialBlockBreak
 				, parser.blockMaterials
 				, parser.isLadder
+				, parser.isComposition
 		);
 	}
 
@@ -128,6 +130,7 @@ public class BlockAspect
 	private final Map<Block, _DropChance[]> _specialBlockBreak;
 	private final Map<Block, BlockMaterial> _blockMaterials;
 	private final Set<Block> _ladderType;
+	private final Set<Block> _isComposition;
 
 	private BlockAspect(ItemRegistry items
 			, Block[] blocksByType
@@ -145,6 +148,7 @@ public class BlockAspect
 			, Map<Block, _DropChance[]> specialBlockBreak
 			, Map<Block, BlockMaterial> blockMaterials
 			, Set<Block> ladderType
+			, Set<Block> isComposition
 	)
 	{
 		_blocksByItemNumber = blocksByType;
@@ -163,6 +167,7 @@ public class BlockAspect
 		_specialBlockBreak = Collections.unmodifiableMap(specialBlockBreak);
 		_blockMaterials = Collections.unmodifiableMap(blockMaterials);
 		_ladderType = Collections.unmodifiableSet(ladderType);
+		_isComposition = Collections.unmodifiableSet(isComposition);
 	}
 
 	/**
@@ -459,6 +464,17 @@ public class BlockAspect
 		return _ladderType.contains(block);
 	}
 
+	/**
+	 * Checks if the given block is intended to be the cornerstone of an in-world block composition.
+	 * 
+	 * @param block The block to check.
+	 * @return True if this block is a cornerstone.
+	 */
+	public boolean isCompositionCornerstone(Block block)
+	{
+		return _isComposition.contains(block);
+	}
+
 
 	private Map<Block, Integer> _nonSolidViscosityMap(boolean isActive)
 	{
@@ -484,6 +500,7 @@ public class BlockAspect
 		public Set<Block> stopsFire = new HashSet<>();
 		public Set<Block> isMultiBlock = new HashSet<>();
 		public Set<Block> isLadder  = new HashSet<>();
+		public Set<Block> isComposition = new HashSet<>();
 		public Map<Block, Integer> nonSolidViscosity = new HashMap<>();
 		public Map<Block, Integer> blockDamage = new HashMap<>();
 		public Map<Block, Set<Block>> specialBlockSupport = new HashMap<>();
@@ -543,6 +560,10 @@ public class BlockAspect
 				else if (FLAG_IS_LADDER.equals(value))
 				{
 					this.isLadder.add(_currentBlock);
+				}
+				else if (FLAG_IS_COMPOSITION.equals(value))
+				{
+					this.isComposition.add(_currentBlock);
 				}
 				else
 				{

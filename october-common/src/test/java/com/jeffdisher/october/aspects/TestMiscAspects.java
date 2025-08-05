@@ -126,4 +126,16 @@ public class TestMiscAspects
 		Assert.assertFalse(ENV.logic.hasSpecialChangeLogic(switchBlock));
 		Assert.assertTrue(ENV.logic.hasSpecialChangeLogic(loaderBlock));
 	}
+
+	@Test
+	public void voidComposite() throws Throwable
+	{
+		Block voidStone = ENV.blocks.fromItem(ENV.items.getItemById("op.void_stone"));
+		Block voidLamp = ENV.blocks.fromItem(ENV.items.getItemById("op.void_lamp"));
+		
+		Assert.assertFalse(ENV.blocks.isCompositionCornerstone(voidStone));
+		Assert.assertTrue(ENV.blocks.isCompositionCornerstone(voidLamp));
+		Assert.assertEquals(0, ENV.lighting.getLightEmission(voidLamp, false));
+		Assert.assertEquals(LightAspect.MAX_LIGHT, ENV.lighting.getLightEmission(voidLamp, true));
+	}
 }

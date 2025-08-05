@@ -13,6 +13,7 @@
 # -is_fire_source (the block can start fires nearby)
 # -stops_fire (the block will extinguish a fire below it and prevent the block below from igniting)
 # -is_multiblock (the block is part of a multi-block structure so it can exist but isn't placeable via normal mutations)
+# -is_composition (the block is the cornerstone of an in-world block composition)
 # block_material is a BlockMaterial enum constant (default of NO_TOOL if not specified).
 # placed_from means that this block is generated, instead of the normal block, when the given item is placed.
 # requires_support means that this block requires one of the given blocks under it.
@@ -137,5 +138,5 @@ op.ladder	is_ladder
 op.cuboid_loader
 op.void_stone
 	block_material	PICKAXE
-op.void_lamp
+op.void_lamp	is_composition
 	block_material	PICKAXE
