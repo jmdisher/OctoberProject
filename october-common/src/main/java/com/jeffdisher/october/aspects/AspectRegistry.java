@@ -8,6 +8,7 @@ import com.jeffdisher.october.data.FuelledAspectCodec;
 import com.jeffdisher.october.data.IObjectCodec;
 import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.InventoryAspectCodec;
+import com.jeffdisher.october.data.ItemSlotCodec;
 import com.jeffdisher.october.data.MultiBlockRootAspectCodec;
 import com.jeffdisher.october.data.OctreeInflatedByte;
 import com.jeffdisher.october.data.OctreeObject;
@@ -16,6 +17,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -153,6 +155,18 @@ public class AspectRegistry
 			}
 			, new MultiBlockRootAspectCodec()
 	);
+	/**
+	 * ItemSlot objects making up a block's "special inventory", usually null.
+	 */
+	public static final Aspect<ItemSlot, OctreeObject<ItemSlot>> SPECIAL_ITEM_SLOT = registerAspect(ItemSlot.class
+			, OctreeObject.getDecoratedClass()
+			, () -> OctreeObject.create()
+			, (OctreeObject<ItemSlot> original) -> {
+				// Inventories are now immutable so just make a clone of the map.
+				return original.cloneMapShallow();
+			}
+			, new ItemSlotCodec()
+	);
 
 	private static int _nextIndex = 0;
 	public static final Aspect<?,?>[] ALL_ASPECTS;
@@ -168,6 +182,7 @@ public class AspectRegistry
 		Assert.assertTrue(7 == FLAGS.index());
 		Assert.assertTrue(8 == ORIENTATION.index());
 		Assert.assertTrue(9 == MULTI_BLOCK_ROOT.index());
+		Assert.assertTrue(10 == SPECIAL_ITEM_SLOT.index());
 		
 		// Create the finished array, in-order.
 		ALL_ASPECTS = new Aspect<?,?>[] {
@@ -183,6 +198,9 @@ public class AspectRegistry
 			FLAGS,
 			ORIENTATION,
 			MULTI_BLOCK_ROOT,
+			
+			// Added in storage version 8.
+			SPECIAL_ITEM_SLOT,
 		};
 	}
 

@@ -482,7 +482,7 @@ public class ResourceLoader
 			else if (VERSION_CUBOID_V7 == version)
 			{
 				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboid(address, context);
+					CuboidData cuboid = _background_readCuboidPre8(address, context);
 					
 					// Load any creatures associated with the cuboid.
 					List<CreatureEntity> creatures = _background_readCreatures(buffer);
@@ -509,7 +509,7 @@ public class ResourceLoader
 			{
 				// V6 just adds data so this is to avoid going backward.
 				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboid(address, context);
+					CuboidData cuboid = _background_readCuboidPre8(address, context);
 					
 					// Load any creatures associated with the cuboid.
 					List<CreatureEntity> creatures = _background_readCreatures(buffer);
@@ -670,6 +670,16 @@ public class ResourceLoader
 	{
 		CuboidData cuboid = CuboidData.createEmpty(address);
 		cuboid.deserializeSomeAspectsFully(context, AspectRegistry.ALL_ASPECTS.length);
+		return cuboid;
+	}
+
+	private CuboidData _background_readCuboidPre8(CuboidAddress address, DeserializationContext context)
+	{
+		// Prior to version 8, only aspects up to and including MULTI_BLOCK_ROOT were included.
+		int aspectCount = 10;
+		
+		CuboidData cuboid = CuboidData.createEmpty(address);
+		cuboid.deserializeSomeAspectsFully(context, aspectCount);
 		return cuboid;
 	}
 

@@ -9,12 +9,16 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
+import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 
@@ -22,11 +26,13 @@ public class TestCuboidData
 {
 	private static Environment ENV;
 	private static Item STONE_ITEM;
+	private static Item IRON_SWORD;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");
+		IRON_SWORD = ENV.items.getItemById("op.iron_sword");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -211,5 +217,41 @@ public class TestCuboidData
 		Assert.assertFalse(new BlockProxy(testAddress, base).doAspectsMatch(new BlockProxy(testAddress, test)));
 		test.setData7(AspectRegistry.LOGIC, testAddress, (byte)0);
 		Assert.assertTrue(new BlockProxy(testAddress, base).doAspectsMatch(new BlockProxy(testAddress, test)));
+	}
+
+	@Test
+	public void serializeSpecialItemSlot()
+	{
+		BlockAddress testAddress1 = BlockAddress.fromInt(0, 0, 0);
+		BlockAddress testAddress2 = BlockAddress.fromInt(0, 0, 1);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		Items stack = new Items(STONE_ITEM, 5);
+		NonStackableItem nonStack = PropertyHelpers.newItemWithDefaults(ENV, IRON_SWORD);
+		input.setData15(AspectRegistry.BLOCK, testAddress1, (short)1);
+		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress1, Inventory.start(5).addStackable(STONE_ITEM, 2).finish());
+		input.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, testAddress1, ItemSlot.fromStack(stack));
+		input.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, testAddress2, ItemSlot.fromNonStack(nonStack));
+		
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		Object resume = input.serializeResumable(null, buffer);
+		Assert.assertNull(resume);
+		buffer.flip();
+		
+		CuboidData output = CuboidData.createEmpty(cuboidAddress);
+		DeserializationContext context = new DeserializationContext(Environment.getShared()
+			, buffer
+			, false
+		);
+		resume = output.deserializeResumable(null, context);
+		Assert.assertNull(resume);
+		Assert.assertEquals((short) 1, output.getData15(AspectRegistry.BLOCK, testAddress1));
+		Inventory inv = output.getDataSpecial(AspectRegistry.INVENTORY, testAddress1);
+		Assert.assertEquals(5, inv.maxEncumbrance);
+		Assert.assertEquals(8, inv.currentEncumbrance);
+		Assert.assertEquals(1, inv.sortedKeys().size());
+		Assert.assertEquals(2, inv.getCount(STONE_ITEM));
+		Assert.assertEquals(stack, output.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, testAddress1).stack);
+		Assert.assertEquals(nonStack, output.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, testAddress2).nonStackable);
 	}
 }
