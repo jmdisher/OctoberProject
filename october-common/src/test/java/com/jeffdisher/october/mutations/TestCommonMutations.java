@@ -1585,6 +1585,44 @@ public class TestCommonMutations
 		Assert.assertEquals(2, inv.getCount(STONE_ITEM));
 	}
 
+	@Test
+	public void pedestalSwap()
+	{
+		// A test to show special slot interactions with a pedestal block.
+		AbsoluteLocation target = new AbsoluteLocation(1, 1, 1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
+		Block pedestalBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.pedestal"));
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), pedestalBlock.item().number());
+		
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation blockLocation) -> {
+				return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
+			}, null)
+			.finish()
+		;
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		ItemSlot slotToStore = ItemSlot.fromStack(new Items(STONE.item(), 5));
+		MutationBlockSwapSpecialSlot swap = new MutationBlockSwapSpecialSlot(target, slotToStore, 0);
+		boolean didApply = swap.applyMutation(context, proxy);
+		
+		Assert.assertTrue(didApply);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(pedestalBlock.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(slotToStore, cuboid.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, target.getBlockAddress()));
+		
+		// Now, swap it out.
+		proxy = new MutableBlockProxy(target, cuboid);
+		swap = new MutationBlockSwapSpecialSlot(target, null, 0);
+		didApply = swap.applyMutation(context, proxy);
+		
+		Assert.assertTrue(didApply);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(pedestalBlock.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(null, cuboid.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, target.getBlockAddress()));
+	}
+
 
 	private static class ProcessingSinks
 	{

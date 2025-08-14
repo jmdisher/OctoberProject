@@ -27,6 +27,7 @@ import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.mutations.MutationBlockSetLogicState;
 import com.jeffdisher.october.mutations.MutationBlockStartFire;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
+import com.jeffdisher.october.mutations.MutationBlockSwapSpecialSlot;
 import com.jeffdisher.october.mutations.MutationBlockType;
 import com.jeffdisher.october.mutations.MutationBlockUpdate;
 import com.jeffdisher.october.utils.Assert;
@@ -66,6 +67,7 @@ public class MutationBlockCodec
 		_CODEC_TABLE[MutationBlockGrowGroundCover.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockGrowGroundCover.deserialize(context);
 		_CODEC_TABLE[MutationBlockInternalSetLogicState.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockInternalSetLogicState.deserialize(context);
 		_CODEC_TABLE[MutationBlockOverwriteByEntity.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockOverwriteByEntity.deserialize(context);
+		_CODEC_TABLE[MutationBlockSwapSpecialSlot.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockSwapSpecialSlot.deserialize(context);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)
