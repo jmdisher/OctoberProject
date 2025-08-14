@@ -39,6 +39,7 @@ import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -1547,6 +1548,41 @@ public class TestCommonMutations
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(farmBlock.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+	}
+
+	@Test
+	public void breakPedestal()
+	{
+		// A test to show that the special slot contents of a pedestal drop in the world.
+		AbsoluteLocation target = new AbsoluteLocation(1, 1, 1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
+		Block pedestalBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.pedestal"));
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), pedestalBlock.item().number());
+		cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, target.getBlockAddress(), ItemSlot.fromStack(new Items(STONE_ITEM, 2)));
+		
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation blockLocation) -> {
+				return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
+			}, null)
+			.eventSink(new TickProcessingContext.IEventSink() {
+				@Override
+				public void post(EventRecord event)
+				{
+				}
+			})
+			.finish()
+		;
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		MutationBlockIncrementalBreak breaking = new MutationBlockIncrementalBreak(target, ENV.damage.getToughness(pedestalBlock), 0);
+		boolean didApply = breaking.applyMutation(context, proxy);
+		Assert.assertTrue(didApply);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Inventory inv = cuboid.getDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress());
+		Assert.assertEquals(1, inv.getCount(pedestalBlock.item()));
+		Assert.assertEquals(2, inv.getCount(STONE_ITEM));
 	}
 
 

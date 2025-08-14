@@ -20,6 +20,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
@@ -400,15 +401,34 @@ public class CommonBlockMutationHelpers
 
 	private static void _fillInventoryFromBlockWithoutLimit(MutableInventory inventoryToFill, IBlockProxy block)
 	{
+		Environment env = Environment.getShared();
+		
 		Inventory oldInventory = block.getInventory();
 		if (null != oldInventory)
 		{
 			_combineInventory(inventoryToFill, oldInventory);
 		}
+		
 		FuelState oldFuel = block.getFuel();
 		if (null != oldFuel)
 		{
 			_combineInventory(inventoryToFill, oldFuel.fuelInventory());
+		}
+		
+		if (env.specialSlot.canRemoveOrDrop(block.getBlock()))
+		{
+			ItemSlot oldSlot = block.getSpecialSlot();
+			if (null != oldSlot)
+			{
+				if (null != oldSlot.stack)
+				{
+					inventoryToFill.addAllItems(oldSlot.stack.type(), oldSlot.stack.count());
+				}
+				else
+				{
+					inventoryToFill.addNonStackableBestEfforts(oldSlot.nonStackable);
+				}
+			}
 		}
 	}
 

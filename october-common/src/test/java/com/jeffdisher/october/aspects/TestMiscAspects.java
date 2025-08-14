@@ -138,4 +138,16 @@ public class TestMiscAspects
 		Assert.assertEquals(0, ENV.lighting.getLightEmission(voidLamp, false));
 		Assert.assertEquals(LightAspect.MAX_LIGHT, ENV.lighting.getLightEmission(voidLamp, true));
 	}
+
+	@Test
+	public void specialSlot() throws Throwable
+	{
+		Block pedestal = ENV.blocks.fromItem(ENV.items.getItemById("op.pedestal"));
+		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		
+		Assert.assertTrue(ENV.specialSlot.hasSpecialSlot(pedestal));
+		Assert.assertTrue(ENV.specialSlot.canRemoveOrDrop(pedestal));
+		Assert.assertFalse(ENV.specialSlot.hasSpecialSlot(stone));
+		Assert.assertFalse(ENV.specialSlot.canRemoveOrDrop(stone));
+	}
 }

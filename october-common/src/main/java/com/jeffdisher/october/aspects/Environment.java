@@ -78,6 +78,7 @@ public class Environment
 	public final CreatureRegistry creatures;
 	public final MultiBlockRegistry multiBlocks;
 	public final GroundCoverRegistry groundCover;
+	public final SpecialSlotAspect specialSlot;
 	public final SpecialConstants special;
 
 	private Environment() throws IOException, TabListException
@@ -111,6 +112,7 @@ public class Environment
 		this.creatures = CreatureRegistry.loadRegistry(this.items, loader.getResourceAsStream("creature_registry.tablist"));
 		this.multiBlocks = new MultiBlockRegistry(this.items, this.blocks);
 		this.groundCover = new GroundCoverRegistry(this.items, this.blocks);
+		this.specialSlot = SpecialSlotAspect.load(this.items, this.blocks);
 		this.special = new SpecialConstants(this.items, this.blocks);
 	}
 }
