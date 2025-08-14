@@ -140,3 +140,5 @@ op.void_stone
 	block_material	PICKAXE
 op.void_lamp	is_composition
 	block_material	PICKAXE
+op.pedestal
+	block_material	PICKAXE

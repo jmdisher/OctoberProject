@@ -200,3 +200,7 @@ op.ladder	COMMON
 	input	op.stick	op.stick	op.stick
 	output	op.ladder
 	millis	2000
+op.pedestal	COMMON
+	input	op.stone_brick	op.stone_brick
+	output	op.pedestal
+	millis	8000
