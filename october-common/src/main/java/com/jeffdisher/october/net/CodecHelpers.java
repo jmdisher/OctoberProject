@@ -816,7 +816,11 @@ public class CodecHelpers
 		Item type = _readItem(buffer);
 		// NOTE:  We will inline the rest of the data since we are overlapping with types.
 		ItemSlot slot;
-		if (context.env().durability.isStackable(type))
+		if (null == type)
+		{
+			slot = null;
+		}
+		else if (context.env().durability.isStackable(type))
 		{
 			int count = buffer.getInt();
 			Items items = new Items(type, count);
@@ -833,17 +837,25 @@ public class CodecHelpers
 
 	private static void _writeSlot(ByteBuffer buffer, ItemSlot slot)
 	{
-		// See if this is a stackable or not.
-		// NOTE:  We will inline the rest of the data since we are overlapping with types.
-		Items stackable = slot.stack;
-		if (null != stackable)
+		if (null != slot)
 		{
-			_writeItem(buffer, stackable.type());
-			buffer.putInt(stackable.count());
+			// See if this is a stackable or not.
+			// NOTE:  We will inline the rest of the data since we are overlapping with types.
+			Items stackable = slot.stack;
+			if (null != stackable)
+			{
+				_writeItem(buffer, stackable.type());
+				buffer.putInt(stackable.count());
+			}
+			else
+			{
+				_writeNonStackableItem(buffer, slot.nonStackable);
+			}
 		}
 		else
 		{
-			_writeNonStackableItem(buffer, slot.nonStackable);
+			// We just write a null item type.
+			_writeItem(buffer, null);
 		}
 	}
 }

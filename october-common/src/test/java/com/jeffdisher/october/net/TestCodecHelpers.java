@@ -326,10 +326,19 @@ public class TestCodecHelpers
 	public void slots() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		CodecHelpers.writeSlot(buffer, null);
+		buffer.flip();
+		DeserializationContext context = new DeserializationContext(Environment.getShared()
+			, buffer
+			, false
+		);
+		Assert.assertNull(CodecHelpers.readSlot(context));
+		
+		buffer.clear();
 		NonStackableItem sword = new NonStackableItem(IRON_SWORD_ITEM, Map.of(PropertyRegistry.DURABILITY, 103));
 		CodecHelpers.writeSlot(buffer, ItemSlot.fromNonStack(sword));
 		buffer.flip();
-		DeserializationContext context = new DeserializationContext(Environment.getShared()
+		context = new DeserializationContext(Environment.getShared()
 			, buffer
 			, false
 		);
