@@ -33,6 +33,15 @@ public interface IMutableInventory
 	public NonStackableItem getNonStackableForKey(int key);
 
 	/**
+	 * Looks up the item slot for the given identifier key.  This will return null only if there is no such key in the
+	 * inventory.
+	 * 
+	 * @param key The identifier key.
+	 * @return The ItemSlot for this key (null if this key is not in the inventory).
+	 */
+	public ItemSlot getSlotForKey(int key);
+
+	/**
 	 * A basic helper to check how many items of a given type are in the inventory.  This cannot be called if the item
 	 * is non-stackable.
 	 * 

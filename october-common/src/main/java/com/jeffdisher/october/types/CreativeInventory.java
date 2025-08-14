@@ -79,6 +79,12 @@ public class CreativeInventory implements IMutableInventory
 	}
 
 	@Override
+	public ItemSlot getSlotForKey(int key)
+	{
+		return _inventory.getSlotForKey(key);
+	}
+
+	@Override
 	public int getCount(Item type)
 	{
 		return _inventory.getCount(type);

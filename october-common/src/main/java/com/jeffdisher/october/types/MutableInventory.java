@@ -91,6 +91,12 @@ public class MutableInventory implements IMutableInventory
 		;
 	}
 
+	@Override
+	public ItemSlot getSlotForKey(int key)
+	{
+		return _slots.get(key);
+	}
+
 	/**
 	 * A basic helper to check how many items of a given type are in the inventory.  This cannot be called if the item
 	 * is non-stackable.

@@ -198,6 +198,12 @@ public class TestMutableInventory
 		Assert.assertEquals(PLANK_ITEM, frozen.getNonStackableForKey(3).type());
 		Assert.assertEquals(DIRT_ITEM, frozen.getNonStackableForKey(4).type());
 		Assert.assertEquals(LOG_ITEM, frozen.getNonStackableForKey(5).type());
+		
+		// Make sure that these are still resolved correctly as slots.
+		Assert.assertEquals(STONE_ITEM, frozen.getSlotForKey(2).stack.type());
+		Assert.assertEquals(PLANK_ITEM, frozen.getSlotForKey(3).nonStackable.type());
+		Assert.assertEquals(DIRT_ITEM, frozen.getSlotForKey(4).nonStackable.type());
+		Assert.assertEquals(LOG_ITEM, frozen.getSlotForKey(5).nonStackable.type());
 	}
 
 	@Test
