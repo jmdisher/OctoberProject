@@ -17,6 +17,7 @@ import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -83,6 +84,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		_setData7(AspectRegistry.FLAGS, (byte)0);
 		_setData7(AspectRegistry.ORIENTATION, OrientationAspect.directionToByte(OrientationAspect.Direction.NORTH));
 		_setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, null);
+		_setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, null);
 	}
 
 	@Override
@@ -237,6 +239,18 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	public void setMultiBlockRoot(AbsoluteLocation rootLocation)
 	{
 		_setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, rootLocation);
+	}
+
+	@Override
+	public ItemSlot getSpecialSlot()
+	{
+		return _getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT);
+	}
+
+	@Override
+	public void setSpecialSlot(ItemSlot slot)
+	{
+		_setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, slot);
 	}
 
 	@Override

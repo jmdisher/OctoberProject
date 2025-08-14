@@ -18,6 +18,8 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
+import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 
@@ -175,5 +177,32 @@ public class TestMutableBlockProxy
 		Assert.assertEquals(OrientationAspect.directionToByte(OrientationAspect.Direction.NORTH), input.getData7(AspectRegistry.ORIENTATION, rootLocation.getBlockAddress()));
 		Assert.assertEquals(ENV.special.AIR.item().number(), input.getData15(AspectRegistry.BLOCK, extensionLocation.getBlockAddress()));
 		Assert.assertEquals(null, input.getDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, extensionLocation.getBlockAddress()));
+	}
+
+	@Test
+	public void specialSlot()
+	{
+		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
+		CuboidAddress cuboidAddress = location.getCuboidAddress();
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		BlockAddress address = location.getBlockAddress();
+		
+		MutableBlockProxy proxy = new MutableBlockProxy(location, input);
+		proxy.setBlockAndClear(STONE);
+		Items stack = new Items(STONE.item(), 2);
+		proxy.setSpecialSlot(ItemSlot.fromStack(stack));
+		
+		CuboidData updated = CuboidData.mutableClone(input);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(updated);
+		Assert.assertEquals(stack, updated.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, address).stack);
+		
+		proxy = new MutableBlockProxy(location, updated);
+		proxy.setBlockAndClear(ENV.special.AIR);
+		
+		updated = CuboidData.mutableClone(updated);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(updated);
+		Assert.assertEquals(null, updated.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, address));
 	}
 }

@@ -16,6 +16,7 @@ import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -135,6 +136,12 @@ public class BlockProxy implements IBlockProxy
 	public AbsoluteLocation getMultiBlockRoot()
 	{
 		return _getDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT);
+	}
+
+	@Override
+	public ItemSlot getSpecialSlot()
+	{
+		return _getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT);
 	}
 
 	/**
