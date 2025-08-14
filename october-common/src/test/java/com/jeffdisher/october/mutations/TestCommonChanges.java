@@ -54,6 +54,7 @@ import com.jeffdisher.october.subactions.EntityChangeUseSelectedItemOnEntity;
 import com.jeffdisher.october.subactions.EntityChangeUseSelectedItemOnSelf;
 import com.jeffdisher.october.subactions.EntitySubActionLadderAscend;
 import com.jeffdisher.october.subactions.EntitySubActionLadderDescend;
+import com.jeffdisher.october.subactions.EntitySubActionRequestSwapSpecialSlot;
 import com.jeffdisher.october.subactions.MutationEntityPushItems;
 import com.jeffdisher.october.subactions.MutationEntityRequestItemPickUp;
 import com.jeffdisher.october.subactions.MutationEntitySelectItem;
@@ -2754,6 +2755,61 @@ public class TestCommonChanges
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(startDurability - 1, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(1)));
 		Assert.assertEquals((10 + 5) * duration, cuboid.getData15(AspectRegistry.DAMAGE, targetStone.getBlockAddress()));
+	}
+
+	@Test
+	public void pedestal() throws Throwable
+	{
+		// A test to show special slot interactions with a pedestal block.
+		Item pedestalItem = ENV.items.getItemById("op.pedestal");
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = new EntityLocation(6.0f, 0.0f, 10.0f);
+		newEntity.newInventory.addAllItems(STONE_ITEM, 2);
+		newEntity.setSelectedKey(1);
+		
+		AbsoluteLocation platform = newEntity.newLocation.getBlockLocation().getRelative(0, 0, -1);
+		AbsoluteLocation target = platform.getRelative(1, 0, 1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, platform.getBlockAddress(), STONE_ITEM.number());
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), pedestalItem.number());
+		
+		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
+		
+		// Try to place the stones into the pedestal.
+		EntitySubActionRequestSwapSpecialSlot swap = new EntitySubActionRequestSwapSpecialSlot(target, true);
+		Assert.assertTrue(swap.applyChange(holder.context, newEntity));
+		newEntity = MutableEntity.existing(newEntity.freeze());
+		Assert.assertNotNull(holder.mutation);
+		MutationBlockSwapSpecialSlot mutation = (MutationBlockSwapSpecialSlot) holder.mutation;
+		Assert.assertNull(holder.change);
+		holder.mutation = null;
+		MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(mutation.applyMutation(holder.context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertNull(holder.change);
+		Assert.assertEquals(0, newEntity.newInventory.getCurrentEncumbrance());
+		Assert.assertEquals(0, newEntity.getSelectedKey());
+		Assert.assertEquals(new Items(STONE_ITEM, 2), cuboid.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, target.getBlockAddress()).stack);
+		
+		// Now, swap the stones back into the inventory.
+		Assert.assertTrue(swap.applyChange(holder.context, newEntity));
+		newEntity = MutableEntity.existing(newEntity.freeze());
+		Assert.assertNotNull(holder.mutation);
+		mutation = (MutationBlockSwapSpecialSlot) holder.mutation;
+		Assert.assertNull(holder.change);
+		holder.mutation = null;
+		proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(mutation.applyMutation(holder.context, proxy));
+		proxy.writeBack(cuboid);
+		MutationEntityStoreToInventory store = (MutationEntityStoreToInventory) holder.change;
+		holder.change = null;
+		Assert.assertTrue(store.applyChange(holder.context, newEntity));
+		newEntity = MutableEntity.existing(newEntity.freeze());
+		Assert.assertNull(holder.mutation);
+		
+		Assert.assertEquals(ENV.encumbrance.getEncumbrance(STONE_ITEM) * 2, newEntity.newInventory.getCurrentEncumbrance());
+		Assert.assertEquals(1, newEntity.getSelectedKey());
+		Assert.assertEquals(null, cuboid.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, target.getBlockAddress()));
 	}
 
 
