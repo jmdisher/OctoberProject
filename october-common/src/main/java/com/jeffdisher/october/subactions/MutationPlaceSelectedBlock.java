@@ -101,13 +101,6 @@ public class MutationPlaceSelectedBlock implements IEntitySubAction<IMutablePlay
 		
 		if (isTargetAir && isItemSelected && isLocationClose && isLocationNotColliding && blockIsSupported)
 		{
-			// We want to apply this so remove the item from the inventory and create the replace mutation.
-			mutableInventory.removeStackableItems(itemType, 1);
-			if (0 == mutableInventory.getCount(itemType))
-			{
-				newEntity.setSelectedKey(Entity.NO_SELECTION);
-			}
-			
 			// Decide if this block type needs special orientation considerations.
 			OrientationAspect.Direction outputDirection = OrientationAspect.getDirectionIfApplicableToSingle(blockType, _targetBlock, _blockOutput);
 			
@@ -119,6 +112,13 @@ public class MutationPlaceSelectedBlock implements IEntitySubAction<IMutablePlay
 				MutationBlockOverwriteByEntity write = new MutationBlockOverwriteByEntity(_targetBlock, blockType, outputDirection, newEntity.getId());
 				context.mutationSink.next(write);
 				didApply = true;
+				
+				// We were able to send the mutation, so remove this from the inventory.
+				mutableInventory.removeStackableItems(itemType, 1);
+				if (0 == mutableInventory.getCount(itemType))
+				{
+					newEntity.setSelectedKey(Entity.NO_SELECTION);
+				}
 				
 				// Do other state reset.
 				newEntity.setCurrentCraftingOperation(null);

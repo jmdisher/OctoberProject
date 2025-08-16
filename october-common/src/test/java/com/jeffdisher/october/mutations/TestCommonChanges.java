@@ -2812,6 +2812,56 @@ public class TestCommonChanges
 		Assert.assertEquals(null, cuboid.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, target.getBlockAddress()));
 	}
 
+	@Test
+	public void placeKeystone() throws Throwable
+	{
+		// Place a portal keystone, showing that it requires orientation.
+		Item itemKeystone = ENV.items.getItemById("op.portal_keystone");
+		
+		int entityId = 1;
+		MutableEntity newEntity = MutableEntity.createForTest(entityId);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		newEntity.newInventory.addAllItems(itemKeystone, 3);
+		newEntity.setSelectedKey(1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
+		
+		// We will place down 2 keystones, facing north and east.
+		AbsoluteLocation centreTarget = new AbsoluteLocation(1, 1, 10);
+		
+		// Face no direction, failing to place.
+		MutationPlaceSelectedBlock fail = new MutationPlaceSelectedBlock(centreTarget.getRelative(0, -1, 0), null);
+		Assert.assertFalse(fail.applyChange(holder.context, newEntity));
+		Assert.assertNull(holder.mutation);
+		
+		// Face north.
+		MutationPlaceSelectedBlock north = new MutationPlaceSelectedBlock(centreTarget.getRelative(0, -1, 0), centreTarget);
+		Assert.assertTrue(north.applyChange(holder.context, newEntity));
+		MutableBlockProxy proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(0, -1, 0), 0, entityId));
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		Assert.assertEquals(itemKeystone, proxy.getBlock().item());
+		Assert.assertEquals(OrientationAspect.Direction.NORTH, proxy.getOrientation());
+		proxy.writeBack(cuboid);
+		holder.mutation = null;
+		
+		// Face east.
+		MutationPlaceSelectedBlock east = new MutationPlaceSelectedBlock(centreTarget.getRelative(-1, 0, 0), centreTarget);
+		Assert.assertTrue(east.applyChange(holder.context, newEntity));
+		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(-1, 0, 0), 0, entityId));
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		Assert.assertEquals(itemKeystone, proxy.getBlock().item());
+		Assert.assertEquals(OrientationAspect.Direction.EAST, proxy.getOrientation());
+		proxy.writeBack(cuboid);
+		holder.mutation = null;
+		
+		// Check our inventory.
+		Inventory inventory = newEntity.freeze().inventory();
+		Assert.assertEquals(1, inventory.sortedKeys().size());
+		Assert.assertEquals(1, inventory.getCount(itemKeystone));
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

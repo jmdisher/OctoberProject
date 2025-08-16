@@ -21,12 +21,24 @@ public class OrientationAspect
 	public static final String OR_GATE = "op.or_gate";
 	public static final String NOT_GATE = "op.not_gate";
 	public static final String SENSOR_INVENTORY = "op.sensor_inventory";
+	public static final String PORTAL_KEYSTONE = "op.portal_keystone";
+
+	public static final Set<String> HAS_ORIENTATION = Set.of(HOPPER
+			, EMITTER
+			, DIODE
+			, AND_GATE
+			, OR_GATE
+			, NOT_GATE
+			, SENSOR_INVENTORY
+			, PORTAL_KEYSTONE
+	);
 	public static final Set<String> FLAT_ONLY = Set.of(EMITTER
 			, DIODE
 			, AND_GATE
 			, OR_GATE
 			, NOT_GATE
 			, SENSOR_INVENTORY
+			, PORTAL_KEYSTONE
 	);
 
 	/**
@@ -62,13 +74,20 @@ public class OrientationAspect
 	public static boolean doesSingleBlockRequireOrientation(Block blockType)
 	{
 		String blockId = blockType.item().id();
-		return blockId.equals(HOPPER) || FLAT_ONLY.contains(blockId);
+		return HAS_ORIENTATION.contains(blockId);
 	}
 
+	/**
+	 * Checks if the given block can be oriented with a downward output (as opposed to only a flat orientation).
+	 * This can only be called for single blocks (not multi-blocks).
+	 * 
+	 * @param blockType The block type.
+	 * @return True if this MUST store an orientation byte and can store a DOWN orientation.
+	 */
 	public static boolean doesAllowDownwardOutput(Block blockType)
 	{
 		String blockId = blockType.item().id();
-		return blockId.equals(HOPPER);
+		return _downAllowDownwardOutput(blockId);
 	}
 
 	/**
@@ -85,9 +104,9 @@ public class OrientationAspect
 	{
 		String blockId = blockType.item().id();
 		boolean has4 = FLAT_ONLY.contains(blockId);
-		boolean has5 = blockId.equals(HOPPER);
+		boolean has5 = _downAllowDownwardOutput(blockId);
 		OrientationAspect.Direction outputDirection;
-		if (has4 || has5)
+		if ((has4 || has5) && (null != outputLocation))
 		{
 			// Check the direction of the output, relative to target block.
 			outputDirection = _getRelativeDirection(blockLocation, outputLocation);
@@ -148,6 +167,11 @@ public class OrientationAspect
 			outputDirection = OrientationAspect.Direction.DOWN;
 		}
 		return outputDirection;
+	}
+
+	private static boolean _downAllowDownwardOutput(String blockId)
+	{
+		return HAS_ORIENTATION.contains(blockId) && !FLAT_ONLY.contains(blockId);
 	}
 
 
