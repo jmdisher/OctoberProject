@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -22,6 +23,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.logic.CompositeHelpers;
 import com.jeffdisher.october.logic.PlantHelpers;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;
@@ -1621,6 +1623,75 @@ public class TestCommonMutations
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(pedestalBlock.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(null, cuboid.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, target.getBlockAddress()));
+	}
+
+	@Test
+	public void placePortalCornerstone()
+	{
+		// A test to show how portals become active or inactive.
+		AbsoluteLocation target = new AbsoluteLocation(5, 5, 1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
+		Block portalBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_keystone"));
+		Block voidBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.void_stone"));
+		Set<AbsoluteLocation> outline = Set.of(
+				target.getRelative(0, -1, 0)
+				, target.getRelative(0, -2, 0)
+				, target.getRelative(0, -2, 1)
+				, target.getRelative(0, -2, 2)
+				, target.getRelative(0, -2, 3)
+				, target.getRelative(0, -2, 4)
+				, target.getRelative(0, 1, 0)
+				, target.getRelative(0, 2, 0)
+				, target.getRelative(0, 2, 1)
+				, target.getRelative(0, 2, 2)
+				, target.getRelative(0, 2, 3)
+				, target.getRelative(0, 2, 4)
+				, target.getRelative(0, -1, 4)
+				, target.getRelative(0, 0, 4)
+				, target.getRelative(0, 1, 4)
+		);
+		for (AbsoluteLocation location : outline)
+		{
+			cuboid.setData15(AspectRegistry.BLOCK, location.getBlockAddress(), voidBlock.item().number());
+		}
+		
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation blockLocation) -> {
+				return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
+			}, null)
+			.eventSink(new TickProcessingContext.IEventSink() {
+				@Override
+				public void post(EventRecord event)
+				{
+					// Do nothing.
+				}
+			})
+			.finish()
+		;
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		MutationBlockOverwriteByEntity overwrite = new MutationBlockOverwriteByEntity(target, portalBlock, OrientationAspect.Direction.EAST, 1);
+		boolean didApply = overwrite.applyMutation(context, proxy);
+		
+		Assert.assertTrue(didApply);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		
+		// Verify that it is active and requested an update check.
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, cuboid.getData7(AspectRegistry.FLAGS, target.getBlockAddress()));
+		Assert.assertEquals(CompositeHelpers.COMPOSITE_CHECK_FREQUENCY, proxy.periodicDelayMillis);
+		
+		// Invalidate one of the corners and run the re-check.
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 2, 4).getBlockAddress(), STONE.item().number());
+		MutationBlockPeriodic periodic = new MutationBlockPeriodic(target);
+		proxy = new MutableBlockProxy(target, cuboid);
+		didApply = periodic.applyMutation(context, proxy);
+		Assert.assertFalse(didApply);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		
+		// Verify that it is inactive but requested an update check.
+		Assert.assertEquals(0x0, cuboid.getData7(AspectRegistry.FLAGS, target.getBlockAddress()));
+		Assert.assertEquals(CompositeHelpers.COMPOSITE_CHECK_FREQUENCY, proxy.periodicDelayMillis);
 	}
 
 

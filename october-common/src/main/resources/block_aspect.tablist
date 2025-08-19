@@ -142,5 +142,5 @@ op.void_lamp	is_composition
 	block_material	PICKAXE
 op.pedestal
 	block_material	PICKAXE
-op.portal_keystone
+op.portal_keystone	is_composition
 	block_material	PICKAXE

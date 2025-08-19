@@ -69,13 +69,12 @@ public class MutationBlockPlaceMultiBlock implements IMutationBlock
 		Environment env = Environment.getShared();
 		boolean isRoot = _rootLocation.equals(_location);
 		Block oldBlock = newBlock.getBlock();
-		boolean didApply = CommonBlockMutationHelpers.overwriteBlock(context, newBlock, _location, _direction, _blockType);
+		OrientationAspect.Direction outputIfRoot = isRoot ? _direction : null;
+		boolean didApply = CommonBlockMutationHelpers.overwriteBlock(context, newBlock, _location, outputIfRoot, _blockType);
 		if (didApply)
 		{
 			if (isRoot)
 			{
-				newBlock.setOrientation(_direction);
-				
 				// Determine the appropriate event to trigger.
 				EventRecord.Type type;
 				if (env.liquids.isSource(_blockType))

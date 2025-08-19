@@ -87,38 +87,38 @@ public class CompositeHelpers
 		{
 			Block stoneBlock = env.blocks.fromItem(env.items.getItemById(VOID_STONE_ID));
 			Set<AbsoluteLocation> stoneSet = Set.of(
-				location.getRelative(-1, 0, 0)
-				, location.getRelative(-2, 0, 0)
-				, location.getRelative(-2, 0, 1)
-				, location.getRelative(-2, 0, 2)
-				, location.getRelative(-2, 0, 3)
-				, location.getRelative(-2, 0, 4)
-				, location.getRelative(-1, 0, 4)
-				, location.getRelative( 0, 0, 4)
-				, location.getRelative( 1, 0, 4)
-				, location.getRelative( 2, 0, 4)
-				, location.getRelative( 2, 0, 3)
-				, location.getRelative( 2, 0, 2)
-				, location.getRelative( 2, 0, 1)
-				, location.getRelative( 2, 0, 0)
-				, location.getRelative( 1, 0, 0)
+				new AbsoluteLocation(-1, 0, 0)
+				, new AbsoluteLocation(-2, 0, 0)
+				, new AbsoluteLocation(-2, 0, 1)
+				, new AbsoluteLocation(-2, 0, 2)
+				, new AbsoluteLocation(-2, 0, 3)
+				, new AbsoluteLocation(-2, 0, 4)
+				, new AbsoluteLocation(-1, 0, 4)
+				, new AbsoluteLocation( 0, 0, 4)
+				, new AbsoluteLocation( 1, 0, 4)
+				, new AbsoluteLocation( 2, 0, 4)
+				, new AbsoluteLocation( 2, 0, 3)
+				, new AbsoluteLocation( 2, 0, 2)
+				, new AbsoluteLocation( 2, 0, 1)
+				, new AbsoluteLocation( 2, 0, 0)
+				, new AbsoluteLocation( 1, 0, 0)
 			);
 			Set<AbsoluteLocation> airSet = Set.of(
-				location.getRelative(-1, 0, 1)
-				, location.getRelative(0, 0, 1)
-				, location.getRelative(1, 0, 1)
-				, location.getRelative(-1, 0, 2)
-				, location.getRelative(0, 0, 2)
-				, location.getRelative(1, 0, 2)
-				, location.getRelative(-1, 0, 3)
-				, location.getRelative(0, 0, 3)
-				, location.getRelative(1, 0, 3)
+				new AbsoluteLocation(-1, 0, 1)
+				, new AbsoluteLocation(0, 0, 1)
+				, new AbsoluteLocation(1, 0, 1)
+				, new AbsoluteLocation(-1, 0, 2)
+				, new AbsoluteLocation(0, 0, 2)
+				, new AbsoluteLocation(1, 0, 2)
+				, new AbsoluteLocation(-1, 0, 3)
+				, new AbsoluteLocation(0, 0, 3)
+				, new AbsoluteLocation(1, 0, 3)
 			);
 			OrientationAspect.Direction orientation = proxy.getOrientation();
-			isValid = _matchBlockTypes(context, orientation, stoneSet, stoneBlock);
+			isValid = _matchBlockTypes(context, orientation, location, stoneSet, stoneBlock);
 			if (isValid)
 			{
-				isValid = _matchBlockTypes(context, orientation, airSet, env.special.AIR);
+				isValid = _matchBlockTypes(context, orientation, location, airSet, env.special.AIR);
 			}
 		}
 		else
@@ -129,14 +129,15 @@ public class CompositeHelpers
 		return isValid;
 	}
 
-	private static boolean _matchBlockTypes(TickProcessingContext context, OrientationAspect.Direction orientation, Set<AbsoluteLocation> locations, Block blockMatch)
+	private static boolean _matchBlockTypes(TickProcessingContext context, OrientationAspect.Direction orientation, AbsoluteLocation base, Set<AbsoluteLocation> relatives, Block blockMatch)
 	{
 		boolean isValid = true;
-		for (AbsoluteLocation target : locations)
+		for (AbsoluteLocation target : relatives)
 		{
 			// Note that we need to correct this for orientation.
 			AbsoluteLocation rotated = orientation.rotateAboutZ(target);
-			BlockProxy targetProxy = context.previousBlockLookUp.apply(rotated);
+			AbsoluteLocation relative = base.getRelative(rotated.x(), rotated.y(), rotated.z());
+			BlockProxy targetProxy = context.previousBlockLookUp.apply(relative);
 			if (null == targetProxy)
 			{
 				// Request that this is loaded since remove portals are sometimes checked.

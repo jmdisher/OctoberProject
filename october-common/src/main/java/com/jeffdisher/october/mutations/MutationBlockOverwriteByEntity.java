@@ -87,11 +87,6 @@ public class MutationBlockOverwriteByEntity implements IMutationBlock
 				// Just use the generic block placed type since we did _something_.
 				type = EventRecord.Type.BLOCK_PLACED;
 			}
-			// If there is an orientation for this block, set it here (this doesn't go through the common overwriteBlock() path since it only matters in this case and doesn't trigger anything).
-			if (null != _outputDirection)
-			{
-				newBlock.setOrientation(_outputDirection);
-			}
 			context.eventSink.post(new EventRecord(type
 					, EventRecord.Cause.NONE
 					, _location

@@ -111,7 +111,7 @@ public class CommonBlockMutationHelpers
 			if (blockIsSupported)
 			{
 				// Do the standard inventory handling.
-				Inventory inventoryToMove = _replaceBlockAndRestoreInventory(env, context, location, newBlock, blockType);
+				Inventory inventoryToMove = _replaceBlockAndRestoreInventory(env, context, location, newBlock, blockType, outputDirection);
 				if (null != inventoryToMove)
 				{
 					_pushInventoryToNeighbour(env, context, location, inventoryToMove, false);
@@ -161,7 +161,9 @@ public class CommonBlockMutationHelpers
 	 */
 	public static Inventory replaceBlockAndRestoreInventory(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock, Block block)
 	{
-		return _replaceBlockAndRestoreInventory(env, context, location, newBlock, block);
+		// This isn't an explicit block placement, so it has no direction.
+		OrientationAspect.Direction outputDirection = null;
+		return _replaceBlockAndRestoreInventory(env, context, location, newBlock, block, outputDirection);
 	}
 
 	/**
@@ -235,7 +237,9 @@ public class CommonBlockMutationHelpers
 	 */
 	public static void setBlockCheckingFire(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy, Block newType)
 	{
-		_setBlockCheckingFire(env, context, location, proxy, newType);
+		// This isn't an explicit block placement, so it has no direction.
+		OrientationAspect.Direction outputDirection = null;
+		_setBlockCheckingFire(env, context, location, proxy, newType, outputDirection);
 	}
 
 	/**
@@ -310,7 +314,9 @@ public class CommonBlockMutationHelpers
 		
 		// Break the block and replace it with the empty type, storing the inventory into it (may be over-filled).
 		// NOTE:  We use this common helper just as a consistent idiom but setting to air never starts fires.
-		_setBlockCheckingFire(env, context, location, proxy, emptyBlock);
+		// This isn't an explicit block placement, so it has no direction.
+		OrientationAspect.Direction outputDirection = null;
+		_setBlockCheckingFire(env, context, location, proxy, emptyBlock, outputDirection);
 		Inventory inventory = newInventory.freeze();
 		proxy.setInventory(inventory);
 		
@@ -432,7 +438,7 @@ public class CommonBlockMutationHelpers
 		}
 	}
 
-	private static Inventory _replaceBlockAndRestoreInventory(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock, Block block)
+	private static Inventory _replaceBlockAndRestoreInventory(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock, Block block, OrientationAspect.Direction outputDirection)
 	{
 		// Get the existing inventory (note that this will return an empty inventory if the block type can support an
 		// inventory but there is nothing there).
@@ -442,7 +448,7 @@ public class CommonBlockMutationHelpers
 			// We will ignore empty inventories.
 			original = null;
 		}
-		_setBlockCheckingFire(env, context, location, newBlock, block);
+		_setBlockCheckingFire(env, context, location, newBlock, block, outputDirection);
 		
 		// If we have an inventory and the block type is either empty with an inventory or a station with an inventory, store there.
 		if ((null != original)
@@ -531,7 +537,7 @@ public class CommonBlockMutationHelpers
 		return env.blocks.droppedBlocksOnBreak(block, random0to99);
 	}
 
-	private static void _setBlockCheckingFire(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy, Block newType)
+	private static void _setBlockCheckingFire(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy, Block newType, OrientationAspect.Direction outputDirection)
 	{
 		Block oldType = proxy.getBlock();
 		
@@ -548,7 +554,11 @@ public class CommonBlockMutationHelpers
 		
 		// If this block changed into a flammable type, see if it should receive an ignition mutation.
 		// (set type first since this helper reads it).
-		_setBlockKeepMultiBlock(env, proxy, oldType, newType);
+		proxy.setBlockAndClear(newType);
+		if (null != outputDirection)
+		{
+			proxy.setOrientation(outputDirection);
+		}
 		if (!env.blocks.isFlammable(oldType) && FireHelpers.canIgnite(env, context, location, proxy))
 		{
 			MutationBlockStartFire startFire = new MutationBlockStartFire(location);
@@ -611,28 +621,6 @@ public class CommonBlockMutationHelpers
 		for (Item dropped : _getItemsDroppedWhenBreakingBlock(env, context, block))
 		{
 			out_inventory.addItemsAllowingOverflow(dropped, 1);
-		}
-	}
-
-	private static void _setBlockKeepMultiBlock(Environment env, IMutableBlockProxy proxy, Block oldType, Block newType)
-	{
-		// If this is a multi-block component, we need to capture orientation and root data to restore after clear.
-		boolean isStillMultiBlock = env.blocks.isMultiBlock(oldType) && env.blocks.isMultiBlock(newType);
-		OrientationAspect.Direction multiBlockDirection = null;
-		AbsoluteLocation multiBlockRoot = null;
-		if (isStillMultiBlock)
-		{
-			multiBlockDirection = proxy.getOrientation();
-			multiBlockRoot = proxy.getMultiBlockRoot();
-		}
-		
-		proxy.setBlockAndClear(newType);
-		
-		// Restore multi-block.
-		if (isStillMultiBlock)
-		{
-			proxy.setOrientation(multiBlockDirection);
-			proxy.setMultiBlockRoot(multiBlockRoot);
 		}
 	}
 }
