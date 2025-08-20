@@ -144,3 +144,6 @@ op.pedestal
 	block_material	PICKAXE
 op.portal_keystone	is_composition
 	block_material	PICKAXE
+op.portal_surface	is_multiblock
+	viscosity	0
+	requires_support	op.portal_keystone

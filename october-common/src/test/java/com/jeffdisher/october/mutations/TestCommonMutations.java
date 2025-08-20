@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -1692,6 +1693,90 @@ public class TestCommonMutations
 		// Verify that it is inactive but requested an update check.
 		Assert.assertEquals(0x0, cuboid.getData7(AspectRegistry.FLAGS, target.getBlockAddress()));
 		Assert.assertEquals(CompositeHelpers.COMPOSITE_CHECK_FREQUENCY, proxy.periodicDelayMillis);
+	}
+
+	@Test
+	public void blockUpdatePortalSurface()
+	{
+		// Show what happens when we perform block updates on parts of the portal which must be supported by the keystone versus the rest.
+		AbsoluteLocation target = new AbsoluteLocation(5, 5, 1);
+		AbsoluteLocation corner = target.getRelative(0, -1, 0);
+		AbsoluteLocation keystoneLocation = target.getRelative(0, 0, -1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
+		Block portalBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_keystone"));
+		Block surfaceBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_surface"));
+		Set<AbsoluteLocation> outline = Set.of(
+				corner
+				, target.getRelative(0,  1, 0)
+				, target.getRelative(0,  0, 1)
+				, target.getRelative(0, -1, 1)
+				, target.getRelative(0,  1, 1)
+				, target.getRelative(0,  0, 2)
+				, target.getRelative(0, -1, 2)
+				, target.getRelative(0,  1, 2)
+		);
+		cuboid.setData15(AspectRegistry.BLOCK, keystoneLocation.getBlockAddress(), portalBlock.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), surfaceBlock.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, target.getBlockAddress(), OrientationAspect.directionToByte(OrientationAspect.Direction.EAST));
+		for (AbsoluteLocation location : outline)
+		{
+			cuboid.setData15(AspectRegistry.BLOCK, location.getBlockAddress(), surfaceBlock.item().number());
+			cuboid.setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, location.getBlockAddress(), target);
+		}
+		
+		Set<AbsoluteLocation> replaceLocations = new HashSet<>();
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation blockLocation) -> {
+				return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
+			}, null)
+			.sinks(new TickProcessingContext.IMutationSink() {
+				@Override
+				public void next(IMutationBlock mutation)
+				{
+					Assert.assertTrue(mutation instanceof MutationBlockReplace);
+					boolean didAdd = replaceLocations.add(mutation.getAbsoluteLocation());
+					Assert.assertTrue(didAdd);
+				}
+				@Override
+				public void future(IMutationBlock mutation, long millisToDelay)
+				{
+				}
+			}, null)
+			.finish()
+		;
+		
+		// Check the base when there is a keystone.
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		MutationBlockUpdate update = new MutationBlockUpdate(target);
+		boolean didApply = update.applyMutation(context, proxy);
+		Assert.assertFalse(didApply);
+		Assert.assertFalse(proxy.didChange());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(0, replaceLocations.size());
+		
+		// Check the corner.
+		proxy = new MutableBlockProxy(corner, cuboid);
+		update = new MutationBlockUpdate(corner);
+		didApply = update.applyMutation(context, proxy);
+		Assert.assertFalse(didApply);
+		Assert.assertFalse(proxy.didChange());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(0, replaceLocations.size());
+		
+		// Check the base when there is a no keystone.
+		cuboid.setData15(AspectRegistry.BLOCK, keystoneLocation.getBlockAddress(), ENV.special.AIR.item().number());
+		proxy = new MutableBlockProxy(target, cuboid);
+		update = new MutationBlockUpdate(target);
+		didApply = update.applyMutation(context, proxy);
+		Assert.assertTrue(didApply);
+		Assert.assertFalse(proxy.didChange());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(9, replaceLocations.size());
+		Assert.assertTrue(replaceLocations.contains(target));
+		for (AbsoluteLocation location : outline)
+		{
+			Assert.assertTrue(replaceLocations.contains(location));
+		}
 	}
 
 

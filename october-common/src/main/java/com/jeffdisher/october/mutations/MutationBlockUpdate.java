@@ -73,9 +73,15 @@ public class MutationBlockUpdate implements IMutationBlock
 			// Make sure that this block can be supported by the one under it.
 			AbsoluteLocation belowBlockLocation = _blockLocation.getRelative(0, 0, -1);
 			BlockProxy belowBlock = context.previousBlockLookUp.apply(belowBlockLocation);
-			boolean blockIsSupported = env.blocks.canExistOnBlock(thisBlock, (null != belowBlock) ? belowBlock.getBlock() : null);
 			Block emptyBlock = env.special.AIR;
 			Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, emptyBlock);
+			
+			// Note that multi-blocks also can require "existing on block", but only if they are the root block.
+			boolean blockIsSupported = env.blocks.canExistOnBlock(thisBlock, (null != belowBlock) ? belowBlock.getBlock() : null);
+			if (MultiBlockUtils.isMultiBlockExtension(env, newBlock))
+			{
+				blockIsSupported = true;
+			}
 			
 			if (!blockIsSupported)
 			{
@@ -86,17 +92,30 @@ public class MutationBlockUpdate implements IMutationBlock
 					context.mutationSink.future(new MutationBlockLiquidFlowInto(_blockLocation), millisDelay);
 				}
 				
-				// Create the inventory for this type.
-				boolean isActive = false;
-				MutableInventory newInventory = new MutableInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, emptyBlock, isActive));
-				CommonBlockMutationHelpers.fillInventoryFromBlockWithoutLimit(newInventory, newBlock);
-				
-				// Add this block's drops to the inventory.
-				CommonBlockMutationHelpers.populateInventoryWhenBreakingBlock(env, context, newInventory, thisBlock);
-				
-				// Break the block and replace it with the empty type, storing the inventory into it (may be over-filled).
-				CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _blockLocation, newBlock, emptyBlock);
-				newBlock.setInventory(newInventory.freeze());
+				// Determine if this is a block which breaks normally or if we need to use a special multi-block breaking idiom.
+				if (MultiBlockUtils.isMultiBlockRoot(env, newBlock))
+				{
+					// We will enqueue the MultiBlockReplace for each block in the multi-block, forcing them into air.
+					MultiBlockUtils.Lookup lookup = MultiBlockUtils.getLoadedRoot(env, context, _blockLocation);
+					MultiBlockUtils.sendMutationToAll(context, (AbsoluteLocation location) -> {
+						MutationBlockReplace mutation = new MutationBlockReplace(location, newBlock.getBlock(), emptyBlock);
+						return mutation;
+					}, lookup);
+				}
+				else
+				{
+					// Create the inventory for this type.
+					boolean isActive = false;
+					MutableInventory newInventory = new MutableInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, emptyBlock, isActive));
+					CommonBlockMutationHelpers.fillInventoryFromBlockWithoutLimit(newInventory, newBlock);
+					
+					// Add this block's drops to the inventory.
+					CommonBlockMutationHelpers.populateInventoryWhenBreakingBlock(env, context, newInventory, thisBlock);
+					
+					// Break the block and replace it with the empty type, storing the inventory into it (may be over-filled).
+					CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _blockLocation, newBlock, emptyBlock);
+					newBlock.setInventory(newInventory.freeze());
+				}
 				didApply = true;
 			}
 			else if (env.blocks.isBrokenByFlowingLiquid(thisBlock) && (emptyBlock != eventualBlock))

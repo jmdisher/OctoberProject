@@ -92,3 +92,4 @@ op.void_lamp	Void Lamp
 op.pedestal	Pedestal
 op.portal_keystone	Portal Keystone
 op.portal_orb	Portal Orb
+op.portal_surface	Portal

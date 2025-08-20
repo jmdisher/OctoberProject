@@ -104,6 +104,20 @@ public class MultiBlockUtils
 		;
 	}
 
+	/**
+	 * Checks if the block described by this proxy is a multi-block root.
+	 * 
+	 * @param env The environment.
+	 * @param proxy The proxy to evaluate.
+	 * @return True if this is both a multi-block and is the root of the multi-block (otherwise false).
+	 */
+	public static boolean isMultiBlockRoot(Environment env, IBlockProxy proxy)
+	{
+		return env.blocks.isMultiBlock(proxy.getBlock())
+				&& (null == proxy.getMultiBlockRoot())
+		;
+	}
+
 
 	/**
 	 * Information to describe the shape of multi-block placements.  Note that extensions is never null but can be empty
