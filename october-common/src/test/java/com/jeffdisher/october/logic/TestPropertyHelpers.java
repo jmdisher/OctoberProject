@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.properties.PropertyRegistry;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.NonStackableItem;
 
@@ -18,12 +19,14 @@ public class TestPropertyHelpers
 	private static Environment ENV;
 	private static Item IRON_SWORD;
 	private static Item IRON_PICKAXE;
+	private static Item PORTAL_ORB;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
 		IRON_SWORD = ENV.items.getItemById("op.iron_sword");
 		IRON_PICKAXE = ENV.items.getItemById("op.iron_pickaxe");
+		PORTAL_ORB = ENV.items.getItemById("op.portal_orb");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -87,5 +90,20 @@ public class TestPropertyHelpers
 			, PropertyRegistry.ENCHANT_TOOL_EFFICIENCY, (byte)5
 		));
 		Assert.assertEquals(15, PropertyHelpers.getToolMaterialEfficiency(ENV, item));
+	}
+
+	@Test
+	public void orbLocation()
+	{
+		NonStackableItem item = PropertyHelpers.newItemWithDefaults(ENV, PORTAL_ORB);
+		Assert.assertEquals(PORTAL_ORB.name(), PropertyHelpers.getName(item));
+		Assert.assertEquals(0, PropertyHelpers.getDurability(item));
+		Assert.assertEquals(null, PropertyHelpers.getLocation(item));
+		
+		AbsoluteLocation location = new AbsoluteLocation(5, -99, 26);
+		item = new NonStackableItem(PORTAL_ORB, Map.of(PropertyRegistry.LOCATION, location));
+		Assert.assertEquals(PORTAL_ORB.name(), PropertyHelpers.getName(item));
+		Assert.assertEquals(0, PropertyHelpers.getDurability(item));
+		Assert.assertEquals(location, PropertyHelpers.getLocation(item));
 	}
 }

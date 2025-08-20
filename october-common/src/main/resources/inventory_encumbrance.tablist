@@ -93,3 +93,4 @@ op.void_stone	2
 op.void_lamp	2
 op.pedestal	4
 op.portal_keystone	2
+op.portal_orb	1

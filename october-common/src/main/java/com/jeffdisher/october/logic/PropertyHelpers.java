@@ -7,6 +7,7 @@ import java.util.Map;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.properties.PropertyType;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.utils.Assert;
@@ -129,6 +130,11 @@ public class PropertyHelpers
 		return Math.min(damage, Byte.MAX_VALUE);
 	}
 
+	public static AbsoluteLocation getLocation(NonStackableItem item)
+	{
+		// This is null in most cases.
+		return _getValue(item.properties(), PropertyRegistry.LOCATION, null);
+	}
 
 	private static <T> T _getValue(Map<PropertyType<?>, Object> properties, PropertyType<T> type, T missingValue)
 	{

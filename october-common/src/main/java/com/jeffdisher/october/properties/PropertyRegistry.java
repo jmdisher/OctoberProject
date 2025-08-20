@@ -7,6 +7,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IObjectCodec;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -125,6 +126,25 @@ public class PropertyRegistry
 			}
 		}
 	);
+	/**
+	 * A special location bound to NonStackableItem.
+	 */
+	public static final PropertyType<AbsoluteLocation> LOCATION = registerProperty(AbsoluteLocation.class
+		, new IObjectCodec<AbsoluteLocation>()
+		{
+			@Override
+			public AbsoluteLocation loadData(DeserializationContext context) throws BufferUnderflowException
+			{
+				ByteBuffer buffer = context.buffer();
+				return CodecHelpers.readAbsoluteLocation(buffer);
+			}
+			@Override
+			public void storeData(ByteBuffer buffer, AbsoluteLocation object) throws BufferOverflowException
+			{
+				CodecHelpers.writeAbsoluteLocation(buffer, object);
+			}
+		}
+	);
 
 
 	private static int _nextIndex = 0;
@@ -136,6 +156,7 @@ public class PropertyRegistry
 		Assert.assertTrue(2 == ENCHANT_DURABILITY.index());
 		Assert.assertTrue(3 == ENCHANT_WEAPON_MELEE.index());
 		Assert.assertTrue(4 == ENCHANT_TOOL_EFFICIENCY.index());
+		Assert.assertTrue(5 == LOCATION.index());
 		
 		// Create the finished array, in-order.
 		ALL_PROPERTIES = new PropertyType<?>[] {
@@ -144,6 +165,7 @@ public class PropertyRegistry
 			ENCHANT_DURABILITY,
 			ENCHANT_WEAPON_MELEE,
 			ENCHANT_TOOL_EFFICIENCY,
+			LOCATION,
 		};
 	}
 
