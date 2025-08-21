@@ -70,7 +70,8 @@ public class MutationBlockPlaceMultiBlock implements IMutationBlock
 		boolean isRoot = _rootLocation.equals(_location);
 		Block oldBlock = newBlock.getBlock();
 		OrientationAspect.Direction outputIfRoot = isRoot ? _direction : null;
-		boolean didApply = CommonBlockMutationHelpers.overwriteBlock(context, newBlock, _location, outputIfRoot, _blockType);
+		boolean isMultiBlockExtension = !isRoot;
+		boolean didApply = CommonBlockMutationHelpers.overwriteBlock(context, newBlock, _location, outputIfRoot, _blockType, isMultiBlockExtension);
 		if (didApply)
 		{
 			if (isRoot)

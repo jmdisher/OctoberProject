@@ -85,9 +85,10 @@ public class CommonBlockMutationHelpers
 	 * @param location The location of the block being written.
 	 * @param outputDirection The output directly of the block in location (can be null).
 	 * @param blockType The new block type to write.
+	 * @param isMultiBlockExtension True if this is a multi-block extension (since they ignore block support rules).
 	 * @return True if the block was written or false if the write was aborted.
 	 */
-	public static boolean overwriteBlock(TickProcessingContext context, IMutableBlockProxy newBlock, AbsoluteLocation location, OrientationAspect.Direction outputDirection, Block blockType)
+	public static boolean overwriteBlock(TickProcessingContext context, IMutableBlockProxy newBlock, AbsoluteLocation location, OrientationAspect.Direction outputDirection, Block blockType, boolean isMultiBlockExtension)
 	{
 		Environment env = Environment.getShared();
 		boolean didApply = false;
@@ -100,12 +101,17 @@ public class CommonBlockMutationHelpers
 			boolean shouldSetHigh = LogicLayerHelpers.shouldSetActive(env, context.previousBlockLookUp, location, outputDirection, blockType);
 			
 			// Make sure that this block can be supported by the one under it.
-			BlockProxy belowBlock = context.previousBlockLookUp.apply(location.getRelative(0, 0, -1));
-			// If the cuboid beneath this isn't loaded, we will just treat it as supported (best we can do in this situation).
-			boolean blockIsSupported = (null != belowBlock)
-					? env.blocks.canExistOnBlock(blockType, belowBlock.getBlock())
-					: true
-			;
+			// Note that multi-blocks only honour their support block for their root.
+			boolean blockIsSupported = true;
+			if (!isMultiBlockExtension)
+			{
+				BlockProxy belowBlock = context.previousBlockLookUp.apply(location.getRelative(0, 0, -1));
+				// If the cuboid beneath this isn't loaded, we will just treat it as supported (best we can do in this situation).
+				if (null != belowBlock)
+				{
+					blockIsSupported = env.blocks.canExistOnBlock(blockType, belowBlock.getBlock());
+				}
+			}
 			
 			// Note that failing to place this means that the block will be destroyed and nothing changes.
 			if (blockIsSupported)

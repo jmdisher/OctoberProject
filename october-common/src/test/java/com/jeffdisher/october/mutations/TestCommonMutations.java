@@ -1779,6 +1779,50 @@ public class TestCommonMutations
 		}
 	}
 
+	@Test
+	public void multiBlockSupport()
+	{
+		// Show that multi-block support only matters for the root.
+		AbsoluteLocation keystoneLocation = new AbsoluteLocation(5, 5, 1);
+		AbsoluteLocation aboveKeystone = keystoneLocation.getRelative(0, 0, 1);
+		AbsoluteLocation notAboveKeystone = keystoneLocation.getRelative(1, 0, 1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(keystoneLocation.getCuboidAddress(), ENV.special.AIR);
+		Block portalBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_keystone"));
+		Block surfaceBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_surface"));
+		cuboid.setData15(AspectRegistry.BLOCK, keystoneLocation.getBlockAddress(), portalBlock.item().number());
+		
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation blockLocation) -> {
+				return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
+			}, null)
+			.finish()
+		;
+		
+		// Show that the root cares about this.
+		MutationBlockPlaceMultiBlock rootPass = new MutationBlockPlaceMultiBlock(aboveKeystone, surfaceBlock, aboveKeystone, OrientationAspect.Direction.NORTH, 0);
+		MutableBlockProxy proxy = new MutableBlockProxy(aboveKeystone, cuboid);
+		boolean didApply = rootPass.applyMutation(context, proxy);
+		Assert.assertTrue(didApply);
+		Assert.assertTrue(proxy.didChange());
+		MutationBlockPlaceMultiBlock rootFail = new MutationBlockPlaceMultiBlock(notAboveKeystone, surfaceBlock, notAboveKeystone, OrientationAspect.Direction.NORTH, 0);
+		proxy = new MutableBlockProxy(notAboveKeystone, cuboid);
+		didApply = rootFail.applyMutation(context, proxy);
+		Assert.assertFalse(didApply);
+		Assert.assertFalse(proxy.didChange());
+		
+		// But that the extensions do not.
+		MutationBlockPlaceMultiBlock extensionPass = new MutationBlockPlaceMultiBlock(aboveKeystone, surfaceBlock, keystoneLocation, OrientationAspect.Direction.NORTH, 0);
+		proxy = new MutableBlockProxy(aboveKeystone, cuboid);
+		didApply = extensionPass.applyMutation(context, proxy);
+		Assert.assertTrue(didApply);
+		Assert.assertTrue(proxy.didChange());
+		MutationBlockPlaceMultiBlock extensionFail = new MutationBlockPlaceMultiBlock(notAboveKeystone, surfaceBlock, keystoneLocation, OrientationAspect.Direction.NORTH, 0);
+		proxy = new MutableBlockProxy(notAboveKeystone, cuboid);
+		didApply = extensionFail.applyMutation(context, proxy);
+		Assert.assertTrue(didApply);
+		Assert.assertTrue(proxy.didChange());
+	}
+
 
 	private static class ProcessingSinks
 	{
