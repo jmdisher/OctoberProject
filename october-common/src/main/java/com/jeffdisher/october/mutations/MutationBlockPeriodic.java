@@ -8,6 +8,7 @@ import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.CompositeHelpers;
 import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.logic.PlantHelpers;
+import com.jeffdisher.october.logic.PortalHelpers;
 import com.jeffdisher.october.logic.SpecialLogicChangeHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -81,6 +82,12 @@ public class MutationBlockPeriodic implements IMutationBlock
 		{
 			// See if we need to change the state of the composite.
 			CompositeHelpers.processCornerstoneUpdate(env, context, _location, newBlock);
+			
+			// If this is the portal cornerstone, see if it needs to update the portal.
+			if (PortalHelpers.isKeystone(newBlock))
+			{
+				PortalHelpers.handlePortalSurface(env, context, _location, newBlock);
+			}
 		}
 		return didApply;
 	}

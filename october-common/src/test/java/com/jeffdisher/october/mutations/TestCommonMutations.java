@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.AfterClass;
@@ -27,6 +28,7 @@ import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.CompositeHelpers;
 import com.jeffdisher.october.logic.PlantHelpers;
 import com.jeffdisher.october.logic.PropertyHelpers;
+import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -45,6 +47,7 @@ import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
@@ -1634,23 +1637,7 @@ public class TestCommonMutations
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
 		Block portalBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_keystone"));
 		Block voidBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.void_stone"));
-		Set<AbsoluteLocation> outline = Set.of(
-				target.getRelative(0, -1, 0)
-				, target.getRelative(0, -2, 0)
-				, target.getRelative(0, -2, 1)
-				, target.getRelative(0, -2, 2)
-				, target.getRelative(0, -2, 3)
-				, target.getRelative(0, -2, 4)
-				, target.getRelative(0, 1, 0)
-				, target.getRelative(0, 2, 0)
-				, target.getRelative(0, 2, 1)
-				, target.getRelative(0, 2, 2)
-				, target.getRelative(0, 2, 3)
-				, target.getRelative(0, 2, 4)
-				, target.getRelative(0, -1, 4)
-				, target.getRelative(0, 0, 4)
-				, target.getRelative(0, 1, 4)
-		);
+		Set<AbsoluteLocation> outline = _getEastFacingPortalVoidStones(target);
 		for (AbsoluteLocation location : outline)
 		{
 			cuboid.setData15(AspectRegistry.BLOCK, location.getBlockAddress(), voidBlock.item().number());
@@ -1821,6 +1808,153 @@ public class TestCommonMutations
 		didApply = extensionFail.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
+	}
+
+	@Test
+	public void periodicPortalUpdates()
+	{
+		// Show that a valid portal frame will generate a surface, on periodic update, and destroy it if the frame is damaged.
+		AbsoluteLocation keystoneLocation = new AbsoluteLocation(5, 5, 1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(keystoneLocation.getCuboidAddress(), ENV.special.AIR);
+		Block portalBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_keystone"));
+		Block voidBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.void_stone"));
+		Block surfaceBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_surface"));
+		NonStackableItem portalOrb = new NonStackableItem(ENV.items.getItemById("op.portal_orb"), Map.of(PropertyRegistry.LOCATION, new AbsoluteLocation(10, 10, 10)));
+		Set<AbsoluteLocation> outline = _getEastFacingPortalVoidStones(keystoneLocation);
+		cuboid.setData15(AspectRegistry.BLOCK, keystoneLocation.getBlockAddress(), portalBlock.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, keystoneLocation.getBlockAddress(), OrientationAspect.directionToByte(OrientationAspect.Direction.EAST));
+		cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, keystoneLocation.getBlockAddress(), ItemSlot.fromNonStack(portalOrb));
+		for (AbsoluteLocation location : outline)
+		{
+			cuboid.setData15(AspectRegistry.BLOCK, location.getBlockAddress(), voidBlock.item().number());
+		}
+		
+		List<MutationBlockPlaceMultiBlock> phase1 = new ArrayList<>();
+		List<MutationBlockPhase2Multi> phase2 = new ArrayList<>();
+		List<MutationBlockReplace> replace = new ArrayList<>();
+		Set<AbsoluteLocation> nextLocations = new HashSet<>();
+		Set<AbsoluteLocation> futureLocations = new HashSet<>();
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation blockLocation) -> {
+				return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
+			}, null)
+			.sinks(new TickProcessingContext.IMutationSink() {
+				@Override
+				public void next(IMutationBlock mutation)
+				{
+					// This is used for both phase1 and replace mutations.
+					if (mutation instanceof MutationBlockPlaceMultiBlock)
+					{
+						phase1.add((MutationBlockPlaceMultiBlock) mutation);
+					}
+					else
+					{
+						replace.add((MutationBlockReplace) mutation);
+					}
+					boolean didAdd = nextLocations.add(mutation.getAbsoluteLocation());
+					Assert.assertTrue(didAdd);
+				}
+				@Override
+				public void future(IMutationBlock mutation, long millisToDelay)
+				{
+					// This test only uses this for phase2 mutations.
+					phase2.add((MutationBlockPhase2Multi) mutation);
+					Assert.assertEquals(ContextBuilder.DEFAULT_MILLIS_PER_TICK, millisToDelay);
+					boolean didAdd = futureLocations.add(mutation.getAbsoluteLocation());
+					Assert.assertTrue(didAdd);
+				}
+			}, null)
+			.finish()
+		;
+		
+		// Show that a periodic update will cause it to create the portal surface.
+		MutableBlockProxy proxy = new MutableBlockProxy(keystoneLocation, cuboid);
+		MutationBlockPeriodic periodic = new MutationBlockPeriodic(keystoneLocation);
+		periodic.applyMutation(context, proxy);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, cuboid.getData7(AspectRegistry.FLAGS, keystoneLocation.getBlockAddress()));
+		Assert.assertEquals(9, nextLocations.size());
+		Assert.assertEquals(9, futureLocations.size());
+		
+		// Now, run these other mutations to build the portal.
+		nextLocations.clear();
+		futureLocations.clear();
+		for (MutationBlockPlaceMultiBlock mutation : phase1)
+		{
+			proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+			mutation.applyMutation(context, proxy);
+			Assert.assertTrue(proxy.didChange());
+			proxy.writeBack(cuboid);
+		}
+		for (MutationBlockPhase2Multi mutation : phase2)
+		{
+			proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+			mutation.applyMutation(context, proxy);
+			Assert.assertFalse(proxy.didChange());
+			proxy.writeBack(cuboid);
+		}
+		Assert.assertEquals(surfaceBlock.item().number(), cuboid.getData15(AspectRegistry.BLOCK, keystoneLocation.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(0, nextLocations.size());
+		Assert.assertEquals(0, futureLocations.size());
+		
+		// Run another periodic and show that it changes nothing.
+		proxy = new MutableBlockProxy(keystoneLocation, cuboid);
+		periodic = new MutationBlockPeriodic(keystoneLocation);
+		periodic.applyMutation(context, proxy);
+		Assert.assertFalse(proxy.didChange());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, cuboid.getData7(AspectRegistry.FLAGS, keystoneLocation.getBlockAddress()));
+		Assert.assertEquals(0, nextLocations.size());
+		Assert.assertEquals(0, futureLocations.size());
+		
+		// Destroy the corner and show that the the periodic update destroys the portal surface.
+		cuboid.setData15(AspectRegistry.BLOCK, keystoneLocation.getRelative(0, 2, 0).getBlockAddress(), ENV.special.AIR.item().number());
+		proxy = new MutableBlockProxy(keystoneLocation, cuboid);
+		periodic = new MutationBlockPeriodic(keystoneLocation);
+		periodic.applyMutation(context, proxy);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(0x0, cuboid.getData7(AspectRegistry.FLAGS, keystoneLocation.getBlockAddress()));
+		Assert.assertEquals(9, nextLocations.size());
+		Assert.assertEquals(0, futureLocations.size());
+		
+		// Now, run these replacement mutations to destroy the portal.
+		nextLocations.clear();
+		futureLocations.clear();
+		for (MutationBlockReplace mutation : replace)
+		{
+			proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+			mutation.applyMutation(context, proxy);
+			Assert.assertTrue(proxy.didChange());
+			proxy.writeBack(cuboid);
+		}
+		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, keystoneLocation.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(0, nextLocations.size());
+		Assert.assertEquals(0, futureLocations.size());
+	}
+
+
+	private static Set<AbsoluteLocation> _getEastFacingPortalVoidStones(AbsoluteLocation keystoneLocation)
+	{
+		Set<AbsoluteLocation> outline = Set.of(
+				keystoneLocation.getRelative(0, -1, 0)
+				, keystoneLocation.getRelative(0, -2, 0)
+				, keystoneLocation.getRelative(0, -2, 1)
+				, keystoneLocation.getRelative(0, -2, 2)
+				, keystoneLocation.getRelative(0, -2, 3)
+				, keystoneLocation.getRelative(0, -2, 4)
+				, keystoneLocation.getRelative(0, 1, 0)
+				, keystoneLocation.getRelative(0, 2, 0)
+				, keystoneLocation.getRelative(0, 2, 1)
+				, keystoneLocation.getRelative(0, 2, 2)
+				, keystoneLocation.getRelative(0, 2, 3)
+				, keystoneLocation.getRelative(0, 2, 4)
+				, keystoneLocation.getRelative(0, -1, 4)
+				, keystoneLocation.getRelative(0, 0, 4)
+				, keystoneLocation.getRelative(0, 1, 4)
+		);
+		return outline;
 	}
 
 
