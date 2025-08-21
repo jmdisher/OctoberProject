@@ -28,6 +28,7 @@ public class TestCompositeHelpers
 	private static Block VOID_STONE;
 	private static Block VOID_LAMP;
 	private static Block PORTAL_KEYSTONE;
+	private static Block PORTAL_SURFACE;
 	@BeforeClass
 	public static void setup()
 	{
@@ -35,6 +36,7 @@ public class TestCompositeHelpers
 		VOID_STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.void_stone"));
 		VOID_LAMP = ENV.blocks.fromItem(ENV.items.getItemById("op.void_lamp"));
 		PORTAL_KEYSTONE = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_keystone"));
+		PORTAL_SURFACE = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_surface"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -77,23 +79,7 @@ public class TestCompositeHelpers
 	{
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
-		Set<AbsoluteLocation> stoneSet = Set.of(
-			centre.getRelative(0, -1, 0)
-			, centre.getRelative(0, -2, 0)
-			, centre.getRelative(0, -2, 1)
-			, centre.getRelative(0, -2, 2)
-			, centre.getRelative(0, -2, 3)
-			, centre.getRelative(0, -2, 4)
-			, centre.getRelative(0, -1, 4)
-			, centre.getRelative(0,  0, 4)
-			, centre.getRelative(0,  1, 4)
-			, centre.getRelative(0,  2, 4)
-			, centre.getRelative(0,  2, 3)
-			, centre.getRelative(0,  2, 2)
-			, centre.getRelative(0,  2, 1)
-			, centre.getRelative(0,  2, 0)
-			, centre.getRelative(0,  1, 0)
-		);
+		Set<AbsoluteLocation> stoneSet = _getPortalStoneFrameEast(centre);
 		cuboid.setData15(AspectRegistry.BLOCK, centre.getBlockAddress(), PORTAL_KEYSTONE.item().number());
 		cuboid.setData7(AspectRegistry.ORIENTATION, centre.getBlockAddress(), OrientationAspect.directionToByte(OrientationAspect.Direction.EAST));
 		for (AbsoluteLocation location : stoneSet)
@@ -114,5 +100,72 @@ public class TestCompositeHelpers
 		byte flags = cuboid.getData7(AspectRegistry.FLAGS, centre.getBlockAddress());
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, flags);
 		Assert.assertEquals(CompositeHelpers.COMPOSITE_CHECK_FREQUENCY, onProxy.periodicDelayMillis);
+	}
+
+	@Test
+	public void activePortalFrame()
+	{
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
+		Set<AbsoluteLocation> stoneSet = _getPortalStoneFrameEast(centre);
+		cuboid.setData15(AspectRegistry.BLOCK, centre.getBlockAddress(), PORTAL_KEYSTONE.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, centre.getBlockAddress(), OrientationAspect.directionToByte(OrientationAspect.Direction.EAST));
+		cuboid.setData7(AspectRegistry.FLAGS, centre.getBlockAddress(), FlagsAspect.FLAG_ACTIVE);
+		for (AbsoluteLocation location : stoneSet)
+		{
+			cuboid.setData15(AspectRegistry.BLOCK, location.getBlockAddress(), VOID_STONE.item().number());
+		}
+		Set<AbsoluteLocation> surfaceSet = Set.of(
+				centre.getRelative(0, -1, 1)
+				, centre.getRelative(0, 0, 1)
+				, centre.getRelative(0, 1, 1)
+				, centre.getRelative(0, -1, 2)
+				, centre.getRelative(0,  0, 2)
+				, centre.getRelative(0,  1, 2)
+				, centre.getRelative(0, -1, 3)
+				, centre.getRelative(0,  0, 3)
+				, centre.getRelative(0,  1, 3)
+		);
+		for (AbsoluteLocation location : surfaceSet)
+		{
+			cuboid.setData15(AspectRegistry.BLOCK, location.getBlockAddress(), PORTAL_SURFACE.item().number());
+		}
+		
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation location) -> {
+				return new BlockProxy(location.getBlockAddress(), cuboid);
+			}, null)
+			.finish()
+		;
+		MutableBlockProxy onProxy = new MutableBlockProxy(centre, cuboid);
+		CompositeHelpers.processCornerstoneUpdate(ENV, context, centre, onProxy);
+		Assert.assertFalse(onProxy.didChange());
+		onProxy.writeBack(cuboid);
+		byte flags = cuboid.getData7(AspectRegistry.FLAGS, centre.getBlockAddress());
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, flags);
+		Assert.assertEquals(CompositeHelpers.COMPOSITE_CHECK_FREQUENCY, onProxy.periodicDelayMillis);
+	}
+
+
+	private static Set<AbsoluteLocation> _getPortalStoneFrameEast(AbsoluteLocation keystoneLocation)
+	{
+		Set<AbsoluteLocation> stoneSet = Set.of(
+			keystoneLocation.getRelative(0, -1, 0)
+			, keystoneLocation.getRelative(0, -2, 0)
+			, keystoneLocation.getRelative(0, -2, 1)
+			, keystoneLocation.getRelative(0, -2, 2)
+			, keystoneLocation.getRelative(0, -2, 3)
+			, keystoneLocation.getRelative(0, -2, 4)
+			, keystoneLocation.getRelative(0, -1, 4)
+			, keystoneLocation.getRelative(0,  0, 4)
+			, keystoneLocation.getRelative(0,  1, 4)
+			, keystoneLocation.getRelative(0,  2, 4)
+			, keystoneLocation.getRelative(0,  2, 3)
+			, keystoneLocation.getRelative(0,  2, 2)
+			, keystoneLocation.getRelative(0,  2, 1)
+			, keystoneLocation.getRelative(0,  2, 0)
+			, keystoneLocation.getRelative(0,  1, 0)
+		);
+		return stoneSet;
 	}
 }

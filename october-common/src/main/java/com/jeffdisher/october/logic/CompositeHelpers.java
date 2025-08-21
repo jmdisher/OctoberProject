@@ -31,6 +31,7 @@ public class CompositeHelpers
 	public static final String VOID_STONE_ID = "op.void_stone";
 	public static final String VOID_LAMP_ID = "op.void_lamp";
 	public static final String PORTAL_KEYSTONE_ID = "op.portal_keystone";
+	public static final String PORTAL_SURFACE_ID = "op.portal_surface";
 
 	/**
 	 * Called when a cornerstone block is placed or receives a periodic update event in order to check if any state
@@ -118,7 +119,16 @@ public class CompositeHelpers
 			isValid = _matchBlockTypes(context, orientation, location, stoneSet, stoneBlock);
 			if (isValid)
 			{
-				isValid = _matchBlockTypes(context, orientation, location, airSet, env.special.AIR);
+				boolean airValid = _matchBlockTypes(context, orientation, location, airSet, env.special.AIR);
+				if (airValid)
+				{
+					isValid = true;
+				}
+				else
+				{
+					Block portalSurfaceBlock = env.blocks.fromItem(env.items.getItemById(PORTAL_SURFACE_ID));
+					isValid = _matchBlockTypes(context, orientation, location, airSet, portalSurfaceBlock);
+				}
 			}
 		}
 		else
