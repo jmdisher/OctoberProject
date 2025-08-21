@@ -15,8 +15,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.EntitySubActionType;
-import com.jeffdisher.october.mutations.MutationBlockPhase2Multi;
-import com.jeffdisher.october.mutations.MutationBlockPlaceMultiBlock;
+import com.jeffdisher.october.mutations.MultiBlockUtils;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -103,26 +102,7 @@ public class EntityChangePlaceMultiBlock implements IEntitySubAction<IMutablePla
 				// This means that this worked so create the mutations to place all the blocks.
 				// WARNING:  If this mutation fails, the item will have been destroyed.
 				int entityId = newEntity.getId();
-				MutationBlockPlaceMultiBlock phase1 = new MutationBlockPlaceMultiBlock(_targetBlock, blockType, _targetBlock, _orientation, entityId);
-				context.mutationSink.next(phase1);
-				for (AbsoluteLocation location : extensions)
-				{
-					phase1 = new MutationBlockPlaceMultiBlock(location, blockType, _targetBlock, _orientation, entityId);
-					context.mutationSink.next(phase1);
-				}
-				
-				// We also need to schedule the verification mutation (since these must be placed atomically, the follow-up mutations act as a phase2).
-				// We check the millis per tick since we require a delay (that is, NOT in the client's projection).
-				if (context.millisPerTick > 0L)
-				{
-					MutationBlockPhase2Multi phase2 = new MutationBlockPhase2Multi(_targetBlock, _targetBlock, _orientation, blockType, context.previousBlockLookUp.apply(_targetBlock).getBlock());
-					context.mutationSink.future(phase2, context.millisPerTick);
-					for (AbsoluteLocation location : extensions)
-					{
-						phase2 = new MutationBlockPhase2Multi(location, _targetBlock, _orientation, blockType, context.previousBlockLookUp.apply(location).getBlock());
-						context.mutationSink.future(phase2, context.millisPerTick);
-					}
-				}
+				MultiBlockUtils.send2PhaseMultiBlock(env, context, blockType, _targetBlock, _orientation, entityId);
 				
 				// Do other state reset.
 				newEntity.setCurrentCraftingOperation(null);

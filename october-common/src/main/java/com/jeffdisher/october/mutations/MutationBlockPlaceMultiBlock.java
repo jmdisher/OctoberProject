@@ -47,8 +47,8 @@ public class MutationBlockPlaceMultiBlock implements IMutationBlock
 		Environment env = Environment.getShared();
 		// This MUST be a multi-block type.
 		Assert.assertTrue(env.blocks.isMultiBlock(blockType));
-		// This must be placed by a player entity.
-		Assert.assertTrue(entityId > 0);
+		// This must be placed by a player entity or nobody at all.
+		Assert.assertTrue(entityId >= 0);
 		
 		_location = location;
 		_blockType = blockType;
@@ -92,12 +92,15 @@ public class MutationBlockPlaceMultiBlock implements IMutationBlock
 					// Just use the generic block placed type since we did _something_.
 					type = EventRecord.Type.BLOCK_PLACED;
 				}
-				context.eventSink.post(new EventRecord(type
+				if (_entityId > 0)
+				{
+					context.eventSink.post(new EventRecord(type
 						, EventRecord.Cause.NONE
 						, _location
 						, 0
 						, _entityId
-				));
+					));
+				}
 			}
 			else
 			{

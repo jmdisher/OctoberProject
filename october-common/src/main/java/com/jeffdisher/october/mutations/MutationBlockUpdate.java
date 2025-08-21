@@ -96,11 +96,8 @@ public class MutationBlockUpdate implements IMutationBlock
 				if (MultiBlockUtils.isMultiBlockRoot(env, newBlock))
 				{
 					// We will enqueue the MultiBlockReplace for each block in the multi-block, forcing them into air.
-					MultiBlockUtils.Lookup lookup = MultiBlockUtils.getLoadedRoot(env, context, _blockLocation);
-					MultiBlockUtils.sendMutationToAll(context, (AbsoluteLocation location) -> {
-						MutationBlockReplace mutation = new MutationBlockReplace(location, newBlock.getBlock(), emptyBlock);
-						return mutation;
-					}, lookup);
+					Block existingBlock = newBlock.getBlock();
+					MultiBlockUtils.replaceMultiBlock(env, context, _blockLocation, existingBlock, emptyBlock);
 				}
 				else
 				{

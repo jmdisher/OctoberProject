@@ -155,4 +155,90 @@ public class TestMultiBlockUtils
 		Assert.assertFalse(MultiBlockUtils.isMultiBlockExtension(ENV, new BlockProxy(base.getBlockAddress(), cuboid)));
 		Assert.assertTrue(MultiBlockUtils.isMultiBlockExtension(ENV, new BlockProxy(base.getRelative(0, 0, 1).getBlockAddress(), cuboid)));
 	}
+
+	@Test
+	public void placeIdiom() throws Throwable
+	{
+		// Tests that the 2-phase multi-block placement idioms.
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		AbsoluteLocation base = new AbsoluteLocation(1, 2, 3);
+		OrientationAspect.Direction direction = OrientationAspect.Direction.NORTH;
+		
+		Set<AbsoluteLocation> nextLocations = new HashSet<>();
+		Set<AbsoluteLocation> futureLocations = new HashSet<>();
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation location) -> {
+				return new BlockProxy(location.getBlockAddress(), cuboid);
+			}, null)
+			.sinks(new TickProcessingContext.IMutationSink() {
+				@Override
+				public void next(IMutationBlock mutation)
+				{
+					Assert.assertTrue(mutation instanceof MutationBlockPlaceMultiBlock);
+					boolean didAdd = nextLocations.add(mutation.getAbsoluteLocation());
+					Assert.assertTrue(didAdd);
+				}
+				@Override
+				public void future(IMutationBlock mutation, long millisToDelay)
+				{
+					Assert.assertTrue(mutation instanceof MutationBlockPhase2Multi);
+					Assert.assertEquals(ContextBuilder.DEFAULT_MILLIS_PER_TICK, millisToDelay);
+					boolean didAdd = futureLocations.add(mutation.getAbsoluteLocation());
+					Assert.assertTrue(didAdd);
+				}
+			}, null)
+			.finish()
+		;
+		
+		MultiBlockUtils.send2PhaseMultiBlock(ENV, context, DOOR, base, direction, 0);
+		Assert.assertEquals(4, nextLocations.size());
+		Assert.assertEquals(4, futureLocations.size());
+		Set<AbsoluteLocation> intersection = new HashSet<>(nextLocations);
+		intersection.removeAll(futureLocations);
+		Assert.assertEquals(0, intersection.size());
+	}
+
+	@Test
+	public void replaceIdiom() throws Throwable
+	{
+		// Tests that the multi-block replacement idiom works.
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		AbsoluteLocation base = new AbsoluteLocation(1, 2, 3);
+		
+		OrientationAspect.Direction direction = OrientationAspect.Direction.NORTH;
+		cuboid.setData15(AspectRegistry.BLOCK, base.getBlockAddress(), DOOR.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, base.getBlockAddress(), OrientationAspect.directionToByte(direction));
+		for (AbsoluteLocation extension : ENV.multiBlocks.getExtensions(DOOR, base, direction))
+		{
+			cuboid.setData15(AspectRegistry.BLOCK, extension.getBlockAddress(), DOOR.item().number());
+			cuboid.setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, extension.getBlockAddress(), base);
+		}
+		
+		Set<AbsoluteLocation> nextLocations = new HashSet<>();
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation location) -> {
+				return new BlockProxy(location.getBlockAddress(), cuboid);
+			}, null)
+			.sinks(new TickProcessingContext.IMutationSink() {
+				@Override
+				public void next(IMutationBlock mutation)
+				{
+					Assert.assertTrue(mutation instanceof MutationBlockReplace);
+					boolean didAdd = nextLocations.add(mutation.getAbsoluteLocation());
+					Assert.assertTrue(didAdd);
+				}
+				@Override
+				public void future(IMutationBlock mutation, long millisToDelay)
+				{
+					Assert.fail();
+				}
+			}, null)
+			.finish()
+		;
+		
+		MultiBlockUtils.replaceMultiBlock(ENV, context, base, DOOR, ENV.special.AIR);
+		Assert.assertEquals(4, nextLocations.size());
+	}
 }
