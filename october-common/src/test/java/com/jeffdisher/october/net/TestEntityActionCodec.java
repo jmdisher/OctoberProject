@@ -13,6 +13,9 @@ import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.subactions.EntityChangeJump;
+import com.jeffdisher.october.subactions.EntitySubActionRequestSwapSpecialSlot;
+import com.jeffdisher.october.subactions.EntitySubActionTravelViaBlock;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntityAction;
@@ -111,6 +114,55 @@ public class TestEntityActionCodec
 		));
 		Assert.assertTrue(read instanceof EntityChangeTopLevelMovement);
 		Assert.assertTrue(((EntityChangeTopLevelMovement<?>)read).test_getSubAction() instanceof EntityChangeJump);
+		Assert.assertEquals(0, buffer.remaining());
+	}
+
+	@Test
+	public void swapped() throws Throwable
+	{
+		AbsoluteLocation target = new AbsoluteLocation(-10, 6, 0);
+		boolean sendAll = true;
+		EntitySubActionRequestSwapSpecialSlot change = new EntitySubActionRequestSwapSpecialSlot(target, sendAll);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(target.toEntityLocation()
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, EntityChangeTopLevelMovement.Intensity.STANDING
+			, (byte)0
+			, (byte)0
+			, change
+		);
+		
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		EntityActionCodec.serializeToBuffer(buffer, action);
+		buffer.flip();
+		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV
+			, buffer
+			, false
+		));
+		Assert.assertTrue(read instanceof EntityChangeTopLevelMovement);
+		Assert.assertEquals(0, buffer.remaining());
+	}
+
+	@Test
+	public void travel() throws Throwable
+	{
+		AbsoluteLocation target = new AbsoluteLocation(-10, 6, 0);
+		EntitySubActionTravelViaBlock change = new EntitySubActionTravelViaBlock(target);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(target.toEntityLocation()
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, EntityChangeTopLevelMovement.Intensity.STANDING
+			, (byte)0
+			, (byte)0
+			, change
+		);
+		
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		EntityActionCodec.serializeToBuffer(buffer, action);
+		buffer.flip();
+		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV
+			, buffer
+			, false
+		));
+		Assert.assertTrue(read instanceof EntityChangeTopLevelMovement);
 		Assert.assertEquals(0, buffer.remaining());
 	}
 }

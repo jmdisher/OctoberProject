@@ -70,6 +70,8 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		EntitySubActionType.MULTI_BLOCK_PLACE,
 		EntitySubActionType.LADDER_ASCEND,
 		EntitySubActionType.LADDER_DESCEND,
+		EntitySubActionType.ITEM_SLOT_REQUEST_SWAP,
+		EntitySubActionType.TRAVEL_VIA_BLOCK,
 		EntitySubActionType.TESTING_ONLY,
 	}).collect(Collectors.toSet());
 
