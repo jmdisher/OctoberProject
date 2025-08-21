@@ -41,6 +41,7 @@ public enum EntitySubActionType
 	LADDER_ASCEND,
 	LADDER_DESCEND,
 	ITEM_SLOT_REQUEST_SWAP,
+	TRAVEL_VIA_BLOCK,
 	
 	/**
 	 * This testing type is never serialized so it should be kept at the end of the list.

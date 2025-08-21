@@ -55,6 +55,7 @@ import com.jeffdisher.october.subactions.EntityChangeUseSelectedItemOnSelf;
 import com.jeffdisher.october.subactions.EntitySubActionLadderAscend;
 import com.jeffdisher.october.subactions.EntitySubActionLadderDescend;
 import com.jeffdisher.october.subactions.EntitySubActionRequestSwapSpecialSlot;
+import com.jeffdisher.october.subactions.EntitySubActionTravelViaBlock;
 import com.jeffdisher.october.subactions.MutationEntityPushItems;
 import com.jeffdisher.october.subactions.MutationEntityRequestItemPickUp;
 import com.jeffdisher.october.subactions.MutationEntitySelectItem;
@@ -77,6 +78,7 @@ import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -2860,6 +2862,39 @@ public class TestCommonChanges
 		Inventory inventory = newEntity.freeze().inventory();
 		Assert.assertEquals(1, inventory.sortedKeys().size());
 		Assert.assertEquals(1, inventory.getCount(itemKeystone));
+	}
+
+	@Test
+	public void travelThroughPortal() throws Throwable
+	{
+		// Place a contrived arrangement of a keystone, with destination, and a portal surface above it to see how traveling through this portal works.
+		Item itemKeystone = ENV.items.getItemById("op.portal_keystone");
+		Item itemSurface = ENV.items.getItemById("op.portal_surface");
+		Item itemOrb = ENV.items.getItemById("op.portal_orb");
+		AbsoluteLocation keystoneLocation = new AbsoluteLocation(5, 6, 7);
+		AbsoluteLocation surfaceLocation = keystoneLocation.getRelative(0, 0, 1);
+		AbsoluteLocation portalTargetLocation = new AbsoluteLocation(10, 6, 9);
+		NonStackableItem orb = new NonStackableItem(itemOrb, Map.of(PropertyRegistry.LOCATION, portalTargetLocation));
+		
+		int entityId = 1;
+		MutableEntity newEntity = MutableEntity.createForTest(entityId);
+		newEntity.newLocation = surfaceLocation.toEntityLocation();
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, keystoneLocation.getBlockAddress(), itemKeystone.number());
+		cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, keystoneLocation.getBlockAddress(), ItemSlot.fromNonStack(orb));
+		cuboid.setData15(AspectRegistry.BLOCK, surfaceLocation.getBlockAddress(), itemSurface.number());
+		
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(200L)
+			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+			.finish()
+		;
+		
+		// Travel via the block and see that our location is changed.
+		EntitySubActionTravelViaBlock travel = new EntitySubActionTravelViaBlock(surfaceLocation);
+		Assert.assertTrue(travel.applyChange(context, newEntity));
+		Assert.assertEquals(portalTargetLocation.getRelative(0, 0, 1).toEntityLocation(), newEntity.getLocation());
 	}
 
 
