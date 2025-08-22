@@ -34,6 +34,18 @@ public class CompositeHelpers
 	public static final String PORTAL_SURFACE_ID = "op.portal_surface";
 
 	/**
+	 * Checks if the given block is a cornerstone type.
+	 * 
+	 * @param block The block type to check.
+	 * @return True if this is a cornerstone.
+	 */
+	public static boolean isCornerstone(Block block)
+	{
+		String blockId = block.item().id();
+		return VOID_LAMP_ID.equals(blockId) || PORTAL_KEYSTONE_ID.equals(blockId);
+	}
+
+	/**
 	 * Called when a cornerstone block is placed or receives a periodic update event in order to check if any state
 	 * needs to change.
 	 * This call also re-requests the periodic update for this block.

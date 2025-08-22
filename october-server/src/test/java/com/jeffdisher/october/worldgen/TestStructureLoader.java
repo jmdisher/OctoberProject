@@ -250,10 +250,16 @@ public class TestStructureLoader
 		// Load into the base of the cuboid and see that only the stone blocks have been replaced but the air left unchanged.
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target, Structure.REPLACE_ALL);
-		Assert.assertTrue(changes.isEmpty());
+		
+		// We expect 1 update since the void lamp is a composite structure.
+		AbsoluteLocation wait1 = target.getRelative(0, 0, 1);
+		Assert.assertEquals(1, changes.size());
+		Set<AbsoluteLocation> locations = changes.stream().map((IMutationBlock mutation) -> mutation.getAbsoluteLocation()).collect(Collectors.toSet());
+		locations.contains(wait1);
+		
 		Assert.assertEquals(voidStone.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(voidStone.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 0, 0).getBlockAddress()));
-		Assert.assertEquals(voidLamp.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress()));
 		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 0, 1).getBlockAddress()));
 	}
 }

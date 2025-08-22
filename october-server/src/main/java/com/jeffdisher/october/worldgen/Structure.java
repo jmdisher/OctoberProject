@@ -8,6 +8,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.PlantRegistry;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.logic.CompositeHelpers;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -153,7 +154,8 @@ public class Structure
 							boolean isActive = false;
 							boolean needsLightUpdate = (lights.getLightEmission(block, isActive) > 0);
 							boolean needsGrowth = (plants.growthDivisor(block) > 0);
-							if (needsLightUpdate || needsGrowth)
+							boolean isComposite = CompositeHelpers.isCornerstone(block);
+							if (needsLightUpdate || needsGrowth || isComposite)
 							{
 								cuboid.setData15(AspectRegistry.BLOCK, blockAddress, replacementBlock);
 								mutations.add(new MutationBlockOverwriteInternal(thisBlock, block));
