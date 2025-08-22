@@ -79,7 +79,7 @@ public class StructureLoader
 	{
 		// We will just define this as an array of short arrays (a short array for each z-level).
 		int layerSize = zLayers[0].length();
-		short[][] allLayerBlocks = new short[zLayers.length][];
+		Block[][] allLayerBlocks = new Block[zLayers.length][];
 		int width = -1;
 		for (int i = 0; i < zLayers.length; ++i)
 		{
@@ -87,7 +87,7 @@ public class StructureLoader
 			// We expect that these are all the same size.
 			Assert.assertTrue(layerSize == layer.length());
 			int totalNewlines = _countNewlines(layer);
-			short[] blocks = new short[layerSize - totalNewlines];
+			Block[] blocks = new Block[layerSize - totalNewlines];
 			int newlines = 0;
 			for (int j = 0; j < layerSize; ++j)
 			{
@@ -108,17 +108,7 @@ public class StructureLoader
 				}
 				else
 				{
-					short value;
-					if (null != block)
-					{
-						value = block.item().number();
-					}
-					else
-					{
-						// We will store -1 if we ignore the block.
-						value = -1;
-					}
-					blocks[j - newlines] = value;
+					blocks[j - newlines] = block;
 				}
 			}
 			allLayerBlocks[i] = blocks;

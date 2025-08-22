@@ -4,9 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.ItemRegistry;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.PlantRegistry;
 import com.jeffdisher.october.data.CuboidData;
@@ -15,7 +13,6 @@ import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
-import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.utils.Encoding;
 
 
@@ -27,17 +24,17 @@ import com.jeffdisher.october.utils.Encoding;
 public class Structure
 {
 	public static final short REPLACE_ALL = -1;
-	private final short[][] _allLayerBlocks;
+	private final Block[][] _allLayerBlocks;
 	private final int _width;
 
 	/**
 	 * Creates the structure with the block type values in allLayerBlocks and the given width to use when interpretting
 	 * rows.
 	 * 
-	 * @param allLayerBlocks The block values of the structure (-1 values will be skipped).
+	 * @param allLayerBlocks The block values of the structure (null values will be skipped).
 	 * @param width The width of a single row within the inner-most array.
 	 */
-	public Structure(short[][] allLayerBlocks, int width)
+	public Structure(Block[][] allLayerBlocks, int width)
 	{
 		_allLayerBlocks = allLayerBlocks;
 		_width = width;
@@ -127,24 +124,22 @@ public class Structure
 		// Now we can copy, bearing in mind that we need to synthesize events to run after loading.
 		AbsoluteLocation baseCuboidLocation = cuboid.getCuboidAddress().getBase();
 		Environment env = Environment.getShared();
-		ItemRegistry items = env.items;
-		BlockAspect blocks = env.blocks;
 		LightAspect lights = env.lighting;
 		PlantRegistry plants = env.plants;
 		short replacementBlock = env.special.AIR.item().number();
 		List<IMutationBlock> mutations = new ArrayList<>();
 		for (int c = 0; c < countZ; ++c)
 		{
-			short[] layer = _allLayerBlocks[readZ + c];
+			Block[] layer = _allLayerBlocks[readZ + c];
 			for (int b = 0; b < countY; ++b)
 			{
 				int readColumn = readY + b;
 				for (int a = 0; a < countX; ++a)
 				{
 					int readIndex = (readColumn * _width) + (readX + a);
-					short value = layer[readIndex];
-					// -1 means "ignore".
-					if (value >= 0)
+					Block block = layer[readIndex];
+					// null means "ignore".
+					if (null != block)
 					{
 						AbsoluteLocation thisBlock = baseCuboidLocation.getRelative(writeX + a, writeY + b, writeZ + c);
 						BlockAddress blockAddress = thisBlock.getBlockAddress();
@@ -155,8 +150,6 @@ public class Structure
 							// are so common, they are specially optimized).  Therefore, we will just handle lighting
 							// updates and growth mutation requirements the same way:  Make the block air and return a
 							// replace block mutation.
-							Item rawItem = items.ITEMS_BY_TYPE[value];
-							Block block = blocks.fromItem(rawItem);
 							boolean isActive = false;
 							boolean needsLightUpdate = (lights.getLightEmission(block, isActive) > 0);
 							boolean needsGrowth = (plants.growthDivisor(block) > 0);
@@ -167,7 +160,7 @@ public class Structure
 							}
 							else
 							{
-								cuboid.setData15(AspectRegistry.BLOCK, blockAddress, value);
+								cuboid.setData15(AspectRegistry.BLOCK, blockAddress, block.item().number());
 							}
 						}
 					}
