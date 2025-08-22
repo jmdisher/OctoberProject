@@ -1,6 +1,7 @@
 package com.jeffdisher.october.worldgen;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -42,7 +43,7 @@ public class TestStructureLoader
 	@Test
 	public void singleBlock()
 	{
-		StructureLoader loader = new StructureLoader(ENV.items, ENV.blocks);
+		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(ENV.items, ENV.blocks));
 		String[] zLayers = new String[] {
 				"D\n",
 		};
@@ -60,7 +61,7 @@ public class TestStructureLoader
 	@Test
 	public void smallPrism()
 	{
-		StructureLoader loader = new StructureLoader(ENV.items, ENV.blocks);
+		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(ENV.items, ENV.blocks));
 		String[] zLayers = new String[] {""
 				+ "B B B\n"
 				+ " D D \n"
@@ -91,7 +92,7 @@ public class TestStructureLoader
 	@Test
 	public void offsetPrism()
 	{
-		StructureLoader loader = new StructureLoader(ENV.items, ENV.blocks);
+		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(ENV.items, ENV.blocks));
 		String[] zLayers = new String[] {""
 				+ "B B B\n"
 				+ " D D \n"
@@ -127,7 +128,7 @@ public class TestStructureLoader
 	public void delayedPlacement()
 	{
 		// Make sure that things which grow or are light sources are replaced by air with mutations to place later.
-		StructureLoader loader = new StructureLoader(ENV.items, ENV.blocks);
+		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(ENV.items, ENV.blocks));
 		String[] zLayers = new String[] {" P B S B L \n"};
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, DIRT);
@@ -154,7 +155,7 @@ public class TestStructureLoader
 	@Test
 	public void oreNode()
 	{
-		StructureLoader loader = new StructureLoader(ENV.items, ENV.blocks);
+		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(ENV.items, ENV.blocks));
 		String[] zLayers = new String[] {""
 				+ "A A\n"
 				+ "III\n"
@@ -205,7 +206,7 @@ public class TestStructureLoader
 	@Test
 	public void treeParts()
 	{
-		StructureLoader loader = new StructureLoader(ENV.items, ENV.blocks);
+		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(ENV.items, ENV.blocks));
 		String[] zLayers = new String[] {""
 				+ "T \n"
 				+ "  \n"
@@ -225,5 +226,34 @@ public class TestStructureLoader
 		Assert.assertTrue(changes.isEmpty());
 		Assert.assertEquals(logValue, cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(leafValue, cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 1, 1).getBlockAddress()));
+	}
+
+	@Test
+	public void customMapping()
+	{
+		Block voidStone = ENV.blocks.fromItem(ENV.items.getItemById("op.void_stone"));
+		Block voidLamp = ENV.blocks.fromItem(ENV.items.getItemById("op.void_lamp"));
+		Map<Character, Block> mapping = Map.of(
+			'V', voidStone
+			, 'L', voidLamp
+		);
+		StructureLoader loader = new StructureLoader(mapping);
+		String[] zLayers = new String[] {""
+				+ "VV\n"
+				, ""
+				+ "L \n"
+		};
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		Structure structure = loader.loadFromStrings(zLayers);
+		
+		// Load into the base of the cuboid and see that only the stone blocks have been replaced but the air left unchanged.
+		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
+		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target, Structure.REPLACE_ALL);
+		Assert.assertTrue(changes.isEmpty());
+		Assert.assertEquals(voidStone.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(voidStone.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 0, 0).getBlockAddress()));
+		Assert.assertEquals(voidLamp.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 0, 1).getBlockAddress()));
 	}
 }

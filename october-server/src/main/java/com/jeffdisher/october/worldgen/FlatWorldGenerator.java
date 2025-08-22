@@ -104,7 +104,7 @@ public class FlatWorldGenerator implements IWorldGenerator
 			// Our structures don't have entities.
 			entities = List.of();
 			
-			StructureLoader loader = new StructureLoader(env.items, env.blocks);
+			StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(env.items, env.blocks));
 			Structure structure = loader.loadFromStrings(STRUCTURE);
 			AbsoluteLocation baseOffset = new AbsoluteLocation(
 					(0 == address.x()) ? BASE.x() : (32 + BASE.x()),

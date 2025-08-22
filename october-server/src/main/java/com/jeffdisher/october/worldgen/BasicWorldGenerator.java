@@ -219,7 +219,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		
 		_cow = env.creatures.getTypeById("op.cow");
 		
-		StructureLoader loader = new StructureLoader(env.items, env.blocks);
+		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(env.items, env.blocks));
 		_coalNode = loader.loadFromStrings(COAL_NODE);
 		_ironNode = loader.loadFromStrings(IRON_NODE);
 		_basicTree = loader.loadFromStrings(BASIC_TREE);

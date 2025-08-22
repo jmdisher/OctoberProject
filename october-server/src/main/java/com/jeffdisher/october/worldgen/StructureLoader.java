@@ -41,15 +41,14 @@ public class StructureLoader
 	public static final char C_TREE_LOG = 'T';
 	public static final char C_TREE_LEAF= 'E';
 
-	private final Map<Character, Block> _lookup;
-
 	/**
-	 * Creates the structure loader.
+	 * Creates the mapping structure for the basic loader cases (when everything is internally defined and block-only).
 	 * 
 	 * @param items The items to aid in block lookup.
 	 * @param blocks The blocks to use to populate the loader mapping.
+	 * @return A mapping to use when defining a StructureLoader.
 	 */
-	public StructureLoader(ItemRegistry items, BlockAspect blocks)
+	public static Map<Character, Block> getBasicMapping(ItemRegistry items, BlockAspect blocks)
 	{
 		Map<Character, Block> temp = new HashMap<>();
 		Assert.assertTrue(null == temp.put(C_DIRT, blocks.fromItem(items.getItemById("op.dirt"))));
@@ -64,7 +63,20 @@ public class StructureLoader
 		Assert.assertTrue(null == temp.put(C_IRON_ORE, blocks.fromItem(items.getItemById("op.iron_ore"))));
 		Assert.assertTrue(null == temp.put(C_TREE_LOG, blocks.fromItem(items.getItemById("op.log"))));
 		Assert.assertTrue(null == temp.put(C_TREE_LEAF, blocks.fromItem(items.getItemById("op.leaf"))));
-		_lookup = Collections.unmodifiableMap(temp);
+		return Collections.unmodifiableMap(temp);
+	}
+
+
+	private final Map<Character, Block> _lookup;
+
+	/**
+	 * Creates the structure loader.
+	 * 
+	 * @param mapping The map which describes how to interpret the character data in the structure definition.
+	 */
+	public StructureLoader(Map<Character, Block> mapping)
+	{
+		_lookup = mapping;
 	}
 
 	/**
