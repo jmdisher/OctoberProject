@@ -106,12 +106,11 @@ public class FlatWorldGenerator implements IWorldGenerator
 			
 			StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(env.items, env.blocks));
 			Structure structure = loader.loadFromStrings(STRUCTURE);
-			AbsoluteLocation baseOffset = new AbsoluteLocation(
-					(0 == address.x()) ? BASE.x() : (32 + BASE.x()),
-					(0 == address.y()) ? BASE.y() : (32 + BASE.y()),
-					(0 == address.z()) ? BASE.z() : (32 + BASE.z())
-			);
-			List<IMutationBlock> immediateMutations = structure.applyToCuboid(data, baseOffset, Structure.REPLACE_ALL);
+			int baseX = (0 == address.x()) ? BASE.x() : (32 + BASE.x());
+			int baseY = (0 == address.y()) ? BASE.y() : (32 + BASE.y());
+			int baseZ = (0 == address.z()) ? BASE.z() : (32 + BASE.z());
+			AbsoluteLocation rootLocation = address.getBase().getRelative(baseX, baseY, baseZ);
+			List<IMutationBlock> immediateMutations = structure.applyToCuboid(data, rootLocation, Structure.REPLACE_ALL);
 			mutations = immediateMutations.stream()
 					.map((IMutationBlock mutation) -> new ScheduledMutation(mutation, 0L))
 					.toList()

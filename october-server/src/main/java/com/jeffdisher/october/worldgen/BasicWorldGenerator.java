@@ -614,11 +614,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 				PerColumnRandomSeedField.View relField = subField.relativeView(x, y);
 				int columnSeed = relField.get(0, 0);
 				AbsoluteLocation sideBase = sideAddress.getBase();
-				int relativeBaseX = sideBase.x() - base.x();
-				int relativeBaseY = sideBase.y() - base.y();
-				int targetCuboidBaseZ = base.z();
-				_applyOreNodes(data, columnSeed, relativeBaseX, relativeBaseY, targetCuboidBaseZ, COAL_NODES_PER_CUBOID_COLUMN, COAL_MIN_Z, COAL_MAX_Z, _coalNode);
-				_applyOreNodes(data, columnSeed, relativeBaseX, relativeBaseY, targetCuboidBaseZ, IRON_NODES_PER_CUBOID_COLUMN, IRON_MIN_Z, IRON_MAX_Z, _ironNode);
+				_applyOreNodes(data, columnSeed, sideBase.x(), sideBase.y(), COAL_NODES_PER_CUBOID_COLUMN, COAL_MIN_Z, COAL_MAX_Z, _coalNode);
+				_applyOreNodes(data, columnSeed, sideBase.x(), sideBase.y(), IRON_NODES_PER_CUBOID_COLUMN, IRON_MIN_Z, IRON_MAX_Z, _ironNode);
 				
 				// If this is a forest, also generate random trees.
 				int biome = _buildBiomeFromSeeds5x5(relField);
@@ -637,10 +634,10 @@ public class BasicWorldGenerator implements IWorldGenerator
 							// Choose the block above the dirt.
 							int absoluteZ = dirtBlockZ + 1;
 							// The tree is a 3x3 structure with the tree in the middle so step back by one.
-							// NOTE:  This relativeBase is NOT an absolute location but is relative to the cuboid base.
-							AbsoluteLocation relativeBase = new AbsoluteLocation(relativeBaseX + relativeX - 1, relativeBaseY + relativeY - 1, absoluteZ - targetCuboidBaseZ);
+							AbsoluteLocation rootLocation = new AbsoluteLocation(sideBase.x() + relativeX - 1, sideBase.y() + relativeY - 1, absoluteZ);
 							// Make sure that these are over dirt.
-							AbsoluteLocation dirtLocation = base.getRelative(relativeBase.x() + 1, relativeBase.y() + 1,relativeBase.z() - 1);
+							// (re-add the +1 to reach the trunk)
+							AbsoluteLocation dirtLocation = new AbsoluteLocation(rootLocation.x() + 1, rootLocation.y() + 1, rootLocation.z() - 1);
 							// TODO:  To determine if this dirtLocation is _actually_ dirt, we would need to do a more
 							// complete generation of these other cuboids.  As it stands, this could generate trees
 							// floating over caves.
@@ -653,7 +650,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 									data.setData15(AspectRegistry.BLOCK, dirtBlock, _blockDirt.item().number());
 								}
 							}
-							_basicTree.applyToCuboid(data, relativeBase, airNumber);
+							_basicTree.applyToCuboid(data, rootLocation, airNumber);
 						}
 					}
 				}
@@ -682,7 +679,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		}
 	}
 
-	private void _applyOreNodes(CuboidData data, int columnSeed, int relativeBaseX, int relativeBaseY, int targetCuboidBaseZ, int tries, int minZ, int maxZ, Structure node)
+	private void _applyOreNodes(CuboidData data, int columnSeed, int relativeBaseX, int relativeBaseY, int tries, int minZ, int maxZ, Structure node)
 	{
 		short stoneNumber = _blockStone.item().number();
 		int range = maxZ - minZ;
@@ -693,7 +690,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 			int relativeY = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
 			int absoluteZ = random.nextInt(range) + minZ;
 			// NOTE:  This relativeBase is NOT an absolute location but is relative to the cuboid base.
-			AbsoluteLocation relativeBase = new AbsoluteLocation(relativeBaseX + relativeX, relativeBaseY + relativeY, absoluteZ - targetCuboidBaseZ);
+			AbsoluteLocation relativeBase = new AbsoluteLocation(relativeBaseX + relativeX, relativeBaseY + relativeY, absoluteZ);
 			node.applyToCuboid(data, relativeBase, stoneNumber);
 		}
 	}

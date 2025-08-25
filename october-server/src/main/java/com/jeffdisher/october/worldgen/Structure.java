@@ -59,22 +59,29 @@ public class Structure
 	 * that the structure begins outside of the cuboid but the part within it will be populated.
 	 * 
 	 * @param cuboid The cuboid to modify.
-	 * @param baseOffset The base offset where the structure will be applied (relative to the base of the cuboid).
+	 * @param rootLocation The root location, in absolute coordinates, where the bottom-south-west corner of this
+	 * structure should be written.
 	 * @param replaceTypeMask If >=0, only blocks with this type number will be replaced (pass -1 to replace
 	 * everything).
 	 * @return The mutations which must be applied to this cuboid to finish the load.
 	 */
-	public List<IMutationBlock> applyToCuboid(CuboidData cuboid, AbsoluteLocation baseOffset, short replaceTypeMask)
+	public List<IMutationBlock> applyToCuboid(CuboidData cuboid, AbsoluteLocation rootLocation, short replaceTypeMask)
 	{
 		int sizeX = _width;
 		int sizeY = _getYSize();
 		int sizeZ = _allLayerBlocks.length;
 		
+		AbsoluteLocation baseCuboidLocation = cuboid.getCuboidAddress().getBase();
+		int rootX = rootLocation.x();
+		int rootY = rootLocation.y();
+		int rootZ = rootLocation.z();
+		
+		
 		// Determine the bounds in our local coordinates (baseOffset is relative to the cuboid, so negative numbers mean we start in the middle of our data).
 		int readX;
 		int writeX;
 		int countX;
-		int baseX = baseOffset.x();
+		int baseX = rootX - baseCuboidLocation.x();
 		if (baseX >= 0)
 		{
 			readX = 0;
@@ -91,7 +98,7 @@ public class Structure
 		int readY;
 		int writeY;
 		int countY;
-		int baseY = baseOffset.y();
+		int baseY = rootY - baseCuboidLocation.y();
 		if (baseY >= 0)
 		{
 			readY = 0;
@@ -108,7 +115,7 @@ public class Structure
 		int readZ;
 		int writeZ;
 		int countZ;
-		int baseZ = baseOffset.z();
+		int baseZ = rootZ - baseCuboidLocation.z();
 		if (baseZ >= 0)
 		{
 			readZ = 0;
@@ -123,7 +130,6 @@ public class Structure
 		}
 		
 		// Now we can copy, bearing in mind that we need to synthesize events to run after loading.
-		AbsoluteLocation baseCuboidLocation = cuboid.getCuboidAddress().getBase();
 		Environment env = Environment.getShared();
 		LightAspect lights = env.lighting;
 		PlantRegistry plants = env.plants;
