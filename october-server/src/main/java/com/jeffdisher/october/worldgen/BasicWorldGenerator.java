@@ -9,6 +9,7 @@ import java.util.Random;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
@@ -650,7 +651,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 									data.setData15(AspectRegistry.BLOCK, dirtBlock, _blockDirt.item().number());
 								}
 							}
-							_basicTree.applyToCuboid(data, rootLocation, airNumber);
+							_basicTree.applyToCuboid(data, rootLocation, OrientationAspect.Direction.NORTH, airNumber);
 						}
 					}
 				}
@@ -691,7 +692,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 			int absoluteZ = random.nextInt(range) + minZ;
 			// NOTE:  This relativeBase is NOT an absolute location but is relative to the cuboid base.
 			AbsoluteLocation relativeBase = new AbsoluteLocation(relativeBaseX + relativeX, relativeBaseY + relativeY, absoluteZ);
-			node.applyToCuboid(data, relativeBase, stoneNumber);
+			node.applyToCuboid(data, relativeBase, OrientationAspect.Direction.NORTH, stoneNumber);
 		}
 	}
 

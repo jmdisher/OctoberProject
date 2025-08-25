@@ -6,6 +6,7 @@ import java.util.List;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LightAspect;
+import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.aspects.PlantRegistry;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.CompositeHelpers;
@@ -60,12 +61,14 @@ public class Structure
 	 * 
 	 * @param cuboid The cuboid to modify.
 	 * @param rootLocation The root location, in absolute coordinates, where the bottom-south-west corner of this
-	 * structure should be written.
+	 * structure should be written.  Note that this is the bottom-south-west corner of the input but the other blocks
+	 * will extend from this block based on the rotation parameter.
+	 * @param rotation The direction to rotate (from NORTH), about the south-west corner.
 	 * @param replaceTypeMask If >=0, only blocks with this type number will be replaced (pass -1 to replace
 	 * everything).
 	 * @return The mutations which must be applied to this cuboid to finish the load.
 	 */
-	public List<IMutationBlock> applyToCuboid(CuboidData cuboid, AbsoluteLocation rootLocation, short replaceTypeMask)
+	public List<IMutationBlock> applyToCuboid(CuboidData cuboid, AbsoluteLocation rootLocation, OrientationAspect.Direction rotation, short replaceTypeMask)
 	{
 		int sizeX = _width;
 		int sizeY = _getYSize();
@@ -76,42 +79,10 @@ public class Structure
 		int rootY = rootLocation.y();
 		int rootZ = rootLocation.z();
 		
-		
 		// Determine the bounds in our local coordinates (baseOffset is relative to the cuboid, so negative numbers mean we start in the middle of our data).
-		int readX;
-		int writeX;
-		int countX;
-		int baseX = rootX - baseCuboidLocation.x();
-		if (baseX >= 0)
-		{
-			readX = 0;
-			writeX = baseX;
-			countX = Math.min(sizeX, Encoding.CUBOID_EDGE_SIZE - writeX);
-		}
-		else
-		{
-			readX = -baseX;
-			writeX = 0;
-			countX = Math.min(sizeX - readX, Encoding.CUBOID_EDGE_SIZE);
-		}
-		
-		int readY;
-		int writeY;
-		int countY;
-		int baseY = rootY - baseCuboidLocation.y();
-		if (baseY >= 0)
-		{
-			readY = 0;
-			writeY = baseY;
-			countY = Math.min(sizeY, Encoding.CUBOID_EDGE_SIZE - writeY);
-		}
-		else
-		{
-			readY = -baseY;
-			writeY = 0;
-			countY = Math.min(sizeY - readY, Encoding.CUBOID_EDGE_SIZE);
-		}
-		
+		// Rotation is in the XY plane so we can avoid extra work in Z but not X or Y (at least not without making the code very confusing).
+		int writeX = rootX - baseCuboidLocation.x();
+		int writeY = rootY - baseCuboidLocation.y();
 		int readZ;
 		int writeZ;
 		int countZ;
@@ -138,37 +109,45 @@ public class Structure
 		for (int c = 0; c < countZ; ++c)
 		{
 			Block[] layer = _allLayerBlocks[readZ + c];
-			for (int b = 0; b < countY; ++b)
+			for (int readY = 0; readY < sizeY; ++readY)
 			{
-				int readColumn = readY + b;
-				for (int a = 0; a < countX; ++a)
+				for (int readX = 0; readX < sizeX; ++readX)
 				{
-					int readIndex = (readColumn * _width) + (readX + a);
+					int readIndex = (readY * _width) + readX;
 					Block block = layer[readIndex];
 					// null means "ignore".
 					if (null != block)
 					{
-						AbsoluteLocation thisBlock = baseCuboidLocation.getRelative(writeX + a, writeY + b, writeZ + c);
-						BlockAddress blockAddress = thisBlock.getBlockAddress();
-						// We will only replace this if it is the mast type or there is no mask type.
-						if ((replaceTypeMask < 0) || (replaceTypeMask == cuboid.getData15(AspectRegistry.BLOCK, blockAddress)))
+						AbsoluteLocation offsetLocation = rotation.rotateAboutZ(new AbsoluteLocation(readX, readY, c));
+						// We only write if this offsetLocation will write into the cuboid.
+						int localX = writeX + offsetLocation.x();
+						int localY = writeY + offsetLocation.y();
+						if ((localX >= 0) && (localX < Encoding.CUBOID_EDGE_SIZE)
+							&& (localY >= 0) && (localY < Encoding.CUBOID_EDGE_SIZE)
+						)
 						{
-							// Lighting updates are handled somewhat specially (not just as a simple mutation - since they
-							// are so common, they are specially optimized).  Therefore, we will just handle lighting
-							// updates and growth mutation requirements the same way:  Make the block air and return a
-							// replace block mutation.
-							boolean isActive = false;
-							boolean needsLightUpdate = (lights.getLightEmission(block, isActive) > 0);
-							boolean needsGrowth = (plants.growthDivisor(block) > 0);
-							boolean isComposite = CompositeHelpers.isCornerstone(block);
-							if (needsLightUpdate || needsGrowth || isComposite)
+							AbsoluteLocation thisBlock = baseCuboidLocation.getRelative(localX, localY, writeZ + offsetLocation.z());
+							BlockAddress blockAddress = thisBlock.getBlockAddress();
+							// We will only replace this if it is the mast type or there is no mask type.
+							if ((replaceTypeMask < 0) || (replaceTypeMask == cuboid.getData15(AspectRegistry.BLOCK, blockAddress)))
 							{
-								cuboid.setData15(AspectRegistry.BLOCK, blockAddress, replacementBlock);
-								mutations.add(new MutationBlockOverwriteInternal(thisBlock, block));
-							}
-							else
-							{
-								cuboid.setData15(AspectRegistry.BLOCK, blockAddress, block.item().number());
+								// Lighting updates are handled somewhat specially (not just as a simple mutation - since they
+								// are so common, they are specially optimized).  Therefore, we will just handle lighting
+								// updates and growth mutation requirements the same way:  Make the block air and return a
+								// replace block mutation.
+								boolean isActive = false;
+								boolean needsLightUpdate = (lights.getLightEmission(block, isActive) > 0);
+								boolean needsGrowth = (plants.growthDivisor(block) > 0);
+								boolean isComposite = CompositeHelpers.isCornerstone(block);
+								if (needsLightUpdate || needsGrowth || isComposite)
+								{
+									cuboid.setData15(AspectRegistry.BLOCK, blockAddress, replacementBlock);
+									mutations.add(new MutationBlockOverwriteInternal(thisBlock, block));
+								}
+								else
+								{
+									cuboid.setData15(AspectRegistry.BLOCK, blockAddress, block.item().number());
+								}
 							}
 						}
 					}

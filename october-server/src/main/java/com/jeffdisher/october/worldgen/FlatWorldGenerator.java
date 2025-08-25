@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
@@ -110,7 +111,7 @@ public class FlatWorldGenerator implements IWorldGenerator
 			int baseY = (0 == address.y()) ? BASE.y() : (32 + BASE.y());
 			int baseZ = (0 == address.z()) ? BASE.z() : (32 + BASE.z());
 			AbsoluteLocation rootLocation = address.getBase().getRelative(baseX, baseY, baseZ);
-			List<IMutationBlock> immediateMutations = structure.applyToCuboid(data, rootLocation, Structure.REPLACE_ALL);
+			List<IMutationBlock> immediateMutations = structure.applyToCuboid(data, rootLocation, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
 			mutations = immediateMutations.stream()
 					.map((IMutationBlock mutation) -> new ScheduledMutation(mutation, 0L))
 					.toList()
