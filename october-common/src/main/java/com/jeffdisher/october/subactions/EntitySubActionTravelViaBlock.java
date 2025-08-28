@@ -1,12 +1,17 @@
 package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IEntitySubAction;
@@ -27,6 +32,31 @@ public class EntitySubActionTravelViaBlock implements IEntitySubAction<IMutableP
 	public static final long TRAVEL_COOLDOWN_MILLIS = 10_000L;
 	public static final String PORTAL_SURFACE_ID = "op.portal_surface";
 	public static final String PORTAL_KEYSTONE_ID = "op.portal_keystone";
+
+	/**
+	 * Checks if the given entity location and volume is intersecting a portal and returns a valid portal surface
+	 * location.
+	 * 
+	 * @param env The environment.
+	 * @param previousBlockLookUp Block lookup for the previous tick.
+	 * @param location The base location of the entity.
+	 * @param volume The volume of the entity.
+	 * @return A valid portal surface or null if not intersecting with one.
+	 */
+	public static AbsoluteLocation getValidPortalSurface(Environment env
+		, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+		, EntityLocation location
+		, EntityVolume volume
+	)
+	{
+		// See if we are intersecting with a portal surface.
+		Block surface = env.blocks.fromItem(env.items.getItemById(PORTAL_SURFACE_ID));
+		Predicate<AbsoluteLocation> supplier = (AbsoluteLocation loc) -> {
+			BlockProxy proxy = previousBlockLookUp.apply(loc);
+			return (null != proxy) && (surface == proxy.getBlock());
+		};
+		return EntityMovementHelpers.checkTypeIntersection(location, volume, supplier);
+	}
 
 	public static EntitySubActionTravelViaBlock deserializeFromBuffer(ByteBuffer buffer)
 	{
