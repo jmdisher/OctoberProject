@@ -13,14 +13,17 @@ import com.jeffdisher.october.utils.Assert;
 public class SpecialSlotAspect
 {
 	public static final String ID_PEDESTAL = "op.pedestal";
+	public static final String ID_PORTAL_KEYSTONE = "op.portal_keystone";
 
 	public static SpecialSlotAspect load(ItemRegistry items, BlockAspect blocks)
 	{
 		// TODO:  Convert this logic and constant into some declarative data file.
 		Block pedestal = blocks.fromItem(items.getItemById(ID_PEDESTAL));
 		Assert.assertTrue(null != pedestal);
+		Block keystone = blocks.fromItem(items.getItemById(ID_PORTAL_KEYSTONE));
+		Assert.assertTrue(null != keystone);
 		
-		Set<Block> hasSpecial = Set.of(pedestal);
+		Set<Block> hasSpecial = Set.of(pedestal, keystone);
 		Set<Block> canSwapOut = Set.of(pedestal);
 		return new SpecialSlotAspect(hasSpecial, canSwapOut);
 	}

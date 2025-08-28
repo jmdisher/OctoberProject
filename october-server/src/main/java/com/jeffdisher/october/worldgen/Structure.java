@@ -14,12 +14,15 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.CompositeHelpers;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
 import com.jeffdisher.october.mutations.MutationBlockPeriodic;
+import com.jeffdisher.october.properties.PropertyRegistry;
+import com.jeffdisher.october.properties.PropertyType;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.ItemSlot;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.Encoding;
 
@@ -239,7 +242,19 @@ public class Structure
 									if (null != aspectData.specialItemSlot)
 									{
 										Assert.assertTrue(env.specialSlot.hasSpecialSlot(block));
-										cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, blockAddress, aspectData.specialItemSlot);
+										// Check the special slot since location references need to be re-interpreted (we consider them relative to the current block by north).
+										ItemSlot specialItemSlot = aspectData.specialItemSlot;
+										if ((null != specialItemSlot.nonStackable) && specialItemSlot.nonStackable.properties().containsKey(PropertyRegistry.LOCATION))
+										{
+											Map<PropertyType<?>, Object> properties = new HashMap<>(specialItemSlot.nonStackable.properties());
+											AbsoluteLocation placeholder = (AbsoluteLocation) properties.get(PropertyRegistry.LOCATION);
+											AbsoluteLocation rotatedPlaceholder = rotation.rotateAboutZ(placeholder);
+											AbsoluteLocation updated = thisBlock.getRelative(rotatedPlaceholder.x(), rotatedPlaceholder.y(), rotatedPlaceholder.z());
+											properties.put(PropertyRegistry.LOCATION, updated);
+											NonStackableItem finalItem = new NonStackableItem(specialItemSlot.nonStackable.type(), properties);
+											specialItemSlot = ItemSlot.fromNonStack(finalItem);
+										}
+										cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, blockAddress, specialItemSlot);
 									}
 									
 									long perioidicMillisDelay = 0L;

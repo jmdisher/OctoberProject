@@ -12,8 +12,10 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
+import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -413,5 +415,25 @@ public class TestStructureLoader
 		Assert.assertFalse(structure.doesIntersectCuboid(address, new AbsoluteLocation(-1, 0, 0), OrientationAspect.Direction.EAST));
 		Assert.assertTrue(structure.doesIntersectCuboid(address, new AbsoluteLocation(31, 0, 0), OrientationAspect.Direction.NORTH));
 		Assert.assertFalse(structure.doesIntersectCuboid(address, new AbsoluteLocation(31, 40, 0), OrientationAspect.Direction.NORTH));
+	}
+
+	@Test
+	public void portalsInFlat()
+	{
+		// Make sure that the portals are properly placed in the FlatWorldGenerator.
+		FlatWorldGenerator gen = new FlatWorldGenerator(ENV, true);
+		
+		AbsoluteLocation northFacingKeystone = new AbsoluteLocation(0, 100, -1);
+		SuspendedCuboid<CuboidData> northFacing = gen.generateCuboid(new CreatureIdAssigner(), northFacingKeystone.getCuboidAddress());
+		Assert.assertEquals(northFacingKeystone.getBlockAddress(), northFacing.periodicMutationMillis().keySet().iterator().next());
+		AbsoluteLocation northFacingTarget = (AbsoluteLocation) northFacing.cuboid().getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, northFacingKeystone.getBlockAddress()).nonStackable.properties().get(PropertyRegistry.LOCATION);
+		
+		AbsoluteLocation southFacingKeystone = new AbsoluteLocation(0, 200, -1);
+		SuspendedCuboid<CuboidData> southFacing = gen.generateCuboid(new CreatureIdAssigner(), southFacingKeystone.getCuboidAddress());
+		Assert.assertEquals(southFacingKeystone.getBlockAddress(), southFacing.periodicMutationMillis().keySet().iterator().next());
+		AbsoluteLocation southFacingTarget = (AbsoluteLocation) southFacing.cuboid().getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, southFacingKeystone.getBlockAddress()).nonStackable.properties().get(PropertyRegistry.LOCATION);
+		
+		Assert.assertEquals(southFacingKeystone, northFacingTarget);
+		Assert.assertEquals(northFacingKeystone, southFacingTarget);
 	}
 }

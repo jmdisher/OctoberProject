@@ -1,5 +1,6 @@
 package com.jeffdisher.october.worldgen;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -13,6 +14,7 @@ import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
+import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -20,6 +22,10 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
+import com.jeffdisher.october.types.NonStackableItem;
+import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 
@@ -50,6 +56,8 @@ public class FlatWorldGenerator implements IWorldGenerator
 			+ "S CCCC S\n"
 	};
 	public static final AbsoluteLocation BASE = new AbsoluteLocation(-4, -4, -1);
+	public static final AbsoluteLocation INNER_PORTAL_NORTH = new AbsoluteLocation(-2, 100, -1);
+	public static final AbsoluteLocation OUTER_PORTAL_NORTH = new AbsoluteLocation(-2, 200, -1);
 
 	private final Environment _env;
 	private final Block _stoneBlock;
@@ -62,6 +70,8 @@ public class FlatWorldGenerator implements IWorldGenerator
 
 	private final boolean _shouldGenerateStructures;
 	private final Structure _centralStructure;
+	private final Structure _portalPositiveStructure;
+	private final Structure _portalNegativeStructure;
 
 	/**
 	 * Creates the world generator, configured with options.
@@ -83,6 +93,42 @@ public class FlatWorldGenerator implements IWorldGenerator
 		_shouldGenerateStructures = shouldGenerateStructures;
 		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(env.items, env.blocks));
 		_centralStructure = loader.loadFromStrings(STRUCTURE);
+		
+		Item portalOrb = env.items.getItemById("op.portal_orb");
+		NonStackableItem positiveOrb = new NonStackableItem(portalOrb, Map.of(PropertyRegistry.LOCATION, new AbsoluteLocation(0, 100, 0)));
+		NonStackableItem negativeOrb = new NonStackableItem(portalOrb, Map.of(PropertyRegistry.LOCATION, new AbsoluteLocation(0, -100, 0)));
+		Block portalKeystone = env.blocks.fromItem(env.items.getItemById("op.portal_keystone"));
+		Map<Character, Structure.AspectData> mapping = Map.of(
+			'A', new Structure.AspectData(env.special.AIR, null, null, null)
+			, 'V', new Structure.AspectData(env.blocks.fromItem(env.items.getItemById("op.void_stone")), null, null, null)
+			, 'P', new Structure.AspectData(portalKeystone, null, null, ItemSlot.fromNonStack(positiveOrb))
+			, 'N', new Structure.AspectData(portalKeystone, null, null, ItemSlot.fromNonStack(negativeOrb))
+		);
+		loader = new StructureLoader(mapping);
+		String[] positivePortal = new String[] {""
+			+ "VVPVV\n"
+			, ""
+			+ "VAAAV\n"
+			, ""
+			+ "VAAAV\n"
+			, ""
+			+ "VAAAV\n"
+			, ""
+			+ "VVVVV\n"
+		};
+		_portalPositiveStructure = loader.loadFromStrings(positivePortal);
+		String[] negativePortal = new String[] {""
+			+ "VVNVV\n"
+			, ""
+			+ "VAAAV\n"
+			, ""
+			+ "VAAAV\n"
+			, ""
+			+ "VAAAV\n"
+			, ""
+			+ "VVVVV\n"
+		};
+		_portalNegativeStructure = loader.loadFromStrings(negativePortal);
 	}
 
 	@Override
@@ -90,8 +136,6 @@ public class FlatWorldGenerator implements IWorldGenerator
 	{
 		// We will store the block types in the negative z blocks, but leave the non-negative blocks full or air.
 		CuboidData data;
-		// The height map will have a single value until we consider adding structures.
-		byte heightMapValue;
 		if (address.z() < (short)0)
 		{
 			data = CuboidGenerator.createFilledCuboid(address, _stoneBlock);
@@ -102,16 +146,11 @@ public class FlatWorldGenerator implements IWorldGenerator
 			// We want to add a bit of water.
 			data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(6, 6, 31), _waterSourceBlock.item().number());
 			data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(7, 7, 31), _waterSourceBlock.item().number());
-			heightMapValue = 31;
 		}
 		else
 		{
 			data = CuboidGenerator.createFilledCuboid(address, _env.special.AIR);
-			heightMapValue = CuboidHeightMap.UNKNOWN_HEIGHT;
 		}
-		
-		// Fill the height map based on this initial value (we might modify it with structure generation later).
-		byte[][] rawHeight = HeightMapHelpers.createUniformHeightMap(heightMapValue);
 		
 		// See if this is a cuboid where we want to generate our structure (it is in the 8 cuboids around the origin).
 		List<CreatureEntity> entities;
@@ -130,9 +169,6 @@ public class FlatWorldGenerator implements IWorldGenerator
 					.toList()
 			;
 			periodicMutationMillis = followUp.periodicMutationMillis();
-			
-			// Walk the octree structure to update the height map.
-			HeightMapHelpers.populateHeightMap(rawHeight, data);
 		}
 		else
 		{
@@ -153,6 +189,27 @@ public class FlatWorldGenerator implements IWorldGenerator
 			mutations = List.of();
 			periodicMutationMillis = Map.of();
 		}
+		
+		// See if there are any special structures to add.
+		if (_shouldGenerateStructures && _portalPositiveStructure.doesIntersectCuboid(address, INNER_PORTAL_NORTH, OrientationAspect.Direction.NORTH))
+		{
+			Structure.FollowUp followUp = _portalPositiveStructure.applyToCuboid(data, INNER_PORTAL_NORTH, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
+			Assert.assertTrue(followUp.overwriteMutations().isEmpty());
+			periodicMutationMillis = new HashMap<>(periodicMutationMillis);
+			periodicMutationMillis.putAll(followUp.periodicMutationMillis());
+		}
+		else if (_shouldGenerateStructures && _portalNegativeStructure.doesIntersectCuboid(address, OUTER_PORTAL_NORTH, OrientationAspect.Direction.NORTH))
+		{
+			Structure.FollowUp followUp = _portalNegativeStructure.applyToCuboid(data, OUTER_PORTAL_NORTH, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
+			Assert.assertTrue(followUp.overwriteMutations().isEmpty());
+			periodicMutationMillis = new HashMap<>(periodicMutationMillis);
+			periodicMutationMillis.putAll(followUp.periodicMutationMillis());
+		}
+		
+		
+		// Create the height map.
+		byte[][] rawHeight = HeightMapHelpers.createUniformHeightMap(CuboidHeightMap.UNKNOWN_HEIGHT);
+		HeightMapHelpers.populateHeightMap(rawHeight, data);
 		CuboidHeightMap heightMap = CuboidHeightMap.wrap(rawHeight);
 		return new SuspendedCuboid<CuboidData>(data
 				, heightMap
