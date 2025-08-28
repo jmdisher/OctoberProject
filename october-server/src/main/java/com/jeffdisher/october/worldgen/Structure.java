@@ -17,6 +17,7 @@ import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.utils.Assert;
@@ -54,10 +55,59 @@ public class Structure
 	 */
 	public AbsoluteLocation totalVolume()
 	{
-		return new AbsoluteLocation(_width
-				, _getYSize()
-				, _allLayerBlocks.length
-		);
+		return _totalVolume();
+	}
+
+	/**
+	 * Checks if this structure intersects with the cuboid at cuboidAddress, based in globalRoot, and rotated.
+	 * 
+	 * @param cuboidAddress The cuboid being generated.
+	 * @param globalRoot The global root location where the structure should be generated.
+	 * @param rotation The rotation of the structure.
+	 * @return True if any part of the receiver would intersect the given cuboid when injected at globalRoot with
+	 * rotation.
+	 */
+	public boolean doesIntersectCuboid(CuboidAddress cuboidAddress, AbsoluteLocation globalRoot, OrientationAspect.Direction rotation)
+	{
+		AbsoluteLocation rotatedVolume = rotation.rotateAboutZ(_totalVolume());
+		int minX;
+		int maxX;
+		if (rotatedVolume.x() > 0)
+		{
+			minX = globalRoot.x();
+			maxX = globalRoot.x() + rotatedVolume.x() - 1;
+		}
+		else
+		{
+			minX = (rotatedVolume.x() + 1);
+			maxX = globalRoot.x();
+		}
+		int minY;
+		int maxY;
+		if (rotatedVolume.y() > 0)
+		{
+			minY = globalRoot.y();
+			maxY = globalRoot.y() + rotatedVolume.y() - 1;
+		}
+		else
+		{
+			minY = (rotatedVolume.y() + 1);
+			maxY = globalRoot.y();
+		}
+		int minZ = globalRoot.z();
+		int maxZ = globalRoot.z() + rotatedVolume.z() - 1;
+		
+		AbsoluteLocation base = cuboidAddress.getBase();
+		int baseX = base.x();
+		int highX = base.x() + Encoding.CUBOID_EDGE_SIZE;
+		int baseY = base.y();
+		int highY = base.y() + Encoding.CUBOID_EDGE_SIZE;
+		int baseZ = base.z();
+		int highZ = base.z() + Encoding.CUBOID_EDGE_SIZE;
+		return (((baseX <= minX) && (minX <= highX)) || ((baseX <= maxX) && (maxX <= highX)))
+			&& (((baseY <= minY) && (minY <= highY)) || ((baseY <= maxY) && (maxY <= highY)))
+			&& (((baseZ <= minZ) && (minZ <= highZ)) || ((baseZ <= maxZ) && (maxZ <= highZ)))
+		;
 	}
 
 	/**
@@ -220,6 +270,14 @@ public class Structure
 	private int _getYSize()
 	{
 		return _allLayerBlocks[0].length / _width;
+	}
+
+	private AbsoluteLocation _totalVolume()
+	{
+		return new AbsoluteLocation(_width
+			, _getYSize()
+			, _allLayerBlocks.length
+		);
 	}
 
 

@@ -51,42 +51,62 @@ public class FlatWorldGenerator implements IWorldGenerator
 	};
 	public static final AbsoluteLocation BASE = new AbsoluteLocation(-4, -4, -1);
 
+	private final Environment _env;
+	private final Block _stoneBlock;
+	private final Block _dirtBlock;
+	private final Block _logBlock;
+	private final Block _coalOreBlock;
+	private final Block _ironOreBlock;
+	private final Block _waterSourceBlock;
+	private final EntityType _cow;
+
 	private final boolean _shouldGenerateStructures;
+	private final Structure _centralStructure;
 
 	/**
 	 * Creates the world generator, configured with options.
 	 * 
+	 * @param env The shared environment.
 	 * @param shouldGenerateStructures True if generated structures should be added, false if not.
 	 */
-	public FlatWorldGenerator(boolean shouldGenerateStructures)
+	public FlatWorldGenerator(Environment env, boolean shouldGenerateStructures)
 	{
+		_env = env;
+		_stoneBlock = env.blocks.fromItem(env.items.getItemById("op.stone"));
+		_dirtBlock = env.blocks.fromItem(env.items.getItemById("op.dirt"));
+		_logBlock = env.blocks.fromItem(env.items.getItemById("op.log"));
+		_coalOreBlock = env.blocks.fromItem(env.items.getItemById("op.coal_ore"));
+		_ironOreBlock = env.blocks.fromItem(env.items.getItemById("op.iron_ore"));
+		_waterSourceBlock = env.blocks.fromItem(env.items.getItemById("op.water_source"));
+		_cow = env.creatures.getTypeById("op.cow");
+		
 		_shouldGenerateStructures = shouldGenerateStructures;
+		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(env.items, env.blocks));
+		_centralStructure = loader.loadFromStrings(STRUCTURE);
 	}
 
 	@Override
 	public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
 	{
-		Environment env = Environment.getShared();
 		// We will store the block types in the negative z blocks, but leave the non-negative blocks full or air.
 		CuboidData data;
 		// The height map will have a single value until we consider adding structures.
 		byte heightMapValue;
 		if (address.z() < (short)0)
 		{
-			data = CuboidGenerator.createFilledCuboid(address, env.blocks.fromItem(env.items.getItemById("op.stone")));
-			_fillPlane(data, (byte)31, env.blocks.fromItem(env.items.getItemById("op.dirt")));
-			_fillPlane(data, (byte)29, env.blocks.fromItem(env.items.getItemById("op.log")));
-			_fillPlane(data, (byte)27, env.blocks.fromItem(env.items.getItemById("op.coal_ore")));
-			_fillPlane(data, (byte)25, env.blocks.fromItem(env.items.getItemById("op.iron_ore")));
+			data = CuboidGenerator.createFilledCuboid(address, _stoneBlock);
+			_fillPlane(data, (byte)31, _dirtBlock);
+			_fillPlane(data, (byte)29, _logBlock);
+			_fillPlane(data, (byte)27, _coalOreBlock);
+			_fillPlane(data, (byte)25, _ironOreBlock);
 			// We want to add a bit of water.
-			Block waterSource = env.blocks.fromItem(env.items.getItemById("op.water_source"));
-			data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(6, 6, 31), waterSource.item().number());
-			data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(7, 7, 31), waterSource.item().number());
+			data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(6, 6, 31), _waterSourceBlock.item().number());
+			data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(7, 7, 31), _waterSourceBlock.item().number());
 			heightMapValue = 31;
 		}
 		else
 		{
-			data = CuboidGenerator.createFilledCuboid(address, env.blocks.fromItem(env.items.getItemById("op.air")));
+			data = CuboidGenerator.createFilledCuboid(address, _env.special.AIR);
 			heightMapValue = CuboidHeightMap.UNKNOWN_HEIGHT;
 		}
 		
@@ -98,21 +118,13 @@ public class FlatWorldGenerator implements IWorldGenerator
 		List<ScheduledMutation> mutations;
 		Map<BlockAddress, Long> periodicMutationMillis;
 		if (_shouldGenerateStructures
-				&& ((-1 == address.x()) || (0 == address.x()))
-				&& ((-1 == address.y()) || (0 == address.y()))
-				&& ((-1 == address.z()) || (0 == address.z()))
+			&& _centralStructure.doesIntersectCuboid(address, BASE, OrientationAspect.Direction.NORTH)
 		)
 		{
 			// Our structures don't have entities.
 			entities = List.of();
 			
-			StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(env.items, env.blocks));
-			Structure structure = loader.loadFromStrings(STRUCTURE);
-			int baseX = (0 == address.x()) ? BASE.x() : (32 + BASE.x());
-			int baseY = (0 == address.y()) ? BASE.y() : (32 + BASE.y());
-			int baseZ = (0 == address.z()) ? BASE.z() : (32 + BASE.z());
-			AbsoluteLocation rootLocation = address.getBase().getRelative(baseX, baseY, baseZ);
-			Structure.FollowUp followUp = structure.applyToCuboid(data, rootLocation, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
+			Structure.FollowUp followUp = _centralStructure.applyToCuboid(data, BASE, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
 			mutations = followUp.overwriteMutations().stream()
 					.map((IMutationBlock mutation) -> new ScheduledMutation(mutation, 0L))
 					.toList()
@@ -125,15 +137,14 @@ public class FlatWorldGenerator implements IWorldGenerator
 		else
 		{
 			// Load in 2 cows near the base of this cuboid if it is at z=0.
-			EntityType cow = env.creatures.getTypeById("op.cow");
 			AbsoluteLocation baseOfCuboid = address.getBase();
 			entities = (0 == address.z())
 					? List.of(CreatureEntity.create(creatureIdAssigner.next()
-							, cow
+							, _cow
 							, baseOfCuboid.toEntityLocation()
 							, (byte)100
 						), CreatureEntity.create(creatureIdAssigner.next()
-							, cow
+							, _cow
 							, baseOfCuboid.getRelative(5, 5, 0).toEntityLocation()
 							, (byte)100
 					))

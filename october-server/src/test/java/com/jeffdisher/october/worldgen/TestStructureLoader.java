@@ -399,4 +399,19 @@ public class TestStructureLoader
 		Assert.assertEquals(OrientationAspect.Direction.EAST.ordinal(), cuboid.getData7(AspectRegistry.ORIENTATION, target.getRelative(0, -5, 0).getBlockAddress()));
 		Assert.assertEquals(OrientationAspect.Direction.NORTH.ordinal(), cuboid.getData7(AspectRegistry.ORIENTATION, target.getRelative(0, -9, 0).getBlockAddress()));
 	}
+
+	@Test
+	public void cuboidIntersection()
+	{
+		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(ENV.items, ENV.blocks));
+		String[] zLayers = new String[] {
+				"DDD\n",
+		};
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		Structure structure = loader.loadFromStrings(zLayers);
+		Assert.assertTrue(structure.doesIntersectCuboid(address, new AbsoluteLocation(-1, 0, 0), OrientationAspect.Direction.NORTH));
+		Assert.assertFalse(structure.doesIntersectCuboid(address, new AbsoluteLocation(-1, 0, 0), OrientationAspect.Direction.EAST));
+		Assert.assertTrue(structure.doesIntersectCuboid(address, new AbsoluteLocation(31, 0, 0), OrientationAspect.Direction.NORTH));
+		Assert.assertFalse(structure.doesIntersectCuboid(address, new AbsoluteLocation(31, 40, 0), OrientationAspect.Direction.NORTH));
+	}
 }

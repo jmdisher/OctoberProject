@@ -522,7 +522,7 @@ public class TestServerRunner
 		TestAdapter network = new TestAdapter();
 		WorldConfig config = new WorldConfig();
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(false), config);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(ENV, false), config);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, network

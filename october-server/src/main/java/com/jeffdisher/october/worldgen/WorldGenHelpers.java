@@ -26,7 +26,7 @@ public class WorldGenHelpers
 			worldGen = new BasicWorldGenerator(env, config.basicSeed);
 			break;
 		case FLAT:
-			worldGen = new FlatWorldGenerator(true);
+			worldGen = new FlatWorldGenerator(env, true);
 			break;
 			default:
 				throw Assert.unreachable();

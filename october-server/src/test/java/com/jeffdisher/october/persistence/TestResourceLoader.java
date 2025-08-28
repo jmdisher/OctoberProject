@@ -126,7 +126,7 @@ public class TestResourceLoader
 	@Test
 	public void flatWorld() throws Throwable
 	{
-		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(false), null);
+		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(ENV, false), null);
 		CuboidAddress stoneAddress = CuboidAddress.fromInt(1, 0, -1);
 		CuboidAddress airAddress = CuboidAddress.fromInt(1, 0, 0);
 		
@@ -157,7 +157,7 @@ public class TestResourceLoader
 	public void writeThenRead() throws Throwable
 	{
 		File worldDirectory = DIRECTORY.newFolder();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(false), null);
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(ENV, false), null);
 		CuboidAddress airAddress = CuboidAddress.fromInt(1, 0, 0);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
@@ -238,7 +238,7 @@ public class TestResourceLoader
 	public void writeAndReadSuspendedCuboid() throws Throwable
 	{
 		File worldDirectory = DIRECTORY.newFolder();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(false), null);
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(ENV, false), null);
 		CuboidAddress airAddress = CuboidAddress.fromInt(1, 0, 0);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
@@ -323,7 +323,7 @@ public class TestResourceLoader
 	public void overwiteFile() throws Throwable
 	{
 		File worldDirectory = DIRECTORY.newFolder();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(false), null);
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(ENV, false), null);
 		CuboidAddress airAddress = CuboidAddress.fromInt(1, 0, 0);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
@@ -415,7 +415,7 @@ public class TestResourceLoader
 		File worldDirectory = DIRECTORY.newFolder();
 		WorldConfig config = new WorldConfig();
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(false), config);
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(ENV, false), config);
 		CuboidAddress airAddress = CuboidAddress.fromInt(1, 0, 0);
 		int entityId = 1;
 		int targetId = 2;
@@ -488,7 +488,7 @@ public class TestResourceLoader
 	public void writeAndReadCuboidAndCreatures() throws Throwable
 	{
 		File worldDirectory = DIRECTORY.newFolder();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(false), null);
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(ENV, false), null);
 		CuboidAddress airAddress = CuboidAddress.fromInt(3, -5, 0);
 		
 		// We will request that this be generated and verify that there is an entity.
