@@ -12,11 +12,17 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
+import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.Encoding;
 
@@ -236,9 +242,9 @@ public class TestStructureLoader
 	{
 		Block voidStone = ENV.blocks.fromItem(ENV.items.getItemById("op.void_stone"));
 		Block voidLamp = ENV.blocks.fromItem(ENV.items.getItemById("op.void_lamp"));
-		Map<Character, Block> mapping = Map.of(
-			'V', voidStone
-			, 'L', voidLamp
+		Map<Character, Structure.AspectData> mapping = Map.of(
+			'V', new Structure.AspectData(voidStone, null, null, null)
+			, 'L', new Structure.AspectData(voidLamp, null, null, null)
 		);
 		StructureLoader loader = new StructureLoader(mapping);
 		String[] zLayers = new String[] {""
@@ -349,5 +355,48 @@ public class TestStructureLoader
 		Assert.assertEquals(stoneBrickValue, neCuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 1, 7)));
 		Assert.assertEquals(coalOreValue, swCuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(31, 31, 7)));
 		Assert.assertEquals(dirtValue, seCuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 31, 7)));
+	}
+
+	@Test
+	public void additionalData()
+	{
+		Block andGate = ENV.blocks.fromItem(ENV.items.getItemById("op.and_gate"));
+		Block chest = ENV.blocks.fromItem(ENV.items.getItemById("op.chest"));
+		Block pedestal = ENV.blocks.fromItem(ENV.items.getItemById("op.pedestal"));
+		Item sword = ENV.items.getItemById("op.iron_sword");
+		NonStackableItem customSword = new NonStackableItem(sword, Map.of(
+			PropertyRegistry.DURABILITY, 10
+			, PropertyRegistry.NAME, "Custom name"
+		));
+		Inventory inv = Inventory.start(10)
+			.addStackable(DIRT.item(), 2)
+			.addNonStackable(PropertyHelpers.newItemWithDefaults(ENV, sword))
+			.finish()
+		;
+		Map<Character, Structure.AspectData> mapping = Map.of(
+			'C', new Structure.AspectData(chest, inv, null, null)
+			, 'I', new Structure.AspectData(pedestal, null, null, ItemSlot.fromNonStack(customSword))
+			, 'N', new Structure.AspectData(andGate, null, OrientationAspect.Direction.NORTH, null)
+			, 'E', new Structure.AspectData(andGate, null, OrientationAspect.Direction.EAST, null)
+			, 'W', new Structure.AspectData(andGate, null, OrientationAspect.Direction.WEST, null)
+			, 'S', new Structure.AspectData(andGate, null, OrientationAspect.Direction.SOUTH, null)
+		);
+		StructureLoader loader = new StructureLoader(mapping);
+		String[] zLayers = new String[] {""
+				+ " C I N E W S \n"
+		};
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, DIRT);
+		Structure structure = loader.loadFromStrings(zLayers);
+		
+		// Load into the base of the cuboid and see that only the stone blocks have been replaced but the air left unchanged.
+		AbsoluteLocation target = new AbsoluteLocation(15, 15, 15);
+		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.EAST, Structure.REPLACE_ALL);
+		Assert.assertTrue(followUp.isEmpty());
+		
+		Assert.assertEquals(inv, cuboid.getDataSpecial(AspectRegistry.INVENTORY, target.getRelative(0, -1, 0).getBlockAddress()));
+		Assert.assertEquals("Custom name", cuboid.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, target.getRelative(0, -3, 0).getBlockAddress()).nonStackable.properties().get(PropertyRegistry.NAME));
+		Assert.assertEquals(OrientationAspect.Direction.EAST.ordinal(), cuboid.getData7(AspectRegistry.ORIENTATION, target.getRelative(0, -5, 0).getBlockAddress()));
+		Assert.assertEquals(OrientationAspect.Direction.NORTH.ordinal(), cuboid.getData7(AspectRegistry.ORIENTATION, target.getRelative(0, -9, 0).getBlockAddress()));
 	}
 }

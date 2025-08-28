@@ -48,33 +48,39 @@ public class StructureLoader
 	 * @param blocks The blocks to use to populate the loader mapping.
 	 * @return A mapping to use when defining a StructureLoader.
 	 */
-	public static Map<Character, Block> getBasicMapping(ItemRegistry items, BlockAspect blocks)
+	public static Map<Character, Structure.AspectData> getBasicMapping(ItemRegistry items, BlockAspect blocks)
 	{
-		Map<Character, Block> temp = new HashMap<>();
-		Assert.assertTrue(null == temp.put(C_DIRT, blocks.fromItem(items.getItemById("op.dirt"))));
-		Assert.assertTrue(null == temp.put(C_SOIL, blocks.fromItem(items.getItemById("op.tilled_soil"))));
-		Assert.assertTrue(null == temp.put(C_WATER, blocks.fromItem(items.getItemById("op.water_source"))));
-		Assert.assertTrue(null == temp.put(C_BRICK, blocks.fromItem(items.getItemById("op.stone_brick"))));
-		Assert.assertTrue(null == temp.put(C_LANTERN, blocks.fromItem(items.getItemById("op.lantern"))));
-		Assert.assertTrue(null == temp.put(C_SEEDLING, blocks.fromItem(items.getItemById("op.wheat_seedling"))));
-		Assert.assertTrue(null == temp.put(C_SAPLING, blocks.fromItem(items.getItemById("op.sapling"))));
-		Assert.assertTrue(null == temp.put(C_CARROT, blocks.fromItem(items.getItemById("op.carrot_seedling"))));
-		Assert.assertTrue(null == temp.put(C_COAL_ORE, blocks.fromItem(items.getItemById("op.coal_ore"))));
-		Assert.assertTrue(null == temp.put(C_IRON_ORE, blocks.fromItem(items.getItemById("op.iron_ore"))));
-		Assert.assertTrue(null == temp.put(C_TREE_LOG, blocks.fromItem(items.getItemById("op.log"))));
-		Assert.assertTrue(null == temp.put(C_TREE_LEAF, blocks.fromItem(items.getItemById("op.leaf"))));
+		Map<Character, Structure.AspectData> temp = new HashMap<>();
+		Assert.assertTrue(null == temp.put(C_DIRT, _wrapBlockWithNulls(items, blocks, "op.dirt")));
+		Assert.assertTrue(null == temp.put(C_SOIL, _wrapBlockWithNulls(items, blocks, "op.tilled_soil")));
+		Assert.assertTrue(null == temp.put(C_WATER, _wrapBlockWithNulls(items, blocks, "op.water_source")));
+		Assert.assertTrue(null == temp.put(C_BRICK, _wrapBlockWithNulls(items, blocks, "op.stone_brick")));
+		Assert.assertTrue(null == temp.put(C_LANTERN, _wrapBlockWithNulls(items, blocks, "op.lantern")));
+		Assert.assertTrue(null == temp.put(C_SEEDLING, _wrapBlockWithNulls(items, blocks, "op.wheat_seedling")));
+		Assert.assertTrue(null == temp.put(C_SAPLING, _wrapBlockWithNulls(items, blocks, "op.sapling")));
+		Assert.assertTrue(null == temp.put(C_CARROT, _wrapBlockWithNulls(items, blocks, "op.carrot_seedling")));
+		Assert.assertTrue(null == temp.put(C_COAL_ORE, _wrapBlockWithNulls(items, blocks, "op.coal_ore")));
+		Assert.assertTrue(null == temp.put(C_IRON_ORE, _wrapBlockWithNulls(items, blocks, "op.iron_ore")));
+		Assert.assertTrue(null == temp.put(C_TREE_LOG, _wrapBlockWithNulls(items, blocks, "op.log")));
+		Assert.assertTrue(null == temp.put(C_TREE_LEAF, _wrapBlockWithNulls(items, blocks, "op.leaf")));
 		return Collections.unmodifiableMap(temp);
 	}
 
+	private static Structure.AspectData _wrapBlockWithNulls(ItemRegistry items, BlockAspect blocks, String id)
+	{
+		Block block = blocks.fromItem(items.getItemById(id));
+		return new Structure.AspectData(block, null, null, null);
+	}
 
-	private final Map<Character, Block> _lookup;
+
+	private final Map<Character, Structure.AspectData> _lookup;
 
 	/**
 	 * Creates the structure loader.
 	 * 
 	 * @param mapping The map which describes how to interpret the character data in the structure definition.
 	 */
-	public StructureLoader(Map<Character, Block> mapping)
+	public StructureLoader(Map<Character, Structure.AspectData> mapping)
 	{
 		_lookup = mapping;
 	}
@@ -91,7 +97,7 @@ public class StructureLoader
 	{
 		// We will just define this as an array of short arrays (a short array for each z-level).
 		int layerSize = zLayers[0].length();
-		Block[][] allLayerBlocks = new Block[zLayers.length][];
+		Structure.AspectData[][] allLayerBlocks = new Structure.AspectData[zLayers.length][];
 		int width = -1;
 		for (int i = 0; i < zLayers.length; ++i)
 		{
@@ -99,12 +105,11 @@ public class StructureLoader
 			// We expect that these are all the same size.
 			Assert.assertTrue(layerSize == layer.length());
 			int totalNewlines = _countNewlines(layer);
-			Block[] blocks = new Block[layerSize - totalNewlines];
+			Structure.AspectData[] blocks = new Structure.AspectData[layerSize - totalNewlines];
 			int newlines = 0;
 			for (int j = 0; j < layerSize; ++j)
 			{
 				char c = layer.charAt(j);
-				Block block = _lookup.get(c);
 				if ('\n' == c)
 				{
 					if (-1 == width)
@@ -120,7 +125,7 @@ public class StructureLoader
 				}
 				else
 				{
-					blocks[j - newlines] = block;
+					blocks[j - newlines] = _lookup.get(c);
 				}
 			}
 			allLayerBlocks[i] = blocks;

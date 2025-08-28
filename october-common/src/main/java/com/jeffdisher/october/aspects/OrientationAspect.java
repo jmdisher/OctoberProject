@@ -229,5 +229,19 @@ public class OrientationAspect
 		{
 			return _sinkLocation.apply(thisLocation);
 		}
+		public Direction rotateOrientation(Direction orientation)
+		{
+			Direction rotated;
+			if (DOWN == orientation)
+			{
+				rotated = orientation;
+			}
+			else
+			{
+				int index = (orientation.ordinal() + this.ordinal()) % 4;
+				rotated = Direction.values()[index];
+			}
+			return rotated;
+		}
 	}
 }

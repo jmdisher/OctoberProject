@@ -17,6 +17,9 @@ import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.ItemSlot;
+import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.Encoding;
 
 
@@ -28,17 +31,17 @@ import com.jeffdisher.october.utils.Encoding;
 public class Structure
 {
 	public static final short REPLACE_ALL = -1;
-	private final Block[][] _allLayerBlocks;
+	private final AspectData[][] _allLayerBlocks;
 	private final int _width;
 
 	/**
-	 * Creates the structure with the block type values in allLayerBlocks and the given width to use when interpretting
+	 * Creates the structure with the block type values in allLayerBlocks and the given width to use when interpreting
 	 * rows.
 	 * 
-	 * @param allLayerBlocks The block values of the structure (null values will be skipped).
+	 * @param allLayerBlocks The aspect data of the structure (null values will be skipped).
 	 * @param width The width of a single row within the inner-most array.
 	 */
-	public Structure(Block[][] allLayerBlocks, int width)
+	public Structure(AspectData[][] allLayerBlocks, int width)
 	{
 		_allLayerBlocks = allLayerBlocks;
 		_width = width;
@@ -113,15 +116,15 @@ public class Structure
 		Map<BlockAddress, Long> periodicMutationMillis = new HashMap<>();
 		for (int c = 0; c < countZ; ++c)
 		{
-			Block[] layer = _allLayerBlocks[readZ + c];
+			AspectData[] layer = _allLayerBlocks[readZ + c];
 			for (int readY = 0; readY < sizeY; ++readY)
 			{
 				for (int readX = 0; readX < sizeX; ++readX)
 				{
 					int readIndex = (readY * _width) + readX;
-					Block block = layer[readIndex];
+					AspectData aspectData = layer[readIndex];
 					// null means "ignore".
-					if (null != block)
+					if (null != aspectData)
 					{
 						AbsoluteLocation offsetLocation = rotation.rotateAboutZ(new AbsoluteLocation(readX, readY, c));
 						// We only write if this offsetLocation will write into the cuboid.
@@ -136,6 +139,10 @@ public class Structure
 							// We will only replace this if it is the mast type or there is no mask type.
 							if ((replaceTypeMask < 0) || (replaceTypeMask == cuboid.getData15(AspectRegistry.BLOCK, blockAddress)))
 							{
+								// The block is required in the aspect data.
+								Block block = aspectData.block;
+								Assert.assertTrue(null != block);
+								
 								// Lighting updates are handled somewhat specially (not just as a simple mutation - since they
 								// are so common, they are specially optimized).  Therefore, we will just handle lighting
 								// updates and growth mutation requirements the same way:  Make the block air and return a
@@ -151,11 +158,39 @@ public class Structure
 									// Lighting updates require that the block be placed to trigger the lighting update.
 									cuboid.setData15(AspectRegistry.BLOCK, blockAddress, replacementBlock);
 									overwriteMutations.add(new MutationBlockOverwriteInternal(thisBlock, block));
+									
+									// We can't have other data if we are using this special path.
+									Assert.assertTrue(null == aspectData.normalInventory);
+									Assert.assertTrue(null == aspectData.orientation);
+									Assert.assertTrue(null == aspectData.specialItemSlot);
 								}
 								else
 								{
 									// Anything other than a lighting update can be placed directly and some require periodic updates.
 									cuboid.setData15(AspectRegistry.BLOCK, blockAddress, block.item().number());
+									if (null != aspectData.normalInventory)
+									{
+										Assert.assertTrue((env.stations.getNormalInventorySize(block) > 0) || env.blocks.hasEmptyBlockInventory(block, isActive));
+										cuboid.setDataSpecial(AspectRegistry.INVENTORY, blockAddress, aspectData.normalInventory);
+									}
+									if (null != aspectData.orientation)
+									{
+										if (OrientationAspect.Direction.DOWN == aspectData.orientation)
+										{
+											Assert.assertTrue(OrientationAspect.doesAllowDownwardOutput(block));
+										}
+										else
+										{
+											Assert.assertTrue(OrientationAspect.HAS_ORIENTATION.contains(block.item().id()));
+										}
+										OrientationAspect.Direction rotatedOrientation = rotation.rotateOrientation(aspectData.orientation);
+										cuboid.setData7(AspectRegistry.ORIENTATION, blockAddress, OrientationAspect.directionToByte(rotatedOrientation));
+									}
+									if (null != aspectData.specialItemSlot)
+									{
+										Assert.assertTrue(env.specialSlot.hasSpecialSlot(block));
+										cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, blockAddress, aspectData.specialItemSlot);
+									}
 									
 									long perioidicMillisDelay = 0L;
 									if (needsGrowth)
@@ -196,4 +231,6 @@ public class Structure
 			return overwriteMutations.isEmpty() && periodicMutationMillis.isEmpty();
 		}
 	}
+
+	public static record AspectData(Block block, Inventory normalInventory, OrientationAspect.Direction orientation, ItemSlot specialItemSlot) {}
 }
