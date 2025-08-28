@@ -1,7 +1,9 @@
 package com.jeffdisher.october.worldgen;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
@@ -10,8 +12,8 @@ import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.aspects.PlantRegistry;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.CompositeHelpers;
-import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
+import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -56,8 +58,10 @@ public class Structure
 	}
 
 	/**
-	 * Applies the receiver structure to the given cuboid, rooting it as baseOffset.  Note that a negative offset means
-	 * that the structure begins outside of the cuboid but the part within it will be populated.
+	 * Applies the receiver structure to the given cuboid, rooting it at rootLocation.  It is possible that the
+	 * structure is not inside the cuboid.
+	 * Given that some block types need periodic updates scheduled (plants, for example), a map of periodic update
+	 * requirements is returned.
 	 * 
 	 * @param cuboid The cuboid to modify.
 	 * @param rootLocation The root location, in absolute coordinates, where the bottom-south-west corner of this
@@ -66,9 +70,9 @@ public class Structure
 	 * @param rotation The direction to rotate (from NORTH), about the south-west corner.
 	 * @param replaceTypeMask If >=0, only blocks with this type number will be replaced (pass -1 to replace
 	 * everything).
-	 * @return The mutations which must be applied to this cuboid to finish the load.
+	 * @return Follow-up changes to apply after this structure after it is loaded.
 	 */
-	public List<IMutationBlock> applyToCuboid(CuboidData cuboid, AbsoluteLocation rootLocation, OrientationAspect.Direction rotation, short replaceTypeMask)
+	public FollowUp applyToCuboid(CuboidData cuboid, AbsoluteLocation rootLocation, OrientationAspect.Direction rotation, short replaceTypeMask)
 	{
 		int sizeX = _width;
 		int sizeY = _getYSize();
@@ -105,7 +109,8 @@ public class Structure
 		LightAspect lights = env.lighting;
 		PlantRegistry plants = env.plants;
 		short replacementBlock = env.special.AIR.item().number();
-		List<IMutationBlock> mutations = new ArrayList<>();
+		List<MutationBlockOverwriteInternal> overwriteMutations = new ArrayList<>();
+		Map<BlockAddress, Long> periodicMutationMillis = new HashMap<>();
 		for (int c = 0; c < countZ; ++c)
 		{
 			Block[] layer = _allLayerBlocks[readZ + c];
@@ -139,14 +144,33 @@ public class Structure
 								boolean needsLightUpdate = (lights.getLightEmission(block, isActive) > 0);
 								boolean needsGrowth = (plants.growthDivisor(block) > 0);
 								boolean isComposite = CompositeHelpers.isCornerstone(block);
-								if (needsLightUpdate || needsGrowth || isComposite)
+								
+								// Schedule the periodic updates for this block type based on what type it is.
+								if (needsLightUpdate)
 								{
+									// Lighting updates require that the block be placed to trigger the lighting update.
 									cuboid.setData15(AspectRegistry.BLOCK, blockAddress, replacementBlock);
-									mutations.add(new MutationBlockOverwriteInternal(thisBlock, block));
+									overwriteMutations.add(new MutationBlockOverwriteInternal(thisBlock, block));
 								}
 								else
 								{
+									// Anything other than a lighting update can be placed directly and some require periodic updates.
 									cuboid.setData15(AspectRegistry.BLOCK, blockAddress, block.item().number());
+									
+									long perioidicMillisDelay = 0L;
+									if (needsGrowth)
+									{
+										perioidicMillisDelay = MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS;
+									}
+									else if (isComposite)
+									{
+										perioidicMillisDelay = MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS;
+									}
+									
+									if (perioidicMillisDelay > 0L)
+									{
+										periodicMutationMillis.put(thisBlock.getBlockAddress(), perioidicMillisDelay);
+									}
 								}
 							}
 						}
@@ -154,12 +178,22 @@ public class Structure
 				}
 			}
 		}
-		return mutations;
+		return new FollowUp(overwriteMutations, periodicMutationMillis);
 	}
 
 
 	private int _getYSize()
 	{
 		return _allLayerBlocks[0].length / _width;
+	}
+
+
+	public static record FollowUp(List<MutationBlockOverwriteInternal> overwriteMutations
+		, Map<BlockAddress, Long> periodicMutationMillis
+	) {
+		public boolean isEmpty()
+		{
+			return overwriteMutations.isEmpty() && periodicMutationMillis.isEmpty();
+		}
 	}
 }

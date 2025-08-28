@@ -96,6 +96,7 @@ public class FlatWorldGenerator implements IWorldGenerator
 		// See if this is a cuboid where we want to generate our structure (it is in the 8 cuboids around the origin).
 		List<CreatureEntity> entities;
 		List<ScheduledMutation> mutations;
+		Map<BlockAddress, Long> periodicMutationMillis;
 		if (_shouldGenerateStructures
 				&& ((-1 == address.x()) || (0 == address.x()))
 				&& ((-1 == address.y()) || (0 == address.y()))
@@ -111,11 +112,12 @@ public class FlatWorldGenerator implements IWorldGenerator
 			int baseY = (0 == address.y()) ? BASE.y() : (32 + BASE.y());
 			int baseZ = (0 == address.z()) ? BASE.z() : (32 + BASE.z());
 			AbsoluteLocation rootLocation = address.getBase().getRelative(baseX, baseY, baseZ);
-			List<IMutationBlock> immediateMutations = structure.applyToCuboid(data, rootLocation, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
-			mutations = immediateMutations.stream()
+			Structure.FollowUp followUp = structure.applyToCuboid(data, rootLocation, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
+			mutations = followUp.overwriteMutations().stream()
 					.map((IMutationBlock mutation) -> new ScheduledMutation(mutation, 0L))
 					.toList()
 			;
+			periodicMutationMillis = followUp.periodicMutationMillis();
 			
 			// Walk the octree structure to update the height map.
 			HeightMapHelpers.populateHeightMap(rawHeight, data);
@@ -138,13 +140,14 @@ public class FlatWorldGenerator implements IWorldGenerator
 					: List.of()
 			;
 			mutations = List.of();
+			periodicMutationMillis = Map.of();
 		}
 		CuboidHeightMap heightMap = CuboidHeightMap.wrap(rawHeight);
 		return new SuspendedCuboid<CuboidData>(data
 				, heightMap
 				, entities
 				, mutations
-				, Map.of()
+				, periodicMutationMillis
 		);
 	}
 

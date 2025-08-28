@@ -2,8 +2,6 @@ package com.jeffdisher.october.worldgen;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -14,7 +12,7 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -52,8 +50,8 @@ public class TestStructureLoader
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		Structure structure = loader.loadFromStrings(zLayers);
 		AbsoluteLocation target = new AbsoluteLocation(5, 6, 7);
-		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
-		Assert.assertTrue(changes.isEmpty());
+		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
+		Assert.assertTrue(followUp.isEmpty());
 		
 		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(4, 5, 6)));
 		Assert.assertEquals(DIRT.item().number(), cuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 6, 7)));
@@ -82,8 +80,8 @@ public class TestStructureLoader
 		Assert.assertEquals(new AbsoluteLocation(5, 3, 3), structure.totalVolume());
 		
 		AbsoluteLocation target = new AbsoluteLocation(5, 6, 7);
-		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
-		Assert.assertTrue(changes.isEmpty());
+		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
+		Assert.assertTrue(followUp.isEmpty());
 		
 		Assert.assertEquals(STONE_BRICK.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(DIRT.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 1, 0).getBlockAddress()));
@@ -113,15 +111,15 @@ public class TestStructureLoader
 		
 		// Offset with the positive edge.
 		AbsoluteLocation target = new AbsoluteLocation(30, 30, 30);
-		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
-		Assert.assertTrue(changes.isEmpty());
+		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
+		Assert.assertTrue(followUp.isEmpty());
 		Assert.assertEquals(STONE_BRICK.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(DIRT.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 1, 0).getBlockAddress()));
 		
 		// Offset with the negative edge.
 		AbsoluteLocation negativeTarget = target.getRelative(-32, -32, -32);
-		changes = structure.applyToCuboid(cuboid, negativeTarget, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
-		Assert.assertTrue(changes.isEmpty());
+		followUp = structure.applyToCuboid(cuboid, negativeTarget, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
+		Assert.assertTrue(followUp.isEmpty());
 		Assert.assertEquals(STONE_BRICK.item().number(), cuboid.getData15(AspectRegistry.BLOCK, negativeTarget.getRelative(2, 2, 2).getBlockAddress()));
 	}
 
@@ -136,20 +134,24 @@ public class TestStructureLoader
 		Structure structure = loader.loadFromStrings(zLayers);
 		
 		AbsoluteLocation target = new AbsoluteLocation(5, 6, 7);
-		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
+		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
 		// We expect 3 things here with x-offsets: +1, +5, +9.
 		AbsoluteLocation wait1 = target.getRelative(1, 0, 0);
 		AbsoluteLocation wait2 = target.getRelative(5, 0, 0);
 		AbsoluteLocation wait3 = target.getRelative(9, 0, 0);
-		Assert.assertEquals(3, changes.size());
-		Set<AbsoluteLocation> locations = changes.stream().map((IMutationBlock mutation) -> mutation.getAbsoluteLocation()).collect(Collectors.toSet());
-		locations.contains(wait1);
-		locations.contains(wait2);
-		locations.contains(wait3);
+		
+		List<MutationBlockOverwriteInternal> changes = followUp.overwriteMutations();
+		Map<BlockAddress, Long> periodicMutationMillis = followUp.periodicMutationMillis();
+		Assert.assertEquals(1, changes.size());
+		Assert.assertEquals(wait3, changes.get(0).getAbsoluteLocation());
+		
+		Assert.assertEquals(2, periodicMutationMillis.size());
+		Assert.assertTrue(periodicMutationMillis.keySet().contains(wait1.getBlockAddress()));
+		Assert.assertTrue(periodicMutationMillis.keySet().contains(wait2.getBlockAddress()));
 		
 		Assert.assertEquals(DIRT.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
-		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, wait1.getBlockAddress()));
-		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, wait2.getBlockAddress()));
+		Assert.assertEquals(ENV.items.getItemById("op.wheat_seedling").number(), cuboid.getData15(AspectRegistry.BLOCK, wait1.getBlockAddress()));
+		Assert.assertEquals(ENV.items.getItemById("op.sapling").number(), cuboid.getData15(AspectRegistry.BLOCK, wait2.getBlockAddress()));
 		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, wait3.getBlockAddress()));
 	}
 
@@ -188,8 +190,8 @@ public class TestStructureLoader
 		short coalOreValue = ENV.items.getItemById("op.coal_ore").number();
 		short ironOreValue = ENV.items.getItemById("op.iron_ore").number();
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
-		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, stoneBlockValue);
-		Assert.assertTrue(changes.isEmpty());
+		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, stoneBlockValue);
+		Assert.assertTrue(followUp.isEmpty());
 		for (byte z = 1; z < Encoding.CUBOID_EDGE_SIZE; ++z)
 		{
 			for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
@@ -223,8 +225,8 @@ public class TestStructureLoader
 		short logValue = ENV.items.getItemById("op.log").number();
 		short leafValue = ENV.items.getItemById("op.leaf").number();
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
-		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
-		Assert.assertTrue(changes.isEmpty());
+		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
+		Assert.assertTrue(followUp.isEmpty());
 		Assert.assertEquals(logValue, cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(leafValue, cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 1, 1).getBlockAddress()));
 	}
@@ -250,17 +252,19 @@ public class TestStructureLoader
 		
 		// Load into the base of the cuboid and see that only the stone blocks have been replaced but the air left unchanged.
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
-		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
+		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
 		
 		// We expect 1 update since the void lamp is a composite structure.
 		AbsoluteLocation wait1 = target.getRelative(0, 0, 1);
-		Assert.assertEquals(1, changes.size());
-		Set<AbsoluteLocation> locations = changes.stream().map((IMutationBlock mutation) -> mutation.getAbsoluteLocation()).collect(Collectors.toSet());
-		locations.contains(wait1);
+		List<MutationBlockOverwriteInternal> changes = followUp.overwriteMutations(); 
+		Map<BlockAddress, Long> periodicMutationMillis = followUp.periodicMutationMillis();
+		Assert.assertEquals(0, changes.size());
+		Assert.assertEquals(1, periodicMutationMillis.size());
+		Assert.assertTrue(periodicMutationMillis.keySet().contains(wait1.getBlockAddress()));
 		
 		Assert.assertEquals(voidStone.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(voidStone.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 0, 0).getBlockAddress()));
-		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(ENV.items.getItemById("op.void_lamp").number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress()));
 		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 0, 1).getBlockAddress()));
 	}
 

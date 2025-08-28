@@ -651,7 +651,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 									data.setData15(AspectRegistry.BLOCK, dirtBlock, _blockDirt.item().number());
 								}
 							}
-							_basicTree.applyToCuboid(data, rootLocation, OrientationAspect.Direction.NORTH, airNumber);
+							Structure.FollowUp followUp = _basicTree.applyToCuboid(data, rootLocation, OrientationAspect.Direction.NORTH, airNumber);
+							Assert.assertTrue(followUp.isEmpty());
 						}
 					}
 				}
@@ -692,7 +693,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 			int absoluteZ = random.nextInt(range) + minZ;
 			// NOTE:  This relativeBase is NOT an absolute location but is relative to the cuboid base.
 			AbsoluteLocation relativeBase = new AbsoluteLocation(relativeBaseX + relativeX, relativeBaseY + relativeY, absoluteZ);
-			node.applyToCuboid(data, relativeBase, OrientationAspect.Direction.NORTH, stoneNumber);
+			Structure.FollowUp followUp = node.applyToCuboid(data, relativeBase, OrientationAspect.Direction.NORTH, stoneNumber);
+			Assert.assertTrue(followUp.isEmpty());
 		}
 	}
 
