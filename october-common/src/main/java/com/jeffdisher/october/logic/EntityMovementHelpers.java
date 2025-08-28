@@ -110,27 +110,28 @@ public class EntityMovementHelpers
 	}
 
 	/**
-	 * Used to check if there is a ladder intersecting with the entity at entityBase of the given volume.
+	 * Used to check if the entity with volume at entityBase is intersecting a specific type of block based on
+	 * caller-defined criteria.
 	 * 
 	 * @param entityBase The base south-west-down corner of the space to check.
 	 * @param volume The volume of the space to check.
-	 * @param ladderSupplier Returns true if there is a ladder block in the requested location.
-	 * @return True if there is a ladder intersecting with this entity, in any block.
+	 * @param predicate Returns true if the function should this location.
+	 * @return The first location where the predicate returned true, or null if it never did.
 	 */
-	public static boolean isInLadder(EntityLocation entityBase, EntityVolume volume, Predicate<AbsoluteLocation> ladderSupplier)
+	public static AbsoluteLocation checkTypeIntersection(EntityLocation entityBase, EntityVolume volume, Predicate<AbsoluteLocation> predicate)
 	{
 		_VolumeIterator iterator = _iteratorForEntity(entityBase, volume);
 		
-		boolean isLadder = false;
+		AbsoluteLocation match = null;
 		for (AbsoluteLocation loc : iterator)
 		{
-			if (ladderSupplier.test(loc))
+			if (predicate.test(loc))
 			{
-				isLadder = true;
+				match = loc;
 				break;
 			}
 		}
-		return isLadder;
+		return match;
 	}
 
 

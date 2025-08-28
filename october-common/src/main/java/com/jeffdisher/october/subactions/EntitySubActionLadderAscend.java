@@ -2,6 +2,7 @@ package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
@@ -94,7 +95,7 @@ public class EntitySubActionLadderAscend<T extends IMutableMinimalEntity> implem
 	{
 		// We want to see if we are standing in a ladder and if we could move up.
 		Environment env = Environment.getShared();
-		boolean isLadder = EntityMovementHelpers.isInLadder(location, volume, (AbsoluteLocation loc) -> {
+		Predicate<AbsoluteLocation> ladderSupplier = (AbsoluteLocation loc) -> {
 			BlockProxy proxy = previousBlockLookUp.apply(loc);
 			boolean ladder = false;
 			if (null != proxy)
@@ -102,7 +103,8 @@ public class EntitySubActionLadderAscend<T extends IMutableMinimalEntity> implem
 				ladder = env.blocks.isLadderType(proxy.getBlock());
 			}
 			return ladder;
-		});
+		};
+		boolean isLadder = (null != EntityMovementHelpers.checkTypeIntersection(location, volume, ladderSupplier));
 		
 		_LadderHelper helper = new _LadderHelper(env, previousBlockLookUp);
 		EntityMovementHelpers.interactiveEntityMove(location, volume, new EntityLocation(0.0f, 0.0f, ASCEND_PER_TICK), helper);

@@ -221,8 +221,8 @@ public class TestEntityMovementHelpers
 		EntityLocation ladderAirLocation = new EntityLocation(5.0f, 3.5f, 4.5f);
 		EntityLocation ladderStoneLocation = new EntityLocation(5.0f, 5.0f, 4.5f);
 		
-		Assert.assertFalse(EntityMovementHelpers.isInLadder(airLocation, volume, lookup));
-		Assert.assertTrue(EntityMovementHelpers.isInLadder(ladderAirLocation, volume, lookup));
-		Assert.assertTrue(EntityMovementHelpers.isInLadder(ladderStoneLocation, volume, lookup));
+		Assert.assertNull(EntityMovementHelpers.checkTypeIntersection(airLocation, volume, lookup));
+		Assert.assertNotNull(EntityMovementHelpers.checkTypeIntersection(ladderAirLocation, volume, lookup));
+		Assert.assertNotNull(EntityMovementHelpers.checkTypeIntersection(ladderStoneLocation, volume, lookup));
 	}
 }

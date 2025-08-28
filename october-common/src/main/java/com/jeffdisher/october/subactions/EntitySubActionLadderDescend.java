@@ -104,11 +104,11 @@ public class EntitySubActionLadderDescend<T extends IMutableMinimalEntity> imple
 			}
 			return ladder;
 		};
-		boolean isLadder = EntityMovementHelpers.isInLadder(location, volume, ladderSupplier);
+		boolean isLadder = (null != EntityMovementHelpers.checkTypeIntersection(location, volume, ladderSupplier));
 		if (!isLadder)
 		{
 			// Check the area just below us (where we will be going).
-			isLadder = EntityMovementHelpers.isInLadder(new EntityLocation(location.x(), location.y(), location.z() + DESCEND_PER_TICK), volume, ladderSupplier);
+			isLadder = (null != EntityMovementHelpers.checkTypeIntersection(new EntityLocation(location.x(), location.y(), location.z() + DESCEND_PER_TICK), volume, ladderSupplier));
 		}
 		
 		_LadderHelper helper = new _LadderHelper(env, previousBlockLookUp);
