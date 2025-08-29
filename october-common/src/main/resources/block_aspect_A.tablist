@@ -18,3 +18,5 @@ op.or_gate
 op.not_gate
 op.sensor_inventory
 op.cuboid_loader
+op.void_lamp
+op.portal_keystone
