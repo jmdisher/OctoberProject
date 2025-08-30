@@ -1,0 +1,229 @@
+package com.jeffdisher.october.worldgen;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.OrientationAspect;
+import com.jeffdisher.october.properties.PropertyRegistry;
+import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
+import com.jeffdisher.october.types.NonStackableItem;
+import com.jeffdisher.october.utils.Assert;
+
+
+/**
+ * This is a container of some of the common complex structures used in the world generators which are defined here
+ * since the details of how to encode extended aspect data in declarative data files hasn't yet been settled.
+ */
+public class CommonStructures
+{
+	public final Structure nexusCastle;
+	public final Structure distanceTower;
+
+	public CommonStructures(Environment env)
+	{
+		Block stoneBrickBlock = env.blocks.fromItem(env.items.getItemById("op.stone_brick"));
+		Block dirtBlock = env.blocks.fromItem(env.items.getItemById("op.dirt"));
+		Block grassBlock = env.blocks.fromItem(env.items.getItemById("op.grass"));
+		Block tilledSoilBlock = env.blocks.fromItem(env.items.getItemById("op.tilled_soil"));
+		Block torchBlock = env.blocks.fromItem(env.items.getItemById("op.torch"));
+		Block wheatBlock = env.blocks.fromItem(env.items.getItemById("op.wheat_seedling"));
+		Block carrotBlock = env.blocks.fromItem(env.items.getItemById("op.carrot_seedling"));
+		Block saplingBlock = env.blocks.fromItem(env.items.getItemById("op.sapling"));
+		Block waterSourceBlock = env.blocks.fromItem(env.items.getItemById("op.water_source"));
+		Block voidStoneBlock = env.blocks.fromItem(env.items.getItemById("op.void_stone"));
+		Block doorBlock = env.blocks.fromItem(env.items.getItemById("op.door"));
+		Block portalKeystoneBlock = env.blocks.fromItem(env.items.getItemById("op.portal_keystone"));
+		
+		Item portalOrb = env.items.getItemById("op.portal_orb");
+		NonStackableItem northOrb = new NonStackableItem(portalOrb, Map.of(PropertyRegistry.LOCATION, new AbsoluteLocation(0, 1000, 0)));
+		NonStackableItem southOrb = new NonStackableItem(portalOrb, Map.of(PropertyRegistry.LOCATION, new AbsoluteLocation(0, -1000, 0)));
+		NonStackableItem eastOrb = new NonStackableItem(portalOrb, Map.of(PropertyRegistry.LOCATION, new AbsoluteLocation(1000, 0, 0)));
+		NonStackableItem westOrb = new NonStackableItem(portalOrb, Map.of(PropertyRegistry.LOCATION, new AbsoluteLocation(-1000, 0, 0)));
+		NonStackableItem reverseOrb = new NonStackableItem(portalOrb, Map.of(PropertyRegistry.LOCATION, new AbsoluteLocation(0, -1000, 0)));
+		
+		Map<Character, Structure.AspectData> mapping = new HashMap<>();
+		Assert.assertTrue(null == mapping.put('A', new Structure.AspectData(env.special.AIR, null, null, null)));
+		Assert.assertTrue(null == mapping.put('B', new Structure.AspectData(stoneBrickBlock, null, null, null)));
+		Assert.assertTrue(null == mapping.put('D', new Structure.AspectData(dirtBlock, null, null, null)));
+		Assert.assertTrue(null == mapping.put('G', new Structure.AspectData(grassBlock, null, null, null)));
+		Assert.assertTrue(null == mapping.put('i', new Structure.AspectData(torchBlock, null, null, null)));
+		Assert.assertTrue(null == mapping.put('w', new Structure.AspectData(wheatBlock, null, null, null)));
+		Assert.assertTrue(null == mapping.put('c', new Structure.AspectData(carrotBlock, null, null, null)));
+		Assert.assertTrue(null == mapping.put('t', new Structure.AspectData(saplingBlock, null, null, null)));
+		Assert.assertTrue(null == mapping.put('O', new Structure.AspectData(tilledSoilBlock, null, null, null)));
+		Assert.assertTrue(null == mapping.put('T', new Structure.AspectData(waterSourceBlock, null, null, null)));
+		Assert.assertTrue(null == mapping.put('V', new Structure.AspectData(voidStoneBlock, null, null, null)));
+		Assert.assertTrue(null == mapping.put('H', new Structure.AspectData(doorBlock, null, null, null)));
+		Assert.assertTrue(null == mapping.put('N', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.NORTH, ItemSlot.fromNonStack(northOrb))));
+		Assert.assertTrue(null == mapping.put('S', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.SOUTH, ItemSlot.fromNonStack(southOrb))));
+		Assert.assertTrue(null == mapping.put('E', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.EAST, ItemSlot.fromNonStack(eastOrb))));
+		Assert.assertTrue(null == mapping.put('W', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.WEST, ItemSlot.fromNonStack(westOrb))));
+		Assert.assertTrue(null == mapping.put('R', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.NORTH, ItemSlot.fromNonStack(reverseOrb))));
+		
+		StructureLoader loader = new StructureLoader(mapping);
+		this.nexusCastle = loader.loadFromStrings(new String[] {""
+			+ " GGGGGGGGGGGGGGG \n"
+			+ "GGBBBBBBBBBBBBBGG\n"
+			+ "GBBBBBBBBBBBBBBBG\n"
+			+ "GBBBBBVVSVVBBBBBG\n"
+			+ "GBBBBBBBBBBBBBBBG\n"
+			+ "GBBBBBBBBBBBBBBBG\n"
+			+ "GBBVBBDOOODBBVBBG\n"
+			+ "GBBVBBOTTTOBBVBBG\n"
+			+ "GBBWBBOTTTOBBEBBG\n"
+			+ "GBBVBBOTTTOBBVBBG\n"
+			+ "GBBVBBDOOODBBVBBG\n"
+			+ "GBBBBBBBBBBBBBBBG\n"
+			+ "GBBBBBBBBBBBBBBBG\n"
+			+ "GBBBBBVVNVVBBBBBG\n"
+			+ "GBBBBBBBBBBBBBBBG\n"
+			+ "GGBBBBBBBBBBBBBGG\n"
+			+ " GGGGGGGGGGGGGGG \n"
+			, ""
+			+ "AAAAAAAAAAAAAAAAA\n"
+			+ "AABBBBBBHBBBBBBAA\n"
+			+ "ABBAAAAAAAAAAABBA\n"
+			+ "ABAiAAVAAAVAAiABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAVAAtwwwtAAVABA\n"
+			+ "ABAAAAcAAAcAAAABA\n"
+			+ "AHAAAAcAAAcAAAAHA\n"
+			+ "ABAAAAcAAAcAAAABA\n"
+			+ "ABAVAAtwwwtAAVABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAiAAVAAAVAAiABA\n"
+			+ "ABBAAAAAAAAAAABBA\n"
+			+ "AABBBBBBHBBBBBBAA\n"
+			+ "AAAAAAAAAAAAAAAAA\n"
+			, ""
+			+ "AAAAAAAAAAAAAAAAA\n"
+			+ "AABBBBBBBBBBBBBAA\n"
+			+ "ABBAAAAAAAAAAABBA\n"
+			+ "ABAAAAVAAAVAAAABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAVAAAAAAAAAVABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAVAAAAAAAAAVABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAAAAVAAAVAAAABA\n"
+			+ "ABBAAAAAAAAAAABBA\n"
+			+ "AABBBBBBBBBBBBBAA\n"
+			+ "AAAAAAAAAAAAAAAAA\n"
+			, ""
+			+ "AAAAAAAAAAAAAAAAA\n"
+			+ "AABBBBBBBBBBBBBAA\n"
+			+ "ABBAAAAAAAAAAABBA\n"
+			+ "ABAAAAVAAAVAAAABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAVAAAAAAAAAVABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAVAAAAAAAAAVABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAAAAVAAAVAAAABA\n"
+			+ "ABBAAAAAAAAAAABBA\n"
+			+ "AABBBBBBBBBBBBBAA\n"
+			+ "AAAAAAAAAAAAAAAAA\n"
+			, ""
+			+ "AAAAAAAAAAAAAAAAA\n"
+			+ "AABBBBBBBBBBBBBAA\n"
+			+ "ABBAAAAAAAAAAABBA\n"
+			+ "ABAAAAVVVVVAAAABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAVAAAAAAAAAVABA\n"
+			+ "ABAVAAAAAAAAAVABA\n"
+			+ "ABAVAAAAAAAAAVABA\n"
+			+ "ABAVAAAAAAAAAVABA\n"
+			+ "ABAVAAAAAAAAAVABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAAAAVVVVVAAAABA\n"
+			+ "ABBAAAAAAAAAAABBA\n"
+			+ "AABBBBBBBBBBBBBAA\n"
+			+ "AAAAAAAAAAAAAAAAA\n"
+			, ""
+			+ "AAAAAAAAAAAAAAAAA\n"
+			+ "AABABABABABABABAA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "AAAAAAAAAAAAAAAAA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "AAAAAAAAAAAAAAAAA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "AAAAAAAAAAAAAAAAA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "AAAAAAAAAAAAAAAAA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "AAAAAAAAAAAAAAAAA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "AAAAAAAAAAAAAAAAA\n"
+			+ "ABAAAAAAAAAAAAABA\n"
+			+ "AABABABABABABABAA\n"
+			+ "AAAAAAAAAAAAAAAAA\n"
+		});
+		this.distanceTower = loader.loadFromStrings(new String[] {""
+			+ "GGGGGGGGGGG\n"
+			+ "GBBBBBBBBBG\n"
+			+ "GBBBBBBBBBG\n"
+			+ "GBBVVRVVBBG\n"
+			+ "GBBBBBBBBBG\n"
+			+ "GBBBBBBBBBG\n"
+			+ "GBBBBBBBBBG\n"
+			+ "GBBBBBBBBBG\n"
+			+ "GGGGGGGGGGG\n"
+			, ""
+			+ "AAAAAAAAAAA\n"
+			+ "ABBBBBBBBBA\n"
+			+ "ABAAAAAAABA\n"
+			+ "ABAVAAAVABA\n"
+			+ "ABAAAAAAABA\n"
+			+ "ABAAAiAAABA\n"
+			+ "ABAAAAAAABA\n"
+			+ "ABBBBHBBBBA\n"
+			+ "AAAAAAAAAAA\n"
+			, ""
+			+ "AAAAAAAAAAA\n"
+			+ "ABBBBBBBBBA\n"
+			+ "ABAAAAAAABA\n"
+			+ "ABAVAAAVABA\n"
+			+ "ABAAAAAAABA\n"
+			+ "ABAAAAAAABA\n"
+			+ "ABAAAAAAABA\n"
+			+ "ABBBBBBBBBA\n"
+			+ "AAAAAAAAAAA\n"
+			, ""
+			+ "AAAAAAAAAAA\n"
+			+ "ABBBBBBBBBA\n"
+			+ "ABAAAAAAABA\n"
+			+ "ABAVAAAVABA\n"
+			+ "ABAAAAAAABA\n"
+			+ "ABAAAAAAABA\n"
+			+ "ABAAAAAAABA\n"
+			+ "ABBBBBBBBBA\n"
+			+ "AAAAAAAAAAA\n"
+			, ""
+			+ "AAAAAAAAAAA\n"
+			+ "ABABABABABA\n"
+			+ "AAAAAAAAAAA\n"
+			+ "ABAVVVVVABA\n"
+			+ "AAAAAAAAAAA\n"
+			+ "ABAAAAAAABA\n"
+			+ "AAAAAAAAAAA\n"
+			+ "ABABABABABA\n"
+			+ "AAAAAAAAAAA\n"
+		});
+	}
+}

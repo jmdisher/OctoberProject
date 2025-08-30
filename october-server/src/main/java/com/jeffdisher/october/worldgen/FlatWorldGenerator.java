@@ -1,5 +1,6 @@
 package com.jeffdisher.october.worldgen;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +15,6 @@ import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
-import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -22,10 +22,6 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
-import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.ItemSlot;
-import com.jeffdisher.october.types.NonStackableItem;
-import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 
@@ -35,29 +31,11 @@ import com.jeffdisher.october.utils.CuboidGenerator;
  */
 public class FlatWorldGenerator implements IWorldGenerator
 {
-	// We want to generate a basic starting structure around the world centre.  For now, we just build that from a static string.
-	public static final String[] STRUCTURE = new String[] {""
-			+ "DDOOOODD\n"
-			+ "DBBBBBBD\n"
-			+ "OBWBBWBO\n"
-			+ "OBBBBBBO\n"
-			+ "OBBBBBBO\n"
-			+ "OBWBBWBO\n"
-			+ "DBBBBBBD\n"
-			+ "DDOOOODD\n"
-			, ""
-			+ "S CCCC S\n"
-			+ " L    L \n"
-			+ "P      P\n"
-			+ "P      P\n"
-			+ "P      P\n"
-			+ "P      P\n"
-			+ " L    L \n"
-			+ "S CCCC S\n"
-	};
-	public static final AbsoluteLocation BASE = new AbsoluteLocation(-4, -4, -1);
-	public static final AbsoluteLocation INNER_PORTAL_NORTH = new AbsoluteLocation(-2, 100, -1);
-	public static final AbsoluteLocation OUTER_PORTAL_NORTH = new AbsoluteLocation(-2, 200, -1);
+	public static final AbsoluteLocation BASE = new AbsoluteLocation(-8, -8, -1);
+	public static final AbsoluteLocation PORTAL_NORTH = new AbsoluteLocation(-5, 1002, -1);
+	public static final AbsoluteLocation PORTAL_SOUTH = new AbsoluteLocation(5, -1002, -1);
+	public static final AbsoluteLocation PORTAL_EAST = new AbsoluteLocation(1002, 5, -1);
+	public static final AbsoluteLocation PORTAL_WEST = new AbsoluteLocation(-1002, -5, -1);
 
 	private final Environment _env;
 	private final Block _stoneBlock;
@@ -69,9 +47,7 @@ public class FlatWorldGenerator implements IWorldGenerator
 	private final EntityType _cow;
 
 	private final boolean _shouldGenerateStructures;
-	private final Structure _centralStructure;
-	private final Structure _portalPositiveStructure;
-	private final Structure _portalNegativeStructure;
+	private final CommonStructures _structures;
 
 	/**
 	 * Creates the world generator, configured with options.
@@ -91,44 +67,7 @@ public class FlatWorldGenerator implements IWorldGenerator
 		_cow = env.creatures.getTypeById("op.cow");
 		
 		_shouldGenerateStructures = shouldGenerateStructures;
-		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(env.items, env.blocks));
-		_centralStructure = loader.loadFromStrings(STRUCTURE);
-		
-		Item portalOrb = env.items.getItemById("op.portal_orb");
-		NonStackableItem positiveOrb = new NonStackableItem(portalOrb, Map.of(PropertyRegistry.LOCATION, new AbsoluteLocation(0, 100, 0)));
-		NonStackableItem negativeOrb = new NonStackableItem(portalOrb, Map.of(PropertyRegistry.LOCATION, new AbsoluteLocation(0, -100, 0)));
-		Block portalKeystone = env.blocks.fromItem(env.items.getItemById("op.portal_keystone"));
-		Map<Character, Structure.AspectData> mapping = Map.of(
-			'A', new Structure.AspectData(env.special.AIR, null, null, null)
-			, 'V', new Structure.AspectData(env.blocks.fromItem(env.items.getItemById("op.void_stone")), null, null, null)
-			, 'P', new Structure.AspectData(portalKeystone, null, null, ItemSlot.fromNonStack(positiveOrb))
-			, 'N', new Structure.AspectData(portalKeystone, null, null, ItemSlot.fromNonStack(negativeOrb))
-		);
-		loader = new StructureLoader(mapping);
-		String[] positivePortal = new String[] {""
-			+ "VVPVV\n"
-			, ""
-			+ "VAAAV\n"
-			, ""
-			+ "VAAAV\n"
-			, ""
-			+ "VAAAV\n"
-			, ""
-			+ "VVVVV\n"
-		};
-		_portalPositiveStructure = loader.loadFromStrings(positivePortal);
-		String[] negativePortal = new String[] {""
-			+ "VVNVV\n"
-			, ""
-			+ "VAAAV\n"
-			, ""
-			+ "VAAAV\n"
-			, ""
-			+ "VAAAV\n"
-			, ""
-			+ "VVVVV\n"
-		};
-		_portalNegativeStructure = loader.loadFromStrings(negativePortal);
+		_structures = new CommonStructures(env);
 	}
 
 	@Override
@@ -154,21 +93,21 @@ public class FlatWorldGenerator implements IWorldGenerator
 		
 		// See if this is a cuboid where we want to generate our structure (it is in the 8 cuboids around the origin).
 		List<CreatureEntity> entities;
-		List<ScheduledMutation> mutations;
-		Map<BlockAddress, Long> periodicMutationMillis;
+		List<ScheduledMutation> mutations = new ArrayList<>();
+		Map<BlockAddress, Long> periodicMutationMillis = new HashMap<>();
 		if (_shouldGenerateStructures
-			&& _centralStructure.doesIntersectCuboid(address, BASE, OrientationAspect.Direction.NORTH)
+			&& _structures.nexusCastle.doesIntersectCuboid(address, BASE, OrientationAspect.Direction.NORTH)
 		)
 		{
 			// Our structures don't have entities.
 			entities = List.of();
 			
-			Structure.FollowUp followUp = _centralStructure.applyToCuboid(data, BASE, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
-			mutations = followUp.overwriteMutations().stream()
+			Structure.FollowUp followUp = _structures.nexusCastle.applyToCuboid(data, BASE, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
+			mutations.addAll(followUp.overwriteMutations().stream()
 					.map((IMutationBlock mutation) -> new ScheduledMutation(mutation, 0L))
 					.toList()
-			;
-			periodicMutationMillis = followUp.periodicMutationMillis();
+			);
+			periodicMutationMillis.putAll(followUp.periodicMutationMillis());
 		}
 		else
 		{
@@ -186,26 +125,45 @@ public class FlatWorldGenerator implements IWorldGenerator
 					))
 					: List.of()
 			;
-			mutations = List.of();
-			periodicMutationMillis = Map.of();
 		}
 		
 		// See if there are any special structures to add.
-		if (_shouldGenerateStructures && _portalPositiveStructure.doesIntersectCuboid(address, INNER_PORTAL_NORTH, OrientationAspect.Direction.NORTH))
+		if (_shouldGenerateStructures && _structures.distanceTower.doesIntersectCuboid(address, PORTAL_NORTH, OrientationAspect.Direction.NORTH))
 		{
-			Structure.FollowUp followUp = _portalPositiveStructure.applyToCuboid(data, INNER_PORTAL_NORTH, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
-			Assert.assertTrue(followUp.overwriteMutations().isEmpty());
-			periodicMutationMillis = new HashMap<>(periodicMutationMillis);
+			Structure.FollowUp followUp = _structures.distanceTower.applyToCuboid(data, PORTAL_NORTH, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
+			mutations.addAll(followUp.overwriteMutations().stream()
+				.map((IMutationBlock mutation) -> new ScheduledMutation(mutation, 0L))
+				.toList()
+			);
 			periodicMutationMillis.putAll(followUp.periodicMutationMillis());
 		}
-		else if (_shouldGenerateStructures && _portalNegativeStructure.doesIntersectCuboid(address, OUTER_PORTAL_NORTH, OrientationAspect.Direction.NORTH))
+		else if (_shouldGenerateStructures && _structures.distanceTower.doesIntersectCuboid(address, PORTAL_SOUTH, OrientationAspect.Direction.SOUTH))
 		{
-			Structure.FollowUp followUp = _portalNegativeStructure.applyToCuboid(data, OUTER_PORTAL_NORTH, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
-			Assert.assertTrue(followUp.overwriteMutations().isEmpty());
-			periodicMutationMillis = new HashMap<>(periodicMutationMillis);
+			Structure.FollowUp followUp = _structures.distanceTower.applyToCuboid(data, PORTAL_SOUTH, OrientationAspect.Direction.SOUTH, Structure.REPLACE_ALL);
+			mutations.addAll(followUp.overwriteMutations().stream()
+				.map((IMutationBlock mutation) -> new ScheduledMutation(mutation, 0L))
+				.toList()
+			);
 			periodicMutationMillis.putAll(followUp.periodicMutationMillis());
 		}
-		
+		else if (_shouldGenerateStructures && _structures.distanceTower.doesIntersectCuboid(address, PORTAL_EAST, OrientationAspect.Direction.EAST))
+		{
+			Structure.FollowUp followUp = _structures.distanceTower.applyToCuboid(data, PORTAL_EAST, OrientationAspect.Direction.EAST, Structure.REPLACE_ALL);
+			mutations.addAll(followUp.overwriteMutations().stream()
+				.map((IMutationBlock mutation) -> new ScheduledMutation(mutation, 0L))
+				.toList()
+			);
+			periodicMutationMillis.putAll(followUp.periodicMutationMillis());
+		}
+		else if (_shouldGenerateStructures && _structures.distanceTower.doesIntersectCuboid(address, PORTAL_WEST, OrientationAspect.Direction.WEST))
+		{
+			Structure.FollowUp followUp = _structures.distanceTower.applyToCuboid(data, PORTAL_WEST, OrientationAspect.Direction.WEST, Structure.REPLACE_ALL);
+			mutations.addAll(followUp.overwriteMutations().stream()
+				.map((IMutationBlock mutation) -> new ScheduledMutation(mutation, 0L))
+				.toList()
+			);
+			periodicMutationMillis.putAll(followUp.periodicMutationMillis());
+		}
 		
 		// Create the height map.
 		byte[][] rawHeight = HeightMapHelpers.createUniformHeightMap(CuboidHeightMap.UNKNOWN_HEIGHT);
