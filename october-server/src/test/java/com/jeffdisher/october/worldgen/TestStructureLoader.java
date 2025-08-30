@@ -428,6 +428,8 @@ public class TestStructureLoader
 		// There are 2 portals in this cuboid:  (5, 0, -1) and (0, 5, -1).
 		Assert.assertEquals(2, northFacing.periodicMutationMillis().size());
 		Assert.assertTrue(northFacing.periodicMutationMillis().containsKey(northFacingKeystone.getBlockAddress()));
+		// We see the placement of torches and the grass as needing to be placed in a follow-up tick since they change lighting or ground cover.
+		Assert.assertEquals(21, northFacing.pendingMutations().size());
 		AbsoluteLocation northFacingTarget = (AbsoluteLocation) northFacing.cuboid().getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, northFacingKeystone.getBlockAddress()).nonStackable.properties().get(PropertyRegistry.LOCATION);
 		
 		AbsoluteLocation southFacingKeystone = new AbsoluteLocation(0, 1005, -1);

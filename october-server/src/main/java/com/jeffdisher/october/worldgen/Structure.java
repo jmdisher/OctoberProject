@@ -7,6 +7,7 @@ import java.util.Map;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.GroundCoverRegistry;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.aspects.PlantRegistry;
@@ -164,6 +165,7 @@ public class Structure
 		Environment env = Environment.getShared();
 		LightAspect lights = env.lighting;
 		PlantRegistry plants = env.plants;
+		GroundCoverRegistry groundCover = env.groundCover;
 		short replacementBlock = env.special.AIR.item().number();
 		List<MutationBlockOverwriteInternal> overwriteMutations = new ArrayList<>();
 		Map<BlockAddress, Long> periodicMutationMillis = new HashMap<>();
@@ -202,11 +204,10 @@ public class Structure
 								// replace block mutation.
 								boolean isActive = false;
 								boolean needsLightUpdate = (lights.getLightEmission(block, isActive) > 0);
-								boolean needsGrowth = (plants.growthDivisor(block) > 0);
-								boolean isComposite = CompositeHelpers.isCornerstone(block);
+								boolean isGroundCover = groundCover.isGroundCover(block);
 								
 								// Schedule the periodic updates for this block type based on what type it is.
-								if (needsLightUpdate)
+								if (needsLightUpdate || isGroundCover)
 								{
 									// Lighting updates require that the block be placed to trigger the lighting update.
 									cuboid.setData15(AspectRegistry.BLOCK, blockAddress, replacementBlock);
@@ -257,6 +258,8 @@ public class Structure
 										cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, blockAddress, specialItemSlot);
 									}
 									
+									boolean needsGrowth = (plants.growthDivisor(block) > 0);
+									boolean isComposite = CompositeHelpers.isCornerstone(block);
 									long perioidicMillisDelay = 0L;
 									if (needsGrowth)
 									{
