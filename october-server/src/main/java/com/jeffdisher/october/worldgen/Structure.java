@@ -2,8 +2,10 @@ package com.jeffdisher.october.worldgen;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
@@ -112,6 +114,66 @@ public class Structure
 			&& ((maxY >= baseY) && (minY <= highY))
 			&& ((maxZ >= baseZ) && (minZ <= highZ))
 		;
+	}
+
+	/**
+	 * Checks if this structure intersects with the cuboid at cuboidAddress, based in globalRoot, and rotated.
+	 * 
+	 * @param cuboidAddress The cuboid being generated.
+	 * @param globalRoot The global root location where the structure should be generated.
+	 * @param rotation The rotation of the structure.
+	 * @return True if any part of the receiver would intersect the given cuboid when injected at globalRoot with
+	 * rotation.
+	 */
+	public Set<CuboidAddress> findIntersectingCuboids(AbsoluteLocation globalRoot, OrientationAspect.Direction rotation)
+	{
+		AbsoluteLocation rotatedVolume = rotation.rotateAboutZ(_totalVolume());
+		int minX;
+		int maxX;
+		if (rotatedVolume.x() > 0)
+		{
+			minX = globalRoot.x();
+			maxX = globalRoot.x() + rotatedVolume.x() - 1;
+		}
+		else
+		{
+			minX = globalRoot.x() + (rotatedVolume.x() + 1);
+			maxX = globalRoot.x();
+		}
+		int minY;
+		int maxY;
+		if (rotatedVolume.y() > 0)
+		{
+			minY = globalRoot.y();
+			maxY = globalRoot.y() + rotatedVolume.y() - 1;
+		}
+		else
+		{
+			minY = globalRoot.y() + (rotatedVolume.y() + 1);
+			maxY = globalRoot.y();
+		}
+		int minZ = globalRoot.z();
+		int maxZ = globalRoot.z() + rotatedVolume.z() - 1;
+		
+		short cuboidMinX = Encoding.getCuboidAddress(minX);
+		short cuboidMaxX = Encoding.getCuboidAddress(maxX);
+		short cuboidMinY = Encoding.getCuboidAddress(minY);
+		short cuboidMaxY = Encoding.getCuboidAddress(maxY);
+		short cuboidMinZ = Encoding.getCuboidAddress(minZ);
+		short cuboidMaxZ = Encoding.getCuboidAddress(maxZ);
+		
+		Set<CuboidAddress> cuboids = new HashSet<>();
+		for (short z = cuboidMinZ; z <= cuboidMaxZ; ++z)
+		{
+			for (short y = cuboidMinY; y <= cuboidMaxY; ++y)
+			{
+				for (short x = cuboidMinX; x <= cuboidMaxX; ++x)
+				{
+					cuboids.add(new CuboidAddress(x, y, z));
+				}
+			}
+		}
+		return cuboids;
 	}
 
 	/**

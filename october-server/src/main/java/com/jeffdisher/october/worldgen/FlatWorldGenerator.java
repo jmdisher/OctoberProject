@@ -47,7 +47,7 @@ public class FlatWorldGenerator implements IWorldGenerator
 	private final EntityType _cow;
 
 	private final boolean _shouldGenerateStructures;
-	private final CommonStructures _structures;
+	private final StructureRegistry _structures;
 
 	/**
 	 * Creates the world generator, configured with options.
@@ -67,7 +67,13 @@ public class FlatWorldGenerator implements IWorldGenerator
 		_cow = env.creatures.getTypeById("op.cow");
 		
 		_shouldGenerateStructures = shouldGenerateStructures;
-		_structures = new CommonStructures(env);
+		CommonStructures structures = new CommonStructures(env);
+		_structures = new StructureRegistry();
+		_structures.register(structures.nexusCastle, BASE, OrientationAspect.Direction.NORTH);
+		_structures.register(structures.distanceTower, PORTAL_NORTH, OrientationAspect.Direction.NORTH);
+		_structures.register(structures.distanceTower, PORTAL_SOUTH, OrientationAspect.Direction.SOUTH);
+		_structures.register(structures.distanceTower, PORTAL_EAST, OrientationAspect.Direction.EAST);
+		_structures.register(structures.distanceTower, PORTAL_WEST, OrientationAspect.Direction.WEST);
 	}
 
 	@Override
@@ -93,21 +99,14 @@ public class FlatWorldGenerator implements IWorldGenerator
 		
 		// See if this is a cuboid where we want to generate our structure (it is in the 8 cuboids around the origin).
 		List<CreatureEntity> entities;
-		List<ScheduledMutation> mutations = new ArrayList<>();
-		Map<BlockAddress, Long> periodicMutationMillis = new HashMap<>();
 		if (_shouldGenerateStructures
-			&& _structures.nexusCastle.doesIntersectCuboid(address, BASE, OrientationAspect.Direction.NORTH)
+			&& ((-1 == address.x()) || (0 == address.x()))
+			&& ((-1 == address.y()) || (0 == address.y()))
+			&& ((-1 == address.z()) || (0 == address.z()))
 		)
 		{
 			// Our structures don't have entities.
 			entities = List.of();
-			
-			Structure.FollowUp followUp = _structures.nexusCastle.applyToCuboid(data, BASE, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
-			mutations.addAll(followUp.overwriteMutations().stream()
-					.map((IMutationBlock mutation) -> new ScheduledMutation(mutation, 0L))
-					.toList()
-			);
-			periodicMutationMillis.putAll(followUp.periodicMutationMillis());
 		}
 		else
 		{
@@ -128,36 +127,11 @@ public class FlatWorldGenerator implements IWorldGenerator
 		}
 		
 		// See if there are any special structures to add.
-		if (_shouldGenerateStructures && _structures.distanceTower.doesIntersectCuboid(address, PORTAL_NORTH, OrientationAspect.Direction.NORTH))
+		List<ScheduledMutation> mutations = new ArrayList<>();
+		Map<BlockAddress, Long> periodicMutationMillis = new HashMap<>();
+		if (_shouldGenerateStructures)
 		{
-			Structure.FollowUp followUp = _structures.distanceTower.applyToCuboid(data, PORTAL_NORTH, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
-			mutations.addAll(followUp.overwriteMutations().stream()
-				.map((IMutationBlock mutation) -> new ScheduledMutation(mutation, 0L))
-				.toList()
-			);
-			periodicMutationMillis.putAll(followUp.periodicMutationMillis());
-		}
-		else if (_shouldGenerateStructures && _structures.distanceTower.doesIntersectCuboid(address, PORTAL_SOUTH, OrientationAspect.Direction.SOUTH))
-		{
-			Structure.FollowUp followUp = _structures.distanceTower.applyToCuboid(data, PORTAL_SOUTH, OrientationAspect.Direction.SOUTH, Structure.REPLACE_ALL);
-			mutations.addAll(followUp.overwriteMutations().stream()
-				.map((IMutationBlock mutation) -> new ScheduledMutation(mutation, 0L))
-				.toList()
-			);
-			periodicMutationMillis.putAll(followUp.periodicMutationMillis());
-		}
-		else if (_shouldGenerateStructures && _structures.distanceTower.doesIntersectCuboid(address, PORTAL_EAST, OrientationAspect.Direction.EAST))
-		{
-			Structure.FollowUp followUp = _structures.distanceTower.applyToCuboid(data, PORTAL_EAST, OrientationAspect.Direction.EAST, Structure.REPLACE_ALL);
-			mutations.addAll(followUp.overwriteMutations().stream()
-				.map((IMutationBlock mutation) -> new ScheduledMutation(mutation, 0L))
-				.toList()
-			);
-			periodicMutationMillis.putAll(followUp.periodicMutationMillis());
-		}
-		else if (_shouldGenerateStructures && _structures.distanceTower.doesIntersectCuboid(address, PORTAL_WEST, OrientationAspect.Direction.WEST))
-		{
-			Structure.FollowUp followUp = _structures.distanceTower.applyToCuboid(data, PORTAL_WEST, OrientationAspect.Direction.WEST, Structure.REPLACE_ALL);
+			Structure.FollowUp followUp = _structures.generateAllInCuboid(data);
 			mutations.addAll(followUp.overwriteMutations().stream()
 				.map((IMutationBlock mutation) -> new ScheduledMutation(mutation, 0L))
 				.toList()
