@@ -418,6 +418,20 @@ public class TestStructureLoader
 	}
 
 	@Test
+	public void bigCuboidIntersection()
+	{
+		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(ENV.items, ENV.blocks));
+		String[] zLayers = new String[] {
+				"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD\n",
+		};
+		Structure structure = loader.loadFromStrings(zLayers);
+		AbsoluteLocation furtherTarget = new AbsoluteLocation(-1, 1000, 0);
+		Assert.assertTrue(structure.doesIntersectCuboid(furtherTarget.getCuboidAddress(), furtherTarget, OrientationAspect.Direction.EAST));
+		Assert.assertTrue(structure.doesIntersectCuboid(furtherTarget.getRelative(0, -32, 0).getCuboidAddress(), furtherTarget, OrientationAspect.Direction.EAST));
+		Assert.assertFalse(structure.doesIntersectCuboid(furtherTarget.getRelative(0, 32, 0).getCuboidAddress(), furtherTarget, OrientationAspect.Direction.EAST));
+	}
+
+	@Test
 	public void portalsInFlat()
 	{
 		// Make sure that the portals are properly placed in the FlatWorldGenerator.

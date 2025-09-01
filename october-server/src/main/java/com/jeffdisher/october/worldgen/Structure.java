@@ -83,7 +83,7 @@ public class Structure
 		}
 		else
 		{
-			minX = (rotatedVolume.x() + 1);
+			minX = globalRoot.x() + (rotatedVolume.x() + 1);
 			maxX = globalRoot.x();
 		}
 		int minY;
@@ -95,7 +95,7 @@ public class Structure
 		}
 		else
 		{
-			minY = (rotatedVolume.y() + 1);
+			minY = globalRoot.y() + (rotatedVolume.y() + 1);
 			maxY = globalRoot.y();
 		}
 		int minZ = globalRoot.z();
@@ -108,9 +108,9 @@ public class Structure
 		int highY = base.y() + Encoding.CUBOID_EDGE_SIZE;
 		int baseZ = base.z();
 		int highZ = base.z() + Encoding.CUBOID_EDGE_SIZE;
-		return (((baseX <= minX) && (minX <= highX)) || ((baseX <= maxX) && (maxX <= highX)))
-			&& (((baseY <= minY) && (minY <= highY)) || ((baseY <= maxY) && (maxY <= highY)))
-			&& (((baseZ <= minZ) && (minZ <= highZ)) || ((baseZ <= maxZ) && (maxZ <= highZ)))
+		return ((maxX >= baseX) && (minX <= highX))
+			&& ((maxY >= baseY) && (minY <= highY))
+			&& ((maxZ >= baseZ) && (minZ <= highZ))
 		;
 	}
 
