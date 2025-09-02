@@ -20,6 +20,19 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CommonStructures
 {
+	public static final int CASTLE_X =  -8;
+	public static final int CASTLE_Y =  -8;
+	public static final int CASTLE_Z = -10;
+	public static final int TOWER_NORTH_X = -5;
+	public static final int TOWER_NORTH_Y = 1002;
+	public static final int TOWER_SOUTH_X =  5;
+	public static final int TOWER_SOUTH_Y = -1002;
+	public static final int TOWER_EAST_X = 1002;
+	public static final int TOWER_EAST_Y = 5;
+	public static final int TOWER_WEST_X =  -1002;
+	public static final int TOWER_WEST_Y = -5;
+	public static final int TOWER_Z = -6;
+
 	public final Structure nexusCastle;
 	public final Structure distanceTower;
 

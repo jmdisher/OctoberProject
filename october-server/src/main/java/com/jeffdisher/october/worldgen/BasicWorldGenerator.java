@@ -16,6 +16,7 @@ import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ScheduledMutation;
+import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -195,6 +196,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 	private final Structure _coalNode;
 	private final Structure _ironNode;
 	private final Structure _basicTree;
+	private final StructureRegistry _structures;
 
 	/**
 	 * Creates the world generator.
@@ -224,6 +226,22 @@ public class BasicWorldGenerator implements IWorldGenerator
 		_coalNode = loader.loadFromStrings(COAL_NODE);
 		_ironNode = loader.loadFromStrings(IRON_NODE);
 		_basicTree = loader.loadFromStrings(BASIC_TREE);
+		
+		// We will place the base of the nexus castle at a random location (based directly on seed), 500 blocks from the
+		// world origin.
+		CommonStructures structures = new CommonStructures(env);
+		_structures = new StructureRegistry();
+		Random random = new Random(_seed);
+		float angle = 2.0f * (float)Math.PI * random.nextFloat();
+		float distance = 500.0f;
+		int x = (int)(distance * Math.cos(angle));
+		int y = (int)(distance * Math.sin(angle));
+		int height = 100;
+		_structures.register(structures.nexusCastle, new AbsoluteLocation(x + CommonStructures.CASTLE_X, y + CommonStructures.CASTLE_Y, height + CommonStructures.CASTLE_Z), OrientationAspect.Direction.NORTH);
+		_structures.register(structures.distanceTower, new AbsoluteLocation(x + CommonStructures.TOWER_NORTH_X, y + CommonStructures.TOWER_NORTH_Y, height + CommonStructures.TOWER_Z), OrientationAspect.Direction.NORTH);
+		_structures.register(structures.distanceTower, new AbsoluteLocation(x + CommonStructures.TOWER_SOUTH_X, y + CommonStructures.TOWER_SOUTH_Y, height + CommonStructures.TOWER_Z), OrientationAspect.Direction.SOUTH);
+		_structures.register(structures.distanceTower, new AbsoluteLocation(x + CommonStructures.TOWER_EAST_X, y + CommonStructures.TOWER_EAST_Y, height + CommonStructures.TOWER_Z), OrientationAspect.Direction.EAST);
+		_structures.register(structures.distanceTower, new AbsoluteLocation(x + CommonStructures.TOWER_WEST_X, y + CommonStructures.TOWER_WEST_Y, height + CommonStructures.TOWER_Z), OrientationAspect.Direction.WEST);
 	}
 
 	@Override
@@ -248,20 +266,26 @@ public class BasicWorldGenerator implements IWorldGenerator
 		// Generate the ore nodes and other structures (including trees).
 		_generateOreNodesAndStructures(subField, address, data);
 		
+		// Generate any fixed structures.
+		Structure.FollowUp followUp = _structures.generateAllInCuboid(data);
+		List<ScheduledMutation> mutations = followUp.overwriteMutations().stream()
+			.map((IMutationBlock mutation) -> new ScheduledMutation(mutation, 0L))
+			.toList()
+		;
+		
+		Map<BlockAddress, Long> periodicMutationMillis = followUp.periodicMutationMillis();
+		
 		// We have finished populating the cuboid so we can generate the cuboid-local height map.
 		CuboidHeightMap cuboidLocalMap = HeightMapHelpers.buildHeightMap(data);
 		
 		// Spawn the creatures within the cuboid.
 		List<CreatureEntity> entities = _spawnCreatures(creatureIdAssigner, subField, heightMap, data, cuboidBase);
 		
-		// We don't currently require any mutations for anything we spawned.
-		List<ScheduledMutation> mutations = List.of();
-		
 		return new SuspendedCuboid<CuboidData>(data
 				, cuboidLocalMap
 				, entities
 				, mutations
-				, Map.of()
+				, periodicMutationMillis
 		);
 	}
 

@@ -31,11 +31,11 @@ import com.jeffdisher.october.utils.CuboidGenerator;
  */
 public class FlatWorldGenerator implements IWorldGenerator
 {
-	public static final AbsoluteLocation BASE = new AbsoluteLocation(-8, -8, -10);
-	public static final AbsoluteLocation PORTAL_NORTH = new AbsoluteLocation(-5, 1002, -6);
-	public static final AbsoluteLocation PORTAL_SOUTH = new AbsoluteLocation(5, -1002, -6);
-	public static final AbsoluteLocation PORTAL_EAST = new AbsoluteLocation(1002, 5, -6);
-	public static final AbsoluteLocation PORTAL_WEST = new AbsoluteLocation(-1002, -5, -6);
+	public static final AbsoluteLocation BASE = new AbsoluteLocation(CommonStructures.CASTLE_X, CommonStructures.CASTLE_Y, CommonStructures.CASTLE_Z);
+	public static final AbsoluteLocation PORTAL_NORTH = new AbsoluteLocation(CommonStructures.TOWER_NORTH_X, CommonStructures.TOWER_NORTH_Y, CommonStructures.TOWER_Z);
+	public static final AbsoluteLocation PORTAL_SOUTH = new AbsoluteLocation(CommonStructures.TOWER_SOUTH_X, CommonStructures.TOWER_SOUTH_Y, CommonStructures.TOWER_Z);
+	public static final AbsoluteLocation PORTAL_EAST = new AbsoluteLocation(CommonStructures.TOWER_EAST_X, CommonStructures.TOWER_EAST_Y, CommonStructures.TOWER_Z);
+	public static final AbsoluteLocation PORTAL_WEST = new AbsoluteLocation(CommonStructures.TOWER_WEST_X, CommonStructures.TOWER_WEST_Y, CommonStructures.TOWER_Z);
 
 	private final Environment _env;
 	private final Block _stoneBlock;

@@ -456,6 +456,21 @@ public class TestBasicWorldGenerator
 		_checkBlockTypes(cuboid, 32576, 50, 122, 16, 2, 0, 0, 0, 0, 0, 2);
 	}
 
+	@Test
+	public void nexusCastle() throws Throwable
+	{
+		// This test verifies that the next castle generates,
+		int seed = 10256;
+		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		AbsoluteLocation generatedRoot = new AbsoluteLocation(199, 447, 90);
+		AbsoluteLocation portalKeystone = generatedRoot.getRelative(8, 3, 9);
+		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, portalKeystone.getCuboidAddress());
+		CuboidData cuboid = suspended.cuboid();
+		
+		short keystoneNumber = ENV.items.getItemById("op.portal_keystone").number();
+		Assert.assertEquals(keystoneNumber, cuboid.getData15(AspectRegistry.BLOCK, portalKeystone.getBlockAddress()));
+	}
+
 
 	private static void _checkBlockTypes(CuboidData data, int stone, int coal, int iron, int grass, int dirt, int soil, int log, int leaf, int wheat, int carrot, int waterSource)
 	{
