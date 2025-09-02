@@ -63,7 +63,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 	public static final int SHIFT_XCENTRE = 21;
 	public static final int WATER_Z_LEVEL = 0;
 	public static final int STONE_PEAK_Z_LEVEL = 16;
-	public static final int LAVA_Z_DEPTH = -100;
+	public static final int LAVA_Z_DEPTH = -200;
 
 	public static final char FOREST_CODE = 'R';
 	public static final char FIELD_CODE = 'F';
@@ -135,9 +135,6 @@ public class BasicWorldGenerator implements IWorldGenerator
 			),
 	};
 
-	public static final int COAL_NODES_PER_CUBOID_COLUMN = 10;
-	public static final int COAL_MIN_Z = -50;
-	public static final int COAL_MAX_Z = 20;
 	public static final String[] COAL_NODE = new String[] {""
 			+ "AA\n"
 			+ "AA\n"
@@ -145,9 +142,6 @@ public class BasicWorldGenerator implements IWorldGenerator
 			+ "AA\n"
 			+ "AA\n"
 	};
-	public static final int IRON_NODES_PER_CUBOID_COLUMN = 10;
-	public static final int IRON_MIN_Z = -100;
-	public static final int IRON_MAX_Z = -10;
 	public static final String[] IRON_NODE = new String[] {""
 			+ "III\n"
 			+ "III\n"
@@ -161,8 +155,21 @@ public class BasicWorldGenerator implements IWorldGenerator
 			+ "III\n"
 			+ "III\n"
 	};
-	public static final int IRON_EXTRA_MIN = 1;
-	public static final int IRON_EXTRA_MAX = 100;
+
+	// We generate ores in column segments, generating a certain number of ore nodes in the given segment.
+	public static final int COAL1_NODES = 40;
+	public static final int COAL1_MIN_Z = -30;
+	public static final int COAL1_MAX_Z = 20;
+	public static final int COAL2_NODES = 20;
+	public static final int COAL2_MIN_Z = -80;
+	public static final int COAL2_MAX_Z = -20;
+	public static final int IRON1_NODES = 30;
+	public static final int IRON1_MIN_Z = -100;
+	public static final int IRON1_MAX_Z = -10;
+	public static final int IRON2_NODES = 50;
+	public static final int IRON2_MIN_Z = -200;
+	public static final int IRON2_MAX_Z = -80;
+
 	public static final int FOREST_TREE_COUNT = 18;
 	public static final String[] BASIC_TREE = new String[] {""
 			+ "   \n"
@@ -188,7 +195,6 @@ public class BasicWorldGenerator implements IWorldGenerator
 	private final Block _blockSoil;
 	private final Block _blockWheatMature;
 	private final Block _blockCarrotMature;
-	private final Block _blockIronOre;
 	private final Block _blockWaterSource;
 	private final Block _blockBasalt;
 	private final Block _blockLavaSource;
@@ -215,7 +221,6 @@ public class BasicWorldGenerator implements IWorldGenerator
 		_blockSoil = env.blocks.fromItem(env.items.getItemById("op.tilled_soil"));
 		_blockWheatMature = env.blocks.fromItem(env.items.getItemById("op.wheat_mature"));
 		_blockCarrotMature = env.blocks.fromItem(env.items.getItemById("op.carrot_mature"));
-		_blockIronOre = env.blocks.fromItem(env.items.getItemById("op.iron_ore"));
 		_blockWaterSource = env.blocks.fromItem(env.items.getItemById("op.water_source"));
 		_blockBasalt = env.blocks.fromItem(env.items.getItemById("op.basalt"));
 		_blockLavaSource = env.blocks.fromItem(env.items.getItemById("op.lava_source"));
@@ -629,7 +634,6 @@ public class BasicWorldGenerator implements IWorldGenerator
 	{
 		// Since the nodes can cross cuboid boundaries, we will consider the 9 chunk columns around this one and apply all generated nodes to this cuboid.
 		// (in the future, we might short-circuit this to avoid cases where the generation isn't possibly here - for now, we always do it to test the code path)
-		AbsoluteLocation base = address.getBase();
 		short airNumber = _env.special.AIR.item().number();
 		for (int y = -1; y <= 1; ++y)
 		{
@@ -639,8 +643,10 @@ public class BasicWorldGenerator implements IWorldGenerator
 				PerColumnRandomSeedField.View relField = subField.relativeView(x, y);
 				int columnSeed = relField.get(0, 0);
 				AbsoluteLocation sideBase = sideAddress.getBase();
-				_applyOreNodes(data, columnSeed, sideBase.x(), sideBase.y(), COAL_NODES_PER_CUBOID_COLUMN, COAL_MIN_Z, COAL_MAX_Z, _coalNode);
-				_applyOreNodes(data, columnSeed, sideBase.x(), sideBase.y(), IRON_NODES_PER_CUBOID_COLUMN, IRON_MIN_Z, IRON_MAX_Z, _ironNode);
+				_applyOreNodes(data, columnSeed, sideBase.x(), sideBase.y(), COAL1_NODES, COAL1_MIN_Z, COAL1_MAX_Z, _coalNode);
+				_applyOreNodes(data, columnSeed, sideBase.x(), sideBase.y(), COAL2_NODES, COAL2_MIN_Z, COAL2_MAX_Z, _coalNode);
+				_applyOreNodes(data, columnSeed, sideBase.x(), sideBase.y(), IRON1_NODES, IRON1_MIN_Z, IRON1_MAX_Z, _ironNode);
+				_applyOreNodes(data, columnSeed, sideBase.x(), sideBase.y(), IRON2_NODES, IRON2_MIN_Z, IRON2_MAX_Z, _ironNode);
 				
 				// If this is a forest, also generate random trees.
 				int biome = _buildBiomeFromSeeds5x5(relField);
@@ -682,27 +688,6 @@ public class BasicWorldGenerator implements IWorldGenerator
 				}
 			}
 		}
-		
-		// At least temporarily (until we add something like cave generation), we will add in more random bits of iron ore in the stone (based on depth).
-		int extraIronAttemptCount = Math.max(IRON_EXTRA_MIN, Math.min(IRON_EXTRA_MAX, -address.z()));
-		short stoneNumber = _blockStone.item().number();
-		short ironNumber = _blockIronOre.item().number();
-		int columnSeed = subField.get(0, 0);
-		Random random = new Random(columnSeed);
-		for (int i = 0; i < extraIronAttemptCount; ++i)
-		{
-			int relativeX = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
-			int relativeY = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
-			int relativeZ = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
-			AbsoluteLocation location = base.getRelative(relativeX, relativeY, relativeZ);
-			BlockAddress blockAddress = location.getBlockAddress();
-			
-			// Overwrite this with iron if it is just stone.
-			if (stoneNumber == data.getData15(AspectRegistry.BLOCK, blockAddress))
-			{
-				data.setData15(AspectRegistry.BLOCK, blockAddress, ironNumber);
-			}
-		}
 	}
 
 	private void _applyOreNodes(CuboidData data, int columnSeed, int relativeBaseX, int relativeBaseY, int tries, int minZ, int maxZ, Structure node)
@@ -715,9 +700,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 			int relativeX = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
 			int relativeY = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
 			int absoluteZ = random.nextInt(range) + minZ;
-			// NOTE:  This relativeBase is NOT an absolute location but is relative to the cuboid base.
-			AbsoluteLocation relativeBase = new AbsoluteLocation(relativeBaseX + relativeX, relativeBaseY + relativeY, absoluteZ);
-			Structure.FollowUp followUp = node.applyToCuboid(data, relativeBase, OrientationAspect.Direction.NORTH, stoneNumber);
+			AbsoluteLocation rootLocation = new AbsoluteLocation(relativeBaseX + relativeX, relativeBaseY + relativeY, absoluteZ);
+			Structure.FollowUp followUp = node.applyToCuboid(data, rootLocation, OrientationAspect.Direction.NORTH, stoneNumber);
 			Assert.assertTrue(followUp.isEmpty());
 		}
 	}
