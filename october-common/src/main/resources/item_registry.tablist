@@ -93,3 +93,5 @@ op.pedestal	Pedestal
 op.portal_keystone	Portal Keystone
 op.portal_orb	Portal Orb
 op.portal_surface	Portal
+op.copper_ore	Copper Ore
+op.diamond_ore	Diamond Ore

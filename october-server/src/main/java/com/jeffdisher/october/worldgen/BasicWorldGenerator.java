@@ -142,6 +142,19 @@ public class BasicWorldGenerator implements IWorldGenerator
 			+ "AA\n"
 			+ "AA\n"
 	};
+	public static final String[] COPPER_NODE = new String[] {""
+			+ " R \n"
+			+ "RRR\n"
+			+ " R \n"
+			, ""
+			+ "RRR\n"
+			+ "RRR\n"
+			+ "RRR\n"
+			, ""
+			+ " R \n"
+			+ "RRR\n"
+			+ " R \n"
+	};
 	public static final String[] IRON_NODE = new String[] {""
 			+ "III\n"
 			+ "III\n"
@@ -155,6 +168,13 @@ public class BasicWorldGenerator implements IWorldGenerator
 			+ "III\n"
 			+ "III\n"
 	};
+	public static final String[] DIAMOND_NODE = new String[] {""
+			+ "M \n"
+			+ " M\n"
+			, ""
+			+ " M\n"
+			+ "M \n"
+	};
 
 	// We generate ores in column segments, generating a certain number of ore nodes in the given segment.
 	public static final int COAL1_NODES = 40;
@@ -163,12 +183,18 @@ public class BasicWorldGenerator implements IWorldGenerator
 	public static final int COAL2_NODES = 20;
 	public static final int COAL2_MIN_Z = -80;
 	public static final int COAL2_MAX_Z = -20;
+	public static final int COPPER_NODES = 30;
+	public static final int COPPER_MIN_Z = -30;
+	public static final int COPPER_MAX_Z = 30;
 	public static final int IRON1_NODES = 30;
 	public static final int IRON1_MIN_Z = -100;
 	public static final int IRON1_MAX_Z = -10;
 	public static final int IRON2_NODES = 50;
 	public static final int IRON2_MIN_Z = -200;
 	public static final int IRON2_MAX_Z = -80;
+	public static final int DIAMOND_NODES = 10;
+	public static final int DIAMOND_MIN_Z = -200;
+	public static final int DIAMOND_MAX_Z = -150;
 
 	public static final int FOREST_TREE_COUNT = 18;
 	public static final String[] BASIC_TREE = new String[] {""
@@ -200,7 +226,9 @@ public class BasicWorldGenerator implements IWorldGenerator
 	private final Block _blockLavaSource;
 	private final EntityType _cow;
 	private final Structure _coalNode;
+	private final Structure _copperNode;
 	private final Structure _ironNode;
+	private final Structure _diamondNode;
 	private final Structure _basicTree;
 	private final StructureRegistry _structures;
 
@@ -229,7 +257,9 @@ public class BasicWorldGenerator implements IWorldGenerator
 		
 		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(env.items, env.blocks));
 		_coalNode = loader.loadFromStrings(COAL_NODE);
+		_copperNode = loader.loadFromStrings(COPPER_NODE);
 		_ironNode = loader.loadFromStrings(IRON_NODE);
+		_diamondNode = loader.loadFromStrings(DIAMOND_NODE);
 		_basicTree = loader.loadFromStrings(BASIC_TREE);
 		
 		// We will place the base of the nexus castle at a random location (based directly on seed), 500 blocks from the
@@ -645,8 +675,10 @@ public class BasicWorldGenerator implements IWorldGenerator
 				AbsoluteLocation sideBase = sideAddress.getBase();
 				_applyOreNodes(data, columnSeed, sideBase.x(), sideBase.y(), COAL1_NODES, COAL1_MIN_Z, COAL1_MAX_Z, _coalNode);
 				_applyOreNodes(data, columnSeed, sideBase.x(), sideBase.y(), COAL2_NODES, COAL2_MIN_Z, COAL2_MAX_Z, _coalNode);
+				_applyOreNodes(data, columnSeed, sideBase.x(), sideBase.y(), COPPER_NODES, COPPER_MIN_Z, COPPER_MAX_Z, _copperNode);
 				_applyOreNodes(data, columnSeed, sideBase.x(), sideBase.y(), IRON1_NODES, IRON1_MIN_Z, IRON1_MAX_Z, _ironNode);
 				_applyOreNodes(data, columnSeed, sideBase.x(), sideBase.y(), IRON2_NODES, IRON2_MIN_Z, IRON2_MAX_Z, _ironNode);
+				_applyOreNodes(data, columnSeed, sideBase.x(), sideBase.y(), DIAMOND_NODES, DIAMOND_MIN_Z, DIAMOND_MAX_Z, _diamondNode);
 				
 				// If this is a forest, also generate random trees.
 				int biome = _buildBiomeFromSeeds5x5(relField);

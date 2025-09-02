@@ -47,3 +47,5 @@ op.void_stone	4000
 op.void_lamp	8000
 op.pedestal	2000
 op.portal_keystone	0
+op.copper_ore	4000
+op.diamond_ore	8000

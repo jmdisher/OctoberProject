@@ -40,6 +40,8 @@ public class StructureLoader
 	public static final char C_IRON_ORE = 'I';
 	public static final char C_TREE_LOG = 'T';
 	public static final char C_TREE_LEAF= 'E';
+	public static final char C_COPPER_ORE = 'R';
+	public static final char C_DIAMOND_ORE = 'M';
 
 	/**
 	 * Creates the mapping structure for the basic loader cases (when everything is internally defined and block-only).
@@ -63,6 +65,8 @@ public class StructureLoader
 		Assert.assertTrue(null == temp.put(C_IRON_ORE, _wrapBlockWithNulls(items, blocks, "op.iron_ore")));
 		Assert.assertTrue(null == temp.put(C_TREE_LOG, _wrapBlockWithNulls(items, blocks, "op.log")));
 		Assert.assertTrue(null == temp.put(C_TREE_LEAF, _wrapBlockWithNulls(items, blocks, "op.leaf")));
+		Assert.assertTrue(null == temp.put(C_COPPER_ORE, _wrapBlockWithNulls(items, blocks, "op.copper_ore")));
+		Assert.assertTrue(null == temp.put(C_DIAMOND_ORE, _wrapBlockWithNulls(items, blocks, "op.diamond_ore")));
 		return Collections.unmodifiableMap(temp);
 	}
 
