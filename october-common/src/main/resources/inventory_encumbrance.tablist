@@ -97,3 +97,5 @@ op.portal_orb	1
 op.portal_surface	1
 op.copper_ore	4
 op.diamond_ore	4
+op.coal	3
+op.diamond	2

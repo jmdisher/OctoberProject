@@ -95,3 +95,5 @@ op.portal_orb	Portal Orb
 op.portal_surface	Portal
 op.copper_ore	Copper Ore
 op.diamond_ore	Diamond Ore
+op.coal	Coal
+op.diamond	Diamond

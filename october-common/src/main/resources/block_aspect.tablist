@@ -43,6 +43,7 @@ op.furnace
 # op.charcoal
 op.coal_ore
 	block_material	PICKAXE
+	special_drop	100	op.coal	100	op.coal
 op.iron_ore
 	block_material	PICKAXE
 op.dirt
@@ -99,6 +100,7 @@ op.copper_ore
 	block_material	PICKAXE
 op.diamond_ore
 	block_material	PICKAXE
+	special_drop	100	op.diamond
 op.torch
 	block_material	AXE
 	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick	op.grass	op.basalt	op.copper_ore	op.diamond_ore

@@ -12,8 +12,9 @@ op.plank	2000
 # op.stone_brick
 op.crafting_table	6000
 # op.furnace
-op.charcoal	20000
-op.coal_ore	20000
+op.charcoal	16000
+op.coal_ore	16000
+op.coal	16000
 # op.iron_ore
 # op.dirt
 # op.water_source

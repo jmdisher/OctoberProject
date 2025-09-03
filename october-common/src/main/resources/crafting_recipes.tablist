@@ -128,8 +128,12 @@ op.iron_dust	GRINDING
 	input	op.iron_ore
 	output	op.iron_dust	op.iron_dust	op.iron_dust
 	millis	4000
-op.torch	BUILT_IN
+op.torch_from_charcoal	BUILT_IN
 	input	op.stick	op.charcoal
+	output	op.torch	op.torch	op.torch	op.torch
+	millis	1000
+op.torch_from_coal	BUILT_IN
+	input	op.stick	op.coal
 	output	op.torch	op.torch	op.torch	op.torch
 	millis	1000
 op.fertilizer_from_wheat	GRINDING
