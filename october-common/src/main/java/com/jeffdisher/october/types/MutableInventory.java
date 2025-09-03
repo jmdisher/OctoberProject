@@ -58,6 +58,21 @@ public class MutableInventory implements IMutableInventory
 		return _getKeyForStackableType(type);
 	}
 
+	@Override
+	public int getIdOfNonStackableInstance(NonStackableItem instance)
+	{
+		int id = 0;
+		for (Map.Entry<Integer, ItemSlot> elt : _slots.entrySet())
+		{
+			if (instance == elt.getValue().nonStackable)
+			{
+				id = elt.getKey();
+				break;
+			}
+		}
+		return id;
+	}
+
 	/**
 	 * Looks up the item stack for the given identifier key.  While this is usually called when we know that the key is
 	 * here, we sometimes call it to see if a key has disappeared.

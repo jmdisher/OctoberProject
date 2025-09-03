@@ -67,6 +67,12 @@ public class CreativeInventory implements IMutableInventory
 	}
 
 	@Override
+	public int getIdOfNonStackableInstance(NonStackableItem instance)
+	{
+		return _inventory.getIdOfNonStackableInstance(instance);
+	}
+
+	@Override
 	public Items getStackForKey(int key)
 	{
 		return _inventory.getStackForKey(key);

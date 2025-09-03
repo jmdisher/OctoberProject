@@ -149,6 +149,28 @@ public class Inventory
 	}
 
 	/**
+	 * Checks the given non-stackable item instance against the instances in this inventory, returning the key or 0 if
+	 * not found.
+	 * NOTE:  This is an instance-comparison only.
+	 * 
+	 * @param instance The specific instance to check.
+	 * @return The key this inventory uses to address the given non-stackable instance or 0 if not known.
+	 */
+	public int getIdOfNonStackableInstance(NonStackableItem instance)
+	{
+		int id = 0;
+		for (Map.Entry<Integer, ItemSlot> elt : _slots.entrySet())
+		{
+			if (instance == elt.getValue().nonStackable)
+			{
+				id = elt.getKey();
+				break;
+			}
+		}
+		return id;
+	}
+
+	/**
 	 * @return A list of the identifier keys used in the inventory, sorted from earliest to latest.
 	 */
 	public List<Integer> sortedKeys()

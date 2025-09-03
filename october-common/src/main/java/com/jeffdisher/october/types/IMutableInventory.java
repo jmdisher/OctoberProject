@@ -16,6 +16,16 @@ public interface IMutableInventory
 	public int getIdOfStackableType(Item type);
 
 	/**
+	 * Checks the given non-stackable item instance against the instances in this inventory, returning the key or 0 if
+	 * not found.
+	 * NOTE:  This is an instance-comparison only.
+	 * 
+	 * @param instance The specific instance to check.
+	 * @return The key this inventory uses to address the given non-stackable instance or 0 if not known.
+	 */
+	public int getIdOfNonStackableInstance(NonStackableItem instance);
+
+	/**
 	 * Looks up the item stack for the given identifier key.  While this is usually called when we know that the key is
 	 * here, we sometimes call it to see if a key has disappeared.
 	 * 

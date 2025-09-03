@@ -18,6 +18,7 @@ public class TestMutableInventory
 	private static Item LOG_ITEM;
 	private static Item PLANK_ITEM;
 	private static Item DIRT_ITEM;
+	private static Item SWORD_ITEM;
 	@BeforeClass
 	public static void setup()
 	{
@@ -26,6 +27,7 @@ public class TestMutableInventory
 		LOG_ITEM = ENV.items.getItemById("op.log");
 		PLANK_ITEM = ENV.items.getItemById("op.plank");
 		DIRT_ITEM = ENV.items.getItemById("op.dirt");
+		SWORD_ITEM = ENV.items.getItemById("op.diamond_sword");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -176,34 +178,53 @@ public class TestMutableInventory
 	public void nonStackable() throws Throwable
 	{
 		// Show that non-stackable items are handled correctly.
+		NonStackableItem sword1 = new NonStackableItem(SWORD_ITEM, Map.of());
+		NonStackableItem sword2 = new NonStackableItem(SWORD_ITEM, Map.of());
+		NonStackableItem sword3 = new NonStackableItem(SWORD_ITEM, Map.of());
+		NonStackableItem sword4 = new NonStackableItem(SWORD_ITEM, Map.of());
 		Inventory original = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY)
-				.addNonStackable(new NonStackableItem(STONE_ITEM, Map.of()))
+				.addNonStackable(sword1)
 				.addStackable(STONE_ITEM, 1)
-				.addNonStackable(new NonStackableItem(PLANK_ITEM, Map.of()))
+				.addNonStackable(sword2)
 				.addStackable(STONE_ITEM, 1)
 				.finish();
 		MutableInventory inv = new MutableInventory(original);
 		inv.addAllItems(STONE_ITEM, 1);
-		inv.addNonStackableBestEfforts(new NonStackableItem(DIRT_ITEM, Map.of()));
-		// Items are added in the order they are given to the builder (first stackable added counts).
-		int firstNonStackableItem = 1;
-		inv.removeNonStackableItems(firstNonStackableItem);
-		inv.addNonStackableAllowingOverflow(new NonStackableItem(LOG_ITEM, Map.of()));
+		inv.addNonStackableBestEfforts(sword3);
+		
+		// Items are added in the order they are given to the builder, but stackables are combined.
+		int sword1Key = 1;
+		int stoneKey = 2;
+		int sword2Key = 3;
+		int sword3Key = 4;
+		int sword4Key = 5;
+		int dirtKey = 6;
+		inv.removeNonStackableItems(sword1Key);
+		inv.addNonStackableAllowingOverflow(sword4);
+		inv.addAllItems(DIRT_ITEM, 2);
+		
+		Assert.assertEquals(stoneKey, inv.getIdOfStackableType(STONE_ITEM));
+		Assert.assertEquals(sword2Key, inv.getIdOfNonStackableInstance(sword2));
+		Assert.assertEquals(sword3Key, inv.getIdOfNonStackableInstance(sword3));
+		Assert.assertEquals(sword4Key, inv.getIdOfNonStackableInstance(sword4));
+		Assert.assertEquals(dirtKey, inv.getIdOfStackableType(DIRT_ITEM));
 		
 		Inventory frozen = inv.freeze();
 		Assert.assertEquals(0, frozen.getCount(LOG_ITEM));
 		Assert.assertEquals(3, frozen.getCount(STONE_ITEM));
-		Assert.assertArrayEquals(new Object[] { Integer.valueOf(2), Integer.valueOf(3), Integer.valueOf(4), Integer.valueOf(5) }, frozen.sortedKeys().toArray());
-		Assert.assertEquals(STONE_ITEM, frozen.getStackForKey(2).type());
-		Assert.assertEquals(PLANK_ITEM, frozen.getNonStackableForKey(3).type());
-		Assert.assertEquals(DIRT_ITEM, frozen.getNonStackableForKey(4).type());
-		Assert.assertEquals(LOG_ITEM, frozen.getNonStackableForKey(5).type());
+		Assert.assertArrayEquals(new Object[] { Integer.valueOf(stoneKey), Integer.valueOf(sword2Key), Integer.valueOf(sword3Key), Integer.valueOf(sword4Key), Integer.valueOf(dirtKey) }, frozen.sortedKeys().toArray());
+		Assert.assertEquals(STONE_ITEM, frozen.getStackForKey(stoneKey).type());
+		Assert.assertTrue(sword2 == frozen.getNonStackableForKey(sword2Key));
+		Assert.assertTrue(sword3 == frozen.getNonStackableForKey(sword3Key));
+		Assert.assertTrue(sword4 == frozen.getNonStackableForKey(sword4Key));
+		Assert.assertEquals(DIRT_ITEM, frozen.getStackForKey(dirtKey).type());
 		
 		// Make sure that these are still resolved correctly as slots.
-		Assert.assertEquals(STONE_ITEM, frozen.getSlotForKey(2).stack.type());
-		Assert.assertEquals(PLANK_ITEM, frozen.getSlotForKey(3).nonStackable.type());
-		Assert.assertEquals(DIRT_ITEM, frozen.getSlotForKey(4).nonStackable.type());
-		Assert.assertEquals(LOG_ITEM, frozen.getSlotForKey(5).nonStackable.type());
+		Assert.assertEquals(STONE_ITEM, frozen.getSlotForKey(stoneKey).stack.type());
+		Assert.assertTrue(sword2 == frozen.getSlotForKey(sword2Key).nonStackable);
+		Assert.assertTrue(sword3 == frozen.getSlotForKey(sword3Key).nonStackable);
+		Assert.assertTrue(sword4 == frozen.getSlotForKey(sword4Key).nonStackable);
+		Assert.assertEquals(DIRT_ITEM, frozen.getSlotForKey(dirtKey).stack.type());
 	}
 
 	@Test
