@@ -51,6 +51,7 @@ public class CommonStructures
 		Block voidStoneBlock = env.blocks.fromItem(env.items.getItemById("op.void_stone"));
 		Block doorBlock = env.blocks.fromItem(env.items.getItemById("op.door"));
 		Block portalKeystoneBlock = env.blocks.fromItem(env.items.getItemById("op.portal_keystone"));
+		Block pedestalBlock = env.blocks.fromItem(env.items.getItemById("op.pedestal"));
 		
 		Item portalOrb = env.items.getItemById("op.portal_orb");
 		NonStackableItem northOrb = new NonStackableItem(portalOrb, Map.of(PropertyRegistry.LOCATION, new AbsoluteLocation(0, 1000, 0)));
@@ -58,6 +59,32 @@ public class CommonStructures
 		NonStackableItem eastOrb = new NonStackableItem(portalOrb, Map.of(PropertyRegistry.LOCATION, new AbsoluteLocation(1000, 0, 0)));
 		NonStackableItem westOrb = new NonStackableItem(portalOrb, Map.of(PropertyRegistry.LOCATION, new AbsoluteLocation(-1000, 0, 0)));
 		NonStackableItem reverseOrb = new NonStackableItem(portalOrb, Map.of(PropertyRegistry.LOCATION, new AbsoluteLocation(0, -1000, 0)));
+		
+		// Special items to generate in pedestals.
+		Item diamondPick = env.items.getItemById("op.diamond_pickaxe");
+		NonStackableItem specialPick= new NonStackableItem(diamondPick, Map.of(PropertyRegistry.DURABILITY, env.durability.getDurability(diamondPick)
+			, PropertyRegistry.NAME, "Hewing Pick Axe"
+			, PropertyRegistry.ENCHANT_DURABILITY, (byte)5
+			, PropertyRegistry.ENCHANT_TOOL_EFFICIENCY, (byte)5
+		));
+		Item diamondShovel = env.items.getItemById("op.diamond_shovel");
+		NonStackableItem specialShovel= new NonStackableItem(diamondShovel, Map.of(PropertyRegistry.DURABILITY, env.durability.getDurability(diamondShovel)
+			, PropertyRegistry.NAME, "Excavator Shovel"
+			, PropertyRegistry.ENCHANT_DURABILITY, (byte)5
+			, PropertyRegistry.ENCHANT_TOOL_EFFICIENCY, (byte)5
+		));
+		Item diamondAxe = env.items.getItemById("op.diamond_axe");
+		NonStackableItem specialAxe= new NonStackableItem(diamondAxe, Map.of(PropertyRegistry.DURABILITY, env.durability.getDurability(diamondAxe)
+			, PropertyRegistry.NAME, "Cleaving Axe"
+			, PropertyRegistry.ENCHANT_DURABILITY, (byte)5
+			, PropertyRegistry.ENCHANT_TOOL_EFFICIENCY, (byte)5
+		));
+		Item diamondSword = env.items.getItemById("op.diamond_sword");
+		NonStackableItem specialSword = new NonStackableItem(diamondSword, Map.of(PropertyRegistry.DURABILITY, env.durability.getDurability(diamondSword)
+			, PropertyRegistry.NAME, "Vorpal Blade"
+			, PropertyRegistry.ENCHANT_DURABILITY, (byte)5
+			, PropertyRegistry.ENCHANT_WEAPON_MELEE, (byte)5
+		));
 		
 		Map<Character, Structure.AspectData> mapping = new HashMap<>();
 		Assert.assertTrue(null == mapping.put('A', new Structure.AspectData(env.special.AIR, null, null, null)));
@@ -78,6 +105,10 @@ public class CommonStructures
 		Assert.assertTrue(null == mapping.put('E', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.EAST, ItemSlot.fromNonStack(eastOrb))));
 		Assert.assertTrue(null == mapping.put('W', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.WEST, ItemSlot.fromNonStack(westOrb))));
 		Assert.assertTrue(null == mapping.put('R', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.NORTH, ItemSlot.fromNonStack(reverseOrb))));
+		Assert.assertTrue(null == mapping.put('1', new Structure.AspectData(pedestalBlock, null, null, ItemSlot.fromNonStack(specialPick))));
+		Assert.assertTrue(null == mapping.put('2', new Structure.AspectData(pedestalBlock, null, null, ItemSlot.fromNonStack(specialShovel))));
+		Assert.assertTrue(null == mapping.put('3', new Structure.AspectData(pedestalBlock, null, null, ItemSlot.fromNonStack(specialAxe))));
+		Assert.assertTrue(null == mapping.put('4', new Structure.AspectData(pedestalBlock, null, null, ItemSlot.fromNonStack(specialSword))));
 		
 		StructureLoader loader = new StructureLoader(mapping);
 		this.nexusCastle = loader.loadFromStrings(new String[] {""
@@ -265,7 +296,7 @@ public class CommonStructures
 			+ "AABBBBBBHBBBBBBAA\n"
 			+ "ABBAAAAAAAAAAABBA\n"
 			+ "ABAiAAVAAAVAAiABA\n"
-			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAA1AAAAAAA2AABA\n"
 			+ "ABAAAAAAAAAAAAABA\n"
 			+ "ABAVAAtwwwtAAVABA\n"
 			+ "ABAAAAcAAAcAAAABA\n"
@@ -273,7 +304,7 @@ public class CommonStructures
 			+ "ABAAAAcAAAcAAAABA\n"
 			+ "ABAVAAtwwwtAAVABA\n"
 			+ "ABAAAAAAAAAAAAABA\n"
-			+ "ABAAAAAAAAAAAAABA\n"
+			+ "ABAA3AAAAAAA4AABA\n"
 			+ "ABAiAAVAAAVAAiABA\n"
 			+ "ABBAAAAAAAAAAABBA\n"
 			+ "AABBBBBBHBBBBBBAA\n"
