@@ -13,3 +13,11 @@ op.iron_greaves	LEGS
 	reduction	10
 op.iron_boots	FEET
 	reduction	10
+op.copper_helmet	HEAD
+	reduction	7
+op.copper_chestplate	TORSO
+	reduction	7
+op.copper_greaves	LEGS
+	reduction	7
+op.copper_boots	FEET
+	reduction	7

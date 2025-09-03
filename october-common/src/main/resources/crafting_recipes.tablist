@@ -113,7 +113,7 @@ op.lamp	COMMON
 	output	op.lamp
 	millis	4000
 op.logic_wire	COMMON
-	input	op.iron_ingot	op.charcoal
+	input	op.copper_ingot
 	output	op.logic_wire	op.logic_wire	op.logic_wire
 	millis	1000
 op.quern	COMMON
@@ -177,23 +177,23 @@ op.stone_hoe	COMMON
 	output	op.stone_hoe
 	millis	8000
 op.emitter	COMMON
-	input	op.iron_ingot	op.charcoal	op.stone
+	input	op.copper_ingot	op.charcoal	op.stone
 	output	op.emitter	op.emitter
 	millis	4000
 op.diode	COMMON
-	input	op.iron_ingot	op.charcoal	op.stone
+	input	op.copper_ingot	op.charcoal	op.stone
 	output	op.diode	op.diode
 	millis	8000
 op.and_gate	COMMON
-	input	op.iron_ingot	op.charcoal	op.stone
+	input	op.copper_ingot	op.charcoal	op.stone
 	output	op.and_gate	op.and_gate
 	millis	8000
 op.or_gate	COMMON
-	input	op.iron_ingot	op.charcoal	op.stone
+	input	op.copper_ingot	op.charcoal	op.stone
 	output	op.or_gate	op.or_gate
 	millis	8000
 op.not_gate	COMMON
-	input	op.iron_ingot	op.charcoal	op.stone
+	input	op.copper_ingot	op.charcoal	op.stone
 	output	op.not_gate	op.not_gate
 	millis	8000
 op.sensor_inventory	COMMON
@@ -208,3 +208,47 @@ op.pedestal	COMMON
 	input	op.stone_brick	op.stone_brick
 	output	op.pedestal
 	millis	8000
+op.copper_dust	GRINDING
+	input	op.copper_ore
+	output	op.copper_dust	op.copper_dust	op.copper_dust
+	millis	2000
+op.furnace_smelt_copper	FUELLED_FURNACE
+	input	op.copper_ore
+	output	op.copper_ingot
+	millis	1000
+op.furnace_smelt_copper_dust	FUELLED_FURNACE
+	input	op.copper_dust	op.copper_dust
+	output	op.copper_ingot
+	millis	1000
+op.copper_pickaxe	COMMON
+	input	op.stick	op.copper_ingot
+	output	op.copper_pickaxe
+	millis	16000
+op.copper_shovel	COMMON
+	input	op.stick	op.copper_ingot
+	output	op.copper_shovel
+	millis	12000
+op.copper_axe	COMMON
+	input	op.stick	op.copper_ingot
+	output	op.copper_axe
+	millis	12000
+op.copper_sword	COMMON
+	input	op.stick	op.copper_ingot	op.copper_ingot
+	output	op.copper_sword
+	millis	20000
+op.copper_helmet	COMMON
+	input	op.copper_ingot	op.copper_ingot
+	output	op.copper_helmet
+	millis	20000
+op.copper_chestplate	COMMON
+	input	op.copper_ingot	op.copper_ingot	op.copper_ingot	op.copper_ingot
+	output	op.copper_chestplate
+	millis	80000
+op.copper_greaves	COMMON
+	input	op.copper_ingot	op.copper_ingot	op.copper_ingot
+	output	op.copper_greaves
+	millis	40000
+op.copper_boots	COMMON
+	input	op.copper_ingot	op.copper_ingot
+	output	op.copper_boots
+	millis	20000

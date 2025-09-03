@@ -26,3 +26,11 @@ op.digging_stick	100
 op.bucket_lava	0
 op.stone_hoe	50
 op.portal_orb	0
+op.copper_pickaxe	1000
+op.copper_shovel	1000
+op.copper_axe	1000
+op.copper_sword	1000
+op.copper_helmet	5000
+op.copper_chestplate	5000
+op.copper_greaves	5000
+op.copper_boots	5000

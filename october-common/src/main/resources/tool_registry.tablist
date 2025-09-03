@@ -36,3 +36,15 @@ op.wooden_chisel	PICKAXE
 op.digging_stick	SHOVEL
 	material_multiplier	6
 	weapon_damage	1
+op.copper_pickaxe	PICKAXE
+	material_multiplier	6
+	weapon_damage	2
+op.copper_shovel	SHOVEL
+	material_multiplier	6
+	weapon_damage	2
+op.copper_axe	AXE
+	material_multiplier	6
+	weapon_damage	3
+op.copper_sword	NO_MATERIAL
+	material_multiplier	1
+	weapon_damage	7
