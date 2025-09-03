@@ -57,8 +57,9 @@ public class MiscConstants
 	/**
 	 * The default cuboid view distance for a new client (0 would mean only the cuboid they are in).  This is the
 	 * initial value assumed by clients and servers when they first connect.
+	 * 3 cuboids is far enough that the client should be able to see their surroundings (over 96 blocks).
 	 */
-	public static final int DEFAULT_CUBOID_VIEW_DISTANCE = 1;
+	public static final int DEFAULT_CUBOID_VIEW_DISTANCE = 3;
 	/**
 	 * How many milliseconds an unreferenced cuboid should still remain actively loaded and processed before being unloaded.
 	 */

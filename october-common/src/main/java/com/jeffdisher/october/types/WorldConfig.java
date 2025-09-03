@@ -120,7 +120,8 @@ public class WorldConfig
 		this.worldGeneratorName = WorldGeneratorName.BASIC;
 		// We default to no synthetic updates as they wash out all performance analysis attempts.
 		this.shouldSynthesizeUpdatesOnLoad = false;
-		this.clientViewDistanceMaximum = 2;
+		// We will default our config maximum to the maximum constant since reducing this is more just an option for servers having issues.
+		this.clientViewDistanceMaximum = MAX_CLIENT_VIEW_DISTANCE_MAXIMUM;
 		this.serverName = "OctoberProject Server";
 		this.defaultPlayerMode = DefaultPlayerMode.SURVIVAL;
 	}

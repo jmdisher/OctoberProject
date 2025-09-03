@@ -544,7 +544,7 @@ public class TestResourceLoader
 		Assert.assertTrue(rawData.contains("difficulty\tHOSTILE\n"));
 		Assert.assertTrue(rawData.contains("ticks_per_day\t12000\n"));
 		Assert.assertTrue(rawData.contains("should_synthesize_updates_on_load\tfalse\n"));
-		Assert.assertTrue(rawData.contains("client_view_distance_maximum\t2\n"));
+		Assert.assertTrue(rawData.contains("client_view_distance_maximum\t5\n"));
 		Assert.assertTrue(rawData.contains("server_name\tOctoberProject Server\n"));
 		Assert.assertTrue(rawData.contains("default_player_mode\tSURVIVAL\n"));
 		String fileToWrite = "difficulty\tPEACEFUL\n"

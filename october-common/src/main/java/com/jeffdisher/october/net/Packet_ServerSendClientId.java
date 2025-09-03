@@ -3,7 +3,6 @@ package com.jeffdisher.october.net;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
-import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -26,9 +25,8 @@ public class Packet_ServerSendClientId extends PacketFromServer
 			long millisPerTick = buffer.getLong();
 			int currentViewDistance = buffer.getInt();
 			Assert.assertTrue(currentViewDistance >= 0);
-			// We have a rule that the maximum distance must be at least 1 (0 is a valid distance but can't actually be used).
 			int viewDistanceMaximum = buffer.getInt();
-			Assert.assertTrue(viewDistanceMaximum >= MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+			Assert.assertTrue(viewDistanceMaximum >= 0);
 			return new Packet_ServerSendClientId(id, millisPerTick, currentViewDistance, viewDistanceMaximum);
 		};
 	}
