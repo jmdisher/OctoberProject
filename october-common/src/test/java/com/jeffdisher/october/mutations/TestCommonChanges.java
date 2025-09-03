@@ -1288,12 +1288,15 @@ public class TestCommonChanges
 		int blockInventoryKey = 1;
 		MutationEntityRequestItemPickUp pullFromInventory = new MutationEntityRequestItemPickUp(furnace, blockInventoryKey, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(pullFromInventory.applyChange(holder.context, newEntity));
+		Assert.assertEquals(0, newEntity.getSelectedKey());
 		Assert.assertNull(holder.change);
 		Assert.assertTrue(holder.mutation instanceof MutationBlockExtractItems);
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
 		holder.mutation = null;
 		Assert.assertTrue(holder.change instanceof MutationEntityStoreToInventory);
 		Assert.assertTrue(holder.change.applyChange(holder.context, newEntity));
+		// We expect to see the removed item selected now since we had nothing selected before.
+		Assert.assertEquals(2, newEntity.getSelectedKey());
 		holder.change = null;
 		mutable.writeBack(cuboid);
 		

@@ -54,34 +54,35 @@ public class MutationEntityStoreToInventory implements IEntityAction<IMutablePla
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		// We will still try a best-efforts request if the inventory has changed (but drop anything else).
-		Item typeToTrySelect = null;
 		int itemsToStore;
 		int stored;
+		int itemKeyToSelect = 0;
 		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
 		if (null != _stack)
 		{
 			Item type = _stack.type();
-			if (0 == mutableInventory.getCount(type))
-			{
-				typeToTrySelect = type;
-			}
 			itemsToStore = _stack.count();
 			stored = mutableInventory.addItemsBestEfforts(type, itemsToStore);
+			if (stored > 0)
+			{
+				itemKeyToSelect = mutableInventory.getIdOfStackableType(type);
+			}
 		}
 		else
 		{
 			itemsToStore = 1;
 			boolean didStore = mutableInventory.addNonStackableBestEfforts(_nonStack);
 			stored = didStore ? 1 : 0;
+			if (didStore)
+			{
+				itemKeyToSelect = mutableInventory.getIdOfNonStackableInstance(_nonStack);
+			}
 		}
 		
-		if (stored > 0)
+		// Just as a "nice to have" behaviour, we will select this item if we have nothing selected and we didn't have any of this item.
+		if ((0 != itemKeyToSelect) && (Entity.NO_SELECTION == newEntity.getSelectedKey()))
 		{
-			// Just as a "nice to have" behaviour, we will select this item if we have nothing selected and we didn't have any of this item.
-			if ((Entity.NO_SELECTION == newEntity.getSelectedKey()) && (null != typeToTrySelect))
-			{
-				newEntity.setSelectedKey(mutableInventory.getIdOfStackableType(typeToTrySelect));
-			}
+			newEntity.setSelectedKey(itemKeyToSelect);
 		}
 		
 		// If there are items left over, drop them on the ground.
