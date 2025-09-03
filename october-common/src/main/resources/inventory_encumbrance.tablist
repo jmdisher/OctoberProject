@@ -109,3 +109,7 @@ op.copper_helmet	4
 op.copper_chestplate	8
 op.copper_greaves	6
 op.copper_boots	4
+op.diamond_pickaxe	4
+op.diamond_shovel	4
+op.diamond_axe	4
+op.diamond_sword	4

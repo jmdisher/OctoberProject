@@ -252,3 +252,19 @@ op.copper_boots	COMMON
 	input	op.copper_ingot	op.copper_ingot
 	output	op.copper_boots
 	millis	20000
+op.diamond_pickaxe	COMMON
+	input	op.stick	op.iron_ingot	op.diamond
+	output	op.diamond_pickaxe
+	millis	32000
+op.diamond_shovel	COMMON
+	input	op.stick	op.iron_ingot	op.diamond
+	output	op.diamond_shovel
+	millis	24000
+op.diamond_axe	COMMON
+	input	op.stick	op.iron_ingot	op.diamond
+	output	op.diamond_axe
+	millis	24000
+op.diamond_sword	COMMON
+	input	op.stick	op.iron_ingot	op.iron_ingot	op.diamond
+	output	op.diamond_sword
+	millis	40000

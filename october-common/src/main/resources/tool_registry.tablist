@@ -48,3 +48,15 @@ op.copper_axe	AXE
 op.copper_sword	NO_MATERIAL
 	material_multiplier	1
 	weapon_damage	7
+op.diamond_pickaxe	PICKAXE
+	material_multiplier	15
+	weapon_damage	3
+op.diamond_shovel	SHOVEL
+	material_multiplier	15
+	weapon_damage	3
+op.diamond_axe	AXE
+	material_multiplier	15
+	weapon_damage	6
+op.diamond_sword	NO_MATERIAL
+	material_multiplier	1
+	weapon_damage	15
