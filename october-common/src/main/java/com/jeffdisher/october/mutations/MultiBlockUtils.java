@@ -118,11 +118,15 @@ public class MultiBlockUtils
 	 */
 	public static void replaceMultiBlock(Environment env, TickProcessingContext context, AbsoluteLocation rootLocation, Block existingBlock, Block emptyBlock)
 	{
+		// Note that the lookup may fail if any part of the multi-block is not currently loaded so we will change nothing, in those cases.
 		MultiBlockUtils.Lookup lookup = _getLoadedRoot(env, context, rootLocation);
-		_sendMutationToAll(context, (AbsoluteLocation location) -> {
-			MutationBlockReplace mutation = new MutationBlockReplace(location, existingBlock, emptyBlock);
-			return mutation;
-		}, lookup);
+		if (null != lookup)
+		{
+			_sendMutationToAll(context, (AbsoluteLocation location) -> {
+				MutationBlockReplace mutation = new MutationBlockReplace(location, existingBlock, emptyBlock);
+				return mutation;
+			}, lookup);
+		}
 	}
 
 

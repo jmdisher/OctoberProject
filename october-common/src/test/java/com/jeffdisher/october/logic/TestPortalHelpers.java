@@ -175,4 +175,42 @@ public class TestPortalHelpers
 		PortalHelpers.handlePortalSurface(ENV, context, keystoneLocation, proxy);
 		Assert.assertEquals(9, nextLocations.size());
 	}
+
+	@Test
+	public void handleUpdateWhenPartiallyUnloaded() throws Throwable
+	{
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		AbsoluteLocation keystoneLocation = new AbsoluteLocation(0, 0, 5);
+		AbsoluteLocation surfaceBase = keystoneLocation.getRelative(0, 0, 1);
+		cuboid.setData15(AspectRegistry.BLOCK, keystoneLocation.getBlockAddress(), KEYSTONE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, surfaceBase.getBlockAddress(), PORTAL_SURFACE.item().number());
+		
+		Set<AbsoluteLocation> nextLocations = new HashSet<>();
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation location) -> {
+				return location.getCuboidAddress().equals(cuboidAddress) ? new BlockProxy(location.getBlockAddress(), cuboid) : null;
+			}, null)
+			.sinks(new TickProcessingContext.IMutationSink() {
+				@Override
+				public void next(IMutationBlock mutation)
+				{
+					Assert.assertTrue(mutation instanceof MutationBlockReplace);
+					boolean didAdd = nextLocations.add(mutation.getAbsoluteLocation());
+					Assert.assertTrue(didAdd);
+				}
+				@Override
+				public void future(IMutationBlock mutation, long millisToDelay)
+				{
+					Assert.fail();
+				}
+			}, null)
+			.finish()
+		;
+		
+		// This call should do nothing since it isn't fully loaded.
+		MutableBlockProxy proxy = new MutableBlockProxy(keystoneLocation, cuboid);
+		PortalHelpers.handlePortalSurface(ENV, context, keystoneLocation, proxy);
+		Assert.assertEquals(0, nextLocations.size());
+	}
 }
