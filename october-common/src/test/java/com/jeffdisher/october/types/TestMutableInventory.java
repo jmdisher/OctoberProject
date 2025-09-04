@@ -144,6 +144,22 @@ public class TestMutableInventory
 	}
 
 	@Test
+	public void clearAndReplaceUnlike() throws Throwable
+	{
+		// Verify that we freeze correctly without assuming that keys aren't always matching stack/non-stack (since "clear" will reset).
+		NonStackableItem first = new NonStackableItem(SWORD_ITEM, Map.of());
+		Inventory original = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addNonStackable(first).addStackable(STONE_ITEM, 1).finish();
+		NonStackableItem second = new NonStackableItem(SWORD_ITEM, Map.of());
+		Inventory replacement = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(PLANK_ITEM, 2).addNonStackable(second).finish();
+		MutableInventory inv = new MutableInventory(original);
+		inv.clearInventory(replacement);
+		Inventory frozen = inv.freeze();
+		Assert.assertEquals(2, frozen.sortedKeys().size());
+		Assert.assertEquals(1, frozen.getIdOfStackableType(PLANK_ITEM));
+		Assert.assertEquals(2, frozen.getIdOfNonStackableInstance(second));
+	}
+
+	@Test
 	public void integerOverflow() throws Throwable
 	{
 		// Normally, we can over-fill inventories but verify that this is cleared if the current encumbrance overflows.

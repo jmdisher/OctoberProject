@@ -30,15 +30,7 @@ public class MutableInventory implements IMutableInventory
 		int lastId = 0;
 		for (Integer key : original.sortedKeys())
 		{
-			Items stackable = original.getStackForKey(key);
-			if (null != stackable)
-			{
-				_slots.put(key, ItemSlot.fromStack(stackable));
-			}
-			else
-			{
-				_slots.put(key, ItemSlot.fromNonStack(original.getNonStackableForKey(key)));
-			}
+			_slots.put(key, original.getSlotForKey(key));
 			lastId = key;
 		}
 		_currentEncumbrance = original.currentEncumbrance;
@@ -410,7 +402,7 @@ public class MutableInventory implements IMutableInventory
 					if (null != newItems)
 					{
 						Items originalItems = _original.getStackForKey(key);
-						if ((newItems.type() != originalItems.type()) || (newItems.count() != originalItems.count()))
+						if ((null == originalItems) || (newItems.type() != originalItems.type()) || (newItems.count() != originalItems.count()))
 						{
 							doMatch = false;
 							break;
