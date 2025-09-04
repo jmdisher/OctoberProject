@@ -184,22 +184,29 @@ public class TestProcesses
 		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test", 1);
 		
 		// Let some time pass and verify the data is loaded.
-		long startTick = client.waitForLocalEntity(System.currentTimeMillis());
+		long currentTimeMillis = 1000L;
+		long startTick = client.waitForLocalEntity(currentTimeMillis);
 		// Wait until we have received the entity and cuboid.
-		client.waitForTick(startTick + 3L, System.currentTimeMillis());
+		currentTimeMillis += MILLIS_PER_TICK;
+		long last = client.waitForTick(startTick + 3L, currentTimeMillis);
+		Assert.assertTrue(last >= startTick + 3L);
 		Assert.assertNotNull(listener.getLocalEntity());
 		Assert.assertEquals(2, listener.cuboids.size());
 		
 		// Wait a few ticks and verify that they are below the starting location.
 		// Empty move changes allow us to account for falling in a way that the client controls (avoids synchronized writers over the network).
-		client.doNothing(System.currentTimeMillis());
-		client.waitForTick(startTick + 4L, System.currentTimeMillis());
-		client.doNothing(System.currentTimeMillis());
-		client.waitForTick(startTick + 5L, System.currentTimeMillis());
-		client.doNothing(System.currentTimeMillis());
-		client.waitForTick(startTick + 6L, System.currentTimeMillis());
-		client.doNothing(System.currentTimeMillis());
-		client.waitForTick(startTick + 7L, System.currentTimeMillis());
+		currentTimeMillis += MILLIS_PER_TICK;
+		client.doNothing(currentTimeMillis);
+		last = client.waitForTick(startTick + 4L, currentTimeMillis);
+		Assert.assertTrue(last >= startTick + 4L);
+		currentTimeMillis += MILLIS_PER_TICK;
+		client.doNothing(currentTimeMillis);
+		last = client.waitForTick(startTick + 5L, currentTimeMillis);
+		Assert.assertTrue(last >= startTick + 5L);
+		currentTimeMillis += MILLIS_PER_TICK;
+		client.doNothing(currentTimeMillis);
+		last = client.waitForTick(startTick + 6L, currentTimeMillis);
+		Assert.assertTrue(last >= startTick + 6L);
 		
 		EntityLocation location = listener.getLocalEntity().location();
 		Assert.assertEquals(0.0f, location.x(), 0.01f);
