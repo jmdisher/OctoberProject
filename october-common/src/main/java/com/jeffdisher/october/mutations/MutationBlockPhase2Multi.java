@@ -78,10 +78,13 @@ public class MutationBlockPhase2Multi implements IMutationBlock
 		
 		if (!doesMatch)
 		{
-			// All the blocks use the same previous look-up so they will all agree on this.
-			boolean didApply = CommonBlockMutationHelpers.overwriteBlock(context, newBlock, _location, _orientation, _revertType, false);
-			// This can't fail.
-			Assert.assertTrue(didApply);
+			Block oldType = newBlock.getBlock();
+			
+			// This is not a normal case so we will just destroy the inventory (these cases are unlikely to have an inventory, anyway).
+			CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, context, _location, newBlock, _revertType);
+			
+			// See if we might need to reflow water (if this multi-block failed to be placed in water).
+			CommonBlockMutationHelpers.scheduleLiquidFlowIfRequired(env, context, _location, oldType, _revertType);
 		}
 		
 		// Whatever happened, we always say that this applied.

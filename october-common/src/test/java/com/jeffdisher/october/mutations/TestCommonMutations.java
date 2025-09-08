@@ -1934,6 +1934,40 @@ public class TestCommonMutations
 		Assert.assertEquals(0, futureLocations.size());
 	}
 
+	@Test
+	public void revertMultiBlock()
+	{
+		AbsoluteLocation target = new AbsoluteLocation(5, 5, 5);
+		AbsoluteLocation root = target.getRelative(0, 0, -1);
+		Block surfaceBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_surface"));
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
+		
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation blockLocation) -> {
+				return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
+			}, null)
+			.finish()
+		;
+		
+		// Place only the single block.
+		MutationBlockPlaceMultiBlock place = new MutationBlockPlaceMultiBlock(target, surfaceBlock, root, OrientationAspect.Direction.NORTH, 0);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		boolean didApply = place.applyMutation(context, proxy);
+		Assert.assertTrue(didApply);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(surfaceBlock.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		
+		// Show that we fail and revert on phase2.
+		MutationBlockPhase2Multi fail = new MutationBlockPhase2Multi(target, root, OrientationAspect.Direction.NORTH, surfaceBlock, ENV.special.AIR);
+		proxy = new MutableBlockProxy(target, cuboid);
+		didApply = fail.applyMutation(context, proxy);
+		Assert.assertTrue(didApply);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+	}
+
 
 	private static Set<AbsoluteLocation> _getEastFacingPortalVoidStones(AbsoluteLocation keystoneLocation)
 	{
