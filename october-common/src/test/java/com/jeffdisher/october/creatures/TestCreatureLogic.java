@@ -843,6 +843,40 @@ public class TestCreatureLogic
 		Assert.assertTrue(out[0]);
 	}
 
+	@Test
+	public void swimUpWhenSinking()
+	{
+		// Show that we swim correctly when sinking.
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		_setLayer(input, (byte)0, "op.stone");
+		_setLayer(input, (byte)1, "op.stone");
+		AbsoluteLocation waterLocation = new AbsoluteLocation(5, 5, 1);
+		short waterSourceNumber = ENV.items.getItemById("op.water_source").number();
+		input.setData15(AspectRegistry.BLOCK, waterLocation.getBlockAddress(), waterSourceNumber);
+		
+		EntityLocation startLocation = new EntityLocation(5.0f, 5.0f, 1.4f);
+		EntityLocation startVelocity = new EntityLocation(0.0f, 0.0f, -2.17f);
+		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, (byte)100);
+		MutableCreature mutable = MutableCreature.existing(cow);
+		mutable.newVelocity = startVelocity;
+		mutable.newMovementPlan = List.of(waterLocation.getRelative(0, 0, 1), waterLocation.getRelative(-1, 0, 1));
+		
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation location) -> {
+				return new BlockProxy(location.getBlockAddress(), input);
+			}, null)
+			.finish()
+		;
+		
+		// Make sure that the movement is correct.
+		EntityChangeTopLevelMovement<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
+		Assert.assertTrue(change.applyChange(context, mutable));
+		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 1.65f), mutable.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 2.24f), mutable.newVelocity);
+	}
+
 
 	private static TickProcessingContext _createContext(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp, int random)
 	{

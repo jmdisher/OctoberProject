@@ -181,9 +181,6 @@ public class CreatureMovementHelpers
 			, boolean isBlockSwimmable
 	)
 	{
-		// TODO:  Make sure that we are applying the baseline velocity change due to gravity and coasting in the same way in all cases here, and in MovementAccumulator.
-		EntityLocation updatedVelocity = _getExistingVelocityChange(creatureVelocity, timeLimitMillis, viscosityFraction);
-		
 		// We might need to jump, walk, or do nothing.
 		// If the target is above us and we are on the ground, 
 		EntityChangeTopLevelMovement<IMutableCreatureEntity> change;
@@ -196,23 +193,29 @@ public class CreatureMovementHelpers
 			{
 				// Jump.
 				subAction = new EntityChangeJump<>();
-				newVelocity = new EntityLocation(updatedVelocity.x(), updatedVelocity.y(), EntityChangeJump.JUMP_FORCE);
+				newVelocity = new EntityLocation(creatureVelocity.x(), creatureVelocity.y(), EntityChangeJump.JUMP_FORCE);
 			}
 			else if (isBlockSwimmable && (SpatialHelpers.getPositiveFractionalComponent(creatureLocation.z()) <= 0.5f))
 			{
 				// Swim.
 				subAction = new EntityChangeSwim<>();
-				newVelocity = new EntityLocation(updatedVelocity.x(), updatedVelocity.y(), EntityChangeSwim.SWIM_FORCE);
+				float zVector = (creatureVelocity.z() < 0.0f)
+					? creatureVelocity.z() + EntityChangeSwim.SWIM_FORCE
+					: EntityChangeSwim.SWIM_FORCE
+				;
+				newVelocity = new EntityLocation(creatureVelocity.x(), creatureVelocity.y(), zVector);
 			}
 			else
 			{
 				// We will have to rely on our momentum to carry us there (or we are just failing to reach it).
 				subAction = null;
-				newVelocity = updatedVelocity;
+				newVelocity = creatureVelocity;
 			}
+			EntityLocation updatedVelocity = _getExistingVelocityChange(newVelocity, timeLimitMillis, viscosityFraction);
 			change = new _TopLevelBuilder(supplier)
 				.buildChange(creatureLocation
 					, newVelocity
+					, updatedVelocity
 					, creatureType.volume()
 					, EntityChangeTopLevelMovement.Intensity.STANDING
 					, yaw
@@ -223,6 +226,9 @@ public class CreatureMovementHelpers
 		}
 		else
 		{
+			// TODO:  Make sure that we are applying the baseline velocity change due to gravity and coasting in the same way in all cases here, and in MovementAccumulator.
+			EntityLocation updatedVelocity = _getExistingVelocityChange(creatureVelocity, timeLimitMillis, viscosityFraction);
+			
 			// We might need to walk, coast in the air (which is the same as walking), or just fall.
 			// We will just move over by the axis which differs and otherwise stay where we are in the other axis.
 			float stepX = creatureLocation.x();
@@ -307,6 +313,7 @@ public class CreatureMovementHelpers
 		return new _TopLevelBuilder(supplier)
 			.buildChange(creatureLocation
 				, updatedVelocity
+				, updatedVelocity
 				, creatureType.volume()
 				, EntityChangeTopLevelMovement.Intensity.STANDING
 				, yaw
@@ -332,6 +339,7 @@ public class CreatureMovementHelpers
 			EntityLocation newVelocity = new EntityLocation(sign * effectiveSpeed, 0.0f, velocity.z());
 			move = new _TopLevelBuilder(supplier)
 				.buildChange(location
+					, newVelocity
 					, newVelocity
 					, volume
 					, EntityChangeTopLevelMovement.Intensity.WALKING
@@ -359,6 +367,7 @@ public class CreatureMovementHelpers
 			EntityLocation newVelocity = new EntityLocation(0.0f, sign * effectiveSpeed, velocity.z());
 			move = new _TopLevelBuilder(supplier)
 				.buildChange(location
+					, newVelocity
 					, newVelocity
 					, volume
 					, EntityChangeTopLevelMovement.Intensity.WALKING
@@ -392,8 +401,9 @@ public class CreatureMovementHelpers
 		{
 			_supplier = supplier;
 		}
-		public EntityChangeTopLevelMovement<IMutableCreatureEntity> buildChange(EntityLocation creatureLocation
-			, EntityLocation creatureVelocity
+		public EntityChangeTopLevelMovement<IMutableCreatureEntity> buildChange(EntityLocation startLocation
+			, EntityLocation startVelocity
+			, EntityLocation endVelocity
 			, EntityVolume creatureVolume
 			, EntityChangeTopLevelMovement.Intensity intensity
 			, byte yaw
@@ -403,19 +413,19 @@ public class CreatureMovementHelpers
 		)
 		{
 			float secondsToMove = (float)timeLimitMillis / 1000.0f;
-			EntityLocation effectiveMovement = new EntityLocation(secondsToMove * creatureVelocity.x()
-				, secondsToMove * creatureVelocity.y()
-				, secondsToMove * creatureVelocity.z()
+			EntityLocation effectiveMovement = new EntityLocation(secondsToMove * (startVelocity.x() + endVelocity.x()) / 2.0f
+				, secondsToMove * (startVelocity.y() + endVelocity.y()) / 2.0f
+				, secondsToMove * (startVelocity.z() + endVelocity.z()) / 2.0f
 			);
-			EntityMovementHelpers.interactiveEntityMove(creatureLocation, creatureVolume, effectiveMovement, new EntityMovementHelpers.InteractiveHelper() {
+			EntityMovementHelpers.interactiveEntityMove(startLocation, creatureVolume, effectiveMovement, new EntityMovementHelpers.InteractiveHelper() {
 				@Override
 				public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
 				{
 					_TopLevelBuilder.this.location = finalLocation;
 					// We keep the velocity we proposed, except for any axes which were cancelled due to collision.
-					_TopLevelBuilder.this.velocity = new EntityLocation(cancelX ? 0.0f : creatureVelocity.x()
-						, cancelY ? 0.0f : creatureVelocity.y()
-						, cancelZ ? 0.0f : creatureVelocity.z()
+					_TopLevelBuilder.this.velocity = new EntityLocation(cancelX ? 0.0f : endVelocity.x()
+						, cancelY ? 0.0f : endVelocity.y()
+						, cancelZ ? 0.0f : endVelocity.z()
 					);
 				}
 				@Override
