@@ -912,6 +912,61 @@ public class TestCreatureProcessor
 		Assert.assertEquals((byte)37, creature.health());
 	}
 
+	@Test
+	public void changeTargetMidStep()
+	{
+		// Shows what happens when a creature changes its planned direction mid-step.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		_setCuboidLayer(cuboid, (byte)0, STONE.item().number());
+		
+		// We need to give it a target so it will move at full speed.
+		Entity target = _createEntity(1, new EntityLocation(14.0f, 16.0f, 1.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
+		EntityLocation startLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
+		CreatureEntity creature = CreatureEntity.create(-1, COW, startLocation, (byte)100);
+		MutableCreature mutable = MutableCreature.existing(creature);
+		mutable.newMovementPlan = List.of(new AbsoluteLocation(15, 16, 1)
+			, new AbsoluteLocation(14, 16, 1)
+		);
+		mutable.newTargetEntityId = target.id();
+		creature = mutable.freeze();
+		
+		Entity[] indirect = new Entity[] { target };
+		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation location) -> {
+				return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
+					? new BlockProxy(location.getBlockAddress(), cuboid)
+					: null
+				;
+			}, (Integer id) -> {
+				return MinimalEntity.fromEntity(indirect[0]);
+			})
+			.finish()
+		;
+		boolean didChange = false;
+		while (null != creature.ephemeral().movementPlan())
+		{
+			AbsoluteLocation blockLocation = creature.location().getBlockLocation();
+			if (!didChange && blockLocation.equals(new AbsoluteLocation(15, 16, 1)))
+			{
+				target = _createEntity(1, new EntityLocation(18.0f, 16.0f, 1.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
+				indirect[0] = target;
+				didChange = true;
+			}
+			CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+				, Map.of(creature.id(), creature)
+				, context
+				, new EntityCollection(Map.of(target.id(), target), Map.of(creature.id(), creature))
+				, Map.of()
+			);
+			creature = group.updatedCreatures().get(creature.id());
+		}
+		
+		// At this point, we will be close enough that we have stopped moving but we still see some "coasting" residual velocity.
+		Assert.assertEquals(new EntityLocation(16.75f, 16.0f, 1.0f), creature.location());
+		Assert.assertEquals(new EntityLocation(0.5f, 0.0f, 0.0f), creature.velocity());
+	}
+
 
 	private static TickProcessingContext _createContext()
 	{

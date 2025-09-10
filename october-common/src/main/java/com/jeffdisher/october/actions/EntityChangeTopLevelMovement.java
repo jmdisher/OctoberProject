@@ -444,11 +444,12 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	)
 	{
 		boolean forceFailure = false;
-		float xVDelta = Math.abs(_newVelocity.x() - startVelocity.x());
-		float yVDelta = Math.abs(_newVelocity.y() - startVelocity.y());
-		boolean isValidAcceleration = (xVDelta <= intensityVelocityPerSecond)
-			&& (yVDelta <= intensityVelocityPerSecond)
-		;
+		
+		// TODO:  Apply acceleration-limiting correctly on the next pass through here (the previous approach treated
+		// every change as limited by velocity per second, despite not being 1 second long and this not being related to
+		// acceleration change but maximum velocity).
+		boolean isValidAcceleration = true;
+		
 		float deceleratedX = _velocityAfterViscosityAndCoast(startInverseViscosity, startVelocity.x());
 		float deceleratedY = _velocityAfterViscosityAndCoast(startInverseViscosity, startVelocity.y());
 		boolean isNaturalDeceleration = (deceleratedX == _newVelocity.x()) && (deceleratedY == _newVelocity.y());
