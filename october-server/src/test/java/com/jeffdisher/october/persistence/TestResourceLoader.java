@@ -1,6 +1,8 @@
 package com.jeffdisher.october.persistence;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -57,6 +59,7 @@ import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.WorldConfig;
@@ -965,16 +968,7 @@ public class TestResourceLoader
 		
 		// Write the file.
 		String fileName = "cuboid_" + address.x() + "_" + address.y() + "_" + address.z() + ".cuboid";
-		try (
-				RandomAccessFile aFile = new RandomAccessFile(new File(worldDirectory, fileName), "rw");
-				FileChannel outChannel = aFile.getChannel();
-		)
-		{
-			int written = outChannel.write(ByteBuffer.wrap(preSerializedV7));
-			outChannel.truncate((long)written);
-			Assert.assertEquals(preSerializedV7.length, written);
-		}
-		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
+		_storePerSerialized(worldDirectory, fileName, preSerializedV7);
 		
 		// Now, read this and make sure it contains what we serialized.
 		ResourceLoader loader = new ResourceLoader(worldDirectory, null, new WorldConfig());
@@ -995,6 +989,93 @@ public class TestResourceLoader
 		Assert.assertEquals(4, inv.currentEncumbrance);
 		Assert.assertEquals(IRON_SWORD, inv.getNonStackableForKey(1).type());
 		Assert.assertEquals(103, PropertyHelpers.getDurability(inv.getNonStackableForKey(1)));
+	}
+
+	@Test
+	public void readDataV8() throws Throwable
+	{
+		// Verify that we can read V8 cuboid (with creatures and on-ground inventories) and an entity.
+		File worldDirectory = DIRECTORY.newFolder();
+		
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		BlockAddress invLocation = BlockAddress.fromInt(3, 6, 0);
+		EntityLocation cowLocation = new EntityLocation(5.0f, 5.0f, 0.0f);
+		byte cowHealth = (byte)50;
+		EntityLocation orcLocation = new EntityLocation(15.0f, 15.0f, 0.0f);
+		byte orcHealth = (byte)60;
+		int playerId = 1;
+		EntityLocation playerLocation = new EntityLocation(25.0f, 25.0f, 0.0f);
+		
+		String cuboidFile = "cuboid_" + address.x() + "_" + address.y() + "_" + address.z() + ".cuboid";
+		String entityFile = "entity_1.entity";
+		
+		/* ----- This code was used to generate the serialized buffer in the V7 shape (kept here for reference)
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		NonStackableItem sword = new NonStackableItem(IRON_SWORD, Map.of(
+			PropertyRegistry.DURABILITY, (int)500
+		));
+		Inventory inv = Inventory.start(50).addStackable(STONE_ITEM, 2).addNonStackable(sword).finish();
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, invLocation, inv);
+		
+		CreatureEntity cow = CreatureEntity.create(-10, COW, cowLocation, cowHealth);
+		EntityType orcType = ENV.creatures.getTypeById("op.orc");
+		CreatureEntity orc = CreatureEntity.create(-11, orcType, orcLocation, orcHealth);
+		
+		MutableEntity mutable = MutableEntity.createForTest(playerId);
+		mutable.newLocation = playerLocation;
+		Entity player = mutable.freeze();
+		
+		ResourceLoader loader = new ResourceLoader(worldDirectory, null, new WorldConfig());
+		loader.writeBackToDisk(List.of(new PackagedCuboid(cuboid, List.of(cow, orc), List.of(), Map.of())), List.of(new SuspendedEntity(player, List.of())));
+		loader.shutdown();
+		
+		System.out.println(Arrays.toString(Files.readAllBytes(new File(worldDirectory, cuboidFile).toPath())));
+		System.out.println(Arrays.toString(Files.readAllBytes(new File(worldDirectory, entityFile).toPath())));
+		*/
+		
+		byte[] capturedCuboidData = new byte[] { 0, 0, 0, 8, -128, 0, 0, 0, 0, 1, 12, -64, 0, 0, 0, 50, 2, 0, 0, 0, 1, 0, 1, 0, 0, 0, 2, 0, 0, 0, 2, 0, 28, 1, 0, 0, 0, 1, -12, -128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 64, -96, 0, 0, 64, -96, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 100, 3, 65, 112, 0, 0, 65, 112, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 60, 100, 0, 0, 0, 0, 0, 0, 0, 0 };
+		byte[] capturedEntityData = new byte[] { 0, 0, 0, 8, 0, 0, 0, 1, 0, 65, -56, 0, 0, 65, -56, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -56, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 100, 100, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+		
+		// Write the pre-serialized data.
+		_storePerSerialized(worldDirectory, cuboidFile, capturedCuboidData);
+		_storePerSerialized(worldDirectory, entityFile, capturedEntityData);
+		
+		// Now, read this and make sure it contains what we serialized.
+		ResourceLoader loader = new ResourceLoader(worldDirectory, null, new WorldConfig());
+		List<SuspendedCuboid<CuboidData>> cuboidResults = new ArrayList<>();
+		List<SuspendedEntity> entityResults = new ArrayList<>();
+		loader.getResultsAndRequestBackgroundLoad(cuboidResults, entityResults, List.of(address), List.of(playerId));
+		for (int i = 0; (i < 10) && (cuboidResults.isEmpty() || entityResults.isEmpty()); ++i)
+		{
+			Thread.sleep(10L);
+			loader.getResultsAndRequestBackgroundLoad(cuboidResults, entityResults, List.of(), List.of());
+		}
+		Assert.assertEquals(1, cuboidResults.size());
+		SuspendedCuboid<CuboidData> cuboidData = cuboidResults.get(0);
+		Assert.assertEquals(1, entityResults.size());
+		
+		// Verify our assumptions.
+		CuboidData cuboid = cuboidData.cuboid();
+		Inventory inv = cuboid.getDataSpecial(AspectRegistry.INVENTORY, invLocation);
+		ItemSlot slot1 = inv.getSlotForKey(1);
+		Assert.assertEquals(STONE_ITEM, slot1.stack.type());
+		Assert.assertEquals(2, slot1.stack.count());
+		ItemSlot slot2 = inv.getSlotForKey(2);
+		Assert.assertEquals(IRON_SWORD, slot2.nonStackable.type());
+		Assert.assertEquals(500, PropertyHelpers.getDurability(slot2.nonStackable));
+		
+		List<CreatureEntity> creatures = cuboidData.creatures();
+		Assert.assertEquals(2, creatures.size());
+		CreatureEntity cow = creatures.get(0);
+		Assert.assertEquals(cowLocation, cow.location());
+		Assert.assertEquals(cowHealth, cow.health());
+		CreatureEntity orc = creatures.get(1);
+		Assert.assertEquals(orcLocation, orc.location());
+		Assert.assertEquals(orcHealth, orc.health());
+		
+		Entity player = entityResults.get(0).entity();
+		Assert.assertEquals(playerId, player.id());
+		Assert.assertEquals(playerLocation, player.location());
 	}
 
 
@@ -1058,5 +1139,19 @@ public class TestResourceLoader
 		}
 		Assert.assertEquals(1, out_loadedCuboids.size());
 		return out_loadedCuboids.get(0);
+	}
+
+	private void _storePerSerialized(File worldDirectory, String fileName, byte[] preSerialized) throws IOException, FileNotFoundException
+	{
+		try (
+				RandomAccessFile aFile = new RandomAccessFile(new File(worldDirectory, fileName), "rw");
+				FileChannel outChannel = aFile.getChannel();
+		)
+		{
+			int written = outChannel.write(ByteBuffer.wrap(preSerialized));
+			outChannel.truncate((long)written);
+			Assert.assertEquals(preSerialized.length, written);
+		}
+		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
 	}
 }
