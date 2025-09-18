@@ -25,7 +25,6 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.HeightMapHelpers;
-import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.subactions.EntityChangeChangeHotbarSlot;
 import com.jeffdisher.october.subactions.EntityChangeCraft;
@@ -703,38 +702,6 @@ public class TestMovementAccumulator
 	}
 
 	@Test
-	public void errorCase1() throws Throwable
-	{
-		// This tests an error case observed while testing OctoberPeaks (falling while walking in the same action as we touched down on the lip).
-		long millisPerTick = 50L;
-		long currentTimeMillis = 1000L;
-		EntityLocation startLocation = new EntityLocation(5.98f, 6.0f, 7.0f);
-		AbsoluteLocation blockLocation = new AbsoluteLocation(5, 6, 6);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		cuboid.setData15(AspectRegistry.BLOCK, blockLocation.getBlockAddress(), STONE_ITEM.number());
-		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
-		
-		// Create the baseline data we need.
-		MutableEntity mutable = MutableEntity.createForTest(1);
-		mutable.newLocation = startLocation;
-		mutable.newVelocity = new EntityLocation(4.0f, 0.0f, -0.49f);
-		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
-		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
-		accumulator.setCuboid(cuboid, HeightMapHelpers.buildHeightMap(cuboid));
-		
-		currentTimeMillis += 16L;
-		accumulator.setOrientation(OrientationHelpers.YAW_WEST, OrientationHelpers.PITCH_FLAT);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.BACKWARD, false);
-		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation();
-		Assert.assertEquals(new EntityLocation(6.02f, 6.0f, 7.0f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(2.4f, 0.0f, 0.0f), listener.thisEntity.velocity());
-	}
-
-	@Test
 	public void creativeClearsSubAction() throws Throwable
 	{
 		// This tests a case where the accumulator would clear queued sub-actions, when standing in creative mode, since it wouldn't change the entity, thus being detected as a failure.
@@ -984,6 +951,79 @@ public class TestMovementAccumulator
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(5.8f, 5.56f, 6.0f), entity.location());
+	}
+
+	@Test
+	public void skipOffLedge1Step() throws Throwable
+	{
+		// We want to fall onto a ledge and skip off of it in one step.
+		long millisPerTick = 100L;
+		long currentTimeMillis = 1000L;
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 5, 5), STONE_ITEM.number());
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Create the baseline data we need.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = new EntityLocation(5.9f, 5.9f, 6.1f);
+		mutable.newVelocity = new EntityLocation(0.0f, 0.0f, -10.0f);
+		Entity entity = mutable.freeze();
+		accumulator.setThisEntity(entity);
+		listener.thisEntityDidLoad(entity);
+		accumulator.clearAccumulation();
+		accumulator.setCuboid(cuboid, HeightMapHelpers.buildHeightMap(cuboid));
+		
+		// Fall through the block in one step - we should reject this.
+		currentTimeMillis += millisPerTick;
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(5.9f, 5.9f, 6.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
+	}
+
+	@Test
+	public void skipOffLedge2Step() throws Throwable
+	{
+		// We want to fall onto a ledge and skip off of it in 2 steps.
+		long millisPerTick = 100L;
+		long currentTimeMillis = 1000L;
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 5, 5), STONE_ITEM.number());
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Create the baseline data we need.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = new EntityLocation(5.9f, 5.9f, 6.1f);
+		mutable.newVelocity = new EntityLocation(0.0f, 0.0f, -10.0f);
+		Entity entity = mutable.freeze();
+		accumulator.setThisEntity(entity);
+		listener.thisEntityDidLoad(entity);
+		accumulator.clearAccumulation();
+		accumulator.setCuboid(cuboid, HeightMapHelpers.buildHeightMap(cuboid));
+		
+		// Fall for part of the time unit.
+		currentTimeMillis += 50L;
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(5.9f, 5.9f, 6.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
+		
+		// Now walk off the edge for the remainder.
+		currentTimeMillis += 50L;
+		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		Assert.assertNotNull(out);
+		Assert.assertNull(out.test_getSubAction());
+		
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
+		Assert.assertEquals(new EntityLocation(5.9f, 5.9f, 6.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(5.9f, 5.9f, 6.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 	}
 
 

@@ -70,6 +70,8 @@ public class MovementAccumulator
 	private long _accumulationMillis;
 	private long _lastSampleMillis;
 	private float _startInverseViscosity;
+	private boolean _isFallingAtStart;
+	private boolean _hasTouchedGround;
 	private EntityLocation _newLocation;
 	private EntityLocation _newVelocity;
 	private byte _newYaw;
@@ -139,7 +141,7 @@ public class MovementAccumulator
 		}
 		
 		// When we are just standing, this basically means just "drift" as we currently are.
-		return _commonAccumulateMotion(currentTimeMillis, EntityChangeTopLevelMovement.Intensity.STANDING, null);
+		return _commonAccumulateMotion(currentTimeMillis, EntityChangeTopLevelMovement.Intensity.STANDING, false, _newVelocity);
 	}
 
 	/**
@@ -374,7 +376,10 @@ public class MovementAccumulator
 		_queuedSubAction = null;
 	}
 
-	private void _updateVelocityAndLocation(long millisToMove, EntityLocation velocityToRestoreIfNotOnGround)
+	private void _updateVelocityAndLocation(long millisToMove
+		, boolean mustEndOnGround
+		, EntityLocation velocityToRestoreIfNotOnGround
+	)
 	{
 		float secondsToPass = (float)millisToMove / 1000.0f;
 		_updateVelocityWithAccumulatedGravity(millisToMove);
@@ -390,9 +395,20 @@ public class MovementAccumulator
 				);
 				
 				// We need to check if we should write these back based on whether we are sneaking.
+				// Additionally, there are some corner-cases of the movement which can't pass anti-cheating logic so we avoid them here.
 				EntityLocation locationToRestore = finalLocation;
 				EntityLocation velocityToRestore = collidedVelocity;
-				if (null != velocityToRestoreIfNotOnGround)
+				boolean forceEndOnGround = mustEndOnGround;
+				if (!forceEndOnGround && _isFallingAtStart)
+				{
+					if (!_hasTouchedGround)
+					{
+						// See if we have touched ground here.
+						_hasTouchedGround = cancelZ && (_newVelocity.z() < 0.0f);
+					}
+					forceEndOnGround = _hasTouchedGround;
+				}
+				if (forceEndOnGround)
 				{
 					// We are in sneaking mode so only change to the new location if it is on the ground.
 					boolean isEndingOnGround = SpatialHelpers.isStandingOnGround(_reader, finalLocation, _playerVolume);
@@ -413,7 +429,7 @@ public class MovementAccumulator
 						}
 						else
 						{
-							locationToRestore = _newLocation;
+							locationToRestore = new EntityLocation(_newLocation.x(), _newLocation.y(), finalLocation.z());
 							velocityToRestore = new EntityLocation(0.0f, 0.0f, 0.0f);
 						}
 					}
@@ -433,6 +449,7 @@ public class MovementAccumulator
 
 	private EntityChangeTopLevelMovement<IMutablePlayerEntity> _commonAccumulateMotion(long currentTimeMillis
 		, EntityChangeTopLevelMovement.Intensity thisStepIntensity
+		, boolean mustEndOnGround
 		, EntityLocation velocityToRestoreIfNotOnGround
 	)
 	{
@@ -452,7 +469,7 @@ public class MovementAccumulator
 		{
 			// We need to carve off the existing accumulation.
 			long fillMillis = millisToAdd - overflowMillis;
-			_updateVelocityAndLocation(fillMillis, velocityToRestoreIfNotOnGround);
+			_updateVelocityAndLocation(fillMillis, mustEndOnGround, velocityToRestoreIfNotOnGround);
 			toReturn = _buildFromAccumulation();
 			
 			// Re-initialize our internal accumulation for the next tick.
@@ -475,7 +492,7 @@ public class MovementAccumulator
 		else
 		{
 			// The accumulation is not yet finished so just accumulate.
-			_updateVelocityAndLocation(millisToAdd, velocityToRestoreIfNotOnGround);
+			_updateVelocityAndLocation(millisToAdd, mustEndOnGround, velocityToRestoreIfNotOnGround);
 			_accumulationMillis = accumulated;
 			toReturn = null;
 		}
@@ -618,6 +635,8 @@ public class MovementAccumulator
 	private void _initializeForNextTick(long currentTimeMillis)
 	{
 		_startInverseViscosity = 1.0f - EntityMovementHelpers.maxViscosityInEntityBlocks(_newLocation, _playerVolume, _proxyLookup);
+		_isFallingAtStart = _newVelocity.z() < 0.0f;
+		_hasTouchedGround = SpatialHelpers.isStandingOnGround(_reader, _newLocation, _playerVolume);
 		if (null != _subAction)
 		{
 			boolean isSubActionValid = _runSubActionToStart(_subAction, currentTimeMillis);
@@ -642,7 +661,7 @@ public class MovementAccumulator
 			{
 				_newVelocity = new EntityLocation(_overflow.velocityX, _overflow.velocityY, _newVelocity.z());
 			}
-			_updateVelocityAndLocation(_overflow.millis, null);
+			_updateVelocityAndLocation(_overflow.millis, false, null);
 			_accumulationMillis = _overflow.millis;
 			_overflow = null;
 		}
@@ -662,7 +681,7 @@ public class MovementAccumulator
 		float yComponent = OrientationHelpers.getNorthYawComponent(yawRadians);
 		
 		// If we want to require that this end on the ground, we will need to capture the _newVelocity to restore later.
-		EntityLocation velocityToRestoreIfNotOnGround = shouldRequireEndOnGround ? _newVelocity : null;
+		EntityLocation velocityToRestoreIfNotOnGround = _newVelocity;
 		
 		// Determine the X/Y velocity based on these components, fluid viscosity, and the walking type.
 		// TODO:  We probably want to apply a velocity change limit.
@@ -677,7 +696,7 @@ public class MovementAccumulator
 		{
 			_intensity = intensity;
 		}
-		return _commonAccumulateMotion(currentTimeMillis, intensity, velocityToRestoreIfNotOnGround);
+		return _commonAccumulateMotion(currentTimeMillis, intensity, shouldRequireEndOnGround, velocityToRestoreIfNotOnGround);
 	}
 
 

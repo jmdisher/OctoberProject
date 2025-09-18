@@ -375,10 +375,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		if (!isValidFall)
 		{
 			// This was not a normal fall but it might still be valid if we hit the ground or passed into a different viscosity.
-			// (note that we may have started on the ground in our previous change and that would also count).
-			boolean didHitGround = (0.0f == _newVelocity.z())
-				&& (SpatialHelpers.isStandingOnGround(reader, _newLocation, volume) || SpatialHelpers.isStandingOnGround(reader, startLocation, volume))
-			;
+			boolean didHitGround = (0.0f == _newVelocity.z()) && SpatialHelpers.isStandingOnGround(reader, _newLocation, volume);
 			if (!didHitGround)
 			{
 				// This is the more expensive check so see if their new velocity is between the extremes of 2 different viscosities.
