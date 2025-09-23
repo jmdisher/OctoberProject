@@ -11,6 +11,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.actions.EntityChangeApplyItemToCreature;
 import com.jeffdisher.october.actions.EntityChangeOperatorSetCreative;
 import com.jeffdisher.october.actions.EntityChangeOperatorSetLocation;
@@ -2928,6 +2929,117 @@ public class TestCommonChanges
 		
 		// This should fail if we aren't in the portal.
 		Assert.assertEquals(null, EntitySubActionTravelViaBlock.getValidPortalSurface(ENV, context.previousBlockLookUp, portalTargetLocation.toEntityLocation(), ENV.creatures.PLAYER.volume()));
+	}
+
+	@Test
+	public void simpleMoveBasics() throws Throwable
+	{
+		// Test some basic movements with the simple move.
+		AbsoluteLocation blockLocation = new AbsoluteLocation(10, 10, 10);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, blockLocation.getBlockAddress(), STONE.item().number());
+		
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+			.finish()
+		;
+		
+		int entityId = 1;
+		MutableEntity newEntity = MutableEntity.createForTest(entityId);
+		newEntity.newLocation = blockLocation.getRelative(0, 0, 1).toEntityLocation();
+		
+		Assert.assertTrue(new EntityActionSimpleMove<>(0.0f, 0.0f, EntityActionSimpleMove.Intensity.STANDING, (byte)0, (byte)0, null).applyChange(context, newEntity));
+		Assert.assertEquals(new EntityLocation(10.0f, 10.0f, 11.0f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.newVelocity);
+		
+		Assert.assertFalse(new EntityActionSimpleMove<>(0.4f, 0.0f, EntityActionSimpleMove.Intensity.STANDING, (byte)0, (byte)0, null).applyChange(context, newEntity));
+		Assert.assertTrue(new EntityActionSimpleMove<>(0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
+		Assert.assertEquals(new EntityLocation(10.4f, 10.0f, 11.0f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.newVelocity);
+		
+		Assert.assertTrue(new EntityActionSimpleMove<>(0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, new EntityChangeJump<>()).applyChange(context, newEntity));
+		Assert.assertEquals(new EntityLocation(10.8f, 10.0f, 11.39f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(.0f, 0.0f, 3.92f), newEntity.newVelocity);
+		
+		Assert.assertTrue(new EntityActionSimpleMove<>(0.0f, 0.0f, EntityActionSimpleMove.Intensity.STANDING, (byte)0, (byte)0, null).applyChange(context, newEntity));
+		Assert.assertEquals(new EntityLocation(10.8f, 10.0f, 11.68f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 2.94f), newEntity.newVelocity);
+		
+		Assert.assertTrue(new EntityActionSimpleMove<>(0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
+		Assert.assertEquals(new EntityLocation(11.2f, 10.0f, 11.88f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 1.96f), newEntity.newVelocity);
+		
+		Assert.assertTrue(new EntityActionSimpleMove<>(-0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
+		Assert.assertEquals(new EntityLocation(10.8f, 10.0f, 11.98f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.98f), newEntity.newVelocity);
+		
+		Assert.assertTrue(new EntityActionSimpleMove<>(0.0f, 0.0f, EntityActionSimpleMove.Intensity.STANDING, (byte)0, (byte)0, null).applyChange(context, newEntity));
+		Assert.assertEquals(new EntityLocation(10.8f, 10.0f, 11.98f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.newVelocity);
+		
+		Assert.assertTrue(new EntityActionSimpleMove<>(0.0f, 0.0f, EntityActionSimpleMove.Intensity.STANDING, (byte)0, (byte)0, null).applyChange(context, newEntity));
+		Assert.assertEquals(new EntityLocation(10.8f, 10.0f, 11.88f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.98f), newEntity.newVelocity);
+	}
+
+	@Test
+	public void simpleMoveEdges() throws Throwable
+	{
+		// Test the simple move with edge cases.
+		AbsoluteLocation blockLocation = new AbsoluteLocation(10, 10, 10);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, blockLocation.getBlockAddress(), STONE.item().number());
+		
+		TickProcessingContext context = ContextBuilder.build()
+			.millisPerTick(100L)
+			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+			.finish()
+		;
+		
+		int entityId = 1;
+		MutableEntity newEntity = MutableEntity.createForTest(entityId);
+		newEntity.newLocation = blockLocation.getRelative(0, 0, 1).toEntityLocation();
+		
+		Assert.assertTrue(new EntityActionSimpleMove<>(-0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, new EntityChangeJump<>()).applyChange(context, newEntity));
+		Assert.assertEquals(new EntityLocation(9.6f, 10.0f, 11.39f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 3.92f), newEntity.newVelocity);
+		
+		Assert.assertTrue(new EntityActionSimpleMove<>(-0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
+		Assert.assertEquals(new EntityLocation(9.2f, 10.0f, 11.68f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 2.94f), newEntity.newVelocity);
+		
+		// Try again with a different tick rate.
+		context = ContextBuilder.build()
+			.millisPerTick(10L)
+			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+			.finish()
+		;
+		
+		newEntity = MutableEntity.createForTest(entityId);
+		newEntity.newLocation = blockLocation.getRelative(0, 0, 1).toEntityLocation();
+		
+		Assert.assertTrue(new EntityActionSimpleMove<>(-0.04f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, new EntityChangeJump<>()).applyChange(context, newEntity));
+		Assert.assertEquals(new EntityLocation(9.96f, 10.0f, 11.05f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 4.8f), newEntity.newVelocity);
+		
+		Assert.assertTrue(new EntityActionSimpleMove<>(-0.04f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
+		Assert.assertEquals(new EntityLocation(9.92f, 10.0f, 11.1f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 4.7f), newEntity.newVelocity);
+		
+		// Test an error case we noticed with sign handling when clamping.
+		context = ContextBuilder.build()
+			.millisPerTick(50L)
+			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+			.finish()
+		;
+		
+		newEntity = MutableEntity.createForTest(entityId);
+		newEntity.newLocation = new EntityLocation(20.0f, 20.0f, 20.0f);
+		newEntity.newVelocity = new EntityLocation(-1.66f, -1.66f, 0.98f);
+		
+		Assert.assertTrue(new EntityActionSimpleMove<>(-0.14f, -0.14f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
+		Assert.assertEquals(new EntityLocation(19.8f, 19.8f, 20.02f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.49f), newEntity.newVelocity);
 	}
 
 

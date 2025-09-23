@@ -42,6 +42,7 @@ public enum EntityActionType
 	OPERATOR_SPAWN_CREATURE,
 	DEPRECATED_TIME_SYNC_NOOP,
 	TOP_LEVEL_MOVEMENT,
+	SIMPLE_MOVE,
 	
 	/**
 	 * This testing type is never serialized so it should be kept at the end of the list.

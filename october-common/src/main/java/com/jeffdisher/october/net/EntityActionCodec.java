@@ -28,6 +28,7 @@ import com.jeffdisher.october.actions.Deprecated_EntityChangeSetOrientation;
 import com.jeffdisher.october.actions.Deprecated_EntityChangeTakeDamageFromOther;
 import com.jeffdisher.october.actions.Deprecated_EntityChangeTakeDamage_V2;
 import com.jeffdisher.october.actions.Deprecated_EntityChangeTimeSync;
+import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.actions.EntityChangeOperatorSetCreative;
 import com.jeffdisher.october.actions.EntityChangeOperatorSetLocation;
 import com.jeffdisher.october.actions.EntityChangeOperatorSpawnCreature;
@@ -82,6 +83,7 @@ public class EntityActionCodec
 		_CODEC_TABLE[EntityChangeOperatorSpawnCreature.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeOperatorSpawnCreature.deserialize(context);
 		_CODEC_TABLE[Deprecated_EntityChangeTimeSync.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityChangeTimeSync.deserialize(context);
 		_CODEC_TABLE[EntityChangeTopLevelMovement.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeTopLevelMovement.deserialize(context);
+		_CODEC_TABLE[EntityActionSimpleMove.TYPE.ordinal()] = (DeserializationContext context) -> EntityActionSimpleMove.deserialize(context);
 		_CODEC_TABLE[EntityActionType.TESTING_ONLY.ordinal()] = (DeserializationContext context) -> { throw Assert.unreachable(); };
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).

@@ -37,7 +37,12 @@ public class EntityMovementHelpers
 	 * The terminal velocity when falling through air.
 	 * (40 m/s seems to be a common free-fall velocity for sky-divers)
 	 */
-	public static final float FALLING_TERMINAL_VELOCITY_PER_SECOND = -40.0f;
+	public static final float AIR_TERMINAL_VELOCITY_PER_SECOND = 40.0f;
+	/**
+	 * The terminal velocity when falling through air.
+	 * (40 m/s seems to be a common free-fall velocity for sky-divers)
+	 */
+	public static final float FALLING_TERMINAL_VELOCITY_PER_SECOND = -AIR_TERMINAL_VELOCITY_PER_SECOND;
 	/**
 	 * Just a helpful constant.
 	 */
