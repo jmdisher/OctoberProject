@@ -853,8 +853,8 @@ public class TestCreatureProcessor
 			// Make sure that we are rising.
 			Assert.assertTrue(creature.location().z() > oldZ);
 			
-			// We expect the 6th iteration to be the final one (since we now swim up quickly).
-			if (i < 5)
+			// We expect the 7th iteration to be the final one (since we now swim up quickly).
+			if (i < 6)
 			{
 				Assert.assertNotNull(creature.ephemeral().movementPlan());
 			}
@@ -866,7 +866,7 @@ public class TestCreatureProcessor
 		// We should be in the same column but higher.
 		Assert.assertEquals(startLocation.x(), creature.location().x(), 0.01f);
 		Assert.assertEquals(startLocation.y(), creature.location().y(), 0.01f);
-		Assert.assertEquals(3.25f, creature.location().z(), 0.01f);
+		Assert.assertEquals(2.85f, creature.location().z(), 0.01f);
 	}
 
 	@Test

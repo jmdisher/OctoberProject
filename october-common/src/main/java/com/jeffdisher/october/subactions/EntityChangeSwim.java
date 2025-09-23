@@ -8,7 +8,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
-import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
@@ -107,9 +106,9 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IEntit
 			, EntityLocation vector
 	)
 	{
-		// We want to only consider swimming if the foot is in the bottom half of the block.
 		boolean canSwim = false;
-		if (SpatialHelpers.getPositiveFractionalComponent(location.z()) <= 0.5f)
+		// As long as we are sinking down in a swimmable block type, we will say that we can swim.
+		if (vector.z() <= 0.0f)
 		{
 			BlockProxy footBlock = previousBlockLookUp.apply(location.getBlockLocation());
 			Environment env = Environment.getShared();

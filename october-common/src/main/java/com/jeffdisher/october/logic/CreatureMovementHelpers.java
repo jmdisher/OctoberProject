@@ -195,14 +195,11 @@ public class CreatureMovementHelpers
 				subAction = new EntityChangeJump<>();
 				newVelocity = new EntityLocation(creatureVelocity.x(), creatureVelocity.y(), EntityChangeJump.JUMP_FORCE);
 			}
-			else if (isBlockSwimmable && (SpatialHelpers.getPositiveFractionalComponent(creatureLocation.z()) <= 0.5f))
+			else if (isBlockSwimmable && (creatureVelocity.z() <= 0.0f))
 			{
 				// Swim.
 				subAction = new EntityChangeSwim<>();
-				float zVector = (creatureVelocity.z() < 0.0f)
-					? creatureVelocity.z() + EntityChangeSwim.SWIM_FORCE
-					: EntityChangeSwim.SWIM_FORCE
-				;
+				float zVector = creatureVelocity.z() + EntityChangeSwim.SWIM_FORCE;
 				newVelocity = new EntityLocation(creatureVelocity.x(), creatureVelocity.y(), zVector);
 			}
 			else
