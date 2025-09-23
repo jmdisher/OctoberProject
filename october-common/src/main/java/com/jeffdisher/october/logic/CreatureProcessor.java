@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.mutations.TickUtils;
@@ -78,7 +78,7 @@ public class CreatureProcessor
 				}
 				else
 				{
-					EntityChangeTopLevelMovement<IMutableCreatureEntity> change = _createStandingChange(context, mutable);
+					EntityActionSimpleMove<IMutableCreatureEntity> change = _createStandingChange(context, mutable);
 					boolean didApply = change.applyChange(context, mutable);
 					// We just asked to create this so failure doesn't make sense.
 					Assert.assertTrue(didApply);
@@ -133,7 +133,7 @@ public class CreatureProcessor
 	)
 	{
 		// Note that this may still return a null list of next steps if there is nothing to do.
-		EntityChangeTopLevelMovement<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, mutable, millisAtEndOfTick);
+		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, mutable, millisAtEndOfTick);
 		if (null == change)
 		{
 			// In this case, we just want to synthesize a "do nothing" standing action so that we fall, etc.
@@ -145,7 +145,7 @@ public class CreatureProcessor
 		Assert.assertTrue(didApply);
 	}
 
-	private static EntityChangeTopLevelMovement<IMutableCreatureEntity> _createStandingChange(TickProcessingContext context
+	private static EntityActionSimpleMove<IMutableCreatureEntity> _createStandingChange(TickProcessingContext context
 			, MutableCreature mutable
 	)
 	{

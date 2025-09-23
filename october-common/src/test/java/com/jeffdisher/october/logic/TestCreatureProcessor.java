@@ -349,7 +349,7 @@ public class TestCreatureProcessor
 			Assert.assertNotNull(creature);
 		}
 		// We should be in the final location with a cleared movement plan by this point.
-		Assert.assertEquals(new EntityLocation(0.0f, 1.0f, 1.0f), creature.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 1.01f, 1.0f), creature.location());
 	}
 
 	@Test
@@ -704,7 +704,7 @@ public class TestCreatureProcessor
 			updated = group.updatedCreatures().get(creature.id());
 		}
 		// We should now be against the wall.
-		Assert.assertEquals(8.0f, updated.location().x(), 0.01f);
+		Assert.assertEquals(8.01f, updated.location().x(), 0.01f);
 		
 		// The cow should have jumped, so verify the location, z-velocity, and no plan to the next step.
 		Assert.assertNotEquals(startLocation, updated.location());
@@ -734,8 +734,8 @@ public class TestCreatureProcessor
 		}
 		
 		// By this point we should be on the ground, in the right block, with no plan.
-		Assert.assertEquals(7.5f, updated.location().x(), 0.01f);
-		Assert.assertEquals(9.05f, updated.location().y(), 0.01f);
+		Assert.assertEquals(7.59f, updated.location().x(), 0.01f);
+		Assert.assertEquals(9.01f, updated.location().y(), 0.01f);
 		Assert.assertEquals(2.0f, updated.location().z(), 0.01f);
 		Assert.assertEquals(0.0f, updated.velocity().x(), 0.01f);
 		Assert.assertEquals(0.0f, updated.velocity().y(), 0.01f);
@@ -801,8 +801,10 @@ public class TestCreatureProcessor
 			// Make sure that the air creature is further ahead.
 			Assert.assertTrue(airCreature.location().x() > waterCreature.location().x());
 		}
+		// Note that these final numbers are sensitive to not only the resistance of the water but also the details of
+		// intra-step planning (lining up against an edge before moving to the next step).
 		Assert.assertEquals(3.0f, waterCreature.location().x(), 0.01f);
-		Assert.assertEquals(4.0f, airCreature.location().x(), 0.01f);
+		Assert.assertEquals(3.79f, airCreature.location().x(), 0.01f);
 	}
 
 	@Test
@@ -827,7 +829,9 @@ public class TestCreatureProcessor
 		long millisPerTick = 100L;
 		
 		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
-		for (int i = 0; i < 5; ++i)
+		// This threshold where we finish climbing is determined experimentally.
+		int stepsRequired = 19;
+		for (int i = 0; i <= stepsRequired; ++i)
 		{
 			TickProcessingContext context = ContextBuilder.build()
 					.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
@@ -848,13 +852,9 @@ public class TestCreatureProcessor
 					, changesToRun
 			);
 			creaturesById = group.updatedCreatures();
-			float oldZ = creature.location().z();
 			creature = group.updatedCreatures().get(creature.id());
-			// Make sure that we are rising.
-			Assert.assertTrue(creature.location().z() > oldZ);
 			
-			// We expect the 7th iteration to be the final one (since we now swim up quickly).
-			if (i < 6)
+			if (i < stepsRequired)
 			{
 				Assert.assertNotNull(creature.ephemeral().movementPlan());
 			}
@@ -866,7 +866,7 @@ public class TestCreatureProcessor
 		// We should be in the same column but higher.
 		Assert.assertEquals(startLocation.x(), creature.location().x(), 0.01f);
 		Assert.assertEquals(startLocation.y(), creature.location().y(), 0.01f);
-		Assert.assertEquals(3.33f, creature.location().z(), 0.01f);
+		Assert.assertEquals(3.19f, creature.location().z(), 0.01f);
 	}
 
 	@Test
@@ -963,8 +963,8 @@ public class TestCreatureProcessor
 		}
 		
 		// At this point, we will be close enough that we have stopped moving but we still see some "coasting" residual velocity.
-		Assert.assertEquals(new EntityLocation(16.75f, 16.0f, 1.0f), creature.location());
-		Assert.assertEquals(new EntityLocation(0.5f, 0.0f, 0.0f), creature.velocity());
+		Assert.assertEquals(new EntityLocation(16.69f, 16.0f, 1.0f), creature.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), creature.velocity());
 	}
 
 

@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.actions.EntityChangeImpregnateCreature;
 import com.jeffdisher.october.actions.EntityChangeTakeDamageFromEntity;
-import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
@@ -111,12 +111,12 @@ public class CreatureLogic
 	 * @param timeLimitMillis The number of milliseconds left in the tick.
 	 * @return The next action to take (null if there is nothing to do).
 	 */
-	public static EntityChangeTopLevelMovement<IMutableCreatureEntity> planNextAction(TickProcessingContext context
+	public static EntityActionSimpleMove<IMutableCreatureEntity> planNextAction(TickProcessingContext context
 			, MutableCreature mutable
 			, long timeLimitMillis
 	)
 	{
-		EntityChangeTopLevelMovement<IMutableCreatureEntity> action;
+		EntityActionSimpleMove<IMutableCreatureEntity> action;
 		if (null != mutable.newMovementPlan)
 		{
 			// If we have a movement plan, we want to try to advance it and then produce the next action.
@@ -304,7 +304,7 @@ public class CreatureLogic
 		mutable.newMovementPlan = movementPlan;
 	}
 
-	private static EntityChangeTopLevelMovement<IMutableCreatureEntity> _produceNextAction(TickProcessingContext context
+	private static EntityActionSimpleMove<IMutableCreatureEntity> _produceNextAction(TickProcessingContext context
 			, Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
 			, MutableCreature mutable
 			, List<AbsoluteLocation> existingPlan
@@ -325,7 +325,7 @@ public class CreatureLogic
 			directionHint = existingPlan.get(1);
 		}
 		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
-		EntityChangeTopLevelMovement<IMutableCreatureEntity> actionProduced = CreatureMovementHelpers.prepareForMove(reader, mutable.getLocation(), mutable.getVelocityVector(), mutable.getType(), directionHint, timeLimitMillis, viscosity, isIdleMovement);
+		EntityActionSimpleMove<IMutableCreatureEntity> actionProduced = CreatureMovementHelpers.prepareForMove(reader, mutable.getLocation(), mutable.getVelocityVector(), mutable.getType(), directionHint, timeLimitMillis, viscosity, isIdleMovement);
 		if (null == actionProduced)
 		{
 			// If we are already in a reasonable location, proceed to move.
@@ -495,7 +495,7 @@ public class CreatureLogic
 		mutable.newMovementPlan = updatedPlan;
 	}
 
-	private static EntityChangeTopLevelMovement<IMutableCreatureEntity> _planNextStep(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
+	private static EntityActionSimpleMove<IMutableCreatureEntity> _planNextStep(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
 			, ViscosityReader reader
 			, EntityLocation entityLocation
 			, EntityLocation entityVelocity

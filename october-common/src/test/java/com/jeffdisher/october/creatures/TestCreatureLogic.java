@@ -10,9 +10,9 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.actions.EntityChangeImpregnateCreature;
 import com.jeffdisher.october.actions.EntityChangeTakeDamageFromEntity;
-import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
@@ -552,7 +552,7 @@ public class TestCreatureLogic
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
-		EntityChangeTopLevelMovement<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
+		EntityActionSimpleMove<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
 				, mutableOrc
 				, 100L
 		);
@@ -636,7 +636,7 @@ public class TestCreatureLogic
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
-		EntityChangeTopLevelMovement<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
+		EntityActionSimpleMove<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
 				, mutableOrc
 				, 100L
 		);
@@ -871,10 +871,10 @@ public class TestCreatureLogic
 		;
 		
 		// Make sure that the movement is correct.
-		EntityChangeTopLevelMovement<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
+		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
 		Assert.assertTrue(change.applyChange(context, mutable));
-		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 1.75f), mutable.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 3.22f), mutable.newVelocity);
+		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 1.54f), mutable.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 1.37f), mutable.newVelocity);
 	}
 
 

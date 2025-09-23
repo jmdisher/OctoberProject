@@ -1,12 +1,11 @@
 package com.jeffdisher.october.logic;
 
-import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.subactions.EntityChangeJump;
 import com.jeffdisher.october.subactions.EntityChangeSwim;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
-import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 
@@ -36,7 +35,7 @@ public class CreatureMovementHelpers
 	 * @param isIdleMovement True if this movement is just idle and not one with a specific goal.
 	 * @return The next move to make to centre in the block toward directionHint (null if there is no useful action).
 	 */
-	public static EntityChangeTopLevelMovement<IMutableCreatureEntity> prepareForMove(ViscosityReader supplier
+	public static EntityActionSimpleMove<IMutableCreatureEntity> prepareForMove(ViscosityReader supplier
 			, EntityLocation creatureLocation
 			, EntityLocation creatureVelocity
 			, EntityType creatureType
@@ -141,12 +140,10 @@ public class CreatureMovementHelpers
 				? 0.5f
 				: 1.0f
 		;
-		// TODO:  Make sure that we are applying the baseline velocity change due to gravity and coasting in the same way in all cases here, and in MovementAccumulator.
-		EntityLocation updatedVelocity = _getExistingVelocityChange(creatureVelocity, timeLimitMillis, viscosityFraction);
-		EntityChangeTopLevelMovement<IMutableCreatureEntity> move = _moveByX(supplier, creatureLocation, updatedVelocity, creatureType.volume(), timeLimitMillis, speed * speedMultiplier, viscosityFraction, targetX);
+		EntityActionSimpleMove<IMutableCreatureEntity> move = _moveByX(creatureLocation, timeLimitMillis, speed * speedMultiplier, viscosityFraction, targetX);
 		if (null == move)
 		{
-			move = _moveByY(supplier, creatureLocation, updatedVelocity, creatureType.volume(), timeLimitMillis, speed * speedMultiplier, viscosityFraction, targetY);
+			move = _moveByY(creatureLocation, timeLimitMillis, speed * speedMultiplier, viscosityFraction, targetY);
 		}
 		return move;
 	}
@@ -168,7 +165,7 @@ public class CreatureMovementHelpers
 	 * @return The next move toward targetBlock (null if there is no useful action at this time - usually just pass
 	 * time).
 	 */
-	public static EntityChangeTopLevelMovement<IMutableCreatureEntity> moveToNextLocation(ViscosityReader supplier
+	public static EntityActionSimpleMove<IMutableCreatureEntity> moveToNextLocation(ViscosityReader supplier
 			, EntityLocation creatureLocation
 			, EntityLocation creatureVelocity
 			, byte yaw
@@ -183,49 +180,36 @@ public class CreatureMovementHelpers
 	{
 		// We might need to jump, walk, or do nothing.
 		// If the target is above us and we are on the ground, 
-		EntityChangeTopLevelMovement<IMutableCreatureEntity> change;
+		EntityActionSimpleMove<IMutableCreatureEntity> change;
 		if (targetBlock.z() > creatureLocation.z())
 		{
 			// We need to go up so see if we should jump, swim, or hope our momentum will get us there.
 			IEntitySubAction<IMutableCreatureEntity> subAction;
-			EntityLocation newVelocity;
 			if (SpatialHelpers.isBlockAligned(creatureLocation.z()))
 			{
 				// Jump.
 				subAction = new EntityChangeJump<>();
-				newVelocity = new EntityLocation(creatureVelocity.x(), creatureVelocity.y(), EntityChangeJump.JUMP_FORCE);
 			}
 			else if (isBlockSwimmable && (creatureVelocity.z() <= 0.0f))
 			{
 				// Swim.
 				subAction = new EntityChangeSwim<>();
-				float zVector = creatureVelocity.z() + EntityChangeSwim.SWIM_FORCE;
-				newVelocity = new EntityLocation(creatureVelocity.x(), creatureVelocity.y(), zVector);
 			}
 			else
 			{
 				// We will have to rely on our momentum to carry us there (or we are just failing to reach it).
 				subAction = null;
-				newVelocity = creatureVelocity;
 			}
-			EntityLocation updatedVelocity = _getExistingVelocityChange(newVelocity, timeLimitMillis, viscosityFraction);
-			change = new _TopLevelBuilder(supplier)
-				.buildChange(creatureLocation
-					, newVelocity
-					, updatedVelocity
-					, creatureType.volume()
-					, EntityChangeTopLevelMovement.Intensity.STANDING
-					, yaw
-					, pitch
-					, timeLimitMillis
-					, subAction
-				);
+			change = new EntityActionSimpleMove<>(0.0f
+				, 0.0f
+				, EntityActionSimpleMove.Intensity.STANDING
+				, yaw
+				, pitch
+				, subAction
+			);
 		}
 		else
 		{
-			// TODO:  Make sure that we are applying the baseline velocity change due to gravity and coasting in the same way in all cases here, and in MovementAccumulator.
-			EntityLocation updatedVelocity = _getExistingVelocityChange(creatureVelocity, timeLimitMillis, viscosityFraction);
-			
 			// We might need to walk, coast in the air (which is the same as walking), or just fall.
 			// We will just move over by the axis which differs and otherwise stay where we are in the other axis.
 			float stepX = creatureLocation.x();
@@ -264,11 +248,11 @@ public class CreatureMovementHelpers
 				;
 				if (maxHorizontal == distanceX)
 				{
-					change = _moveByX(supplier, creatureLocation, updatedVelocity, creatureType.volume(), timeLimitMillis, speed * speedMultiplier, viscosityFraction, stepLocation.x());
+					change = _moveByX(creatureLocation, timeLimitMillis, speed * speedMultiplier, viscosityFraction, stepLocation.x());
 				}
 				else
 				{
-					change = _moveByY(supplier, creatureLocation, updatedVelocity, creatureType.volume(), timeLimitMillis, speed * speedMultiplier, viscosityFraction, stepLocation.y());
+					change = _moveByY(creatureLocation, timeLimitMillis, speed * speedMultiplier, viscosityFraction, stepLocation.y());
 				}
 			}
 			else
@@ -294,7 +278,7 @@ public class CreatureMovementHelpers
 	 * @param subAction The sub-action to embed in the change (can be null).
 	 * @return The change to pass time while standing (never null).
 	 */
-	public static EntityChangeTopLevelMovement<IMutableCreatureEntity> buildStandingChange(ViscosityReader supplier
+	public static EntityActionSimpleMove<IMutableCreatureEntity> buildStandingChange(ViscosityReader supplier
 		, EntityLocation creatureLocation
 		, EntityLocation creatureVelocity
 		, byte yaw
@@ -304,141 +288,77 @@ public class CreatureMovementHelpers
 		, float viscosityFraction
 	)
 	{
-		// TODO:  Make sure that we are applying the baseline velocity change due to gravity and coasting in the same way in all cases here, and in MovementAccumulator.
-		EntityLocation updatedVelocity = _getExistingVelocityChange(creatureVelocity, timeLimitMillis, viscosityFraction);
-		
-		return new _TopLevelBuilder(supplier)
-			.buildChange(creatureLocation
-				, updatedVelocity
-				, updatedVelocity
-				, creatureType.volume()
-				, EntityChangeTopLevelMovement.Intensity.STANDING
-				, yaw
-				, pitch
-				, timeLimitMillis
-				, null
-			);
+		return new EntityActionSimpleMove<>(0.0f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.STANDING
+			, yaw
+			, pitch
+			, null
+		);
 	}
 
 
-	private static EntityChangeTopLevelMovement<IMutableCreatureEntity> _moveByX(ViscosityReader supplier, EntityLocation location, EntityLocation velocity, EntityVolume volume, long timeLimitMillis, float currentCreatureSpeed, float viscosityFraction, float targetX)
+	private static EntityActionSimpleMove<IMutableCreatureEntity> _moveByX(EntityLocation location, long timeLimitMillis, float currentCreatureSpeed, float viscosityFraction, float targetX)
 	{
 		// NOTE:  This call assumes that moving in X is possible (on solid ground or swimming).
 		float moveX = targetX - location.x();
-		float sign = Math.signum(moveX);
 		float absoluteMove = Math.abs(moveX);
-		EntityChangeTopLevelMovement<IMutableCreatureEntity> move = null;
+		EntityActionSimpleMove<IMutableCreatureEntity> move = null;
 		if (absoluteMove > FLOAT_THRESHOLD)
 		{
-			float inverseViscosity = (1.0f - viscosityFraction);
-			float effectiveSpeed = inverseViscosity * currentCreatureSpeed;
+			// Note that we use viscosity to estimate how far we will move but the actual units of movement are just in terms of our basic speed.
+			float distanceToMove = _findRawMoveInTime(currentCreatureSpeed, viscosityFraction, moveX, timeLimitMillis);
 			
-			EntityLocation newVelocity = new EntityLocation(sign * effectiveSpeed, 0.0f, velocity.z());
-			move = new _TopLevelBuilder(supplier)
-				.buildChange(location
-					, newVelocity
-					, newVelocity
-					, volume
-					, EntityChangeTopLevelMovement.Intensity.WALKING
-					, (moveX > 0.0f) ? OrientationHelpers.YAW_EAST : OrientationHelpers.YAW_WEST
-					, OrientationHelpers.PITCH_FLAT
-					, timeLimitMillis
-					, null
-				);
+			move = new EntityActionSimpleMove<>(distanceToMove
+				, 0.0f
+				, EntityActionSimpleMove.Intensity.WALKING
+				, (moveX > 0.0f) ? OrientationHelpers.YAW_EAST : OrientationHelpers.YAW_WEST
+				, OrientationHelpers.PITCH_FLAT
+				, null
+			);
 		}
 		return move;
 	}
 
-	private static EntityChangeTopLevelMovement<IMutableCreatureEntity> _moveByY(ViscosityReader supplier, EntityLocation location, EntityLocation velocity, EntityVolume volume, long timeLimitMillis, float currentCreatureSpeed, float viscosityFraction, float targetY)
+	private static EntityActionSimpleMove<IMutableCreatureEntity> _moveByY(EntityLocation location, long timeLimitMillis, float currentCreatureSpeed, float viscosityFraction, float targetY)
 	{
 		// NOTE:  This call assumes that moving in Y is possible (on solid ground or swimming).
 		float moveY = targetY - location.y();
-		float sign = Math.signum(moveY);
 		float absoluteMove = Math.abs(moveY);
-		EntityChangeTopLevelMovement<IMutableCreatureEntity> move = null;
+		EntityActionSimpleMove<IMutableCreatureEntity> move = null;
 		if (absoluteMove > FLOAT_THRESHOLD)
 		{
-			float inverseViscosity = (1.0f - viscosityFraction);
-			float effectiveSpeed = inverseViscosity * currentCreatureSpeed;
+			// Note that we use viscosity to estimate how far we will move but the actual units of movement are just in terms of our basic speed.
+			float distanceToMove = _findRawMoveInTime(currentCreatureSpeed, viscosityFraction, moveY, timeLimitMillis);
 			
-			EntityLocation newVelocity = new EntityLocation(0.0f, sign * effectiveSpeed, velocity.z());
-			move = new _TopLevelBuilder(supplier)
-				.buildChange(location
-					, newVelocity
-					, newVelocity
-					, volume
-					, EntityChangeTopLevelMovement.Intensity.WALKING
-					, (moveY > 0.0f) ? OrientationHelpers.YAW_NORTH : OrientationHelpers.YAW_SOUTH
-					, OrientationHelpers.PITCH_FLAT
-					, timeLimitMillis
-					, null
-				);
+			move = new EntityActionSimpleMove<>(0.0f
+				, distanceToMove
+				, EntityActionSimpleMove.Intensity.WALKING
+				, (moveY > 0.0f) ? OrientationHelpers.YAW_NORTH : OrientationHelpers.YAW_SOUTH
+				, OrientationHelpers.PITCH_FLAT
+				, null
+			);
 		}
 		return move;
 	}
 
-	private static EntityLocation _getExistingVelocityChange(EntityLocation creatureVelocity, long timeLimitMillis, float viscosityFraction)
+	private static float _findRawMoveInTime(float currentCreatureSpeed
+		, float viscosityFraction
+		, float move
+		, long timeLimitMillis
+	)
 	{
-		// This changes velocity based on coasting and gravity.
 		float inverseViscosity = (1.0f - viscosityFraction);
-		float newXVelocity = EntityChangeTopLevelMovement.velocityAfterViscosityAndCoast(inverseViscosity, creatureVelocity.x());
-		float newYVelocity = EntityChangeTopLevelMovement.velocityAfterViscosityAndCoast(inverseViscosity, creatureVelocity.y());
-		float newZVelocity = EntityMovementHelpers.zVelocityAfterGravity(creatureVelocity.z(), inverseViscosity, timeLimitMillis);
-		return new EntityLocation(newXVelocity, newYVelocity, newZVelocity);
-	}
-
-
-	private static class _TopLevelBuilder
-	{
-		private final ViscosityReader _supplier;
-		private EntityLocation location;
-		private EntityLocation velocity;
+		float effectiveSpeed = inverseViscosity * currentCreatureSpeed;
 		
-		public _TopLevelBuilder(ViscosityReader supplier)
-		{
-			_supplier = supplier;
-		}
-		public EntityChangeTopLevelMovement<IMutableCreatureEntity> buildChange(EntityLocation startLocation
-			, EntityLocation startVelocity
-			, EntityLocation endVelocity
-			, EntityVolume creatureVolume
-			, EntityChangeTopLevelMovement.Intensity intensity
-			, byte yaw
-			, byte pitch
-			, long timeLimitMillis
-			, IEntitySubAction<IMutableCreatureEntity> subAction
-		)
-		{
-			float secondsToMove = (float)timeLimitMillis / 1000.0f;
-			EntityLocation effectiveMovement = new EntityLocation(secondsToMove * (startVelocity.x() + endVelocity.x()) / 2.0f
-				, secondsToMove * (startVelocity.y() + endVelocity.y()) / 2.0f
-				, secondsToMove * (startVelocity.z() + endVelocity.z()) / 2.0f
-			);
-			EntityMovementHelpers.interactiveEntityMove(startLocation, creatureVolume, effectiveMovement, new EntityMovementHelpers.InteractiveHelper() {
-				@Override
-				public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
-				{
-					_TopLevelBuilder.this.location = finalLocation;
-					// We keep the velocity we proposed, except for any axes which were cancelled due to collision.
-					_TopLevelBuilder.this.velocity = new EntityLocation(cancelX ? 0.0f : endVelocity.x()
-						, cancelY ? 0.0f : endVelocity.y()
-						, cancelZ ? 0.0f : endVelocity.z()
-					);
-				}
-				@Override
-				public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
-				{
-					return _supplier.getViscosityFraction(location, fromAbove);
-				}
-			});
-			
-			return new EntityChangeTopLevelMovement<>(this.location
-				, this.velocity
-				, intensity
-				, yaw
-				, pitch
-				, subAction
-			);
-		}
+		float absoluteMove = Math.abs(move);
+		float seconds = (float)timeLimitMillis / 1000.0f;
+		float maxDistanceInTime = effectiveSpeed * seconds;
+		float distanceInTime = Math.min(absoluteMove, maxDistanceInTime);
+		float fractionToMove = distanceInTime / maxDistanceInTime;
+		
+		float rawDistanceInTime = currentCreatureSpeed * seconds;
+		float distanceToMove = rawDistanceInTime * fractionToMove;
+		return Math.signum(move) * distanceToMove;
 	}
 }
