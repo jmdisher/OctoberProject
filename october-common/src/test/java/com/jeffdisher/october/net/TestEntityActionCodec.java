@@ -9,7 +9,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.actions.Deprecated_EntityChangeTakeDamageFromOther;
 import com.jeffdisher.october.actions.EntityChangeTakeDamageFromEntity;
-import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.actions.Deprecated_EntityChangeTopLevelMovement;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.subactions.EntityChangeJump;
@@ -77,9 +77,9 @@ public class TestEntityActionCodec
 	{
 		EntityLocation newLocation = new EntityLocation(0.5f, 0.0f, 0.0f);
 		EntityLocation newVelocity = new EntityLocation(5.0f, 0.0f, 0.0f);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(newLocation
+		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new Deprecated_EntityChangeTopLevelMovement<>(newLocation
 			, newVelocity
-			, EntityChangeTopLevelMovement.Intensity.WALKING
+			, Deprecated_EntityChangeTopLevelMovement.Intensity.WALKING
 			, (byte)0
 			, (byte)0
 			, null
@@ -92,14 +92,14 @@ public class TestEntityActionCodec
 			, buffer
 			, false
 		));
-		Assert.assertTrue(read instanceof EntityChangeTopLevelMovement);
-		Assert.assertNull(((EntityChangeTopLevelMovement<?>)read).test_getSubAction());
+		Assert.assertTrue(read instanceof Deprecated_EntityChangeTopLevelMovement);
+		Assert.assertNull(((Deprecated_EntityChangeTopLevelMovement<?>)read).test_getSubAction());
 		Assert.assertEquals(0, buffer.remaining());
 		
 		EntityChangeJump<IMutablePlayerEntity> jump = new EntityChangeJump<>();
-		action = new EntityChangeTopLevelMovement<>(newLocation
+		action = new Deprecated_EntityChangeTopLevelMovement<>(newLocation
 			, newVelocity
-			, EntityChangeTopLevelMovement.Intensity.WALKING
+			, Deprecated_EntityChangeTopLevelMovement.Intensity.WALKING
 			, (byte)5
 			, (byte)6
 			, jump
@@ -112,8 +112,8 @@ public class TestEntityActionCodec
 			, buffer
 			, false
 		));
-		Assert.assertTrue(read instanceof EntityChangeTopLevelMovement);
-		Assert.assertTrue(((EntityChangeTopLevelMovement<?>)read).test_getSubAction() instanceof EntityChangeJump);
+		Assert.assertTrue(read instanceof Deprecated_EntityChangeTopLevelMovement);
+		Assert.assertTrue(((Deprecated_EntityChangeTopLevelMovement<?>)read).test_getSubAction() instanceof EntityChangeJump);
 		Assert.assertEquals(0, buffer.remaining());
 	}
 
@@ -123,9 +123,9 @@ public class TestEntityActionCodec
 		AbsoluteLocation target = new AbsoluteLocation(-10, 6, 0);
 		boolean sendAll = true;
 		EntitySubActionRequestSwapSpecialSlot change = new EntitySubActionRequestSwapSpecialSlot(target, sendAll);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(target.toEntityLocation()
+		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new Deprecated_EntityChangeTopLevelMovement<>(target.toEntityLocation()
 			, new EntityLocation(0.0f, 0.0f, 0.0f)
-			, EntityChangeTopLevelMovement.Intensity.STANDING
+			, Deprecated_EntityChangeTopLevelMovement.Intensity.STANDING
 			, (byte)0
 			, (byte)0
 			, change
@@ -138,7 +138,7 @@ public class TestEntityActionCodec
 			, buffer
 			, false
 		));
-		Assert.assertTrue(read instanceof EntityChangeTopLevelMovement);
+		Assert.assertTrue(read instanceof Deprecated_EntityChangeTopLevelMovement);
 		Assert.assertEquals(0, buffer.remaining());
 	}
 
@@ -147,9 +147,9 @@ public class TestEntityActionCodec
 	{
 		AbsoluteLocation target = new AbsoluteLocation(-10, 6, 0);
 		EntitySubActionTravelViaBlock change = new EntitySubActionTravelViaBlock(target);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(target.toEntityLocation()
+		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new Deprecated_EntityChangeTopLevelMovement<>(target.toEntityLocation()
 			, new EntityLocation(0.0f, 0.0f, 0.0f)
-			, EntityChangeTopLevelMovement.Intensity.STANDING
+			, Deprecated_EntityChangeTopLevelMovement.Intensity.STANDING
 			, (byte)0
 			, (byte)0
 			, change
@@ -162,7 +162,7 @@ public class TestEntityActionCodec
 			, buffer
 			, false
 		));
-		Assert.assertTrue(read instanceof EntityChangeTopLevelMovement);
+		Assert.assertTrue(read instanceof Deprecated_EntityChangeTopLevelMovement);
 		Assert.assertEquals(0, buffer.remaining());
 	}
 }

@@ -30,9 +30,9 @@ import com.jeffdisher.october.utils.Assert;
  * NOTE:  As this class is how the server applies movement, this is the most likely attack vector for most forms of
  * "cheating" in the game.
  */
-public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> implements IEntityAction<T>
+public class Deprecated_EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> implements IEntityAction<T>
 {
-	public static final EntityActionType TYPE = EntityActionType.TOP_LEVEL_MOVEMENT;
+	public static final EntityActionType TYPE = EntityActionType.DEPRECATED_TOP_LEVEL_MOVEMENT;
 	/**
 	 * We will require that the change in z-vector is within 90% of what gravity dictates (rounding errors, etc).
 	 */
@@ -75,7 +75,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		EntitySubActionType.TESTING_ONLY,
 	}).collect(Collectors.toSet());
 
-	public static <T extends IMutableMinimalEntity> EntityChangeTopLevelMovement<T> deserialize(DeserializationContext context)
+	public static <T extends IMutableMinimalEntity> Deprecated_EntityChangeTopLevelMovement<T> deserialize(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
 		EntityLocation newLocation = CodecHelpers.readEntityLocation(buffer);
@@ -84,7 +84,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		byte yaw = buffer.get();
 		byte pitch = buffer.get();
 		IEntitySubAction<T> subAction = CodecHelpers.readNullableNestedChange(buffer);
-		return new EntityChangeTopLevelMovement<>(newLocation, newVelocity, intensity, yaw, pitch, subAction);
+		return new Deprecated_EntityChangeTopLevelMovement<>(newLocation, newVelocity, intensity, yaw, pitch, subAction);
 	}
 
 	/**
@@ -108,7 +108,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	private final byte _pitch;
 	private final IEntitySubAction<T> _subAction;
 
-	public EntityChangeTopLevelMovement(EntityLocation newLocation
+	public Deprecated_EntityChangeTopLevelMovement(EntityLocation newLocation
 		, EntityLocation newVelocity
 		, Intensity intensity
 		, byte yaw

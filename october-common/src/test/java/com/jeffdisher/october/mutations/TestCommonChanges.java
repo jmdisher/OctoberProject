@@ -18,7 +18,7 @@ import com.jeffdisher.october.actions.EntityChangeOperatorSetLocation;
 import com.jeffdisher.october.actions.EntityChangeOperatorSpawnCreature;
 import com.jeffdisher.october.actions.EntityChangePeriodic;
 import com.jeffdisher.october.actions.EntityChangeTakeDamageFromEntity;
-import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.actions.Deprecated_EntityChangeTopLevelMovement;
 import com.jeffdisher.october.actions.MutationEntityStoreToInventory;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
@@ -2410,9 +2410,9 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = oldLocation;
 		TickProcessingContext context = _createSimpleContext();
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(newLocation
+		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new Deprecated_EntityChangeTopLevelMovement<>(newLocation
 			, newVelocity
-			, EntityChangeTopLevelMovement.Intensity.WALKING
+			, Deprecated_EntityChangeTopLevelMovement.Intensity.WALKING
 			, (byte)5
 			, (byte)6
 			, null
@@ -2443,9 +2443,9 @@ public class TestCommonChanges
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), water), null)
 				.finish()
 		;
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(newLocation
+		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new Deprecated_EntityChangeTopLevelMovement<>(newLocation
 			, newVelocity
-			, EntityChangeTopLevelMovement.Intensity.STANDING
+			, Deprecated_EntityChangeTopLevelMovement.Intensity.STANDING
 			, (byte)5
 			, (byte)6
 			, null
@@ -2473,9 +2473,9 @@ public class TestCommonChanges
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), air), null)
 				.finish()
 		;
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(newLocation
+		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new Deprecated_EntityChangeTopLevelMovement<>(newLocation
 			, newVelocity
-			, EntityChangeTopLevelMovement.Intensity.STANDING
+			, Deprecated_EntityChangeTopLevelMovement.Intensity.STANDING
 			, (byte)5
 			, (byte)6
 			, null
@@ -2499,9 +2499,9 @@ public class TestCommonChanges
 		
 		// Craft some items to use these up and verify that the selection is cleared.
 		EntityChangeCraft craft = new EntityChangeCraft(logToPlanks);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> topLevel = new EntityChangeTopLevelMovement<>(newEntity.newLocation
+		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> topLevel = new Deprecated_EntityChangeTopLevelMovement<>(newEntity.newLocation
 			, newEntity.newVelocity
-			, EntityChangeTopLevelMovement.Intensity.STANDING
+			, Deprecated_EntityChangeTopLevelMovement.Intensity.STANDING
 			, (byte)0
 			, (byte)0
 			, craft
@@ -2561,9 +2561,9 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = oldLocation;
 		TickProcessingContext context = _createSimpleContext();
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(newLocation
+		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new Deprecated_EntityChangeTopLevelMovement<>(newLocation
 			, newVelocity
-			, EntityChangeTopLevelMovement.Intensity.RUNNING
+			, Deprecated_EntityChangeTopLevelMovement.Intensity.RUNNING
 			, (byte)5
 			, (byte)6
 			, null
@@ -2719,9 +2719,9 @@ public class TestCommonChanges
 		
 		// Show that this still works as a sub-action.
 		EntityLocation newLocation = new EntityLocation(5.0f, 5.1f, 0.8f);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> topLevel = new EntityChangeTopLevelMovement<>(newLocation
+		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> topLevel = new Deprecated_EntityChangeTopLevelMovement<>(newLocation
 			, new EntityLocation(0.0f, 2.0f, 0.0f)
-			, EntityChangeTopLevelMovement.Intensity.WALKING
+			, Deprecated_EntityChangeTopLevelMovement.Intensity.WALKING
 			, (byte)5
 			, (byte)6
 			, descend
@@ -3183,9 +3183,9 @@ public class TestCommonChanges
 			}
 		});
 		
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> stand = new EntityChangeTopLevelMovement<>(outLocation[0]
+		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> stand = new Deprecated_EntityChangeTopLevelMovement<>(outLocation[0]
 			, outVelocity[0]
-			, EntityChangeTopLevelMovement.Intensity.STANDING
+			, Deprecated_EntityChangeTopLevelMovement.Intensity.STANDING
 			, (byte)0
 			, (byte)0
 			, null
