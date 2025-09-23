@@ -26,6 +26,7 @@ import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.process.ClientProcess;
 import com.jeffdisher.october.process.ServerProcess;
 import com.jeffdisher.october.server.MonitoringAgent;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -117,9 +118,12 @@ public class TestProcesses
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
 		
-		// Load a cuboid.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		cuboidLoader.preload(cuboid);
+		// Load central cuboids.
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), stone);
+		cuboidLoader.preload(airCuboid);
+		cuboidLoader.preload(stoneCuboid);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
 				, cuboidLoader
@@ -133,11 +137,13 @@ public class TestProcesses
 		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test", 1);
 		
 		// Let some time pass and verify the data is loaded.
-		long startTick = client.waitForLocalEntity(System.currentTimeMillis());
+		long currentTimeMillis = 1000L;
+		long startTick = client.waitForLocalEntity(currentTimeMillis);
 		// Wait until we have received the entity and cuboid.
-		client.waitForTick(startTick + 3L, System.currentTimeMillis());
+		currentTimeMillis += MILLIS_PER_TICK;
+		client.waitForTick(startTick + 3L, currentTimeMillis);
 		Assert.assertNotNull(listener.getLocalEntity());
-		Assert.assertEquals(1, listener.cuboids.size());
+		Assert.assertEquals(2, listener.cuboids.size());
 		
 		// Move the client, slightly, and verify that we see the update.
 		// (since we are using the real clock, wait for this move to be valid)
@@ -147,12 +153,13 @@ public class TestProcesses
 		long millisRemaining = millisInStep;
 		while (millisRemaining > 0L)
 		{
-			Thread.sleep(MILLIS_PER_TICK);
-			client.walk(MovementAccumulator.Relative.FORWARD, false, System.currentTimeMillis());
+			currentTimeMillis += MILLIS_PER_TICK;
+			client.walk(MovementAccumulator.Relative.FORWARD, false, currentTimeMillis);
 			millisRemaining -= MILLIS_PER_TICK;
 		}
-		long serverTick = server.waitForTicksToPass(2L);
-		client.waitForTick(serverTick, System.currentTimeMillis());
+		long serverTick = server.waitForTicksToPass(millisInStep / MILLIS_PER_TICK);
+		currentTimeMillis += MILLIS_PER_TICK;
+		client.waitForTick(serverTick, currentTimeMillis);
 		Assert.assertEquals(newLocation, listener.getLocalEntity().location());
 		
 		// Disconnect the client.
