@@ -43,6 +43,7 @@ public enum EntityActionType
 	DEPRECATED_TIME_SYNC_NOOP,
 	DEPRECATED_TOP_LEVEL_MOVEMENT,
 	SIMPLE_MOVE,
+	NUDGE_ENTITY,
 	
 	/**
 	 * This testing type is never serialized so it should be kept at the end of the list.

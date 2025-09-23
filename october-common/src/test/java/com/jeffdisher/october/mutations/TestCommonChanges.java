@@ -13,6 +13,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.actions.EntityChangeApplyItemToCreature;
+import com.jeffdisher.october.actions.EntityActionNudge;
 import com.jeffdisher.october.actions.EntityChangeOperatorSetCreative;
 import com.jeffdisher.october.actions.EntityChangeOperatorSetLocation;
 import com.jeffdisher.october.actions.EntityChangeOperatorSpawnCreature;
@@ -2948,6 +2949,53 @@ public class TestCommonChanges
 		Assert.assertTrue(new EntityActionSimpleMove<>(-0.14f, -0.14f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
 		Assert.assertEquals(new EntityLocation(19.8f, 19.8f, 20.02f), newEntity.newLocation);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.49f), newEntity.newVelocity);
+	}
+
+	@Test
+	public void nudgeCreature() throws Throwable
+	{
+		// Show what happens when we send a nudge action to a creature and then have them stand.
+		int targetId = -1;
+		CreatureEntity creature = CreatureEntity.create(targetId
+				, COW
+				, new EntityLocation(9.0f, 9.0f, 0.0f)
+				, (byte) 100
+		);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		CommonChangeSink changeSink = new CommonChangeSink();
+		TickProcessingContext context = ContextBuilder.build()
+				.tick(5L)
+				.lookups((AbsoluteLocation location) -> {
+					CuboidData cuboid = (location.z() >= 0) ? airCuboid : stoneCuboid;
+					return new BlockProxy(location.getBlockAddress(), cuboid);
+				}, (Integer id) -> {
+					Assert.assertEquals(targetId, id.intValue());
+					return MinimalEntity.fromCreature(creature);
+				})
+				.sinks(null, changeSink)
+				.finish()
+		;
+		
+		// Send a nudge to them and see that they move.
+		EntityLocation force = new EntityLocation(1.0f, 1.0f, 0.0f);
+		EntityActionNudge<IMutableCreatureEntity> nudge = new EntityActionNudge<>(force);
+		MutableCreature mutable = MutableCreature.existing(creature);
+		Assert.assertTrue(nudge.applyChange(context, mutable));
+		Assert.assertEquals(new EntityLocation(9.0f, 9.0f, 0.0f), mutable.newLocation);
+		Assert.assertEquals(new EntityLocation(1.0f, 1.0f, 0.0f), mutable.newVelocity);
+		
+		// Send a stand to see how we account for this.
+		EntityActionSimpleMove<IMutableCreatureEntity> stand = new EntityActionSimpleMove<>(0.0f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.STANDING
+			, (byte)0
+			, (byte)0
+			, null
+		);
+		Assert.assertTrue(stand.applyChange(context, mutable));
+		Assert.assertEquals(new EntityLocation(9.1f, 9.1f, 0.0f), mutable.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutable.newVelocity);
 	}
 
 

@@ -35,6 +35,7 @@ import com.jeffdisher.october.actions.EntityChangeOperatorSpawnCreature;
 import com.jeffdisher.october.actions.EntityChangePeriodic;
 import com.jeffdisher.october.actions.EntityChangeTakeDamageFromEntity;
 import com.jeffdisher.october.actions.Deprecated_EntityChangeTopLevelMovement;
+import com.jeffdisher.october.actions.EntityActionNudge;
 import com.jeffdisher.october.actions.MutationEntityStoreToInventory;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.mutations.EntityActionType;
@@ -84,6 +85,7 @@ public class EntityActionCodec
 		_CODEC_TABLE[Deprecated_EntityChangeTimeSync.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityChangeTimeSync.deserialize(context);
 		_CODEC_TABLE[Deprecated_EntityChangeTopLevelMovement.TYPE.ordinal()] = (DeserializationContext context) -> Deprecated_EntityChangeTopLevelMovement.deserialize(context);
 		_CODEC_TABLE[EntityActionSimpleMove.TYPE.ordinal()] = (DeserializationContext context) -> EntityActionSimpleMove.deserialize(context);
+		_CODEC_TABLE[EntityActionNudge.TYPE.ordinal()] = (DeserializationContext context) -> EntityActionNudge.deserialize(context);
 		_CODEC_TABLE[EntityActionType.TESTING_ONLY.ordinal()] = (DeserializationContext context) -> { throw Assert.unreachable(); };
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
