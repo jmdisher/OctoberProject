@@ -3,7 +3,7 @@ package com.jeffdisher.october.net;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
-import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -26,17 +26,17 @@ public class Packet_MutationEntityFromClient extends PacketFromClient
 				, false
 			);
 			
-			EntityChangeTopLevelMovement<IMutablePlayerEntity> mutation = (EntityChangeTopLevelMovement<IMutablePlayerEntity>) EntityActionCodec.parseAndSeekContext(context);
+			EntityActionSimpleMove<IMutablePlayerEntity> mutation = (EntityActionSimpleMove<IMutablePlayerEntity>) EntityActionCodec.parseAndSeekContext(context);
 			long commitLevel = buffer.getLong();
 			return new Packet_MutationEntityFromClient(mutation, commitLevel);
 		};
 	}
 
 
-	public final EntityChangeTopLevelMovement<IMutablePlayerEntity> mutation;
+	public final EntityActionSimpleMove<IMutablePlayerEntity> mutation;
 	public final long commitLevel;
 
-	public Packet_MutationEntityFromClient(EntityChangeTopLevelMovement<IMutablePlayerEntity> mutation, long commitLevel)
+	public Packet_MutationEntityFromClient(EntityActionSimpleMove<IMutablePlayerEntity> mutation, long commitLevel)
 	{
 		super(TYPE);
 		

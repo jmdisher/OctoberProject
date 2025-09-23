@@ -15,7 +15,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
@@ -225,11 +225,10 @@ public class TestServerStateManager
 		manager.setupNextTickAfterCompletion(snapshot);
 		
 		// We need to setup the callouts to not fully satisfy this.
-		Entity entity = MutableEntity.createForTest(clientId).freeze();
 		MutationEntitySelectItem subAction = new MutationEntitySelectItem(1);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> change = new EntityChangeTopLevelMovement<>(entity.location()
-			, entity.velocity()
-			, EntityChangeTopLevelMovement.Intensity.STANDING
+		EntityActionSimpleMove<IMutablePlayerEntity> change = new EntityActionSimpleMove<>(0.0f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.STANDING
 			, OrientationHelpers.YAW_NORTH
 			, OrientationHelpers.PITCH_FLAT
 			, subAction
@@ -1064,7 +1063,7 @@ public class TestServerStateManager
 			throw new AssertionError("network_sendChatMessage");
 		}
 		@Override
-		public boolean runner_enqueueEntityChange(int entityId, EntityChangeTopLevelMovement<IMutablePlayerEntity> change, long commitLevel)
+		public boolean runner_enqueueEntityChange(int entityId, EntityActionSimpleMove<IMutablePlayerEntity> change, long commitLevel)
 		{
 			return this.didEnqueue;
 		}

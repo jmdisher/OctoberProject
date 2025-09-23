@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
@@ -401,7 +401,7 @@ public class SpeculativeProjection
 	 * @param currentTickTimeMillis The current time, in milliseconds.
 	 * @return The local commit number for this change, 0L if it failed to applied and should be rejected.
 	 */
-	public long applyLocalChange(EntityChangeTopLevelMovement<IMutablePlayerEntity> change, long currentTickTimeMillis)
+	public long applyLocalChange(EntityActionSimpleMove<IMutablePlayerEntity> change, long currentTickTimeMillis)
 	{
 		// Create the new commit number although we will reverse this if we can merge.
 		long commitNumber = _nextLocalCommitNumber;
@@ -458,7 +458,7 @@ public class SpeculativeProjection
 		}
 	}
 
-	private _LocalActionWrapper _applyChangeToProjected(EntityChangeTopLevelMovement<IMutablePlayerEntity> change
+	private _LocalActionWrapper _applyChangeToProjected(EntityActionSimpleMove<IMutablePlayerEntity> change
 			, long commitNumber
 			, long currentTickTimeMillis
 	)

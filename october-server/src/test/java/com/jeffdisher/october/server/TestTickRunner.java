@@ -10,10 +10,10 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.actions.EntityChangeOperatorSetCreative;
 import com.jeffdisher.october.actions.EntityChangeOperatorSpawnCreature;
 import com.jeffdisher.october.actions.EntityChangePeriodic;
-import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
@@ -3209,10 +3209,11 @@ public class TestTickRunner
 		
 		// Just submit the single movement.
 		EntityLocation newLocation = new EntityLocation(0.04f, 0.0f, 1.0f);
-		EntityLocation newVelocity = new EntityLocation(4.0f, 0.0f, 0.0f);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(newLocation
-			, newVelocity
-			, EntityChangeTopLevelMovement.Intensity.WALKING
+		// (note that this tick is small enough to not intersect with the ground)
+		EntityLocation newVelocity = new EntityLocation(0.0f, 0.0f, -0.1f);
+		EntityActionSimpleMove<IMutablePlayerEntity> action = new EntityActionSimpleMove<>(0.04f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.WALKING
 			, (byte)5
 			, (byte)6
 			, null
@@ -3252,9 +3253,9 @@ public class TestTickRunner
 		runner.waitForPreviousTick();
 		
 		// Submit the action to activate the cuboid loader.
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(entity1.newLocation
-			, new EntityLocation(0.0f, 0.0f, 0.0f)
-			, EntityChangeTopLevelMovement.Intensity.STANDING
+		EntityActionSimpleMove<IMutablePlayerEntity> action = new EntityActionSimpleMove<>(0.0f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.STANDING
 			, (byte)5
 			, (byte)6
 			, new EntityChangeSetBlockLogicState(target, true)
@@ -3299,17 +3300,17 @@ public class TestTickRunner
 		// Submit actions to place down both lamps.
 		AbsoluteLocation onLamp  = stand.getRelative(0, 0, 1);
 		AbsoluteLocation offLamp = stand.getRelative(0, 1, 1);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> onAction = new EntityChangeTopLevelMovement<>(entity1.newLocation
-			, new EntityLocation(0.0f, 0.0f, 0.0f)
-			, EntityChangeTopLevelMovement.Intensity.STANDING
+		EntityActionSimpleMove<IMutablePlayerEntity> onAction = new EntityActionSimpleMove<>(0.0f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.STANDING
 			, (byte)5
 			, (byte)6
 			, new MutationPlaceSelectedBlock(onLamp, onLamp.getRelative(0, 0, -1))
 		);
 		runner.enqueueEntityChange(entityId, onAction, 1L);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> offAction = new EntityChangeTopLevelMovement<>(entity1.newLocation
-			, new EntityLocation(0.0f, 0.0f, 0.0f)
-			, EntityChangeTopLevelMovement.Intensity.STANDING
+		EntityActionSimpleMove<IMutablePlayerEntity> offAction = new EntityActionSimpleMove<>(0.0f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.STANDING
 			, (byte)5
 			, (byte)6
 			, new MutationPlaceSelectedBlock(offLamp, offLamp.getRelative(0, 0, -1))
@@ -3513,17 +3514,17 @@ public class TestTickRunner
 		}
 	}
 
-	private static EntityChangeTopLevelMovement<IMutablePlayerEntity> _wrapForEntity(Entity entity, IMutationBlock next)
+	private static EntityActionSimpleMove<IMutablePlayerEntity> _wrapForEntity(Entity entity, IMutationBlock next)
 	{
 		EntityChangeMutation wrapper = new EntityChangeMutation(next);
 		return _wrapSubAction(entity, wrapper);
 	}
 
-	private static EntityChangeTopLevelMovement<IMutablePlayerEntity> _wrapSubAction(Entity entity, IEntitySubAction<IMutablePlayerEntity> subAction)
+	private static EntityActionSimpleMove<IMutablePlayerEntity> _wrapSubAction(Entity entity, IEntitySubAction<IMutablePlayerEntity> subAction)
 	{
-		return new EntityChangeTopLevelMovement<>(entity.location()
-			, entity.velocity()
-			, EntityChangeTopLevelMovement.Intensity.STANDING
+		return new EntityActionSimpleMove<>(0.0f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.STANDING
 			, OrientationHelpers.YAW_NORTH
 			, OrientationHelpers.PITCH_FLAT
 			, subAction

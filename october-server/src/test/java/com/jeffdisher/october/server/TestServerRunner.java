@@ -15,8 +15,8 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.actions.EntityChangeOperatorSetLocation;
-import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
@@ -182,7 +182,7 @@ public class TestServerRunner
 		// Break a block in 2 steps, observing the changes coming out.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 1, -1);
 		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(changeLocation);
-		network.receiveFromClient(clientId, _wrapSubAction(entity, break1), 1L);
+		network.receiveFromClient(clientId, _wrapSubAction(break1), 1L);
 		// EntityChangeIncrementalBlockBreak consumes energy and then breaks the block so we should see 2 changes.
 		Object mutation = network.waitForUpdate(clientId, 0);
 		Assert.assertTrue(mutation instanceof MutationEntitySetEntity);
@@ -190,7 +190,7 @@ public class TestServerRunner
 		Assert.assertTrue(mutation instanceof MutationBlockSetBlock);
 		
 		// Send it again and see the block break.
-		network.receiveFromClient(clientId, _wrapSubAction(entity, break1), 2L);
+		network.receiveFromClient(clientId, _wrapSubAction(break1), 2L);
 		// EntityChangeIncrementalBlockBreak consumes energy and then breaks the block so we should see 2 changes.
 		mutation = network.waitForUpdate(clientId, 2);
 		Assert.assertTrue(mutation instanceof MutationEntitySetEntity);
@@ -241,7 +241,7 @@ public class TestServerRunner
 		// Pick these from the inventory and observe that they appear 2 ticks later.
 		// We will assume the inventory key is 1.
 		int blockInventoryKey = 1;
-		network.receiveFromClient(clientId, _wrapSubAction(entity, new MutationEntityRequestItemPickUp(new AbsoluteLocation(0, 0, -1), blockInventoryKey, 1, Inventory.INVENTORY_ASPECT_INVENTORY)), 1L);
+		network.receiveFromClient(clientId, _wrapSubAction(new MutationEntityRequestItemPickUp(new AbsoluteLocation(0, 0, -1), blockInventoryKey, 1, Inventory.INVENTORY_ASPECT_INVENTORY)), 1L);
 		
 		// The first tick won't change anything (as requesting inventory doesn't change the entity).
 		// The second will change the block (extracting from the inventory).
@@ -378,10 +378,7 @@ public class TestServerRunner
 		network.waitForCuboidAddedCount(clientId1, 6);
 		
 		// Now, we want to take a step to the West and see 2 new cuboids added and 2 removed.
-		float speed = ENV.creatures.PLAYER.blocksPerSecond();
-		EntityLocation firstStep = new EntityLocation(-0.2f, 0.0f, 0.0f);
-		EntityLocation velocity = new EntityLocation(speed, 0.0f, 0.0f);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> move = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_WEST, OrientationHelpers.PITCH_FLAT, null);
+		EntityActionSimpleMove<IMutablePlayerEntity> move = new EntityActionSimpleMove<>(-0.2f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, OrientationHelpers.YAW_WEST, OrientationHelpers.PITCH_FLAT, null);
 		network.receiveFromClient(clientId1, move, 1L);
 		
 		network.waitForCuboidRemovedCount(clientId1, 2);
@@ -420,7 +417,7 @@ public class TestServerRunner
 		Assert.assertEquals(0, entity1.hotbarIndex());
 		
 		// Change something - just change the selected hotbar slot.
-		network.receiveFromClient(clientId1, _wrapSubAction(entity1, new EntityChangeChangeHotbarSlot(1)), 1L);
+		network.receiveFromClient(clientId1, _wrapSubAction(new EntityChangeChangeHotbarSlot(1)), 1L);
 		Object change0 = network.waitForUpdate(clientId1, 0);
 		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
 		
@@ -674,10 +671,7 @@ public class TestServerRunner
 		Assert.assertNotNull(entity1);
 		
 		// Move them slightly so that they aren't on the world spawn.
-		EntityLocation firstStep = new EntityLocation(0.0f, 0.2f, 0.0f);
-		float speed = ENV.creatures.PLAYER.blocksPerSecond();
-		EntityLocation velocity = new EntityLocation(0.0f, speed, 0.0f);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> move = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_NORTH, OrientationHelpers.PITCH_FLAT, null);
+		EntityActionSimpleMove<IMutablePlayerEntity> move = new EntityActionSimpleMove<>(0.0f, 0.2f, EntityActionSimpleMove.Intensity.WALKING, OrientationHelpers.YAW_NORTH, OrientationHelpers.PITCH_FLAT, null);
 		network.receiveFromClient(clientId1, move, 1L);
 		Object change0 = network.waitForUpdate(clientId1, 0);
 		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
@@ -689,7 +683,7 @@ public class TestServerRunner
 		
 		// Now, inject the action to reset the day and spawn for them.
 		Assert.assertEquals(0, config.dayStartTick);
-		network.receiveFromClient(clientId1, _wrapSubAction(entity1, new EntityChangeSetDayAndSpawn(new AbsoluteLocation(1, 1, 1))), 2L);
+		network.receiveFromClient(clientId1, _wrapSubAction(new EntityChangeSetDayAndSpawn(new AbsoluteLocation(1, 1, 1))), 2L);
 		EntityLocation spawn = entity1.location();
 		// Wait for 4 ticks for the broadcast to happen (it since it won't come until "after" the tick where this was scheduled and we may already be waiting for the previous tick).
 		network.waitForServer(4L);
@@ -883,7 +877,7 @@ public class TestServerRunner
 		
 		// Activate the loader.
 		EntityChangeSetBlockLogicState setLogic = new EntityChangeSetBlockLogicState(new AbsoluteLocation(0, 1, 1), true);
-		network.receiveFromClient(clientId1, _wrapSubAction(entity1, setLogic), 1L);
+		network.receiveFromClient(clientId1, _wrapSubAction(setLogic), 1L);
 		Object mutation = network.waitForUpdate(clientId1, 0);
 		Assert.assertTrue(mutation instanceof MutationBlockSetBlock);
 		
@@ -918,11 +912,11 @@ public class TestServerRunner
 		cuboidLoader.preload(cuboid);
 	}
 
-	private static EntityChangeTopLevelMovement<IMutablePlayerEntity> _wrapSubAction(Entity entity, IEntitySubAction<IMutablePlayerEntity> subAction)
+	private static EntityActionSimpleMove<IMutablePlayerEntity> _wrapSubAction(IEntitySubAction<IMutablePlayerEntity> subAction)
 	{
-		return new EntityChangeTopLevelMovement<>(entity.location()
-			, entity.velocity()
-			, EntityChangeTopLevelMovement.Intensity.STANDING
+		return new EntityActionSimpleMove<>(0.0f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.STANDING
 			, OrientationHelpers.YAW_NORTH
 			, OrientationHelpers.PITCH_FLAT
 			, subAction
@@ -1190,7 +1184,7 @@ public class TestServerRunner
 				this.wait();
 			}
 		}
-		public void receiveFromClient(int clientId, EntityChangeTopLevelMovement<IMutablePlayerEntity> mutation, long commitLevel)
+		public void receiveFromClient(int clientId, EntityActionSimpleMove<IMutablePlayerEntity> mutation, long commitLevel)
 		{
 			Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(mutation, commitLevel);
 			boolean wasEmpty;

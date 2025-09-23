@@ -6,7 +6,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
-import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.IEntityUpdate;
@@ -540,7 +540,7 @@ public class ServerRunner
 			_network.sendEntityEvent(clientId, type, cause, optionalLocation, entityTarget, entitySource);
 		}
 		@Override
-		public boolean runner_enqueueEntityChange(int entityId, EntityChangeTopLevelMovement<IMutablePlayerEntity> change, long commitLevel)
+		public boolean runner_enqueueEntityChange(int entityId, EntityActionSimpleMove<IMutablePlayerEntity> change, long commitLevel)
 		{
 			return _tickRunner.enqueueEntityChange(entityId, change, commitLevel);
 		}

@@ -11,7 +11,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
@@ -188,7 +188,7 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		
 		// Observe that this came out in the network.
-		Assert.assertTrue(network.toSend instanceof EntityChangeTopLevelMovement<IMutablePlayerEntity>);
+		Assert.assertTrue(network.toSend instanceof EntityActionSimpleMove<IMutablePlayerEntity>);
 		Assert.assertEquals(1L, network.commitLevel);
 		
 		// The would normally send a setBlock but we will just echo the normal mutation, to keep this simple.
@@ -213,7 +213,7 @@ public class TestClientRunner
 		network.client.receivedEndOfTick(5L, 1L);
 		currentTimeMillis += 100L;
 		runner.runPendingCalls(currentTimeMillis);
-		Assert.assertTrue(network.toSend instanceof EntityChangeTopLevelMovement<IMutablePlayerEntity>);
+		Assert.assertTrue(network.toSend instanceof EntityActionSimpleMove<IMutablePlayerEntity>);
 		Assert.assertEquals(2L, network.commitLevel);
 		network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.authoritativeEntity, network.toSend));
 		network.client.receivedEndOfTick(6L, 2L);
@@ -270,6 +270,7 @@ public class TestClientRunner
 		runner.commonApplyEntityAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.log_to_planks")), currentTimeMillis);
 		runner.standStill(currentTimeMillis);
 		currentTimeMillis += 100L;
+		runner.commonApplyEntityAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.log_to_planks")), currentTimeMillis);
 		runner.standStill(currentTimeMillis);
 		// Verify that we now see this in the entity.
 		Assert.assertNotNull(projection.thisEntity.localCraftOperation());
@@ -471,7 +472,7 @@ public class TestClientRunner
 			network.toSend = null;
 		}
 		// Compare this walked distance to what we have experimentally verified.
-		Assert.assertEquals(new EntityLocation(19.66f, 0.0f, 0.0f), projection.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(20.8f, 0.0f, 0.0f), projection.thisEntity.location());
 		Assert.assertTrue(projection.events.isEmpty());
 	}
 
@@ -614,7 +615,7 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		
 		// Observe that this came out in the network.
-		Assert.assertTrue(network.toSend instanceof EntityChangeTopLevelMovement<IMutablePlayerEntity>);
+		Assert.assertTrue(network.toSend instanceof EntityActionSimpleMove<IMutablePlayerEntity>);
 		Assert.assertTrue(1L == network.commitLevel);
 		
 		// They would normally send a setBlock but we will just echo the normal mutation, to keep this simple.
@@ -748,7 +749,7 @@ public class TestClientRunner
 	private static class TestAdapter implements IClientAdapter
 	{
 		public IClientAdapter.IListener client;
-		public EntityChangeTopLevelMovement<IMutablePlayerEntity> toSend;
+		public EntityActionSimpleMove<IMutablePlayerEntity> toSend;
 		public long commitLevel;
 		public int clientViewDistance = -1;
 		@Override
@@ -762,7 +763,7 @@ public class TestClientRunner
 		{
 		}
 		@Override
-		public void sendChange(EntityChangeTopLevelMovement<IMutablePlayerEntity> change, long commitLevel)
+		public void sendChange(EntityActionSimpleMove<IMutablePlayerEntity> change, long commitLevel)
 		{
 			this.toSend = change;
 			this.commitLevel = commitLevel;

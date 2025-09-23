@@ -18,7 +18,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 
-import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidHeightMap;
@@ -278,7 +278,7 @@ public class TickRunner
 	 * @param commitLevel The client's commit level associated with this change.
 	 * @return True if this was enqueued, false if the client should be disconnected.
 	 */
-	public boolean enqueueEntityChange(int entityId, EntityChangeTopLevelMovement<IMutablePlayerEntity> change, long commitLevel)
+	public boolean enqueueEntityChange(int entityId, EntityActionSimpleMove<IMutablePlayerEntity> change, long commitLevel)
 	{
 		// TODO:  We should validate these parameters closer to the decoding point.
 		Assert.assertTrue(entityId > 0);
@@ -799,7 +799,7 @@ public class TickRunner
 				List<SuspendedEntity> newEntities;
 				List<Integer> removedEntityIds;
 				List<_OperatorMutationWrapper> operatorMutations;
-				Map<Integer, EntityChangeTopLevelMovement<IMutablePlayerEntity>> newEntityChanges = new HashMap<>();
+				Map<Integer, EntityActionSimpleMove<IMutablePlayerEntity>> newEntityChanges = new HashMap<>();
 				Map<Integer, Long> newCommitLevels = new HashMap<>();
 				
 				_sharedDataLock.lock();
@@ -995,7 +995,7 @@ public class TickRunner
 					_scheduleChangesForEntity(nextTickChanges, id, new LinkedList<>(entry.getValue()));
 				}
 				snapshotEntityMutations = null;
-				for (Map.Entry<Integer, EntityChangeTopLevelMovement<IMutablePlayerEntity>> container : newEntityChanges.entrySet())
+				for (Map.Entry<Integer, EntityActionSimpleMove<IMutablePlayerEntity>> container : newEntityChanges.entrySet())
 				{
 					// These are coming in from outside, so they should be run immediately (no delay for future), after anything already scheduled from the previous tick.
 					ScheduledChange change = new ScheduledChange(container.getValue(), 0L);
@@ -1329,7 +1329,7 @@ public class TickRunner
 	/**
 	 * A wrapper over the IMutationEntity to store commit level data.
 	 */
-	private static record _EntityMutationWrapper(EntityChangeTopLevelMovement<IMutablePlayerEntity> mutation, long commitLevel) {}
+	private static record _EntityMutationWrapper(EntityActionSimpleMove<IMutablePlayerEntity> mutation, long commitLevel) {}
 
 	/**
 	 * A wrapper over the IMutationEntity with associated entity ID.

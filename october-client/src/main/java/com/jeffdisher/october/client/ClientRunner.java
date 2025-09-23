@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.LongConsumer;
 
-import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
@@ -137,7 +137,7 @@ public class ClientRunner
 	 */
 	public void walk(MovementAccumulator.Relative relativeDirection, boolean runningSpeed, long currentTimeMillis)
 	{
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> complete = _accumulator.walk(currentTimeMillis, relativeDirection, runningSpeed);
+		EntityActionSimpleMove<IMutablePlayerEntity> complete = _accumulator.walk(currentTimeMillis, relativeDirection, runningSpeed);
 		_endAction(complete, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
 		_lastCallMillis = currentTimeMillis;
@@ -151,7 +151,7 @@ public class ClientRunner
 	 */
 	public void sneak(MovementAccumulator.Relative relativeDirection, long currentTimeMillis)
 	{
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> complete = _accumulator.sneak(currentTimeMillis, relativeDirection);
+		EntityActionSimpleMove<IMutablePlayerEntity> complete = _accumulator.sneak(currentTimeMillis, relativeDirection);
 		_endAction(complete, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
 		_lastCallMillis = currentTimeMillis;
@@ -165,7 +165,7 @@ public class ClientRunner
 	public void standStill(long currentTimeMillis)
 	{
 		// We will interpret this as just standing, since that also accounts for falling.
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> complete = _accumulator.stand(currentTimeMillis);
+		EntityActionSimpleMove<IMutablePlayerEntity> complete = _accumulator.stand(currentTimeMillis);
 		_endAction(complete, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
 		_lastCallMillis = currentTimeMillis;
@@ -233,7 +233,7 @@ public class ClientRunner
 		}
 	}
 
-	private void _endAction(EntityChangeTopLevelMovement<IMutablePlayerEntity> optionalOutput, long currentTimeMillis)
+	private void _endAction(EntityActionSimpleMove<IMutablePlayerEntity> optionalOutput, long currentTimeMillis)
 	{
 		if (null != optionalOutput)
 		{

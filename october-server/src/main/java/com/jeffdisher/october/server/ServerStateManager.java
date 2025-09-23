@@ -13,7 +13,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.jeffdisher.october.actions.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.CuboidData;
@@ -1023,7 +1023,7 @@ public class ServerStateManager
 		void network_sendChatMessage(int clientId, int senderId, String message);
 		
 		// TickRunner.
-		boolean runner_enqueueEntityChange(int entityId, EntityChangeTopLevelMovement<IMutablePlayerEntity> change, long commitLevel);
+		boolean runner_enqueueEntityChange(int entityId, EntityActionSimpleMove<IMutablePlayerEntity> change, long commitLevel);
 		
 		// Misc.
 		void handleClientUpdateOptions(int clientId, int clientViewDistance);
