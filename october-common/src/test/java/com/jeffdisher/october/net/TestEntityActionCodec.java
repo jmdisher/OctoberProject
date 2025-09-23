@@ -9,15 +9,9 @@ import org.junit.Test;
 
 import com.jeffdisher.october.actions.Deprecated_EntityChangeTakeDamageFromOther;
 import com.jeffdisher.october.actions.EntityChangeTakeDamageFromEntity;
-import com.jeffdisher.october.actions.Deprecated_EntityChangeTopLevelMovement;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.subactions.EntityChangeJump;
-import com.jeffdisher.october.subactions.EntitySubActionRequestSwapSpecialSlot;
-import com.jeffdisher.october.subactions.EntitySubActionTravelViaBlock;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BodyPart;
-import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 
@@ -69,100 +63,6 @@ public class TestEntityActionCodec
 			, false
 		));
 		Assert.assertTrue(read instanceof Deprecated_EntityChangeTakeDamageFromOther);
-		Assert.assertEquals(0, buffer.remaining());
-	}
-
-	@Test
-	public void topLevel() throws Throwable
-	{
-		EntityLocation newLocation = new EntityLocation(0.5f, 0.0f, 0.0f);
-		EntityLocation newVelocity = new EntityLocation(5.0f, 0.0f, 0.0f);
-		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new Deprecated_EntityChangeTopLevelMovement<>(newLocation
-			, newVelocity
-			, Deprecated_EntityChangeTopLevelMovement.Intensity.WALKING
-			, (byte)0
-			, (byte)0
-			, null
-		);
-		
-		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		EntityActionCodec.serializeToBuffer(buffer, action);
-		buffer.flip();
-		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV
-			, buffer
-			, false
-		));
-		Assert.assertTrue(read instanceof Deprecated_EntityChangeTopLevelMovement);
-		Assert.assertNull(((Deprecated_EntityChangeTopLevelMovement<?>)read).test_getSubAction());
-		Assert.assertEquals(0, buffer.remaining());
-		
-		EntityChangeJump<IMutablePlayerEntity> jump = new EntityChangeJump<>();
-		action = new Deprecated_EntityChangeTopLevelMovement<>(newLocation
-			, newVelocity
-			, Deprecated_EntityChangeTopLevelMovement.Intensity.WALKING
-			, (byte)5
-			, (byte)6
-			, jump
-		);
-		
-		buffer = ByteBuffer.allocate(1024);
-		EntityActionCodec.serializeToBuffer(buffer, action);
-		buffer.flip();
-		read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV
-			, buffer
-			, false
-		));
-		Assert.assertTrue(read instanceof Deprecated_EntityChangeTopLevelMovement);
-		Assert.assertTrue(((Deprecated_EntityChangeTopLevelMovement<?>)read).test_getSubAction() instanceof EntityChangeJump);
-		Assert.assertEquals(0, buffer.remaining());
-	}
-
-	@Test
-	public void swapped() throws Throwable
-	{
-		AbsoluteLocation target = new AbsoluteLocation(-10, 6, 0);
-		boolean sendAll = true;
-		EntitySubActionRequestSwapSpecialSlot change = new EntitySubActionRequestSwapSpecialSlot(target, sendAll);
-		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new Deprecated_EntityChangeTopLevelMovement<>(target.toEntityLocation()
-			, new EntityLocation(0.0f, 0.0f, 0.0f)
-			, Deprecated_EntityChangeTopLevelMovement.Intensity.STANDING
-			, (byte)0
-			, (byte)0
-			, change
-		);
-		
-		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		EntityActionCodec.serializeToBuffer(buffer, action);
-		buffer.flip();
-		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV
-			, buffer
-			, false
-		));
-		Assert.assertTrue(read instanceof Deprecated_EntityChangeTopLevelMovement);
-		Assert.assertEquals(0, buffer.remaining());
-	}
-
-	@Test
-	public void travel() throws Throwable
-	{
-		AbsoluteLocation target = new AbsoluteLocation(-10, 6, 0);
-		EntitySubActionTravelViaBlock change = new EntitySubActionTravelViaBlock(target);
-		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new Deprecated_EntityChangeTopLevelMovement<>(target.toEntityLocation()
-			, new EntityLocation(0.0f, 0.0f, 0.0f)
-			, Deprecated_EntityChangeTopLevelMovement.Intensity.STANDING
-			, (byte)0
-			, (byte)0
-			, change
-		);
-		
-		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		EntityActionCodec.serializeToBuffer(buffer, action);
-		buffer.flip();
-		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV
-			, buffer
-			, false
-		));
-		Assert.assertTrue(read instanceof Deprecated_EntityChangeTopLevelMovement);
 		Assert.assertEquals(0, buffer.remaining());
 	}
 }

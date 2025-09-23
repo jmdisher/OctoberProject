@@ -9,7 +9,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.jeffdisher.october.actions.Deprecated_EntityChangeTopLevelMovement;
+import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
@@ -90,15 +90,15 @@ public class TestCrowdProcessor
 		Assert.assertNull(group.entityOutput().get(entityId).entity());
 		
 		// Then, we will run another call with a standing change, and show that the fall damage is applied.
-		EntityLocation fallTarget = new EntityLocation(16.8f, 16.8f, 16.0f);
-		EntityLocation allStop = new EntityLocation(0.0f, 0.0f, 0.0f);
-		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> topLevel = new Deprecated_EntityChangeTopLevelMovement<>(fallTarget
-			, allStop
-			, Deprecated_EntityChangeTopLevelMovement.Intensity.STANDING
+		EntityActionSimpleMove<IMutablePlayerEntity> topLevel = new EntityActionSimpleMove<>(0.0f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.STANDING
 			, OrientationHelpers.YAW_NORTH
 			, OrientationHelpers.PITCH_FLAT
 			, null
 		);
+		EntityLocation fallTarget = new EntityLocation(16.8f, 16.8f, 16.0f);
+		EntityLocation allStop = new EntityLocation(0.0f, 0.0f, 0.0f);
 		ScheduledChange singleChange = new ScheduledChange(topLevel, 0L);
 		group = CrowdProcessor.processCrowdGroupParallel(thread
 			, context

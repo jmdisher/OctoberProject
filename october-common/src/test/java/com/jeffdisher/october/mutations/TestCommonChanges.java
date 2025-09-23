@@ -18,7 +18,6 @@ import com.jeffdisher.october.actions.EntityChangeOperatorSetLocation;
 import com.jeffdisher.october.actions.EntityChangeOperatorSpawnCreature;
 import com.jeffdisher.october.actions.EntityChangePeriodic;
 import com.jeffdisher.october.actions.EntityChangeTakeDamageFromEntity;
-import com.jeffdisher.october.actions.Deprecated_EntityChangeTopLevelMovement;
 import com.jeffdisher.october.actions.MutationEntityStoreToInventory;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
@@ -33,6 +32,7 @@ import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
+import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
@@ -101,7 +101,6 @@ public class TestCommonChanges
 	private static Item IRON_SWORD_ITEM;
 	private static Item IRON_AXE_ITEM;
 	private static Block STONE;
-	private static Block WATER_SOURCE;
 	private static Block LADDER;
 	private static EntityType COW;
 	@BeforeClass
@@ -115,7 +114,6 @@ public class TestCommonChanges
 		IRON_SWORD_ITEM = ENV.items.getItemById("op.iron_sword");
 		IRON_AXE_ITEM = ENV.items.getItemById("op.iron_axe");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
-		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
 		LADDER = ENV.blocks.fromItem(ENV.items.getItemById("op.ladder"));
 		COW = ENV.creatures.getTypeById("op.cow");
 	}
@@ -156,8 +154,7 @@ public class TestCommonChanges
 		_stand(context, newEntity);
 		TickUtils.endOfTick(context, newEntity);
 		Assert.assertEquals(0.0f, newEntity.newLocation.z(), 0.01f);
-		// However, the vector is still drawing us down (since the vector is updated at the beginning of the move, not the end).
-		Assert.assertEquals(-5.88f, newEntity.newVelocity.z(), 0.01f);
+		Assert.assertEquals(0.0f, newEntity.newVelocity.z(), 0.01f);
 		
 		// Fall one last time to finalize "impact".
 		context = _createNextTick(context, 100L);
@@ -481,7 +478,7 @@ public class TestCommonChanges
 			_stand(context, newEntity);
 			TickUtils.endOfTick(context, newEntity);
 		}
-		Assert.assertEquals(15.1f, newEntity.newLocation.z(), 0.01f);
+		Assert.assertEquals(14.61f, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(-9.8, newEntity.newVelocity.z(), 0.01f);
 	}
 
@@ -1700,8 +1697,8 @@ public class TestCommonChanges
 		// Try a few ticks to see how our motion changes - the specific values are derived from how we implement _stand, so they aren't too important.
 		_stand(context, newEntity);
 		TickUtils.endOfTick(context, newEntity);
-		Assert.assertEquals(5.56, newEntity.newLocation.z(), 0.01f);
-		Assert.assertEquals(5.39f, newEntity.newVelocity.z(), 0.01f);
+		Assert.assertEquals(5.25f, newEntity.newLocation.z(), 0.01f);
+		Assert.assertEquals(2.45f, newEntity.newVelocity.z(), 0.01f);
 		// See how long it takes for the viscosity to slow us and gravity to act on us until we start to descend.
 		int ticks = 0;
 		while (newEntity.newVelocity.z() > 0.0f)
@@ -1711,9 +1708,9 @@ public class TestCommonChanges
 			ticks += 1;
 		}
 		// Verify the expected tick count, location, and velocity (experimentally derived).
-		Assert.assertEquals(11, ticks);
-		Assert.assertEquals(8.52f, newEntity.newLocation.z(), 0.01f);
-		Assert.assertEquals(0.0f, newEntity.newVelocity.z(), 0.01f);
+		Assert.assertEquals(2, ticks);
+		Assert.assertEquals(5.31f, newEntity.newLocation.z(), 0.01f);
+		Assert.assertEquals(-0.12f, newEntity.newVelocity.z(), 0.01f);
 	}
 
 	@Test
@@ -2400,94 +2397,6 @@ public class TestCommonChanges
 	}
 
 	@Test
-	public void simpleTopLevel()
-	{
-		// We just want to show that the entity can move using this top-level movement helper.
-		// Note that it doesn't currently check the validity of movements.
-		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
-		EntityLocation newVelocity = new EntityLocation(4.0f, 0.0f, 0.0f);
-		MutableEntity newEntity = MutableEntity.createForTest(1);
-		newEntity.newLocation = oldLocation;
-		TickProcessingContext context = _createSimpleContext();
-		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new Deprecated_EntityChangeTopLevelMovement<>(newLocation
-			, newVelocity
-			, Deprecated_EntityChangeTopLevelMovement.Intensity.WALKING
-			, (byte)5
-			, (byte)6
-			, null
-		);
-		boolean didApply = action.applyChange(context, newEntity);
-		Assert.assertTrue(didApply);
-		Assert.assertEquals(newLocation, newEntity.newLocation);
-		Assert.assertEquals(newVelocity, newEntity.newVelocity);
-		Assert.assertEquals(EntityChangePeriodic.ENERGY_COST_PER_TICK_WALKING, newEntity.newEnergyDeficit);
-		Assert.assertEquals(5, newEntity.newYaw);
-		Assert.assertEquals(6, newEntity.newPitch);
-	}
-
-	@Test
-	public void coastToStopTopLevel()
-	{
-		// Show that when we coast to a stop, while falling, the check on the change passes.
-		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 5.0f);
-		EntityLocation oldVelocity = new EntityLocation(0.8f, 0.0f, -1.0f);
-		EntityLocation newLocation = new EntityLocation(0.04f, 0.0f, 4.0f);
-		EntityLocation newVelocity = new EntityLocation(0.0f, 0.0f, -2.0f);
-		MutableEntity newEntity = MutableEntity.createForTest(1);
-		newEntity.newLocation = oldLocation;
-		newEntity.newVelocity = oldVelocity;
-		CuboidData water = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), WATER_SOURCE);
-		TickProcessingContext context = ContextBuilder.build()
-				.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
-				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), water), null)
-				.finish()
-		;
-		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new Deprecated_EntityChangeTopLevelMovement<>(newLocation
-			, newVelocity
-			, Deprecated_EntityChangeTopLevelMovement.Intensity.STANDING
-			, (byte)5
-			, (byte)6
-			, null
-		);
-		boolean didApply = action.applyChange(context, newEntity);
-		Assert.assertTrue(didApply);
-		Assert.assertEquals(newLocation, newEntity.newLocation);
-		Assert.assertEquals(newVelocity, newEntity.newVelocity);
-	}
-
-	@Test
-	public void coastInAir()
-	{
-		// Show how we handle the case where the entity is coasting while hanging in the air on the client side (small time units).
-		EntityLocation oldLocation = new EntityLocation(41.87f, -93.59f, 8.38f);
-		EntityLocation oldVelocity = new EntityLocation(-1.95f, 0.0f, -3.92f);
-		EntityLocation newLocation = new EntityLocation(41.85f, -93.59f, 8.31f);
-		EntityLocation newVelocity = new EntityLocation(-0.97f, 0.0f, -4.09f);
-		MutableEntity newEntity = MutableEntity.createForTest(1);
-		newEntity.newLocation = oldLocation;
-		newEntity.newVelocity = oldVelocity;
-		CuboidData air = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, -4, 0), ENV.special.AIR);
-		TickProcessingContext context = ContextBuilder.build()
-				.millisPerTick(17L)
-				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), air), null)
-				.finish()
-		;
-		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new Deprecated_EntityChangeTopLevelMovement<>(newLocation
-			, newVelocity
-			, Deprecated_EntityChangeTopLevelMovement.Intensity.STANDING
-			, (byte)5
-			, (byte)6
-			, null
-		);
-		
-		boolean didApply = action.applyChange(context, newEntity);
-		Assert.assertTrue(didApply);
-		Assert.assertEquals(newLocation, newEntity.newLocation);
-		Assert.assertEquals(newVelocity, newEntity.newVelocity);
-	}
-
-	@Test
 	public void invalidCraft() throws Throwable
 	{
 		Craft logToPlanks = ENV.crafting.getCraftById("op.log_to_planks");
@@ -2499,9 +2408,9 @@ public class TestCommonChanges
 		
 		// Craft some items to use these up and verify that the selection is cleared.
 		EntityChangeCraft craft = new EntityChangeCraft(logToPlanks);
-		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> topLevel = new Deprecated_EntityChangeTopLevelMovement<>(newEntity.newLocation
-			, newEntity.newVelocity
-			, Deprecated_EntityChangeTopLevelMovement.Intensity.STANDING
+		EntityActionSimpleMove<IMutablePlayerEntity> topLevel = new EntityActionSimpleMove<>(0.0f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.STANDING
 			, (byte)0
 			, (byte)0
 			, craft
@@ -2557,13 +2466,12 @@ public class TestCommonChanges
 		// We just show that the validation works for moving at double normal speed.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		EntityLocation newLocation = new EntityLocation(0.8f, 0.0f, 0.0f);
-		EntityLocation newVelocity = new EntityLocation(8.0f, 0.0f, 0.0f);
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = oldLocation;
 		TickProcessingContext context = _createSimpleContext();
-		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new Deprecated_EntityChangeTopLevelMovement<>(newLocation
-			, newVelocity
-			, Deprecated_EntityChangeTopLevelMovement.Intensity.RUNNING
+		EntityActionSimpleMove<IMutablePlayerEntity> action = new EntityActionSimpleMove<>(0.8f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.RUNNING
 			, (byte)5
 			, (byte)6
 			, null
@@ -2571,7 +2479,7 @@ public class TestCommonChanges
 		boolean didApply = action.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
 		Assert.assertEquals(newLocation, newEntity.newLocation);
-		Assert.assertEquals(newVelocity, newEntity.newVelocity);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.newVelocity);
 		Assert.assertEquals(EntityChangePeriodic.ENERGY_COST_PER_TICK_RUNNING, newEntity.newEnergyDeficit);
 		Assert.assertEquals(5, newEntity.newYaw);
 		Assert.assertEquals(6, newEntity.newPitch);
@@ -2719,11 +2627,11 @@ public class TestCommonChanges
 		
 		// Show that this still works as a sub-action.
 		EntityLocation newLocation = new EntityLocation(5.0f, 5.1f, 0.8f);
-		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> topLevel = new Deprecated_EntityChangeTopLevelMovement<>(newLocation
-			, new EntityLocation(0.0f, 2.0f, 0.0f)
-			, Deprecated_EntityChangeTopLevelMovement.Intensity.WALKING
-			, (byte)5
-			, (byte)6
+		EntityActionSimpleMove<IMutablePlayerEntity> topLevel = new EntityActionSimpleMove<>(0.0f
+			, 0.1f
+			, EntityActionSimpleMove.Intensity.WALKING
+			, (byte)0
+			, (byte)0
 			, descend
 		);
 		Assert.assertTrue(topLevel.applyChange(context, mutable3));
@@ -3183,11 +3091,11 @@ public class TestCommonChanges
 			}
 		});
 		
-		Deprecated_EntityChangeTopLevelMovement<IMutablePlayerEntity> stand = new Deprecated_EntityChangeTopLevelMovement<>(outLocation[0]
-			, outVelocity[0]
-			, Deprecated_EntityChangeTopLevelMovement.Intensity.STANDING
-			, (byte)0
-			, (byte)0
+		EntityActionSimpleMove<IMutablePlayerEntity> stand = new EntityActionSimpleMove<>(0.0f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.STANDING
+			, OrientationHelpers.YAW_NORTH
+			, OrientationHelpers.PITCH_FLAT
 			, null
 		);
 		Assert.assertTrue(stand.applyChange(context, mutableEntity));
