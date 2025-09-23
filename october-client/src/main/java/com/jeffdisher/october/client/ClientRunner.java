@@ -93,7 +93,7 @@ public class ClientRunner
 	public void commonApplyEntityAction(IEntitySubAction<IMutablePlayerEntity> change, long currentTimeMillis)
 	{
 		// Note that this might fail.
-		_accumulator.enqueueSubAction(change);
+		_accumulator.enqueueSubAction(change, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
 		_lastCallMillis = currentTimeMillis;
 	}

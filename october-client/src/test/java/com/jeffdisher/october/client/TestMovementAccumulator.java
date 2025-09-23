@@ -168,7 +168,7 @@ public class TestMovementAccumulator
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
 		
-		boolean didJump = accumulator.enqueueSubAction(new EntityChangeJump<>());
+		boolean didJump = accumulator.enqueueSubAction(new EntityChangeJump<>(), currentTimeMillis);
 		Assert.assertTrue(didJump);
 		currentTimeMillis += 20L;
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
@@ -207,7 +207,7 @@ public class TestMovementAccumulator
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
 		
-		boolean didJump = accumulator.enqueueSubAction(new EntityChangeJump<>());
+		boolean didJump = accumulator.enqueueSubAction(new EntityChangeJump<>(), currentTimeMillis);
 		Assert.assertTrue(didJump);
 		currentTimeMillis += 20L;
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
@@ -374,7 +374,7 @@ public class TestMovementAccumulator
 		accumulator.clearAccumulation();
 		
 		// Swim, then move forward until the action is generated, and again to see that the swim impacts the second action.
-		boolean didSwim = accumulator.enqueueSubAction(new EntityChangeSwim<>());
+		boolean didSwim = accumulator.enqueueSubAction(new EntityChangeSwim<>(), currentTimeMillis);
 		Assert.assertTrue(didSwim);
 		currentTimeMillis += 20L;
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
@@ -446,7 +446,7 @@ public class TestMovementAccumulator
 		// Place a block and verify that the output information is correct for local accumulation.
 		long millisPerMove = 60L;
 		currentTimeMillis += millisPerMove;
-		accumulator.enqueueSubAction(new MutationPlaceSelectedBlock(new AbsoluteLocation(15, 15, 15), new AbsoluteLocation(15, 16, 15)));
+		accumulator.enqueueSubAction(new MutationPlaceSelectedBlock(new AbsoluteLocation(15, 15, 15), new AbsoluteLocation(15, 16, 15)), currentTimeMillis);
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
@@ -591,7 +591,7 @@ public class TestMovementAccumulator
 		// Enqueue a craft operation and run a standing iteration to see that it does set the local crafting operation but that the following tick, without continuing, abandons it.
 		long millisPerMove = millisPerTick;
 		currentTimeMillis += millisPerMove;
-		accumulator.enqueueSubAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.log_to_planks")));
+		accumulator.enqueueSubAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.log_to_planks")), currentTimeMillis);
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(out.test_getSubAction() instanceof EntityChangeCraft);
@@ -638,7 +638,7 @@ public class TestMovementAccumulator
 		AbsoluteLocation targetBlock = entity.location().getBlockLocation();
 		long millisPerMove = millisPerTick;
 		currentTimeMillis += millisPerMove;
-		accumulator.enqueueSubAction(new EntityChangeIncrementalBlockBreak(targetBlock));
+		accumulator.enqueueSubAction(new EntityChangeIncrementalBlockBreak(targetBlock), currentTimeMillis);
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(out.test_getSubAction() instanceof EntityChangeIncrementalBlockBreak);
@@ -726,7 +726,7 @@ public class TestMovementAccumulator
 		
 		// Enqueue and then stand around for a bit (enough that we will properly collide with the ground).
 		currentTimeMillis += 25L;
-		accumulator.enqueueSubAction(new EntityChangeChangeHotbarSlot(1));
+		accumulator.enqueueSubAction(new EntityChangeChangeHotbarSlot(1), currentTimeMillis);
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
@@ -814,7 +814,7 @@ public class TestMovementAccumulator
 		// Enqueue and then stand around for a bit (enough that we will properly collide with the ground).
 		currentTimeMillis += 25L;
 		AbsoluteLocation targetLocation = new AbsoluteLocation(4, 5, 7);
-		accumulator.enqueueSubAction(new MutationPlaceSelectedBlock(targetLocation, targetLocation.getRelative(0, 0, -1)));
+		accumulator.enqueueSubAction(new MutationPlaceSelectedBlock(targetLocation, targetLocation.getRelative(0, 0, -1)), currentTimeMillis);
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		// Note that this will produce nothing and will actually reset the accumulation since it changes nothing about the entity - it will cue up the sub-action, though.
 		Assert.assertNull(out);
@@ -944,7 +944,7 @@ public class TestMovementAccumulator
 		// Enqueue an action which we know will fail and observe that the top-level is still produced and passes.
 		long millisPerMove = millisPerTick;
 		currentTimeMillis += millisPerMove;
-		accumulator.enqueueSubAction(new EntityChangeChangeHotbarSlot(0));
+		accumulator.enqueueSubAction(new EntityChangeChangeHotbarSlot(0), currentTimeMillis);
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.BACKWARD, false);
 		Assert.assertNotNull(out);
 		Assert.assertNull(out.test_getSubAction());

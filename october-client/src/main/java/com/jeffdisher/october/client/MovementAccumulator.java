@@ -52,7 +52,9 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class MovementAccumulator
 {
+	public static final float DEFAULT_SPEED_MULTIPLIER = 1.0f;
 	public static final float SNEAK_SPEED_MULTIPLIER = 0.5f;
+	public static final float STANDING_SPEED_MULTIPLIER = 0.0f;
 
 	private final Environment _env;
 	private final IProjectionListener _listener;
@@ -165,8 +167,8 @@ public class MovementAccumulator
 			? EntityChangeTopLevelMovement.Intensity.RUNNING
 			: EntityChangeTopLevelMovement.Intensity.WALKING
 		;
-		
-		return _commonWalking(currentTimeMillis, relativeDirection, intensity, 1.0f, false);
+		float speedMultiplier = DEFAULT_SPEED_MULTIPLIER;
+		return _commonWalking(currentTimeMillis, relativeDirection, intensity, speedMultiplier, false);
 	}
 
 	/**
@@ -199,9 +201,10 @@ public class MovementAccumulator
 	 * sub-action.
 	 * 
 	 * @param subAction The sub-action to enqueue.
+	 * @param currentTimeMillis The current time.
 	 * @return True if the action was enqueued, false if there is already one waiting.
 	 */
-	public boolean enqueueSubAction(IEntitySubAction<IMutablePlayerEntity> subAction)
+	public boolean enqueueSubAction(IEntitySubAction<IMutablePlayerEntity> subAction, long currentTimeMillis)
 	{
 		// This is applied directly to the current accumulation, unless there already is a sub-action.
 		boolean didApply = false;
