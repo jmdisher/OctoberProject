@@ -24,10 +24,12 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IEntitySubAction<T>
 {
 	/**
-	 * We will make the swim force 0.5x the force of gravity since that is the current jump force but this will change
+	 * We will make the swim force 0.6x the force of gravity since that is the current jump force but this will change
 	 * with experimentation and "play feel" later on.
+	 * NOTE:  This was changed from 0.5x when the EntityActionSimpleMove was introduced to apply gravity at the start of
+	 * the tick, not the end.
 	 */
-	public static final float SWIM_FORCE = -0.5f * EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND;
+	public static final float SWIM_FORCE = -0.6f * EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND;
 	public static final EntitySubActionType TYPE = EntitySubActionType.SWIM;
 
 	public static boolean canSwim(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp

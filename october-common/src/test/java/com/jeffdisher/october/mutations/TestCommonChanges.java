@@ -144,7 +144,7 @@ public class TestCommonChanges
 		
 		// Try a few falling steps to see how we sink back to the ground.
 		// (we will use 50ms updates to see the more detailed arc)
-		for (int i = 0; i < 18; ++i)
+		for (int i = 0; i < 22; ++i)
 		{
 			context = _createNextTick(context, 50L);
 			_stand(context, newEntity);
@@ -155,9 +155,9 @@ public class TestCommonChanges
 		context = _createNextTick(context, 100L);
 		_stand(context, newEntity);
 		TickUtils.endOfTick(context, newEntity);
-		Assert.assertTrue(0.0f == newEntity.newLocation.z());
+		Assert.assertEquals(0.0f, newEntity.newLocation.z(), 0.01f);
 		// However, the vector is still drawing us down (since the vector is updated at the beginning of the move, not the end).
-		Assert.assertEquals(-4.9f, newEntity.newVelocity.z(), 0.01f);
+		Assert.assertEquals(-5.88f, newEntity.newVelocity.z(), 0.01f);
 		
 		// Fall one last time to finalize "impact".
 		context = _createNextTick(context, 100L);
@@ -1700,8 +1700,8 @@ public class TestCommonChanges
 		// Try a few ticks to see how our motion changes - the specific values are derived from how we implement _stand, so they aren't too important.
 		_stand(context, newEntity);
 		TickUtils.endOfTick(context, newEntity);
-		Assert.assertEquals(5.47, newEntity.newLocation.z(), 0.01f);
-		Assert.assertEquals(4.41f, newEntity.newVelocity.z(), 0.01f);
+		Assert.assertEquals(5.56, newEntity.newLocation.z(), 0.01f);
+		Assert.assertEquals(5.39f, newEntity.newVelocity.z(), 0.01f);
 		// See how long it takes for the viscosity to slow us and gravity to act on us until we start to descend.
 		int ticks = 0;
 		while (newEntity.newVelocity.z() > 0.0f)
@@ -1711,8 +1711,8 @@ public class TestCommonChanges
 			ticks += 1;
 		}
 		// Verify the expected tick count, location, and velocity (experimentally derived).
-		Assert.assertEquals(9, ticks);
-		Assert.assertEquals(7.45f, newEntity.newLocation.z(), 0.01f);
+		Assert.assertEquals(11, ticks);
+		Assert.assertEquals(8.52f, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(0.0f, newEntity.newVelocity.z(), 0.01f);
 	}
 
@@ -2958,28 +2958,28 @@ public class TestCommonChanges
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.newVelocity);
 		
 		Assert.assertTrue(new EntityActionSimpleMove<>(0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, new EntityChangeJump<>()).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(10.8f, 10.0f, 11.39f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(.0f, 0.0f, 3.92f), newEntity.newVelocity);
-		
-		Assert.assertTrue(new EntityActionSimpleMove<>(0.0f, 0.0f, EntityActionSimpleMove.Intensity.STANDING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(10.8f, 10.0f, 11.68f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 2.94f), newEntity.newVelocity);
-		
-		Assert.assertTrue(new EntityActionSimpleMove<>(0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(11.2f, 10.0f, 11.88f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 1.96f), newEntity.newVelocity);
-		
-		Assert.assertTrue(new EntityActionSimpleMove<>(-0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(10.8f, 10.0f, 11.98f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.98f), newEntity.newVelocity);
-		
-		Assert.assertTrue(new EntityActionSimpleMove<>(0.0f, 0.0f, EntityActionSimpleMove.Intensity.STANDING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(10.8f, 10.0f, 11.98f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.newVelocity);
+		Assert.assertEquals(new EntityLocation(10.8f, 10.0f, 11.49f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(.0f, 0.0f, 4.9f), newEntity.newVelocity);
 		
 		Assert.assertTrue(new EntityActionSimpleMove<>(0.0f, 0.0f, EntityActionSimpleMove.Intensity.STANDING, (byte)0, (byte)0, null).applyChange(context, newEntity));
 		Assert.assertEquals(new EntityLocation(10.8f, 10.0f, 11.88f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.98f), newEntity.newVelocity);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 3.92f), newEntity.newVelocity);
+		
+		Assert.assertTrue(new EntityActionSimpleMove<>(0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
+		Assert.assertEquals(new EntityLocation(11.2f, 10.0f, 12.17f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 2.94f), newEntity.newVelocity);
+		
+		Assert.assertTrue(new EntityActionSimpleMove<>(-0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
+		Assert.assertEquals(new EntityLocation(10.8f, 10.0f, 12.37f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 1.96f), newEntity.newVelocity);
+		
+		Assert.assertTrue(new EntityActionSimpleMove<>(0.0f, 0.0f, EntityActionSimpleMove.Intensity.STANDING, (byte)0, (byte)0, null).applyChange(context, newEntity));
+		Assert.assertEquals(new EntityLocation(10.8f, 10.0f, 12.47f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.98f), newEntity.newVelocity);
+		
+		Assert.assertTrue(new EntityActionSimpleMove<>(0.0f, 0.0f, EntityActionSimpleMove.Intensity.STANDING, (byte)0, (byte)0, null).applyChange(context, newEntity));
+		Assert.assertEquals(new EntityLocation(10.8f, 10.0f, 12.47f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.newVelocity);
 	}
 
 	@Test
@@ -3001,12 +3001,12 @@ public class TestCommonChanges
 		newEntity.newLocation = blockLocation.getRelative(0, 0, 1).toEntityLocation();
 		
 		Assert.assertTrue(new EntityActionSimpleMove<>(-0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, new EntityChangeJump<>()).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(9.6f, 10.0f, 11.39f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 3.92f), newEntity.newVelocity);
+		Assert.assertEquals(new EntityLocation(9.6f, 10.0f, 11.49f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 4.9f), newEntity.newVelocity);
 		
 		Assert.assertTrue(new EntityActionSimpleMove<>(-0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(9.2f, 10.0f, 11.68f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 2.94f), newEntity.newVelocity);
+		Assert.assertEquals(new EntityLocation(9.2f, 10.0f, 11.88f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 3.92f), newEntity.newVelocity);
 		
 		// Try again with a different tick rate.
 		context = ContextBuilder.build()
@@ -3019,12 +3019,12 @@ public class TestCommonChanges
 		newEntity.newLocation = blockLocation.getRelative(0, 0, 1).toEntityLocation();
 		
 		Assert.assertTrue(new EntityActionSimpleMove<>(-0.04f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, new EntityChangeJump<>()).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(9.96f, 10.0f, 11.05f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 4.8f), newEntity.newVelocity);
+		Assert.assertEquals(new EntityLocation(9.96f, 10.0f, 11.06f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 5.78f), newEntity.newVelocity);
 		
 		Assert.assertTrue(new EntityActionSimpleMove<>(-0.04f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(9.92f, 10.0f, 11.1f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 4.7f), newEntity.newVelocity);
+		Assert.assertEquals(new EntityLocation(9.92f, 10.0f, 11.12f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 5.68f), newEntity.newVelocity);
 		
 		// Test an error case we noticed with sign handling when clamping.
 		context = ContextBuilder.build()

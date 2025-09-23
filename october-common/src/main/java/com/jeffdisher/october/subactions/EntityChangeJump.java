@@ -25,10 +25,12 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public class EntityChangeJump<T extends IMutableMinimalEntity> implements IEntitySubAction<T>
 {
 	/**
-	 * We will make the jump force 0.5x the force of gravity (this was experimentally shown to jump just over 1 block
+	 * We will make the jump force 0.6x the force of gravity (this was experimentally shown to jump just over 1 block
 	 * and has a relatively "quick" feel in play testing).
+	 * NOTE:  This was changed from 0.5x when the EntityActionSimpleMove was introduced to apply gravity at the start of
+	 * the tick, not the end.
 	 */
-	public static final float JUMP_FORCE = -0.5f * EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND;
+	public static final float JUMP_FORCE = -0.6f * EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND;
 	public static final EntitySubActionType TYPE = EntitySubActionType.JUMP;
 
 	public static boolean canJump(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp

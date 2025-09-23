@@ -873,8 +873,8 @@ public class TestCreatureLogic
 		// Make sure that the movement is correct.
 		EntityChangeTopLevelMovement<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
 		Assert.assertTrue(change.applyChange(context, mutable));
-		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 1.65f), mutable.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 2.24f), mutable.newVelocity);
+		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 1.75f), mutable.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 3.22f), mutable.newVelocity);
 	}
 
 
