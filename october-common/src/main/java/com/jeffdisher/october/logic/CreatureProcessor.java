@@ -83,11 +83,17 @@ public class CreatureProcessor
 					// We just asked to create this so failure doesn't make sense.
 					Assert.assertTrue(didApply);
 				}
+				
+				// Perform our usual "end of tick" concerns.
+				// Apply fall damage.
 				byte fallDamage = TickUtils.calculateFallDamage(startZVelocity - mutable.newVelocity.z());
 				if (fallDamage > 0)
 				{
 					DamageHelpers.applyDamageDirectlyAndPostEvent(context, mutable, (byte)fallDamage, EventRecord.Cause.FALL);
 				}
+				// See if we need to "nudge" anyone this tick.
+				NudgeHelpers.nudgeAsCreature(Environment.getShared(), context, entityCollection, creature);
+				// Perform common end of tick processing.
 				TickUtils.endOfTick(context, mutable);
 				
 				// If there was a change, we want to send it back so that the snapshot can be updated and clients can be informed.

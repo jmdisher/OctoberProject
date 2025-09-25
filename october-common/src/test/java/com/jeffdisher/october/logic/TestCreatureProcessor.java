@@ -12,6 +12,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.actions.EntityActionNudge;
 import com.jeffdisher.october.actions.EntityChangeApplyItemToCreature;
 import com.jeffdisher.october.actions.EntityChangeImpregnateCreature;
 import com.jeffdisher.october.actions.EntityChangeTakeDamageFromEntity;
@@ -965,6 +966,68 @@ public class TestCreatureProcessor
 		// At this point, we will be close enough that we have stopped moving but we still see some "coasting" residual velocity.
 		Assert.assertEquals(new EntityLocation(16.69f, 16.0f, 1.0f), creature.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), creature.velocity());
+	}
+
+	@Test
+	public void cowsNudge()
+	{
+		// Put 2 cows intersecting and show that one will use a nudge to push the other away based on ID and tick number.
+		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
+		EntityLocation location1 = new EntityLocation(1.0f, 1.0f, 0.0f);
+		EntityLocation location2 = new EntityLocation(1.2f, 0.9f, 0.1f);
+		CreatureEntity cow1 = CreatureEntity.create(-1, COW, location1, (byte)100);
+		CreatureEntity cow2 = CreatureEntity.create(-2, COW, location2, (byte)100);
+		
+		// First step, we should see the cows both take notice of the player since it has wheat in its hand.
+		Map<Integer, CreatureEntity> creaturesById = new HashMap<>(Map.of(cow1.id(), cow1
+				, cow2.id(), cow2
+		));
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), AIR);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		Object[] out = new Object[1];
+		TickProcessingContext context = ContextBuilder.build()
+				.tick(NudgeHelpers.CREATURE_NUDGE_TICK_FREQUENCY - Math.abs(cow2.id()))
+				.lookups((AbsoluteLocation location) -> {
+					return ((short)-1 == location.z())
+						? new BlockProxy(location.getBlockAddress(), stoneCuboid)
+						: new BlockProxy(location.getBlockAddress(), airCuboid)
+					;
+				} , null)
+				.sinks(null, new TickProcessingContext.IChangeSink() {
+					@Override
+					public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+					{
+						Assert.fail();
+					}
+					@Override
+					public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+					{
+						Assert.fail();
+					}
+					@Override
+					public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+					{
+						Assert.assertEquals(-1, targetCreatureId);
+						Assert.assertTrue(change instanceof EntityActionNudge);
+						out[0] = change;
+					}
+				})
+				.finish()
+		;
+		CreatureProcessor.processCreatureGroupParallel(thread
+			, creaturesById
+			, context
+			, new EntityCollection(Map.of(), creaturesById)
+			, Map.of()
+		);
+		Assert.assertTrue(out[0] instanceof EntityActionNudge);
+		
+		// We will just run this against the cow, manually, to show the velocity change.
+		MutableCreature mutable = MutableCreature.existing(cow1);
+		@SuppressWarnings("unchecked")
+		EntityActionNudge<IMutableCreatureEntity> nudge = (EntityActionNudge<IMutableCreatureEntity>) out[0];
+		Assert.assertTrue(nudge.applyChange(context, mutable));
+		Assert.assertEquals(new EntityLocation(-0.2f, 0.3f, -0.3f), mutable.newVelocity);
 	}
 
 

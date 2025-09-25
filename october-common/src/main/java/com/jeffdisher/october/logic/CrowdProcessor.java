@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EventRecord;
@@ -105,12 +106,16 @@ public class CrowdProcessor
 					}
 				}
 				
+				// Perform our usual "end of tick" concerns.
+				// Apply fall damage.
 				byte fallDamage = TickUtils.calculateFallDamage(startZVelocity - mutable.newVelocity.z());
 				if (fallDamage > 0)
 				{
 					DamageHelpers.applyDamageDirectlyAndPostEvent(context, mutable, (byte)fallDamage, EventRecord.Cause.FALL);
 				}
-				// Account for time passing.
+				// See if we need to "nudge" anyone this tick.
+				NudgeHelpers.nudgeAsPlayer(Environment.getShared(), context, entityCollection, entity);
+				// Perform common end of tick processing.
 				TickUtils.endOfTick(context, mutable);
 				
 				// If there was a change, we want to send it back so that the snapshot can be updated and clients can be informed.
