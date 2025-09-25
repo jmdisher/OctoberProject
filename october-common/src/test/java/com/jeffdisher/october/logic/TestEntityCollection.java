@@ -111,6 +111,39 @@ public class TestEntityCollection
 		Assert.assertNull(collection.getCreatureById(-3));
 	}
 
+	@Test
+	public void intersections()
+	{
+		Map<Integer, Entity> players = Map.of(1, _buildPlayer(1, new EntityLocation(1.0f, -1.0f, 1.0f))
+				, 2, _buildPlayer(2, new EntityLocation(-1.0f, 1.0f, 1.0f))
+		);
+		Map<Integer, CreatureEntity> creatures = Map.of(-1, _buildCreature(-1, new EntityLocation(-1.0f, -1.0f, 1.0f))
+				, -2, _buildCreature(-2, new EntityLocation(-1.0f, 1.0f, 1.0f))
+		);
+		
+		int[] counts = new int[2];
+		EntityCollection.IIntersector<Entity> entityCounter = (Entity data, EntityLocation centre, float radius) -> {
+			counts[0] += 1;
+		};
+		EntityCollection.IIntersector<CreatureEntity> creatureCounter = (CreatureEntity data, EntityLocation centre, float radius) -> {
+			counts[1] += 1;
+		};
+		
+		EntityCollection collection = new EntityCollection(players, creatures);
+		collection.findIntersections(ENV, new EntityLocation(0.0f, 0.0f, 0.0f), 3.0f, entityCounter, creatureCounter);
+		Assert.assertArrayEquals(new int[] {2, 2}, counts);
+		
+		counts[0] = 0;
+		counts[1] = 0;
+		collection.findIntersections(ENV, new EntityLocation(0.0f, 0.0f, 0.0f), 0.5f, entityCounter, creatureCounter);
+		Assert.assertArrayEquals(new int[] {0, 0}, counts);
+		
+		counts[0] = 0;
+		counts[1] = 0;
+		collection.findIntersections(ENV, new EntityLocation(1.1f, -1.0f, 1.1f), 0.3f, entityCounter, creatureCounter);
+		Assert.assertArrayEquals(new int[] {1, 0}, counts);
+	}
+
 
 	private static Entity _buildPlayer(int id, EntityLocation location)
 	{

@@ -3,9 +3,11 @@ package com.jeffdisher.october.logic;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.utils.Assert;
@@ -124,6 +126,68 @@ public class EntityCollection
 		return _creatures.get(id);
 	}
 
+	/**
+	 * Finds all player entities and creatures which intersect within range of centre, calling the given intersectors
+	 * for each one.
+	 * 
+	 * @param env The environment.
+	 * @param centre The centre-point of the sphere to check.
+	 * @param range The radius of the sphere to check.
+	 * @param entityVisit The intersector for player entities found (can be null).
+	 * @param creatureVisit The intersector for creatures found (can be null).
+	 */
+	public void findIntersections(Environment env, EntityLocation centre, float range, IIntersector<Entity> entityVisit, IIntersector<CreatureEntity> creatureVisit)
+	{
+		// TODO:  This is VERY inefficient when a large world is loaded so we need to redesign this based on a different way of organizing or indexing the entities and creatures.
+		float squareRange = range * range;
+		if (null != entityVisit)
+		{
+			EntityVolume volume = env.creatures.PLAYER.volume();
+			// We will just use the XY radius.
+			float radius = volume.width() / 2.0f;
+			float squareRadius = radius * radius;
+			// We are summing square radii in 3-space so we need to multiply.
+			float squareSums = 3 * (squareRange + squareRadius);
+			for (Entity player : _players.values())
+			{
+				EntityLocation playerLocation = player.location();
+				EntityLocation playerCentre = SpatialHelpers.getCentreOfRegion(playerLocation, volume);
+				float dx = centre.x() - playerCentre.x();
+				float dy = centre.y() - playerCentre.y();
+				float dz = centre.z() - playerCentre.z();
+				float squareDistance = dx * dx + dy * dy + dz * dz;
+				
+				if (squareDistance <= squareSums)
+				{
+					entityVisit.intersect(player, playerCentre, radius);
+				}
+			}
+		}
+		if (null != creatureVisit)
+		{
+			for (CreatureEntity creature : _creatures.values())
+			{
+				EntityLocation creatureLocation = creature.location();
+				EntityVolume volume = creature.type().volume();
+				EntityLocation creatureCentre = SpatialHelpers.getCentreOfRegion(creatureLocation, volume);
+				float dx = centre.x() - creatureCentre.x();
+				float dy = centre.y() - creatureCentre.y();
+				float dz = centre.z() - creatureCentre.z();
+				float squareDistance = dx * dx + dy * dy + dz * dz;
+				
+				// We will just use the XY radius.
+				float radius = volume.width() / 2.0f;
+				float squareRadius = radius * radius;
+				// We are summing square radii in 3-space so we need to multiply.
+				float squareSums = 3 * (squareRange + squareRadius);
+				if (squareDistance <= squareSums)
+				{
+					creatureVisit.intersect(creature, creatureCentre, radius);
+				}
+			}
+		}
+	}
+
 
 	private static <T> boolean _checkInstance(IMutableMinimalEntity source, MinimalEntity dest, float maxRange, Consumer<T> consumer, T arg)
 	{
@@ -134,5 +198,11 @@ public class EntityCollection
 			isInRange = true;
 		}
 		return isInRange;
+	}
+
+
+	public static interface IIntersector<T>
+	{
+		void intersect(T data, EntityLocation centre, float radius);
 	}
 }
