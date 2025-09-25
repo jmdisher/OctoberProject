@@ -237,6 +237,16 @@ public class TestSpatialHelpers
 		Assert.assertEquals(0.6f, SpatialHelpers.getPositiveFractionalComponent(-10.4f), 0.01f);
 	}
 
+	@Test
+	public void centreOfRegion()
+	{
+		EntityLocation base = new EntityLocation(5.1f, -6.4f, 7.2f);
+		EntityVolume volume = new EntityVolume(0.5f, 0.4f);
+		
+		EntityLocation centre = SpatialHelpers.getCentreOfRegion(base, volume);
+		Assert.assertEquals(new EntityLocation(5.3f, -6.2f, 7.45f), centre);
+	}
+
 
 	private static class _EndpointHelper implements EntityMovementHelpers.InteractiveHelper
 	{

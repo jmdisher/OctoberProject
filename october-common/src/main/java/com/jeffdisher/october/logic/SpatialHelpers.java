@@ -205,6 +205,20 @@ public class SpatialHelpers
 		return f - (float)Math.floor(f);
 	}
 
+	/**
+	 * Gets the centre-point of a region based at base of volume.
+	 * 
+	 * @param base The bottom-south-west corner of the region.
+	 * @param volume The total volume of the region.
+	 * @return The centre of the region.
+	 */
+	public static EntityLocation getCentreOfRegion(EntityLocation base, EntityVolume volume)
+	{
+		float width = volume.width() / 2.0f;
+		float height = volume.height() / 2.0f;
+		return new EntityLocation(base.x() + width, base.y() + width, base.z() + height);
+	}
+
 
 	private static boolean _isBlockAligned(float coord)
 	{
