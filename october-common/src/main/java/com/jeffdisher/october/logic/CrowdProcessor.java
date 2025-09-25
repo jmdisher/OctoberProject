@@ -42,12 +42,14 @@ public class CrowdProcessor
 	 * 
 	 * @param processor The current thread.
 	 * @param context The context used for running changes.
+	 * @param entityCollection A look-up mechanism for the entities in the loaded world.
 	 * @param entitiesById The map of all read-only entities and scheduled changes (may not be ready).
 	 * @param operatorChanges The changes to run as the operator.
 	 * @return The OutputEntity instances for InputEntity instances processed by this thread.
 	 */
 	public static ProcessedGroup processCrowdGroupParallel(ProcessorElement processor
 			, TickProcessingContext context
+			, EntityCollection entityCollection
 			, Map<Integer, InputEntity> entitiesById
 			, List<IEntityAction<IMutablePlayerEntity>> operatorChanges
 	)

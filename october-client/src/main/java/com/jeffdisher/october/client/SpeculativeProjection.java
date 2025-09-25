@@ -24,6 +24,7 @@ import com.jeffdisher.october.logic.BlockChangeDescription;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.CrowdProcessor;
+import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.ScheduledChange;
@@ -654,6 +655,7 @@ public class SpeculativeProjection
 		List<ScheduledChange> scheduled = _scheduledChangeList(entityMutations);
 		CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(processor
 				, context
+				, new EntityCollection(Map.of(), Map.of())
 				, (null != entity) ? Map.of(entityId, new CrowdProcessor.InputEntity(entity, scheduled)) : Map.of()
 				, List.of()
 		);

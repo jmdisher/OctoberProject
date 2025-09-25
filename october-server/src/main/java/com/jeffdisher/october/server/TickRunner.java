@@ -488,6 +488,7 @@ public class TickRunner
 			long startCrowd = System.currentTimeMillis();
 			CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(thisThread
 					, context
+					, entityCollection
 					, materials.changesToRun
 					, materials.operatorChanges
 			);

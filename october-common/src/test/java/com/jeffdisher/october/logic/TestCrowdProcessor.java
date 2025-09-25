@@ -82,6 +82,7 @@ public class TestCrowdProcessor
 		// We will run an iteration with no top-level events, to emulate lag, to show that nothing happens.
 		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(thread
 			, context
+			, new EntityCollection(Map.of(), Map.of())
 			, Map.of(entityId, new CrowdProcessor.InputEntity(entity, List.of()))
 			, List.of()
 		);
@@ -102,6 +103,7 @@ public class TestCrowdProcessor
 		ScheduledChange singleChange = new ScheduledChange(topLevel, 0L);
 		group = CrowdProcessor.processCrowdGroupParallel(thread
 			, context
+			, new EntityCollection(Map.of(), Map.of())
 			, Map.of(entityId, new CrowdProcessor.InputEntity(entity, List.of(singleChange)))
 			, List.of()
 		);
