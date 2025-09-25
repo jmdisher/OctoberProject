@@ -418,8 +418,10 @@ public class TestServerStateManager
 		
 		// Load in the cuboids and creatures.
 		CreatureEntity nearCreature = new CreatureEntity(-1, COW, near.newLocation, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)0, (byte)0, (byte)1, (byte)100
+				, COW.extendedCodec().buildDefault()
 				, CreatureEntity.EMPTY_DATA);
 		CreatureEntity farCreature = new CreatureEntity(-2, COW, far.newLocation, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)0, (byte)0, (byte)1, (byte)100
+				, COW.extendedCodec().buildDefault()
 				, CreatureEntity.EMPTY_DATA);
 		
 		CuboidData nearCuboid = CuboidGenerator.createFilledCuboid(near.newLocation.getBlockLocation().getCuboidAddress(), ENV.special.AIR);

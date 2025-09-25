@@ -26,6 +26,7 @@ public class MutablePartialEntity
 	public byte newYaw;
 	public byte newPitch;
 	public byte newHealth;
+	public Object newExtendedData;
 
 	private MutablePartialEntity(PartialEntity original)
 	{
@@ -34,6 +35,7 @@ public class MutablePartialEntity
 		this.newYaw = original.yaw();
 		this.newPitch = original.pitch();
 		this.newHealth = original.health();
+		this.newExtendedData = original.extendedData();
 	}
 
 	/**
@@ -50,6 +52,7 @@ public class MutablePartialEntity
 				, this.newYaw
 				, this.newPitch
 				, this.newHealth
+				, this.newExtendedData
 		);
 		return this.original.equals(newCopy)
 				? this.original

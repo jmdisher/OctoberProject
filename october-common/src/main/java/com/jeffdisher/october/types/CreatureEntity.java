@@ -26,6 +26,8 @@ public record CreatureEntity(int id
 		, byte health
 		// The breath the entity has (for drowning).
 		, byte breath
+		// This data is defined by EntityType, per-instance, and is persisted to disk and sent over the network.
+		, Object extendedData
 		
 		// Note that ephemeral data isn't persisted or passed over the network.
 		, Ephemeral ephemeral
@@ -100,6 +102,7 @@ public record CreatureEntity(int id
 				, (byte)0
 				, health
 				, MiscConstants.MAX_BREATH
+				, type.extendedCodec().buildDefault()
 				
 				, EMPTY_DATA
 		);
@@ -115,6 +118,7 @@ public record CreatureEntity(int id
 				, this.pitch
 				, this.health
 				, this.breath
+				, this.type.extendedCodec().buildDefault()
 				
 				, new Ephemeral(
 						this.ephemeral.movementPlan

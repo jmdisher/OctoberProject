@@ -294,12 +294,14 @@ public class CodecHelpers
 		byte yaw = buffer.get();
 		byte pitch = buffer.get();
 		byte health = buffer.get();
+		Object extendedData = type.extendedCodec().read(buffer);
 		return new PartialEntity(id
 				, type
 				, location
 				, yaw
 				, pitch
 				, health
+				, extendedData
 		);
 	}
 
@@ -312,6 +314,7 @@ public class CodecHelpers
 		byte health = entity.health();
 		byte yaw = entity.yaw();
 		byte pitch = entity.pitch();
+		Object extendedData = entity.extendedData();
 		
 		buffer.putInt(id);
 		buffer.put(ordinal);
@@ -319,6 +322,7 @@ public class CodecHelpers
 		buffer.put(yaw);
 		buffer.put(pitch);
 		buffer.put(health);
+		entity.type().extendedCodec().write(buffer, extendedData);
 	}
 
 	public static CreatureEntity readCreatureEntity(int idToAssign, ByteBuffer buffer)
@@ -334,6 +338,7 @@ public class CodecHelpers
 		byte pitch = buffer.get();
 		byte health = buffer.get();
 		byte breath = buffer.get();
+		Object extendedData = type.extendedCodec().read(buffer);
 		
 		return new CreatureEntity(id
 				, type
@@ -343,6 +348,7 @@ public class CodecHelpers
 				, pitch
 				, health
 				, breath
+				, extendedData
 				
 				, CreatureEntity.EMPTY_DATA
 		);
@@ -359,6 +365,7 @@ public class CodecHelpers
 		byte pitch = entity.pitch();
 		byte health = entity.health();
 		byte breath = entity.breath();
+		Object extendedData = entity.extendedData();
 		
 		buffer.put(ordinal);
 		_writeEntityLocation(buffer, location);
@@ -367,6 +374,7 @@ public class CodecHelpers
 		buffer.put(pitch);
 		buffer.put(health);
 		buffer.put(breath);
+		entity.type().extendedCodec().write(buffer, extendedData);
 	}
 
 	public static CraftOperation readCraftOperation(ByteBuffer buffer)

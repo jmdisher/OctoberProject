@@ -17,6 +17,8 @@ public record PartialEntity(int id
 		// Pitch is measured from [-64..64] where 0 is "level", -64 is "straight down", and 64 is "straight up".
 		, byte pitch
 		, byte health
+		// The extended data is based on type.
+		, Object extendedData
 )
 {
 	public static PartialEntity fromEntity(Entity entity)
@@ -28,6 +30,7 @@ public record PartialEntity(int id
 				, entity.yaw()
 				, entity.pitch()
 				, entity.health()
+				, env.creatures.PLAYER.extendedCodec().buildDefault()
 		);
 	}
 
@@ -39,6 +42,7 @@ public record PartialEntity(int id
 				, entity.yaw()
 				, entity.pitch()
 				, entity.health()
+				, entity.extendedData()
 		);
 	}
 }

@@ -41,6 +41,7 @@ import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.net.EntityActionCodec;
 import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV1;
+import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV8;
 import com.jeffdisher.october.persistence.legacy.LegacyEntityV1;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -489,7 +490,7 @@ public class ResourceLoader
 					CuboidData cuboid = _background_readCuboid(address, context);
 					
 					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreatures(buffer);
+					List<CreatureEntity> creatures = _background_readCreaturesV8(buffer);
 					
 					// Now, load any suspended mutations.
 					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
@@ -515,7 +516,7 @@ public class ResourceLoader
 					CuboidData cuboid = _background_readCuboidPre8(address, context);
 					
 					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreatures(buffer);
+					List<CreatureEntity> creatures = _background_readCreaturesV8(buffer);
 					
 					// Now, load any suspended mutations.
 					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
@@ -542,7 +543,7 @@ public class ResourceLoader
 					CuboidData cuboid = _background_readCuboidPre8(address, context);
 					
 					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreatures(buffer);
+					List<CreatureEntity> creatures = _background_readCreaturesV8(buffer);
 					
 					// Now, load any suspended mutations.
 					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
@@ -569,7 +570,7 @@ public class ResourceLoader
 					CuboidData cuboid = _background_readCuboidV5(address, context);
 					
 					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreatures(buffer);
+					List<CreatureEntity> creatures = _background_readCreaturesV8(buffer);
 					
 					// Now, load any suspended mutations.
 					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
@@ -596,7 +597,7 @@ public class ResourceLoader
 					CuboidData cuboid = _background_readCuboidPre5(address, context);
 					
 					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreatures(buffer);
+					List<CreatureEntity> creatures = _background_readCreaturesV8(buffer);
 					
 					// Now, load any suspended mutations.
 					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
@@ -623,7 +624,7 @@ public class ResourceLoader
 					CuboidData cuboid = _background_readCuboidPre5(address, context);
 					
 					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreatures(buffer);
+					List<CreatureEntity> creatures = _background_readCreaturesV8(buffer);
 					
 					// Now, load any suspended mutations.
 					List<ScheduledMutation> pendingMutations = new ArrayList<>();
@@ -855,13 +856,26 @@ public class ResourceLoader
 		}
 	}
 
-	private List<CreatureEntity> _background_readCreatures(MappedByteBuffer buffer)
+	private List<CreatureEntity> _background_readCreatures(ByteBuffer buffer)
 	{
 		int creatureCount = buffer.getInt();
 		List<CreatureEntity> creatures = new ArrayList<>();
 		for (int i = 0; i < creatureCount; ++i)
 		{
 			CreatureEntity entity = CodecHelpers.readCreatureEntity(this.creatureIdAssigner.next(), buffer);
+			creatures.add(entity);
+		}
+		return creatures;
+	}
+
+	private List<CreatureEntity> _background_readCreaturesV8(ByteBuffer buffer)
+	{
+		int creatureCount = buffer.getInt();
+		List<CreatureEntity> creatures = new ArrayList<>();
+		for (int i = 0; i < creatureCount; ++i)
+		{
+			LegacyCreatureEntityV8 legacy = LegacyCreatureEntityV8.load(this.creatureIdAssigner.next(), buffer);
+			CreatureEntity entity = legacy.toEntity();
 			creatures.add(entity);
 		}
 		return creatures;

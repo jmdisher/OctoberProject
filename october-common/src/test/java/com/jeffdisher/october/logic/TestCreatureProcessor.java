@@ -205,6 +205,7 @@ public class TestCreatureProcessor
 				, (byte)0
 				, (byte)100
 				, MiscConstants.MAX_BREATH
+				, COW.extendedCodec().buildDefault()
 				
 				, new CreatureEntity.Ephemeral(
 					movementPlan
@@ -252,6 +253,7 @@ public class TestCreatureProcessor
 				, (byte)0
 				, (byte)100
 				, MiscConstants.MAX_BREATH
+				, COW.extendedCodec().buildDefault()
 				
 				, new CreatureEntity.Ephemeral(
 					movementPlan
@@ -300,6 +302,7 @@ public class TestCreatureProcessor
 				, (byte)0
 				, (byte)100
 				, MiscConstants.MAX_BREATH
+				, COW.extendedCodec().buildDefault()
 				
 				, new CreatureEntity.Ephemeral(
 					movementPlan
@@ -1196,6 +1199,7 @@ public class TestCreatureProcessor
 				, entity.pitch()
 				, entity.health()
 				, entity.breath()
+				, entity.extendedData()
 				
 				, new CreatureEntity.Ephemeral(
 					movementPlan

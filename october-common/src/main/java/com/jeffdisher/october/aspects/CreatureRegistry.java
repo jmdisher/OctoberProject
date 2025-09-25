@@ -109,6 +109,7 @@ public class CreatureRegistry
 						, _attackDamage
 						, _drops
 						, _breedingItem
+						, new CreatureExtendedData.NullCodec()
 				);
 				creatures.add(type);
 				
@@ -285,6 +286,7 @@ public class CreatureRegistry
 				, (byte)0
 				, null
 				, null
+				, new CreatureExtendedData.NullCodec()
 		);
 		ENTITY_BY_NUMBER = new EntityType[creatures.size() + 2];
 		ENTITY_BY_NUMBER[1] = this.PLAYER;
@@ -334,6 +336,7 @@ public class CreatureRegistry
 			, byte attackDamage
 			, Items[] drops
 			, Item breedingItem
+			, EntityType.IExtendedCodec extendedCodec
 	)
 	{
 		return new EntityType(number
@@ -347,6 +350,7 @@ public class CreatureRegistry
 				, attackDamage
 				, drops
 				, breedingItem
+				, extendedCodec
 		);
 	}
 }

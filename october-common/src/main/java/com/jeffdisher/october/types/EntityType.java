@@ -1,5 +1,6 @@
 package com.jeffdisher.october.types;
 
+import java.nio.ByteBuffer;
 
 /**
  * This is used closely by CreatureRegistry to determine server-side behaviour but also client-side audio, etc.
@@ -15,6 +16,7 @@ public record EntityType(byte number
 		, byte attackDamage
 		, Items[] drops
 		, Item breedingItem
+		, IExtendedCodec extendedCodec
 )
 {
 	/**
@@ -50,5 +52,13 @@ public record EntityType(byte number
 	public boolean isHostile()
 	{
 		return (this.attackDamage > 0);
+	}
+
+
+	public static interface IExtendedCodec
+	{
+		public Object buildDefault();
+		public Object read(ByteBuffer buffer);
+		public void write(ByteBuffer buffer, Object extendedData);
 	}
 }

@@ -73,6 +73,7 @@ public record LegacyCreatureEntityV1(int id
 				, pitch
 				, this.health
 				, this.breath
+				, this.type.extendedCodec().buildDefault()
 				
 				, CreatureEntity.EMPTY_DATA
 		);

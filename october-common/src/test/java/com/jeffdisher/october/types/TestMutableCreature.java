@@ -46,6 +46,7 @@ public class TestMutableCreature
 				, (byte)0
 				, (byte)50
 				, MiscConstants.MAX_BREATH
+				, COW.extendedCodec().buildDefault()
 				
 				, CreatureEntity.EMPTY_DATA
 		);

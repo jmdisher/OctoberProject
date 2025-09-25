@@ -37,6 +37,7 @@ public class MutableCreature implements IMutableCreatureEntity
 	public byte newPitch;
 	public byte newHealth;
 	public byte newBreath;
+	public Object newExtendedData;
 
 	public List<AbsoluteLocation> newMovementPlan;
 	public long newLastActionTick;
@@ -58,6 +59,7 @@ public class MutableCreature implements IMutableCreatureEntity
 		this.newPitch = creature.pitch();
 		this.newHealth = creature.health();
 		this.newBreath = creature.breath();
+		this.newExtendedData = creature.extendedData();
 		
 		this.newMovementPlan = creature.ephemeral().movementPlan();
 		this.newLastActionTick = creature.ephemeral().lastActionTick();
@@ -294,6 +296,7 @@ public class MutableCreature implements IMutableCreatureEntity
 					, this.newPitch
 					, this.newHealth
 					, this.newBreath
+					, this.newExtendedData
 					
 					, ephemeral.equals(_creature.ephemeral()) ? _creature.ephemeral() : ephemeral
 			);
