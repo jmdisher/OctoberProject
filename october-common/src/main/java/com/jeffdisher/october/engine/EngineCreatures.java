@@ -1,4 +1,4 @@
-package com.jeffdisher.october.logic;
+package com.jeffdisher.october.engine;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,6 +8,13 @@ import java.util.Map;
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.creatures.CreatureLogic;
+import com.jeffdisher.october.logic.CreatureMovementHelpers;
+import com.jeffdisher.october.logic.DamageHelpers;
+import com.jeffdisher.october.logic.EntityCollection;
+import com.jeffdisher.october.logic.EntityMovementHelpers;
+import com.jeffdisher.october.logic.NudgeHelpers;
+import com.jeffdisher.october.logic.ProcessorElement;
+import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EventRecord;
@@ -19,13 +26,11 @@ import com.jeffdisher.october.utils.Assert;
 
 
 /**
- * Static logic which implements the parallel game tick logic when operating on CreatureEntity instances within the
- * world.
- * This is very similar to CrowdProcessor but has some different internal logic and other helpers related to creatures.
+ * Static engine logic related to processing creature entities in the world.
  */
-public class CreatureProcessor
+public class EngineCreatures
 {
-	private CreatureProcessor()
+	private EngineCreatures()
 	{
 		// This is just static logic.
 	}

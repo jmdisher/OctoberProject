@@ -1,4 +1,4 @@
-package com.jeffdisher.october.logic;
+package com.jeffdisher.october.engine;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -9,6 +9,10 @@ import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.EntityCollection;
+import com.jeffdisher.october.logic.PropagationHelpers;
+import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -23,9 +27,9 @@ import com.jeffdisher.october.utils.Encoding;
 
 
 /**
- * The algorithm for spawning creatures in the world.
+ * Static engine logic related to spawning dynamic entities in the world.
  */
-public class CreatureSpawner
+public class EngineSpawner
 {
 	/**
 	 * The distance around a player where no new hostile mobs will spawn.

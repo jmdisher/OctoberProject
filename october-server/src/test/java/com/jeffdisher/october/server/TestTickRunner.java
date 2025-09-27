@@ -25,8 +25,8 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.engine.EnginePlayers;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
-import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.EntityChangeSendItem;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
@@ -2383,7 +2383,7 @@ public class TestTickRunner
 		
 		// Enqueue the operator command, run the tick, and observe this change.
 		EntityLocation location = new EntityLocation(1.2f, -3.4f, 5.0f);
-		runner.enqueueOperatorMutation(CrowdProcessor.OPERATOR_ENTITY_ID, new EntityChangeOperatorSpawnCreature(COW, location));
+		runner.enqueueOperatorMutation(EnginePlayers.OPERATOR_ENTITY_ID, new EntityChangeOperatorSpawnCreature(COW, location));
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.creatures().size());

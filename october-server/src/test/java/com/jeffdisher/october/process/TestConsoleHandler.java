@@ -14,7 +14,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.actions.EntityChangeOperatorSpawnCreature;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.logic.CrowdProcessor;
+import com.jeffdisher.october.engine.EnginePlayers;
 import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.server.TickRunner;
 import com.jeffdisher.october.types.Difficulty;
@@ -294,7 +294,7 @@ public class TestConsoleHandler
 			@Override
 			public void submitEntityMutation(int clientId, IEntityAction<IMutablePlayerEntity> command)
 			{
-				Assert.assertEquals(CrowdProcessor.OPERATOR_ENTITY_ID, clientId);
+				Assert.assertEquals(EnginePlayers.OPERATOR_ENTITY_ID, clientId);
 				Assert.assertTrue(command instanceof EntityChangeOperatorSpawnCreature);
 				didBroadcast[0] = true;
 			}

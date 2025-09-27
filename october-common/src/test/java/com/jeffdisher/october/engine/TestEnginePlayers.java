@@ -1,4 +1,4 @@
-package com.jeffdisher.october.logic;
+package com.jeffdisher.october.engine;
 
 import java.util.List;
 import java.util.Map;
@@ -15,6 +15,11 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.logic.EntityCollection;
+import com.jeffdisher.october.logic.OrientationHelpers;
+import com.jeffdisher.october.logic.ProcessorElement;
+import com.jeffdisher.october.logic.ScheduledChange;
+import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -30,7 +35,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 
-public class TestCrowdProcessor
+public class TestEnginePlayers
 {
 	private static Environment ENV;
 	private static Block STONE;
@@ -80,10 +85,10 @@ public class TestCrowdProcessor
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.FALL, entity.location().getBlockLocation(), entity.id(), 0));
 		
 		// We will run an iteration with no top-level events, to emulate lag, to show that nothing happens.
-		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(thread
+		EnginePlayers.ProcessedGroup group = EnginePlayers.processCrowdGroupParallel(thread
 			, context
 			, new EntityCollection(Map.of(), Map.of())
-			, Map.of(entityId, new CrowdProcessor.InputEntity(entity, List.of()))
+			, Map.of(entityId, new EnginePlayers.InputEntity(entity, List.of()))
 			, List.of()
 		);
 		// We should see the one output (since we processed this) but it should have a null updated instance.
@@ -101,10 +106,10 @@ public class TestCrowdProcessor
 		EntityLocation fallTarget = new EntityLocation(16.8f, 16.8f, 16.0f);
 		EntityLocation allStop = new EntityLocation(0.0f, 0.0f, 0.0f);
 		ScheduledChange singleChange = new ScheduledChange(topLevel, 0L);
-		group = CrowdProcessor.processCrowdGroupParallel(thread
+		group = EnginePlayers.processCrowdGroupParallel(thread
 			, context
 			, new EntityCollection(Map.of(), Map.of())
-			, Map.of(entityId, new CrowdProcessor.InputEntity(entity, List.of(singleChange)))
+			, Map.of(entityId, new EnginePlayers.InputEntity(entity, List.of(singleChange)))
 			, List.of()
 		);
 		Assert.assertEquals(1, group.entityOutput().size());

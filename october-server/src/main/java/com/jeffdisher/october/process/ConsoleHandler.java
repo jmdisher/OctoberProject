@@ -13,7 +13,7 @@ import com.jeffdisher.october.actions.EntityChangeOperatorSetCreative;
 import com.jeffdisher.october.actions.EntityChangeOperatorSetLocation;
 import com.jeffdisher.october.actions.EntityChangeOperatorSpawnCreature;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.logic.CrowdProcessor;
+import com.jeffdisher.october.engine.EnginePlayers;
 import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
@@ -435,7 +435,7 @@ public class ConsoleHandler
 					MonitoringAgent monitoringAgent = state.monitoringAgent;
 					EntityLocation location = new AbsoluteLocation(x, y, z).toEntityLocation();
 					EntityChangeOperatorSpawnCreature command = new EntityChangeOperatorSpawnCreature(entityType, location);
-					monitoringAgent.getCommandSink().submitEntityMutation(CrowdProcessor.OPERATOR_ENTITY_ID, command);
+					monitoringAgent.getCommandSink().submitEntityMutation(EnginePlayers.OPERATOR_ENTITY_ID, command);
 				}
 				else
 				{

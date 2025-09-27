@@ -10,16 +10,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.engine.EnginePlayers;
+import com.jeffdisher.october.engine.EngineCuboids;
 import com.jeffdisher.october.logic.BlockChangeDescription;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
-import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SyncPoint;
-import com.jeffdisher.october.logic.WorldProcessor;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -65,10 +65,10 @@ public class OneOffRunner
 		// Run initial change.
 		int thisEntityId = state.thisEntity().id();
 		ScheduledChange scheduled = new ScheduledChange(mutation, 0L);
-		CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(singleThreadElement
+		EnginePlayers.ProcessedGroup innerGroup = EnginePlayers.processCrowdGroupParallel(singleThreadElement
 				, context
 				, new EntityCollection(Map.of(), Map.of())
-				, Map.of(thisEntityId, new CrowdProcessor.InputEntity(state.thisEntity(), List.of(scheduled)))
+				, Map.of(thisEntityId, new EnginePlayers.InputEntity(state.thisEntity(), List.of(scheduled)))
 				, List.of()
 		);
 		boolean wasSuccess = (innerGroup.committedMutationCount() > 0);
@@ -99,7 +99,7 @@ public class OneOffRunner
 			}
 			// Note that we will need to capture output mutations from these sinks if there is an interest in running multiple ticks in advance here.
 			TickProcessingContext innerContext = _createContext(state, new CommonMutationSink(), new CommonChangeSink(), eventSink, millisPerTick, currentTickTimeMillis);
-			WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(singleThreadElement
+			EngineCuboids.ProcessedFragment innerFragment = EngineCuboids.processWorldFragmentParallel(singleThreadElement
 					, state.world
 					, innerContext
 					, splitMutations

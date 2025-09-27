@@ -1,4 +1,4 @@
-package com.jeffdisher.october.logic;
+package com.jeffdisher.october.engine;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -13,6 +13,11 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.logic.BlockChangeDescription;
+import com.jeffdisher.october.logic.HeightMapHelpers;
+import com.jeffdisher.october.logic.ProcessorElement;
+import com.jeffdisher.october.logic.PropagationHelpers;
+import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.mutations.MutationBlockUpdate;
@@ -26,12 +31,11 @@ import com.jeffdisher.october.utils.Assert;
 
 
 /**
- * Static logic which implements the parallel game tick logic when operating on cuboids within the world.
- * The counterpart to this, for entities, is CrowdProcessor.
+ * Static engine logic related to processing cuboids in the world.
  */
-public class WorldProcessor
+public class EngineCuboids
 {
-	private WorldProcessor()
+	private EngineCuboids()
 	{
 		// This is just static logic.
 	}

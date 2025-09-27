@@ -1,4 +1,4 @@
-package com.jeffdisher.october.logic;
+package com.jeffdisher.october.engine;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -6,6 +6,11 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.logic.DamageHelpers;
+import com.jeffdisher.october.logic.EntityCollection;
+import com.jeffdisher.october.logic.NudgeHelpers;
+import com.jeffdisher.october.logic.ProcessorElement;
+import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EventRecord;
@@ -17,10 +22,9 @@ import com.jeffdisher.october.utils.Assert;
 
 
 /**
- * Static logic which implements the parallel game tick logic when operating on entities within the world.
- * The counterpart to this, for cuboids, is WorldProcessor.
+ * Static engine logic related to processing player entities in the world.
  */
-public class CrowdProcessor
+public class EnginePlayers
 {
 	/**
 	 * The ID used for the operator "no entity" cases (that is, when the operator runs an action but not against any
@@ -29,7 +33,7 @@ public class CrowdProcessor
 	public static final int OPERATOR_ENTITY_ID = Integer.MIN_VALUE;
 
 
-	private CrowdProcessor()
+	private EnginePlayers()
 	{
 		// This is just static logic.
 	}

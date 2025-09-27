@@ -1,4 +1,4 @@
-package com.jeffdisher.october.logic;
+package com.jeffdisher.october.engine;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -22,6 +22,12 @@ import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.logic.CreatureIdAssigner;
+import com.jeffdisher.october.logic.EntityCollection;
+import com.jeffdisher.october.logic.NudgeHelpers;
+import com.jeffdisher.october.logic.ProcessorElement;
+import com.jeffdisher.october.logic.PropertyHelpers;
+import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.TickUtils;
@@ -55,7 +61,7 @@ import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.Encoding;
 
 
-public class TestCreatureProcessor
+public class TestEngineCreatures
 {
 	private static Environment ENV;
 	private static Block AIR;
@@ -89,7 +95,7 @@ public class TestCreatureProcessor
 		EntityChangeTakeDamageFromEntity<IMutableCreatureEntity> change = new EntityChangeTakeDamageFromEntity<>(BodyPart.FEET, 10, sourceId);
 		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of(creature.id(), List.of(change));
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
-		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Map.of(), Map.of())
@@ -134,7 +140,7 @@ public class TestCreatureProcessor
 		EntityChangeTakeDamageFromEntity<IMutableCreatureEntity> change = new EntityChangeTakeDamageFromEntity<>(BodyPart.FEET, 120, sourceId);
 		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of(creature.id(), List.of(change));
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_KILLED, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
-		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Map.of(), Map.of())
@@ -157,7 +163,7 @@ public class TestCreatureProcessor
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
-		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Map.of(), Map.of())
@@ -178,7 +184,7 @@ public class TestCreatureProcessor
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContextWithOptions(Difficulty.PEACEFUL, null);
 		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
-		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Map.of(), Map.of())
@@ -223,7 +229,7 @@ public class TestCreatureProcessor
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
-		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Map.of(), Map.of())
@@ -271,7 +277,7 @@ public class TestCreatureProcessor
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
-		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Map.of(), Map.of())
@@ -328,7 +334,7 @@ public class TestCreatureProcessor
 		for (int i = 0; i < 2; ++i)
 		{
 			Map<Integer, CreatureEntity> creaturesById = Map.of(creatureId, creature);
-			CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+			EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
 					, creaturesById
 					, context
 					, new EntityCollection(Map.of(), Map.of())
@@ -343,7 +349,7 @@ public class TestCreatureProcessor
 		for (int i = 0; i < 19; ++i)
 		{
 			Map<Integer, CreatureEntity> creaturesById = Map.of(creatureId, creature);
-			CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+			EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
 					, creaturesById
 					, context
 					, new EntityCollection(Map.of(), Map.of())
@@ -367,7 +373,7 @@ public class TestCreatureProcessor
 		_Events events = new _Events();
 		TickProcessingContext context = _createContextWithEvents(events);
 		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
-		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Map.of(), Map.of())
@@ -387,7 +393,7 @@ public class TestCreatureProcessor
 		int sourceId = 1;
 		changesToRun = Map.of(creature.id(), List.of(new EntityChangeTakeDamageFromEntity<>(BodyPart.FEET, damage, sourceId)));
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
-		group = CreatureProcessor.processCreatureGroupParallel(thread
+		group = EngineCreatures.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Map.of(), Map.of())
@@ -412,7 +418,7 @@ public class TestCreatureProcessor
 		Entity nonWheat = _createEntity(3, new EntityLocation(2.0f, 0.0f, 0.0f), null, PropertyHelpers.newItemWithDefaults(ENV, ENV.items.getItemById("op.iron_pickaxe")));
 		TickProcessingContext context = _createContext();
 		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
-		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Map.of(farWheat.id(), farWheat, closeWheat.id(), closeWheat, nonWheat.id(), nonWheat), creaturesById)
@@ -433,7 +439,7 @@ public class TestCreatureProcessor
 		// Run the processor to observe the movement of the target entity.
 		context = _updateContextWithPlayerAndCreatures(context, closeWheat, creaturesById);
 		creaturesById = group.updatedCreatures();
-		group = CreatureProcessor.processCreatureGroupParallel(thread
+		group = EngineCreatures.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Map.of(farWheat.id(), farWheat, closeWheat.id(), closeWheat, nonWheat.id(), nonWheat), creaturesById)
@@ -460,7 +466,7 @@ public class TestCreatureProcessor
 		TickProcessingContext context = _createContext();
 		context = _updateContextWithPlayerAndCreatures(context, player, creaturesById);
 		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
-		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Map.of(player.id(), player), creaturesById)
@@ -483,7 +489,7 @@ public class TestCreatureProcessor
 		// We will run the processor to see them update their target location.
 		context = _updateContextWithPlayerAndCreatures(context, player, creaturesById);
 		creaturesById = group.updatedCreatures();
-		group = CreatureProcessor.processCreatureGroupParallel(thread
+		group = EngineCreatures.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Map.of(player.id(), player), creaturesById)
@@ -520,7 +526,7 @@ public class TestCreatureProcessor
 		TickProcessingContext context = _createContext();
 		context = _updateContextWithPlayerAndCreatures(context, null, creaturesById);
 		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
-		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
 				, Map.of(fedCow.id(), fedCow)
 				, context
 				, new EntityCollection(Map.of(closeWheat.id(), closeWheat), creaturesById)
@@ -559,7 +565,7 @@ public class TestCreatureProcessor
 		));
 		TickProcessingContext context = _createContext();
 		context = _updateContextWithPlayerAndCreatures(context, player, creaturesById);
-		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Map.of(player.id(), player), creaturesById)
@@ -573,7 +579,7 @@ public class TestCreatureProcessor
 		
 		// Now, feed them using the mutations we would expect.
 		context = _updateContextWithPlayerAndCreatures(context, player, creaturesById);
-		group = CreatureProcessor.processCreatureGroupParallel(thread
+		group = EngineCreatures.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Map.of(player.id(), player), creaturesById)
@@ -594,7 +600,7 @@ public class TestCreatureProcessor
 		
 		// Run another tick so that they see each other in love mode.
 		context = _updateContextWithPlayerAndCreatures(context, player, creaturesById);
-		group = CreatureProcessor.processCreatureGroupParallel(thread
+		group = EngineCreatures.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Map.of(player.id(), player), creaturesById)
@@ -628,7 +634,7 @@ public class TestCreatureProcessor
 				changes.put(targetCreatureId, change);
 			}
 		}, null, null);
-		group = CreatureProcessor.processCreatureGroupParallel(thread
+		group = EngineCreatures.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Map.of(), creaturesById)
@@ -643,7 +649,7 @@ public class TestCreatureProcessor
 		creaturesById.putAll(group.updatedCreatures());
 		CreatureEntity[] out = new CreatureEntity[1];
 		context = _updateContextWithCreatures(context, creaturesById.values(), null, out, idAssigner);
-		group = CreatureProcessor.processCreatureGroupParallel(thread
+		group = EngineCreatures.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Map.of(), creaturesById)
@@ -659,7 +665,7 @@ public class TestCreatureProcessor
 		Assert.assertNull(creaturesById.get(cow2.id()).ephemeral().movementPlan());
 		creaturesById.put(offspring.id(), offspring);
 		context = _updateContextWithCreatures(context, creaturesById.values(), null, null, null);
-		group = CreatureProcessor.processCreatureGroupParallel(thread
+		group = EngineCreatures.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Map.of(), creaturesById)
@@ -685,7 +691,7 @@ public class TestCreatureProcessor
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createSingleCuboidContext(cuboid);
 		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
-		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Map.of(), creaturesById)
@@ -699,7 +705,7 @@ public class TestCreatureProcessor
 		{
 			Assert.assertEquals(0.0f, updated.velocity().z(), 0.001f);
 			creaturesById = group.updatedCreatures();
-			group = CreatureProcessor.processCreatureGroupParallel(thread
+			group = EngineCreatures.processCreatureGroupParallel(thread
 					, creaturesById
 					, context
 					, new EntityCollection(Map.of(), creaturesById)
@@ -728,7 +734,7 @@ public class TestCreatureProcessor
 			updated = justUpdated;
 			// Apply the next step.
 			creaturesById = group.updatedCreatures();
-			group = CreatureProcessor.processCreatureGroupParallel(thread
+			group = EngineCreatures.processCreatureGroupParallel(thread
 					, creaturesById
 					, context
 					, new EntityCollection(Map.of(), creaturesById)
@@ -788,7 +794,7 @@ public class TestCreatureProcessor
 					.fixedRandom(1)
 					.finish()
 			;
-			CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+			EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
 					, creaturesById
 					, context
 					, new EntityCollection(Map.of(waterTarget.id(), waterTarget, airTarget.id(), airTarget), creaturesById)
@@ -849,7 +855,7 @@ public class TestCreatureProcessor
 					.fixedRandom(0)
 					.finish()
 			;
-			CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+			EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
 					, creaturesById
 					, context
 					, new EntityCollection(Map.of(), creaturesById)
@@ -903,7 +909,7 @@ public class TestCreatureProcessor
 				.finish()
 		;
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.FALL, creature.location().getBlockLocation(), creature.id(), 0));
-		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
 				, Map.of(creature.id(), creature)
 				, context
 				, new EntityCollection(Map.of(), Map.of(creature.id(), creature))
@@ -957,7 +963,7 @@ public class TestCreatureProcessor
 				indirect[0] = target;
 				didChange = true;
 			}
-			CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+			EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
 				, Map.of(creature.id(), creature)
 				, context
 				, new EntityCollection(Map.of(target.id(), target), Map.of(creature.id(), creature))
@@ -1017,7 +1023,7 @@ public class TestCreatureProcessor
 				})
 				.finish()
 		;
-		CreatureProcessor.processCreatureGroupParallel(thread
+		EngineCreatures.processCreatureGroupParallel(thread
 			, creaturesById
 			, context
 			, new EntityCollection(Map.of(), creaturesById)

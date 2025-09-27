@@ -20,17 +20,17 @@ import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.OctreeInflatedByte;
+import com.jeffdisher.october.engine.EnginePlayers;
+import com.jeffdisher.october.engine.EngineCuboids;
 import com.jeffdisher.october.logic.BlockChangeDescription;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
-import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SyncPoint;
-import com.jeffdisher.october.logic.WorldProcessor;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
@@ -595,7 +595,7 @@ public class SpeculativeProjection
 		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress = Map.of();
 		Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid = Map.of();
 		Set<CuboidAddress> cuboidsLoadedThisTick = Set.of();
-		WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement
+		EngineCuboids.ProcessedFragment innerFragment = EngineCuboids.processWorldFragmentParallel(_singleThreadElement
 				, _projectedState.projectedWorld
 				, context
 				, innerMutations
@@ -653,10 +653,10 @@ public class SpeculativeProjection
 	private static Entity[] _runChangesOnEntity(ProcessorElement processor, TickProcessingContext context, int entityId, Entity entity, List<IEntityAction<IMutablePlayerEntity>> entityMutations)
 	{
 		List<ScheduledChange> scheduled = _scheduledChangeList(entityMutations);
-		CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(processor
+		EnginePlayers.ProcessedGroup innerGroup = EnginePlayers.processCrowdGroupParallel(processor
 				, context
 				, new EntityCollection(Map.of(), Map.of())
-				, (null != entity) ? Map.of(entityId, new CrowdProcessor.InputEntity(entity, scheduled)) : Map.of()
+				, (null != entity) ? Map.of(entityId, new EnginePlayers.InputEntity(entity, scheduled)) : Map.of()
 				, List.of()
 		);
 		return (innerGroup.committedMutationCount() > 0)

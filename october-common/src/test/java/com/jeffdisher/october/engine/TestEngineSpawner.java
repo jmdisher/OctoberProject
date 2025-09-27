@@ -1,4 +1,4 @@
-package com.jeffdisher.october.logic;
+package com.jeffdisher.october.engine;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -15,6 +15,10 @@ import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.CreatureIdAssigner;
+import com.jeffdisher.october.logic.EntityCollection;
+import com.jeffdisher.october.logic.HeightMapHelpers;
+import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -31,7 +35,7 @@ import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 
-public class TestCreatureSpawner
+public class TestEngineSpawner
 {
 	private static Environment ENV;
 	private static Block AIR;
@@ -60,7 +64,7 @@ public class TestCreatureSpawner
 		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(Map.of(cuboid.getCuboidAddress(), heightMap));
 		CreatureEntity[] out = new CreatureEntity[1];
 		TickProcessingContext context = _createContext(completedCuboids, out, 5);
-		CreatureSpawner.trySpawnCreature(context
+		EngineSpawner.trySpawnCreature(context
 				, new EntityCollection(Map.of(), Map.of())
 				, completedCuboids
 				, completedHeightMaps
@@ -81,7 +85,7 @@ public class TestCreatureSpawner
 		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(Map.of(cuboid.getCuboidAddress(), heightMap));
 		CreatureEntity[] out = new CreatureEntity[1];
 		TickProcessingContext context = _createSunnyContext(completedCuboids, out, 5);
-		CreatureSpawner.trySpawnCreature(context
+		EngineSpawner.trySpawnCreature(context
 				, new EntityCollection(Map.of(), Map.of())
 				, completedCuboids
 				, completedHeightMaps
@@ -117,7 +121,7 @@ public class TestCreatureSpawner
 		;
 		
 		// This will throw an exception since we have no spawner if it tries to spawn.
-		CreatureSpawner.trySpawnCreature(context
+		EngineSpawner.trySpawnCreature(context
 				, new EntityCollection(Map.of(), Map.of())
 				, completedCuboids
 				, completedHeightMaps
@@ -135,7 +139,7 @@ public class TestCreatureSpawner
 		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(cuboidMaps);
 		CreatureEntity[] out = new CreatureEntity[1];
 		TickProcessingContext context = _createContext(completedCuboids, out, 1);
-		CreatureSpawner.trySpawnCreature(context
+		EngineSpawner.trySpawnCreature(context
 				, new EntityCollection(Map.of(), Map.of())
 				, completedCuboids
 				, completedHeightMaps
@@ -161,7 +165,7 @@ public class TestCreatureSpawner
 		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(Map.of(cuboid.getCuboidAddress(), heightMap));
 		CreatureEntity[] out = new CreatureEntity[1];
 		TickProcessingContext context = _createContext(completedCuboids, out, 5);
-		CreatureSpawner.trySpawnCreature(context
+		EngineSpawner.trySpawnCreature(context
 				, new EntityCollection(Map.of(), Map.of())
 				, completedCuboids
 				, completedHeightMaps
@@ -181,7 +185,7 @@ public class TestCreatureSpawner
 		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(Map.of(cuboid.getCuboidAddress(), heightMap));
 		CreatureEntity[] out = new CreatureEntity[1];
 		TickProcessingContext context = _createContext(completedCuboids, out, 5);
-		CreatureSpawner.trySpawnCreature(context
+		EngineSpawner.trySpawnCreature(context
 				, new EntityCollection(Map.of(1, MutableEntity.createForTest(1).freeze()), Map.of())
 				, completedCuboids
 				, completedHeightMaps
@@ -202,7 +206,7 @@ public class TestCreatureSpawner
 		ColumnHeightMap columnMap = ColumnHeightMap.build().freeze();
 		CreatureEntity[] out = new CreatureEntity[1];
 		TickProcessingContext context = _createContext(completedCuboids, out, 5);
-		CreatureSpawner.trySpawnCreature(context
+		EngineSpawner.trySpawnCreature(context
 				, new EntityCollection(Map.of(), Map.of())
 				, completedCuboids
 				, Map.of(cuboid.getCuboidAddress().getColumn(), columnMap)
@@ -224,7 +228,7 @@ public class TestCreatureSpawner
 		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(Map.of(topCuboid.getCuboidAddress(), topHeightMap, bottomCuboid.getCuboidAddress(), bottomHeightMap));
 		CreatureEntity[] out = new CreatureEntity[1];
 		TickProcessingContext context = _createContext(completedCuboids, out, 5);
-		CreatureSpawner.trySpawnCreature(context
+		EngineSpawner.trySpawnCreature(context
 				, new EntityCollection(Map.of(), Map.of())
 				, completedCuboids
 				, completedHeightMaps

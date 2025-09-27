@@ -23,13 +23,14 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.engine.EngineCreatures;
+import com.jeffdisher.october.engine.EngineSpawner;
+import com.jeffdisher.october.engine.EnginePlayers;
+import com.jeffdisher.october.engine.EngineCuboids;
 import com.jeffdisher.october.logic.BlockChangeDescription;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
-import com.jeffdisher.october.logic.CreatureProcessor;
-import com.jeffdisher.october.logic.CreatureSpawner;
-import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
@@ -38,7 +39,6 @@ import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SyncPoint;
-import com.jeffdisher.october.logic.WorldProcessor;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
@@ -318,7 +318,7 @@ public class TickRunner
 	public void enqueueOperatorMutation(int entityId, IEntityAction<IMutablePlayerEntity> change)
 	{
 		// The entity might be missing, but the ID should be positive or OPERATOR_ENTITY_ID.
-		Assert.assertTrue((entityId > 0) || (CrowdProcessor.OPERATOR_ENTITY_ID == entityId));
+		Assert.assertTrue((entityId > 0) || (EnginePlayers.OPERATOR_ENTITY_ID == entityId));
 		
 		_sharedDataLock.lock();
 		try
@@ -380,9 +380,9 @@ public class TickRunner
 				, Collections.emptyMap()
 				// mutableCreatureState
 				, Collections.emptyMap()
-				, new _PartialHandoffData(new WorldProcessor.ProcessedFragment(Map.of(), Map.of(), List.of(), Map.of(), Map.of(), 0)
-						, new CrowdProcessor.ProcessedGroup(0, Map.of())
-						, new CreatureProcessor.CreatureGroup(false, Map.of(), List.of())
+				, new _PartialHandoffData(new EngineCuboids.ProcessedFragment(Map.of(), Map.of(), List.of(), Map.of(), Map.of(), 0)
+						, new EnginePlayers.ProcessedGroup(0, Map.of())
+						, new EngineCreatures.CreatureGroup(false, Map.of(), List.of())
 						, List.of()
 						, List.of()
 						, Map.of()
@@ -467,7 +467,7 @@ public class TickRunner
 			if (thisThread.handleNextWorkUnit())
 			{
 				// This will spawn in the context, if spawning is appropriate.
-				CreatureSpawner.trySpawnCreature(context
+				EngineSpawner.trySpawnCreature(context
 						, entityCollection
 						, materials.completedCuboids
 						, materials.completedHeightMaps
@@ -476,7 +476,7 @@ public class TickRunner
 			}
 			
 			long startCreatures = System.currentTimeMillis();
-			CreatureProcessor.CreatureGroup creatureGroup = CreatureProcessor.processCreatureGroupParallel(thisThread
+			EngineCreatures.CreatureGroup creatureGroup = EngineCreatures.processCreatureGroupParallel(thisThread
 					, materials.completedCreatures
 					, context
 					, entityCollection
@@ -486,7 +486,7 @@ public class TickRunner
 			Assert.assertTrue(null != creatureGroup);
 			
 			long startCrowd = System.currentTimeMillis();
-			CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(thisThread
+			EnginePlayers.ProcessedGroup group = EnginePlayers.processCrowdGroupParallel(thisThread
 					, context
 					, entityCollection
 					, materials.changesToRun
@@ -496,7 +496,7 @@ public class TickRunner
 			Assert.assertTrue(null != group);
 			// Now, process the world changes.
 			long startWorld = System.currentTimeMillis();
-			WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(thisThread
+			EngineCuboids.ProcessedFragment fragment = EngineCuboids.processWorldFragmentParallel(thisThread
 					, materials.completedCuboids
 					, context
 					, materials.mutationsToRun
@@ -595,7 +595,7 @@ public class TickRunner
 				mutableWorldState.putAll(fragment.world.stateFragment());
 				mergedChangedHeightMaps.putAll(fragment.world.heightFragment());
 				// Similarly, collect the results of the changed entities for the snapshot.
-				Map<Integer, CrowdProcessor.OutputEntity> entitiesProcessedInFragment = fragment.crowd.entityOutput();
+				Map<Integer, EnginePlayers.OutputEntity> entitiesProcessedInFragment = fragment.crowd.entityOutput();
 				Map<Integer, CreatureEntity> creaturesChangedInFragment = fragment.creatures.updatedCreatures();
 				List<CreatureEntity> creaturesSpawnedInFragment = fragment.spawnedCreatures();
 				List<Integer> creaturesKilledInFragment = fragment.creatures.deadCreatureIds();
@@ -647,10 +647,10 @@ public class TickRunner
 				}
 				
 				// Add any updated entities into the right maps and schedule not yet ready actions.
-				for (Map.Entry<Integer, CrowdProcessor.OutputEntity> processed : entitiesProcessedInFragment.entrySet())
+				for (Map.Entry<Integer, EnginePlayers.OutputEntity> processed : entitiesProcessedInFragment.entrySet())
 				{
 					Integer key = processed.getKey();
-					CrowdProcessor.OutputEntity value = processed.getValue();
+					EnginePlayers.OutputEntity value = processed.getValue();
 					Entity updated = value.entity();
 					
 					// Note that this is documented to be null if nothing changed.
@@ -921,7 +921,7 @@ public class TickRunner
 					for (_OperatorMutationWrapper wrapper : operatorMutations)
 					{
 						// The operator mutations must be run against a connected entity or OPERATOR_ENTITY_ID.
-						if (CrowdProcessor.OPERATOR_ENTITY_ID == wrapper.entityId)
+						if (EnginePlayers.OPERATOR_ENTITY_ID == wrapper.entityId)
 						{
 							operatorChanges.add(wrapper.mutation);
 						}
@@ -1021,9 +1021,9 @@ public class TickRunner
 				}
 				
 				// Convert this raw next tick action accumulation into the CrowdProcessor input.
-				Map<Integer, CrowdProcessor.InputEntity> changesToRun = new HashMap<>();
+				Map<Integer, EnginePlayers.InputEntity> changesToRun = new HashMap<>();
 				// We shouldn't have put operator changes into this common map.
-				Assert.assertTrue(!nextTickChanges.containsKey(CrowdProcessor.OPERATOR_ENTITY_ID));
+				Assert.assertTrue(!nextTickChanges.containsKey(EnginePlayers.OPERATOR_ENTITY_ID));
 				for (Map.Entry<Integer, List<ScheduledChange>> oneEntity : nextTickChanges.entrySet())
 				{
 					Integer id = oneEntity.getKey();
@@ -1033,7 +1033,7 @@ public class TickRunner
 						List<ScheduledChange> list = oneEntity.getValue();
 						// If this is in the map, it can't be empty.
 						Assert.assertTrue(!list.isEmpty());
-						CrowdProcessor.InputEntity input = new CrowdProcessor.InputEntity(entity, Collections.unmodifiableList(list));
+						EnginePlayers.InputEntity input = new EnginePlayers.InputEntity(entity, Collections.unmodifiableList(list));
 						changesToRun.put(id, input);
 					}
 					else
@@ -1292,7 +1292,7 @@ public class TickRunner
 			, Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationMillis
 			// Note that we only add of of these inputs if the entity has some mutations scheduled against it (may not
 			// be ready, though).
-			, Map<Integer, CrowdProcessor.InputEntity> changesToRun
+			, Map<Integer, EnginePlayers.InputEntity> changesToRun
 			// Never null but typically empty.
 			, List<IEntityAction<IMutablePlayerEntity>> operatorChanges
 			, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureChanges
@@ -1340,9 +1340,9 @@ public class TickRunner
 	/**
 	 * A wrapper over the per-thread partial data which we hand-off at synchronization.
 	 */
-	private static record _PartialHandoffData(WorldProcessor.ProcessedFragment world
-			, CrowdProcessor.ProcessedGroup crowd
-			, CreatureProcessor.CreatureGroup creatures
+	private static record _PartialHandoffData(EngineCuboids.ProcessedFragment world
+			, EnginePlayers.ProcessedGroup crowd
+			, EngineCreatures.CreatureGroup creatures
 			, List<CreatureEntity> spawnedCreatures
 			, List<ScheduledMutation> newlyScheduledMutations
 			, Map<Integer, List<ScheduledChange>> newlyScheduledChanges
