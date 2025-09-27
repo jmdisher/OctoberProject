@@ -1,6 +1,7 @@
 package com.jeffdisher.october.types;
 
 import java.nio.ByteBuffer;
+import java.util.Set;
 
 /**
  * This is used closely by CreatureRegistry to determine server-side behaviour but also client-side audio, etc.
@@ -13,6 +14,7 @@ public record EntityType(byte number
 		, byte maxHealth
 		, float viewDistance
 		, float actionDistance
+		, Set<EntityType> hostileTargets
 		, byte attackDamage
 		, Items[] drops
 		, Item breedingItem

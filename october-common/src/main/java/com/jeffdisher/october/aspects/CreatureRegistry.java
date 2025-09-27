@@ -2,11 +2,9 @@ package com.jeffdisher.october.aspects;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,9 +27,11 @@ public class CreatureRegistry
 	private static final String SUB_VIEW_DISTANCE = "view_distance";
 	private static final String SUB_ACTION_DISTANCE = "action_distance";
 	private static final String SUB_DROPS = "drops";
-	private static final String SUB_OPT_ATTACK_DAMAGE = "attack_damage";
-	private static final String SUB_OPT_BREEDING_ITEM = "breeding_item";
+	private static final String SUB_OPT_MELEE = "melee";
+	private static final String SUB_OPT_BREEDING = "breeding";
+	private static final String SUB_OPT_HOSTILE = "hostile";
 
+	private static final byte FAKE_PLAYER_NUMBER = 1;
 	private static final String FAKE_PLAYER_ID = "op.player";
 
 	/**
@@ -49,9 +49,22 @@ public class CreatureRegistry
 		{
 			throw new IOException("Resource missing");
 		}
-		List<EntityType> creatures = new ArrayList<>();
-		Set<String> usedIds = new HashSet<>();
-		usedIds.add(FAKE_PLAYER_ID);
+		Map<String, EntityType> creatureById = new HashMap<>();
+		EntityType player = _packageEntity(FAKE_PLAYER_NUMBER
+			, FAKE_PLAYER_ID
+			, "PLAYER"
+			, new EntityVolume(0.9f, 0.4f)
+			, 4.0f
+			, (byte)100
+			, 0.0f
+			, 0.0f
+			, Set.of()
+			, (byte)0
+			, null
+			, null
+			, new CreatureExtendedData.NullCodec()
+		);
+		creatureById.put(FAKE_PLAYER_ID, player);
 		
 		TabListReader.readEntireFile(new TabListReader.IParseCallbacks() {
 			private String _id = null;
@@ -61,6 +74,7 @@ public class CreatureRegistry
 			private byte _maxHealth = -1;
 			private float _viewDistance = -1.0f;
 			private float _actionDistance = -1.0f;
+			private Set<EntityType> _hostileTargets = new HashSet<>();
 			private byte _attackDamage = 0;
 			private Items[] _drops = null;
 			private Item _breedingItem = null;
@@ -69,11 +83,10 @@ public class CreatureRegistry
 			public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
 			{
 				Assert.assertTrue(null == _id);
-				if (usedIds.contains(name))
+				if (creatureById.containsKey(name))
 				{
 					throw new TabListReader.TabListException("Duplicate ID: " + name);
 				}
-				usedIds.add(name);
 				_id = name;
 				if (1 != parameters.length)
 				{
@@ -95,9 +108,9 @@ public class CreatureRegistry
 				_assert(SUB_DROPS, null != _drops);
 				// optional _breedingItem
 				
-				// Add 2 to the number since 0 is reserved as an error and 1 is for the player.
-				Assert.assertTrue(creatures.size() < 253);
-				byte number = (byte)(creatures.size() + 2);
+				// Add 1 to the number since 0 is reserved as an error.
+				Assert.assertTrue(creatureById.size() < 254);
+				byte number = (byte)(creatureById.size() + 1);
 				EntityType type = _packageEntity(number
 						, _id
 						, _name
@@ -106,12 +119,13 @@ public class CreatureRegistry
 						, _maxHealth
 						, _viewDistance
 						, _actionDistance
+						, _hostileTargets
 						, _attackDamage
 						, _drops
 						, _breedingItem
 						, new CreatureExtendedData.NullCodec()
 				);
-				creatures.add(type);
+				creatureById.put(_id, type);
 				
 				_id = null;
 				_name = null;
@@ -181,21 +195,37 @@ public class CreatureRegistry
 					int count = _getInt(parameters[1]);
 					_drops = new Items[] { new Items(item, count) };
 				}
-				else if (SUB_OPT_ATTACK_DAMAGE.equals(name))
+				else if (SUB_OPT_MELEE.equals(name))
 				{
 					if (1 != parameters.length)
 					{
-						throw new TabListReader.TabListException(_id + ": Expected 1 parameter for " + SUB_OPT_ATTACK_DAMAGE);
+						throw new TabListReader.TabListException(_id + ": Expected 1 parameter for " + SUB_OPT_MELEE);
 					}
 					_attackDamage = _getByte(parameters[0]);
 				}
-				else if (SUB_OPT_BREEDING_ITEM.equals(name))
+				else if (SUB_OPT_BREEDING.equals(name))
 				{
 					if (1 != parameters.length)
 					{
-						throw new TabListReader.TabListException(_id + ": Expected 1 parameter for " + SUB_OPT_BREEDING_ITEM);
+						throw new TabListReader.TabListException(_id + ": Expected 1 parameter for " + SUB_OPT_BREEDING);
 					}
 					_breedingItem = _getItem(parameters[0]);
+				}
+				else if (SUB_OPT_HOSTILE.equals(name))
+				{
+					if (0 == parameters.length)
+					{
+						throw new TabListReader.TabListException(_id + ": Expected at least 1 parameter for " + SUB_OPT_HOSTILE);
+					}
+					for (String param : parameters)
+					{
+						EntityType target = creatureById.get(param);
+						if (null == target)
+						{
+							throw new TabListReader.TabListException(_id + ": Specified invalid hostile target " + param);
+						}
+						_hostileTargets.add(target);
+					}
 				}
 				else
 				{
@@ -259,7 +289,7 @@ public class CreatureRegistry
 			}
 		}, stream);
 		
-		return new CreatureRegistry(items, creatures);
+		return new CreatureRegistry(items, player, creatureById);
 	}
 
 
@@ -273,42 +303,22 @@ public class CreatureRegistry
 	 */
 	public final EntityType[] HOSTILE_MOBS;
 
-	private CreatureRegistry(ItemRegistry items, List<EntityType> creatures)
+	private CreatureRegistry(ItemRegistry items, EntityType player, Map<String, EntityType> creatureById)
 	{
-		this.PLAYER = _packageEntity((byte)1
-				, FAKE_PLAYER_ID
-				, "PLAYER"
-				, new EntityVolume(0.9f, 0.4f)
-				, 4.0f
-				, (byte)100
-				, 0.0f
-				, 0.0f
-				, (byte)0
-				, null
-				, null
-				, new CreatureExtendedData.NullCodec()
-		);
-		ENTITY_BY_NUMBER = new EntityType[creatures.size() + 2];
-		ENTITY_BY_NUMBER[1] = this.PLAYER;
-		int index = 2;
-		Map<String, EntityType> capture = new HashMap<>();
-		capture.put(this.PLAYER.id(), this.PLAYER);
-		for (EntityType type : creatures)
+		this.PLAYER = player;
+		ENTITY_BY_NUMBER = new EntityType[creatureById.size() + 1];
+		for (EntityType type : creatureById.values())
 		{
-			Assert.assertTrue(type.number() == index);
-			ENTITY_BY_NUMBER[index] = type;
-			index += 1;
-			
-			capture.put(type.id(), type);
+			ENTITY_BY_NUMBER[type.number()] = type;
 		}
 		
 		// For historical reasons, there is a limit of 254 entity types, where 0 is reserved as an error value.
 		Assert.assertTrue(null == this.ENTITY_BY_NUMBER[0]);
 		Assert.assertTrue(this.ENTITY_BY_NUMBER.length <= 254);
 		
-		_mapByIds = Collections.unmodifiableMap(capture);
+		_mapByIds = Collections.unmodifiableMap(creatureById);
 		this.HOSTILE_MOBS = _mapByIds.values().stream()
-				.filter((EntityType type) -> (type.attackDamage() > 0))
+				.filter((EntityType type) -> type.hostileTargets().contains(this.PLAYER))
 				.toArray((int size) -> new EntityType[size])
 		;
 	}
@@ -333,6 +343,7 @@ public class CreatureRegistry
 			, byte maxHealth
 			, float viewDistance
 			, float actionDistance
+			, Set<EntityType> hostileTargets
 			, byte attackDamage
 			, Items[] drops
 			, Item breedingItem
@@ -347,6 +358,7 @@ public class CreatureRegistry
 				, maxHealth
 				, viewDistance
 				, actionDistance
+				, hostileTargets
 				, attackDamage
 				, drops
 				, breedingItem

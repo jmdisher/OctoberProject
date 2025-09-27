@@ -6,13 +6,15 @@
 # <TAB>view_distance<TAB>float
 # <TAB>action_distance<TAB>float
 # <TAB>drops<TAB>item_id<tab>count_int
-# [<TAB>attack_damage<TAB>byte]
-# [<TAB>breeding_item<TAB>item_id]
+#[ <TAB>melee<TAB>damage_int]
+#[ <TAB>breeding<TAB>breeding_item]
+#[ <TAB>hostile<TAB>creature_id_list]
 #
 # Note that all entries listed here will be numbered in order, starting at 2 (as 1 is hard-coded as "PLAYER" and 0 is a
 # reserved error value.
-# "attack_damage" defaults to 0 (non-hostile) when omitted.
-# "breeding_item" presence means that the creature can be bread.
+# "melee" defaults to 0 when omitted (meaning no melee attacks can be used, even when armed).
+# "breeding" defaults to non-breedable when missing.
+# "hostile" defaults to fully passive when not provided.
 
 op.cow	Cow
 	volume	0.7	0.8
@@ -21,7 +23,7 @@ op.cow	Cow
 	view_distance	7.0
 	action_distance	1.0
 	drops	op.beef	5
-	breeding_item	op.wheat_item
+	breeding	op.wheat_item
 op.orc	Orc
 	volume	0.7	0.4
 	blocks_per_second	2.0
@@ -29,4 +31,5 @@ op.orc	Orc
 	view_distance	8.0
 	action_distance	1.0
 	drops	op.iron_dust	1
-	attack_damage	5
+	melee	5
+	hostile	op.player
