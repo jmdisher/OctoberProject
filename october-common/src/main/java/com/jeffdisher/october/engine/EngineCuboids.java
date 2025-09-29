@@ -72,7 +72,6 @@ public class EngineCuboids
 			, Set<CuboidAddress> cuboidsLoadedThisTick
 	)
 	{
-		long millisSinceLastTick = context.millisPerTick;
 		Map<CuboidAddress, IReadOnlyCuboidData> fragment = new HashMap<>();
 		Map<CuboidAddress, CuboidHeightMap> fragmentHeights = new HashMap<>();
 		
@@ -92,141 +91,42 @@ public class EngineCuboids
 				
 				// We can't be told to operate on something which isn't in the state.
 				Assert.assertTrue(null != oldState);
-				// We will accumulate changing blocks and determine if we need to write any back at the end.
-				LazyLocationCache<MutableBlockProxy> lazyMutableBlockCache = new LazyLocationCache<>(
-						(AbsoluteLocation location) ->  new MutableBlockProxy(location, oldState)
+				SingleCuboidResult result = _processOneCuboid(context
+					, worldMap.keySet()
+					, mutationsToRun.get(key)
+					, periodicMutationMillis.get(key)
+					, modifiedBlocksByCuboidAddress
+					, potentialLightChangesByCuboid
+					, potentialLogicChangesByCuboid
+					, cuboidsLoadedThisTick
+					, key
+					, oldState
 				);
-				
-				// We want to synthesize block updates adjacent to modified blocks and, optionally, boundaries of fresh cuboids.
-				// NOTE:  This is disabled by default since it washes out all performance values and will be replaced with something more precise in the future.
-				committedMutationCount += _synthesizeAndRunBlockUpdates(processor
-						, context.config.shouldSynthesizeUpdatesOnLoad
-						, lazyMutableBlockCache
-						, context
-						, oldState
-						, modifiedBlocksByCuboidAddress
-						, worldMap.keySet()
-						, cuboidsLoadedThisTick
-				);
-				
-				// Run any periodic mutations which have been requested.
-				Map<BlockAddress, Long> periodicNotReady = new HashMap<>();
-				Map<BlockAddress, Long> periodicToRun = periodicMutationMillis.get(key);
-				if (null != periodicToRun)
+				if (null != result.changedCuboidOrNull)
 				{
-					for (Map.Entry<BlockAddress, Long> ent : periodicToRun.entrySet())
-					{
-						BlockAddress block = ent.getKey();
-						long millisUntilReady = ent.getValue();
-						if (0L == millisUntilReady)
-						{
-							// Synthesize this.
-							MutationBlockPeriodic mutation = new MutationBlockPeriodic(key.getBase().relativeForBlock(block));
-							processor.cuboidMutationsProcessed += 1;
-							boolean didApply = _runOneMutation(lazyMutableBlockCache, context, oldState, mutation);
-							if (didApply)
-							{
-								committedMutationCount += 1;
-							}
-						}
-						else
-						{
-							long updatedMillis = millisUntilReady - millisSinceLastTick;
-							if (updatedMillis < 0L)
-							{
-								updatedMillis = 0L;
-							}
-							periodicNotReady.put(block, updatedMillis);
-						}
-					}
+					fragment.put(key, result.changedCuboidOrNull);
 				}
-				
-				// Now run the normal mutations.
-				List<ScheduledMutation> mutations = mutationsToRun.get(key);
-				if (null != mutations)
+				if (null != result.changedHeightMap)
 				{
-					for (ScheduledMutation scheduledMutations : mutations)
-					{
-						long millisUntilReady = scheduledMutations.millisUntilReady();
-						IMutationBlock mutation = scheduledMutations.mutation();
-						if (0L == millisUntilReady)
-						{
-							processor.cuboidMutationsProcessed += 1;
-							boolean didApply = _runOneMutation(lazyMutableBlockCache, context, oldState, mutation);
-							if (didApply)
-							{
-								committedMutationCount += 1;
-							}
-						}
-						else
-						{
-							long updatedMillis = millisUntilReady - millisSinceLastTick;
-							if (updatedMillis < 0L)
-							{
-								updatedMillis = 0L;
-							}
-							ScheduledMutation updated = new ScheduledMutation(mutation, updatedMillis);
-							notYetReadyMutations.add(updated);
-						}
-					}
+					fragmentHeights.put(key, result.changedHeightMap);
 				}
-				
-				// We also want to process lighting updates from the previous tick.
-				PropagationHelpers.processPreviousTickLightUpdates(key, potentialLightChangesByCuboid, lazyMutableBlockCache, context.previousBlockLookUp);
-				
-				// While here, also process any logic aspect updates from the previous tick.
-				PropagationHelpers.processPreviousTickLogicUpdates((IMutationBlock update) -> context.mutationSink.next(update)
-						, key
-						, potentialLogicChangesByCuboid
-						, lazyMutableBlockCache
-						, context.previousBlockLookUp
-				);
-				
-				// Return the old instance if nothing changed.
-				List<MutableBlockProxy> proxiesToWrite = lazyMutableBlockCache.getCachedValues().stream().filter(
-						(MutableBlockProxy proxy) -> proxy.didChange()
-				).toList();
-				if (!proxiesToWrite.isEmpty())
+				if (null != result.changedBlocks)
 				{
-					// Something changed so we will write-back the updated cuboid and list of block state changes.
-					ByteBuffer scratchBuffer = ByteBuffer.allocate(PacketCodec.MAX_PACKET_BYTES - PacketCodec.HEADER_BYTES);
-					List<BlockChangeDescription> updateMutations = new ArrayList<>();
-					// At least something changed so create a new clone and write-back into it.
-					CuboidData mutable = CuboidData.mutableClone(oldState);
-					for (MutableBlockProxy proxy : proxiesToWrite)
-					{
-						proxy.writeBack(mutable);
-						
-						// Since this one changed, we also want to send the set block mutation.
-						updateMutations.add(BlockChangeDescription.extractFromProxy(scratchBuffer, proxy));
-					}
-					fragment.put(key, mutable);
-					
-					// For now, we will regenerate the maps in this case but we may want to update more precisely.
-					fragmentHeights.put(key, HeightMapHelpers.buildHeightMap(mutable));
-					
-					// Add the change descriptions for this cuboid.
-					blockChangesByCuboid.put(key, updateMutations);
+					Assert.assertTrue(!result.changedBlocks.isEmpty());
+					blockChangesByCuboid.put(key, result.changedBlocks);
 				}
-				
-				// Write back any of the updated periodic events.
-				List<MutableBlockProxy> proxiesWithScheduledMutations = lazyMutableBlockCache.getCachedValues().stream().filter(
-						(MutableBlockProxy proxy) -> (proxy.periodicDelayMillis > 0L)
-				).toList();
-				for (MutableBlockProxy proxy : proxiesWithScheduledMutations)
+				if (null != result.notYetReadyMutations)
 				{
-					BlockAddress block = proxy.absoluteLocation.getBlockAddress();
-					long existing = periodicNotReady.containsKey(block)
-							? periodicNotReady.get(block)
-							: Long.MAX_VALUE
-					;
-					long updated = Math.min(proxy.periodicDelayMillis, existing);
-					periodicNotReady.put(block, updated);
+					notYetReadyMutations.addAll(result.notYetReadyMutations);
 				}
-				if (!periodicNotReady.isEmpty())
+				if (null != result.periodicNotReady)
 				{
-					periodicNotReadyByCuboid.put(key, periodicNotReady);
+					Assert.assertTrue(!result.periodicNotReady.isEmpty());
+					periodicNotReadyByCuboid.put(key, result.periodicNotReady);
 				}
+				processor.cuboidBlockupdatesProcessed += result.blockUpdatesProcessed;
+				processor.cuboidMutationsProcessed += result.mutationsProcessed;
+				committedMutationCount += result.blockUpdatesApplied + result.mutationsApplied;
 			}
 		}
 		
@@ -237,6 +137,170 @@ public class EngineCuboids
 				, periodicNotReadyByCuboid
 				, blockChangesByCuboid
 				, committedMutationCount
+		);
+	}
+
+
+	private static SingleCuboidResult _processOneCuboid(TickProcessingContext context
+		, Set<CuboidAddress> allLoadedCuboids
+		, List<ScheduledMutation> mutationsToRun
+		, Map<BlockAddress, Long> periodicToRun
+		, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
+		, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
+		, Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid
+		, Set<CuboidAddress> cuboidsLoadedThisTick
+		, CuboidAddress key
+		, IReadOnlyCuboidData oldState
+	)
+	{
+		long millisSinceLastTick = context.millisPerTick;
+		// We can't be told to operate on something which isn't in the state.
+		Assert.assertTrue(null != oldState);
+		// We will accumulate changing blocks and determine if we need to write any back at the end.
+		LazyLocationCache<MutableBlockProxy> lazyMutableBlockCache = new LazyLocationCache<>(
+				(AbsoluteLocation location) ->  new MutableBlockProxy(location, oldState)
+		);
+		
+		// We want to synthesize block updates adjacent to modified blocks and, optionally, boundaries of fresh cuboids.
+		// NOTE:  This is disabled by default since it washes out all performance values and will be replaced with something more precise in the future.
+		_UpdateResults updateResults = _synthesizeAndRunBlockUpdates(context
+			, context.config.shouldSynthesizeUpdatesOnLoad
+			, lazyMutableBlockCache
+			, oldState
+			, modifiedBlocksByCuboidAddress
+			, allLoadedCuboids
+			, cuboidsLoadedThisTick
+		);
+		int blockUpdatesProcessed = updateResults.blockUpdatesProcessed;
+		int blockUpdatesApplied = updateResults.blockUpdatesApplied;
+		int mutationsProcessed = 0;
+		int mutationsApplied = 0;
+		
+		// Run any periodic mutations which have been requested.
+		Map<BlockAddress, Long> periodicNotReady = new HashMap<>();
+		if (null != periodicToRun)
+		{
+			for (Map.Entry<BlockAddress, Long> ent : periodicToRun.entrySet())
+			{
+				BlockAddress block = ent.getKey();
+				long millisUntilReady = ent.getValue();
+				if (0L == millisUntilReady)
+				{
+					// Synthesize this.
+					MutationBlockPeriodic mutation = new MutationBlockPeriodic(key.getBase().relativeForBlock(block));
+					mutationsProcessed += 1;
+					boolean didApply = _runOneMutation(lazyMutableBlockCache, context, oldState, mutation);
+					if (didApply)
+					{
+						mutationsApplied += 1;
+					}
+				}
+				else
+				{
+					long updatedMillis = millisUntilReady - millisSinceLastTick;
+					if (updatedMillis < 0L)
+					{
+						updatedMillis = 0L;
+					}
+					periodicNotReady.put(block, updatedMillis);
+				}
+			}
+		}
+		
+		// Now run the normal mutations.
+		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
+		if (null != mutationsToRun)
+		{
+			for (ScheduledMutation scheduledMutations : mutationsToRun)
+			{
+				long millisUntilReady = scheduledMutations.millisUntilReady();
+				IMutationBlock mutation = scheduledMutations.mutation();
+				if (0L == millisUntilReady)
+				{
+					mutationsProcessed += 1;
+					boolean didApply = _runOneMutation(lazyMutableBlockCache, context, oldState, mutation);
+					if (didApply)
+					{
+						mutationsApplied += 1;
+					}
+				}
+				else
+				{
+					long updatedMillis = millisUntilReady - millisSinceLastTick;
+					if (updatedMillis < 0L)
+					{
+						updatedMillis = 0L;
+					}
+					ScheduledMutation updated = new ScheduledMutation(mutation, updatedMillis);
+					notYetReadyMutations.add(updated);
+				}
+			}
+		}
+		
+		// We also want to process lighting updates from the previous tick.
+		PropagationHelpers.processPreviousTickLightUpdates(key, potentialLightChangesByCuboid, lazyMutableBlockCache, context.previousBlockLookUp);
+		
+		// While here, also process any logic aspect updates from the previous tick.
+		PropagationHelpers.processPreviousTickLogicUpdates((IMutationBlock update) -> context.mutationSink.next(update)
+			, key
+			, potentialLogicChangesByCuboid
+			, lazyMutableBlockCache
+			, context.previousBlockLookUp
+		);
+		
+		// Return the old instance if nothing changed.
+		List<MutableBlockProxy> proxiesToWrite = lazyMutableBlockCache.getCachedValues().stream().filter(
+				(MutableBlockProxy proxy) -> proxy.didChange()
+		).toList();
+		IReadOnlyCuboidData changedCuboidOrNull = null;
+		CuboidHeightMap changedHeightMap = null;
+		List<BlockChangeDescription> changedBlocks = null;
+		if (!proxiesToWrite.isEmpty())
+		{
+			// Something changed so we will write-back the updated cuboid and list of block state changes.
+			ByteBuffer scratchBuffer = ByteBuffer.allocate(PacketCodec.MAX_PACKET_BYTES - PacketCodec.HEADER_BYTES);
+			List<BlockChangeDescription> updateMutations = new ArrayList<>();
+			// At least something changed so create a new clone and write-back into it.
+			CuboidData mutable = CuboidData.mutableClone(oldState);
+			for (MutableBlockProxy proxy : proxiesToWrite)
+			{
+				proxy.writeBack(mutable);
+				
+				// Since this one changed, we also want to send the set block mutation.
+				updateMutations.add(BlockChangeDescription.extractFromProxy(scratchBuffer, proxy));
+			}
+			changedCuboidOrNull = mutable;
+			
+			// For now, we will regenerate the maps in this case but we may want to update more precisely.
+			changedHeightMap = HeightMapHelpers.buildHeightMap(mutable);
+			
+			// Add the change descriptions for this cuboid.
+			changedBlocks = updateMutations;
+		}
+		
+		// Write back any of the updated periodic events.
+		List<MutableBlockProxy> proxiesWithScheduledMutations = lazyMutableBlockCache.getCachedValues().stream().filter(
+				(MutableBlockProxy proxy) -> (proxy.periodicDelayMillis > 0L)
+		).toList();
+		for (MutableBlockProxy proxy : proxiesWithScheduledMutations)
+		{
+			BlockAddress block = proxy.absoluteLocation.getBlockAddress();
+			long existing = periodicNotReady.containsKey(block)
+					? periodicNotReady.get(block)
+					: Long.MAX_VALUE
+			;
+			long updated = Math.min(proxy.periodicDelayMillis, existing);
+			periodicNotReady.put(block, updated);
+		}
+		return new SingleCuboidResult(changedCuboidOrNull
+			, changedHeightMap
+			, changedBlocks
+			, periodicNotReady.isEmpty() ? null : periodicNotReady
+			, notYetReadyMutations.isEmpty() ? null : notYetReadyMutations
+			, blockUpdatesProcessed
+			, blockUpdatesApplied
+			, mutationsProcessed
+			, mutationsApplied
 		);
 	}
 
@@ -251,10 +315,9 @@ public class EngineCuboids
 		return mutation.applyMutation(context, thisBlockProxy);
 	}
 
-	private static int _synthesizeAndRunBlockUpdates(ProcessorElement processor
+	private static _UpdateResults _synthesizeAndRunBlockUpdates(TickProcessingContext context
 			, boolean shouldIncludeLoadedCuboidFaces
 			, Function<AbsoluteLocation, MutableBlockProxy> lazyMutableBlockCache
-			, TickProcessingContext context
 			, IReadOnlyCuboidData oldState
 			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
 			, Set<CuboidAddress> allLoadedCuboids
@@ -289,18 +352,18 @@ public class EngineCuboids
 		}
 		
 		// Now, walk that set, synthesize and run a block update on each.
+		int blockUpdatesProcessed = toSynthesize.size();
 		int appliedUpdates = 0;
 		for (AbsoluteLocation target : toSynthesize)
 		{
 			MutationBlockUpdate update = new MutationBlockUpdate(target);
-			processor.cuboidBlockupdatesProcessed += 1;
 			boolean didApply = _runOneMutation(lazyMutableBlockCache, context, oldState, update);
 			if (didApply)
 			{
 				appliedUpdates += 1;
 			}
 		}
-		return appliedUpdates;
+		return new _UpdateResults(blockUpdatesProcessed, appliedUpdates);
 	}
 
 	private static void _collectFacesOfNewCuboids(Set<AbsoluteLocation> inout_toSynthesize
@@ -401,4 +464,17 @@ public class EngineCuboids
 			, Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid
 			, int committedMutationCount
 	) {}
+
+	public static record SingleCuboidResult(IReadOnlyCuboidData changedCuboidOrNull
+		, CuboidHeightMap changedHeightMap
+		, List<BlockChangeDescription> changedBlocks
+		, Map<BlockAddress, Long> periodicNotReady
+		, List<ScheduledMutation> notYetReadyMutations
+		, int blockUpdatesProcessed
+		, int blockUpdatesApplied
+		, int mutationsProcessed
+		, int mutationsApplied
+	) {}
+
+	private static record _UpdateResults(int blockUpdatesProcessed, int blockUpdatesApplied) {}
 }

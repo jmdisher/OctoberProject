@@ -67,10 +67,7 @@ public class EnginePlayers
 		{
 			// Verify that this isn't redundantly described.
 			Assert.assertTrue(!entitiesById.containsKey(OPERATOR_ENTITY_ID));
-			for (IEntityAction<IMutablePlayerEntity> change : operatorChanges)
-			{
-				change.applyChange(context, null);
-			}
+			_processOperatorChanges(context, operatorChanges);
 		}
 		for (Map.Entry<Integer, InputEntity> elt : entitiesById.entrySet())
 		{
@@ -80,60 +77,93 @@ public class EnginePlayers
 				Integer id = elt.getKey();
 				InputEntity input = elt.getValue();
 				Entity entity = input.entity;
+				List<ScheduledChange> changes = input.scheduledChanges;
 				processor.entitiesProcessed += 1;
 				
-				MutableEntity mutable = MutableEntity.existing(entity);
-				float startZVelocity = mutable.newVelocity.z();
-				List<ScheduledChange> changes = input.scheduledChanges;
-				List<ScheduledChange> notYetReadyChanges = new ArrayList<>();
-				for (ScheduledChange scheduled : changes)
-				{
-					long millisUntilReady = scheduled.millisUntilReady();
-					IEntityAction<IMutablePlayerEntity> change = scheduled.change();
-					if (0L == millisUntilReady)
-					{
-						processor.entityChangesProcessed += 1;
-						boolean didApply = change.applyChange(context, mutable);
-						if (didApply)
-						{
-							committedMutationCount += 1;
-						}
-					}
-					else
-					{
-						long updatedMillis = millisUntilReady - context.millisPerTick;
-						if (updatedMillis < 0L)
-						{
-							updatedMillis = 0L;
-						}
-						notYetReadyChanges.add(new ScheduledChange(change, updatedMillis));
-					}
-				}
-				
-				// Perform our usual "end of tick" concerns.
-				// Apply fall damage.
-				byte fallDamage = TickUtils.calculateFallDamage(startZVelocity - mutable.newVelocity.z());
-				if (fallDamage > 0)
-				{
-					DamageHelpers.applyDamageDirectlyAndPostEvent(context, mutable, (byte)fallDamage, EventRecord.Cause.FALL);
-				}
-				// See if we need to "nudge" anyone this tick.
-				NudgeHelpers.nudgeAsPlayer(Environment.getShared(), context, entityCollection, entity);
-				// Perform common end of tick processing.
-				TickUtils.endOfTick(context, mutable);
-				
-				// If there was a change, we want to send it back so that the snapshot can be updated and clients can be informed.
-				// This freeze() call will return the original instance if it is identical.
-				Entity newEntity = mutable.freeze();
-				Entity entityToReturn = (newEntity != entity)
-					? newEntity
-					: null
-				;
-				processedEntities.put(id, new OutputEntity(entityToReturn, notYetReadyChanges));
+				SinglePlayerResult result = _processOnePlayer(context
+					, entityCollection
+					, entity
+					, changes
+				);
+				processedEntities.put(id, new OutputEntity(result.changedEntityOrNull, result.notYetReadyChanges));
+				processor.entityChangesProcessed = +result.entityChangesProcessed;
+				committedMutationCount += result.committedMutationCount;
 			}
 		}
 		return new ProcessedGroup(committedMutationCount
 			, processedEntities
+		);
+	}
+
+
+	private static void _processOperatorChanges(TickProcessingContext context
+		, List<IEntityAction<IMutablePlayerEntity>> operatorChanges
+	)
+	{
+		for (IEntityAction<IMutablePlayerEntity> change : operatorChanges)
+		{
+			change.applyChange(context, null);
+		}
+	}
+
+	private static SinglePlayerResult _processOnePlayer(TickProcessingContext context
+		, EntityCollection entityCollection
+		, Entity entity
+		, List<ScheduledChange> changes
+	)
+	{
+		int entityChangesProcessed = 0;
+		int committedMutationCount = 0;
+		MutableEntity mutable = MutableEntity.existing(entity);
+		float startZVelocity = mutable.newVelocity.z();
+		List<ScheduledChange> notYetReadyChanges = new ArrayList<>();
+		for (ScheduledChange scheduled : changes)
+		{
+			long millisUntilReady = scheduled.millisUntilReady();
+			IEntityAction<IMutablePlayerEntity> change = scheduled.change();
+			if (0L == millisUntilReady)
+			{
+				entityChangesProcessed += 1;
+				boolean didApply = change.applyChange(context, mutable);
+				if (didApply)
+				{
+					committedMutationCount += 1;
+				}
+			}
+			else
+			{
+				long updatedMillis = millisUntilReady - context.millisPerTick;
+				if (updatedMillis < 0L)
+				{
+					updatedMillis = 0L;
+				}
+				notYetReadyChanges.add(new ScheduledChange(change, updatedMillis));
+			}
+		}
+		
+		// Perform our usual "end of tick" concerns.
+		// Apply fall damage.
+		byte fallDamage = TickUtils.calculateFallDamage(startZVelocity - mutable.newVelocity.z());
+		if (fallDamage > 0)
+		{
+			DamageHelpers.applyDamageDirectlyAndPostEvent(context, mutable, (byte)fallDamage, EventRecord.Cause.FALL);
+		}
+		// See if we need to "nudge" anyone this tick.
+		NudgeHelpers.nudgeAsPlayer(Environment.getShared(), context, entityCollection, entity);
+		// Perform common end of tick processing.
+		TickUtils.endOfTick(context, mutable);
+		
+		// If there was a change, we want to send it back so that the snapshot can be updated and clients can be informed.
+		// This freeze() call will return the original instance if it is identical.
+		Entity newEntity = mutable.freeze();
+		Entity entityToReturn = (newEntity != entity)
+			? newEntity
+			: null
+		;
+		return new SinglePlayerResult(entityToReturn
+			, notYetReadyChanges
+			, entityChangesProcessed
+			, committedMutationCount
 		);
 	}
 
@@ -151,5 +181,11 @@ public class EnginePlayers
 	// Note that "entity" will be NULL if unchanged and notYetReadyChanges will NEVER be NULL but may be empty.
 	public static record OutputEntity(Entity entity
 		, List<ScheduledChange> notYetReadyChanges
+	) {}
+
+	public static record SinglePlayerResult(Entity changedEntityOrNull
+		, List<ScheduledChange> notYetReadyChanges
+		, int entityChangesProcessed
+		, int committedMutationCount
 	) {}
 }
