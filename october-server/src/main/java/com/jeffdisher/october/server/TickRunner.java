@@ -82,6 +82,9 @@ public class TickRunner
 	private final long _millisPerTick;
 	private final CreatureIdAssigner _idAssigner;
 	private final IntUnaryOperator _random;
+	private final Consumer<Snapshot> _tickCompletionListener;
+	private final WorldConfig _config;
+
 	// Read-only snapshot of the previously-completed tick.
 	private Snapshot _snapshot;
 	
@@ -127,6 +130,9 @@ public class TickRunner
 		_millisPerTick = millisPerTick;
 		_idAssigner = idAssigner;
 		_random = randomInt;
+		_tickCompletionListener = tickCompletionListener;
+		_config = config;
+		
 		_entitySharedAccess = new HashMap<>();
 		_partial = new _PartialHandoffData[threadCount];
 		_threadStats = new ProcessorElement.PerThreadStats[threadCount];
@@ -139,10 +145,7 @@ public class TickRunner
 				try
 				{
 					ProcessorElement thisThread = new ProcessorElement(id, _syncPoint, atomic);
-					_backgroundThreadMain(thisThread
-							, tickCompletionListener
-							, config
-					);
+					_backgroundThreadMain(thisThread);
 				}
 				catch (Throwable t)
 				{
@@ -366,20 +369,30 @@ public class TickRunner
 	}
 
 
-	private void _backgroundThreadMain(ProcessorElement thisThread
-			, Consumer<Snapshot> tickCompletionListener
-			, WorldConfig config
-	)
+	private void _backgroundThreadMain(ProcessorElement thisThread)
 	{
 		// There is nothing loaded at the start so pass in an empty world and crowd state, as well as no work having been processed.
+		TickMaterials emptyMaterials = new TickMaterials(0L
+			, Map.of()
+			, Map.of()
+			, Map.of()
+			, Map.of()
+			, Map.of()
+			, Map.of()
+			, Map.of()
+			, Map.of()
+			, List.of()
+			, Map.of()
+			, Map.of()
+			, Map.of()
+			, Map.of()
+			, Set.of()
+			, Map.of()
+			, 0L
+			, System.currentTimeMillis()
+		);
 		TickMaterials materials = _mergeTickStateAndWaitForNext(thisThread
-				, tickCompletionListener
-				, Collections.emptyMap()
-				, Collections.emptyMap()
-				, Collections.emptyMap()
-				, Collections.emptyMap()
-				// mutableCreatureState
-				, Collections.emptyMap()
+				, emptyMaterials
 				, new _PartialHandoffData(new EngineCuboids.ProcessedFragment(Map.of(), Map.of(), List.of(), Map.of(), Map.of(), 0)
 						, new EnginePlayers.ProcessedGroup(0, Map.of())
 						, new EngineCreatures.CreatureGroup(false, Map.of(), List.of())
@@ -389,10 +402,7 @@ public class TickRunner
 						, Map.of()
 						, List.of()
 						, Set.of()
-						, Map.of()
 				)
-				, 0L
-				, System.currentTimeMillis()
 		);
 		while (null != materials)
 		{
@@ -440,7 +450,7 @@ public class TickRunner
 							int highestBlock = map.getHeight(blockAddress.x(), blockAddress.y());
 							// If this is the highest block, return the light, otherwise 0.
 							skyLight = (blockLocation.z() == highestBlock)
-									? PropagationHelpers.currentSkyLightValue(thisTickMaterials.thisGameTick, config.ticksPerDay, config.dayStartTick)
+									? PropagationHelpers.currentSkyLightValue(thisTickMaterials.thisGameTick, _config.ticksPerDay, _config.dayStartTick)
 									: 0
 							;
 						}
@@ -457,7 +467,7 @@ public class TickRunner
 					, _random
 					, (EventRecord event) -> events.add(event)
 					, (CuboidAddress address) -> internallyMarkedAlive.add(address)
-					, config
+					, _config
 					, _millisPerTick
 					, currentTickTimeMillis
 			);
@@ -515,12 +525,7 @@ public class TickRunner
 			thisThread.millisInCrowdProcessor = (startWorld - startCrowd);
 			thisThread.millisInWorldProcessor = (endLoop - startWorld);
 			materials = _mergeTickStateAndWaitForNext(thisThread
-					, tickCompletionListener
-					, materials.completedCuboids
-					, materials.cuboidHeightMaps
-					, materials.completedHeightMaps
-					, materials.completedEntities
-					, materials.completedCreatures
+					, materials
 					, new _PartialHandoffData(fragment
 							, group
 							, creatureGroup
@@ -530,26 +535,14 @@ public class TickRunner
 							, newChangeSink.takeExportedCreatureChanges()
 							, events
 							, internallyMarkedAlive
-							, materials.commitLevels
 					)
-					, materials.millisInTickPreamble
-					, materials.timeMillisPreambleEnd
 			);
 		}
 	}
 
 	private TickMaterials _mergeTickStateAndWaitForNext(ProcessorElement elt
-			, Consumer<Snapshot> tickCompletionListener
-			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
-			, Map<CuboidAddress, CuboidHeightMap> completedCuboidHeightMap
-			, Map<CuboidColumnAddress, ColumnHeightMap> completedColumnHeightMaps
-			, Map<Integer, Entity> completedCrowdState
-			, Map<Integer, CreatureEntity> completedCreatureState
+			, TickMaterials startingMaterials
 			, _PartialHandoffData perThreadData
-			
-			// Data related to internal statistics generated at the end of the previous tick and passed back in.
-			, long millisInTickPreamble
-			, long timeMillisPreambleEnd
 	)
 	{
 		// Store whatever work we finished from the just-completed tick.
@@ -581,10 +574,10 @@ public class TickRunner
 			
 			// We will create new mutable maps from the previous materials and modify them based on the changes in the fragments.
 			// We will create read-only snapshots for the Snapshot object and continue to modify these in order to create the next TickMaterials.
-			Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState = new HashMap<>(completedCuboids);
+			Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState = new HashMap<>(startingMaterials.completedCuboids);
 			Map<CuboidAddress, CuboidHeightMap> mergedChangedHeightMaps = new HashMap<>();
-			Map<Integer, Entity> mutableCrowdState = new HashMap<>(completedCrowdState);
-			Map<Integer, CreatureEntity> mutableCreatureState = new HashMap<>(completedCreatureState);
+			Map<Integer, Entity> mutableCrowdState = new HashMap<>(startingMaterials.completedEntities);
+			Map<Integer, CreatureEntity> mutableCreatureState = new HashMap<>(startingMaterials.completedCreatures);
 			Set<CuboidAddress> internallyMarkedAlive = new HashSet<>();
 			
 			for (int i = 0; i < _partial.length; ++i)
@@ -612,7 +605,7 @@ public class TickRunner
 				}
 				
 				// We will also collect all the per-client commit levels.
-				combinedCommitLevels.putAll(fragment.commitLevels);
+				combinedCommitLevels.putAll(startingMaterials.commitLevels);
 				updatedCreatures.putAll(creaturesChangedInFragment);
 				committedEntityMutationCount += fragment.crowd.committedMutationCount();
 				blockChangesByCuboid.putAll(fragment.world.blockChangesByCuboid());
@@ -681,13 +674,13 @@ public class TickRunner
 						.toList();
 				resultantBlockChangesByCuboid.put(perCuboid.getKey(), list);
 			}
-			Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.rebuildColumnMaps(completedColumnHeightMaps
-					, completedCuboidHeightMap
+			Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.rebuildColumnMaps(startingMaterials.completedHeightMaps
+					, startingMaterials.cuboidHeightMaps
 					, mergedChangedHeightMaps
 					, mutableWorldState.keySet()
 			);
 			long endMillisPostamble = System.currentTimeMillis();
-			long millisTickParallelPhase = (startMillisPostamble - timeMillisPreambleEnd);
+			long millisTickParallelPhase = (startMillisPostamble - startingMaterials.timeMillisPreambleEnd);
 			long millisTickPostamble = (endMillisPostamble - startMillisPostamble);
 			
 			// ***************** Tick ends here *********************
@@ -772,7 +765,7 @@ public class TickRunner
 					
 					// Stats.
 					, new TickStats(_nextTick
-						, millisInTickPreamble
+						, startingMaterials.millisInTickPreamble
 						, millisTickParallelPhase
 						, millisTickPostamble
 						, _threadStats.clone()
@@ -782,7 +775,7 @@ public class TickRunner
 			);
 			
 			// We want to pass this to a listener before we synchronize to avoid calling out under monitor.
-			tickCompletionListener.accept(completedTick);
+			_tickCompletionListener.accept(completedTick);
 			
 			// This is the point where we will block for the next tick to be requested.
 			_acknowledgeTickCompleteAndWaitForNext(completedTick);
@@ -845,7 +838,7 @@ public class TickRunner
 				}
 				
 				// We now update our mutable collections for the materials to use in the next tick.
-				Map<CuboidAddress, CuboidHeightMap> nextTickMutableHeightMaps = new HashMap<>(completedCuboidHeightMap);
+				Map<CuboidAddress, CuboidHeightMap> nextTickMutableHeightMaps = new HashMap<>(startingMaterials.cuboidHeightMaps);
 				nextTickMutableHeightMaps.putAll(mergedChangedHeightMaps);
 				Map<CuboidAddress, List<ScheduledMutation>> pendingMutations = new HashMap<>();
 				Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutations = new HashMap<>();
@@ -1349,6 +1342,5 @@ public class TickRunner
 			, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> newlyScheduledCreatureChanges
 			, List<EventRecord> postedEvents
 			, Set<CuboidAddress> internallyMarkedAlive
-			, Map<Integer, Long> commitLevels
 	) {}
 }
