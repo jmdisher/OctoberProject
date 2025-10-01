@@ -25,6 +25,7 @@ import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.engine.EngineCreatures;
 import com.jeffdisher.october.engine.EngineSpawner;
+import com.jeffdisher.october.engine.EnginePlayers.OutputEntity;
 import com.jeffdisher.october.engine.EnginePlayers;
 import com.jeffdisher.october.engine.EngineCuboids;
 import com.jeffdisher.october.logic.BlockChangeDescription;
@@ -556,118 +557,91 @@ public class TickRunner
 		if (elt.synchronizeAndReleaseLast())
 		{
 			long startMillisPostamble = System.currentTimeMillis();
-			// Rebuild the immutable snapshot of the state.
-			Map<Integer, Long> combinedCommitLevels = new HashMap<>();
-			Map<Integer, Entity> updatedEntities = new HashMap<>();
-			Map<Integer, CreatureEntity> updatedCreatures = new HashMap<>();
-			int committedEntityMutationCount = 0;
-			Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid = new HashMap<>();
-			int committedCuboidMutationCount = 0;
 			
-			// We will also capture any of the mutations which should be scheduled into the next tick since we should publish those into the snapshot.
-			// (this is in case they need to be serialized - that way they can be read back in without interrupting the enqueued operations)
-			Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = new HashMap<>();
-			Map<CuboidAddress, Map<BlockAddress, Long>> snapshotPeriodicMutations = new HashMap<>();
-			Map<Integer, List<ScheduledChange>> snapshotEntityMutations = new HashMap<>();
-			Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> nextCreatureChanges = new HashMap<>();
-			List<EventRecord> postedEvents = new ArrayList<>();
-			
-			// We will create new mutable maps from the previous materials and modify them based on the changes in the fragments.
-			// We will create read-only snapshots for the Snapshot object and continue to modify these in order to create the next TickMaterials.
+			// We will build mutable copies of the previous tick's materials for updating with the results of the tick.
 			Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState = new HashMap<>(startingMaterials.completedCuboids);
-			Map<CuboidAddress, CuboidHeightMap> mergedChangedHeightMaps = new HashMap<>();
 			Map<Integer, Entity> mutableCrowdState = new HashMap<>(startingMaterials.completedEntities);
 			Map<Integer, CreatureEntity> mutableCreatureState = new HashMap<>(startingMaterials.completedCreatures);
-			Set<CuboidAddress> internallyMarkedAlive = new HashSet<>();
 			
-			for (int i = 0; i < _partial.length; ++i)
+			// We will merge together all the per-thread fragments into one master fragment.
+			_PartialHandoffData masterFragment = _mergeAndClearPartialFragments(_partial);
+			
+			// We can now apply the merged changes from the tick to our mutable material components.
+			mutableWorldState.putAll(masterFragment.world.stateFragment());
+			for (Map.Entry<Integer, EnginePlayers.OutputEntity> processed : masterFragment.crowd.entityOutput().entrySet())
 			{
-				_PartialHandoffData fragment = _partial[i];
+				Integer key = processed.getKey();
+				EnginePlayers.OutputEntity value = processed.getValue();
+				Entity updated = value.entity();
 				
-				// Collect the end results into the combined world and crowd for the snapshot (note that these are all replacing existing keys).
-				mutableWorldState.putAll(fragment.world.stateFragment());
-				mergedChangedHeightMaps.putAll(fragment.world.heightFragment());
-				// Similarly, collect the results of the changed entities for the snapshot.
-				Map<Integer, EnginePlayers.OutputEntity> entitiesProcessedInFragment = fragment.crowd.entityOutput();
-				Map<Integer, CreatureEntity> creaturesChangedInFragment = fragment.creatures.updatedCreatures();
-				List<CreatureEntity> creaturesSpawnedInFragment = fragment.spawnedCreatures();
-				List<Integer> creaturesKilledInFragment = fragment.creatures.deadCreatureIds();
+				// Note that this is documented to be null if nothing changed.
+				if (null != updated)
+				{
+					mutableCrowdState.put(key, updated);
+				}
+			}
+			mutableCreatureState.putAll(masterFragment.creatures.updatedCreatures());
+			
+			// Account for anything we scheduled to run in a later tick with this tick.
+			Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = new HashMap<>();
+			for (ScheduledMutation scheduledMutation : masterFragment.newlyScheduledMutations)
+			{
+				_scheduleMutationForCuboid(snapshotBlockMutations, scheduledMutation);
+			}
+			for (ScheduledMutation scheduledMutation : masterFragment.world.notYetReadyMutations())
+			{
+				_scheduleMutationForCuboid(snapshotBlockMutations, scheduledMutation);
+			}
+			Map<Integer, List<ScheduledChange>> snapshotEntityMutations = new HashMap<>();
+			for (Map.Entry<Integer, List<ScheduledChange>> container : masterFragment.newlyScheduledChanges().entrySet())
+			{
+				_scheduleChangesForEntity(snapshotEntityMutations, container.getKey(), container.getValue());
+			}
+			for (Map.Entry<Integer, EnginePlayers.OutputEntity> processed : masterFragment.crowd.entityOutput().entrySet())
+			{
+				Integer key = processed.getKey();
+				EnginePlayers.OutputEntity value = processed.getValue();
 				
-				// Creatures are like entities, but in their own collection.
-				mutableCreatureState.putAll(creaturesChangedInFragment);
-				for (Integer creatureId : creaturesKilledInFragment)
+				// We want to schedule anything which wasn't yet ready.
+				List<ScheduledChange> notYetReadyChanges = value.notYetReadyChanges();
+				if (!notYetReadyChanges.isEmpty())
 				{
-					mutableCreatureState.remove(creatureId);
+					_scheduleChangesForEntity(snapshotEntityMutations, key, notYetReadyChanges);
 				}
-				for (CreatureEntity newCreature : creaturesSpawnedInFragment)
-				{
-					mutableCreatureState.put(newCreature.id(), newCreature);
-				}
+			}
+			Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> nextCreatureChanges = new HashMap<>();
+			for (Map.Entry<Integer, List<IEntityAction<IMutableCreatureEntity>>> container : masterFragment.newlyScheduledCreatureChanges().entrySet())
+			{
+				_scheduleChangesForEntity(nextCreatureChanges, container.getKey(), container.getValue());
+			}
+			
+			// Apply higher-level logical updates to this "super-set state".
+			for (Integer creatureId : masterFragment.creatures.deadCreatureIds())
+			{
+				mutableCreatureState.remove(creatureId);
+			}
+			for (CreatureEntity newCreature : masterFragment.spawnedCreatures())
+			{
+				mutableCreatureState.put(newCreature.id(), newCreature);
+			}
+			Map<Integer, Entity> updatedEntities = new HashMap<>();
+			for (Map.Entry<Integer, EnginePlayers.OutputEntity> processed : masterFragment.crowd.entityOutput().entrySet())
+			{
+				Integer key = processed.getKey();
+				EnginePlayers.OutputEntity value = processed.getValue();
+				Entity updated = value.entity();
 				
-				// We will also collect all the per-client commit levels.
-				combinedCommitLevels.putAll(startingMaterials.commitLevels);
-				updatedCreatures.putAll(creaturesChangedInFragment);
-				committedEntityMutationCount += fragment.crowd.committedMutationCount();
-				blockChangesByCuboid.putAll(fragment.world.blockChangesByCuboid());
-				committedCuboidMutationCount += fragment.world.committedMutationCount();
-				
-				// Common data given to the context.
-				for (ScheduledMutation scheduledMutation : fragment.newlyScheduledMutations)
+				// Note that this is documented to be null if nothing changed.
+				if (null != updated)
 				{
-					_scheduleMutationForCuboid(snapshotBlockMutations, scheduledMutation);
-				}
-				for (Map.Entry<Integer, List<ScheduledChange>> container : fragment.newlyScheduledChanges().entrySet())
-				{
-					_scheduleChangesForEntity(snapshotEntityMutations, container.getKey(), container.getValue());
-				}
-				for (Map.Entry<Integer, List<IEntityAction<IMutableCreatureEntity>>> container : fragment.newlyScheduledCreatureChanges().entrySet())
-				{
-					_scheduleChangesForEntity(nextCreatureChanges, container.getKey(), container.getValue());
-				}
-				postedEvents.addAll(fragment.postedEvents);
-				internallyMarkedAlive.addAll(fragment.internallyMarkedAlive);
-				
-				// World data.
-				for (ScheduledMutation scheduledMutation : fragment.world.notYetReadyMutations())
-				{
-					_scheduleMutationForCuboid(snapshotBlockMutations, scheduledMutation);
-				}
-				for (Map.Entry<CuboidAddress, Map<BlockAddress, Long>> ent : fragment.world.periodicNotReadyByCuboid().entrySet())
-				{
-					Map<BlockAddress, Long> old = snapshotPeriodicMutations.put(ent.getKey(), ent.getValue());
-					// These should never overlap.
+					Entity old = updatedEntities.put(key, updated);
 					Assert.assertTrue(null == old);
 				}
-				
-				// Add any updated entities into the right maps and schedule not yet ready actions.
-				for (Map.Entry<Integer, EnginePlayers.OutputEntity> processed : entitiesProcessedInFragment.entrySet())
-				{
-					Integer key = processed.getKey();
-					EnginePlayers.OutputEntity value = processed.getValue();
-					Entity updated = value.entity();
-					
-					// Note that this is documented to be null if nothing changed.
-					if (null != updated)
-					{
-						mutableCrowdState.put(key, updated);
-						Entity old = updatedEntities.put(key, updated);
-						Assert.assertTrue(null == old);
-					}
-					
-					// We want to schedule anything which wasn't yet ready.
-					List<ScheduledChange> notYetReadyChanges = value.notYetReadyChanges();
-					if (!notYetReadyChanges.isEmpty())
-					{
-						_scheduleChangesForEntity(snapshotEntityMutations, key, notYetReadyChanges);
-					}
-				}
-				
-				_partial[i] = null;
 			}
 			
 			// We want to extract the block state set objects from the block change information for the snapshot.
 			Map<CuboidAddress, List<MutationBlockSetBlock>> resultantBlockChangesByCuboid = new HashMap<>();
-			for (Map.Entry<CuboidAddress, List<BlockChangeDescription>> perCuboid : blockChangesByCuboid.entrySet())
+			for (Map.Entry<CuboidAddress, List<BlockChangeDescription>> perCuboid : masterFragment.world.blockChangesByCuboid().entrySet())
 			{
 				List<MutationBlockSetBlock> list = perCuboid.getValue().stream()
 						.map((BlockChangeDescription description) -> description.serializedForm())
@@ -676,7 +650,7 @@ public class TickRunner
 			}
 			Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.rebuildColumnMaps(startingMaterials.completedHeightMaps
 					, startingMaterials.cuboidHeightMaps
-					, mergedChangedHeightMaps
+					, masterFragment.world.heightFragment()
 					, mutableWorldState.keySet()
 			);
 			long endMillisPostamble = System.currentTimeMillis();
@@ -701,7 +675,7 @@ public class TickRunner
 				{
 					scheduledMutations = List.of();
 				}
-				Map<BlockAddress, Long> periodicMutationMillis = snapshotPeriodicMutations.get(key);
+				Map<BlockAddress, Long> periodicMutationMillis = masterFragment.world.periodicNotReadyByCuboid().get(key);
 				if (null == periodicMutationMillis)
 				{
 					periodicMutationMillis = Map.of();
@@ -720,7 +694,7 @@ public class TickRunner
 				Integer key = ent.getKey();
 				Assert.assertTrue(key > 0);
 				Entity completed = ent.getValue();
-				long commitLevel = combinedCommitLevels.get(key);
+				long commitLevel = startingMaterials.commitLevels.get(key);
 				Entity updated = updatedEntities.get(key);
 				
 				// Get the scheduled mutations (note that this is often null but we don't want to store null).
@@ -743,7 +717,7 @@ public class TickRunner
 				Integer key = ent.getKey();
 				Assert.assertTrue(key < 0);
 				CreatureEntity completed = ent.getValue();
-				CreatureEntity visiblyChanged = updatedCreatures.get(key);
+				CreatureEntity visiblyChanged = masterFragment.creatures.updatedCreatures().get(key);
 				
 				SnapshotCreature snapshot = new SnapshotCreature(
 						completed
@@ -759,9 +733,9 @@ public class TickRunner
 					, completedHeightMaps
 					
 					// postedEvents
-					, postedEvents
+					, masterFragment.postedEvents
 					// internallyMarkedAlive
-					, internallyMarkedAlive
+					, masterFragment.internallyMarkedAlive
 					
 					// Stats.
 					, new TickStats(_nextTick
@@ -769,8 +743,8 @@ public class TickRunner
 						, millisTickParallelPhase
 						, millisTickPostamble
 						, _threadStats.clone()
-						, committedEntityMutationCount
-						, committedCuboidMutationCount
+						, masterFragment.crowd.committedMutationCount()
+						, masterFragment.world.committedMutationCount()
 					)
 			);
 			
@@ -795,6 +769,7 @@ public class TickRunner
 				List<_OperatorMutationWrapper> operatorMutations;
 				Map<Integer, EntityActionSimpleMove<IMutablePlayerEntity>> newEntityChanges = new HashMap<>();
 				Map<Integer, Long> newCommitLevels = new HashMap<>();
+				Map<Integer, Long> combinedCommitLevels = new HashMap<>(startingMaterials.commitLevels);
 				
 				_sharedDataLock.lock();
 				try
@@ -839,7 +814,7 @@ public class TickRunner
 				
 				// We now update our mutable collections for the materials to use in the next tick.
 				Map<CuboidAddress, CuboidHeightMap> nextTickMutableHeightMaps = new HashMap<>(startingMaterials.cuboidHeightMaps);
-				nextTickMutableHeightMaps.putAll(mergedChangedHeightMaps);
+				nextTickMutableHeightMaps.putAll(masterFragment.world.heightFragment());
 				Map<CuboidAddress, List<ScheduledMutation>> pendingMutations = new HashMap<>();
 				Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutations = new HashMap<>();
 				Map<Integer, List<ScheduledChange>> nextTickChanges = new HashMap<>();
@@ -941,8 +916,7 @@ public class TickRunner
 				}
 				snapshotBlockMutations = null;
 				// Also add in any periodic mutations.
-				periodicMutations.putAll(snapshotPeriodicMutations);
-				snapshotPeriodicMutations = null;
+				periodicMutations.putAll(masterFragment.world.periodicNotReadyByCuboid());
 				
 				// Remove anything old.
 				if (null != cuboidsToDrop)
@@ -1039,7 +1013,7 @@ public class TickRunner
 				Map<CuboidAddress, List<AbsoluteLocation>> updatedBlockLocationsByCuboid = new HashMap<>();
 				Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = new HashMap<>();
 				Set<AbsoluteLocation> potentialLogicChangeSet = new HashSet<>();
-				for (Map.Entry<CuboidAddress, List<BlockChangeDescription>> entry : blockChangesByCuboid.entrySet())
+				for (Map.Entry<CuboidAddress, List<BlockChangeDescription>> entry : masterFragment.world.blockChangesByCuboid().entrySet())
 				{
 					List<BlockChangeDescription> list = entry.getValue();
 					
@@ -1191,6 +1165,86 @@ public class TickRunner
 			}
 		}
 		return _snapshot;
+	}
+
+	private static _PartialHandoffData _mergeAndClearPartialFragments(_PartialHandoffData[] partials)
+	{
+		// EngineCuboids.ProcessedFragment world
+		Map<CuboidAddress, IReadOnlyCuboidData> stateFragment = new HashMap<>();
+		Map<CuboidAddress, CuboidHeightMap> heightFragment = new HashMap<>();
+		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
+		Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyByCuboid = new HashMap<>();
+		Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid = new HashMap<>();
+		int world_committedMutationCount = 0;
+		
+		// EnginePlayers.ProcessedGroup crowd
+		int players_committedMutationCount = 0;
+		Map<Integer, OutputEntity> entityOutput = new HashMap<>();
+		
+		// EngineCreatures.CreatureGroup creatures
+		Map<Integer, CreatureEntity> updatedCreatures = new HashMap<>();
+		List<Integer> deadCreatureIds = new ArrayList<>();
+		
+		List<CreatureEntity> spawnedCreatures = new ArrayList<>();
+		List<ScheduledMutation> newlyScheduledMutations = new ArrayList<>();
+		Map<Integer, List<ScheduledChange>> newlyScheduledChanges = new HashMap<>();
+		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> newlyScheduledCreatureChanges = new HashMap<>();
+		List<EventRecord> postedEvents = new ArrayList<>();
+		Set<CuboidAddress> internallyMarkedAlive = new HashSet<>();
+		
+		for (int i = 0; i < partials.length; ++i)
+		{
+			_PartialHandoffData fragment = partials[i];
+			
+			// EngineCuboids.ProcessedFragment world
+			stateFragment.putAll(fragment.world().stateFragment());
+			heightFragment.putAll(fragment.world().heightFragment());
+			notYetReadyMutations.addAll(fragment.world().notYetReadyMutations());
+			periodicNotReadyByCuboid.putAll(fragment.world().periodicNotReadyByCuboid());
+			blockChangesByCuboid.putAll(fragment.world().blockChangesByCuboid());
+			world_committedMutationCount += fragment.world().committedMutationCount();
+			
+			// EnginePlayers.ProcessedGroup crowd
+			players_committedMutationCount += fragment.crowd().committedMutationCount();
+			entityOutput.putAll(fragment.crowd().entityOutput());
+			
+			// EngineCreatures.CreatureGroup creatures
+			updatedCreatures.putAll(fragment.creatures().updatedCreatures());
+			deadCreatureIds.addAll(fragment.creatures().deadCreatureIds());
+			
+			spawnedCreatures.addAll(fragment.spawnedCreatures());
+			newlyScheduledMutations.addAll(fragment.newlyScheduledMutations());
+			newlyScheduledChanges.putAll(fragment.newlyScheduledChanges());
+			newlyScheduledCreatureChanges.putAll(fragment.newlyScheduledCreatureChanges());
+			postedEvents.addAll(fragment.postedEvents());
+			internallyMarkedAlive.addAll(fragment.internallyMarkedAlive());
+			partials[i] = null;
+		}
+		
+		EngineCuboids.ProcessedFragment world = new EngineCuboids.ProcessedFragment(stateFragment
+			, heightFragment
+			, notYetReadyMutations
+			, periodicNotReadyByCuboid
+			, blockChangesByCuboid
+			, world_committedMutationCount
+		);
+		EnginePlayers.ProcessedGroup crowd = new EnginePlayers.ProcessedGroup(players_committedMutationCount
+			, entityOutput
+		);
+		EngineCreatures.CreatureGroup creatures = new EngineCreatures.CreatureGroup(false
+			, updatedCreatures
+			, deadCreatureIds
+		);
+		return new _PartialHandoffData(world
+			, crowd
+			, creatures
+			, spawnedCreatures
+			, newlyScheduledMutations
+			, newlyScheduledChanges
+			, newlyScheduledCreatureChanges
+			, postedEvents
+			, internallyMarkedAlive
+		);
 	}
 
 
