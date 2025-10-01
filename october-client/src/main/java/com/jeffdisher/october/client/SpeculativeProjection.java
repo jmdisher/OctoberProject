@@ -18,6 +18,7 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.OctreeInflatedByte;
 import com.jeffdisher.october.engine.EnginePlayers;
@@ -589,43 +590,67 @@ public class SpeculativeProjection
 			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
 	)
 	{
+		// We want to combine our mutations into the right map but we will also add in the potential light changes since they might grow the map (with empty mutations).
 		Map<CuboidAddress, List<ScheduledMutation>> innerMutations = _createMutationMap(blockMutations, _projectedState.projectedWorld.keySet());
+		for (CuboidAddress lighting : potentialLightChangesByCuboid.keySet())
+		{
+			if (!innerMutations.containsKey(lighting))
+			{
+				innerMutations.put(lighting, List.of());
+			}
+		}
+		
 		// We ignore normal "block update" events and logic changes in the speculative projection.
 		// We ignore the block updates in the speculative projection (although this could be used in more precisely notifying the listener).
-		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress = Map.of();
-		Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid = Map.of();
-		Set<CuboidAddress> cuboidsLoadedThisTick = Set.of();
-		EngineCuboids.ProcessedFragment innerFragment = EngineCuboids.processWorldFragmentParallel(_singleThreadElement
-				, _projectedState.projectedWorld
-				, context
-				, innerMutations
+		Map<CuboidAddress, IReadOnlyCuboidData> changedCuboids = new HashMap<>();
+		Map<CuboidAddress, CuboidHeightMap> heightFragment = new HashMap<>();
+		List<BlockChangeDescription> blockChanges = new ArrayList<>();
+		for (Map.Entry<CuboidAddress, List<ScheduledMutation>> mut : innerMutations.entrySet())
+		{
+			CuboidAddress key = mut.getKey();
+			List<ScheduledMutation> list = mut.getValue();
+			EngineCuboids.SingleCuboidResult result = EngineCuboids.processOneCuboid(context
+				, _projectedState.projectedWorld.keySet()
+				, list
 				, Map.of()
-				, modifiedBlocksByCuboidAddress
+				, Map.of()
 				, potentialLightChangesByCuboid
-				, potentialLogicChangesByCuboid
-				, cuboidsLoadedThisTick
-		);
-		_projectedState.projectedWorld.putAll(innerFragment.stateFragment());
-		_projectedState.projectedHeightMap.putAll(innerFragment.heightFragment());
+				, Map.of()
+				, Set.of()
+				, key
+				, _projectedState.projectedWorld.get(key)
+			);
+			if (null != result.changedCuboidOrNull())
+			{
+				changedCuboids.put(key, result.changedCuboidOrNull());
+			}
+			if (null != result.changedHeightMap())
+			{
+				heightFragment.put(key, result.changedHeightMap());
+			}
+			if (null != result.changedBlocks())
+			{
+				blockChanges.addAll(result.changedBlocks());
+			}
+		}
+		_projectedState.projectedWorld.putAll(changedCuboids);
+		_projectedState.projectedHeightMap.putAll(heightFragment);
 		Map<AbsoluteLocation, MutationBlockSetBlock> outputModifiedBlocks = new HashMap<>();
 		Map<CuboidAddress, List<AbsoluteLocation>> outputPotentialLightChangesByCuboid = new HashMap<>();
-		for (List<BlockChangeDescription> elt : innerFragment.blockChangesByCuboid().values())
+		for (BlockChangeDescription desc : blockChanges)
 		{
-			for (BlockChangeDescription desc : elt)
+			MutationBlockSetBlock mutation = desc.serializedForm();
+			AbsoluteLocation location = mutation.getAbsoluteLocation();
+			MutationBlockSetBlock old = outputModifiedBlocks.put(location, mutation);
+			Assert.assertTrue(null == old);
+			if (desc.requiresLightingCheck())
 			{
-				MutationBlockSetBlock mutation = desc.serializedForm();
-				AbsoluteLocation location = mutation.getAbsoluteLocation();
-				MutationBlockSetBlock old = outputModifiedBlocks.put(location, mutation);
-				Assert.assertTrue(null == old);
-				if (desc.requiresLightingCheck())
+				CuboidAddress address = location.getCuboidAddress();
+				if (!outputPotentialLightChangesByCuboid.containsKey(address))
 				{
-					CuboidAddress address = location.getCuboidAddress();
-					if (!outputPotentialLightChangesByCuboid.containsKey(address))
-					{
-						outputPotentialLightChangesByCuboid.put(address, new ArrayList<>());
-					}
-					outputPotentialLightChangesByCuboid.get(address).add(location);
+					outputPotentialLightChangesByCuboid.put(address, new ArrayList<>());
 				}
+				outputPotentialLightChangesByCuboid.get(address).add(location);
 			}
 		}
 		return new _ApplicationResult(outputModifiedBlocks, outputPotentialLightChangesByCuboid);

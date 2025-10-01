@@ -15,7 +15,6 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.BlockChangeDescription;
 import com.jeffdisher.october.logic.HeightMapHelpers;
-import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
@@ -41,107 +40,23 @@ public class EngineCuboids
 	}
 
 	/**
-	 * Applies the given mutationsToRun to the data in worldMap, returning updated cuboids for some subset of the
-	 * mutations.
-	 * Note that this is expected to be run in parallel, across many threads, and will rely on a bakery algorithm to
-	 * select each thread's subset of the work, dynamically.  The fragments returned by all threads will have no overlap
-	 * and the union of all of them will entirely cover the key space defined by mutationsToRun.
+	 * Applies the given mutationsToRun to the given oldState, returning the results.
 	 * 
-	 * @param processor The current thread.
-	 * @param worldMap The map of all read-only cuboids from the previous tick.
 	 * @param context The context used for running changes.
-	 * @param mutationsToRun The map of mutations to run in this tick, keyed by cuboid addresses where they are
-	 * scheduled.
-	 * @param periodicMutationMillis The map of blocks requiring periodic mutations, and their millisecond delays.
+	 * @param allLoadedCuboids The set of all loaded cuboid addresses loaded in the current tick.
+	 * @param mutationsToRun The list of mutations to run against this cuboid in the current tick or future.
+	 * @param periodicToRun The map of blocks in this cuboid to when they next need periodic events run (in millis).
 	 * @param modifiedBlocksByCuboidAddress The map of which blocks where updated in the previous tick.
 	 * @param potentialLightChangesByCuboid The map of block locations which may have incurred lighting updates in the
 	 * previous tick.
 	 * @param potentialLogicChangesByCuboid The map of block locations which may have incurred logic updates in the
 	 * previous tick.
 	 * @param cuboidsLoadedThisTick The set of cuboids which were loaded this tick (for update even synthesis).
-	 * @return The subset of the mutationsToRun work which was completed by this thread.
+	 * @param key The address of the cuboid being processed.
+	 * @param oldState The read-only input state of the cuboid to be processed.
+	 * @return The results of running these mutations and periodic events on this cuboid.
 	 */
-	public static ProcessedFragment processWorldFragmentParallel(ProcessorElement processor
-			, Map<CuboidAddress, IReadOnlyCuboidData> worldMap
-			, TickProcessingContext context
-			, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
-			, Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationMillis
-			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
-			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
-			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid
-			, Set<CuboidAddress> cuboidsLoadedThisTick
-	)
-	{
-		Map<CuboidAddress, IReadOnlyCuboidData> fragment = new HashMap<>();
-		Map<CuboidAddress, CuboidHeightMap> fragmentHeights = new HashMap<>();
-		
-		// We need to walk all the loaded cuboids, just to make sure that there were no updates.
-		Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid = new HashMap<>();
-		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
-		Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyByCuboid = new HashMap<>();
-		int committedMutationCount = 0;
-		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> elt : worldMap.entrySet())
-		{
-			if (processor.handleNextWorkUnit())
-			{
-				// This is our element.
-				processor.cuboidsProcessed += 1;
-				CuboidAddress key = elt.getKey();
-				IReadOnlyCuboidData oldState = elt.getValue();
-				
-				// We can't be told to operate on something which isn't in the state.
-				Assert.assertTrue(null != oldState);
-				SingleCuboidResult result = _processOneCuboid(context
-					, worldMap.keySet()
-					, mutationsToRun.get(key)
-					, periodicMutationMillis.get(key)
-					, modifiedBlocksByCuboidAddress
-					, potentialLightChangesByCuboid
-					, potentialLogicChangesByCuboid
-					, cuboidsLoadedThisTick
-					, key
-					, oldState
-				);
-				if (null != result.changedCuboidOrNull)
-				{
-					fragment.put(key, result.changedCuboidOrNull);
-				}
-				if (null != result.changedHeightMap)
-				{
-					fragmentHeights.put(key, result.changedHeightMap);
-				}
-				if (null != result.changedBlocks)
-				{
-					Assert.assertTrue(!result.changedBlocks.isEmpty());
-					blockChangesByCuboid.put(key, result.changedBlocks);
-				}
-				if (null != result.notYetReadyMutations)
-				{
-					notYetReadyMutations.addAll(result.notYetReadyMutations);
-				}
-				if (null != result.periodicNotReady)
-				{
-					Assert.assertTrue(!result.periodicNotReady.isEmpty());
-					periodicNotReadyByCuboid.put(key, result.periodicNotReady);
-				}
-				processor.cuboidBlockupdatesProcessed += result.blockUpdatesProcessed;
-				processor.cuboidMutationsProcessed += result.mutationsProcessed;
-				committedMutationCount += result.blockUpdatesApplied + result.mutationsApplied;
-			}
-		}
-		
-		// We package up any of the work that we did (note that no thread will return a cuboid which had no mutations in its fragment).
-		return new ProcessedFragment(fragment
-				, fragmentHeights
-				, notYetReadyMutations
-				, periodicNotReadyByCuboid
-				, blockChangesByCuboid
-				, committedMutationCount
-		);
-	}
-
-
-	private static SingleCuboidResult _processOneCuboid(TickProcessingContext context
+	public static SingleCuboidResult processOneCuboid(TickProcessingContext context
 		, Set<CuboidAddress> allLoadedCuboids
 		, List<ScheduledMutation> mutationsToRun
 		, Map<BlockAddress, Long> periodicToRun
@@ -456,14 +371,6 @@ public class EngineCuboids
 		}
 	}
 
-
-	public static record ProcessedFragment(Map<CuboidAddress, IReadOnlyCuboidData> stateFragment
-			, Map<CuboidAddress, CuboidHeightMap> heightFragment
-			, List<ScheduledMutation> notYetReadyMutations
-			, Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyByCuboid
-			, Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid
-			, int committedMutationCount
-	) {}
 
 	public static record SingleCuboidResult(IReadOnlyCuboidData changedCuboidOrNull
 		, CuboidHeightMap changedHeightMap

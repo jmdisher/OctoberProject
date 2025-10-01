@@ -99,19 +99,37 @@ public class OneOffRunner
 			}
 			// Note that we will need to capture output mutations from these sinks if there is an interest in running multiple ticks in advance here.
 			TickProcessingContext innerContext = _createContext(state, new CommonMutationSink(), new CommonChangeSink(), eventSink, millisPerTick, currentTickTimeMillis);
-			EngineCuboids.ProcessedFragment innerFragment = EngineCuboids.processWorldFragmentParallel(singleThreadElement
-					, state.world
-					, innerContext
-					, splitMutations
+			changedCuboids = new HashMap<>();
+			heightFragment = new HashMap<>();
+			optionalBlockChanges = new HashMap<>();
+			for (Map.Entry<CuboidAddress, List<ScheduledMutation>> mut : splitMutations.entrySet())
+			{
+				CuboidAddress key = mut.getKey();
+				List<ScheduledMutation> list = mut.getValue();
+				EngineCuboids.SingleCuboidResult result = EngineCuboids.processOneCuboid(innerContext
+					, state.world.keySet()
+					, list
 					, Map.of()
 					, Map.of()
 					, Map.of()
 					, Map.of()
 					, Set.of()
-			);
-			changedCuboids = innerFragment.stateFragment();
-			heightFragment = innerFragment.heightFragment();
-			optionalBlockChanges = innerFragment.blockChangesByCuboid();
+					, key
+					, state.world.get(key)
+				);
+				if (null != result.changedCuboidOrNull())
+				{
+					changedCuboids.put(key, result.changedCuboidOrNull());
+				}
+				if (null != result.changedHeightMap())
+				{
+					heightFragment.put(key, result.changedHeightMap());
+				}
+				if ((null != result.changedBlocks()) && !result.changedBlocks().isEmpty())
+				{
+					optionalBlockChanges.put(key, result.changedBlocks());
+				}
+			}
 		}
 		
 		// Repackage results.

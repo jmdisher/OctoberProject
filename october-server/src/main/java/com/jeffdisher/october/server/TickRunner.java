@@ -395,7 +395,7 @@ public class TickRunner
 		);
 		TickMaterials materials = _mergeTickStateAndWaitForNext(thisThread
 				, emptyMaterials
-				, new _PartialHandoffData(new EngineCuboids.ProcessedFragment(Map.of(), Map.of(), List.of(), Map.of(), Map.of(), 0)
+				, new _PartialHandoffData(new _ProcessedFragment(Map.of(), Map.of(), List.of(), Map.of(), Map.of(), 0)
 						, new EnginePlayers.ProcessedGroup(0, Map.of())
 						, new _CreatureGroup(false, Map.of(), List.of())
 						, List.of()
@@ -508,7 +508,7 @@ public class TickRunner
 			Assert.assertTrue(null != group);
 			// Now, process the world changes.
 			long startWorld = System.currentTimeMillis();
-			EngineCuboids.ProcessedFragment fragment = EngineCuboids.processWorldFragmentParallel(thisThread
+			_ProcessedFragment fragment = _processWorldFragmentParallel(thisThread
 					, materials.completedCuboids
 					, context
 					, materials.mutationsToRun
@@ -582,6 +582,85 @@ public class TickRunner
 		return new _CreatureGroup(false
 				, updatedCreatures
 				, deadCreatureIds
+		);
+	}
+
+	private static _ProcessedFragment _processWorldFragmentParallel(ProcessorElement processor
+			, Map<CuboidAddress, IReadOnlyCuboidData> worldMap
+			, TickProcessingContext context
+			, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
+			, Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationMillis
+			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
+			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
+			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid
+			, Set<CuboidAddress> cuboidsLoadedThisTick
+	)
+	{
+		Map<CuboidAddress, IReadOnlyCuboidData> fragment = new HashMap<>();
+		Map<CuboidAddress, CuboidHeightMap> fragmentHeights = new HashMap<>();
+		
+		// We need to walk all the loaded cuboids, just to make sure that there were no updates.
+		Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid = new HashMap<>();
+		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
+		Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyByCuboid = new HashMap<>();
+		int committedMutationCount = 0;
+		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> elt : worldMap.entrySet())
+		{
+			if (processor.handleNextWorkUnit())
+			{
+				// This is our element.
+				processor.cuboidsProcessed += 1;
+				CuboidAddress key = elt.getKey();
+				IReadOnlyCuboidData oldState = elt.getValue();
+				
+				// We can't be told to operate on something which isn't in the state.
+				Assert.assertTrue(null != oldState);
+				EngineCuboids.SingleCuboidResult result = EngineCuboids.processOneCuboid(context
+					, worldMap.keySet()
+					, mutationsToRun.get(key)
+					, periodicMutationMillis.get(key)
+					, modifiedBlocksByCuboidAddress
+					, potentialLightChangesByCuboid
+					, potentialLogicChangesByCuboid
+					, cuboidsLoadedThisTick
+					, key
+					, oldState
+				);
+				if (null != result.changedCuboidOrNull())
+				{
+					fragment.put(key, result.changedCuboidOrNull());
+				}
+				if (null != result.changedHeightMap())
+				{
+					fragmentHeights.put(key, result.changedHeightMap());
+				}
+				if (null != result.changedBlocks())
+				{
+					Assert.assertTrue(!result.changedBlocks().isEmpty());
+					blockChangesByCuboid.put(key, result.changedBlocks());
+				}
+				if (null != result.notYetReadyMutations())
+				{
+					notYetReadyMutations.addAll(result.notYetReadyMutations());
+				}
+				if (null != result.periodicNotReady())
+				{
+					Assert.assertTrue(!result.periodicNotReady().isEmpty());
+					periodicNotReadyByCuboid.put(key, result.periodicNotReady());
+				}
+				processor.cuboidBlockupdatesProcessed += result.blockUpdatesProcessed();
+				processor.cuboidMutationsProcessed += result.mutationsProcessed();
+				committedMutationCount += result.blockUpdatesApplied() + result.mutationsApplied();
+			}
+		}
+		
+		// We package up any of the work that we did (note that no thread will return a cuboid which had no mutations in its fragment).
+		return new _ProcessedFragment(fragment
+				, fragmentHeights
+				, notYetReadyMutations
+				, periodicNotReadyByCuboid
+				, blockChangesByCuboid
+				, committedMutationCount
 		);
 	}
 
@@ -1323,7 +1402,7 @@ public class TickRunner
 			partials[i] = null;
 		}
 		
-		EngineCuboids.ProcessedFragment world = new EngineCuboids.ProcessedFragment(stateFragment
+		_ProcessedFragment world = new _ProcessedFragment(stateFragment
 			, heightFragment
 			, notYetReadyMutations
 			, periodicNotReadyByCuboid
@@ -1601,7 +1680,7 @@ public class TickRunner
 	/**
 	 * A wrapper over the per-thread partial data which we hand-off at synchronization.
 	 */
-	private static record _PartialHandoffData(EngineCuboids.ProcessedFragment world
+	private static record _PartialHandoffData(_ProcessedFragment world
 			, EnginePlayers.ProcessedGroup crowd
 			, _CreatureGroup creatures
 			, List<CreatureEntity> spawnedCreatures
@@ -1616,5 +1695,13 @@ public class TickRunner
 			// Note that we will only pass back a new Entity object if it changed.
 			, Map<Integer, CreatureEntity> updatedCreatures
 			, List<Integer> deadCreatureIds
+	) {}
+
+	private static record _ProcessedFragment(Map<CuboidAddress, IReadOnlyCuboidData> stateFragment
+			, Map<CuboidAddress, CuboidHeightMap> heightFragment
+			, List<ScheduledMutation> notYetReadyMutations
+			, Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyByCuboid
+			, Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid
+			, int committedMutationCount
 	) {}
 }
