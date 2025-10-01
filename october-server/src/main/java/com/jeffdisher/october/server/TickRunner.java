@@ -397,7 +397,7 @@ public class TickRunner
 				, emptyMaterials
 				, new _PartialHandoffData(new EngineCuboids.ProcessedFragment(Map.of(), Map.of(), List.of(), Map.of(), Map.of(), 0)
 						, new EnginePlayers.ProcessedGroup(0, Map.of())
-						, new EngineCreatures.CreatureGroup(false, Map.of(), List.of())
+						, new _CreatureGroup(false, Map.of(), List.of())
 						, List.of()
 						, List.of()
 						, Map.of()
@@ -488,7 +488,7 @@ public class TickRunner
 			}
 			
 			long startCreatures = System.currentTimeMillis();
-			EngineCreatures.CreatureGroup creatureGroup = EngineCreatures.processCreatureGroupParallel(thisThread
+			_CreatureGroup creatureGroup = _processCreatureGroupParallel(thisThread
 					, materials.completedCreatures
 					, context
 					, entityCollection
@@ -540,6 +540,49 @@ public class TickRunner
 					)
 			);
 		}
+	}
+
+	private static _CreatureGroup _processCreatureGroupParallel(ProcessorElement processor
+			, Map<Integer, CreatureEntity> creaturesById
+			, TickProcessingContext context
+			, EntityCollection entityCollection
+			, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun
+	)
+	{
+		Map<Integer, CreatureEntity> updatedCreatures = new HashMap<>();
+		List<Integer> deadCreatureIds = new ArrayList<>();
+		for (Map.Entry<Integer, CreatureEntity> elt : creaturesById.entrySet())
+		{
+			if (processor.handleNextWorkUnit())
+			{
+				// This is our element.
+				Integer id = elt.getKey();
+				CreatureEntity creature = elt.getValue();
+				List<IEntityAction<IMutableCreatureEntity>> changes = changesToRun.get(id);
+				processor.creaturesProcessed += 1;
+				if (null != changes)
+				{
+					processor.creatureChangesProcessed += changes.size();
+				}
+				EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context, entityCollection, creature, changes);
+				if (null == result.updatedEntity())
+				{
+					deadCreatureIds.add(id);
+				}
+				else if (result.updatedEntity() != creature)
+				{
+					updatedCreatures.put(id, result.updatedEntity());
+				}
+				if (!result.didTakeSpecialAction())
+				{
+					processor.creatureChangesProcessed += 1;
+				}
+			}
+		}
+		return new _CreatureGroup(false
+				, updatedCreatures
+				, deadCreatureIds
+		);
 	}
 
 	private TickMaterials _mergeTickStateAndWaitForNext(ProcessorElement elt
@@ -1290,7 +1333,7 @@ public class TickRunner
 		EnginePlayers.ProcessedGroup crowd = new EnginePlayers.ProcessedGroup(players_committedMutationCount
 			, entityOutput
 		);
-		EngineCreatures.CreatureGroup creatures = new EngineCreatures.CreatureGroup(false
+		_CreatureGroup creatures = new _CreatureGroup(false
 			, updatedCreatures
 			, deadCreatureIds
 		);
@@ -1560,12 +1603,18 @@ public class TickRunner
 	 */
 	private static record _PartialHandoffData(EngineCuboids.ProcessedFragment world
 			, EnginePlayers.ProcessedGroup crowd
-			, EngineCreatures.CreatureGroup creatures
+			, _CreatureGroup creatures
 			, List<CreatureEntity> spawnedCreatures
 			, List<ScheduledMutation> newlyScheduledMutations
 			, Map<Integer, List<ScheduledChange>> newlyScheduledChanges
 			, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> newlyScheduledCreatureChanges
 			, List<EventRecord> postedEvents
 			, Set<CuboidAddress> internallyMarkedAlive
+	) {}
+
+	private static record _CreatureGroup(boolean ignored
+			// Note that we will only pass back a new Entity object if it changed.
+			, Map<Integer, CreatureEntity> updatedCreatures
+			, List<Integer> deadCreatureIds
 	) {}
 }

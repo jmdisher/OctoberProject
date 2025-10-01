@@ -1,9 +1,6 @@
 package com.jeffdisher.october.engine;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.Environment;
@@ -13,7 +10,6 @@ import com.jeffdisher.october.logic.DamageHelpers;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.NudgeHelpers;
-import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -36,62 +32,15 @@ public class EngineCreatures
 	}
 
 	/**
-	 * Runs the given changesToRun on the creatures provided in creaturesById, in parallel.
+	 * Runs all elements in changesToRun against the given creature, returning a description of the change.
 	 * 
-	 * @param processor The current thread.
-	 * @param creaturesById The map of all read-only creatures from the previous tick.
 	 * @param context The context used for running changes.
 	 * @param entityCollection A look-up mechanism for the entities in the loaded world.
-	 * @param changesToRun The map of changes to run in this tick, keyed by the ID of the creature on which they are
-	 * scheduled.
-	 * @return The subset of the changesToRun work which was completed by this thread.
+	 * @param creature The creature to process.
+	 * @param changesToRun A list of changes to run on this creature in this tick.
+	 * @return A description of the results of processing this creature.
 	 */
-	public static CreatureGroup processCreatureGroupParallel(ProcessorElement processor
-			, Map<Integer, CreatureEntity> creaturesById
-			, TickProcessingContext context
-			, EntityCollection entityCollection
-			, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun
-	)
-	{
-		Map<Integer, CreatureEntity> updatedCreatures = new HashMap<>();
-		List<Integer> deadCreatureIds = new ArrayList<>();
-		for (Map.Entry<Integer, CreatureEntity> elt : creaturesById.entrySet())
-		{
-			if (processor.handleNextWorkUnit())
-			{
-				// This is our element.
-				Integer id = elt.getKey();
-				CreatureEntity creature = elt.getValue();
-				List<IEntityAction<IMutableCreatureEntity>> changes = changesToRun.get(id);
-				processor.creaturesProcessed += 1;
-				if (null != changes)
-				{
-					processor.creatureChangesProcessed += changes.size();
-				}
-				SingleCreatureResult result = _processOneCreature(context, entityCollection, creature, changes);
-				if (null == result.updatedEntity)
-				{
-					deadCreatureIds.add(id);
-				}
-				else if (result.updatedEntity != creature)
-				{
-					updatedCreatures.put(id, result.updatedEntity);
-				}
-				if (!result.didTakeSpecialAction)
-				{
-					processor.creatureChangesProcessed += 1;
-				}
-			}
-		}
-		return new CreatureGroup(false
-				, updatedCreatures
-				, deadCreatureIds
-		);
-	}
-
-
-	// Returns an updated creature or null, if it died.
-	private static SingleCreatureResult _processOneCreature(TickProcessingContext context
+	public static SingleCreatureResult processOneCreature(TickProcessingContext context
 		, EntityCollection entityCollection
 		, CreatureEntity creature
 		, List<IEntityAction<IMutableCreatureEntity>> changesToRun
@@ -178,12 +127,6 @@ public class EngineCreatures
 		return CreatureMovementHelpers.buildStandingChange(reader, mutable.newLocation, mutable.newVelocity, mutable.newYaw, mutable.newPitch, mutable.getType(), context.millisPerTick, viscosity);
 	}
 
-
-	public static record CreatureGroup(boolean ignored
-			// Note that we will only pass back a new Entity object if it changed.
-			, Map<Integer, CreatureEntity> updatedCreatures
-			, List<Integer> deadCreatureIds
-	) {}
 
 	public static record SingleCreatureResult(CreatureEntity updatedEntity
 		, boolean didTakeSpecialAction

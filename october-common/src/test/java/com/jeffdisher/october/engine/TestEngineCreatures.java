@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.junit.AfterClass;
@@ -25,9 +24,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.NudgeHelpers;
-import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.PropertyHelpers;
-import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.TickUtils;
@@ -86,34 +83,26 @@ public class TestEngineCreatures
 	@Test
 	public void singleChange()
 	{
-		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		CreatureEntity creature = CreatureEntity.create(-1, COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100);
-		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		_Events events = new _Events();
 		TickProcessingContext context = _createContextWithEvents(events);
 		int sourceId = 1;
 		EntityChangeTakeDamageFromEntity<IMutableCreatureEntity> change = new EntityChangeTakeDamageFromEntity<>(BodyPart.FEET, 10, sourceId);
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of(creature.id(), List.of(change));
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
-		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
-				, creaturesById
-				, context
-				, new EntityCollection(Map.of(), Map.of())
-				, changesToRun
+		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+			, new EntityCollection(Map.of(), Map.of())
+			, creature
+			, List.of(change)
 		);
 		
-		Assert.assertEquals(1, group.updatedCreatures().size());
-		Assert.assertEquals(0, group.deadCreatureIds().size());
-		CreatureEntity updated = group.updatedCreatures().get(creature.id());
+		CreatureEntity updated = result.updatedEntity();
 		Assert.assertEquals((byte)90, updated.health());
 	}
 
 	@Test
 	public void killEntity()
 	{
-		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		CreatureEntity creature = CreatureEntity.create(-1, COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)50);
-		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		IMutationBlock[] mutationHolder = new IMutationBlock[1];
 		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
 		_Events events = new _Events();
@@ -138,18 +127,14 @@ public class TestEngineCreatures
 		;
 		int sourceId = 1;
 		EntityChangeTakeDamageFromEntity<IMutableCreatureEntity> change = new EntityChangeTakeDamageFromEntity<>(BodyPart.FEET, 120, sourceId);
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of(creature.id(), List.of(change));
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_KILLED, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
-		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
-				, creaturesById
-				, context
-				, new EntityCollection(Map.of(), Map.of())
-				, changesToRun
+		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+			, new EntityCollection(Map.of(), Map.of())
+			, creature
+			, List.of(change)
 		);
 		
-		Assert.assertEquals(0, group.updatedCreatures().size());
-		Assert.assertEquals(1, group.deadCreatureIds().size());
-		Assert.assertEquals(creature.id(), group.deadCreatureIds().get(0).intValue());
+		Assert.assertNull(result.updatedEntity());
 		// This is a cow so we should see it drop an item.
 		Assert.assertTrue(mutationHolder[0] instanceof MutationBlockStoreItems);
 	}
@@ -157,20 +142,16 @@ public class TestEngineCreatures
 	@Test
 	public void decideOnMovement()
 	{
-		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CreatureEntity creature = CreatureEntity.create(-1, COW, startLocation, (byte)100);
-		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
-		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
-				, creaturesById
-				, context
-				, new EntityCollection(Map.of(), Map.of())
-				, changesToRun
+		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+			, new EntityCollection(Map.of(), Map.of())
+			, creature
+			, List.of()
 		);
 		
-		CreatureEntity updated = group.updatedCreatures().get(creature.id());
+		CreatureEntity updated = result.updatedEntity();
 		Assert.assertNotEquals(startLocation, updated.location());
 		Assert.assertNotNull(updated.ephemeral().movementPlan());
 	}
@@ -178,26 +159,21 @@ public class TestEngineCreatures
 	@Test
 	public void despawnOrcOnMovementDecision()
 	{
-		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CreatureEntity creature = CreatureEntity.create(-1, ORC, startLocation, (byte)50);
-		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContextWithOptions(Difficulty.PEACEFUL, null);
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
-		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
-				, creaturesById
-				, context
-				, new EntityCollection(Map.of(), Map.of())
-				, changesToRun
+		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+			, new EntityCollection(Map.of(), Map.of())
+			, creature
+			, List.of()
 		);
 		
-		Assert.assertTrue(group.updatedCreatures().isEmpty());
+		Assert.assertNull(result.updatedEntity());
 	}
 
 	@Test
 	public void startNextStep()
 	{
-		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 1.0f, 0.0f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
@@ -226,17 +202,14 @@ public class TestEngineCreatures
 					, 0L
 				)
 		);
-		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
-		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
-				, creaturesById
-				, context
-				, new EntityCollection(Map.of(), Map.of())
-				, changesToRun
+		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+			, new EntityCollection(Map.of(), Map.of())
+			, creature
+			, List.of()
 		);
 		
-		CreatureEntity updated = group.updatedCreatures().get(creature.id());
+		CreatureEntity updated = result.updatedEntity();
 		Assert.assertNotEquals(startLocation, updated.location());
 		Assert.assertEquals(4.9f, updated.velocity().z(), 0.001f);
 		Assert.assertEquals(1, updated.ephemeral().movementPlan().size());
@@ -246,7 +219,6 @@ public class TestEngineCreatures
 	public void waitForJump()
 	{
 		// In this test, we should just be waiting for a jump to have an effect.
-		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 1.0f, 0.441f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 3.92f);
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 1)
@@ -274,17 +246,14 @@ public class TestEngineCreatures
 					, 0L
 				)
 		);
-		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
-		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
-				, creaturesById
-				, context
-				, new EntityCollection(Map.of(), Map.of())
-				, changesToRun
+		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+			, new EntityCollection(Map.of(), Map.of())
+			, creature
+			, List.of()
 		);
 		
-		CreatureEntity updated = group.updatedCreatures().get(creature.id());
+		CreatureEntity updated = result.updatedEntity();
 		Assert.assertNotEquals(startLocation, updated.location());
 		Assert.assertEquals(2.94f, updated.velocity().z(), 0.001f);
 		Assert.assertEquals(1, updated.ephemeral().movementPlan().size());
@@ -293,7 +262,6 @@ public class TestEngineCreatures
 	@Test
 	public void moveAfterJump()
 	{
-		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 1.2f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 0, 1)
@@ -328,19 +296,16 @@ public class TestEngineCreatures
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), AIR);
 		_setCuboidLayer(cuboid, (byte)0, STONE.item().number());
 		TickProcessingContext context = _createSingleCuboidContext(cuboid);
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
 		
 		// We expect that there will be 2 moves to make to get into the right place to _begin_ moving into the new block.
 		for (int i = 0; i < 2; ++i)
 		{
-			Map<Integer, CreatureEntity> creaturesById = Map.of(creatureId, creature);
-			EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
-					, creaturesById
-					, context
-					, new EntityCollection(Map.of(), Map.of())
-					, changesToRun
+			EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+				, new EntityCollection(Map.of(), Map.of())
+				, creature
+				, List.of()
 			);
-			creature = group.updatedCreatures().get(creatureId);
+			creature = result.updatedEntity();
 			Assert.assertNotNull(creature);
 		}
 		Assert.assertEquals(new EntityLocation(0.0f, 0.1f, 1.0f), creature.location());
@@ -348,14 +313,12 @@ public class TestEngineCreatures
 		// There should now be just 1 step in the movement plan and the next invocation will cause us to convert it into steps, 19 in total.
 		for (int i = 0; i < 19; ++i)
 		{
-			Map<Integer, CreatureEntity> creaturesById = Map.of(creatureId, creature);
-			EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
-					, creaturesById
-					, context
-					, new EntityCollection(Map.of(), Map.of())
-					, changesToRun
+			EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+				, new EntityCollection(Map.of(), Map.of())
+				, creature
+				, List.of()
 			);
-			creature = group.updatedCreatures().get(creatureId);
+			creature = result.updatedEntity();
 			Assert.assertNotNull(creature);
 		}
 		// We should be in the final location with a cleared movement plan by this point.
@@ -365,42 +328,35 @@ public class TestEngineCreatures
 	@Test
 	public void resetPlanOnDamage()
 	{
-		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		byte startHealth = 100;
 		CreatureEntity creature = CreatureEntity.create(-1, COW, startLocation, startHealth);
-		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		_Events events = new _Events();
 		TickProcessingContext context = _createContextWithEvents(events);
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
-		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
-				, creaturesById
-				, context
-				, new EntityCollection(Map.of(), Map.of())
-				, changesToRun
+		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+			, new EntityCollection(Map.of(), Map.of())
+			, creature
+			, List.of()
 		);
 		
-		CreatureEntity updated = group.updatedCreatures().get(creature.id());
+		CreatureEntity updated = result.updatedEntity();
 		Assert.assertEquals(startHealth, updated.health());
 		Assert.assertNotEquals(startLocation, updated.location());
 		Assert.assertNotNull(updated.ephemeral().movementPlan());
 		Assert.assertEquals(context.currentTick, updated.ephemeral().lastActionTick());
 		
 		// Now, hit them and see this clears their movement plan so we should see a plan with new timers.
-		creaturesById = group.updatedCreatures();
 		context = _updateContextForTick(context);
 		int damage = 10;
 		int sourceId = 1;
-		changesToRun = Map.of(creature.id(), List.of(new EntityChangeTakeDamageFromEntity<>(BodyPart.FEET, damage, sourceId)));
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
-		group = EngineCreatures.processCreatureGroupParallel(thread
-				, creaturesById
-				, context
-				, new EntityCollection(Map.of(), Map.of())
-				, changesToRun
+		result = EngineCreatures.processOneCreature(context
+			, new EntityCollection(Map.of(), Map.of())
+			, creature
+			, List.of(new EntityChangeTakeDamageFromEntity<>(BodyPart.FEET, damage, sourceId))
 		);
 		
-		updated = group.updatedCreatures().get(creature.id());
+		updated = result.updatedEntity();
 		Assert.assertEquals(startHealth - damage, updated.health());
 		Assert.assertEquals(context.currentTick, updated.ephemeral().lastActionTick());
 	}
@@ -409,7 +365,6 @@ public class TestEngineCreatures
 	public void followTheWheat()
 	{
 		// Create 3 entities, 2 holding wheat and one holding a tool, to show that we always path to the closest with wheat.
-		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.19f, 0.0f, 0.0f);
 		CreatureEntity creature = CreatureEntity.create(-1, COW, startLocation, (byte)100);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
@@ -417,15 +372,13 @@ public class TestEngineCreatures
 		Entity closeWheat = _createEntity(2, new EntityLocation(3.0f, 0.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
 		Entity nonWheat = _createEntity(3, new EntityLocation(2.0f, 0.0f, 0.0f), null, PropertyHelpers.newItemWithDefaults(ENV, ENV.items.getItemById("op.iron_pickaxe")));
 		TickProcessingContext context = _createContext();
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
-		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
-				, creaturesById
-				, context
-				, new EntityCollection(Map.of(farWheat.id(), farWheat, closeWheat.id(), closeWheat, nonWheat.id(), nonWheat), creaturesById)
-				, changesToRun
+		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+			, new EntityCollection(Map.of(farWheat.id(), farWheat, closeWheat.id(), closeWheat, nonWheat.id(), nonWheat), creaturesById)
+			, creature
+			, List.of()
 		);
 		
-		CreatureEntity updated = group.updatedCreatures().get(creature.id());
+		CreatureEntity updated = result.updatedEntity();
 		Assert.assertNotEquals(startLocation, updated.location());
 		
 		// Make sure that the movement plan ends at the close wheat.
@@ -438,14 +391,13 @@ public class TestEngineCreatures
 		
 		// Run the processor to observe the movement of the target entity.
 		context = _updateContextWithPlayerAndCreatures(context, closeWheat, creaturesById);
-		creaturesById = group.updatedCreatures();
-		group = EngineCreatures.processCreatureGroupParallel(thread
-				, creaturesById
-				, context
-				, new EntityCollection(Map.of(farWheat.id(), farWheat, closeWheat.id(), closeWheat, nonWheat.id(), nonWheat), creaturesById)
-				, changesToRun
+		creature = updated;
+		result = EngineCreatures.processOneCreature(context
+			, new EntityCollection(Map.of(farWheat.id(), farWheat, closeWheat.id(), closeWheat, nonWheat.id(), nonWheat), creaturesById)
+			, creature
+			, List.of()
 		);
-		updated = group.updatedCreatures().get(creature.id());
+		updated = result.updatedEntity();
 		Assert.assertNotNull(updated);
 		
 		// Make sure that the movement plan ends at the NEW close wheat location.
@@ -458,23 +410,20 @@ public class TestEngineCreatures
 	public void orcTrackTarget()
 	{
 		// Create an orc and a player, showing that the orc follows the player when they move.
-		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(1.0f, 1.0f, 0.0f);
 		CreatureEntity creature = CreatureEntity.create(-1, ORC, startLocation, (byte)100);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		Entity player = _createEntity(1, new EntityLocation(5.0f, 1.0f, 0.0f), null, null);
 		TickProcessingContext context = _createContext();
 		context = _updateContextWithPlayerAndCreatures(context, player, creaturesById);
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
-		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
-				, creaturesById
-				, context
-				, new EntityCollection(Map.of(player.id(), player), creaturesById)
-				, changesToRun
+		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+			, new EntityCollection(Map.of(player.id(), player), creaturesById)
+			, creature
+			, List.of()
 		);
 		
 		// We should see that the orc has targeted the player and started moving toward them.
-		CreatureEntity updated = group.updatedCreatures().get(creature.id());
+		CreatureEntity updated = result.updatedEntity();
 		Assert.assertNotEquals(startLocation, updated.location());
 		Assert.assertEquals(1, updated.ephemeral().targetEntityId());
 		
@@ -488,14 +437,13 @@ public class TestEngineCreatures
 		
 		// We will run the processor to see them update their target location.
 		context = _updateContextWithPlayerAndCreatures(context, player, creaturesById);
-		creaturesById = group.updatedCreatures();
-		group = EngineCreatures.processCreatureGroupParallel(thread
-				, creaturesById
-				, context
-				, new EntityCollection(Map.of(player.id(), player), creaturesById)
-				, changesToRun
+		creature = updated;
+		result = EngineCreatures.processOneCreature(context
+			, new EntityCollection(Map.of(player.id(), player), creaturesById)
+			, creature
+			, List.of()
 		);
-		updated = group.updatedCreatures().get(creature.id());
+		updated = result.updatedEntity();
 		Assert.assertNotNull(updated);
 		
 		// Make sure that the movement plan ends at the NEW player location.
@@ -508,7 +456,6 @@ public class TestEngineCreatures
 	public void cowsInLoveMode()
 	{
 		// Create 1 player holding wheat and 2 cows:  a distant one in love mode and a closer not in love mode.  Show that a cow priorizes the love cow.
-		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.19f, 0.0f, 0.0f);
 		Item wheat_item = ENV.items.getItemById("op.wheat_item");
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, COW, startLocation, (byte)100));
@@ -525,15 +472,13 @@ public class TestEngineCreatures
 		Entity closeWheat = _createEntity(1, new EntityLocation(3.0f, 0.0f, 0.0f), new Items(wheat_item, 2), null);
 		TickProcessingContext context = _createContext();
 		context = _updateContextWithPlayerAndCreatures(context, null, creaturesById);
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
-		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
-				, Map.of(fedCow.id(), fedCow)
-				, context
-				, new EntityCollection(Map.of(closeWheat.id(), closeWheat), creaturesById)
-				, changesToRun
+		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+			, new EntityCollection(Map.of(closeWheat.id(), closeWheat), creaturesById)
+			, fedCow
+			, List.of()
 		);
 		
-		CreatureEntity updated = group.updatedCreatures().get(fedCow.id());
+		CreatureEntity updated = result.updatedEntity();
 		Assert.assertNotEquals(startLocation, updated.location());
 		
 		// Make sure that the movement plan ends at the close target cow.
@@ -546,7 +491,6 @@ public class TestEngineCreatures
 	public void cowsBreeding()
 	{
 		// Create 2 cows close to each other, feed both of them, and observe the messages related to how they breed.
-		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		CreatureIdAssigner idAssigner = new CreatureIdAssigner();
 		EntityLocation location1 = new EntityLocation(0.0f, 0.0f, 0.0f);
 		EntityLocation location2 = new EntityLocation(1.7f, 0.0f, 0.0f);
@@ -556,63 +500,55 @@ public class TestEngineCreatures
 		mutablePlayer.newInventory.addAllItems(wheat_item, 3);
 		mutablePlayer.setSelectedKey(1);
 		Entity player = mutablePlayer.freeze();
-		CreatureEntity cow1 = CreatureEntity.create(idAssigner.next(), COW, location1, (byte)100);
-		CreatureEntity cow2 = CreatureEntity.create(idAssigner.next(), COW, location2, (byte)100);
+		int cowId1 = idAssigner.next();
+		int cowId2 = idAssigner.next();
 		
 		// First step, we should see the cows both take notice of the player since it has wheat in its hand.
-		Map<Integer, CreatureEntity> creaturesById = new HashMap<>(Map.of(cow1.id(), cow1
-				, cow2.id(), cow2
+		Map<Integer, CreatureEntity> creaturesById = new HashMap<>(Map.of(cowId1, CreatureEntity.create(cowId1, COW, location1, (byte)100)
+			, cowId2, CreatureEntity.create(cowId2, COW, location2, (byte)100)
 		));
 		TickProcessingContext context = _createContext();
 		context = _updateContextWithPlayerAndCreatures(context, player, creaturesById);
-		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
-				, creaturesById
-				, context
-				, new EntityCollection(Map.of(player.id(), player), creaturesById)
-				, Map.of()
+		creaturesById = _runGroup(context
+			, List.of(player)
+			, creaturesById
+			, Map.of()
 		);
-		creaturesById.putAll(group.updatedCreatures());
 		
 		// Verify that they have set the targets.
-		Assert.assertEquals(player.id(), creaturesById.get(cow1.id()).ephemeral().targetEntityId());
-		Assert.assertEquals(player.id(), creaturesById.get(cow2.id()).ephemeral().targetEntityId());
+		Assert.assertEquals(player.id(), creaturesById.get(cowId1).ephemeral().targetEntityId());
+		Assert.assertEquals(player.id(), creaturesById.get(cowId2).ephemeral().targetEntityId());
 		
 		// Now, feed them using the mutations we would expect.
 		context = _updateContextWithPlayerAndCreatures(context, player, creaturesById);
-		group = EngineCreatures.processCreatureGroupParallel(thread
-				, creaturesById
-				, context
-				, new EntityCollection(Map.of(player.id(), player), creaturesById)
-				, Map.of(cow1.id(), List.of(new EntityChangeApplyItemToCreature(wheat_item))
-						, cow2.id(), List.of(new EntityChangeApplyItemToCreature(wheat_item))
-				)
+		creaturesById = _runGroup(context
+			, List.of(player)
+			, creaturesById
+			, Map.of(cowId1, List.of(new EntityChangeApplyItemToCreature(wheat_item))
+				, cowId2, List.of(new EntityChangeApplyItemToCreature(wheat_item))
+			)
 		);
-		creaturesById.putAll(group.updatedCreatures());
 		
 		// The feeding will reset them but they can't yet see each other so they will pick an idle wander.
-		Assert.assertFalse(creaturesById.get(cow1.id()).ephemeral().shouldTakeImmediateAction());
-		Assert.assertFalse(creaturesById.get(cow1.id()).ephemeral().movementPlan().isEmpty());
-		Assert.assertFalse(creaturesById.get(cow2.id()).ephemeral().shouldTakeImmediateAction());
-		Assert.assertFalse(creaturesById.get(cow2.id()).ephemeral().movementPlan().isEmpty());
+		Assert.assertFalse(creaturesById.get(cowId1).ephemeral().shouldTakeImmediateAction());
+		Assert.assertFalse(creaturesById.get(cowId1).ephemeral().movementPlan().isEmpty());
+		Assert.assertFalse(creaturesById.get(cowId2).ephemeral().shouldTakeImmediateAction());
+		Assert.assertFalse(creaturesById.get(cowId2).ephemeral().movementPlan().isEmpty());
 		// We want to clear this to observe the rest of the behaviour (otherwise, we would need to wait for them to move).
-		creaturesById.put(cow1.id(), _takeAction(creaturesById.get(cow1.id())));
-		creaturesById.put(cow2.id(), _takeAction(creaturesById.get(cow2.id())));
+		creaturesById.put(cowId1, _takeAction(creaturesById.get(cowId1)));
+		creaturesById.put(cowId2, _takeAction(creaturesById.get(cowId2)));
 		
 		// Run another tick so that they see each other in love mode.
 		context = _updateContextWithPlayerAndCreatures(context, player, creaturesById);
-		group = EngineCreatures.processCreatureGroupParallel(thread
-				, creaturesById
-				, context
-				, new EntityCollection(Map.of(player.id(), player), creaturesById)
-				, Map.of(cow1.id(), List.of()
-						, cow2.id(), List.of()
-				)
+		creaturesById = _runGroup(context
+			, List.of(player)
+			, creaturesById
+			, Map.of()
 		);
-		creaturesById.putAll(group.updatedCreatures());
 		
 		// Verify that they now target each other.
-		Assert.assertEquals(cow2.id(), creaturesById.get(cow1.id()).ephemeral().targetEntityId());
-		Assert.assertEquals(cow1.id(), creaturesById.get(cow2.id()).ephemeral().targetEntityId());
+		Assert.assertEquals(cowId2, creaturesById.get(cowId1).ephemeral().targetEntityId());
+		Assert.assertEquals(cowId1, creaturesById.get(cowId2).ephemeral().targetEntityId());
 		
 		// Nothing should have happened yet, as they just found their mating partners so run the next tick.
 		Map<Integer, IEntityAction<IMutableCreatureEntity>> changes = new HashMap<>();
@@ -634,26 +570,23 @@ public class TestEngineCreatures
 				changes.put(targetCreatureId, change);
 			}
 		}, null, null);
-		group = EngineCreatures.processCreatureGroupParallel(thread
-				, creaturesById
-				, context
-				, new EntityCollection(Map.of(), creaturesById)
-				, Map.of()
+		creaturesById = _runGroup(context
+			, List.of(player)
+			, creaturesById
+			, Map.of()
 		);
 		
 		// Verify that cow1 sent a message to cow2.
 		Assert.assertEquals(1, changes.size());
-		Assert.assertTrue(changes.get(cow2.id()) instanceof EntityChangeImpregnateCreature);
+		Assert.assertTrue(changes.get(cowId2) instanceof EntityChangeImpregnateCreature);
 		
 		// Run another tick to see the mother receive this request and spawn the offspring.
-		creaturesById.putAll(group.updatedCreatures());
 		CreatureEntity[] out = new CreatureEntity[1];
 		context = _updateContextWithCreatures(context, creaturesById.values(), null, out, idAssigner);
-		group = EngineCreatures.processCreatureGroupParallel(thread
-				, creaturesById
-				, context
-				, new EntityCollection(Map.of(), creaturesById)
-				, Map.of(cow2.id(), List.of(changes.get(cow2.id())))
+		creaturesById = _runGroup(context
+			, List.of()
+			, creaturesById
+			, Map.of(cowId2, List.of(changes.get(cowId2)))
 		);
 		Assert.assertNotNull(out[0]);
 		CreatureEntity offspring = out[0];
@@ -661,15 +594,13 @@ public class TestEngineCreatures
 		Assert.assertEquals(COW, offspring.type());
 		
 		// Run another tick to observe that nothing special happens.
-		creaturesById.putAll(group.updatedCreatures());
-		Assert.assertNull(creaturesById.get(cow2.id()).ephemeral().movementPlan());
+		Assert.assertNull(creaturesById.get(cowId2).ephemeral().movementPlan());
 		creaturesById.put(offspring.id(), offspring);
 		context = _updateContextWithCreatures(context, creaturesById.values(), null, null, null);
-		group = EngineCreatures.processCreatureGroupParallel(thread
-				, creaturesById
-				, context
-				, new EntityCollection(Map.of(), creaturesById)
-				, Map.of()
+		creaturesById = _runGroup(context
+			, List.of()
+			, creaturesById
+			, Map.of()
 		);
 	}
 
@@ -685,33 +616,29 @@ public class TestEngineCreatures
 		}
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(8, 8, 1), AIR.item().number());
 		
-		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(8.5f, 8.0f, 1.0f);
 		CreatureEntity creature = CreatureEntity.create(-1, ORC, startLocation, (byte)100);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createSingleCuboidContext(cuboid);
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
-		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
-				, creaturesById
-				, context
-				, new EntityCollection(Map.of(), creaturesById)
-				, changesToRun
+		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+			, new EntityCollection(Map.of(), creaturesById)
+			, creature
+			, List.of()
 		);
 		
-		CreatureEntity updated = group.updatedCreatures().get(creature.id());
+		CreatureEntity updated = result.updatedEntity();
 		// The cow should first position itself against the wall before making the jump.
 		// Note that it will take 5 steps, instead of 3, since this is an idle movement (half-speed but also ends in a jump).
 		for (int i = 0; i < 5; ++i)
 		{
 			Assert.assertEquals(0.0f, updated.velocity().z(), 0.001f);
-			creaturesById = group.updatedCreatures();
-			group = EngineCreatures.processCreatureGroupParallel(thread
-					, creaturesById
-					, context
-					, new EntityCollection(Map.of(), creaturesById)
-					, changesToRun
+			creaturesById = Map.of(updated.id(), updated);
+			result = EngineCreatures.processOneCreature(context
+				, new EntityCollection(Map.of(), creaturesById)
+				, updated
+				, List.of()
 			);
-			updated = group.updatedCreatures().get(creature.id());
+			updated = result.updatedEntity();
 		}
 		// We should now be against the wall.
 		Assert.assertEquals(8.01f, updated.location().x(), 0.01f);
@@ -733,14 +660,18 @@ public class TestEngineCreatures
 		{
 			updated = justUpdated;
 			// Apply the next step.
-			creaturesById = group.updatedCreatures();
-			group = EngineCreatures.processCreatureGroupParallel(thread
-					, creaturesById
-					, context
-					, new EntityCollection(Map.of(), creaturesById)
-					, changesToRun
+			creaturesById = Map.of(updated.id(), updated);
+			result = EngineCreatures.processOneCreature(context
+				, new EntityCollection(Map.of(), creaturesById)
+				, updated
+				, List.of()
 			);
-			justUpdated = group.updatedCreatures().get(creature.id());
+			justUpdated = result.updatedEntity();
+			if (justUpdated == updated)
+			{
+				// No change so null this.
+				justUpdated = null;
+			}
 		}
 		
 		// By this point we should be on the ground, in the right block, with no plan.
@@ -761,7 +692,6 @@ public class TestEngineCreatures
 		_setCuboidLayer(cuboid, (byte)0, STONE.item().number());
 		_setCuboidLayer(cuboid, (byte)1, ENV.items.getItemById("op.water_source").number());
 		_setCuboidLayer(cuboid, (byte)16, STONE.item().number());
-		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		
 		EntityLocation waterStart = new EntityLocation(2.0f, 2.0f, 1.0f);
 		EntityLocation airStart = new EntityLocation(2.0f, 2.0f, 17.0f);
@@ -776,7 +706,6 @@ public class TestEngineCreatures
 		);
 		long millisPerTick = 100L;
 		
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
 		for (int i = 0; i < 10; ++i)
 		{
 			Map<Integer, MinimalEntity> minimalEntitiesById = Map.of(waterTarget.id(), MinimalEntity.fromEntity(waterTarget)
@@ -794,17 +723,11 @@ public class TestEngineCreatures
 					.fixedRandom(1)
 					.finish()
 			;
-			EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
-					, creaturesById
-					, context
-					, new EntityCollection(Map.of(waterTarget.id(), waterTarget, airTarget.id(), airTarget), creaturesById)
-					, changesToRun
-			);
-			creaturesById = group.updatedCreatures();
+			creaturesById = _runGroup(context, List.of(waterTarget, airTarget), creaturesById, Map.of());
 			float oldWater = waterCreature.location().x();
 			float oldAir = waterCreature.location().x();
-			waterCreature = group.updatedCreatures().get(waterCreature.id());
-			airCreature = group.updatedCreatures().get(airCreature.id());
+			waterCreature = creaturesById.get(waterCreature.id());
+			airCreature = creaturesById.get(airCreature.id());
 			// Make sure that both are making progress.
 			Assert.assertTrue(waterCreature.location().x() > oldWater);
 			Assert.assertTrue(airCreature.location().x() > oldAir);
@@ -826,7 +749,6 @@ public class TestEngineCreatures
 		_setCuboidLayer(cuboid, (byte)0, STONE.item().number());
 		_setCuboidLayer(cuboid, (byte)1, waterSourceNumber);
 		_setCuboidLayer(cuboid, (byte)2, waterSourceNumber);
-		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		
 		EntityLocation startLocation = new EntityLocation(8.0f, 8.0f, 1.0f);
 		CreatureEntity creature = CreatureEntity.create(-1, ORC, startLocation, (byte)100);
@@ -835,10 +757,8 @@ public class TestEngineCreatures
 		mutable.newBreath -= 1;
 		creature = mutable.freeze();
 		
-		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		long millisPerTick = 100L;
 		
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun = Map.of();
 		// This threshold where we finish climbing is determined experimentally.
 		int stepsRequired = 19;
 		for (int i = 0; i <= stepsRequired; ++i)
@@ -855,14 +775,12 @@ public class TestEngineCreatures
 					.fixedRandom(0)
 					.finish()
 			;
-			EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
-					, creaturesById
-					, context
-					, new EntityCollection(Map.of(), creaturesById)
-					, changesToRun
+			EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+				, new EntityCollection(Map.of(), Map.of(creature.id(), creature))
+				, creature
+				, List.of()
 			);
-			creaturesById = group.updatedCreatures();
-			creature = group.updatedCreatures().get(creature.id());
+			creature = result.updatedEntity();
 			
 			if (i < stepsRequired)
 			{
@@ -895,7 +813,6 @@ public class TestEngineCreatures
 		mutable.newVelocity = startVelocity;
 		creature = mutable.freeze();
 		
-		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
@@ -909,13 +826,12 @@ public class TestEngineCreatures
 				.finish()
 		;
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.FALL, creature.location().getBlockLocation(), creature.id(), 0));
-		EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
-				, Map.of(creature.id(), creature)
-				, context
-				, new EntityCollection(Map.of(), Map.of(creature.id(), creature))
-				, Map.of()
+		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+			, new EntityCollection(Map.of(), Map.of(creature.id(), creature))
+			, creature
+			, List.of()
 		);
-		creature = group.updatedCreatures().get(creature.id());
+		creature = result.updatedEntity();
 		
 		Assert.assertEquals(new EntityLocation(16.8f, 16.8f, 16.0f), creature.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), creature.velocity());
@@ -941,7 +857,6 @@ public class TestEngineCreatures
 		creature = mutable.freeze();
 		
 		Entity[] indirect = new Entity[] { target };
-		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
 				return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
@@ -963,13 +878,12 @@ public class TestEngineCreatures
 				indirect[0] = target;
 				didChange = true;
 			}
-			EngineCreatures.CreatureGroup group = EngineCreatures.processCreatureGroupParallel(thread
-				, Map.of(creature.id(), creature)
-				, context
+			EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
 				, new EntityCollection(Map.of(target.id(), target), Map.of(creature.id(), creature))
-				, Map.of()
+				, creature
+				, List.of()
 			);
-			creature = group.updatedCreatures().get(creature.id());
+			creature = result.updatedEntity();
 		}
 		
 		// At this point, we will be close enough that we have stopped moving but we still see some "coasting" residual velocity.
@@ -981,7 +895,6 @@ public class TestEngineCreatures
 	public void cowsNudge()
 	{
 		// Put 2 cows intersecting and show that one will use a nudge to push the other away based on ID and tick number.
-		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation location1 = new EntityLocation(1.0f, 1.0f, 0.0f);
 		EntityLocation location2 = new EntityLocation(1.2f, 0.9f, 0.1f);
 		CreatureEntity cow1 = CreatureEntity.create(-1, COW, location1, (byte)100);
@@ -1023,12 +936,7 @@ public class TestEngineCreatures
 				})
 				.finish()
 		;
-		EngineCreatures.processCreatureGroupParallel(thread
-			, creaturesById
-			, context
-			, new EntityCollection(Map.of(), creaturesById)
-			, Map.of()
-		);
+		creaturesById = _runGroup(context, List.of(), creaturesById, Map.of());
 		Assert.assertTrue(out[0] instanceof EntityActionNudge);
 		
 		// We will just run this against the cow, manually, to show the velocity change.
@@ -1220,6 +1128,44 @@ public class TestEngineCreatures
 					, entity.ephemeral().lastDamageTakenMillis()
 				)
 		);
+	}
+
+	private static Map<Integer, CreatureEntity> _runGroup(TickProcessingContext context
+		, List<Entity> players
+		, Map<Integer, CreatureEntity> creatures
+		, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun
+	)
+	{
+		Map<Integer, Entity> playerMap = new HashMap<>();
+		for (Entity player : players)
+		{
+			playerMap.put(player.id(), player);
+		}
+		EntityCollection entityCollection = new EntityCollection(playerMap, creatures);
+		Map<Integer, CreatureEntity> updated = new HashMap<>(creatures);
+		for (Integer key : creatures.keySet())
+		{
+			List<IEntityAction<IMutableCreatureEntity>> toRun = changesToRun.get(key);
+			if (null == toRun)
+			{
+				toRun = List.of();
+			}
+			EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+				, entityCollection
+				, creatures.get(key)
+				, toRun
+			);
+			if (null != result.updatedEntity())
+			{
+				// This is either changed or not, but not deleted.
+				updated.put(key, result.updatedEntity());
+			}
+			else
+			{
+				updated.remove(key);
+			}
+		}
+		return updated;
 	}
 
 	private static class _Events implements TickProcessingContext.IEventSink
