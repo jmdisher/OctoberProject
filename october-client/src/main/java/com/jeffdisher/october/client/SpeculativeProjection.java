@@ -9,7 +9,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -28,10 +27,8 @@ import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.HeightMapHelpers;
-import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
-import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
@@ -86,7 +83,6 @@ public class SpeculativeProjection
 	public static final int MAX_FOLLOW_UP_TICKS = 3;
 
 	private final int _localEntityId;
-	private final ProcessorElement _singleThreadElement;
 	private final IProjectionListener _listener;
 	private final long _serverMillisPerTick;
 	private final Set<EventRecord.Type> _eventTypesToAlwaysReport;
@@ -114,7 +110,6 @@ public class SpeculativeProjection
 	{
 		Assert.assertTrue(null != listener);
 		_localEntityId = localEntityId;
-		_singleThreadElement = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		_listener = listener;
 		_serverMillisPerTick = serverMillisPerTick;
 		// We want to always pass through the events which are related to entities (since we don't speculate on other entities).
@@ -494,7 +489,7 @@ public class SpeculativeProjection
 			);
 			
 			// Run these changes and mutations, collecting the resultant output from them.
-			Entity[] entityResult = _runChangesOnEntity(_singleThreadElement, context, _localEntityId, _projectedState.projectedLocalEntity, entityChangesToRun);
+			Entity[] entityResult = _runChangesOnEntity(context, _localEntityId, _projectedState.projectedLocalEntity, entityChangesToRun);
 			// This returns non-null on success but the container may be empty if the entity didn't change.
 			IEntityUpdate update = null;
 			if ((null != entityResult) && (null != entityResult[0]))
@@ -675,7 +670,7 @@ public class SpeculativeProjection
 		).toList();
 	}
 
-	private static Entity[] _runChangesOnEntity(ProcessorElement processor, TickProcessingContext context, int entityId, Entity entity, List<IEntityAction<IMutablePlayerEntity>> entityMutations)
+	private static Entity[] _runChangesOnEntity(TickProcessingContext context, int entityId, Entity entity, List<IEntityAction<IMutablePlayerEntity>> entityMutations)
 	{
 		List<ScheduledChange> scheduled = _scheduledChangeList(entityMutations);
 		EnginePlayers.SinglePlayerResult playerResult = EnginePlayers.processOnePlayer(context
