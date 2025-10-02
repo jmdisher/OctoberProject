@@ -1,15 +1,12 @@
 package com.jeffdisher.october.engine;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.DamageHelpers;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.NudgeHelpers;
-import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.Entity;
@@ -18,7 +15,6 @@ import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -39,64 +35,13 @@ public class EnginePlayers
 	}
 
 	/**
-	 * Applies the given changesToRun to the data in entitiesById, returning updated entities for some subset of the
-	 * changes (previous entity instances will be returned if not changed).
-	 * Note that this is expected to be run in parallel, across many threads, and will rely on a bakery algorithm to
-	 * select each thread's subset of the work, dynamically.  The groups returned by all threads will have no overlap
-	 * and the union of all of them will entirely cover the key space defined by changesToRun.
+	 * Processes the given list of operator actions.  Note that operator actions work like normal player actions but
+	 * they are applied to a null entity.  These originate from the console.
 	 * 
-	 * @param processor The current thread.
-	 * @param context The context used for running changes.
-	 * @param entityCollection A look-up mechanism for the entities in the loaded world.
-	 * @param entitiesById The map of all read-only entities and scheduled changes (may not be ready).
-	 * @param operatorChanges The changes to run as the operator.
-	 * @return The OutputEntity instances for InputEntity instances processed by this thread.
+	 * @param context The current tick context.
+	 * @param operatorChanges The list of operator actions (not null).
 	 */
-	public static ProcessedGroup processCrowdGroupParallel(ProcessorElement processor
-			, TickProcessingContext context
-			, EntityCollection entityCollection
-			, Map<Integer, InputEntity> entitiesById
-			, List<IEntityAction<IMutablePlayerEntity>> operatorChanges
-	)
-	{
-		Map<Integer, OutputEntity> processedEntities = new HashMap<>();
-		int committedMutationCount = 0;
-		
-		// We need to check the operator as a special-case since it isn't a real entity.
-		if (processor.handleNextWorkUnit())
-		{
-			// Verify that this isn't redundantly described.
-			Assert.assertTrue(!entitiesById.containsKey(OPERATOR_ENTITY_ID));
-			_processOperatorChanges(context, operatorChanges);
-		}
-		for (Map.Entry<Integer, InputEntity> elt : entitiesById.entrySet())
-		{
-			if (processor.handleNextWorkUnit())
-			{
-				// This is our element.
-				Integer id = elt.getKey();
-				InputEntity input = elt.getValue();
-				Entity entity = input.entity;
-				List<ScheduledChange> changes = input.scheduledChanges;
-				processor.entitiesProcessed += 1;
-				
-				SinglePlayerResult result = _processOnePlayer(context
-					, entityCollection
-					, entity
-					, changes
-				);
-				processedEntities.put(id, new OutputEntity(result.changedEntityOrNull, result.notYetReadyChanges));
-				processor.entityChangesProcessed = +result.entityChangesProcessed;
-				committedMutationCount += result.committedMutationCount;
-			}
-		}
-		return new ProcessedGroup(committedMutationCount
-			, processedEntities
-		);
-	}
-
-
-	private static void _processOperatorChanges(TickProcessingContext context
+	public static void processOperatorActions(TickProcessingContext context
 		, List<IEntityAction<IMutablePlayerEntity>> operatorChanges
 	)
 	{
@@ -106,7 +51,17 @@ public class EnginePlayers
 		}
 	}
 
-	private static SinglePlayerResult _processOnePlayer(TickProcessingContext context
+	/**
+	 * Applies a list of actions to the given player entity.  Note that only the actions which are currently "ready" are
+	 * run, with those which aren't yet ready updated and returned as part of the output.
+	 * 
+	 * @param context The current tick context.
+	 * @param entityCollection The entities in the world.
+	 * @param entity The player entity.
+	 * @param changes The list of actions to apply (or update for a future tick).
+	 * @return The results of the run (returned entity will be null if unchanged).
+	 */
+	public static SinglePlayerResult processOnePlayer(TickProcessingContext context
 		, EntityCollection entityCollection
 		, Entity entity
 		, List<ScheduledChange> changes
@@ -167,21 +122,6 @@ public class EnginePlayers
 		);
 	}
 
-
-	public static record ProcessedGroup(int committedMutationCount
-		// We will pass back an OutputEntity for every InputEntity processed by this thread, even if no changes.
-		, Map<Integer, OutputEntity> entityOutput
-	) {}
-
-	// Note that NEITHER of these will be NULL and scheduledChanges MUST not be empty.
-	public static record InputEntity(Entity entity
-		, List<ScheduledChange> scheduledChanges
-	) {}
-
-	// Note that "entity" will be NULL if unchanged and notYetReadyChanges will NEVER be NULL but may be empty.
-	public static record OutputEntity(Entity entity
-		, List<ScheduledChange> notYetReadyChanges
-	) {}
 
 	public static record SinglePlayerResult(Entity changedEntityOrNull
 		, List<ScheduledChange> notYetReadyChanges

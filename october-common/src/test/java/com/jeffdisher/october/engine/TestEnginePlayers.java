@@ -2,7 +2,6 @@ package com.jeffdisher.october.engine;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -17,9 +16,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.OrientationHelpers;
-import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.ScheduledChange;
-import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -69,7 +66,6 @@ public class TestEnginePlayers
 		mutable.newHealth = health;
 		Entity entity = mutable.freeze();
 		
-		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
@@ -85,15 +81,14 @@ public class TestEnginePlayers
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.FALL, entity.location().getBlockLocation(), entity.id(), 0));
 		
 		// We will run an iteration with no top-level events, to emulate lag, to show that nothing happens.
-		EnginePlayers.ProcessedGroup group = EnginePlayers.processCrowdGroupParallel(thread
-			, context
+		EnginePlayers.SinglePlayerResult result = EnginePlayers.processOnePlayer(context
 			, new EntityCollection(Map.of(), Map.of())
-			, Map.of(entityId, new EnginePlayers.InputEntity(entity, List.of()))
+			, entity
 			, List.of()
 		);
+		
 		// We should see the one output (since we processed this) but it should have a null updated instance.
-		Assert.assertEquals(1, group.entityOutput().size());
-		Assert.assertNull(group.entityOutput().get(entityId).entity());
+		Assert.assertNull(result.changedEntityOrNull());
 		
 		// Then, we will run another call with a standing change, and show that the fall damage is applied.
 		EntityActionSimpleMove<IMutablePlayerEntity> topLevel = new EntityActionSimpleMove<>(0.0f
@@ -106,14 +101,12 @@ public class TestEnginePlayers
 		EntityLocation fallTarget = new EntityLocation(16.8f, 16.8f, 16.0f);
 		EntityLocation allStop = new EntityLocation(0.0f, 0.0f, 0.0f);
 		ScheduledChange singleChange = new ScheduledChange(topLevel, 0L);
-		group = EnginePlayers.processCrowdGroupParallel(thread
-			, context
+		result = EnginePlayers.processOnePlayer(context
 			, new EntityCollection(Map.of(), Map.of())
-			, Map.of(entityId, new EnginePlayers.InputEntity(entity, List.of(singleChange)))
-			, List.of()
+			, entity
+			, List.of(singleChange)
 		);
-		Assert.assertEquals(1, group.entityOutput().size());
-		entity = group.entityOutput().get(entityId).entity();
+		entity = result.changedEntityOrNull();
 		
 		Assert.assertTrue(events.didPost());
 		Assert.assertEquals(fallTarget, entity.location());

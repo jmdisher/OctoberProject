@@ -26,7 +26,6 @@ import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.engine.EngineCreatures;
 import com.jeffdisher.october.engine.EngineSpawner;
-import com.jeffdisher.october.engine.EnginePlayers.OutputEntity;
 import com.jeffdisher.october.engine.EnginePlayers;
 import com.jeffdisher.october.engine.EngineCuboids;
 import com.jeffdisher.october.logic.BlockChangeDescription;
@@ -396,7 +395,7 @@ public class TickRunner
 		TickMaterials materials = _mergeTickStateAndWaitForNext(thisThread
 				, emptyMaterials
 				, new _PartialHandoffData(new _ProcessedFragment(Map.of(), Map.of(), List.of(), Map.of(), Map.of(), 0)
-						, new EnginePlayers.ProcessedGroup(0, Map.of())
+						, new _ProcessedGroup(0, Map.of())
 						, new _CreatureGroup(false, Map.of(), List.of())
 						, List.of()
 						, List.of()
@@ -498,7 +497,7 @@ public class TickRunner
 			Assert.assertTrue(null != creatureGroup);
 			
 			long startCrowd = System.currentTimeMillis();
-			EnginePlayers.ProcessedGroup group = EnginePlayers.processCrowdGroupParallel(thisThread
+			_ProcessedGroup group = _processCrowdGroupParallel(thisThread
 					, context
 					, entityCollection
 					, materials.changesToRun
@@ -582,6 +581,49 @@ public class TickRunner
 		return new _CreatureGroup(false
 				, updatedCreatures
 				, deadCreatureIds
+		);
+	}
+
+	private static _ProcessedGroup _processCrowdGroupParallel(ProcessorElement processor
+			, TickProcessingContext context
+			, EntityCollection entityCollection
+			, Map<Integer, _InputEntity> entitiesById
+			, List<IEntityAction<IMutablePlayerEntity>> operatorChanges
+	)
+	{
+		Map<Integer, _OutputEntity> processedEntities = new HashMap<>();
+		int committedMutationCount = 0;
+		
+		// We need to check the operator as a special-case since it isn't a real entity.
+		if (processor.handleNextWorkUnit())
+		{
+			// Verify that this isn't redundantly described.
+			Assert.assertTrue(!entitiesById.containsKey(EnginePlayers.OPERATOR_ENTITY_ID));
+			EnginePlayers.processOperatorActions(context, operatorChanges);
+		}
+		for (Map.Entry<Integer, _InputEntity> elt : entitiesById.entrySet())
+		{
+			if (processor.handleNextWorkUnit())
+			{
+				// This is our element.
+				Integer id = elt.getKey();
+				_InputEntity input = elt.getValue();
+				Entity entity = input.entity();
+				List<ScheduledChange> changes = input.scheduledChanges();
+				processor.entitiesProcessed += 1;
+				
+				EnginePlayers.SinglePlayerResult result = EnginePlayers.processOnePlayer(context
+					, entityCollection
+					, entity
+					, changes
+				);
+				processedEntities.put(id, new _OutputEntity(result.changedEntityOrNull(), result.notYetReadyChanges()));
+				processor.entityChangesProcessed = +result.entityChangesProcessed();
+				committedMutationCount += result.committedMutationCount();
+			}
+		}
+		return new _ProcessedGroup(committedMutationCount
+			, processedEntities
 		);
 	}
 
@@ -870,7 +912,7 @@ public class TickRunner
 				}
 				
 				// Convert this raw next tick action accumulation into the CrowdProcessor input.
-				Map<Integer, EnginePlayers.InputEntity> changesToRun = _determineChangesToRun(mutableCrowdState, nextTickChanges);
+				Map<Integer, _InputEntity> changesToRun = _determineChangesToRun(mutableCrowdState, nextTickChanges);
 				
 				// We want to build the arrangement of blocks modified in the last tick so that block updates can be synthesized.
 				Map<CuboidAddress, List<AbsoluteLocation>> updatedBlockLocationsByCuboid = _extractBlockUpdateLocations( masterFragment);
@@ -925,10 +967,10 @@ public class TickRunner
 	private static Map<Integer, Entity> _extractSnapshotPlayers(TickMaterials startingMaterials, _PartialHandoffData masterFragment)
 	{
 		Map<Integer, Entity> mutableCrowdState = new HashMap<>(startingMaterials.completedEntities);
-		for (Map.Entry<Integer, EnginePlayers.OutputEntity> processed : masterFragment.crowd.entityOutput().entrySet())
+		for (Map.Entry<Integer, _OutputEntity> processed : masterFragment.crowd.entityOutput().entrySet())
 		{
 			Integer key = processed.getKey();
-			EnginePlayers.OutputEntity value = processed.getValue();
+			_OutputEntity value = processed.getValue();
 			Entity updated = value.entity();
 			
 			// Note that this is documented to be null if nothing changed.
@@ -976,10 +1018,10 @@ public class TickRunner
 		{
 			_scheduleChangesForEntity(snapshotEntityMutations, container.getKey(), container.getValue());
 		}
-		for (Map.Entry<Integer, EnginePlayers.OutputEntity> processed : masterFragment.crowd.entityOutput().entrySet())
+		for (Map.Entry<Integer, _OutputEntity> processed : masterFragment.crowd.entityOutput().entrySet())
 		{
 			Integer key = processed.getKey();
-			EnginePlayers.OutputEntity value = processed.getValue();
+			_OutputEntity value = processed.getValue();
 			
 			// We want to schedule anything which wasn't yet ready.
 			List<ScheduledChange> notYetReadyChanges = value.notYetReadyChanges();
@@ -994,10 +1036,10 @@ public class TickRunner
 	private static Map<Integer, Entity> _extractChangedPlayerEntitiesOnly(_PartialHandoffData masterFragment)
 	{
 		Map<Integer, Entity> updatedEntities = new HashMap<>();
-		for (Map.Entry<Integer, EnginePlayers.OutputEntity> processed : masterFragment.crowd.entityOutput().entrySet())
+		for (Map.Entry<Integer, _OutputEntity> processed : masterFragment.crowd.entityOutput().entrySet())
 		{
 			Integer key = processed.getKey();
-			EnginePlayers.OutputEntity value = processed.getValue();
+			_OutputEntity value = processed.getValue();
 			Entity updated = value.entity();
 			
 			// Note that this is documented to be null if nothing changed.
@@ -1191,9 +1233,9 @@ public class TickRunner
 		return nextTickChanges;
 	}
 
-	private static Map<Integer, EnginePlayers.InputEntity> _determineChangesToRun(Map<Integer, Entity> mutableCrowdState, Map<Integer, List<ScheduledChange>> nextTickChanges)
+	private static Map<Integer, _InputEntity> _determineChangesToRun(Map<Integer, Entity> mutableCrowdState, Map<Integer, List<ScheduledChange>> nextTickChanges)
 	{
-		Map<Integer, EnginePlayers.InputEntity> changesToRun = new HashMap<>();
+		Map<Integer, _InputEntity> changesToRun = new HashMap<>();
 		// We shouldn't have put operator changes into this common map.
 		Assert.assertTrue(!nextTickChanges.containsKey(EnginePlayers.OPERATOR_ENTITY_ID));
 		for (Map.Entry<Integer, List<ScheduledChange>> oneEntity : nextTickChanges.entrySet())
@@ -1205,7 +1247,7 @@ public class TickRunner
 				List<ScheduledChange> list = oneEntity.getValue();
 				// If this is in the map, it can't be empty.
 				Assert.assertTrue(!list.isEmpty());
-				EnginePlayers.InputEntity input = new EnginePlayers.InputEntity(entity, Collections.unmodifiableList(list));
+				_InputEntity input = new _InputEntity(entity, Collections.unmodifiableList(list));
 				changesToRun.put(id, input);
 			}
 			else
@@ -1360,7 +1402,7 @@ public class TickRunner
 		
 		// EnginePlayers.ProcessedGroup crowd
 		int players_committedMutationCount = 0;
-		Map<Integer, OutputEntity> entityOutput = new HashMap<>();
+		Map<Integer, _OutputEntity> entityOutput = new HashMap<>();
 		
 		// EngineCreatures.CreatureGroup creatures
 		Map<Integer, CreatureEntity> updatedCreatures = new HashMap<>();
@@ -1409,7 +1451,7 @@ public class TickRunner
 			, blockChangesByCuboid
 			, world_committedMutationCount
 		);
-		EnginePlayers.ProcessedGroup crowd = new EnginePlayers.ProcessedGroup(players_committedMutationCount
+		_ProcessedGroup crowd = new _ProcessedGroup(players_committedMutationCount
 			, entityOutput
 		);
 		_CreatureGroup creatures = new _CreatureGroup(false
@@ -1632,7 +1674,7 @@ public class TickRunner
 			, Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationMillis
 			// Note that we only add of of these inputs if the entity has some mutations scheduled against it (may not
 			// be ready, though).
-			, Map<Integer, EnginePlayers.InputEntity> changesToRun
+			, Map<Integer, _InputEntity> changesToRun
 			// Never null but typically empty.
 			, List<IEntityAction<IMutablePlayerEntity>> operatorChanges
 			, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureChanges
@@ -1681,7 +1723,7 @@ public class TickRunner
 	 * A wrapper over the per-thread partial data which we hand-off at synchronization.
 	 */
 	private static record _PartialHandoffData(_ProcessedFragment world
-			, EnginePlayers.ProcessedGroup crowd
+			, _ProcessedGroup crowd
 			, _CreatureGroup creatures
 			, List<CreatureEntity> spawnedCreatures
 			, List<ScheduledMutation> newlyScheduledMutations
@@ -1695,6 +1737,21 @@ public class TickRunner
 			// Note that we will only pass back a new Entity object if it changed.
 			, Map<Integer, CreatureEntity> updatedCreatures
 			, List<Integer> deadCreatureIds
+	) {}
+
+	private static record _ProcessedGroup(int committedMutationCount
+		// We will pass back an OutputEntity for every InputEntity processed by this thread, even if no changes.
+		, Map<Integer, _OutputEntity> entityOutput
+	) {}
+
+	// Note that NEITHER of these will be NULL and scheduledChanges MUST not be empty.
+	private static record _InputEntity(Entity entity
+		, List<ScheduledChange> scheduledChanges
+	) {}
+
+	// Note that "entity" will be NULL if unchanged and notYetReadyChanges will NEVER be NULL but may be empty.
+	private static record _OutputEntity(Entity entity
+		, List<ScheduledChange> notYetReadyChanges
 	) {}
 
 	private static record _ProcessedFragment(Map<CuboidAddress, IReadOnlyCuboidData> stateFragment

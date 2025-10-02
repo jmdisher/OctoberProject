@@ -678,15 +678,14 @@ public class SpeculativeProjection
 	private static Entity[] _runChangesOnEntity(ProcessorElement processor, TickProcessingContext context, int entityId, Entity entity, List<IEntityAction<IMutablePlayerEntity>> entityMutations)
 	{
 		List<ScheduledChange> scheduled = _scheduledChangeList(entityMutations);
-		EnginePlayers.ProcessedGroup innerGroup = EnginePlayers.processCrowdGroupParallel(processor
-				, context
-				, new EntityCollection(Map.of(), Map.of())
-				, (null != entity) ? Map.of(entityId, new EnginePlayers.InputEntity(entity, scheduled)) : Map.of()
-				, List.of()
+		EnginePlayers.SinglePlayerResult playerResult = EnginePlayers.processOnePlayer(context
+			, new EntityCollection(Map.of(), Map.of())
+			, entity
+			, scheduled
 		);
-		return (innerGroup.committedMutationCount() > 0)
-				? new Entity[] { innerGroup.entityOutput().get(entityId).entity() }
-				: null
+		return (playerResult.committedMutationCount() > 0)
+			? new Entity[] { playerResult.changedEntityOrNull() }
+			: null
 		;
 	}
 

@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidHeightMap;
@@ -16,10 +15,8 @@ import com.jeffdisher.october.logic.BlockChangeDescription;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.EntityCollection;
-import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
-import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -57,23 +54,20 @@ public class OneOffRunner
 	)
 	{
 		// Setup components.
-		ProcessorElement singleThreadElement = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		CommonMutationSink newMutationSink = new CommonMutationSink();
 		CommonChangeSink newChangeSink = new CommonChangeSink();
 		TickProcessingContext context = _createContext(state, newMutationSink, newChangeSink, eventSink, millisPerTick, currentTickTimeMillis);
 		
 		// Run initial change.
-		int thisEntityId = state.thisEntity().id();
 		ScheduledChange scheduled = new ScheduledChange(mutation, 0L);
-		EnginePlayers.ProcessedGroup innerGroup = EnginePlayers.processCrowdGroupParallel(singleThreadElement
-				, context
-				, new EntityCollection(Map.of(), Map.of())
-				, Map.of(thisEntityId, new EnginePlayers.InputEntity(state.thisEntity(), List.of(scheduled)))
-				, List.of()
+		EnginePlayers.SinglePlayerResult playerResult = EnginePlayers.processOnePlayer(context
+			, new EntityCollection(Map.of(), Map.of())
+			, state.thisEntity()
+			, List.of(scheduled)
 		);
-		boolean wasSuccess = (innerGroup.committedMutationCount() > 0);
+		boolean wasSuccess = (playerResult.committedMutationCount() > 0);
 		Entity updatedEntity = wasSuccess
-				? innerGroup.entityOutput().get(thisEntityId).entity()
+				? playerResult.changedEntityOrNull()
 				: null
 		;
 		List<ScheduledMutation> immediateMutations = newMutationSink.takeExportedMutations().stream()
