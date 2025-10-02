@@ -65,7 +65,7 @@ public class TestEngineSpawner
 		CreatureEntity[] out = new CreatureEntity[1];
 		TickProcessingContext context = _createContext(completedCuboids, out, 5);
 		EngineSpawner.trySpawnCreature(context
-				, new EntityCollection(Map.of(), Map.of())
+				, EntityCollection.emptyCollection()
 				, completedCuboids
 				, completedHeightMaps
 				, Map.of()
@@ -86,7 +86,7 @@ public class TestEngineSpawner
 		CreatureEntity[] out = new CreatureEntity[1];
 		TickProcessingContext context = _createSunnyContext(completedCuboids, out, 5);
 		EngineSpawner.trySpawnCreature(context
-				, new EntityCollection(Map.of(), Map.of())
+				, EntityCollection.emptyCollection()
 				, completedCuboids
 				, completedHeightMaps
 				, Map.of()
@@ -122,7 +122,7 @@ public class TestEngineSpawner
 		
 		// This will throw an exception since we have no spawner if it tries to spawn.
 		EngineSpawner.trySpawnCreature(context
-				, new EntityCollection(Map.of(), Map.of())
+				, EntityCollection.emptyCollection()
 				, completedCuboids
 				, completedHeightMaps
 				, Map.of()
@@ -140,7 +140,7 @@ public class TestEngineSpawner
 		CreatureEntity[] out = new CreatureEntity[1];
 		TickProcessingContext context = _createContext(completedCuboids, out, 1);
 		EngineSpawner.trySpawnCreature(context
-				, new EntityCollection(Map.of(), Map.of())
+				, EntityCollection.emptyCollection()
 				, completedCuboids
 				, completedHeightMaps
 				, Map.of()
@@ -166,7 +166,7 @@ public class TestEngineSpawner
 		CreatureEntity[] out = new CreatureEntity[1];
 		TickProcessingContext context = _createContext(completedCuboids, out, 5);
 		EngineSpawner.trySpawnCreature(context
-				, new EntityCollection(Map.of(), Map.of())
+				, EntityCollection.emptyCollection()
 				, completedCuboids
 				, completedHeightMaps
 				, Map.of()
@@ -186,7 +186,7 @@ public class TestEngineSpawner
 		CreatureEntity[] out = new CreatureEntity[1];
 		TickProcessingContext context = _createContext(completedCuboids, out, 5);
 		EngineSpawner.trySpawnCreature(context
-				, new EntityCollection(Map.of(1, MutableEntity.createForTest(1).freeze()), Map.of())
+				, EntityCollection.fromMaps(Map.of(1, MutableEntity.createForTest(1).freeze()), Map.of())
 				, completedCuboids
 				, completedHeightMaps
 				, Map.of()
@@ -207,7 +207,7 @@ public class TestEngineSpawner
 		CreatureEntity[] out = new CreatureEntity[1];
 		TickProcessingContext context = _createContext(completedCuboids, out, 5);
 		EngineSpawner.trySpawnCreature(context
-				, new EntityCollection(Map.of(), Map.of())
+				, EntityCollection.emptyCollection()
 				, completedCuboids
 				, Map.of(cuboid.getCuboidAddress().getColumn(), columnMap)
 				, Map.of()
@@ -229,7 +229,7 @@ public class TestEngineSpawner
 		CreatureEntity[] out = new CreatureEntity[1];
 		TickProcessingContext context = _createContext(completedCuboids, out, 5);
 		EngineSpawner.trySpawnCreature(context
-				, new EntityCollection(Map.of(), Map.of())
+				, EntityCollection.emptyCollection()
 				, completedCuboids
 				, completedHeightMaps
 				, Map.of()

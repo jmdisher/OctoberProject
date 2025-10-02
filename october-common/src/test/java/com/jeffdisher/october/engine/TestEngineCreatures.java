@@ -90,7 +90,7 @@ public class TestEngineCreatures
 		EntityChangeTakeDamageFromEntity<IMutableCreatureEntity> change = new EntityChangeTakeDamageFromEntity<>(BodyPart.FEET, 10, sourceId);
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
-			, new EntityCollection(Map.of(), Map.of())
+			, EntityCollection.emptyCollection()
 			, creature
 			, List.of(change)
 		);
@@ -129,7 +129,7 @@ public class TestEngineCreatures
 		EntityChangeTakeDamageFromEntity<IMutableCreatureEntity> change = new EntityChangeTakeDamageFromEntity<>(BodyPart.FEET, 120, sourceId);
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_KILLED, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
-			, new EntityCollection(Map.of(), Map.of())
+			, EntityCollection.emptyCollection()
 			, creature
 			, List.of(change)
 		);
@@ -146,7 +146,7 @@ public class TestEngineCreatures
 		CreatureEntity creature = CreatureEntity.create(-1, COW, startLocation, (byte)100);
 		TickProcessingContext context = _createContext();
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
-			, new EntityCollection(Map.of(), Map.of())
+			, EntityCollection.emptyCollection()
 			, creature
 			, List.of()
 		);
@@ -163,7 +163,7 @@ public class TestEngineCreatures
 		CreatureEntity creature = CreatureEntity.create(-1, ORC, startLocation, (byte)50);
 		TickProcessingContext context = _createContextWithOptions(Difficulty.PEACEFUL, null);
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
-			, new EntityCollection(Map.of(), Map.of())
+			, EntityCollection.emptyCollection()
 			, creature
 			, List.of()
 		);
@@ -204,7 +204,7 @@ public class TestEngineCreatures
 		);
 		TickProcessingContext context = _createContext();
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
-			, new EntityCollection(Map.of(), Map.of())
+			, EntityCollection.emptyCollection()
 			, creature
 			, List.of()
 		);
@@ -248,7 +248,7 @@ public class TestEngineCreatures
 		);
 		TickProcessingContext context = _createContext();
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
-			, new EntityCollection(Map.of(), Map.of())
+			, EntityCollection.emptyCollection()
 			, creature
 			, List.of()
 		);
@@ -301,7 +301,7 @@ public class TestEngineCreatures
 		for (int i = 0; i < 2; ++i)
 		{
 			EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
-				, new EntityCollection(Map.of(), Map.of())
+				, EntityCollection.emptyCollection()
 				, creature
 				, List.of()
 			);
@@ -314,7 +314,7 @@ public class TestEngineCreatures
 		for (int i = 0; i < 19; ++i)
 		{
 			EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
-				, new EntityCollection(Map.of(), Map.of())
+				, EntityCollection.emptyCollection()
 				, creature
 				, List.of()
 			);
@@ -334,7 +334,7 @@ public class TestEngineCreatures
 		_Events events = new _Events();
 		TickProcessingContext context = _createContextWithEvents(events);
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
-			, new EntityCollection(Map.of(), Map.of())
+			, EntityCollection.emptyCollection()
 			, creature
 			, List.of()
 		);
@@ -351,7 +351,7 @@ public class TestEngineCreatures
 		int sourceId = 1;
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
 		result = EngineCreatures.processOneCreature(context
-			, new EntityCollection(Map.of(), Map.of())
+			, EntityCollection.emptyCollection()
 			, creature
 			, List.of(new EntityChangeTakeDamageFromEntity<>(BodyPart.FEET, damage, sourceId))
 		);
@@ -373,7 +373,7 @@ public class TestEngineCreatures
 		Entity nonWheat = _createEntity(3, new EntityLocation(2.0f, 0.0f, 0.0f), null, PropertyHelpers.newItemWithDefaults(ENV, ENV.items.getItemById("op.iron_pickaxe")));
 		TickProcessingContext context = _createContext();
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
-			, new EntityCollection(Map.of(farWheat.id(), farWheat, closeWheat.id(), closeWheat, nonWheat.id(), nonWheat), creaturesById)
+			, EntityCollection.fromMaps(Map.of(farWheat.id(), farWheat, closeWheat.id(), closeWheat, nonWheat.id(), nonWheat), creaturesById)
 			, creature
 			, List.of()
 		);
@@ -393,7 +393,7 @@ public class TestEngineCreatures
 		context = _updateContextWithPlayerAndCreatures(context, closeWheat, creaturesById);
 		creature = updated;
 		result = EngineCreatures.processOneCreature(context
-			, new EntityCollection(Map.of(farWheat.id(), farWheat, closeWheat.id(), closeWheat, nonWheat.id(), nonWheat), creaturesById)
+			, EntityCollection.fromMaps(Map.of(farWheat.id(), farWheat, closeWheat.id(), closeWheat, nonWheat.id(), nonWheat), creaturesById)
 			, creature
 			, List.of()
 		);
@@ -417,7 +417,7 @@ public class TestEngineCreatures
 		TickProcessingContext context = _createContext();
 		context = _updateContextWithPlayerAndCreatures(context, player, creaturesById);
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
-			, new EntityCollection(Map.of(player.id(), player), creaturesById)
+			, EntityCollection.fromMaps(Map.of(player.id(), player), creaturesById)
 			, creature
 			, List.of()
 		);
@@ -439,7 +439,7 @@ public class TestEngineCreatures
 		context = _updateContextWithPlayerAndCreatures(context, player, creaturesById);
 		creature = updated;
 		result = EngineCreatures.processOneCreature(context
-			, new EntityCollection(Map.of(player.id(), player), creaturesById)
+			, EntityCollection.fromMaps(Map.of(player.id(), player), creaturesById)
 			, creature
 			, List.of()
 		);
@@ -473,7 +473,7 @@ public class TestEngineCreatures
 		TickProcessingContext context = _createContext();
 		context = _updateContextWithPlayerAndCreatures(context, null, creaturesById);
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
-			, new EntityCollection(Map.of(closeWheat.id(), closeWheat), creaturesById)
+			, EntityCollection.fromMaps(Map.of(closeWheat.id(), closeWheat), creaturesById)
 			, fedCow
 			, List.of()
 		);
@@ -621,7 +621,7 @@ public class TestEngineCreatures
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createSingleCuboidContext(cuboid);
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
-			, new EntityCollection(Map.of(), creaturesById)
+			, EntityCollection.fromMaps(Map.of(), creaturesById)
 			, creature
 			, List.of()
 		);
@@ -634,7 +634,7 @@ public class TestEngineCreatures
 			Assert.assertEquals(0.0f, updated.velocity().z(), 0.001f);
 			creaturesById = Map.of(updated.id(), updated);
 			result = EngineCreatures.processOneCreature(context
-				, new EntityCollection(Map.of(), creaturesById)
+				, EntityCollection.fromMaps(Map.of(), creaturesById)
 				, updated
 				, List.of()
 			);
@@ -662,7 +662,7 @@ public class TestEngineCreatures
 			// Apply the next step.
 			creaturesById = Map.of(updated.id(), updated);
 			result = EngineCreatures.processOneCreature(context
-				, new EntityCollection(Map.of(), creaturesById)
+				, EntityCollection.fromMaps(Map.of(), creaturesById)
 				, updated
 				, List.of()
 			);
@@ -776,7 +776,7 @@ public class TestEngineCreatures
 					.finish()
 			;
 			EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
-				, new EntityCollection(Map.of(), Map.of(creature.id(), creature))
+				, EntityCollection.fromMaps(Map.of(), Map.of(creature.id(), creature))
 				, creature
 				, List.of()
 			);
@@ -827,7 +827,7 @@ public class TestEngineCreatures
 		;
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.FALL, creature.location().getBlockLocation(), creature.id(), 0));
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
-			, new EntityCollection(Map.of(), Map.of(creature.id(), creature))
+			, EntityCollection.fromMaps(Map.of(), Map.of(creature.id(), creature))
 			, creature
 			, List.of()
 		);
@@ -879,7 +879,7 @@ public class TestEngineCreatures
 				didChange = true;
 			}
 			EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
-				, new EntityCollection(Map.of(target.id(), target), Map.of(creature.id(), creature))
+				, EntityCollection.fromMaps(Map.of(target.id(), target), Map.of(creature.id(), creature))
 				, creature
 				, List.of()
 			);
@@ -1141,7 +1141,7 @@ public class TestEngineCreatures
 		{
 			playerMap.put(player.id(), player);
 		}
-		EntityCollection entityCollection = new EntityCollection(playerMap, creatures);
+		EntityCollection entityCollection = EntityCollection.fromMaps(playerMap, creatures);
 		Map<Integer, CreatureEntity> updated = new HashMap<>(creatures);
 		for (Integer key : creatures.keySet())
 		{

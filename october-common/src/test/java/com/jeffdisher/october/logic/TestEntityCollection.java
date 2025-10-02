@@ -38,9 +38,7 @@ public class TestEntityCollection
 	@Test
 	public void checkEmpty()
 	{
-		Map<Integer, Entity> players = Map.of();
-		Map<Integer, CreatureEntity> creatures = Map.of();
-		EntityCollection collection = new EntityCollection(players, creatures);
+		EntityCollection collection = EntityCollection.emptyCollection();
 		EntityLocation centre = new EntityLocation(0.0f, 0.0f, 0.0f);
 		MutableCreature searcher = _buildMutableCow(-1, centre);
 		int count = collection.countPlayersInRangeOfBase(centre, 1.0f);
@@ -56,7 +54,7 @@ public class TestEntityCollection
 	{
 		Map<Integer, Entity> players = Map.of(1, _buildPlayer(1, new EntityLocation(10.0f, 1.0f, 1.0f)));
 		Map<Integer, CreatureEntity> creatures = Map.of(-1, _buildCreature(-1, new EntityLocation(-10.0f, -1.0f, 1.0f)));
-		EntityCollection collection = new EntityCollection(players, creatures);
+		EntityCollection collection = EntityCollection.fromMaps(players, creatures);
 		EntityLocation centre = new EntityLocation(0.0f, 0.0f, 0.0f);
 		MutableCreature searcher = _buildMutableCow(-1, centre);
 		int count = collection.countPlayersInRangeOfBase(centre, 1.0f);
@@ -78,7 +76,7 @@ public class TestEntityCollection
 				, -2, _buildCreature(-2, new EntityLocation(-1.0f, 1.0f, 1.0f))
 				, -3, _buildCreature(-3, new EntityLocation(-10.0f, 1.0f, 1.0f))
 		);
-		EntityCollection collection = new EntityCollection(players, creatures);
+		EntityCollection collection = EntityCollection.fromMaps(players, creatures);
 		EntityLocation centre = new EntityLocation(0.0f, 0.0f, 0.0f);
 		MutableCreature searcher = _buildMutableCow(-1, centre);
 		int[] counts = new int[2];
@@ -102,7 +100,7 @@ public class TestEntityCollection
 		Map<Integer, CreatureEntity> creatures = Map.of(-1, _buildCreature(-1, new EntityLocation(-1.0f, -1.0f, 1.0f))
 				, -2, _buildCreature(-2, new EntityLocation(-1.0f, 1.0f, 1.0f))
 		);
-		EntityCollection collection = new EntityCollection(players, creatures);
+		EntityCollection collection = EntityCollection.fromMaps(players, creatures);
 		Assert.assertNotNull(collection.getPlayerById(1));
 		Assert.assertNotNull(collection.getPlayerById(2));
 		Assert.assertNull(collection.getPlayerById(3));
@@ -129,7 +127,7 @@ public class TestEntityCollection
 			counts[1] += 1;
 		};
 		
-		EntityCollection collection = new EntityCollection(players, creatures);
+		EntityCollection collection = EntityCollection.fromMaps(players, creatures);
 		collection.findIntersections(ENV, new EntityLocation(0.0f, 0.0f, 0.0f), 3.0f, entityCounter, creatureCounter);
 		Assert.assertArrayEquals(new int[] {2, 2}, counts);
 		

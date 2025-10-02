@@ -61,7 +61,7 @@ public class OneOffRunner
 		// Run initial change.
 		ScheduledChange scheduled = new ScheduledChange(mutation, 0L);
 		EnginePlayers.SinglePlayerResult playerResult = EnginePlayers.processOnePlayer(context
-			, new EntityCollection(Map.of(), Map.of())
+			, EntityCollection.emptyCollection()
 			, state.thisEntity()
 			, List.of(scheduled)
 		);

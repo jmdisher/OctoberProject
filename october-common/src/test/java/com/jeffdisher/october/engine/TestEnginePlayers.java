@@ -1,7 +1,6 @@
 package com.jeffdisher.october.engine;
 
 import java.util.List;
-import java.util.Map;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -82,7 +81,7 @@ public class TestEnginePlayers
 		
 		// We will run an iteration with no top-level events, to emulate lag, to show that nothing happens.
 		EnginePlayers.SinglePlayerResult result = EnginePlayers.processOnePlayer(context
-			, new EntityCollection(Map.of(), Map.of())
+			, EntityCollection.emptyCollection()
 			, entity
 			, List.of()
 		);
@@ -102,7 +101,7 @@ public class TestEnginePlayers
 		EntityLocation allStop = new EntityLocation(0.0f, 0.0f, 0.0f);
 		ScheduledChange singleChange = new ScheduledChange(topLevel, 0L);
 		result = EnginePlayers.processOnePlayer(context
-			, new EntityCollection(Map.of(), Map.of())
+			, EntityCollection.emptyCollection()
 			, entity
 			, List.of(singleChange)
 		);

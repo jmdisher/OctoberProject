@@ -18,10 +18,33 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class EntityCollection
 {
+	/**
+	 * A factory method to create an empty EntityCollection, as this is a common case.
+	 * 
+	 * @return An instance containing no players or creatures.
+	 */
+	public static EntityCollection emptyCollection()
+	{
+		return new EntityCollection(Map.of(), Map.of());
+	}
+
+	/**
+	 * A factory method to create an EntityCollection from maps of players and creatures.
+	 * 
+	 * @param players Player entities by player ID.
+	 * @param creatures Creatures by creature ID.
+	 * @return An instance containing these players and creatures.
+	 */
+	public static EntityCollection fromMaps(Map<Integer, Entity> players, Map<Integer, CreatureEntity> creatures)
+	{
+		return new EntityCollection(players, creatures);
+	}
+
+
 	private final Map<Integer, Entity> _players;
 	private final Map<Integer, CreatureEntity> _creatures;
 
-	public EntityCollection(Map<Integer, Entity> players, Map<Integer, CreatureEntity> creatures)
+	private EntityCollection(Map<Integer, Entity> players, Map<Integer, CreatureEntity> creatures)
 	{
 		// TODO:  Build useful indexes once we have a good sense of the performance profile of how this is used.
 		_players = players;

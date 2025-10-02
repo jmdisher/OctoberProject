@@ -167,7 +167,7 @@ public class TestCreatureLogic
 		MutableCreature mutable = MutableCreature.existing(entity);
 		mutable.newBreath -= 1;
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, new EntityCollection(Map.of(), Map.of(entity.id(), entity))
+				, EntityCollection.fromMaps(Map.of(), Map.of(entity.id(), entity))
 				, mutable
 		);
 		Assert.assertFalse(didTakeAction);
@@ -266,7 +266,7 @@ public class TestCreatureLogic
 		
 		// First, choose the target.
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, new EntityCollection(Map.of(player[0].id(), player[0]), Map.of(orc.id(), orc))
+				, EntityCollection.fromMaps(Map.of(player[0].id(), player[0]), Map.of(orc.id(), orc))
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
@@ -299,7 +299,7 @@ public class TestCreatureLogic
 		);
 		// Special action is where we account for this targeting update but it doesn't count as a special action.
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, new EntityCollection(Map.of(player[0].id(), player[0]), Map.of(orc.id(), orc))
+				, EntityCollection.fromMaps(Map.of(player[0].id(), player[0]), Map.of(orc.id(), orc))
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
@@ -336,13 +336,13 @@ public class TestCreatureLogic
 		MutableCreature mutableCow = MutableCreature.existing(cow);
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, new EntityCollection(Map.of(), Map.of(cow.id(), cow, orc.id(), orc))
+				, EntityCollection.fromMaps(Map.of(), Map.of(cow.id(), cow, orc.id(), orc))
 				, mutableCow
 		);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals((byte)100, mutableCow.newHealth);
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, new EntityCollection(Map.of(), Map.of(cow.id(), cow, orc.id(), orc))
+				, EntityCollection.fromMaps(Map.of(), Map.of(cow.id(), cow, orc.id(), orc))
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
@@ -355,13 +355,13 @@ public class TestCreatureLogic
 				.finish()
 		;
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, new EntityCollection(Map.of(), Map.of(cow.id(), cow, orc.id(), orc))
+				, EntityCollection.fromMaps(Map.of(), Map.of(cow.id(), cow, orc.id(), orc))
 				, mutableCow
 		);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals((byte)100, mutableCow.newHealth);
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, new EntityCollection(Map.of(), Map.of(cow.id(), cow, orc.id(), orc))
+				, EntityCollection.fromMaps(Map.of(), Map.of(cow.id(), cow, orc.id(), orc))
 				, mutableOrc
 		);
 		Assert.assertTrue(didTakeAction);
@@ -433,7 +433,7 @@ public class TestCreatureLogic
 		// We should see the father sending a message
 		mutable = MutableCreature.existing(father);
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, new EntityCollection(Map.of(), creatures)
+				, EntityCollection.fromMaps(Map.of(), creatures)
 				, mutable
 		);
 		Assert.assertTrue(didTakeAction);
@@ -447,7 +447,7 @@ public class TestCreatureLogic
 		// The mother should not take any action since they are waiting for the father.
 		mutable = MutableCreature.existing(mother);
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, new EntityCollection(Map.of(), creatures)
+				, EntityCollection.fromMaps(Map.of(), creatures)
 				, mutable
 		);
 		Assert.assertFalse(didTakeAction);
@@ -496,7 +496,7 @@ public class TestCreatureLogic
 				.finish()
 		;
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, new EntityCollection(Map.of(), Map.of(mother.id(), mother))
+				, EntityCollection.fromMaps(Map.of(), Map.of(mother.id(), mother))
 				, mutable
 		);
 		Assert.assertTrue(didTakeAction);
@@ -548,7 +548,7 @@ public class TestCreatureLogic
 		;
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, new EntityCollection(Map.of(player.id(), player), Map.of(orc.id(), orc))
+				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
@@ -632,7 +632,7 @@ public class TestCreatureLogic
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
 		mutableOrc.newTargetEntityId = player.id();
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, new EntityCollection(Map.of(player.id(), player), Map.of(orc.id(), orc))
+				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
@@ -650,7 +650,7 @@ public class TestCreatureLogic
 		
 		// Now, allow it to perform the attack.
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, new EntityCollection(Map.of(player.id(), player), Map.of(orc.id(), orc))
+				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
 				, mutableOrc
 		);
 		Assert.assertTrue(didTakeAction);
@@ -663,7 +663,7 @@ public class TestCreatureLogic
 		
 		// A second attack on the following tick should fail since we are on cooldown.
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, new EntityCollection(Map.of(player.id(), player), Map.of(orc.id(), orc))
+				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
@@ -679,7 +679,7 @@ public class TestCreatureLogic
 				.finish()
 		;
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, new EntityCollection(Map.of(player.id(), player), Map.of(orc.id(), orc))
+				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
 				, mutableOrc
 		);
 		Assert.assertTrue(didTakeAction);
@@ -724,7 +724,7 @@ public class TestCreatureLogic
 		entities.put(player.id(), MinimalEntity.fromEntity(player));
 		entities.put(cow.id(), MinimalEntity.fromCreature(cow));
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, new EntityCollection(Map.of(player.id(), player), Map.of(cow.id(), cow))
+				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(cow.id(), cow))
 				, mutableCow
 		);
 		Assert.assertFalse(didTakeAction);
@@ -739,7 +739,7 @@ public class TestCreatureLogic
 		cow = mutableCow.freeze();
 		entities.put(cow.id(), MinimalEntity.fromCreature(cow));
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, new EntityCollection(Map.of(player.id(), player), Map.of(cow.id(), cow))
+				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(cow.id(), cow))
 				, mutableCow
 		);
 		Assert.assertFalse(didTakeAction);
@@ -754,7 +754,7 @@ public class TestCreatureLogic
 		cow = mutableCow.freeze();
 		entities.put(cow.id(), MinimalEntity.fromCreature(cow));
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, new EntityCollection(Map.of(player.id(), player), Map.of(cow.id(), cow))
+				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(cow.id(), cow))
 				, mutableCow
 		);
 		Assert.assertFalse(didTakeAction);
@@ -769,7 +769,7 @@ public class TestCreatureLogic
 		cow = mutableCow.freeze();
 		entities.put(cow.id(), MinimalEntity.fromCreature(cow));
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, new EntityCollection(Map.of(player.id(), player), Map.of(cow.id(), cow))
+				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(cow.id(), cow))
 				, mutableCow
 		);
 		Assert.assertFalse(didTakeAction);
@@ -834,7 +834,7 @@ public class TestCreatureLogic
 		entities.put(player.id(), MinimalEntity.fromEntity(player));
 		entities.put(orc.id(), MinimalEntity.fromCreature(orc));
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, new EntityCollection(Map.of(player.id(), player), Map.of(orc.id(), orc))
+				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
 				, mutableOrc
 		);
 		// We should have taken no action but created a plan.

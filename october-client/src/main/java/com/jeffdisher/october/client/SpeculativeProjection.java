@@ -674,7 +674,7 @@ public class SpeculativeProjection
 	{
 		List<ScheduledChange> scheduled = _scheduledChangeList(entityMutations);
 		EnginePlayers.SinglePlayerResult playerResult = EnginePlayers.processOnePlayer(context
-			, new EntityCollection(Map.of(), Map.of())
+			, EntityCollection.emptyCollection()
 			, entity
 			, scheduled
 		);

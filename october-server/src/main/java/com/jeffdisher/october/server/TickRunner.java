@@ -388,7 +388,11 @@ public class TickRunner
 			, Map.of()
 			, Map.of()
 			, Set.of()
+			
 			, Map.of()
+			
+			, EntityCollection.emptyCollection()
+			
 			, 0L
 			, System.currentTimeMillis()
 		);
@@ -472,14 +476,13 @@ public class TickRunner
 					, _millisPerTick
 					, currentTickTimeMillis
 			);
-			EntityCollection entityCollection = new EntityCollection(thisTickMaterials.completedEntities, thisTickMaterials.completedCreatures);
 			
 			// We will have the first thread attempt the monster spawning algorithm.
 			if (thisThread.handleNextWorkUnit())
 			{
 				// This will spawn in the context, if spawning is appropriate.
 				EngineSpawner.trySpawnCreature(context
-						, entityCollection
+						, materials.entityCollection
 						, materials.completedCuboids
 						, materials.completedHeightMaps
 						, materials.completedCreatures
@@ -490,7 +493,7 @@ public class TickRunner
 			_CreatureGroup creatureGroup = _processCreatureGroupParallel(thisThread
 					, materials.completedCreatures
 					, context
-					, entityCollection
+					, materials.entityCollection
 					, materials.creatureChanges
 			);
 			// There is always a returned group (even if it has no content).
@@ -499,7 +502,7 @@ public class TickRunner
 			long startCrowd = System.currentTimeMillis();
 			_ProcessedGroup group = _processCrowdGroupParallel(thisThread
 					, context
-					, entityCollection
+					, materials.entityCollection
 					, materials.changesToRun
 					, materials.operatorChanges
 			);
@@ -925,6 +928,7 @@ public class TickRunner
 				
 				// WARNING:  completedHeightMaps does NOT include the new height maps loaded after the previous tick finished!
 				// (this is done to avoid the cost of rebuilding the maps since the column height maps are not guaranteed to be fully accurate)
+				EntityCollection entityCollection = EntityCollection.fromMaps(mutableCrowdState, mutableCreatureState);
 				_thisTickMaterials = new TickMaterials(_nextTick
 						, Collections.unmodifiableMap(mutableWorldState)
 						, Collections.unmodifiableMap(nextTickMutableHeightMaps)
@@ -946,6 +950,8 @@ public class TickRunner
 						
 						// Data only used by this method:
 						, newCommitLevels
+						
+						, entityCollection
 						
 						// Store the partial tick stats.
 						, millisInNextTickPreamble
@@ -1691,6 +1697,9 @@ public class TickRunner
 			// ----- TickRunner private state attached to the materials below this line -----
 			// The last commit levels of all connected clients (by ID).
 			, Map<Integer, Long> commitLevels
+			
+			// Higher-level data associated with the materials.
+			, EntityCollection entityCollection
 			
 			// Data related to internal statistics to be passed back at the end of the tick.
 			, long millisInTickPreamble
