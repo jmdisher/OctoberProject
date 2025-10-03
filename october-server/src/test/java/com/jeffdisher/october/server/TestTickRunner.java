@@ -393,7 +393,8 @@ public class TestTickRunner
 		MutableEntity mutable = MutableEntity.createForTest(entityId1);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
 		Entity entity1 = mutable.freeze();
-		runner.setupChangesForTick(null
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
 				, List.of(new SuspendedEntity(entity1, List.of())
 						, _createFreshEntity(entityId2)
@@ -1428,8 +1429,12 @@ public class TestTickRunner
 		TickRunner runner = _createTestRunner();
 		int entityId1 = 1;
 		int entityId2 = 2;
-		SuspendedEntity entity1 = _createFreshEntity(entityId1);
-		SuspendedEntity entity2 = _createFreshEntity(entityId2);
+		MutableEntity mutable1 = MutableEntity.createForTest(entityId1);
+		mutable1.newLocation = lanternLocation.getRelative(1, 0, 0).toEntityLocation();
+		MutableEntity mutable2 = MutableEntity.createForTest(entityId2);
+		mutable2.newLocation = stoneLocation.getRelative(1, 0, 0).toEntityLocation();
+		SuspendedEntity entity1 = new SuspendedEntity(mutable1.freeze(), List.of());
+		SuspendedEntity entity2 = new SuspendedEntity(mutable2.freeze(), List.of());
 		runner.setupChangesForTick(List.of(_packageCuboid(cuboid)
 					, _packageCuboid(otherCuboid0)
 					, _packageCuboid(otherCuboid1)

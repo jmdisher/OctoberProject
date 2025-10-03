@@ -379,11 +379,7 @@ public class TickRunner
 			, Map.of()
 			, Map.of()
 			, Map.of()
-			, Map.of()
-			, Map.of()
-			, Map.of()
 			, List.of()
-			, Map.of()
 			, Map.of()
 			, Map.of()
 			, Map.of()
@@ -392,6 +388,7 @@ public class TickRunner
 			, Map.of()
 			
 			, EntityCollection.emptyCollection()
+			, null
 			
 			, 0L
 			, System.currentTimeMillis()
@@ -477,96 +474,211 @@ public class TickRunner
 					, currentTickTimeMillis
 			);
 			
-			// We will have the first thread attempt the monster spawning algorithm.
-			if (thisThread.handleNextWorkUnit())
-			{
-				// This will spawn in the context, if spawning is appropriate.
-				EngineSpawner.trySpawnCreature(context
-						, materials.entityCollection
-						, materials.completedCuboids
-						, materials.completedHeightMaps
-						, materials.completedCreatures
-				);
-			}
+			// We cluster work together in cuboid columns in order to improve per-thread world cache utilization and allow some result merging in the parallel phase.
+			// First, we will handle the one-off special-cases.
+			_runParallelSpecialCases(thisThread, materials, context);
 			
-			long startCreatures = System.currentTimeMillis();
-			_CreatureGroup creatureGroup = _processCreatureGroupParallel(thisThread
-					, materials.completedCreatures
-					, context
-					, materials.entityCollection
-					, materials.creatureChanges
-			);
-			// There is always a returned group (even if it has no content).
-			Assert.assertTrue(null != creatureGroup);
+			// Now, loop over the rest of the high-level units.
+			_PartialHandoffData innerResults = _runParallelHighLevelUnits(thisThread, materials, context);
 			
-			long startCrowd = System.currentTimeMillis();
-			_ProcessedGroup group = _processCrowdGroupParallel(thisThread
-					, context
-					, materials.entityCollection
-					, materials.changesToRun
-					, materials.operatorChanges
-			);
-			// There is always a returned group (even if it has no content).
-			Assert.assertTrue(null != group);
-			// Now, process the world changes.
-			long startWorld = System.currentTimeMillis();
-			_ProcessedFragment fragment = _processWorldFragmentParallel(thisThread
-					, materials.completedCuboids
-					, context
-					, materials.mutationsToRun
-					, materials.periodicMutationMillis
-					, materials.modifiedBlocksByCuboidAddress
-					, materials.potentialLightChangesByCuboid
-					, materials.potentialLogicChangesByCuboid
-					, materials.cuboidsLoadedThisTick
-			);
-			// There is always a returned fragment (even if it has no content).
-			Assert.assertTrue(null != fragment);
-			long endLoop = System.currentTimeMillis();
-			
-			// Update our thread stats before we merge.
-			thisThread.millisInCreatureProcessor = (startCrowd - startCreatures);
-			thisThread.millisInCrowdProcessor = (startWorld - startCrowd);
-			thisThread.millisInWorldProcessor = (endLoop - startWorld);
 			materials = _mergeTickStateAndWaitForNext(thisThread
-					, materials
-					, new _PartialHandoffData(fragment
-							, group
-							, creatureGroup
-							, spawnedCreatures
-							, newMutationSink.takeExportedMutations()
-							, newChangeSink.takeExportedChanges()
-							, newChangeSink.takeExportedCreatureChanges()
-							, events
-							, internallyMarkedAlive
-					)
+				, materials
+				, new _PartialHandoffData(innerResults.world
+					, innerResults.crowd
+					, innerResults.creatures
+					, spawnedCreatures
+					, newMutationSink.takeExportedMutations()
+					, newChangeSink.takeExportedChanges()
+					, newChangeSink.takeExportedCreatureChanges()
+					, events
+					, internallyMarkedAlive
+				)
 			);
 		}
 	}
 
-	private static _CreatureGroup _processCreatureGroupParallel(ProcessorElement processor
-			, Map<Integer, CreatureEntity> creaturesById
-			, TickProcessingContext context
-			, EntityCollection entityCollection
-			, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun
+	private static void _runParallelSpecialCases(ProcessorElement thisThread
+		, TickMaterials materials
+		, TickProcessingContext context
 	)
 	{
+		// We will have the first thread attempt the monster spawning algorithm.
+		if (thisThread.handleNextWorkUnit())
+		{
+			// This will spawn in the context, if spawning is appropriate.
+			EngineSpawner.trySpawnCreature(context
+					, materials.entityCollection
+					, materials.completedCuboids
+					, materials.completedHeightMaps
+					, materials.completedCreatures
+			);
+		}
+		// We need to check the operator as a special-case since it isn't a real entity.
+		if (thisThread.handleNextWorkUnit())
+		{
+			// Verify that this isn't redundantly described.
+			Assert.assertTrue(!materials.completedEntities.containsKey(EnginePlayers.OPERATOR_ENTITY_ID));
+			EnginePlayers.processOperatorActions(context, materials.operatorChanges);
+		}
+	}
+
+	private static _PartialHandoffData _runParallelHighLevelUnits(ProcessorElement thisThread
+		, TickMaterials materials
+		, TickProcessingContext context
+	)
+	{
+		long startHighLevel = System.currentTimeMillis();
+		// TODO:  Replace this collection technique and return value with something more appropriate as this re-write progresses.
+		List<_PartialHandoffData> partials = new ArrayList<>();
+		_HighLevelPlan highLevel = materials.highLevel;
+		
+		// We will have a thread repackage anything which spilled.
+		if (thisThread.handleNextWorkUnit())
+		{
+			if (!highLevel.spilledEntities.isEmpty())
+			{
+				Map<Integer, _OutputEntity> repackaged = new HashMap<>();
+				for (Map.Entry<Integer, _InputEntity> elt : highLevel.spilledEntities.entrySet())
+				{
+					_InputEntity input = elt.getValue();
+					// We set this to null output entity since that means it was unchanged.
+					_OutputEntity output = new _OutputEntity(null, input.scheduledChanges);
+					repackaged.put(elt.getKey(), output);
+				}
+				_ProcessedGroup spilledGroup = new _ProcessedGroup(0, repackaged);
+				// Just use empty elements except for our spilled group.
+				_PartialHandoffData spilledPartial = new _PartialHandoffData(new _ProcessedFragment(Map.of(), Map.of(), List.of(), Map.of(), Map.of(), 0)
+					, spilledGroup
+					, new _CreatureGroup(false, Map.of(), List.of())
+					, List.of()
+					, List.of()
+					, Map.of()
+					, Map.of()
+					, List.of()
+					, Set.of()
+				);
+				partials.add(spilledPartial);
+			}
+		}
+		
+		for (_CommonWorkUnit unit : highLevel.common)
+		{
+			if (thisThread.handleNextWorkUnit())
+			{
+				_PartialHandoffData result = _processWorkUnit(thisThread, materials, context, unit);
+				partials.add(result);
+			}
+		}
+		_PartialHandoffData finalResult = _mergeAndClearPartialFragments(partials.toArray((int size) -> new _PartialHandoffData[size]));
+		long endHighLevel = System.currentTimeMillis();
+		
+		// TODO:  Update how we account for these or what we are tracking, at all.
+		thisThread.millisInCreatureProcessor = 0L;
+		thisThread.millisInCrowdProcessor = 0L;
+		thisThread.millisInWorldProcessor = (endHighLevel - startHighLevel);
+		return finalResult;
+	}
+
+	private static _PartialHandoffData _processWorkUnit(ProcessorElement processor
+		, TickMaterials materials
+		, TickProcessingContext context
+		, _CommonWorkUnit unit
+	)
+	{
+		// Per-cuboid data.
+		Map<CuboidAddress, IReadOnlyCuboidData> fragment = new HashMap<>();
+		Map<CuboidAddress, CuboidHeightMap> fragmentHeights = new HashMap<>();
+		Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid = new HashMap<>();
+		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
+		Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyByCuboid = new HashMap<>();
+		int committedMutationCount = 0;
+		
+		// Per-player entity data.
+		Map<Integer, _OutputEntity> processedEntities = new HashMap<>();
+		int committedActionCount = 0;
+		
+		// Per-creature entity data.
 		Map<Integer, CreatureEntity> updatedCreatures = new HashMap<>();
 		List<Integer> deadCreatureIds = new ArrayList<>();
-		for (Map.Entry<Integer, CreatureEntity> elt : creaturesById.entrySet())
+		
+		// We need to walk the cuboids and collect data from each of them and associated players and creatures.
+		Set<CuboidAddress> loadedCuboids = materials.completedCuboids.keySet();
+		for (_CuboidWorkUnit subUnit : unit.cuboids)
 		{
-			if (processor.handleNextWorkUnit())
+			// This is our element.
+			processor.cuboidsProcessed += 1;
+			IReadOnlyCuboidData oldState = subUnit.cuboid;
+			CuboidAddress key = oldState.getCuboidAddress();
+			
+			// We can't be told to operate on something which isn't in the state.
+			Assert.assertTrue(null != oldState);
+			EngineCuboids.SingleCuboidResult cuboidResult = EngineCuboids.processOneCuboid(context
+				, loadedCuboids
+				, subUnit.mutations
+				, subUnit.periodicMutationMillis
+				, materials.modifiedBlocksByCuboidAddress
+				, materials.potentialLightChangesByCuboid
+				, materials.potentialLogicChangesByCuboid
+				, materials.cuboidsLoadedThisTick
+				, key
+				, oldState
+			);
+			if (null != cuboidResult.changedCuboidOrNull())
 			{
-				// This is our element.
-				Integer id = elt.getKey();
-				CreatureEntity creature = elt.getValue();
-				List<IEntityAction<IMutableCreatureEntity>> changes = changesToRun.get(id);
+				fragment.put(key, cuboidResult.changedCuboidOrNull());
+			}
+			if (null != cuboidResult.changedHeightMap())
+			{
+				fragmentHeights.put(key, cuboidResult.changedHeightMap());
+			}
+			if (null != cuboidResult.changedBlocks())
+			{
+				Assert.assertTrue(!cuboidResult.changedBlocks().isEmpty());
+				blockChangesByCuboid.put(key, cuboidResult.changedBlocks());
+			}
+			if (null != cuboidResult.notYetReadyMutations())
+			{
+				notYetReadyMutations.addAll(cuboidResult.notYetReadyMutations());
+			}
+			if (null != cuboidResult.periodicNotReady())
+			{
+				Assert.assertTrue(!cuboidResult.periodicNotReady().isEmpty());
+				periodicNotReadyByCuboid.put(key, cuboidResult.periodicNotReady());
+			}
+			processor.cuboidBlockupdatesProcessed += cuboidResult.blockUpdatesProcessed();
+			processor.cuboidMutationsProcessed += cuboidResult.mutationsProcessed();
+			committedMutationCount += cuboidResult.blockUpdatesApplied() + cuboidResult.mutationsApplied();
+			
+			// Process the player entities in this cuboid.
+			for (_EntityWorkUnit entityUnit : subUnit.entities)
+			{
+				Entity entity = entityUnit.entity;
+				List<ScheduledChange> changes = entityUnit.actions;
+				processor.entitiesProcessed += 1;
+				
+				EnginePlayers.SinglePlayerResult result = EnginePlayers.processOnePlayer(context
+					, materials.entityCollection
+					, entity
+					, changes
+				);
+				processedEntities.put(entity.id(), new _OutputEntity(result.changedEntityOrNull(), result.notYetReadyChanges()));
+				processor.entityChangesProcessed += result.entityChangesProcessed();
+				committedActionCount += result.committedMutationCount();
+			}
+			
+			// Process the creature entities in this cuboid.
+			for (_CreatureWorkUnit creatureUnit : subUnit.creatures)
+			{
+				CreatureEntity creature = creatureUnit.creature;
+				List<IEntityAction<IMutableCreatureEntity>> changes = creatureUnit.actions;
 				processor.creaturesProcessed += 1;
-				if (null != changes)
-				{
-					processor.creatureChangesProcessed += changes.size();
-				}
-				EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context, entityCollection, creature, changes);
+				processor.creatureChangesProcessed += changes.size();
+				EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+					, materials.entityCollection
+					, creature
+					, changes
+				);
+				Integer id = creature.id();
 				if (null == result.updatedEntity())
 				{
 					deadCreatureIds.add(id);
@@ -581,131 +693,30 @@ public class TickRunner
 				}
 			}
 		}
-		return new _CreatureGroup(false
-				, updatedCreatures
-				, deadCreatureIds
-		);
-	}
-
-	private static _ProcessedGroup _processCrowdGroupParallel(ProcessorElement processor
-			, TickProcessingContext context
-			, EntityCollection entityCollection
-			, Map<Integer, _InputEntity> entitiesById
-			, List<IEntityAction<IMutablePlayerEntity>> operatorChanges
-	)
-	{
-		Map<Integer, _OutputEntity> processedEntities = new HashMap<>();
-		int committedMutationCount = 0;
 		
-		// We need to check the operator as a special-case since it isn't a real entity.
-		if (processor.handleNextWorkUnit())
-		{
-			// Verify that this isn't redundantly described.
-			Assert.assertTrue(!entitiesById.containsKey(EnginePlayers.OPERATOR_ENTITY_ID));
-			EnginePlayers.processOperatorActions(context, operatorChanges);
-		}
-		for (Map.Entry<Integer, _InputEntity> elt : entitiesById.entrySet())
-		{
-			if (processor.handleNextWorkUnit())
-			{
-				// This is our element.
-				Integer id = elt.getKey();
-				_InputEntity input = elt.getValue();
-				Entity entity = input.entity();
-				List<ScheduledChange> changes = input.scheduledChanges();
-				processor.entitiesProcessed += 1;
-				
-				EnginePlayers.SinglePlayerResult result = EnginePlayers.processOnePlayer(context
-					, entityCollection
-					, entity
-					, changes
-				);
-				processedEntities.put(id, new _OutputEntity(result.changedEntityOrNull(), result.notYetReadyChanges()));
-				processor.entityChangesProcessed = +result.entityChangesProcessed();
-				committedMutationCount += result.committedMutationCount();
-			}
-		}
-		return new _ProcessedGroup(committedMutationCount
+		_ProcessedFragment world = new _ProcessedFragment(fragment
+			, fragmentHeights
+			, notYetReadyMutations
+			, periodicNotReadyByCuboid
+			, blockChangesByCuboid
+			, committedMutationCount
+		);
+		_ProcessedGroup crowd = new _ProcessedGroup(committedActionCount
 			, processedEntities
 		);
-	}
-
-	private static _ProcessedFragment _processWorldFragmentParallel(ProcessorElement processor
-			, Map<CuboidAddress, IReadOnlyCuboidData> worldMap
-			, TickProcessingContext context
-			, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
-			, Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationMillis
-			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
-			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
-			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid
-			, Set<CuboidAddress> cuboidsLoadedThisTick
-	)
-	{
-		Map<CuboidAddress, IReadOnlyCuboidData> fragment = new HashMap<>();
-		Map<CuboidAddress, CuboidHeightMap> fragmentHeights = new HashMap<>();
-		
-		// We need to walk all the loaded cuboids, just to make sure that there were no updates.
-		Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid = new HashMap<>();
-		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
-		Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyByCuboid = new HashMap<>();
-		int committedMutationCount = 0;
-		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> elt : worldMap.entrySet())
-		{
-			if (processor.handleNextWorkUnit())
-			{
-				// This is our element.
-				processor.cuboidsProcessed += 1;
-				CuboidAddress key = elt.getKey();
-				IReadOnlyCuboidData oldState = elt.getValue();
-				
-				// We can't be told to operate on something which isn't in the state.
-				Assert.assertTrue(null != oldState);
-				EngineCuboids.SingleCuboidResult result = EngineCuboids.processOneCuboid(context
-					, worldMap.keySet()
-					, mutationsToRun.get(key)
-					, periodicMutationMillis.get(key)
-					, modifiedBlocksByCuboidAddress
-					, potentialLightChangesByCuboid
-					, potentialLogicChangesByCuboid
-					, cuboidsLoadedThisTick
-					, key
-					, oldState
-				);
-				if (null != result.changedCuboidOrNull())
-				{
-					fragment.put(key, result.changedCuboidOrNull());
-				}
-				if (null != result.changedHeightMap())
-				{
-					fragmentHeights.put(key, result.changedHeightMap());
-				}
-				if (null != result.changedBlocks())
-				{
-					Assert.assertTrue(!result.changedBlocks().isEmpty());
-					blockChangesByCuboid.put(key, result.changedBlocks());
-				}
-				if (null != result.notYetReadyMutations())
-				{
-					notYetReadyMutations.addAll(result.notYetReadyMutations());
-				}
-				if (null != result.periodicNotReady())
-				{
-					Assert.assertTrue(!result.periodicNotReady().isEmpty());
-					periodicNotReadyByCuboid.put(key, result.periodicNotReady());
-				}
-				processor.cuboidBlockupdatesProcessed += result.blockUpdatesProcessed();
-				processor.cuboidMutationsProcessed += result.mutationsProcessed();
-				committedMutationCount += result.blockUpdatesApplied() + result.mutationsApplied();
-			}
-		}
-		
-		// We package up any of the work that we did (note that no thread will return a cuboid which had no mutations in its fragment).
-		return new _ProcessedFragment(fragment
-				, fragmentHeights
-				, notYetReadyMutations
-				, periodicNotReadyByCuboid
-				, blockChangesByCuboid
-				, committedMutationCount
+		_CreatureGroup creatures = new _CreatureGroup(false
+			, updatedCreatures
+			, deadCreatureIds
+		);
+		return new _PartialHandoffData(world
+			, crowd
+			, creatures
+			, List.of()
+			, List.of()
+			, Map.of()
+			, Map.of()
+			, List.of()
+			, Set.of()
 		);
 	}
 
@@ -929,6 +940,16 @@ public class TickRunner
 				// WARNING:  completedHeightMaps does NOT include the new height maps loaded after the previous tick finished!
 				// (this is done to avoid the cost of rebuilding the maps since the column height maps are not guaranteed to be fully accurate)
 				EntityCollection entityCollection = EntityCollection.fromMaps(mutableCrowdState, mutableCreatureState);
+				_HighLevelPlan highLevelPlan = _packageHighLevelWorkUnits(mutableWorldState
+					, nextTickMutableHeightMaps
+					, completedHeightMaps
+					, changesToRun
+					, mutableCreatureState
+					, pendingMutations
+					, periodicMutations
+					, nextCreatureChanges
+				);
+				
 				_thisTickMaterials = new TickMaterials(_nextTick
 						, Collections.unmodifiableMap(mutableWorldState)
 						, Collections.unmodifiableMap(nextTickMutableHeightMaps)
@@ -937,12 +958,7 @@ public class TickRunner
 						// completedCreatures
 						, Collections.unmodifiableMap(mutableCreatureState)
 						
-						, pendingMutations
-						, periodicMutations
-						, Collections.unmodifiableMap(changesToRun)
 						, operatorChanges
-						// creatureChanges
-						, nextCreatureChanges
 						, updatedBlockLocationsByCuboid
 						, potentialLightChangesByCuboid
 						, potentialLogicChangesByCuboid
@@ -952,6 +968,7 @@ public class TickRunner
 						, newCommitLevels
 						
 						, entityCollection
+						, highLevelPlan
 						
 						// Store the partial tick stats.
 						, millisInNextTickPreamble
@@ -1588,6 +1605,126 @@ public class TickRunner
 		return completedTick;
 	}
 
+	private static _HighLevelPlan _packageHighLevelWorkUnits(Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
+		, Map<CuboidAddress, CuboidHeightMap> cuboidHeightMaps
+		, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
+		, Map<Integer, _InputEntity> entities
+		, Map<Integer, CreatureEntity> completedCreatures
+		, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
+		, Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationMillis
+		, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureChanges
+	)
+	{
+		Map<Integer, _InputEntity> spilledEntities = new HashMap<>();
+		Map<CuboidAddress, List<_EntityWorkUnit>> workingEntityList = new HashMap<>();
+		for (_InputEntity entity : entities.values())
+		{
+			CuboidAddress thisAddress = entity.entity.location().getBlockLocation().getCuboidAddress();
+			if (completedCuboids.containsKey(thisAddress))
+			{
+				List<ScheduledChange> scheduledChanges = entity.scheduledChanges;
+				if (!workingEntityList.containsKey(thisAddress))
+				{
+					workingEntityList.put(thisAddress, new ArrayList<>());
+				}
+				_EntityWorkUnit unit = new _EntityWorkUnit(entity.entity
+					, scheduledChanges
+				);
+				List<_EntityWorkUnit> list = workingEntityList.get(thisAddress);
+				list.add(unit);
+			}
+			else
+			{
+				// This cuboid isn't loaded so spill it to the next tick.
+				// This is usually due to load ordering (an entity might be created before its cuboid is loaded - thus dropping the creation of its periodic mutation).
+				spilledEntities.put(entity.entity.id(), entity);
+			}
+		}
+		Map<CuboidAddress, List<_CreatureWorkUnit>> workingCreatureList = new HashMap<>();
+		for (CreatureEntity entity : completedCreatures.values())
+		{
+			CuboidAddress thisAddress = entity.location().getBlockLocation().getCuboidAddress();
+			//  Note that we expect any creatures who weren't unloaded to be in a loaded cuboid.
+			Assert.assertTrue(completedCuboids.containsKey(thisAddress));
+			
+			if (!workingCreatureList.containsKey(thisAddress))
+			{
+				workingCreatureList.put(thisAddress, new ArrayList<>());
+			}
+			List<IEntityAction<IMutableCreatureEntity>> actions = creatureChanges.get(entity.id());
+			if (null == actions)
+			{
+				actions = List.of();
+			}
+			_CreatureWorkUnit unit = new _CreatureWorkUnit(entity
+				, actions
+			);
+			List<_CreatureWorkUnit> list = workingCreatureList.get(thisAddress);
+			list.add(unit);
+		}
+		
+		Map<CuboidColumnAddress, List<_CuboidWorkUnit>> workingWorkList = new HashMap<>();
+		for (CuboidAddress address : completedCuboids.keySet())
+		{
+			IReadOnlyCuboidData cuboid = completedCuboids.get(address);
+			CuboidHeightMap cuboidHeightMap = cuboidHeightMaps.get(address);
+			List<ScheduledMutation> mutations = mutationsToRun.get(address);
+			if (null == mutations)
+			{
+				mutations = List.of();
+			}
+			Map<BlockAddress, Long> periodic = periodicMutationMillis.get(address);
+			if (null == periodic)
+			{
+				periodic = Map.of();
+			}
+			List<_EntityWorkUnit> entityList = workingEntityList.get(address);
+			if (null == entityList)
+			{
+				entityList = List.of();
+			}
+			List<_CreatureWorkUnit> creatures = workingCreatureList.get(address);
+			if (null == creatures)
+			{
+				creatures = List.of();
+			}
+			_CuboidWorkUnit unit = new _CuboidWorkUnit(cuboid
+				, cuboidHeightMap
+				, Collections.unmodifiableList(mutations)
+				, Collections.unmodifiableMap(periodic)
+				, Collections.unmodifiableList(entityList)
+				, Collections.unmodifiableList(creatures)
+			);
+			
+			CuboidColumnAddress column = address.getColumn();
+			if (!workingWorkList.containsKey(column))
+			{
+				workingWorkList.put(column, new ArrayList<>());
+			}
+			List<_CuboidWorkUnit> list = workingWorkList.get(column);
+			list.add(unit);
+		}
+		
+		List<_CommonWorkUnit> result = new ArrayList<>();
+		for (CuboidColumnAddress column : workingWorkList.keySet())
+		{
+			ColumnHeightMap columnHeightMap = completedHeightMaps.get(column);
+			List<_CuboidWorkUnit> list = workingWorkList.get(column);
+			if (null == list)
+			{
+				list = List.of();
+			}
+			_CommonWorkUnit unit = new _CommonWorkUnit(column
+				, columnHeightMap
+				, Collections.unmodifiableList(list)
+			);
+			result.add(unit);
+		}
+		return new _HighLevelPlan(Collections.unmodifiableList(result)
+			, Collections.unmodifiableMap(spilledEntities)
+		);
+	}
+
 
 	/**
 	 * The snapshot of immutable state created whenever a tick is completed.
@@ -1674,16 +1811,8 @@ public class TickRunner
 			, Map<Integer, Entity> completedEntities
 			// Read-only versions of the creatures from the previous tick (by ID).
 			, Map<Integer, CreatureEntity> completedCreatures
-			// The block mutations to run in this tick (by cuboid address).
-			, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
-			// We handle "periodic" mutations differently since they saturate for a given location.
-			, Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationMillis
-			// Note that we only add of of these inputs if the entity has some mutations scheduled against it (may not
-			// be ready, though).
-			, Map<Integer, _InputEntity> changesToRun
 			// Never null but typically empty.
 			, List<IEntityAction<IMutablePlayerEntity>> operatorChanges
-			, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureChanges
 			// The blocks modified in the last tick, represented as a list per cuboid where they originate.
 			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
 			// The blocks which were modified in such a way that they may require a lighting update.
@@ -1700,6 +1829,7 @@ public class TickRunner
 			
 			// Higher-level data associated with the materials.
 			, EntityCollection entityCollection
+			, _HighLevelPlan highLevel
 			
 			// Data related to internal statistics to be passed back at the end of the tick.
 			, long millisInTickPreamble
@@ -1769,5 +1899,30 @@ public class TickRunner
 			, Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyByCuboid
 			, Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid
 			, int committedMutationCount
+	) {}
+
+	private static record _HighLevelPlan(List<_CommonWorkUnit> common
+		, Map<Integer, _InputEntity> spilledEntities
+	) {}
+
+	private static record _CommonWorkUnit(CuboidColumnAddress columnAddress
+		, ColumnHeightMap columnHeightMap
+		, List<_CuboidWorkUnit> cuboids
+	) {}
+
+	private static record _CuboidWorkUnit(IReadOnlyCuboidData cuboid
+		, CuboidHeightMap cuboidHeightMap
+		, List<ScheduledMutation> mutations
+		, Map<BlockAddress, Long> periodicMutationMillis
+		, List<_EntityWorkUnit> entities
+		, List<_CreatureWorkUnit> creatures
+	) {}
+
+	private static record _EntityWorkUnit(Entity entity
+		, List<ScheduledChange> actions
+	) {}
+
+	private static record _CreatureWorkUnit(CreatureEntity creature
+		, List<IEntityAction<IMutableCreatureEntity>> actions
 	) {}
 }
