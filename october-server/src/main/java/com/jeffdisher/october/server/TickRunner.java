@@ -1714,12 +1714,23 @@ public class TickRunner
 			{
 				list = List.of();
 			}
+			// We will come with a priority hint based on the work here so that we can schedule heavier work units first:
+			// +1 for each entry in the list, since it does require some checks just for existing (and potentially heavy lighting work)
+			// +1 for each mutation applied to the cuboid
+			// +1 for each creature in the cuboid (since they may have actions or other AI work to do)
+			// +1 for each entity in the cuboid (since there may be actions from players)
+			int priorityHint = list.stream().mapToInt(
+				(_CuboidWorkUnit inner) -> 1 + inner.mutations.size() + inner.creatures.size() + inner.entities.size()
+			).sum();
 			_CommonWorkUnit unit = new _CommonWorkUnit(column
 				, columnHeightMap
 				, Collections.unmodifiableList(list)
+				, priorityHint
 			);
 			result.add(unit);
 		}
+		// Now sort by priority list (descending on priorityHint).
+		result.sort((_CommonWorkUnit one, _CommonWorkUnit two) -> two.priorityHint - one.priorityHint);
 		return new _HighLevelPlan(Collections.unmodifiableList(result)
 			, Collections.unmodifiableMap(spilledEntities)
 		);
@@ -1908,6 +1919,7 @@ public class TickRunner
 	private static record _CommonWorkUnit(CuboidColumnAddress columnAddress
 		, ColumnHeightMap columnHeightMap
 		, List<_CuboidWorkUnit> cuboids
+		, int priorityHint
 	) {}
 
 	private static record _CuboidWorkUnit(IReadOnlyCuboidData cuboid
