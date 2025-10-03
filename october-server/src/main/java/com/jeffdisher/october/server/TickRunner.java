@@ -395,7 +395,7 @@ public class TickRunner
 		);
 		TickMaterials materials = _mergeTickStateAndWaitForNext(thisThread
 				, emptyMaterials
-				, new _PartialHandoffData(new _ProcessedFragment(Map.of(), Map.of(), List.of(), Map.of(), Map.of(), 0)
+				, new _PartialHandoffData(new _ProcessedFragment(Map.of(), Map.of(), Map.of(), List.of(), Map.of(), Map.of(), 0)
 						, new _ProcessedGroup(0, Map.of())
 						, new _CreatureGroup(false, Map.of(), List.of())
 						, List.of()
@@ -547,7 +547,7 @@ public class TickRunner
 				}
 				_ProcessedGroup spilledGroup = new _ProcessedGroup(0, repackaged);
 				// Just use empty elements except for our spilled group.
-				_PartialHandoffData spilledPartial = new _PartialHandoffData(new _ProcessedFragment(Map.of(), Map.of(), List.of(), Map.of(), Map.of(), 0)
+				_PartialHandoffData spilledPartial = new _PartialHandoffData(new _ProcessedFragment(Map.of(), Map.of(), Map.of(), List.of(), Map.of(), Map.of(), 0)
 					, spilledGroup
 					, new _CreatureGroup(false, Map.of(), List.of())
 					, List.of()
@@ -588,6 +588,7 @@ public class TickRunner
 		// Per-cuboid data.
 		Map<CuboidAddress, IReadOnlyCuboidData> fragment = new HashMap<>();
 		Map<CuboidAddress, CuboidHeightMap> fragmentHeights = new HashMap<>();
+		Map<CuboidAddress, CuboidHeightMap> allCuboidHeights = new HashMap<>();
 		Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid = new HashMap<>();
 		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
 		Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyByCuboid = new HashMap<>();
@@ -629,7 +630,13 @@ public class TickRunner
 			}
 			if (null != cuboidResult.changedHeightMap())
 			{
-				fragmentHeights.put(key, cuboidResult.changedHeightMap());
+				CuboidHeightMap changedHeightMap = cuboidResult.changedHeightMap();
+				fragmentHeights.put(key, changedHeightMap);
+				allCuboidHeights.put(key, changedHeightMap);
+			}
+			else
+			{
+				allCuboidHeights.put(key, subUnit.cuboidHeightMap);
 			}
 			if (null != cuboidResult.changedBlocks())
 			{
@@ -694,8 +701,14 @@ public class TickRunner
 			}
 		}
 		
+		// We can now merge the height maps since each _CommonWorkUnit is a full column.
+		Map<CuboidColumnAddress, ColumnHeightMap> columnHeight = HeightMapHelpers.buildColumnMaps(allCuboidHeights);
+		// This should only be for this single column.
+		Assert.assertTrue(1 == columnHeight.size());
+		
 		_ProcessedFragment world = new _ProcessedFragment(fragment
 			, fragmentHeights
+			, columnHeight
 			, notYetReadyMutations
 			, periodicNotReadyByCuboid
 			, blockChangesByCuboid
@@ -745,11 +758,7 @@ public class TickRunner
 			
 			Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState = new HashMap<>(startingMaterials.completedCuboids);
 			mutableWorldState.putAll(masterFragment.world.stateFragment());
-			Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.rebuildColumnMaps(startingMaterials.completedHeightMaps
-				, startingMaterials.cuboidHeightMaps
-				, masterFragment.world.heightFragment()
-				, mutableWorldState.keySet()
-			);
+			Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = masterFragment.world.completedHeightMaps;
 			
 			Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = _extractSnapshotBlockMutations(masterFragment);
 			Map<Integer, List<ScheduledChange>> snapshotEntityMutations = _extractPlayerEntityChanges(masterFragment);
@@ -1418,6 +1427,7 @@ public class TickRunner
 		// EngineCuboids.ProcessedFragment world
 		Map<CuboidAddress, IReadOnlyCuboidData> stateFragment = new HashMap<>();
 		Map<CuboidAddress, CuboidHeightMap> heightFragment = new HashMap<>();
+		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = new HashMap<>();
 		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
 		Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyByCuboid = new HashMap<>();
 		Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid = new HashMap<>();
@@ -1445,6 +1455,7 @@ public class TickRunner
 			// EngineCuboids.ProcessedFragment world
 			stateFragment.putAll(fragment.world().stateFragment());
 			heightFragment.putAll(fragment.world().heightFragment());
+			completedHeightMaps.putAll(fragment.world().completedHeightMaps());
 			notYetReadyMutations.addAll(fragment.world().notYetReadyMutations());
 			periodicNotReadyByCuboid.putAll(fragment.world().periodicNotReadyByCuboid());
 			blockChangesByCuboid.putAll(fragment.world().blockChangesByCuboid());
@@ -1469,6 +1480,7 @@ public class TickRunner
 		
 		_ProcessedFragment world = new _ProcessedFragment(stateFragment
 			, heightFragment
+			, completedHeightMaps
 			, notYetReadyMutations
 			, periodicNotReadyByCuboid
 			, blockChangesByCuboid
@@ -1906,6 +1918,7 @@ public class TickRunner
 
 	private static record _ProcessedFragment(Map<CuboidAddress, IReadOnlyCuboidData> stateFragment
 			, Map<CuboidAddress, CuboidHeightMap> heightFragment
+			, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
 			, List<ScheduledMutation> notYetReadyMutations
 			, Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyByCuboid
 			, Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid
