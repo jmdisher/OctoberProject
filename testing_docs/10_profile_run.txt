@@ -1,0 +1,66 @@
+A basic workload (derived from 100_stress_test.txt) for use in profiling.
+
+This only uses 10 clients and gives more memory to all of the processes so that they can allocate the profiling structures required.
+
+Start server:
+
+rm -f world/cuboid_* world/entity_* && \
+java -Xmx256m -jar october-server/target/october-server-0.0-SNAPSHOT-jar-with-dependencies.jar  9999
+
+
+Wait until the server starts and then start the clients:
+
+java -Xmx128m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot000 > /dev/null & \
+java -Xmx128m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot001 > /dev/null & \
+java -Xmx128m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot002 > /dev/null & \
+java -Xmx128m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot003 > /dev/null & \
+java -Xmx128m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot004 > /dev/null & \
+java -Xmx128m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot005 > /dev/null & \
+java -Xmx128m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot006 > /dev/null & \
+java -Xmx128m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot007 > /dev/null & \
+java -Xmx128m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot008 > /dev/null & \
+java -Xmx128m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot009 > /dev/null & \
+true
+
+
+Wait until 10 clients show up in !list_clients, then configure them:
+
+!set_mode 1383296247 creative
+!set_mode 1383296246 creative
+!set_mode 1383296245 creative
+!set_mode 1383296244 creative
+!set_mode 1383296243 creative
+!set_mode 1383296242 creative
+!set_mode 1383296241 creative
+!set_mode 1383296240 creative
+!set_mode 1383296239 creative
+!set_mode 1383296238 creative
+
+
+The clients can be teleported at the same time:
+
+!tp 1383296247 0 10 0
+!tp 1383296246 0 20 0
+!tp 1383296245 0 30 0
+!tp 1383296244 0 40 0
+!tp 1383296243 0 50 0
+!tp 1383296242 0 60 0
+!tp 1383296241 0 70 0
+!tp 1383296240 0 80 0
+!tp 1383296239 0 90 0
+!tp 1383296238 0 100 0
+
+
+A few seconds later, these messages can be sent to start the client movements:
+
+!message 1383296247 BRICK EAST
+!message 1383296246 BRICK EAST
+!message 1383296245 BRICK EAST
+!message 1383296244 BRICK EAST
+!message 1383296243 BRICK EAST
+!message 1383296242 BRICK EAST
+!message 1383296241 BRICK EAST
+!message 1383296240 BRICK EAST
+!message 1383296239 BRICK EAST
+!message 1383296238 BRICK EAST
+
