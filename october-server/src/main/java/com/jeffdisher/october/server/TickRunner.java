@@ -505,6 +505,8 @@ public class TickRunner
 		// We will have the first thread attempt the monster spawning algorithm.
 		if (thisThread.handleNextWorkUnit())
 		{
+			long startNanos = System.nanoTime();
+			
 			// This will spawn in the context, if spawning is appropriate.
 			EngineSpawner.trySpawnCreature(context
 					, materials.entityCollection
@@ -512,13 +514,21 @@ public class TickRunner
 					, materials.completedHeightMaps
 					, materials.completedCreatures
 			);
+			
+			long endNanos = System.nanoTime();
+			thisThread.nanosInEngineSpawner = (endNanos - startNanos);
 		}
 		// We need to check the operator as a special-case since it isn't a real entity.
 		if (thisThread.handleNextWorkUnit())
 		{
+			long startNanos = System.nanoTime();
+			
 			// Verify that this isn't redundantly described.
 			Assert.assertTrue(!materials.completedEntities.containsKey(EnginePlayers.OPERATOR_ENTITY_ID));
 			EnginePlayers.processOperatorActions(context, materials.operatorChanges);
+			
+			long endNanos = System.nanoTime();
+			thisThread.nanosProcessingOperator = (endNanos - startNanos);
 		}
 	}
 
@@ -527,7 +537,6 @@ public class TickRunner
 		, TickProcessingContext context
 	)
 	{
-		long startHighLevel = System.currentTimeMillis();
 		// TODO:  Replace this collection technique and return value with something more appropriate as this re-write progresses.
 		List<_PartialHandoffData> partials = new ArrayList<>();
 		_HighLevelPlan highLevel = materials.highLevel;
@@ -570,12 +579,6 @@ public class TickRunner
 			}
 		}
 		_PartialHandoffData finalResult = _mergeAndClearPartialFragments(partials.toArray((int size) -> new _PartialHandoffData[size]));
-		long endHighLevel = System.currentTimeMillis();
-		
-		// TODO:  Update how we account for these or what we are tracking, at all.
-		thisThread.millisInCreatureProcessor = 0L;
-		thisThread.millisInCrowdProcessor = 0L;
-		thisThread.millisInWorldProcessor = (endHighLevel - startHighLevel);
 		return finalResult;
 	}
 
@@ -603,6 +606,7 @@ public class TickRunner
 		List<Integer> deadCreatureIds = new ArrayList<>();
 		
 		// We need to walk the cuboids and collect data from each of them and associated players and creatures.
+		processor.workUnitsProcessed += 1;
 		Set<CuboidAddress> loadedCuboids = materials.completedCuboids.keySet();
 		for (_CuboidWorkUnit subUnit : unit.cuboids)
 		{
@@ -613,6 +617,7 @@ public class TickRunner
 			
 			// We can't be told to operate on something which isn't in the state.
 			Assert.assertTrue(null != oldState);
+			long startCuboidNanos = System.nanoTime();
 			EngineCuboids.SingleCuboidResult cuboidResult = EngineCuboids.processOneCuboid(context
 				, loadedCuboids
 				, subUnit.mutations
@@ -652,8 +657,10 @@ public class TickRunner
 				Assert.assertTrue(!cuboidResult.periodicNotReady().isEmpty());
 				periodicNotReadyByCuboid.put(key, cuboidResult.periodicNotReady());
 			}
+			long endCuboidNanos = System.nanoTime();
 			processor.cuboidBlockupdatesProcessed += cuboidResult.blockUpdatesProcessed();
 			processor.cuboidMutationsProcessed += cuboidResult.mutationsProcessed();
+			processor.nanosInEngineCuboids += (endCuboidNanos - startCuboidNanos);
 			committedMutationCount += cuboidResult.blockUpdatesApplied() + cuboidResult.mutationsApplied();
 			
 			// Process the player entities in this cuboid.
@@ -661,7 +668,7 @@ public class TickRunner
 			{
 				Entity entity = entityUnit.entity;
 				List<ScheduledChange> changes = entityUnit.actions;
-				processor.entitiesProcessed += 1;
+				processor.playersProcessed += 1;
 				
 				EnginePlayers.SinglePlayerResult result = EnginePlayers.processOnePlayer(context
 					, materials.entityCollection
@@ -669,9 +676,11 @@ public class TickRunner
 					, changes
 				);
 				processedEntities.put(entity.id(), new _OutputEntity(result.changedEntityOrNull(), result.notYetReadyChanges()));
-				processor.entityChangesProcessed += result.entityChangesProcessed();
+				processor.playerActionsProcessed += result.entityChangesProcessed();
 				committedActionCount += result.committedMutationCount();
 			}
+			long endPlayerNanos = System.nanoTime();
+			processor.nanosInEnginePlayers += (endPlayerNanos - endCuboidNanos);
 			
 			// Process the creature entities in this cuboid.
 			for (_CreatureWorkUnit creatureUnit : subUnit.creatures)
@@ -679,7 +688,7 @@ public class TickRunner
 				CreatureEntity creature = creatureUnit.creature;
 				List<IEntityAction<IMutableCreatureEntity>> changes = creatureUnit.actions;
 				processor.creaturesProcessed += 1;
-				processor.creatureChangesProcessed += changes.size();
+				processor.creatureActionsProcessed += changes.size();
 				EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
 					, materials.entityCollection
 					, creature
@@ -696,9 +705,11 @@ public class TickRunner
 				}
 				if (!result.didTakeSpecialAction())
 				{
-					processor.creatureChangesProcessed += 1;
+					processor.creatureActionsProcessed += 1;
 				}
 			}
+			long endCreatureNanos = System.nanoTime();
+			processor.nanosInEngineCreatures += (endCreatureNanos - endPlayerNanos);
 		}
 		
 		// We can now merge the height maps since each _CommonWorkUnit is a full column.
@@ -942,10 +953,6 @@ public class TickRunner
 				Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = _extractPotentialLightChanges( masterFragment);
 				Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid = _extractPotentialLogicChanges( masterFragment);
 				
-				// Collect the last timing data for this tick preamble.
-				long endMillisPreamble = System.currentTimeMillis();
-				long millisInNextTickPreamble = endMillisPreamble - startMillisPreamble;
-				
 				// WARNING:  completedHeightMaps does NOT include the new height maps loaded after the previous tick finished!
 				// (this is done to avoid the cost of rebuilding the maps since the column height maps are not guaranteed to be fully accurate)
 				EntityCollection entityCollection = EntityCollection.fromMaps(mutableCrowdState, mutableCreatureState);
@@ -958,6 +965,10 @@ public class TickRunner
 					, periodicMutations
 					, nextCreatureChanges
 				);
+				
+				// Collect the last timing data for this tick preamble.
+				long endMillisPreamble = System.currentTimeMillis();
+				long millisInNextTickPreamble = endMillisPreamble - startMillisPreamble;
 				
 				_thisTickMaterials = new TickMaterials(_nextTick
 						, Collections.unmodifiableMap(mutableWorldState)
@@ -1807,6 +1818,7 @@ public class TickRunner
 	) {
 		public void writeToStream(PrintStream out)
 		{
+			long nanosPerMilli = 1_000_000L;
 			long preamble = this.millisTickPreamble;
 			long parallel = this.millisTickParallelPhase;
 			long postamble = this.millisTickPostamble;
@@ -1814,12 +1826,26 @@ public class TickRunner
 			out.println("Log for slow (" + tickTime + " ms) tick " + this.tickNumber);
 			out.println("\tPreamble: " + preamble + " ms");
 			out.println("\tParallel: " + parallel + " ms");
-			for (ProcessorElement.PerThreadStats thread : this.threadStats)
+			for (int i = 0; i < this.threadStats.length; ++i)
 			{
-				out.println("\t-Crowd: " + thread.millisInCrowdProcessor() + " ms, Creatures: " + thread.millisInCreatureProcessor() + " ms, World: " + thread.millisInWorldProcessor() + " ms");
-				out.println("\t\tEntities processed: " + thread.entitiesProcessed() + ", changes processed " + thread.entityChangesProcessed());
-				out.println("\t\tCreatures processed: " + thread.creaturesProcessed() + ", changes processed " + thread.creatureChangesProcessed());
-				out.println("\t\tCuboids processed: " + thread.cuboidsProcessed() + ", mutations processed " + thread.cuboidMutationsProcessed() + ", updates processed " + thread.cuboidBlockupdatesProcessed());
+				ProcessorElement.PerThreadStats thread = this.threadStats[i];
+				long millisInEnginePlayers = thread.nanosInEnginePlayers() / nanosPerMilli;
+				long millisInEngineCreatures = thread.nanosInEngineCreatures() / nanosPerMilli;
+				long millisInEngineCuboids = thread.nanosInEngineCuboids() / nanosPerMilli;
+				long millisInEngineSpawner = thread.nanosInEngineSpawner() / nanosPerMilli;
+				long millisProcessingOperator = thread.nanosProcessingOperator() / nanosPerMilli;
+				out.printf("\t-Thread %d ran %d work units in %d ms\n", i, thread.workUnitsProcessed(), (millisInEnginePlayers + millisInEngineCreatures + millisInEngineCuboids + millisInEngineSpawner + millisProcessingOperator));
+				out.printf("\t\t=%d ms in EnginePlayer: %d players, %d actions\n", millisInEnginePlayers, thread.playersProcessed(), thread.playerActionsProcessed());
+				out.printf("\t\t=%d ms in EngineCreatures: %d creatures, %d actions\n", millisInEngineCreatures, thread.creaturesProcessed(), thread.creatureActionsProcessed());
+				out.printf("\t\t=%d ms in EngineCuboids: %d cuboids, %d mutations, %d block updates\n", millisInEngineCuboids, thread.cuboidsProcessed(), thread.cuboidMutationsProcessed(), thread.cuboidBlockupdatesProcessed());
+				if (millisInEngineSpawner > 0L)
+				{
+					out.printf("\t\t=%d ms in EngineSpawner\n", millisInEngineSpawner);
+				}
+				if (millisProcessingOperator > 0L)
+				{
+					out.printf("\t\t=%d ms running operator commands\n", millisProcessingOperator);
+				}
 			}
 			out.println("\tPostamble: " + postamble + " ms");
 		}

@@ -15,18 +15,22 @@ public class ProcessorElement
 	private int _nextWorkUnit;
 
 	// Public variables related to per-thread tick execution statistics.
-	public int entitiesProcessed;
-	public int entityChangesProcessed;
-	public long millisInCrowdProcessor;
-	
+	public int playersProcessed;
+	public int playerActionsProcessed;
+	public long nanosInEnginePlayers;
+
 	public int creaturesProcessed;
-	public int creatureChangesProcessed;
-	public long millisInCreatureProcessor;
-	
+	public int creatureActionsProcessed;
+	public long nanosInEngineCreatures;
+
+	public int workUnitsProcessed;
 	public int cuboidsProcessed;
 	public int cuboidMutationsProcessed;
 	public int cuboidBlockupdatesProcessed;
-	public long millisInWorldProcessor;
+	public long nanosInEngineCuboids;
+
+	public long nanosInEngineSpawner;
+	public long nanosProcessingOperator;
 
 	public ProcessorElement(int id, SyncPoint sync, AtomicInteger sharedUnitCounter)
 	{
@@ -76,32 +80,40 @@ public class ProcessorElement
 
 	public PerThreadStats consumeAndResetStats()
 	{
-		PerThreadStats stats = new PerThreadStats(this.entitiesProcessed
-				, this.entityChangesProcessed
-				, this.millisInCrowdProcessor
-				
-				, this.creaturesProcessed
-				, this.creatureChangesProcessed
-				, this.millisInCreatureProcessor
-				
-				, this.cuboidsProcessed
-				, this.cuboidMutationsProcessed
-				, this.cuboidBlockupdatesProcessed
-				, this.millisInWorldProcessor
+		PerThreadStats stats = new PerThreadStats(this.playersProcessed
+			, this.playerActionsProcessed
+			, this.nanosInEnginePlayers
+			
+			, this.creaturesProcessed
+			, this.creatureActionsProcessed
+			, this.nanosInEngineCreatures
+			
+			, this.workUnitsProcessed
+			, this.cuboidsProcessed
+			, this.cuboidMutationsProcessed
+			, this.cuboidBlockupdatesProcessed
+			, this.nanosInEngineCuboids
+			
+			, this.nanosInEngineSpawner
+			, this.nanosProcessingOperator
 		);
 		
-		this.entitiesProcessed = 0;
-		this.entityChangesProcessed = 0;
-		this.millisInCrowdProcessor = 0L;
+		this.playersProcessed = 0;
+		this.playerActionsProcessed = 0;
+		this.nanosInEnginePlayers = 0L;
 		
 		this.creaturesProcessed = 0;
-		this.creatureChangesProcessed = 0;
-		this.millisInCreatureProcessor = 0L;
+		this.creatureActionsProcessed = 0;
+		this.nanosInEngineCreatures = 0L;
 		
+		this.workUnitsProcessed = 0;
 		this.cuboidsProcessed = 0;
 		this.cuboidMutationsProcessed = 0;
 		this.cuboidBlockupdatesProcessed = 0;
-		this.millisInWorldProcessor = 0L;
+		this.nanosInEngineCuboids = 0L;
+		
+		this.nanosInEngineSpawner = 0L;
+		this.nanosProcessingOperator = 0L;
 		
 		return stats;
 	}
@@ -109,18 +121,22 @@ public class ProcessorElement
 	/**
 	 * The statistics of what a specific thread does during the parallel tick phase.
 	 */
-	public static record PerThreadStats(int entitiesProcessed
-			, int entityChangesProcessed
-			, long millisInCrowdProcessor
-			
-			, int creaturesProcessed
-			, int creatureChangesProcessed
-			, long millisInCreatureProcessor
-			
-			, int cuboidsProcessed
-			, int cuboidMutationsProcessed
-			, int cuboidBlockupdatesProcessed
-			, long millisInWorldProcessor
+	public static record PerThreadStats(int playersProcessed
+		, int playerActionsProcessed
+		, long nanosInEnginePlayers
+		
+		, int creaturesProcessed
+		, int creatureActionsProcessed
+		, long nanosInEngineCreatures
+		
+		, int workUnitsProcessed
+		, int cuboidsProcessed
+		, int cuboidMutationsProcessed
+		, int cuboidBlockupdatesProcessed
+		, long nanosInEngineCuboids
+		
+		, long nanosInEngineSpawner
+		, long nanosProcessingOperator
 	)
 	{}
 }
