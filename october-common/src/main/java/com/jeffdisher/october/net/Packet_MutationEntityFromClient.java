@@ -23,6 +23,7 @@ public class Packet_MutationEntityFromClient extends PacketFromClient
 			Environment env = Environment.getShared();
 			DeserializationContext context = new DeserializationContext(env
 				, buffer
+				, 0L
 				, false
 			);
 			

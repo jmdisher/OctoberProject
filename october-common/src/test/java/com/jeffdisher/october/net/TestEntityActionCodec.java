@@ -42,6 +42,7 @@ public class TestEntityActionCodec
 		buffer.flip();
 		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV
 			, buffer
+			, 0L
 			, false
 		));
 		Assert.assertTrue(read instanceof EntityChangeTakeDamageFromEntity);
@@ -60,6 +61,7 @@ public class TestEntityActionCodec
 		buffer.flip();
 		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV
 			, buffer
+			, 0L
 			, false
 		));
 		Assert.assertTrue(read instanceof Deprecated_EntityChangeTakeDamageFromOther);

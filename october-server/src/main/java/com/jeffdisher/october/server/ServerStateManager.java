@@ -74,6 +74,7 @@ public class ServerStateManager
 	public static final int PRIORITY_CUBOID_VIEW_DISTANCE = 1;
 
 	private final ICallouts _callouts;
+	private final long _millisPerTick;
 	private final int _cuboidKeepAliveTicks;
 	private final Map<Integer, ClientState> _connectedClients;
 	private final Map<Integer, _ConnectingClient> _newClients;
@@ -103,6 +104,7 @@ public class ServerStateManager
 	public ServerStateManager(ICallouts callouts, long millisPerTick)
 	{
 		_callouts = callouts;
+		_millisPerTick = millisPerTick;
 		_cuboidKeepAliveTicks = (int)((MiscConstants.CUBOID_KEEP_ALIVE_MILLIS + millisPerTick - 1L) / millisPerTick);
 		_connectedClients = new HashMap<>();
 		_newClients = new HashMap<>();
@@ -311,7 +313,7 @@ public class ServerStateManager
 		// Request any missing cuboids or new entities and see what we got back from last time.
 		Collection<SuspendedCuboid<CuboidData>> newlyLoadedCuboids = new ArrayList<>();
 		Collection<SuspendedEntity> newlyLoadedEntities = new ArrayList<>();
-		_handleResourceLoading(newlyLoadedCuboids, newlyLoadedEntities, cuboidsToLoad);
+		_handleResourceLoading(newlyLoadedCuboids, newlyLoadedEntities, cuboidsToLoad, _tickNumber * _millisPerTick);
 		_requestedCuboids.addAll(cuboidsToLoad);
 		
 		// Any cuboids we just loaded, we want to set their keep-alive.
@@ -466,9 +468,15 @@ public class ServerStateManager
 	private void _handleResourceLoading(Collection<SuspendedCuboid<CuboidData>> out_loadedCuboids
 			, Collection<SuspendedEntity> out_loadedEntities
 			, Set<CuboidAddress> cuboidsToLoad
+			, long currentGameMillis
 	)
 	{
-		_callouts.resources_getAndRequestBackgroundLoad(out_loadedCuboids, out_loadedEntities, cuboidsToLoad, _newClients.keySet());
+		_callouts.resources_getAndRequestBackgroundLoad(out_loadedCuboids
+			, out_loadedEntities
+			, cuboidsToLoad
+			, _newClients.keySet()
+			, currentGameMillis
+		);
 		_requestedCuboids.addAll(cuboidsToLoad);
 		// We have requested the clients so drop this, now.
 		_clientsPendingLoad.putAll(_newClients);
@@ -1001,6 +1009,7 @@ public class ServerStateManager
 				, Collection<SuspendedEntity> out_loadedEntities
 				, Collection<CuboidAddress> requestedCuboids
 				, Collection<Integer> requestedEntityIds
+				, long currentGameMillis
 		);
 		
 		// IServerAdapter.

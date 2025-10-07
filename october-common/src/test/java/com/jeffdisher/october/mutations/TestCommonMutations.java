@@ -402,6 +402,7 @@ public class TestCommonMutations
 		buffer.flip();
 		MutationBlockReplace test = MutationBlockReplace.deserialize(new DeserializationContext(ENV
 			, buffer
+			, 0L
 			, false
 		));
 		Assert.assertNotNull(test);

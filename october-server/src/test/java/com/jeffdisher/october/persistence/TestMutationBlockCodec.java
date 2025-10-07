@@ -51,6 +51,7 @@ public class TestMutationBlockCodec
 		buffer.flip();
 		IMutationBlock read = MutationBlockCodec.parseAndSeekContext(new DeserializationContext(ENV
 			, buffer
+			, 0L
 			, false
 		));
 		Assert.assertTrue(read instanceof MutationBlockOverwriteInternal);
@@ -69,6 +70,7 @@ public class TestMutationBlockCodec
 		buffer.flip();
 		IMutationBlock read = MutationBlockCodec.parseAndSeekContext(new DeserializationContext(ENV
 			, buffer
+			, 0L
 			, false
 		));
 		Assert.assertTrue(read instanceof MutationBlockOverwriteByEntity);
@@ -89,6 +91,7 @@ public class TestMutationBlockCodec
 		buffer.flip();
 		IMutationBlock read = MutationBlockCodec.parseAndSeekContext(new DeserializationContext(ENV
 			, buffer
+			, 0L
 			, false
 		));
 		Assert.assertTrue(read instanceof MutationBlockExtractItems);
@@ -108,6 +111,7 @@ public class TestMutationBlockCodec
 		buffer.flip();
 		IMutationBlock read = MutationBlockCodec.parseAndSeekContext(new DeserializationContext(ENV
 			, buffer
+			, 0L
 			, false
 		));
 		Assert.assertTrue(read instanceof MutationBlockStoreItems);
@@ -127,6 +131,7 @@ public class TestMutationBlockCodec
 		buffer.flip();
 		IMutationBlock read = MutationBlockCodec.parseAndSeekContext(new DeserializationContext(ENV
 			, buffer
+			, 0L
 			, false
 		));
 		Assert.assertTrue(read instanceof MutationBlockStoreItems);
@@ -145,6 +150,7 @@ public class TestMutationBlockCodec
 		buffer.flip();
 		IMutationBlock read = MutationBlockCodec.parseAndSeekContext(new DeserializationContext(ENV
 			, buffer
+			, 0L
 			, false
 		));
 		Assert.assertTrue(read instanceof MutationBlockIncrementalBreak);
@@ -164,6 +170,7 @@ public class TestMutationBlockCodec
 		buffer.flip();
 		IMutationBlock read = MutationBlockCodec.parseAndSeekContext(new DeserializationContext(ENV
 			, buffer
+			, 0L
 			, false
 		));
 		Assert.assertTrue(read instanceof MutationBlockCraft);
@@ -182,6 +189,7 @@ public class TestMutationBlockCodec
 		buffer.flip();
 		IMutationBlock read = MutationBlockCodec.parseAndSeekContext(new DeserializationContext(ENV
 			, buffer
+			, 0L
 			, false
 		));
 		Assert.assertTrue(read instanceof MutationBlockIncrementalRepair);

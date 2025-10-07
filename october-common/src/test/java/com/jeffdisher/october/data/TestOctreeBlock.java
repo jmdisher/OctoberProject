@@ -377,6 +377,7 @@ public class TestOctreeBlock
 		OctreeInflatedByte test = OctreeInflatedByte.empty();
 		DeserializationContext context = new DeserializationContext(Environment.getShared()
 			, buffer
+			, 0L
 			, false
 		);
 		state = test.deserializeResumable(null, context, null);
@@ -396,6 +397,7 @@ public class TestOctreeBlock
 		OctreeInflatedByte test2 = OctreeInflatedByte.empty();
 		context = new DeserializationContext(Environment.getShared()
 			, buffer
+			, 0L
 			, false
 		);
 		state = test2.deserializeResumable(null, context, null);
@@ -425,6 +427,7 @@ public class TestOctreeBlock
 		OctreeShort output = OctreeShort.empty();
 		DeserializationContext context = new DeserializationContext(Environment.getShared()
 			, buffer
+			, 0L
 			, false
 		);
 		state = output.deserializeResumable(null, context, null);
@@ -470,6 +473,7 @@ public class TestOctreeBlock
 		OctreeByte output = OctreeByte.empty();
 		DeserializationContext context = new DeserializationContext(Environment.getShared()
 			, buffer
+			, 0L
 			, false
 		);
 		state = output.deserializeResumable(null, context, null);

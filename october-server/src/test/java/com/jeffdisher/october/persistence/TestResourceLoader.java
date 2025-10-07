@@ -201,7 +201,7 @@ public class TestResourceLoader
 		for (int i = 0; (results.size() < 2) && (i < 10); ++i)
 		{
 			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of());
+			loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(), 0L);
 		}
 		
 		// Modify an entity and write these  back.
@@ -227,7 +227,7 @@ public class TestResourceLoader
 		for (int i = 0; (results.size() < 2) && (i < 10); ++i)
 		{
 			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of());
+			loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(), 0L);
 		}
 		Entity resolved = (original.id() == results.get(0).entity().id())
 				? results.get(0).entity()
@@ -278,12 +278,12 @@ public class TestResourceLoader
 		int entityId = 1;
 		
 		List<SuspendedEntity> results = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(entityId));
+		loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(entityId), 0L);
 		Assert.assertTrue(results.isEmpty());
 		for (int i = 0; (results.size() < 1) && (i < 10); ++i)
 		{
 			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of());
+			loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(), 0L);
 		}
 		
 		// Verify that this is the default.
@@ -308,12 +308,12 @@ public class TestResourceLoader
 		// Now, create a new loader to verify that we can read this.
 		loader = new ResourceLoader(worldDirectory, null, null);
 		results = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(entityId));
+		loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(entityId), 0L);
 		Assert.assertTrue(results.isEmpty());
 		for (int i = 0; (results.size() < 1) && (i < 10); ++i)
 		{
 			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of());
+			loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(), 0L);
 		}
 		SuspendedEntity suspended = results.get(0);
 		Assert.assertEquals(newLocation, suspended.entity().location());
@@ -395,12 +395,12 @@ public class TestResourceLoader
 			}
 		}, null);
 		List<SuspendedCuboid<CuboidData>> out_loadedCuboids = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(CuboidAddress.fromInt(1, 2, 3)), List.of());
+		loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(CuboidAddress.fromInt(1, 2, 3)), List.of(), 0L);
 		Assert.assertTrue(out_loadedCuboids.isEmpty());
 		for (int i = 0; (out_loadedCuboids.isEmpty()) && (i < 10); ++i)
 		{
 			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(), List.of());
+			loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(), List.of(), 0L);
 		}
 		Assert.assertEquals(1, out_loadedCuboids.size());
 		SuspendedCuboid<CuboidData> result = out_loadedCuboids.get(0);
@@ -425,11 +425,11 @@ public class TestResourceLoader
 		
 		List<SuspendedCuboid<CuboidData>> cuboids = new ArrayList<>();
 		List<SuspendedEntity> entities = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(cuboids, entities, List.of(airAddress), List.of(entityId));
+		loader.getResultsAndRequestBackgroundLoad(cuboids, entities, List.of(airAddress), List.of(entityId), 0L);
 		for (int i = 0; ((cuboids.size() < 1) || (entities.size() < 1)) && (i < 10); ++i)
 		{
 			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(cuboids, entities, List.of(), List.of());
+			loader.getResultsAndRequestBackgroundLoad(cuboids, entities, List.of(), List.of(), 0L);
 		}
 		Assert.assertEquals(1, cuboids.size());
 		Assert.assertEquals(1, entities.size());
@@ -471,11 +471,11 @@ public class TestResourceLoader
 		// Load them back.
 		cuboids = new ArrayList<>();
 		entities = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(cuboids, entities, List.of(airAddress), List.of(entityId));
+		loader.getResultsAndRequestBackgroundLoad(cuboids, entities, List.of(airAddress), List.of(entityId), 0L);
 		for (int i = 0; ((cuboids.size() < 1) || (entities.size() < 1)) && (i < 10); ++i)
 		{
 			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(cuboids, entities, List.of(), List.of());
+			loader.getResultsAndRequestBackgroundLoad(cuboids, entities, List.of(), List.of(), 0L);
 		}
 		Assert.assertEquals(1, cuboids.size());
 		Assert.assertEquals(1, entities.size());
@@ -496,11 +496,11 @@ public class TestResourceLoader
 		
 		// We will request that this be generated and verify that there is an entity.
 		Collection<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(airAddress), List.of());
+		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(airAddress), List.of(), 0L);
 		for (int i = 0; (i < 10) && results.isEmpty(); ++i)
 		{
 			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of());
+			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of(), 0L);
 		}
 		
 		// We expect a result with a cow of ID -1 and an orc with ID -2.
@@ -518,11 +518,11 @@ public class TestResourceLoader
 		
 		// Now, re-load this within the same loader and observe that the ID has updated.
 		results = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(airAddress), List.of());
+		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(airAddress), List.of(), 0L);
 		for (int i = 0; (i < 10) && results.isEmpty(); ++i)
 		{
 			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of());
+			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of(), 0L);
 		}
 		
 		// We expect a result with a cow of ID -3 and an orc with ID -4.
@@ -603,12 +603,12 @@ public class TestResourceLoader
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
 		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
 		List<SuspendedEntity> results = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(id));
+		loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(id), 0L);
 		Assert.assertTrue(results.isEmpty());
 		for (int i = 0; (results.size() < 1) && (i < 10); ++i)
 		{
 			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of());
+			loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(), 0L);
 		}
 		
 		// Verify that this matches.
@@ -694,11 +694,11 @@ public class TestResourceLoader
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
 		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
 		List<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of());
+		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of(), 0L);
 		for (int i = 0; (i < 10) && results.isEmpty(); ++i)
 		{
 			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of());
+			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of(), 0L);
 		}
 		
 		// We expect a result with a cow of ID -1 (renumbered on load).
@@ -785,11 +785,11 @@ public class TestResourceLoader
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
 		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
 		List<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of());
+		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of(), 0L);
 		for (int i = 0; (i < 10) && results.isEmpty(); ++i)
 		{
 			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of());
+			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of(), 0L);
 		}
 		Assert.assertEquals(1, results.size());
 		SuspendedCuboid<CuboidData> result = results.get(0);
@@ -890,11 +890,11 @@ public class TestResourceLoader
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
 		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
 		List<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of());
+		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of(), 0L);
 		for (int i = 0; (i < 10) && results.isEmpty(); ++i)
 		{
 			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of());
+			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of(), 0L);
 		}
 		Assert.assertEquals(1, results.size());
 		SuspendedCuboid<CuboidData> result = results.get(0);
@@ -940,7 +940,7 @@ public class TestResourceLoader
 		for (int i = 0; (results.size() < 1) && (i < 10); ++i)
 		{
 			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of());
+			loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(), 0L);
 		}
 		Entity entity = results.get(0).entity();
 		
@@ -973,11 +973,11 @@ public class TestResourceLoader
 		// Now, read this and make sure it contains what we serialized.
 		ResourceLoader loader = new ResourceLoader(worldDirectory, null, new WorldConfig());
 		List<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of());
+		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of(), 0L);
 		for (int i = 0; (i < 10) && results.isEmpty(); ++i)
 		{
 			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of());
+			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of(), 0L);
 		}
 		Assert.assertEquals(1, results.size());
 		SuspendedCuboid<CuboidData> result = results.get(0);
@@ -1044,11 +1044,11 @@ public class TestResourceLoader
 		ResourceLoader loader = new ResourceLoader(worldDirectory, null, new WorldConfig());
 		List<SuspendedCuboid<CuboidData>> cuboidResults = new ArrayList<>();
 		List<SuspendedEntity> entityResults = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(cuboidResults, entityResults, List.of(address), List.of(playerId));
+		loader.getResultsAndRequestBackgroundLoad(cuboidResults, entityResults, List.of(address), List.of(playerId), 0L);
 		for (int i = 0; (i < 10) && (cuboidResults.isEmpty() || entityResults.isEmpty()); ++i)
 		{
 			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(cuboidResults, entityResults, List.of(), List.of());
+			loader.getResultsAndRequestBackgroundLoad(cuboidResults, entityResults, List.of(), List.of(), 0L);
 		}
 		Assert.assertEquals(1, cuboidResults.size());
 		SuspendedCuboid<CuboidData> cuboidData = cuboidResults.get(0);
@@ -1100,7 +1100,7 @@ public class TestResourceLoader
 	private static Collection<CuboidData> _loadSimpleCuboids(ResourceLoader loader, Collection<CuboidAddress> addresses)
 	{
 		Collection<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(results, List.of(), addresses, List.of());
+		loader.getResultsAndRequestBackgroundLoad(results, List.of(), addresses, List.of(), 0L);
 		// In this helper, we will just extract the cuboids.
 		Collection<CuboidData> extracted = null;
 		if (!results.isEmpty())
@@ -1119,7 +1119,7 @@ public class TestResourceLoader
 	private static Collection<Entity> _loadEntities(ResourceLoader loader, Collection<Integer> ids)
 	{
 		Collection<SuspendedEntity> results = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), ids);
+		loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), ids, 0L);
 		return results.isEmpty()
 				? null
 				: results.stream().map((SuspendedEntity suspended) -> suspended.entity()).toList()
@@ -1129,13 +1129,13 @@ public class TestResourceLoader
 	private SuspendedCuboid<CuboidData> _loadOneSuspended(ResourceLoader loader, CuboidAddress address) throws InterruptedException
 	{
 		List<SuspendedCuboid<CuboidData>> out_loadedCuboids = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(address), List.of());
+		loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(address), List.of(), 0L);
 		// The first call should give us nothing so loop until we see an answer.
 		Assert.assertTrue(out_loadedCuboids.isEmpty());
 		for (int i = 0; (out_loadedCuboids.isEmpty()) && (i < 10); ++i)
 		{
 			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(), List.of());
+			loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(), List.of(), 0L);
 		}
 		Assert.assertEquals(1, out_loadedCuboids.size());
 		return out_loadedCuboids.get(0);

@@ -450,9 +450,15 @@ public class ServerRunner
 				, Collection<SuspendedEntity> out_loadedEntities
 				, Collection<CuboidAddress> requestedCuboids
 				, Collection<Integer> requestedEntityIds
+				, long currentGameMillis
 		)
 		{
-			_loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, out_loadedEntities, requestedCuboids, requestedEntityIds);
+			_loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids
+				, out_loadedEntities
+				, requestedCuboids
+				, requestedEntityIds
+				, currentGameMillis
+			);
 		}
 		@Override
 		public boolean network_isNetworkWriteReady(int clientId)

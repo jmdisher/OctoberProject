@@ -934,6 +934,7 @@ public class TestServerStateManager
 				, Collection<SuspendedEntity> out_loadedEntities
 				, Collection<CuboidAddress> requestedCuboids
 				, Collection<Integer> requestedEntityIds
+				, long currentGameMillis
 		)
 		{
 			// There should be no duplicates.

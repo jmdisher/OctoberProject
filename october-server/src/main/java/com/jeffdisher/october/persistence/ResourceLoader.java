@@ -195,12 +195,14 @@ public class ResourceLoader
 	 * @param out_loadedEntities Will be filled with previously-requested entities which have been satisfied in the
 	 * background.
 	 * @param requestedCuboids The collection of cuboids to load/generate, by address.
+	 * @param currentGameMillis The millisecond time of the loading tick.
 	 * @param requestedEntityIds The collection of entities to load/generate, by ID.
 	 */
 	public void getResultsAndRequestBackgroundLoad(Collection<SuspendedCuboid<CuboidData>> out_loadedCuboids
 			, Collection<SuspendedEntity> out_loadedEntities
 			, Collection<CuboidAddress> requestedCuboids
 			, Collection<Integer> requestedEntityIds
+			, long currentGameMillis
 	)
 	{
 		// Send this request to the background thread.
@@ -219,7 +221,7 @@ public class ResourceLoader
 					// 4) Return null (only happens in tests)
 					
 					// See if we can load this from disk.
-					SuspendedCuboid<CuboidData> data = _background_readCuboidFromDisk(address);
+					SuspendedCuboid<CuboidData> data = _background_readCuboidFromDisk(address, currentGameMillis);
 					if (null == data)
 					{
 						if (_preLoaded.containsKey(address))
@@ -254,7 +256,7 @@ public class ResourceLoader
 					// 2) The generator
 					
 					// See if we can load this from disk.
-					SuspendedEntity data = _background_readEntityFromDisk(id);
+					SuspendedEntity data = _background_readEntityFromDisk(id, currentGameMillis);
 					if (null == data)
 					{
 						// Note that the entity generator is always present.
@@ -434,7 +436,7 @@ public class ResourceLoader
 		}
 	}
 
-	private SuspendedCuboid<CuboidData> _background_readCuboidFromDisk(CuboidAddress address)
+	private SuspendedCuboid<CuboidData> _background_readCuboidFromDisk(CuboidAddress address, long currentGameMillis)
 	{
 		// These data files are relatively small so we can just read this in, completely.
 		SuspendedCuboid<CuboidData> result;
@@ -454,6 +456,7 @@ public class ResourceLoader
 			boolean usePreV8NonStackableDecoding = (version <= VERSION_CUBOID_V7);
 			DeserializationContext context = new DeserializationContext(env
 				, buffer
+				, currentGameMillis
 				, usePreV8NonStackableDecoding
 			);
 			
@@ -464,7 +467,7 @@ public class ResourceLoader
 					CuboidData cuboid = _background_readCuboid(address, context);
 					
 					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreatures(buffer);
+					List<CreatureEntity> creatures = _background_readCreatures(context);
 					
 					// Now, load any suspended mutations.
 					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
@@ -490,7 +493,7 @@ public class ResourceLoader
 					CuboidData cuboid = _background_readCuboid(address, context);
 					
 					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreaturesV8(buffer);
+					List<CreatureEntity> creatures = _background_readCreaturesV8(context);
 					
 					// Now, load any suspended mutations.
 					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
@@ -516,7 +519,7 @@ public class ResourceLoader
 					CuboidData cuboid = _background_readCuboidPre8(address, context);
 					
 					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreaturesV8(buffer);
+					List<CreatureEntity> creatures = _background_readCreaturesV8(context);
 					
 					// Now, load any suspended mutations.
 					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
@@ -543,7 +546,7 @@ public class ResourceLoader
 					CuboidData cuboid = _background_readCuboidPre8(address, context);
 					
 					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreaturesV8(buffer);
+					List<CreatureEntity> creatures = _background_readCreaturesV8(context);
 					
 					// Now, load any suspended mutations.
 					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
@@ -570,7 +573,7 @@ public class ResourceLoader
 					CuboidData cuboid = _background_readCuboidV5(address, context);
 					
 					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreaturesV8(buffer);
+					List<CreatureEntity> creatures = _background_readCreaturesV8(context);
 					
 					// Now, load any suspended mutations.
 					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
@@ -597,7 +600,7 @@ public class ResourceLoader
 					CuboidData cuboid = _background_readCuboidPre5(address, context);
 					
 					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreaturesV8(buffer);
+					List<CreatureEntity> creatures = _background_readCreaturesV8(context);
 					
 					// Now, load any suspended mutations.
 					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
@@ -624,7 +627,7 @@ public class ResourceLoader
 					CuboidData cuboid = _background_readCuboidPre5(address, context);
 					
 					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreaturesV8(buffer);
+					List<CreatureEntity> creatures = _background_readCreaturesV8(context);
 					
 					// Now, load any suspended mutations.
 					List<ScheduledMutation> pendingMutations = new ArrayList<>();
@@ -856,8 +859,9 @@ public class ResourceLoader
 		}
 	}
 
-	private List<CreatureEntity> _background_readCreatures(ByteBuffer buffer)
+	private List<CreatureEntity> _background_readCreatures(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		int creatureCount = buffer.getInt();
 		List<CreatureEntity> creatures = new ArrayList<>();
 		for (int i = 0; i < creatureCount; ++i)
@@ -868,8 +872,9 @@ public class ResourceLoader
 		return creatures;
 	}
 
-	private List<CreatureEntity> _background_readCreaturesV8(ByteBuffer buffer)
+	private List<CreatureEntity> _background_readCreaturesV8(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		int creatureCount = buffer.getInt();
 		List<CreatureEntity> creatures = new ArrayList<>();
 		for (int i = 0; i < creatureCount; ++i)
@@ -1021,7 +1026,7 @@ public class ResourceLoader
 		return new File(_saveDirectory, fileName);
 	}
 
-	private SuspendedEntity _background_readEntityFromDisk(int id)
+	private SuspendedEntity _background_readEntityFromDisk(int id, long currentGameMillis)
 	{
 		// These data files are relatively small so we can just read this in, completely.
 		SuspendedEntity result;
@@ -1041,6 +1046,7 @@ public class ResourceLoader
 			boolean usePreV8NonStackableDecoding = (version <= VERSION_CUBOID_V7);
 			DeserializationContext context = new DeserializationContext(env
 				, buffer
+				, currentGameMillis
 				, usePreV8NonStackableDecoding
 			);
 			

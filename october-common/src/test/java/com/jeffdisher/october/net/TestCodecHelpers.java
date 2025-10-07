@@ -87,6 +87,7 @@ public class TestCodecHelpers
 		buffer.flip();
 		DeserializationContext context = new DeserializationContext(Environment.getShared()
 			, buffer
+			, 0L
 			, false
 		);
 		Inventory output = CodecHelpers.readInventory(context);
@@ -110,6 +111,7 @@ public class TestCodecHelpers
 		buffer.flip();
 		DeserializationContext context = new DeserializationContext(Environment.getShared()
 			, buffer
+			, 0L
 			, false
 		);
 		Inventory output = CodecHelpers.readInventory(context);
@@ -197,6 +199,7 @@ public class TestCodecHelpers
 		buffer.flip();
 		Entity output = CodecHelpers.readEntity(new DeserializationContext(ENV
 			, buffer
+			, 0L
 			, false
 		));
 		// Entity contains Inventory, which has no .equals, so compare other parts.
@@ -217,6 +220,7 @@ public class TestCodecHelpers
 		buffer.flip();
 		Entity output = CodecHelpers.readEntity(new DeserializationContext(ENV
 			, buffer
+			, 0L
 			, false
 		));
 		
@@ -244,6 +248,7 @@ public class TestCodecHelpers
 		buffer.flip();
 		DeserializationContext context = new DeserializationContext(Environment.getShared()
 			, buffer
+			, 0L
 			, false
 		);
 		FuelState output = CodecHelpers.readFuelState(context);
@@ -258,6 +263,7 @@ public class TestCodecHelpers
 		buffer.flip();
 		context = new DeserializationContext(Environment.getShared()
 			, buffer
+			, 0L
 			, false
 		);
 		output = CodecHelpers.readFuelState(context);
@@ -273,6 +279,7 @@ public class TestCodecHelpers
 		buffer.flip();
 		NonStackableItem output = CodecHelpers.readNonStackableItem(new DeserializationContext(ENV
 			, buffer
+			, 0L
 			, false
 		));
 		Assert.assertEquals(test, output);
@@ -282,6 +289,7 @@ public class TestCodecHelpers
 		buffer.flip();
 		output = CodecHelpers.readNonStackableItem(new DeserializationContext(ENV
 			, buffer
+			, 0L
 			, false
 		));
 		Assert.assertNull(output);
@@ -330,6 +338,7 @@ public class TestCodecHelpers
 		buffer.flip();
 		DeserializationContext context = new DeserializationContext(Environment.getShared()
 			, buffer
+			, 0L
 			, false
 		);
 		Assert.assertNull(CodecHelpers.readSlot(context));
@@ -340,6 +349,7 @@ public class TestCodecHelpers
 		buffer.flip();
 		context = new DeserializationContext(Environment.getShared()
 			, buffer
+			, 0L
 			, false
 		);
 		ItemSlot output = CodecHelpers.readSlot(context);
@@ -351,6 +361,7 @@ public class TestCodecHelpers
 		buffer.flip();
 		context = new DeserializationContext(Environment.getShared()
 			, buffer
+			, 0L
 			, false
 		);
 		output = CodecHelpers.readSlot(context);
