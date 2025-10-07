@@ -28,6 +28,8 @@ import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
+import com.jeffdisher.october.types.PassiveEntity;
+import com.jeffdisher.october.types.PassiveType;
 
 
 public class TestCodecHelpers
@@ -366,5 +368,43 @@ public class TestCodecHelpers
 		);
 		output = CodecHelpers.readSlot(context);
 		Assert.assertEquals(stack, output.stack);
+	}
+
+	@Test
+	public void passiveItemSlot() throws Throwable
+	{
+		int id = 1;
+		EntityLocation location = new EntityLocation(-5.4f, 6.6f, 0.0f);
+		EntityLocation velocity = new EntityLocation(-0.4f, 2.6f, -5.1f);
+		NonStackableItem sword = new NonStackableItem(IRON_SWORD_ITEM, Map.of(PropertyRegistry.DURABILITY, 103));
+		Object extendedData = ItemSlot.fromNonStack(sword);
+		long lastAliveMillis= 2000L;
+		PassiveEntity input = new PassiveEntity(id
+			, PassiveType.ITEM_SLOT
+			, location
+			, velocity
+			, extendedData
+			, lastAliveMillis
+		);
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		CodecHelpers.writePassiveEntity(buffer, input);
+		
+		buffer.flip();
+		long newAliveMillis = 5500L;
+		DeserializationContext context = new DeserializationContext(Environment.getShared()
+			, buffer
+			, newAliveMillis
+			, false
+		);
+		
+		int newId = 3;
+		PassiveEntity output = CodecHelpers.readPassiveEntity(newId, context);
+		Assert.assertFalse(buffer.hasRemaining());
+		
+		Assert.assertEquals(newId, output.id());
+		Assert.assertEquals(PassiveType.ITEM_SLOT, output.type());
+		Assert.assertEquals(location, output.location());
+		Assert.assertEquals(sword, ((ItemSlot)output.extendedData()).nonStackable);
+		Assert.assertEquals(newAliveMillis, output.lastAliveMillis());
 	}
 }

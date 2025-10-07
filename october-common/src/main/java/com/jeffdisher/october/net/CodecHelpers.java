@@ -32,6 +32,8 @@ import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PassiveEntity;
+import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -522,6 +524,48 @@ public class CodecHelpers
 	public static void writeSlot(ByteBuffer buffer, ItemSlot slot)
 	{
 		_writeSlot(buffer, slot);
+	}
+
+	public static PassiveEntity readPassiveEntity(int idToAssign, DeserializationContext context)
+	{
+		ByteBuffer buffer = context.buffer();
+		
+		// The IDs for entities are assigned late.
+		int id = idToAssign;
+		
+		// We only have the item slot, for now.
+		byte ordinal = buffer.get();
+		Assert.assertTrue((byte)1 == ordinal);
+		PassiveType type = PassiveType.ITEM_SLOT;
+		
+		EntityLocation location = _readEntityLocation(buffer);
+		EntityLocation velocity = _readEntityLocation(buffer);
+		Object extendedData = type.extendedCodec().read(context);
+		long lastAliveTick = context.currentGameMillis();
+		
+		return new PassiveEntity(id
+			, type
+			, location
+			, velocity
+			, extendedData
+			
+			, lastAliveTick
+		);
+	}
+
+	public static void writePassiveEntity(ByteBuffer buffer, PassiveEntity entity)
+	{
+		// Note that we don't serialize the IDs for passives.
+		byte ordinal = entity.type().number();
+		Assert.assertTrue((byte)0 != ordinal);
+		EntityLocation location = entity.location();
+		EntityLocation velocity = entity.velocity();
+		Object extendedData = entity.extendedData();
+		
+		buffer.put(ordinal);
+		_writeEntityLocation(buffer, location);
+		_writeEntityLocation(buffer, velocity);
+		entity.type().extendedCodec().write(buffer, extendedData);
 	}
 
 
