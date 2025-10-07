@@ -343,7 +343,7 @@ public class TestEngineCreatures
 		Assert.assertEquals(startHealth, updated.health());
 		Assert.assertNotEquals(startLocation, updated.location());
 		Assert.assertNotNull(updated.ephemeral().movementPlan());
-		Assert.assertEquals(context.currentTick, updated.ephemeral().lastActionTick());
+		Assert.assertEquals(context.currentTickTimeMillis, updated.ephemeral().lastActionMillis());
 		
 		// Now, hit them and see this clears their movement plan so we should see a plan with new timers.
 		context = _updateContextForTick(context);
@@ -358,7 +358,7 @@ public class TestEngineCreatures
 		
 		updated = result.updatedEntity();
 		Assert.assertEquals(startHealth - damage, updated.health());
-		Assert.assertEquals(context.currentTick, updated.ephemeral().lastActionTick());
+		Assert.assertEquals(context.currentTickTimeMillis, updated.ephemeral().lastActionMillis());
 	}
 
 	@Test
@@ -1117,12 +1117,12 @@ public class TestEngineCreatures
 				
 				, new CreatureEntity.Ephemeral(
 					movementPlan
-					, entity.ephemeral().lastActionTick()
+					, entity.ephemeral().lastActionMillis()
 					, shouldTakeImmediateAction
-					, entity.ephemeral().despawnKeepAliveTick()
+					, entity.ephemeral().despawnKeepAliveMillis()
 					, targetEntityId
 					, targetPreviousLocation
-					, entity.ephemeral().lastAttackTick()
+					, entity.ephemeral().lastAttackMillis()
 					, entity.ephemeral().inLoveMode()
 					, entity.ephemeral().offspringLocation()
 					, entity.ephemeral().lastDamageTakenMillis()

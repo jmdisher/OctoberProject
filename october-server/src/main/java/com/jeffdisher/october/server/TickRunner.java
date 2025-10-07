@@ -866,7 +866,7 @@ public class TickRunner
 				Map<CuboidAddress, CuboidHeightMap> nextTickMutableHeightMaps = new HashMap<>(startingMaterials.cuboidHeightMaps);
 				nextTickMutableHeightMaps.putAll(masterFragment.world.heightFragment());
 				_poopulateWorldWithNewCuboids(mutableWorldState, nextTickMutableHeightMaps, newCuboids);
-				_addCreaturesInNewCuboids(mutableCreatureState, newCuboids, _snapshot.tickNumber);
+				_addCreaturesInNewCuboidsWithMillis(mutableCreatureState, newCuboids, _snapshot.tickNumber * _millisPerTick);
 				Map<CuboidAddress, List<ScheduledMutation>> pendingMutations = _extractPendingMutationsFromNewCuboids(newCuboids, snapshotBlockMutations);
 				Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutations = _extractPeriodicMutationsFromNewCuboids(newCuboids, masterFragment);
 				
@@ -1127,7 +1127,7 @@ public class TickRunner
 	}
 
 	// NOTE:  Modifies out_mutableCreatureState.
-	private static void _addCreaturesInNewCuboids(Map<Integer, CreatureEntity> out_mutableCreatureState, List<SuspendedCuboid<IReadOnlyCuboidData>> newCuboids, long tickNumber)
+	private static void _addCreaturesInNewCuboidsWithMillis(Map<Integer, CreatureEntity> out_mutableCreatureState, List<SuspendedCuboid<IReadOnlyCuboidData>> newCuboids, long tickMillis)
 	{
 		if (null != newCuboids)
 		{
@@ -1137,7 +1137,7 @@ public class TickRunner
 				for (CreatureEntity loadedCreature : suspended.creatures())
 				{
 					// We initialize the creature's despawn keep-alive tick to now.
-					CreatureEntity creature = loadedCreature.updateKeepAliveTick(tickNumber);
+					CreatureEntity creature = loadedCreature.updateKeepAlive(tickMillis);
 					out_mutableCreatureState.put(creature.id(), creature);
 				}
 			}

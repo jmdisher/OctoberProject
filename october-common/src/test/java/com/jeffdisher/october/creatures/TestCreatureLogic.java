@@ -316,8 +316,9 @@ public class TestCreatureLogic
 		_setLayer(input, (byte)0, "op.stone");
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		long startTick = 1000L;
-		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100).updateKeepAliveTick(startTick);
-		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100).updateKeepAliveTick(startTick);
+		long startMillis = startTick * ContextBuilder.DEFAULT_MILLIS_PER_TICK;
+		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100).updateKeepAlive(startMillis);
+		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100).updateKeepAlive(startMillis);
 		
 		// We will take a special action where nothing should happen.
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {

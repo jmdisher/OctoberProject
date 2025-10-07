@@ -260,8 +260,8 @@ public class CreatureLogic
 	)
 	{
 		// We will first see if they can make a deliberate plan.
-		long nextDeliberateActionTick = mutable.newLastActionTick + _ticksBetweenActions(context.millisPerTick);
-		boolean canMakeAction = mutable.newShouldTakeAction || ( context.currentTick >= nextDeliberateActionTick);
+		long nextDeliberateActionMillis = mutable.newLastActionMillis + MINIMUM_MILLIS_TO_ACTION;
+		boolean canMakeAction = mutable.newShouldTakeAction || ( context.currentTickTimeMillis >= nextDeliberateActionMillis);
 		List<AbsoluteLocation> movementPlan;
 		if (canMakeAction)
 		{
@@ -294,7 +294,7 @@ public class CreatureLogic
 				// This can return an empty array just so we know a decision was made but we want to null it.
 				movementPlan = null;
 			}
-			mutable.newLastActionTick = context.currentTick;
+			mutable.newLastActionMillis = context.currentTickTimeMillis;
 			mutable.newShouldTakeAction = false;
 		}
 		else
@@ -385,7 +385,7 @@ public class CreatureLogic
 				path.remove(0);
 				// (we will still return an empty path just to communicate that we made a decision.
 				// As long as we found a new deliberate target, reset our despawn timeout.
-				mutable.newDespawnKeepAliveTick = context.currentTick;
+				mutable.newDespawnKeepAliveMillis = context.currentTickTimeMillis;
 			}
 		}
 		return path;
@@ -622,11 +622,6 @@ public class CreatureLogic
 		}
 	}
 
-	private static long _ticksBetweenActions(long millisPerTick)
-	{
-		return (MINIMUM_MILLIS_TO_ACTION / millisPerTick);
-	}
-
 	private static _TargetEntity _findBreedable(EntityCollection entityCollection, IMutableMinimalEntity creature)
 	{
 		_TargetEntity[] target = new _TargetEntity[1];
@@ -732,7 +727,7 @@ public class CreatureLogic
 		boolean isDone;
 		// The only special action we will take is attacking but this path will also reset our tracking if the target moves.
 		// We don't have an objective measurement of time but the tick rate is considered constant within a server instance so we will estimate time passed.
-		long millisSinceLastAttack = (context.currentTick - creature.newLastAttackTick) * context.millisPerTick;
+		long millisSinceLastAttack = context.currentTickTimeMillis - creature.newLastAttackMillis;
 		if ((CreatureEntity.NO_TARGET_ENTITY_ID != creature.newTargetEntityId) && (millisSinceLastAttack >= MILLIS_ATTACK_COOLDOWN))
 		{
 			// We are tracking a target so see if they have moved (since we would need to clear our existing targets and
@@ -753,7 +748,7 @@ public class CreatureLogic
 				EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromEntity<>(target, creatureType.attackDamage(), creature.getId());
 				context.newChangeSink.next(creature.newTargetEntityId, takeDamage);
 				// Since we sent the attack, put us on attack cooldown.
-				creature.newLastAttackTick = context.currentTick;
+				creature.newLastAttackMillis = context.currentTickTimeMillis;
 				// We only count a successful attack as an "action".
 				isDone = true;
 			}
@@ -860,8 +855,8 @@ public class CreatureLogic
 		else
 		{
 			// See if this should despawn due to a timeout.
-			long despawnTick = mutable.newDespawnKeepAliveTick + (MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick);
-			if (creatureType.canDespawn() && (despawnTick <= context.currentTick))
+			long despawnMillis = mutable.newDespawnKeepAliveMillis + MILLIS_UNTIL_NO_ACTION_DESPAWN;
+			if (creatureType.canDespawn() && (despawnMillis <= context.currentTickTimeMillis))
 			{
 				mutable.setHealth((byte)0);
 				didDespawn = true;

@@ -55,18 +55,18 @@ public record CreatureEntity(int id
 	public static record Ephemeral(
 			// The current plan of steps to the creature should be following.
 			List<AbsoluteLocation> movementPlan
-			// The last tick number when this creature's AI made a decision or did something.
-			, long lastActionTick
+			// The last game millisecond when this creature's AI made a decision or did something.
+			, long lastActionMillis
 			// If something special happens, we want to force a new deliberate action, no matter lastActionTick.
 			, boolean shouldTakeImmediateAction
-			// The last tick where some action was taken to stop this creature from despawning (if it is a despawning type).
-			, long despawnKeepAliveTick
+			// The last game millisecond where some action was taken to stop this creature from despawning (if it is a despawning type).
+			, long despawnKeepAliveMillis
 			// The ID of the entity this creature is currently targeting (or NO_TARGET_ENTITY_ID if none).
 			, int targetEntityId
 			// The last block location of the target which was used to determine the movementPlan.
 			, AbsoluteLocation targetPreviousLocation
-			// The tick when this creature last sent an attack.
-			, long lastAttackTick
+			// The last game millisecond when this creature last sent an attack.
+			, long lastAttackMillis
 			// True if this is a breedable creature which should now search for a partner.
 			, boolean inLoveMode
 			// Non-null if this is a breedable creature who is ready to spawn offspring.
@@ -108,7 +108,7 @@ public record CreatureEntity(int id
 		);
 	}
 
-	public CreatureEntity updateKeepAliveTick(long tick)
+	public CreatureEntity updateKeepAlive(long gameMillis)
 	{
 		return new CreatureEntity(this.id
 				, this.type
@@ -122,12 +122,12 @@ public record CreatureEntity(int id
 				
 				, new Ephemeral(
 						this.ephemeral.movementPlan
-						, this.ephemeral.lastActionTick
+						, this.ephemeral.lastActionMillis
 						, this.ephemeral.shouldTakeImmediateAction
-						, tick
+						, gameMillis
 						, this.ephemeral.targetEntityId
 						, this.ephemeral.targetPreviousLocation
-						, this.ephemeral.lastAttackTick
+						, this.ephemeral.lastAttackMillis
 						, this.ephemeral.inLoveMode
 						, this.ephemeral.offspringLocation
 						, this.ephemeral().lastDamageTakenMillis

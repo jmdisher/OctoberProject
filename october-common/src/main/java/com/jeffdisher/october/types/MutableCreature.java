@@ -40,12 +40,12 @@ public class MutableCreature implements IMutableCreatureEntity
 	public Object newExtendedData;
 
 	public List<AbsoluteLocation> newMovementPlan;
-	public long newLastActionTick;
+	public long newLastActionMillis;
 	public boolean newShouldTakeAction;
-	public long newDespawnKeepAliveTick;
+	public long newDespawnKeepAliveMillis;
 	public int newTargetEntityId;
 	public AbsoluteLocation newTargetPreviousLocation;
-	public long newLastAttackTick;
+	public long newLastAttackMillis;
 	public boolean newInLoveMode;
 	public EntityLocation newOffspringLocation;
 	public long newLastDamageTakenMillis;
@@ -62,12 +62,12 @@ public class MutableCreature implements IMutableCreatureEntity
 		this.newExtendedData = creature.extendedData();
 		
 		this.newMovementPlan = creature.ephemeral().movementPlan();
-		this.newLastActionTick = creature.ephemeral().lastActionTick();
+		this.newLastActionMillis = creature.ephemeral().lastActionMillis();
 		this.newShouldTakeAction = creature.ephemeral().shouldTakeImmediateAction();
-		this.newDespawnKeepAliveTick = creature.ephemeral().despawnKeepAliveTick();
+		this.newDespawnKeepAliveMillis = creature.ephemeral().despawnKeepAliveMillis();
 		this.newTargetEntityId = creature.ephemeral().targetEntityId();
 		this.newTargetPreviousLocation = creature.ephemeral().targetPreviousLocation();
-		this.newLastAttackTick = creature.ephemeral().lastAttackTick();
+		this.newLastAttackMillis = creature.ephemeral().lastAttackMillis();
 		this.newInLoveMode = creature.ephemeral().inLoveMode();
 		this.newOffspringLocation = creature.ephemeral().offspringLocation();
 		this.newLastDamageTakenMillis = creature.ephemeral().lastDamageTakenMillis();
@@ -278,12 +278,12 @@ public class MutableCreature implements IMutableCreatureEntity
 			Assert.assertTrue((null == this.newMovementPlan) || !this.newMovementPlan.isEmpty());
 			CreatureEntity.Ephemeral ephemeral = new CreatureEntity.Ephemeral(
 					(null != this.newMovementPlan) ? Collections.unmodifiableList(this.newMovementPlan) : null
-							, this.newLastActionTick
+							, this.newLastActionMillis
 							, this.newShouldTakeAction
-							, this.newDespawnKeepAliveTick
+							, this.newDespawnKeepAliveMillis
 							, this.newTargetEntityId
 							, this.newTargetPreviousLocation
-							, this.newLastAttackTick
+							, this.newLastAttackMillis
 							, this.newInLoveMode
 							, this.newOffspringLocation
 							, this.newLastDamageTakenMillis
