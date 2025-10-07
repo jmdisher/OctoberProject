@@ -48,7 +48,7 @@ public class TestMutableCreature
 				, MiscConstants.MAX_BREATH
 				, COW.extendedCodec().buildDefault()
 				
-				, CreatureEntity.EMPTY_DATA
+				, CreatureEntity.createEmptyEphemeral(0L)
 		);
 		
 		MutableCreature mutable = MutableCreature.existing(middle);

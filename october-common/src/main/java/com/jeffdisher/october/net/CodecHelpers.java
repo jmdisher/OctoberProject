@@ -325,7 +325,7 @@ public class CodecHelpers
 		entity.type().extendedCodec().write(buffer, extendedData);
 	}
 
-	public static CreatureEntity readCreatureEntity(int idToAssign, ByteBuffer buffer)
+	public static CreatureEntity readCreatureEntity(int idToAssign, ByteBuffer buffer, long gameTimeMillis)
 	{
 		Environment env = Environment.getShared();
 		// The IDs for creatures are assigned late.
@@ -350,7 +350,7 @@ public class CodecHelpers
 				, breath
 				, extendedData
 				
-				, CreatureEntity.EMPTY_DATA
+				, CreatureEntity.createEmptyEphemeral(gameTimeMillis)
 		);
 	}
 

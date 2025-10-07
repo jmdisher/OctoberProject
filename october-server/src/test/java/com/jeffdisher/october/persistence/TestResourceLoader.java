@@ -694,11 +694,12 @@ public class TestResourceLoader
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
 		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
 		List<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of(), 0L);
+		long loadingGameMillis = 2000L;
+		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of(), loadingGameMillis);
 		for (int i = 0; (i < 10) && results.isEmpty(); ++i)
 		{
 			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of(), 0L);
+			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of(), loadingGameMillis);
 		}
 		
 		// We expect a result with a cow of ID -1 (renumbered on load).
@@ -715,6 +716,7 @@ public class TestResourceLoader
 		CreatureEntity entity = creatures.get(0);
 		Assert.assertEquals(-1, entity.id());
 		Assert.assertEquals((byte)0, entity.yaw());
+		Assert.assertEquals(loadingGameMillis, entity.ephemeral().despawnKeepAliveMillis());
 		
 		loader.shutdown();
 	}

@@ -37,6 +37,7 @@ import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.types.CreatureEntity.Ephemeral;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 
@@ -317,8 +318,8 @@ public class TestCreatureLogic
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		long startTick = 1000L;
 		long startMillis = startTick * ContextBuilder.DEFAULT_MILLIS_PER_TICK;
-		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100).updateKeepAlive(startMillis);
-		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100).updateKeepAlive(startMillis);
+		CreatureEntity orc = _updateKeepAlive(CreatureEntity.create(assigner.next(), ORC, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100), startMillis);
+		CreatureEntity cow = _updateKeepAlive(CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100), startMillis);
 		
 		// We will take a special action where nothing should happen.
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
@@ -899,5 +900,32 @@ public class TestCreatureLogic
 				input.setData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z), stoneNumber);
 			}
 		}
+	}
+
+	private static CreatureEntity _updateKeepAlive(CreatureEntity original, long gameMillis)
+	{
+		return new CreatureEntity(original.id()
+			, original.type()
+			, original.location()
+			, original.velocity()
+			, original.yaw()
+			, original.pitch()
+			, original.health()
+			, original.breath()
+			, original.extendedData()
+			
+			, new Ephemeral(
+				original.ephemeral().movementPlan()
+				, original.ephemeral().lastActionMillis()
+				, original.ephemeral().shouldTakeImmediateAction()
+				, gameMillis
+				, original.ephemeral().targetEntityId()
+				, original.ephemeral().targetPreviousLocation()
+				, original.ephemeral().lastAttackMillis()
+				, original.ephemeral().inLoveMode()
+				, original.ephemeral().offspringLocation()
+				, original.ephemeral().lastDamageTakenMillis()
+			)
+		);
 	}
 }

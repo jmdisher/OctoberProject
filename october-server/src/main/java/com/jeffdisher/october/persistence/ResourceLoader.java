@@ -659,7 +659,7 @@ public class ResourceLoader
 					for (int i = 0; i < creatureCount; ++i)
 					{
 						LegacyCreatureEntityV1 legacy = LegacyCreatureEntityV1.load(this.creatureIdAssigner.next(), buffer);
-						CreatureEntity entity = legacy.toEntity();
+						CreatureEntity entity = legacy.toEntity(currentGameMillis);
 						creatures.add(entity);
 					}
 					
@@ -866,7 +866,7 @@ public class ResourceLoader
 		List<CreatureEntity> creatures = new ArrayList<>();
 		for (int i = 0; i < creatureCount; ++i)
 		{
-			CreatureEntity entity = CodecHelpers.readCreatureEntity(this.creatureIdAssigner.next(), buffer);
+			CreatureEntity entity = CodecHelpers.readCreatureEntity(this.creatureIdAssigner.next(), buffer, context.currentGameMillis());
 			creatures.add(entity);
 		}
 		return creatures;
@@ -880,7 +880,7 @@ public class ResourceLoader
 		for (int i = 0; i < creatureCount; ++i)
 		{
 			LegacyCreatureEntityV8 legacy = LegacyCreatureEntityV8.load(this.creatureIdAssigner.next(), buffer);
-			CreatureEntity entity = legacy.toEntity();
+			CreatureEntity entity = legacy.toEntity(context.currentGameMillis());
 			creatures.add(entity);
 		}
 		return creatures;

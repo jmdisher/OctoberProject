@@ -47,7 +47,7 @@ public record LegacyCreatureEntityV8(int id
 		);
 	}
 
-	public CreatureEntity toEntity()
+	public CreatureEntity toEntity(long currentGameMillis)
 	{
 		byte yaw = 0;
 		byte pitch = 0;
@@ -61,7 +61,7 @@ public record LegacyCreatureEntityV8(int id
 			, this.breath
 			, this.type.extendedCodec().buildDefault()
 			
-			, CreatureEntity.EMPTY_DATA
+			, CreatureEntity.createEmptyEphemeral(currentGameMillis)
 		);
 	}
 }

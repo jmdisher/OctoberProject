@@ -34,20 +34,21 @@ public record CreatureEntity(int id
 )
 {
 	public static final int NO_TARGET_ENTITY_ID = 0;
-	/**
-	 * The empty ephemeral data used when loading a new instance.
-	 */
-	public static final Ephemeral EMPTY_DATA = new Ephemeral(null
+
+	public static final Ephemeral createEmptyEphemeral(long gameTimeMillis)
+	{
+		return new Ephemeral(null
 			, 0L
 			, false
-			, 0L
+			, gameTimeMillis
 			, NO_TARGET_ENTITY_ID
 			, null
 			, 0L
 			, false
 			, null
 			, 0L
-	);
+		);
+	}
 
 	/**
 	 * All data stored in this class is considered ephemeral and local:  It is not persisted, nor sent over the network.
@@ -104,7 +105,7 @@ public record CreatureEntity(int id
 				, MiscConstants.MAX_BREATH
 				, type.extendedCodec().buildDefault()
 				
-				, EMPTY_DATA
+				, createEmptyEphemeral(0L)
 		);
 	}
 
