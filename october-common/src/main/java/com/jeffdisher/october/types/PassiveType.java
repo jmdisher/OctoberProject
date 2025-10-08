@@ -15,6 +15,11 @@ public record PassiveType(byte number
 	, IExtendedCodec extendedCodec
 )
 {
+	/**
+	 * Item slot passive entities will despawn after 5 minutes.
+	 */
+	public static final long ITEM_SLOT_DESPAWN_MILLIS = 5L * 60L * 1000L;
+
 	public static final PassiveType ITEM_SLOT = new PassiveType((byte)1
 		, new EntityVolume(0.1f, 0.1f)
 		, new IExtendedCodec() {
