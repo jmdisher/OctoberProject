@@ -48,7 +48,7 @@ public class TestEntityMovementHelpers
 		EntityLocation location = new EntityLocation(1.3f, 1.4f, 1.5f);
 		EntityVolume volume = new EntityVolume(1.2f, 1.2f);
 		EntityLocation velocity = new EntityLocation(1.0f, 1.0f, 1.0f);
-		EntityMovementHelpers.interactiveEntityMove(location, volume, velocity, new EntityMovementHelpers.InteractiveHelper() {
+		EntityMovementHelpers.interactiveEntityMove(location, volume, velocity, new EntityMovementHelpers.IInteractiveHelper() {
 			@Override
 			public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
 			{
@@ -77,7 +77,7 @@ public class TestEntityMovementHelpers
 		EntityLocation location = new EntityLocation(1.3f, 1.4f, 1.5f);
 		EntityVolume volume = new EntityVolume(1.2f, 1.2f);
 		EntityLocation velocity = new EntityLocation(-1.0f, -1.0f, -1.0f);
-		EntityMovementHelpers.interactiveEntityMove(location, volume, velocity, new EntityMovementHelpers.InteractiveHelper() {
+		EntityMovementHelpers.interactiveEntityMove(location, volume, velocity, new EntityMovementHelpers.IInteractiveHelper() {
 			@Override
 			public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
 			{
@@ -106,7 +106,7 @@ public class TestEntityMovementHelpers
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
 		EntityVolume volume = new EntityVolume(0.8f, 1.7f);
 		EntityLocation velocity = new EntityLocation(-1.0f, 2.0f, -3.0f);
-		EntityMovementHelpers.interactiveEntityMove(location, volume, velocity, new EntityMovementHelpers.InteractiveHelper() {
+		EntityMovementHelpers.interactiveEntityMove(location, volume, velocity, new EntityMovementHelpers.IInteractiveHelper() {
 			@Override
 			public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
 			{
@@ -164,7 +164,7 @@ public class TestEntityMovementHelpers
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
 		EntityVolume volume = new EntityVolume(0.8f, 1.7f);
 		EntityLocation velocity = new EntityLocation(-1.0f, 2.0f, -3.0f);
-		EntityMovementHelpers.interactiveEntityMove(location, volume, velocity, new EntityMovementHelpers.InteractiveHelper() {
+		EntityMovementHelpers.interactiveEntityMove(location, volume, velocity, new EntityMovementHelpers.IInteractiveHelper() {
 			@Override
 			public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
 			{
@@ -187,7 +187,7 @@ public class TestEntityMovementHelpers
 		EntityLocation location = new EntityLocation(0.1f, 0.2f, 0.3f);
 		EntityVolume volume = new EntityVolume(0.8f, 1.7f);
 		EntityLocation velocity = new EntityLocation(-1.0f, 2.0f, -3.0f);
-		EntityMovementHelpers.interactiveEntityMove(location, volume, velocity, new EntityMovementHelpers.InteractiveHelper() {
+		EntityMovementHelpers.interactiveEntityMove(location, volume, velocity, new EntityMovementHelpers.IInteractiveHelper() {
 			@Override
 			public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
 			{
@@ -224,5 +224,75 @@ public class TestEntityMovementHelpers
 		Assert.assertNull(EntityMovementHelpers.checkTypeIntersection(airLocation, volume, lookup));
 		Assert.assertNotNull(EntityMovementHelpers.checkTypeIntersection(ladderAirLocation, volume, lookup));
 		Assert.assertNotNull(EntityMovementHelpers.checkTypeIntersection(ladderStoneLocation, volume, lookup));
+	}
+
+	@Test
+	public void commonMoveWalk()
+	{
+		// A basic test of the commonMovementIdiom - walking on the ground.
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
+			return location.getCuboidAddress().equals(airCuboid.getCuboidAddress())
+				? new BlockProxy(location.getBlockAddress(), airCuboid)
+				: new BlockProxy(location.getBlockAddress(), stoneCuboid)
+			;
+		};
+		
+		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		EntityLocation startVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		EntityVolume volume = new EntityVolume(2.2f, 1.7f);
+		float activeXMovement = 0.4f;
+		float activeYMovement = 0.0f;
+		float maxVelocityPerSecond = 4.0f;
+		float seconds = 0.1f;
+		
+		EntityMovementHelpers.HighLevelMovementResult result = EntityMovementHelpers.commonMovementIdiom(previousBlockLookUp
+			, startLocation
+			, startVelocity
+			, volume
+			, activeXMovement
+			, activeYMovement
+			, maxVelocityPerSecond
+			, seconds
+		);
+		
+		Assert.assertEquals(new EntityLocation(0.4f, 0.0f, 0.0f), result.location());
+		Assert.assertEquals(0.0f, result.vX(), 0.01f);
+		Assert.assertEquals(0.0f, result.vY(), 0.01f);
+		Assert.assertEquals(0.0f, result.vZ(), 0.01f);
+	}
+
+	@Test
+	public void commonMoveFall()
+	{
+		// A basic test of the commonMovementIdiom - falling through air.
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
+			return new BlockProxy(location.getBlockAddress(), airCuboid);
+		};
+		
+		EntityLocation startLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
+		EntityLocation startVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		EntityVolume volume = new EntityVolume(2.2f, 1.7f);
+		float activeXMovement = 0.0f;
+		float activeYMovement = 0.0f;
+		float maxVelocityPerSecond = 4.0f;
+		float seconds = 0.1f;
+		
+		EntityMovementHelpers.HighLevelMovementResult result = EntityMovementHelpers.commonMovementIdiom(previousBlockLookUp
+			, startLocation
+			, startVelocity
+			, volume
+			, activeXMovement
+			, activeYMovement
+			, maxVelocityPerSecond
+			, seconds
+		);
+		
+		Assert.assertEquals(new EntityLocation(10.0f, 10.0f, 9.9f), result.location());
+		Assert.assertEquals(0.0f, result.vX(), 0.01f);
+		Assert.assertEquals(0.0f, result.vY(), 0.01f);
+		Assert.assertEquals(-0.98f, result.vZ(), 0.01f);
 	}
 }

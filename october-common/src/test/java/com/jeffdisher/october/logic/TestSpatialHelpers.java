@@ -248,7 +248,7 @@ public class TestSpatialHelpers
 	}
 
 
-	private static class _EndpointHelper implements EntityMovementHelpers.InteractiveHelper
+	private static class _EndpointHelper implements EntityMovementHelpers.IInteractiveHelper
 	{
 		private final EntityLocation _expected;
 		private final boolean _isOnGround;

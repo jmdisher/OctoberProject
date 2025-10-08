@@ -306,7 +306,7 @@ public class SpatialHelpers
 	}
 
 
-	private static class _CollisionHelper implements EntityMovementHelpers.InteractiveHelper
+	private static class _CollisionHelper implements EntityMovementHelpers.IInteractiveHelper
 	{
 		private final ViscosityReader _reader;
 		public EntityLocation finalLocation;

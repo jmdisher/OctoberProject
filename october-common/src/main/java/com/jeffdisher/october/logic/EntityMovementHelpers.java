@@ -57,7 +57,7 @@ public class EntityMovementHelpers
 	 * @param vectorToMove The direction the entity is trying to move, in relative coordinates.
 	 * @param helper Used for looking up viscosities and setting final state.
 	 */
-	public static void interactiveEntityMove(EntityLocation start, EntityVolume volume, EntityLocation vectorToMove, InteractiveHelper helper)
+	public static void interactiveEntityMove(EntityLocation start, EntityVolume volume, EntityLocation vectorToMove, IInteractiveHelper helper)
 	{
 		_interactiveEntityMove(start, volume, vectorToMove, helper);
 	}
@@ -73,45 +73,12 @@ public class EntityMovementHelpers
 	public static float maxViscosityInEntityBlocks(EntityLocation entityBase, EntityVolume volume, Function<AbsoluteLocation, BlockProxy> blockLookup)
 	{
 		Environment env = Environment.getShared();
-		InteractiveHelper helper = new InteractiveHelper() {
-			@Override
-			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
-			{
-				return new ViscosityReader(env, blockLookup).getViscosityFraction(location, fromAbove);
-			}
-			@Override
-			public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
-			{
-				// This isn't called in this path.
-				throw Assert.unreachable();
-			}
-		};
+		ViscosityReader reader = new ViscosityReader(env, blockLookup);
+		IViscosityLookup helper = (AbsoluteLocation location, boolean fromAbove) -> reader.getViscosityFraction(location, fromAbove);
+		
 		// In this case, we are just check where we stand, not falling.
 		boolean fromAbove = false;
 		return _maxViscosityInEntityBlocks(entityBase, volume, helper, fromAbove);
-	}
-
-	/**
-	 * A helper to compute the z-velocity after applying gravity to an initial z-velocity vector for millisToApply ms.
-	 * Internally accounts for the drag incurred by inverseViscosity (inverse means higher numbers have less resistance)
-	 * and will limit by terminal velocity.
-	 * 
-	 * @param startZVector The starting Z component of a velocity vector.
-	 * @param inverseViscosity The inverse viscosity of the environment (that is, 1-viscosity).
-	 * @param millisToApply The number milliseconds to pass.
-	 * @return The new Z component of a velocity vector.
-	 */
-	public static float zVelocityAfterGravity(float startZVector, float inverseViscosity, long millisToApply)
-	{
-		float secondsToPass = (float)millisToApply / FLOAT_MILLIS_PER_SECOND;
-		float zVelocityChange = secondsToPass * inverseViscosity * GRAVITY_CHANGE_PER_SECOND;
-		float newZVelocity = startZVector + zVelocityChange;
-		float effectiveTerminalVelocity = inverseViscosity * FALLING_TERMINAL_VELOCITY_PER_SECOND;
-		if (newZVelocity < effectiveTerminalVelocity)
-		{
-			newZVelocity = effectiveTerminalVelocity;
-		}
-		return newZVelocity;
 	}
 
 	/**
@@ -139,15 +106,93 @@ public class EntityMovementHelpers
 		return match;
 	}
 
+	/**
+	 * The common movement idiom, extracted from EntityActionSimpleMove in order to allow reuse and improve test
+	 * coverage.
+	 * Given a start location and velocity, plus explicit movement on top of that, this helper computes the final
+	 * location and velocity.
+	 * 
+	 * @param previousBlockLookUp Looks up blocks from the previous tick.
+	 * @param startLocation The starting base location of the entity.
+	 * @param startVelocity The starting velocity of the entity.
+	 * @param volume The volume of the entity.
+	 * @param activeXMovement Absolute active movement in the X direction (in total blocks travelled in seconds).
+	 * @param activeYMovement Absolute active movement in the Y direction (in total blocks travelled in seconds).
+	 * @param maxVelocityPerSecond The maximum velocity of the entity, accounting for how intensely it is moving.
+	 * @param seconds The number of seconds elapsed while the active movement was applied.
+	 * @return The final location and components of velocity.
+	 */
+	public static HighLevelMovementResult commonMovementIdiom(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+		, EntityLocation startLocation
+		, EntityLocation startVelocity
+		, EntityVolume volume
+		, float activeXMovement
+		, float activeYMovement
+		, float maxVelocityPerSecond
+		, float seconds
+	)
+	{
+		Environment env = Environment.getShared();
+		ViscosityReader reader = new ViscosityReader(env, previousBlockLookUp);
+		
+		// In this case, we are just check where we stand, not falling.
+		IViscosityLookup viscosityLookup = (AbsoluteLocation location, boolean fromAbove) -> reader.getViscosityFraction(location, fromAbove);
+		boolean fromAbove = false;
+		float startViscosity = _maxViscosityInEntityBlocks(startLocation, volume, viscosityLookup, fromAbove);
+		EntityLocation effectiveVelocity = _adjustVelocityForMovement(startVelocity, activeXMovement, activeYMovement, maxVelocityPerSecond, seconds, startViscosity);
+		
+		// Derive the effective movement vector for this action.
+		EntityLocation effectiveMovement = new EntityLocation(seconds * effectiveVelocity.x()
+			, seconds * effectiveVelocity.y()
+			, seconds * effectiveVelocity.z()
+		);
+		
+		// Apply the effective movement to find collisions.
+		HighLevelMovementResult[] out = new HighLevelMovementResult[1];
+		IInteractiveHelper helper = new IInteractiveHelper()
+		{
+			@Override
+			public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
+			{
+				// Derive final velocity by checking these collisions (note that we also account for XY surface friction if on the ground).
+				boolean isOnGround = false;
+				float finX = effectiveVelocity.x();
+				float finY = effectiveVelocity.y();
+				float finZ = effectiveVelocity.z();
+				if (cancelZ)
+				{
+					finZ = 0.0f;
+					isOnGround = (effectiveMovement.z() <= 0.0f);
+				}
+				if (cancelX || isOnGround)
+				{
+					finX = 0.0f;
+				}
+				if (cancelY || isOnGround)
+				{
+					finY = 0.0f;
+				}
+				out[0] = new HighLevelMovementResult(finalLocation, finX, finY, finZ);
+			}
+			@Override
+			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
+			{
+				return reader.getViscosityFraction(location, fromAbove);
+			}
+		};
+		_interactiveEntityMove(startLocation, volume, effectiveMovement, helper);
+		return out[0];
+	}
 
-	private static boolean _canOccupyLocation(EntityLocation movingStart, EntityVolume volume, InteractiveHelper helper, boolean fromAbove)
+
+	private static boolean _canOccupyLocation(EntityLocation movingStart, EntityVolume volume, IViscosityLookup helper, boolean fromAbove)
 	{
 		float maxViscosity = _maxViscosityInEntityBlocks(movingStart, volume, helper, fromAbove);
 		boolean canOccupy = (maxViscosity < 1.0f);
 		return canOccupy;
 	}
 
-	private static float _maxViscosityInEntityBlocks(EntityLocation entityBase, EntityVolume volume, InteractiveHelper helper, boolean fromAbove)
+	private static float _maxViscosityInEntityBlocks(EntityLocation entityBase, EntityVolume volume, IViscosityLookup helper, boolean fromAbove)
 	{
 		_VolumeIterator iterator = _iteratorForEntity(entityBase, volume);
 		
@@ -160,7 +205,7 @@ public class EntityMovementHelpers
 		return maxViscosity;
 	}
 
-	private static void _interactiveEntityMoveNotStuck(EntityLocation start, EntityVolume volume, EntityLocation vectorToMove, InteractiveHelper helper, boolean failZ)
+	private static void _interactiveEntityMoveNotStuck(EntityLocation start, EntityVolume volume, EntityLocation vectorToMove, IInteractiveHelper helper, boolean failZ)
 	{
 		// We will move in the direction of vectorToMove, biased by viscosity, one block at a time until the move is complete or blocked in all movement directions.
 		// Note that, for now at least, we will only compute the viscosity at the beginning of the move, as the move is rarely multiple blocks (falling at terminal velocity being an outlier example).
@@ -303,7 +348,7 @@ public class EntityMovementHelpers
 		helper.setLocationAndCancelVelocity(movingStart, cancelX, cancelY, cancelZ);
 	}
 
-	private static void _interactiveEntityMove(EntityLocation start, EntityVolume volume, EntityLocation vectorToMove, InteractiveHelper helper)
+	private static void _interactiveEntityMove(EntityLocation start, EntityVolume volume, EntityLocation vectorToMove, IInteractiveHelper helper)
 	{
 		// We want to handle the degenerate case of being stuck in a block first, because it avoids some setup and the 
 		// common code assumes it isn't happening so will only report a partial collision.
@@ -340,12 +385,103 @@ public class EntityMovementHelpers
 		return new _VolumeIterator(baseBlock, edgeBlock);
 	}
 
+	private static float _clampByAirTerminal(float v)
+	{
+		float out;
+		if (Math.abs(v) > EntityMovementHelpers.AIR_TERMINAL_VELOCITY_PER_SECOND)
+		{
+			out = Math.signum(v) * EntityMovementHelpers.AIR_TERMINAL_VELOCITY_PER_SECOND;
+		}
+		else
+		{
+			out = v;
+		}
+		return out;
+	}
+
+	private static float _clampHorizontalAcceleration(float passive, float active, float intensityVelocityPerSecond)
+	{
+		float sum;
+		if (Math.signum(passive) == Math.signum(active))
+		{
+			// We need to account for various clamping here.
+			if (Math.abs(passive) > intensityVelocityPerSecond)
+			{
+				sum = Math.signum(passive) * intensityVelocityPerSecond;
+			}
+			else
+			{
+				sum = passive + active;
+				if (Math.abs(sum) > intensityVelocityPerSecond)
+				{
+					sum = Math.signum(sum) * intensityVelocityPerSecond;
+				}
+			}
+		}
+		else
+		{
+			// This is deceleration so just sum.
+			sum = passive + active;
+		}
+		return sum;
+	}
+
+	private static EntityLocation _adjustVelocityForMovement(EntityLocation inputVelocity, float activeXMovement, float activeYMovement, float maxVelocityPerSecond, float seconds, float startViscosity)
+	{
+		// We calculate the effective velocity at the start of the action (which will be applied and further refined later):
+		// 1) Convert XY movement, and gravity, into velocity per second.
+		// 2) Add existing velocity to new velocity (note that XY cannot push the velocity over user maximum).
+		// 3) Clamp new velocity to terminal velocity in air.
+		// 4) Determine starting viscosity and multiply inverse viscosity against this clamped velocity.
+		// The result is our effective starting velocity.
+		
+		float passiveX = inputVelocity.x();
+		float passiveY = inputVelocity.y();
+		float passiveZ = inputVelocity.z();
+		
+		float activeVX = activeXMovement / seconds;
+		float activeVY = activeYMovement / seconds;
+		float activeVZ = EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND * seconds;
+		
+		// We want to limit XY velocity from this active movement to the maximum of the entity's velocity.
+		float sumVX = _clampHorizontalAcceleration(passiveX, activeVX, maxVelocityPerSecond);
+		float sumVY = _clampHorizontalAcceleration(passiveY, activeVY, maxVelocityPerSecond);
+		float sumVZ = passiveZ + activeVZ;
+		
+		// We now clamp everything by air terminal velocity.
+		float airX = _clampByAirTerminal(sumVX);
+		float airY = _clampByAirTerminal(sumVY);
+		float airZ = _clampByAirTerminal(sumVZ);
+		
+		// Finally, multiply these clamped values by the inverse viscosity of the starting block.
+		// TODO:  We probably need to rework this approach to drag, in the future.
+		float startInverseViscosity = 1.0f - startViscosity;
+		float visX = startInverseViscosity * airX;
+		float visY = startInverseViscosity * airY;
+		float visZ = startInverseViscosity * airZ;
+		return new EntityLocation(visX, visY, visZ);
+	}
+
+
+	public static interface IViscosityLookup
+	{
+		/**
+		 * Gets the viscosity of the block in the given location as a fraction (0.0f is no resistance while 1.0f is
+		 * fully solid).
+		 * 
+		 * @param location The location to check.
+		 * @param fromAbove True if we are asking for viscosity while falling into the block, false for other
+		 * collisions.
+		 * @return The viscosity fraction (1.0f being solid).
+		 */
+		public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove);
+	}
 
 	/**
 	 * The interface used by interactiveEntityMove() in order to look up required information and return the final
 	 * result.
 	 */
-	public static interface InteractiveHelper
+	public static interface IInteractiveHelper extends IViscosityLookup
 	{
 		/**
 		 * Gets the viscosity of the block in the given location as a fraction (0.0f is no resistance while 1.0f is
@@ -367,6 +503,12 @@ public class EntityMovementHelpers
 		 */
 		public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ);
 	}
+
+	/**
+	 * Used to return the final result of commonMovementIdiom().
+	 * The location is provided directly but the velocity is kept as components in case it must be further processed.
+	 */
+	public static record HighLevelMovementResult(EntityLocation location, float vX, float vY, float vZ) {}
 
 
 	private static class _VolumeIterator implements Iterable<AbsoluteLocation>

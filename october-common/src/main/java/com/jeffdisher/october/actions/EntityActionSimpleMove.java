@@ -5,14 +5,11 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
-import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IEntityAction;
@@ -154,49 +151,24 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 			
 			// Derive starting effective velocity.
 			EntityLocation startLocation = newEntity.getLocation();
+			EntityLocation startVelocity = newEntity.getVelocityVector();
 			EntityVolume volume = newEntity.getType().volume();
-			float startViscosity = EntityMovementHelpers.maxViscosityInEntityBlocks(startLocation, volume, context.previousBlockLookUp);
-			EntityLocation effectiveVelocity = _buildStartingVelocity(newEntity, seconds, startViscosity);
-			
-			// Derive the effective movement vector for this action.
-			EntityLocation effectiveMovement = new EntityLocation(seconds * effectiveVelocity.x()
-				, seconds * effectiveVelocity.y()
-				, seconds * effectiveVelocity.z()
+			EntityMovementHelpers.HighLevelMovementResult result = EntityMovementHelpers.commonMovementIdiom(context.previousBlockLookUp
+				, startLocation
+				, startVelocity
+				, volume
+				, _activeX
+				, _activeY
+				, intensityVelocityPerSecond
+				, seconds
 			);
 			
-			// Apply the effective movement to find collisions.
-			Environment env = Environment.getShared();
-			ViscosityReader reader = new ViscosityReader(env, context.previousBlockLookUp);
-			_MovementHelper movementHelper = new _MovementHelper(reader);
-			EntityMovementHelpers.interactiveEntityMove(startLocation, volume, effectiveMovement, movementHelper);
-			EntityLocation finalLocation = movementHelper.finalLocation;
-			
-			// Derive final velocity by checking these collisions (note that we also account for XY surface friction if on the ground).
-			boolean isOnGround = false;
-			float finX = effectiveVelocity.x();
-			float finY = effectiveVelocity.y();
-			float finZ = effectiveVelocity.z();
-			if (movementHelper.cancelZ)
-			{
-				finZ = 0.0f;
-				isOnGround = (effectiveMovement.z() <= 0.0f);
-			}
-			if (movementHelper.cancelX || isOnGround)
-			{
-				finX = 0.0f;
-			}
-			if (movementHelper.cancelY || isOnGround)
-			{
-				finY = 0.0f;
-			}
 			// TODO:  For now, we cancel all velocity to make this feel responsive but we probably need a quadratic drag
 			// approximation here in order to explosion knockback, etc, to look/feel right.
-			finX = 0.0f;
-			finY = 0.0f;
-			EntityLocation finalVelocity = new EntityLocation(finX, finY, finZ);
+			EntityLocation finalVelocity = new EntityLocation(0.0f, 0.0f, result.vZ());
 			
 			// Save back final state.
-			newEntity.setLocation(finalLocation);
+			newEntity.setLocation(result.location());
 			newEntity.setVelocityVector(finalVelocity);
 			newEntity.setOrientation(_yaw, _pitch);
 			
@@ -247,88 +219,6 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 	}
 
 
-	private EntityLocation _buildStartingVelocity(T newEntity, float seconds, float startViscosity)
-	{
-		// We calculate the effective velocity at the start of the action (which will be applied and further refined later):
-		// 1) Convert XY movement, and gravity, into velocity per second.
-		// 2) Add existing velocity to new velocity (note that XY cannot push the velocity over user maximum).
-		// 3) Clamp new velocity to terminal velocity in air.
-		// 4) Determine starting viscosity and multiply inverse viscosity against this clamped velocity.
-		// The result is our effective starting velocity.
-		
-		EntityLocation velocity = newEntity.getVelocityVector();
-		float passiveX = velocity.x();
-		float passiveY = velocity.y();
-		float passiveZ = velocity.z();
-		
-		float activeVX =_activeX / seconds;
-		float activeVY = _activeY / seconds;
-		float activeVZ = EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND * seconds;
-		
-		// We want to limit XY velocity from this active movement to the maximum of the entity's velocity.
-		float entityBlocksPerSecond = newEntity.getType().blocksPerSecond();
-		float intensityVelocityPerSecond = _intensity.speedMultipler * entityBlocksPerSecond;
-		
-		float sumVX = _clampHorizontalAcceleration(passiveX, activeVX, intensityVelocityPerSecond);
-		float sumVY = _clampHorizontalAcceleration(passiveY, activeVY, intensityVelocityPerSecond);
-		float sumVZ = passiveZ + activeVZ;
-		
-		// We now clamp everything by air terminal velocity.
-		float airX = _clampByAirTerminal(sumVX);
-		float airY = _clampByAirTerminal(sumVY);
-		float airZ = _clampByAirTerminal(sumVZ);
-		
-		// Finally, multiply these clamped values by the inverse viscosity of the starting block.
-		// TODO:  We probably need to rework this approach to drag, in the future.
-		float startInverseViscosity = 1.0f - startViscosity;
-		float visX = startInverseViscosity * airX;
-		float visY = startInverseViscosity * airY;
-		float visZ = startInverseViscosity * airZ;
-		return new EntityLocation(visX, visY, visZ);
-	}
-
-	private float _clampByAirTerminal(float v)
-	{
-		float out;
-		if (Math.abs(v) > EntityMovementHelpers.AIR_TERMINAL_VELOCITY_PER_SECOND)
-		{
-			out = Math.signum(v) * EntityMovementHelpers.AIR_TERMINAL_VELOCITY_PER_SECOND;
-		}
-		else
-		{
-			out = v;
-		}
-		return out;
-	}
-
-	private float _clampHorizontalAcceleration(float passive, float active, float intensityVelocityPerSecond)
-	{
-		float sum;
-		if (Math.signum(passive) == Math.signum(active))
-		{
-			// We need to account for various clamping here.
-			if (Math.abs(passive) > intensityVelocityPerSecond)
-			{
-				sum = Math.signum(passive) * intensityVelocityPerSecond;
-			}
-			else
-			{
-				sum = passive + active;
-				if (Math.abs(sum) > intensityVelocityPerSecond)
-				{
-					sum = Math.signum(sum) * intensityVelocityPerSecond;
-				}
-			}
-		}
-		else
-		{
-			// This is deceleration so just sum.
-			sum = passive + active;
-		}
-		return sum;
-	}
-
-
 	public static enum Intensity
 	{
 		STANDING(0.0f, 0),
@@ -351,34 +241,6 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 		{
 			byte ordinal = (byte)intensity.ordinal();
 			buffer.put(ordinal);
-		}
-	}
-
-
-	private static class _MovementHelper implements EntityMovementHelpers.InteractiveHelper
-	{
-		private final ViscosityReader _viscosityReader;
-		public EntityLocation finalLocation;
-		public boolean cancelX;
-		public boolean cancelY;
-		public boolean cancelZ;
-		
-		public _MovementHelper(ViscosityReader viscosityReader)
-		{
-			_viscosityReader = viscosityReader;
-		}
-		@Override
-		public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
-		{
-			this.finalLocation = finalLocation;
-			this.cancelX = cancelX;
-			this.cancelY = cancelY;
-			this.cancelZ = cancelZ;
-		}
-		@Override
-		public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
-		{
-			return _viscosityReader.getViscosityFraction(location, fromAbove);
 		}
 	}
 }

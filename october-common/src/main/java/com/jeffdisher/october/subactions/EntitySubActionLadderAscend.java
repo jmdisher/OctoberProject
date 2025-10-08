@@ -115,7 +115,7 @@ public class EntitySubActionLadderAscend<T extends IMutableMinimalEntity> implem
 	}
 
 
-	private static class _LadderHelper implements EntityMovementHelpers.InteractiveHelper
+	private static class _LadderHelper implements EntityMovementHelpers.IInteractiveHelper
 	{
 		private final ViscosityReader _reader;
 		public EntityLocation outputLocation;

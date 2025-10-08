@@ -3111,7 +3111,7 @@ public class TestCommonChanges
 		float inverseViscosity = reader.getInverseViscosity(startLocation.getBlockLocation(), fromAbove);
 		long millis = context.millisPerTick;
 		EntityLocation startVelocity = mutableEntity.getVelocityVector();
-		float newZ = EntityMovementHelpers.zVelocityAfterGravity(startVelocity.z(), inverseViscosity, millis);
+		float newZ = _zVelocityAfterGravity(startVelocity.z(), inverseViscosity, millis);
 		EntityLocation newVelocity = new EntityLocation(startVelocity.x(), startVelocity.y(), newZ);
 		float seconds = (float)millis / 1000.0f;
 		EntityLocation vectorToMove = new EntityLocation(seconds * (startVelocity.x() + newVelocity.x()) / 2.0f
@@ -3121,7 +3121,7 @@ public class TestCommonChanges
 		
 		EntityLocation[] outLocation = new EntityLocation[1];
 		EntityLocation[] outVelocity = new EntityLocation[1];
-		EntityMovementHelpers.interactiveEntityMove(startLocation, ENV.creatures.PLAYER.volume(), vectorToMove, new EntityMovementHelpers.InteractiveHelper()
+		EntityMovementHelpers.interactiveEntityMove(startLocation, ENV.creatures.PLAYER.volume(), vectorToMove, new EntityMovementHelpers.IInteractiveHelper()
 		{
 			@Override
 			public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
@@ -3147,6 +3147,19 @@ public class TestCommonChanges
 			, null
 		);
 		Assert.assertTrue(stand.applyChange(context, mutableEntity));
+	}
+
+	private static float _zVelocityAfterGravity(float startZVector, float inverseViscosity, long millisToApply)
+	{
+		float secondsToPass = (float)millisToApply / EntityMovementHelpers.FLOAT_MILLIS_PER_SECOND;
+		float zVelocityChange = secondsToPass * inverseViscosity * EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND;
+		float newZVelocity = startZVector + zVelocityChange;
+		float effectiveTerminalVelocity = inverseViscosity * EntityMovementHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND;
+		if (newZVelocity < effectiveTerminalVelocity)
+		{
+			newZVelocity = effectiveTerminalVelocity;
+		}
+		return newZVelocity;
 	}
 
 
