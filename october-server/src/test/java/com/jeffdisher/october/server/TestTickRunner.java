@@ -30,6 +30,7 @@ import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.EntityChangeSendItem;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
+import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.ShockwaveMutation;
@@ -70,9 +71,12 @@ import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
+import com.jeffdisher.october.types.PassiveEntity;
+import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.Encoding;
@@ -3339,6 +3343,68 @@ public class TestTickRunner
 		Assert.assertEquals(0x0, snapshot.cuboids().get(offLamp.getCuboidAddress()).completed().getData7(AspectRegistry.FLAGS, offLamp.getBlockAddress()));
 		Assert.assertEquals(LightAspect.MAX_LIGHT, snapshot.cuboids().get(onLamp.getCuboidAddress()).completed().getData7(AspectRegistry.LIGHT, onLamp.getBlockAddress()));
 		Assert.assertEquals(LightAspect.MAX_LIGHT - 1, snapshot.cuboids().get(onLamp.getRelative(0, 0, 1).getCuboidAddress()).completed().getData7(AspectRegistry.LIGHT, onLamp.getRelative(0, 0, 1).getBlockAddress()));
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void observePassive()
+	{
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		TickRunner runner = _createTestRunner();
+		int id = 1;
+		PassiveType type = PassiveType.ITEM_SLOT;
+		EntityLocation location = new EntityLocation(10.0f, 11.0f, 12.0f);
+		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		ItemSlot extendedData = ItemSlot.fromStack(new Items(STONE_ITEM, 3));
+		long lastAliveMillis = 1000L;
+		PassiveEntity passive = new PassiveEntity(id
+			, type
+			, location
+			, velocity
+			, extendedData
+			, lastAliveMillis
+		);
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of(), List.of(passive)))
+			, null
+			, null
+			, null
+		);
+		runner.start();
+		TickRunner.Snapshot startState = runner.waitForPreviousTick();
+		Assert.assertEquals(0, startState.passives().size());
+		
+		// Run another tick to see everything loaded.
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.passives().size());
+		Assert.assertNull(snapshot.passives().get(id).visiblyChanged());
+		Assert.assertEquals(location, snapshot.passives().get(id).completed().location());
+		int processedPassives = 0;
+		for (ProcessorElement.PerThreadStats stats : snapshot.stats().threadStats())
+		{
+			processedPassives += stats.passivesProcessed();
+		}
+		Assert.assertEquals(1, processedPassives);
+		
+		// Run another tick and show that nothing changed.
+		// TODO:  Update this when we start applying movements.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.passives().size());
+		Assert.assertNull(snapshot.passives().get(id).visiblyChanged());
+		Assert.assertEquals(location, snapshot.passives().get(id).completed().location());
+		
+		// Verify that the passive unloads correctly.
+		runner.setupChangesForTick(null
+			, List.of(address)
+			, null
+			, null
+		);
+		runner.startNextTick();
+		TickRunner.Snapshot endState = runner.waitForPreviousTick();
+		Assert.assertEquals(0, endState.passives().size());
 		
 		runner.shutdown();
 	}

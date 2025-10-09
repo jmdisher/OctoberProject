@@ -123,6 +123,7 @@ public class TestServerStateManager
 				, _convertToCuboidMap(changes.newCuboids())
 				, _convertToEntityMap(changes.newEntities())
 				, snapshot.creatures()
+				, snapshot.passives()
 				, _convertToCuboidHeightMap(changes.newCuboids())
 				, Set.of()
 		);
@@ -156,6 +157,7 @@ public class TestServerStateManager
 				, snapshot.cuboids()
 				, Collections.emptyMap()
 				, snapshot.creatures()
+				, snapshot.passives()
 				, snapshot.completedHeightMaps()
 				, Set.of()
 		);
@@ -182,6 +184,7 @@ public class TestServerStateManager
 				, _convertToCuboidMap(changes.newCuboids())
 				, snapshot.entities()
 				, snapshot.creatures()
+				, snapshot.passives()
 				, _convertToCuboidHeightMap(changes.newCuboids())
 				, Set.of()
 		);
@@ -310,6 +313,7 @@ public class TestServerStateManager
 				)
 				, Map.of(1, new TickRunner.SnapshotEntity(entity, 1L, null, List.of()))
 				, snapshot.creatures()
+				, snapshot.passives()
 				, Map.of(
 						near.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(nearCuboid), near).freeze(),
 						far.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(farCuboid), far).freeze()
@@ -357,6 +361,7 @@ public class TestServerStateManager
 				)
 				, Map.of(1, new TickRunner.SnapshotEntity(entity, 1L, null, List.of()))
 				, snapshot.creatures()
+				, snapshot.passives()
 				, Map.of(
 						near.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(nearCuboid), near).freeze()
 				)
@@ -446,6 +451,7 @@ public class TestServerStateManager
 				)
 				, Map.of(clientId1, new TickRunner.SnapshotEntity(near.freeze(), 1L, null, List.of()), clientId2, new TickRunner.SnapshotEntity(far.freeze(), 1L, null, List.of()))
 				, snapshot.creatures()
+				, snapshot.passives()
 				, Map.of(
 				)
 				, Set.of()
@@ -466,6 +472,7 @@ public class TestServerStateManager
 						nearCreature.id(), new TickRunner.SnapshotCreature(nearCreature, null),
 						farCreature.id(), new TickRunner.SnapshotCreature(farCreature, null)
 				)
+				, snapshot.passives()
 				, HeightMapHelpers.buildColumnMaps(Map.of(
 						nearCuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(nearCuboid),
 						farCuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(farCuboid)
@@ -488,6 +495,7 @@ public class TestServerStateManager
 				, Map.of(
 						farCreature.id(), new TickRunner.SnapshotCreature(farCreature, null)
 				)
+				, snapshot.passives()
 				, snapshot.completedHeightMaps()
 				, Set.of()
 		);
@@ -548,6 +556,7 @@ public class TestServerStateManager
 				)
 				, Map.of(clientId, new TickRunner.SnapshotEntity(entity, 1L, null, List.of()))
 				, snapshot.creatures()
+				, snapshot.passives()
 				, Map.of(
 						oneCuboid.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(oneCuboid), oneCuboid.getCuboidAddress()).freeze(),
 						twoCuboid.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(twoCuboid), twoCuboid.getCuboidAddress()).freeze()
@@ -565,6 +574,7 @@ public class TestServerStateManager
 				, snapshot.cuboids()
 				, Map.of(clientId, new TickRunner.SnapshotEntity(entity, 1L, null, List.of()))
 				, snapshot.creatures()
+				, snapshot.passives()
 				, snapshot.completedHeightMaps()
 				, Set.of()
 		), 1L);
@@ -628,6 +638,7 @@ public class TestServerStateManager
 				)
 				, Map.of(clientId, new TickRunner.SnapshotEntity(entity, 1L, null, List.of()))
 				, snapshot.creatures()
+				, snapshot.passives()
 				, Map.of(
 						cuboid0.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(cuboid0), cuboid0.getCuboidAddress()).freeze(),
 						cuboid1.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(cuboid1), cuboid1.getCuboidAddress()).freeze(),
@@ -717,6 +728,7 @@ public class TestServerStateManager
 			, Map.of()
 			, Map.of()
 			, Map.of()
+			, Map.of()
 			, Set.of(internalAddress)
 		);
 		
@@ -741,6 +753,7 @@ public class TestServerStateManager
 			, Map.of()
 			, Map.of()
 			, Map.of()
+			, Map.of()
 			, Set.of()
 		);
 		manager.setupNextTickAfterCompletion(snapshot);
@@ -752,6 +765,7 @@ public class TestServerStateManager
 			)
 			, Map.of()
 			, snapshot.creatures()
+			, snapshot.passives()
 			, Map.of(
 				internalAddress.getColumn(), ColumnHeightMap.build().consume(heightMap, internalAddress).freeze()
 			)
@@ -781,6 +795,7 @@ public class TestServerStateManager
 			, Map.of()
 			, Map.of()
 			, Map.of()
+			, Map.of()
 			, Set.of()
 		);
 		manager.setupNextTickAfterCompletion(snapshot);
@@ -798,6 +813,7 @@ public class TestServerStateManager
 				, Collections.emptyMap()
 				, Collections.emptyMap()
 				
+				, Collections.emptyMap()
 				, Collections.emptyMap()
 				
 				, List.of()
@@ -820,6 +836,7 @@ public class TestServerStateManager
 			, Map<CuboidAddress, TickRunner.SnapshotCuboid> cuboids
 			, Map<Integer, TickRunner.SnapshotEntity> entities
 			, Map<Integer, TickRunner.SnapshotCreature> completedCreatures
+			, Map<Integer, TickRunner.SnapshotPassive> completedPassives
 			, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
 			, Set<CuboidAddress> internallyMarkedAlive
 	)
@@ -829,6 +846,7 @@ public class TestServerStateManager
 				, cuboids
 				, entities
 				, completedCreatures
+				, completedPassives
 				, completedHeightMaps
 				
 				, snapshot.postedEvents()
@@ -846,6 +864,7 @@ public class TestServerStateManager
 				, snapshot.cuboids()
 				, snapshot.entities()
 				, snapshot.creatures()
+				, snapshot.passives()
 				, snapshot.completedHeightMaps()
 				
 				, snapshot.postedEvents()

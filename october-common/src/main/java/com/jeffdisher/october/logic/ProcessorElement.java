@@ -23,6 +23,10 @@ public class ProcessorElement
 	public int creatureActionsProcessed;
 	public long nanosInEngineCreatures;
 
+	public int passivesProcessed;
+	public int passiveActionsProcessed;
+	public long nanosInEnginePassives;
+
 	public int workUnitsProcessed;
 	public int cuboidsProcessed;
 	public int cuboidMutationsProcessed;
@@ -88,6 +92,10 @@ public class ProcessorElement
 			, this.creatureActionsProcessed
 			, this.nanosInEngineCreatures
 			
+			, this.passivesProcessed
+			, this.passiveActionsProcessed
+			, this.nanosInEnginePassives
+			
 			, this.workUnitsProcessed
 			, this.cuboidsProcessed
 			, this.cuboidMutationsProcessed
@@ -105,6 +113,10 @@ public class ProcessorElement
 		this.creaturesProcessed = 0;
 		this.creatureActionsProcessed = 0;
 		this.nanosInEngineCreatures = 0L;
+		
+		this.passivesProcessed = 0;
+		this.passiveActionsProcessed = 0;
+		this.nanosInEnginePassives = 0L;
 		
 		this.workUnitsProcessed = 0;
 		this.cuboidsProcessed = 0;
@@ -128,6 +140,10 @@ public class ProcessorElement
 		, int creaturesProcessed
 		, int creatureActionsProcessed
 		, long nanosInEngineCreatures
+		
+		, int passivesProcessed
+		, int passiveActionsProcessed
+		, long nanosInEnginePassives
 		
 		, int workUnitsProcessed
 		, int cuboidsProcessed

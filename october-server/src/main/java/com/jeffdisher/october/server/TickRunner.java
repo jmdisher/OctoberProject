@@ -28,6 +28,7 @@ import com.jeffdisher.october.engine.EngineCreatures;
 import com.jeffdisher.october.engine.EngineSpawner;
 import com.jeffdisher.october.engine.EnginePlayers;
 import com.jeffdisher.october.engine.EngineCuboids;
+import com.jeffdisher.october.engine.EnginePassives;
 import com.jeffdisher.october.logic.BlockChangeDescription;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
@@ -55,8 +56,10 @@ import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.MinimalEntity;
+import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
@@ -171,6 +174,7 @@ public class TickRunner
 				, Collections.emptyMap()
 				, Collections.emptyMap()
 				
+				, Collections.emptyMap()
 				, Collections.emptyMap()
 				
 				// postedEvents
@@ -379,6 +383,7 @@ public class TickRunner
 			, Map.of()
 			, Map.of()
 			, Map.of()
+			, Map.of()
 			, List.of()
 			, Map.of()
 			, Map.of()
@@ -398,8 +403,11 @@ public class TickRunner
 				, new _PartialHandoffData(new _ProcessedFragment(Map.of(), Map.of(), Map.of(), List.of(), Map.of(), Map.of(), 0)
 						, new _ProcessedGroup(0, Map.of())
 						, new _CreatureGroup(false, Map.of(), List.of())
+						, new _PassiveGroup(false, Map.of(), List.of())
 						, List.of()
 						, List.of()
+						, List.of()
+						, Map.of()
 						, Map.of()
 						, Map.of()
 						, List.of()
@@ -432,6 +440,8 @@ public class TickRunner
 				CreatureEntity entity = CreatureEntity.create(id, type, location, health);
 				spawnedCreatures.add(entity);
 			};
+			// TODO:  Implement a passive spawning mechanism in the context.
+			List<PassiveEntity> spawnedPassives = new ArrayList<>();
 			
 			// On the server, we just generate the tick time as purely abstract monotonic value.
 			long currentTickTimeMillis = (materials.thisGameTick * _millisPerTick);
@@ -486,10 +496,13 @@ public class TickRunner
 				, new _PartialHandoffData(innerResults.world
 					, innerResults.crowd
 					, innerResults.creatures
+					, innerResults.passives
 					, spawnedCreatures
+					, spawnedPassives
 					, newMutationSink.takeExportedMutations()
 					, newChangeSink.takeExportedChanges()
 					, newChangeSink.takeExportedCreatureChanges()
+					, newChangeSink.takeExportedPassiveActions()
 					, events
 					, internallyMarkedAlive
 				)
@@ -559,8 +572,11 @@ public class TickRunner
 				_PartialHandoffData spilledPartial = new _PartialHandoffData(new _ProcessedFragment(Map.of(), Map.of(), Map.of(), List.of(), Map.of(), Map.of(), 0)
 					, spilledGroup
 					, new _CreatureGroup(false, Map.of(), List.of())
+					, new _PassiveGroup(false, Map.of(), List.of())
 					, List.of()
 					, List.of()
+					, List.of()
+					, Map.of()
 					, Map.of()
 					, Map.of()
 					, List.of()
@@ -604,6 +620,10 @@ public class TickRunner
 		// Per-creature entity data.
 		Map<Integer, CreatureEntity> updatedCreatures = new HashMap<>();
 		List<Integer> deadCreatureIds = new ArrayList<>();
+		
+		// Per-passive entity data.
+		Map<Integer, PassiveEntity> updatedPassives = new HashMap<>();
+		List<Integer> deadPassiveIds = new ArrayList<>();
 		
 		// We need to walk the cuboids and collect data from each of them and associated players and creatures.
 		processor.workUnitsProcessed += 1;
@@ -710,6 +730,27 @@ public class TickRunner
 			}
 			long endCreatureNanos = System.nanoTime();
 			processor.nanosInEngineCreatures += (endCreatureNanos - endPlayerNanos);
+			
+			// Process the passive entities in this cuboid.
+			for (_PassiveWorkUnit passiveUnit : subUnit.passives)
+			{
+				PassiveEntity passive = passiveUnit.passive;
+				List<IPassiveAction> actions = passiveUnit.actions;
+				processor.passivesProcessed += 1;
+				processor.passiveActionsProcessed += actions.size();
+				PassiveEntity result = EnginePassives.processOneCreature(context, passive, actions);
+				Integer id = passive.id();
+				if (null == result)
+				{
+					deadPassiveIds.add(id);
+				}
+				else if (result != passive)
+				{
+					updatedPassives.put(id, result);
+				}
+			}
+			long endPassiveNanos = System.nanoTime();
+			processor.nanosInEnginePassives += (endPassiveNanos - endCreatureNanos);
 		}
 		
 		// We can now merge the height maps since each _CommonWorkUnit is a full column.
@@ -732,11 +773,18 @@ public class TickRunner
 			, updatedCreatures
 			, deadCreatureIds
 		);
+		_PassiveGroup passives = new _PassiveGroup(false
+			, updatedPassives
+			, deadPassiveIds
+		);
 		return new _PartialHandoffData(world
 			, crowd
 			, creatures
+			, passives
 			, List.of()
 			, List.of()
+			, List.of()
+			, Map.of()
 			, Map.of()
 			, Map.of()
 			, List.of()
@@ -766,6 +814,7 @@ public class TickRunner
 			
 			Map<Integer, Entity> mutableCrowdState = _extractSnapshotPlayers(startingMaterials, masterFragment);
 			Map<Integer, CreatureEntity> mutableCreatureState = _extractSnapshotCreatures(startingMaterials, masterFragment);
+			Map<Integer, PassiveEntity> mutablePassiveState = _extractSnapshotPassives(startingMaterials, masterFragment);
 			
 			Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState = new HashMap<>(startingMaterials.completedCuboids);
 			mutableWorldState.putAll(masterFragment.world.stateFragment());
@@ -790,6 +839,7 @@ public class TickRunner
 				, mutableWorldState
 				, mutableCrowdState
 				, mutableCreatureState
+				, mutablePassiveState
 				, completedHeightMaps
 				, snapshotBlockMutations
 				, snapshotEntityMutations
@@ -867,6 +917,7 @@ public class TickRunner
 				nextTickMutableHeightMaps.putAll(masterFragment.world.heightFragment());
 				_poopulateWorldWithNewCuboids(mutableWorldState, nextTickMutableHeightMaps, newCuboids);
 				_addCreaturesInNewCuboidsWithMillis(mutableCreatureState, newCuboids, _snapshot.tickNumber * _millisPerTick);
+				_addPassivesInNewCuboidsWithMillis(mutablePassiveState, newCuboids, _snapshot.tickNumber * _millisPerTick);
 				Map<CuboidAddress, List<ScheduledMutation>> pendingMutations = _extractPendingMutationsFromNewCuboids(newCuboids, snapshotBlockMutations);
 				Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutations = _extractPeriodicMutationsFromNewCuboids(newCuboids, masterFragment);
 				
@@ -891,6 +942,7 @@ public class TickRunner
 				
 				// We can also extract any creature changes scheduled in the previous tick (creature actions are not saved in the cuboid so we only have what was scheduled in previous tick).
 				Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> nextCreatureChanges = _scheduleNewCreatureActions(masterFragment);
+				Map<Integer, List<IPassiveAction>> nextPassiveActions = masterFragment.newlyScheduledPassiveActions;
 				
 				// Remove anything old.
 				if (null != cuboidsToDrop)
@@ -913,6 +965,17 @@ public class TickRunner
 							if (loc.getBlockLocation().getCuboidAddress().equals(address))
 							{
 								expensive.remove();
+							}
+						}
+						// Similarly, remove the passives.
+						Iterator<Map.Entry<Integer, PassiveEntity>> expensivePassives = mutablePassiveState.entrySet().iterator();
+						while (expensivePassives.hasNext())
+						{
+							Map.Entry<Integer, PassiveEntity> one = expensivePassives.next();
+							EntityLocation loc = one.getValue().location();
+							if (loc.getBlockLocation().getCuboidAddress().equals(address))
+							{
+								expensivePassives.remove();
 							}
 						}
 						
@@ -967,9 +1030,11 @@ public class TickRunner
 					, completedHeightMaps
 					, changesToRun
 					, mutableCreatureState
+					, mutablePassiveState
 					, pendingMutations
 					, periodicMutations
 					, nextCreatureChanges
+					, nextPassiveActions
 				);
 				
 				// Collect the last timing data for this tick preamble.
@@ -983,6 +1048,7 @@ public class TickRunner
 						, Collections.unmodifiableMap(mutableCrowdState)
 						// completedCreatures
 						, Collections.unmodifiableMap(mutableCreatureState)
+						, Collections.unmodifiableMap(mutablePassiveState)
 						
 						, operatorChanges
 						, updatedBlockLocationsByCuboid
@@ -1058,6 +1124,21 @@ public class TickRunner
 			mutableCreatureState.put(newCreature.id(), newCreature);
 		}
 		return mutableCreatureState;
+	}
+
+	private static Map<Integer, PassiveEntity> _extractSnapshotPassives(TickMaterials startingMaterials, _PartialHandoffData masterFragment)
+	{
+		Map<Integer, PassiveEntity> mutablePassiveState = new HashMap<>(startingMaterials.completedPassives);
+		mutablePassiveState.putAll(masterFragment.passives.updatedPassives());
+		for (Integer creatureId : masterFragment.passives.deadPassiveIds())
+		{
+			mutablePassiveState.remove(creatureId);
+		}
+		for (PassiveEntity newPassive : masterFragment.spawnedPassives())
+		{
+			mutablePassiveState.put(newPassive.id(), newPassive);
+		}
+		return mutablePassiveState;
 	}
 
 	private static Map<Integer, List<ScheduledChange>> _extractPlayerEntityChanges(_PartialHandoffData masterFragment)
@@ -1143,6 +1224,22 @@ public class TickRunner
 				for (CreatureEntity loadedCreature : suspended.creatures())
 				{
 					out_mutableCreatureState.put(loadedCreature.id(), loadedCreature);
+				}
+			}
+		}
+	}
+
+	// NOTE:  Modifies out_mutablePassiveState.
+	private static void _addPassivesInNewCuboidsWithMillis(Map<Integer, PassiveEntity> out_mutablePassiveState, List<SuspendedCuboid<IReadOnlyCuboidData>> newCuboids, long tickMillis)
+	{
+		if (null != newCuboids)
+		{
+			for (SuspendedCuboid<IReadOnlyCuboidData> suspended : newCuboids)
+			{
+				// Load any creatures associated with this cuboid.
+				for (PassiveEntity loadedPassive : suspended.passives())
+				{
+					out_mutablePassiveState.put(loadedPassive.id(), loadedPassive);
 				}
 			}
 		}
@@ -1456,10 +1553,16 @@ public class TickRunner
 		Map<Integer, CreatureEntity> updatedCreatures = new HashMap<>();
 		List<Integer> deadCreatureIds = new ArrayList<>();
 		
+		// EnginePassives
+		Map<Integer, PassiveEntity> updatedPassives = new HashMap<>();
+		List<Integer> deadPassiveIds = new ArrayList<>();
+		
 		List<CreatureEntity> spawnedCreatures = new ArrayList<>();
+		List<PassiveEntity> spawnedPassives = new ArrayList<>();
 		List<ScheduledMutation> newlyScheduledMutations = new ArrayList<>();
 		Map<Integer, List<ScheduledChange>> newlyScheduledChanges = new HashMap<>();
 		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> newlyScheduledCreatureChanges = new HashMap<>();
+		Map<Integer, List<IPassiveAction>> newlyScheduledPassiveActions = new HashMap<>();
 		List<EventRecord> postedEvents = new ArrayList<>();
 		Set<CuboidAddress> internallyMarkedAlive = new HashSet<>();
 		
@@ -1484,10 +1587,16 @@ public class TickRunner
 			updatedCreatures.putAll(fragment.creatures().updatedCreatures());
 			deadCreatureIds.addAll(fragment.creatures().deadCreatureIds());
 			
+			// EnginePassives
+			updatedPassives.putAll(fragment.passives().updatedPassives());
+			deadPassiveIds.addAll(fragment.passives().deadPassiveIds());
+			
 			spawnedCreatures.addAll(fragment.spawnedCreatures());
+			spawnedPassives.addAll(fragment.spawnedPassives());
 			newlyScheduledMutations.addAll(fragment.newlyScheduledMutations());
 			newlyScheduledChanges.putAll(fragment.newlyScheduledChanges());
 			newlyScheduledCreatureChanges.putAll(fragment.newlyScheduledCreatureChanges());
+			newlyScheduledPassiveActions.putAll(fragment.newlyScheduledPassiveActions());
 			postedEvents.addAll(fragment.postedEvents());
 			internallyMarkedAlive.addAll(fragment.internallyMarkedAlive());
 			partials[i] = null;
@@ -1508,13 +1617,20 @@ public class TickRunner
 			, updatedCreatures
 			, deadCreatureIds
 		);
+		_PassiveGroup passives = new _PassiveGroup(false
+			, updatedPassives
+			, deadPassiveIds
+		);
 		return new _PartialHandoffData(world
 			, crowd
 			, creatures
+			, passives
 			, spawnedCreatures
+			, spawnedPassives
 			, newlyScheduledMutations
 			, newlyScheduledChanges
 			, newlyScheduledCreatureChanges
+			, newlyScheduledPassiveActions
 			, postedEvents
 			, internallyMarkedAlive
 		);
@@ -1526,6 +1642,7 @@ public class TickRunner
 		, Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState
 		, Map<Integer, Entity> mutableCrowdState
 		, Map<Integer, CreatureEntity> mutableCreatureState
+		, Map<Integer, PassiveEntity> mutablePassiveState
 		, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
 		, Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations
 		, Map<Integer, List<ScheduledChange>> snapshotEntityMutations
@@ -1607,11 +1724,27 @@ public class TickRunner
 			);
 			creatures.put(key, snapshot);
 		}
+		Map<Integer, SnapshotPassive> passives = new HashMap<>();
+		for (Map.Entry<Integer, PassiveEntity>  ent : mutablePassiveState.entrySet())
+		{
+			Integer key = ent.getKey();
+			// Passives are expected to have positive IDs.
+			Assert.assertTrue(key > 0);
+			PassiveEntity completed = ent.getValue();
+			PassiveEntity visiblyChanged = masterFragment.passives.updatedPassives().get(key);
+			
+			SnapshotPassive snapshot = new SnapshotPassive(
+					completed
+					, visiblyChanged
+			);
+			passives.put(key, snapshot);
+		}
 		
 		Snapshot completedTick = new Snapshot(tickNumber
 			, Collections.unmodifiableMap(cuboids)
 			, Collections.unmodifiableMap(entities)
 			, Collections.unmodifiableMap(creatures)
+			, Collections.unmodifiableMap(passives)
 			, completedHeightMaps
 			
 			// postedEvents
@@ -1637,9 +1770,11 @@ public class TickRunner
 		, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
 		, Map<Integer, _InputEntity> entities
 		, Map<Integer, CreatureEntity> completedCreatures
+		, Map<Integer, PassiveEntity> completedPassives
 		, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
 		, Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationMillis
 		, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureChanges
+		, Map<Integer, List<IPassiveAction>> passiveActions
 	)
 	{
 		Map<Integer, _InputEntity> spilledEntities = new HashMap<>();
@@ -1689,6 +1824,28 @@ public class TickRunner
 			List<_CreatureWorkUnit> list = workingCreatureList.get(thisAddress);
 			list.add(unit);
 		}
+		Map<CuboidAddress, List<_PassiveWorkUnit>> workingPassiveList = new HashMap<>();
+		for (PassiveEntity entity : completedPassives.values())
+		{
+			CuboidAddress thisAddress = entity.location().getBlockLocation().getCuboidAddress();
+			//  Note that we expect any creatures who weren't unloaded to be in a loaded cuboid.
+			Assert.assertTrue(completedCuboids.containsKey(thisAddress));
+			
+			if (!workingPassiveList.containsKey(thisAddress))
+			{
+				workingPassiveList.put(thisAddress, new ArrayList<>());
+			}
+			List<IPassiveAction> actions = passiveActions.get(entity.id());
+			if (null == actions)
+			{
+				actions = List.of();
+			}
+			_PassiveWorkUnit unit = new _PassiveWorkUnit(entity
+				, actions
+			);
+			List<_PassiveWorkUnit> list = workingPassiveList.get(thisAddress);
+			list.add(unit);
+		}
 		
 		Map<CuboidColumnAddress, List<_CuboidWorkUnit>> workingWorkList = new HashMap<>();
 		for (CuboidAddress address : completedCuboids.keySet())
@@ -1715,12 +1872,18 @@ public class TickRunner
 			{
 				creatures = List.of();
 			}
+			List<_PassiveWorkUnit> passives = workingPassiveList.get(address);
+			if (null == passives)
+			{
+				passives = List.of();
+			}
 			_CuboidWorkUnit unit = new _CuboidWorkUnit(cuboid
 				, cuboidHeightMap
 				, Collections.unmodifiableList(mutations)
 				, Collections.unmodifiableMap(periodic)
 				, Collections.unmodifiableList(entityList)
 				, Collections.unmodifiableList(creatures)
+				, Collections.unmodifiableList(passives)
 			);
 			
 			CuboidColumnAddress column = address.getColumn();
@@ -1771,6 +1934,7 @@ public class TickRunner
 			, Map<CuboidAddress, SnapshotCuboid> cuboids
 			, Map<Integer, SnapshotEntity> entities
 			, Map<Integer, SnapshotCreature> creatures
+			, Map<Integer, SnapshotPassive> passives
 			, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
 			
 			, List<EventRecord> postedEvents
@@ -1812,6 +1976,14 @@ public class TickRunner
 	)
 	{}
 
+	public static record SnapshotPassive(
+			// Never null.
+			PassiveEntity completed
+			// Null if not visibly changed in this tick.
+			, PassiveEntity visiblyChanged
+	)
+	{}
+
 	public static record TickStats(long tickNumber
 			, long millisTickPreamble
 			, long millisTickParallelPhase
@@ -1835,12 +2007,14 @@ public class TickRunner
 				ProcessorElement.PerThreadStats thread = this.threadStats[i];
 				long millisInEnginePlayers = thread.nanosInEnginePlayers() / nanosPerMilli;
 				long millisInEngineCreatures = thread.nanosInEngineCreatures() / nanosPerMilli;
+				long millisInEnginePassives = thread.nanosInEnginePassives() / nanosPerMilli;
 				long millisInEngineCuboids = thread.nanosInEngineCuboids() / nanosPerMilli;
 				long millisInEngineSpawner = thread.nanosInEngineSpawner() / nanosPerMilli;
 				long millisProcessingOperator = thread.nanosProcessingOperator() / nanosPerMilli;
 				out.printf("\t-Thread %d ran %d work units in %d ms\n", i, thread.workUnitsProcessed(), (millisInEnginePlayers + millisInEngineCreatures + millisInEngineCuboids + millisInEngineSpawner + millisProcessingOperator));
 				out.printf("\t\t=%d ms in EnginePlayer: %d players, %d actions\n", millisInEnginePlayers, thread.playersProcessed(), thread.playerActionsProcessed());
 				out.printf("\t\t=%d ms in EngineCreatures: %d creatures, %d actions\n", millisInEngineCreatures, thread.creaturesProcessed(), thread.creatureActionsProcessed());
+				out.printf("\t\t=%d ms in EnginePassives: %d passives, %d actions\n", millisInEnginePassives, thread.passivesProcessed(), thread.passiveActionsProcessed());
 				out.printf("\t\t=%d ms in EngineCuboids: %d cuboids, %d mutations, %d block updates\n", millisInEngineCuboids, thread.cuboidsProcessed(), thread.cuboidMutationsProcessed(), thread.cuboidBlockupdatesProcessed());
 				if (millisInEngineSpawner > 0L)
 				{
@@ -1864,6 +2038,8 @@ public class TickRunner
 			, Map<Integer, Entity> completedEntities
 			// Read-only versions of the creatures from the previous tick (by ID).
 			, Map<Integer, CreatureEntity> completedCreatures
+			// Read-only versions of the passives from the previous tick (by ID).
+			, Map<Integer, PassiveEntity> completedPassives
 			// Never null but typically empty.
 			, List<IEntityAction<IMutablePlayerEntity>> operatorChanges
 			// The blocks modified in the last tick, represented as a list per cuboid where they originate.
@@ -1917,10 +2093,13 @@ public class TickRunner
 	private static record _PartialHandoffData(_ProcessedFragment world
 			, _ProcessedGroup crowd
 			, _CreatureGroup creatures
+			, _PassiveGroup passives
 			, List<CreatureEntity> spawnedCreatures
+			, List<PassiveEntity> spawnedPassives
 			, List<ScheduledMutation> newlyScheduledMutations
 			, Map<Integer, List<ScheduledChange>> newlyScheduledChanges
 			, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> newlyScheduledCreatureChanges
+			, Map<Integer, List<IPassiveAction>> newlyScheduledPassiveActions
 			, List<EventRecord> postedEvents
 			, Set<CuboidAddress> internallyMarkedAlive
 	) {}
@@ -1929,6 +2108,12 @@ public class TickRunner
 			// Note that we will only pass back a new Entity object if it changed.
 			, Map<Integer, CreatureEntity> updatedCreatures
 			, List<Integer> deadCreatureIds
+	) {}
+
+	private static record _PassiveGroup(boolean ignored
+			// Note that we will only pass back a new PassiveEntity object if it changed.
+			, Map<Integer, PassiveEntity> updatedPassives
+			, List<Integer> deadPassiveIds
 	) {}
 
 	private static record _ProcessedGroup(int committedMutationCount
@@ -1971,6 +2156,7 @@ public class TickRunner
 		, Map<BlockAddress, Long> periodicMutationMillis
 		, List<_EntityWorkUnit> entities
 		, List<_CreatureWorkUnit> creatures
+		, List<_PassiveWorkUnit> passives
 	) {}
 
 	private static record _EntityWorkUnit(Entity entity
@@ -1979,5 +2165,9 @@ public class TickRunner
 
 	private static record _CreatureWorkUnit(CreatureEntity creature
 		, List<IEntityAction<IMutableCreatureEntity>> actions
+	) {}
+
+	private static record _PassiveWorkUnit(PassiveEntity passive
+		, List<IPassiveAction> actions
 	) {}
 }

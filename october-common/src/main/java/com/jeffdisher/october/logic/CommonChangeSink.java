@@ -9,6 +9,7 @@ import java.util.Set;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -114,6 +115,18 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 		{
 			_exportedCreatureChanges = null;
 		}
+	}
+
+	/**
+	 * Removes the collected exported passive actions.  Note that the receiver can no longer listen to passive actions
+	 * after this call.
+	 * 
+	 * @return The mutable passive action map, now owned by the caller.
+	 */
+	public Map<Integer, List<IPassiveAction>> takeExportedPassiveActions()
+	{
+		// TODO:  Implement this once the interface populates it.
+		return Map.of();
 	}
 
 
