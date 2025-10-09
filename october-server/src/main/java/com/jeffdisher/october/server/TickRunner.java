@@ -421,8 +421,8 @@ public class TickRunner
 			};
 			// WARNING:  This block cache is used for everything this thread does and we may want to provide a flushing mechanism.
 			LazyLocationCache<BlockProxy> cachingLoader = new LazyLocationCache<>(loader);
-			CommonMutationSink newMutationSink = new CommonMutationSink();
-			CommonChangeSink newChangeSink = new CommonChangeSink();
+			CommonMutationSink newMutationSink = new CommonMutationSink(materials.completedCuboids.keySet());
+			CommonChangeSink newChangeSink = new CommonChangeSink(materials.completedEntities.keySet(), materials.completedCreatures.keySet());
 			List<EventRecord> events = new ArrayList<>();
 			
 			// We will capture the newly-spawned creatures into a basic list.
@@ -928,21 +928,27 @@ public class TickRunner
 						Entity old = mutableCrowdState.remove(entityId);
 						// This must have been present.
 						Assert.assertTrue(null != old);
+						
+						// Remove any of the scheduled operations against this entity.
+						nextTickChanges.remove(entityId);
 					}
 				}
 				
 				// TODO:  We should probably remove this once we are sure we know what is happening and/or find a cheaper way to check this.
 				for (CuboidAddress key : pendingMutations.keySet())
 				{
-					if (!mutableWorldState.containsKey(key))
-					{
-						System.out.println("WARNING: missing cuboid " + key);
-					}
+					// Given that these can only be scheduled against loaded cuboids, which can only be explicitly unloaded above, anything remaining must still be present.
+					Assert.assertTrue(mutableWorldState.containsKey(key));
 				}
 				for (CuboidAddress key : periodicMutations.keySet())
 				{
 					// Given that these can only be scheduled against loaded cuboids, which can only be explicitly unloaded above, anything remaining must still be present.
 					Assert.assertTrue(mutableWorldState.containsKey(key));
+				}
+				for (int entityId : nextTickChanges.keySet())
+				{
+					// Given that these can only be scheduled against loaded entities, which can only be explicitly unloaded above, anything remaining must still be present.
+					Assert.assertTrue(mutableCrowdState.containsKey(entityId));
 				}
 				
 				// Convert this raw next tick action accumulation into the CrowdProcessor input.

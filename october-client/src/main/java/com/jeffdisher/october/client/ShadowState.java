@@ -1,6 +1,7 @@
 package com.jeffdisher.october.client;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -116,6 +117,18 @@ public class ShadowState
 	public PartialEntity getEntity(int entityId)
 	{
 		return _shadowCrowd.get(entityId);
+	}
+
+	public Set<Integer> getAllPlayerEntityIds()
+	{
+		Set<Integer> set = new HashSet<>(_shadowCrowd.keySet().stream().filter((Integer i) -> i > 0).toList());
+		set.add(_thisShadowEntity.id());
+		return set;
+	}
+
+	public Set<Integer> getAllCreatureEntityIds()
+	{
+		return _shadowCrowd.keySet().stream().filter((Integer i) -> i < 0).collect(Collectors.toSet());
 	}
 
 

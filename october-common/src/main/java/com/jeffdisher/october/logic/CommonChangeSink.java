@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
@@ -17,36 +18,58 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CommonChangeSink implements TickProcessingContext.IChangeSink
 {
-	private Map<Integer, List<ScheduledChange>> _exportedEntityChanges = new HashMap<>();
-	private Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> _exportedCreatureChanges = new HashMap<>();
+	private final Set<Integer> _loadedEntities;
+	private final Set<Integer> _loadedCreatures;
+	private Map<Integer, List<ScheduledChange>> _exportedEntityChanges;
+	private Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> _exportedCreatureChanges;
+
+	public CommonChangeSink(Set<Integer> loadedEntities, Set<Integer> loadedCreatures)
+	{
+		_loadedEntities = loadedEntities;
+		_loadedCreatures = loadedCreatures;
+		_exportedEntityChanges = new HashMap<>();
+		_exportedCreatureChanges = new HashMap<>();
+	}
 
 	@Override
 	public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 	{
 		Assert.assertTrue(targetEntityId > 0);
-		List<ScheduledChange> entityChanges = _getChangeList(targetEntityId);
-		entityChanges.add(new ScheduledChange(change, 0L));
+		
+		if (_loadedEntities.contains(targetEntityId))
+		{
+			List<ScheduledChange> entityChanges = _getChangeList(targetEntityId);
+			entityChanges.add(new ScheduledChange(change, 0L));
+		}
 	}
 
 	@Override
 	public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 	{
 		Assert.assertTrue(targetEntityId > 0);
-		List<ScheduledChange> entityChanges = _getChangeList(targetEntityId);
-		entityChanges.add(new ScheduledChange(change, millisToDelay));
+		
+		if (_loadedEntities.contains(targetEntityId))
+		{
+			List<ScheduledChange> entityChanges = _getChangeList(targetEntityId);
+			entityChanges.add(new ScheduledChange(change, millisToDelay));
+		}
 	}
 
 	@Override
 	public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 	{
 		Assert.assertTrue(targetCreatureId < 0);
-		List<IEntityAction<IMutableCreatureEntity>> list = _exportedCreatureChanges.get(targetCreatureId);
-		if (null == list)
+		
+		if (_loadedCreatures.contains(targetCreatureId))
 		{
-			list = new LinkedList<>();
-			_exportedCreatureChanges.put(targetCreatureId, list);
+			List<IEntityAction<IMutableCreatureEntity>> list = _exportedCreatureChanges.get(targetCreatureId);
+			if (null == list)
+			{
+				list = new LinkedList<>();
+				_exportedCreatureChanges.put(targetCreatureId, list);
+			}
+			list.add(change);
 		}
-		list.add(change);
 	}
 
 	/**

@@ -2,9 +2,11 @@ package com.jeffdisher.october.client;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidHeightMap;
@@ -54,8 +56,12 @@ public class OneOffRunner
 	)
 	{
 		// Setup components.
-		CommonMutationSink newMutationSink = new CommonMutationSink();
-		CommonChangeSink newChangeSink = new CommonChangeSink();
+		Set<CuboidAddress> loadedCuboids = state.world.keySet();
+		Set<Integer> allPlayerIds = new HashSet<>(state.otherEntities.keySet().stream().filter((Integer i) -> i > 0).toList());
+		allPlayerIds.add(state.thisEntity.id());
+		Set<Integer> allCreatureIds = state.otherEntities.keySet().stream().filter((Integer i) -> i < 0).collect(Collectors.toSet());
+		CommonMutationSink newMutationSink = new CommonMutationSink(loadedCuboids);
+		CommonChangeSink newChangeSink = new CommonChangeSink(allPlayerIds, allCreatureIds);
 		TickProcessingContext context = _createContext(state, newMutationSink, newChangeSink, eventSink, millisPerTick, currentTickTimeMillis);
 		
 		// Run initial change.
@@ -92,7 +98,7 @@ public class OneOffRunner
 				splitMutations.get(address).add(imm);
 			}
 			// Note that we will need to capture output mutations from these sinks if there is an interest in running multiple ticks in advance here.
-			TickProcessingContext innerContext = _createContext(state, new CommonMutationSink(), new CommonChangeSink(), eventSink, millisPerTick, currentTickTimeMillis);
+			TickProcessingContext innerContext = _createContext(state, new CommonMutationSink(loadedCuboids), new CommonChangeSink(allPlayerIds, allCreatureIds), eventSink, millisPerTick, currentTickTimeMillis);
 			changedCuboids = new HashMap<>();
 			heightFragment = new HashMap<>();
 			optionalBlockChanges = new HashMap<>();

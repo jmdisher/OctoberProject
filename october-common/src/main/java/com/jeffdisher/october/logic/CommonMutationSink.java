@@ -2,8 +2,10 @@ package com.jeffdisher.october.logic;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -13,19 +15,32 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CommonMutationSink implements TickProcessingContext.IMutationSink
 {
-	private List<ScheduledMutation> _exportedMutations = new ArrayList<>();
+	private final Set<CuboidAddress> _loadedCuboids;
+	private List<ScheduledMutation> _exportedMutations;
+
+	public CommonMutationSink(Set<CuboidAddress> loadedCuboids)
+	{
+		_loadedCuboids = loadedCuboids;
+		_exportedMutations = new ArrayList<>();
+	}
 
 	@Override
 	public void next(IMutationBlock mutation)
 	{
-		_exportedMutations.add(new ScheduledMutation(mutation, 0L));
+		if (_loadedCuboids.contains(mutation.getAbsoluteLocation().getCuboidAddress()))
+		{
+			_exportedMutations.add(new ScheduledMutation(mutation, 0L));
+		}
 	}
 
 	@Override
 	public void future(IMutationBlock mutation, long millisToDelay)
 	{
 		Assert.assertTrue(millisToDelay > 0L);
-		_exportedMutations.add(new ScheduledMutation(mutation, millisToDelay));
+		if (_loadedCuboids.contains(mutation.getAbsoluteLocation().getCuboidAddress()))
+		{
+			_exportedMutations.add(new ScheduledMutation(mutation, millisToDelay));
+		}
 	}
 
 	/**

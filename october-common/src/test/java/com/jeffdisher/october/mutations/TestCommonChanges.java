@@ -869,14 +869,14 @@ public class TestCommonChanges
 	@Test
 	public void entityPeriodic()
 	{
-		CommonChangeSink changeSink = new CommonChangeSink();
+		int entityId = 1;
+		CommonChangeSink changeSink = new CommonChangeSink(Set.of(entityId), Set.of());
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 				.sinks(null, changeSink)
 				.eventSink(events)
 				.finish()
 		;
-		int entityId = 1;
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		EntityChangePeriodic periodic = new EntityChangePeriodic();
 		// We should only see this change after applying it 100 times.
@@ -1330,7 +1330,7 @@ public class TestCommonChanges
 				, new EntityLocation(9.0f, 9.0f, 0.0f)
 				, (byte) 100
 		);
-		CommonChangeSink changeSink = new CommonChangeSink();
+		CommonChangeSink changeSink = new CommonChangeSink(Set.of(attackerId), Set.of(targetId));
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
 				.lookups(null, (Integer id) -> {
@@ -1390,7 +1390,7 @@ public class TestCommonChanges
 				, new EntityLocation(9.0f, 9.0f, 0.0f)
 				, (byte) 100
 		);
-		CommonChangeSink changeSink = new CommonChangeSink();
+		CommonChangeSink changeSink = new CommonChangeSink(Set.of(entityId), Set.of(targetId));
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
 				.lookups(null, (Integer id) -> {
@@ -2963,7 +2963,7 @@ public class TestCommonChanges
 		);
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
-		CommonChangeSink changeSink = new CommonChangeSink();
+		CommonChangeSink changeSink = new CommonChangeSink(Set.of(), Set.of(targetId));
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
 				.lookups((AbsoluteLocation location) -> {
