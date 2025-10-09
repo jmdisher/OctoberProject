@@ -3375,12 +3375,13 @@ public class TestTickRunner
 		TickRunner.Snapshot startState = runner.waitForPreviousTick();
 		Assert.assertEquals(0, startState.passives().size());
 		
-		// Run another tick to see everything loaded.
+		// Run another tick to see everything loaded and the first changes being applied.
 		runner.startNextTick();
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.passives().size());
-		Assert.assertNull(snapshot.passives().get(id).visiblyChanged());
+		Assert.assertNotNull(snapshot.passives().get(id).visiblyChanged());
 		Assert.assertEquals(location, snapshot.passives().get(id).completed().location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.1f), snapshot.passives().get(id).completed().velocity());
 		int processedPassives = 0;
 		for (ProcessorElement.PerThreadStats stats : snapshot.stats().threadStats())
 		{
@@ -3388,13 +3389,23 @@ public class TestTickRunner
 		}
 		Assert.assertEquals(1, processedPassives);
 		
-		// Run another tick and show that nothing changed.
-		// TODO:  Update this when we start applying movements.
-		runner.startNextTick();
-		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(1, snapshot.passives().size());
-		Assert.assertNull(snapshot.passives().get(id).visiblyChanged());
-		Assert.assertEquals(location, snapshot.passives().get(id).completed().location());
+		// Run a few more ticks until we see them start to move due to accumulated z-velocity.
+		float vZ = snapshot.passives().get(id).completed().velocity().z();
+		int count = 0;
+		while (snapshot.passives().get(id).completed().location().equals(location))
+		{
+			runner.startNextTick();
+			snapshot = runner.waitForPreviousTick();
+			Assert.assertEquals(1, snapshot.passives().size());
+			Assert.assertNotNull(snapshot.passives().get(id).visiblyChanged());
+			float newZ = snapshot.passives().get(id).completed().velocity().z();
+			Assert.assertTrue(newZ < vZ);
+			vZ = newZ;
+			count += 1;
+		}
+		Assert.assertEquals(5, count);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.6f), snapshot.passives().get(id).completed().velocity());
+		Assert.assertEquals(new EntityLocation(10.0f, 11.0f, 11.99f), snapshot.passives().get(id).completed().location());
 		
 		// Verify that the passive unloads correctly.
 		runner.setupChangesForTick(null

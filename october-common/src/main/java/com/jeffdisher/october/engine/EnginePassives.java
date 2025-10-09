@@ -2,6 +2,7 @@ package com.jeffdisher.october.engine;
 
 import java.util.List;
 
+import com.jeffdisher.october.actions.passive.PassiveActionEveryTick;
 import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -31,7 +32,22 @@ public class EnginePassives
 		, List<IPassiveAction> actionsToRun
 	)
 	{
-		// TODO:  Implement.
-		return passive;
+		// Run all the actions, bearing in mind that any of them might cause the passive to despawn.
+		PassiveEntity working = passive;
+		for (IPassiveAction action : actionsToRun)
+		{
+			working = action.applyChange(context, working);
+			if (null == working)
+			{
+				break;
+			}
+		}
+		// Now, apply the default action.
+		if (null != working)
+		{
+			PassiveActionEveryTick action = new PassiveActionEveryTick();
+			working = action.applyChange(context, working);
+		}
+		return working;
 	}
 }
