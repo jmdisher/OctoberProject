@@ -45,6 +45,7 @@ import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
 
@@ -99,6 +100,7 @@ public class ServerStateManager
 	private Map<Integer, Long> _commitLevels;
 	private Map<Integer, CreatureEntity> _completedCreatures;
 	private Map<Integer, CreatureEntity> _visiblyChangedCreatures;
+	private Map<Integer, PassiveEntity> _completedPassives;
 	private Map<CuboidAddress, List<MutationBlockSetBlock>> _blockChanges;
 
 	public ServerStateManager(ICallouts callouts, long millisPerTick)
@@ -124,6 +126,7 @@ public class ServerStateManager
 		_commitLevels = Collections.emptyMap();
 		_completedCreatures = Collections.emptyMap();
 		_visiblyChangedCreatures = Collections.emptyMap();
+		_completedPassives = Collections.emptyMap();
 		_blockChanges = Collections.emptyMap();
 	}
 
@@ -207,6 +210,8 @@ public class ServerStateManager
 				(Map.Entry<Integer, TickRunner.SnapshotCreature> elt) -> elt.getKey()
 				, (Map.Entry<Integer, TickRunner.SnapshotCreature> elt) -> elt.getValue().visiblyChanged()
 		));
+		// TODO:  Populate this once the passives are exposed in the snapshot.
+		_completedPassives = Map.of();
 		_blockChanges = snapshot.cuboids().entrySet().stream().filter(
 				(Map.Entry<CuboidAddress, TickRunner.SnapshotCuboid> elt) -> (null != elt.getValue().blockChanges())
 		).collect(Collectors.toMap(
@@ -333,7 +338,13 @@ public class ServerStateManager
 		// Push any required data into the TickRunner before we kick-off the tick.
 		// We need to run through these to make them the read-only variants for the TickRunner.
 		Collection<SuspendedCuboid<IReadOnlyCuboidData>> readOnlyCuboids = newlyLoadedCuboids.stream().map(
-				(SuspendedCuboid<CuboidData> readWrite) -> new SuspendedCuboid<IReadOnlyCuboidData>(readWrite.cuboid(), readWrite.heightMap(), readWrite.creatures(), readWrite.pendingMutations(), readWrite.periodicMutationMillis())
+			(SuspendedCuboid<CuboidData> readWrite) -> new SuspendedCuboid<IReadOnlyCuboidData>(readWrite.cuboid()
+				, readWrite.heightMap()
+				, readWrite.creatures()
+				, readWrite.pendingMutations()
+				, readWrite.periodicMutationMillis()
+				, readWrite.passives()
+			)
 		).toList();
 		
 		// Feed in any new data from the network.
@@ -408,7 +419,8 @@ public class ServerStateManager
 		{
 			// We need to package up the cuboids with any suspended operations.
 			Map<CuboidAddress, List<CreatureEntity>> creaturesToUnload = _findCreaturesToUnload(_completedCuboids.values());
-			Collection<PackagedCuboid> cuboidResources = _packageCuboidsForUnloading(_completedCuboids.values(), creaturesToUnload);
+			Map<CuboidAddress, List<PassiveEntity>> passivesToUnload = _findPassivesToUnload(_completedCuboids.values());
+			Collection<PackagedCuboid> cuboidResources = _packageCuboidsForUnloading(_completedCuboids.values(), creaturesToUnload, passivesToUnload);
 			Collection<SuspendedEntity> entityResources = _packageEntitiesForUnloading(_completedEntities.values());
 			_callouts.resources_writeToDisk(cuboidResources, entityResources);
 		}
@@ -447,7 +459,8 @@ public class ServerStateManager
 					(CuboidAddress address) -> _completedCuboids.get(address)
 			).toList();
 			Map<CuboidAddress, List<CreatureEntity>> creaturesToUnload = _findCreaturesToUnload(cuboidsToPackage);
-			Collection<PackagedCuboid> saveCuboids = _packageCuboidsForUnloading(cuboidsToPackage, creaturesToUnload);
+			Map<CuboidAddress, List<PassiveEntity>> passivesToUnload = _findPassivesToUnload(cuboidsToPackage);
+			Collection<PackagedCuboid> saveCuboids = _packageCuboidsForUnloading(cuboidsToPackage, creaturesToUnload, passivesToUnload);
 			List<Entity> entitiesToPackage = removedClients.stream().map(
 					(Integer id) -> _completedEntities.get(id)
 			).filter(
@@ -922,13 +935,37 @@ public class ServerStateManager
 		return creaturesToUnload;
 	}
 
-	private Collection<PackagedCuboid> _packageCuboidsForUnloading(Collection<IReadOnlyCuboidData> cuboidsToPackage, Map<CuboidAddress, List<CreatureEntity>> creaturesToUnload)
+	private Map<CuboidAddress, List<PassiveEntity>> _findPassivesToUnload(Collection<IReadOnlyCuboidData> cuboidsToPackage)
+	{
+		Map<CuboidAddress, List<PassiveEntity>> passivesToUnload = new HashMap<>();
+		for (IReadOnlyCuboidData cuboid : cuboidsToPackage)
+		{
+			CuboidAddress address = cuboid.getCuboidAddress();
+			passivesToUnload.put(address, new ArrayList<>());
+		}
+		// TODO:  Change this to use some sort of spatial look-up mechanism since this loop is attrocious.
+		for (PassiveEntity passive : _completedPassives.values())
+		{
+			CuboidAddress address = passive.location().getBlockLocation().getCuboidAddress();
+			List<PassiveEntity> list = passivesToUnload.get(address);
+			if (null != list)
+			{
+				list.add(passive);
+			}
+		}
+		return passivesToUnload;
+	}
+
+	private Collection<PackagedCuboid> _packageCuboidsForUnloading(Collection<IReadOnlyCuboidData> cuboidsToPackage
+		, Map<CuboidAddress, List<CreatureEntity>> creaturesToUnload
+		, Map<CuboidAddress, List<PassiveEntity>> passivesToUnload
+	)
 	{
 		Collection<PackagedCuboid> cuboidResources = new ArrayList<>();
 		for (IReadOnlyCuboidData cuboid : cuboidsToPackage)
 		{
 			CuboidAddress address = cuboid.getCuboidAddress();
-			List<CreatureEntity> entities = creaturesToUnload.get(cuboid.getCuboidAddress());
+			List<CreatureEntity> entities = creaturesToUnload.get(address);
 			List<ScheduledMutation> pendingMutations = _scheduledBlockMutations.get(address);
 			if (null == pendingMutations)
 			{
@@ -939,7 +976,8 @@ public class ServerStateManager
 			{
 				periodicMutationMillis = Map.of();
 			}
-			cuboidResources.add(new PackagedCuboid(cuboid, entities, pendingMutations, periodicMutationMillis));
+			List<PassiveEntity> passives = passivesToUnload.get(address);
+			cuboidResources.add(new PackagedCuboid(cuboid, entities, pendingMutations, periodicMutationMillis, passives));
 		}
 		return cuboidResources;
 	}
@@ -979,6 +1017,7 @@ public class ServerStateManager
 
 	private void _writeRemainingToDisk(Set<CuboidAddress> orphanedCuboids, Collection<Integer> removedClients)
 	{
+		// This path is to write-back everything we are NOT unloading, so filter those out.
 		Map<CuboidAddress, IReadOnlyCuboidData> remainingCuboids = new HashMap<>(_completedCuboids);
 		remainingCuboids.keySet().removeAll(orphanedCuboids);
 		Map<Integer, Entity> remainingEntities = new HashMap<>(_completedEntities);
@@ -986,8 +1025,10 @@ public class ServerStateManager
 		
 		if (!remainingCuboids.isEmpty() || !remainingEntities.isEmpty())
 		{
-			Map<CuboidAddress, List<CreatureEntity>> remainingCreatures = _findCreaturesToUnload(remainingCuboids.values());
-			Collection<PackagedCuboid> saveCuboids = _packageCuboidsForUnloading(remainingCuboids.values(), remainingCreatures);
+			Collection<IReadOnlyCuboidData> stillLoadedCuboidsToPackage = remainingCuboids.values();
+			Map<CuboidAddress, List<CreatureEntity>> remainingCreatures = _findCreaturesToUnload(stillLoadedCuboidsToPackage);
+			Map<CuboidAddress, List<PassiveEntity>> remainingPassives = _findPassivesToUnload(stillLoadedCuboidsToPackage);
+			Collection<PackagedCuboid> saveCuboids = _packageCuboidsForUnloading(remainingCuboids.values(), remainingCreatures, remainingPassives);
 			Collection<SuspendedEntity> saveEntities = _packageEntitiesForUnloading(remainingEntities.values());
 			_callouts.resources_tryWriteToDisk(saveCuboids, saveEntities);
 		}

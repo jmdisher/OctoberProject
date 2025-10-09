@@ -7,6 +7,7 @@ import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
+import com.jeffdisher.october.types.PassiveEntity;
 
 
 /**
@@ -18,6 +19,7 @@ public record SuspendedCuboid<T>(T cuboid
 		, List<CreatureEntity> creatures
 		, List<ScheduledMutation> pendingMutations
 		, Map<BlockAddress, Long> periodicMutationMillis
+		, List<PassiveEntity> passives
 )
 {
 }

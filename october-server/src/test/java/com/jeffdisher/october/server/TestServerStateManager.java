@@ -167,6 +167,7 @@ public class TestServerStateManager
 				, List.of()
 				, List.of()
 				, Map.of()
+				, List.of()
 		));
 		changes = manager.setupNextTickAfterCompletion(snapshot);
 		Assert.assertEquals(1, changes.newCuboids().size());
@@ -431,12 +432,14 @@ public class TestServerStateManager
 				, List.of(nearCreature)
 				, List.of()
 				, Map.of()
+				, List.of()
 		));
 		callouts.loadedCuboids.add(new SuspendedCuboid<>(farCuboid
 				, HeightMapHelpers.buildHeightMap(farCuboid)
 				, List.of(farCreature)
 				, List.of()
 				, Map.of()
+				, List.of()
 		));
 		snapshot = _modifySnapshot(snapshot
 				, Map.of(
@@ -731,6 +734,7 @@ public class TestServerStateManager
 			, List.of()
 			, List.of()
 			, Map.of()
+			, List.of()
 		));
 		snapshot = _modifySnapshot(_advanceSnapshot(snapshot, 1)
 			, Map.of()

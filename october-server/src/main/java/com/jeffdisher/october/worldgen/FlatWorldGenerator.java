@@ -22,6 +22,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 
@@ -139,6 +140,9 @@ public class FlatWorldGenerator implements IWorldGenerator
 			periodicMutationMillis.putAll(followUp.periodicMutationMillis());
 		}
 		
+		// No passives.
+		List<PassiveEntity> passives = List.of();
+		
 		// Create the height map.
 		byte[][] rawHeight = HeightMapHelpers.createUniformHeightMap(CuboidHeightMap.UNKNOWN_HEIGHT);
 		HeightMapHelpers.populateHeightMap(rawHeight, data);
@@ -148,6 +152,7 @@ public class FlatWorldGenerator implements IWorldGenerator
 				, entities
 				, mutations
 				, periodicMutationMillis
+				, passives
 		);
 	}
 

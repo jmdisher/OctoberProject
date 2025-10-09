@@ -25,6 +25,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.Encoding;
@@ -316,11 +317,15 @@ public class BasicWorldGenerator implements IWorldGenerator
 		// Spawn the creatures within the cuboid.
 		List<CreatureEntity> entities = _spawnCreatures(creatureIdAssigner, subField, heightMap, data, cuboidBase);
 		
+		// No passives.
+		List<PassiveEntity> passives = List.of();
+		
 		return new SuspendedCuboid<CuboidData>(data
 				, cuboidLocalMap
 				, entities
 				, mutations
 				, periodicMutationMillis
+				, passives
 		);
 	}
 

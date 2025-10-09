@@ -62,6 +62,8 @@ import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.PassiveEntity;
+import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.Encoding;
@@ -170,7 +172,7 @@ public class TestResourceLoader
 		BlockAddress block = BlockAddress.fromInt(0, 0, 0);
 		// Modify a block and write this back.
 		loaded.setData15(AspectRegistry.BLOCK, block, STONE_ITEM.number());
-		loader.writeBackToDisk(List.of(new PackagedCuboid(loaded, List.of(), List.of(), Map.of())), List.of());
+		loader.writeBackToDisk(List.of(new PackagedCuboid(loaded, List.of(), List.of(), Map.of(), List.of())), List.of());
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
 		
@@ -250,7 +252,7 @@ public class TestResourceLoader
 		CuboidData loaded = _waitForOne(loader);
 		// Create a mutation which targets this and save it back with the cuboid.
 		MutationBlockOverwriteInternal mutation = new MutationBlockOverwriteInternal(new AbsoluteLocation(32, 0, 0), STONE);
-		loader.writeBackToDisk(List.of(new PackagedCuboid(loaded, List.of(), List.of(new ScheduledMutation(mutation, 0L)), Map.of())), List.of());
+		loader.writeBackToDisk(List.of(new PackagedCuboid(loaded, List.of(), List.of(new ScheduledMutation(mutation, 0L)), Map.of(), List.of())), List.of());
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
 		
@@ -335,15 +337,15 @@ public class TestResourceLoader
 		CuboidData loaded = _waitForOne(loader);
 		// Create a mutation which targets this and save it back with the cuboid.
 		MutationBlockOverwriteInternal mutation = new MutationBlockOverwriteInternal(new AbsoluteLocation(32, 0, 0), STONE);
-		loader.writeBackToDisk(List.of(new PackagedCuboid(loaded, List.of(), List.of(new ScheduledMutation(mutation, 0L)), Map.of())), List.of());
+		loader.writeBackToDisk(List.of(new PackagedCuboid(loaded, List.of(), List.of(new ScheduledMutation(mutation, 0L)), Map.of(), List.of())), List.of());
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
 		
 		// Make sure that we see this written back.
 		File cuboidFile = new File(worldDirectory, "cuboid_" + airAddress.x() + "_" + airAddress.y() + "_" + airAddress.z() + ".cuboid");
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 67 bytes.
-		Assert.assertEquals(67L, cuboidFile.length());
+		// Experimentally, we know that this is 71 bytes.
+		Assert.assertEquals(71L, cuboidFile.length());
 		
 		// Now, create a new loader, load, and resave this.
 		loader = new ResourceLoader(worldDirectory, null, null);
@@ -351,14 +353,14 @@ public class TestResourceLoader
 		Assert.assertEquals(airAddress, suspended.cuboid().getCuboidAddress());
 		Assert.assertEquals(1, suspended.pendingMutations().size());
 		Assert.assertTrue(suspended.pendingMutations().get(0).mutation() instanceof MutationBlockOverwriteInternal);
-		loader.writeBackToDisk(List.of(new PackagedCuboid(suspended.cuboid(), List.of(), List.of(), Map.of())), List.of());
+		loader.writeBackToDisk(List.of(new PackagedCuboid(suspended.cuboid(), List.of(), List.of(), Map.of(), List.of())), List.of());
 		Assert.assertEquals(0, suspended.periodicMutationMillis().size());
 		loader.shutdown();
 		
 		// Verify that the file has been truncated.
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 44 bytes.
-		Assert.assertEquals(44L, cuboidFile.length());
+		// Experimentally, we know that this is 48 bytes.
+		Assert.assertEquals(48L, cuboidFile.length());
 		
 		// Load it again and verify that the mutation is missing and we parsed without issue.
 		loader = new ResourceLoader(worldDirectory, null, null);
@@ -386,6 +388,7 @@ public class TestResourceLoader
 								new ScheduledMutation(test, 100L)
 						)
 						, Map.of()
+						, List.of()
 				);
 			}
 			@Override
@@ -460,7 +463,7 @@ public class TestResourceLoader
 				new PackagedCuboid(cuboids.get(0).cuboid(), List.of(), List.of(
 						new ScheduledMutation(ephemeralMutation, 0L),
 						new ScheduledMutation(persistentMutation, 0L)
-				), Map.of())
+				), Map.of(), List.of())
 		), List.of(
 				new SuspendedEntity(entities.get(0).entity(), List.of(
 						new ScheduledChange(persistentChange, 0L),
@@ -513,7 +516,7 @@ public class TestResourceLoader
 		Assert.assertEquals(0, generated.periodicMutationMillis().size());
 		
 		// Save this back.
-		Collection<PackagedCuboid> toWrite = List.of(new PackagedCuboid(generated.cuboid(), generated.creatures(), generated.pendingMutations(), generated.periodicMutationMillis()));
+		Collection<PackagedCuboid> toWrite = List.of(new PackagedCuboid(generated.cuboid(), generated.creatures(), generated.pendingMutations(), generated.periodicMutationMillis(), generated.passives()));
 		loader.writeBackToDisk(toWrite, List.of());
 		
 		// Now, re-load this within the same loader and observe that the ID has updated.
@@ -1080,6 +1083,51 @@ public class TestResourceLoader
 		Assert.assertEquals(playerLocation, player.location());
 	}
 
+	@Test
+	public void writeThenReadPassives() throws Throwable
+	{
+		File worldDirectory = DIRECTORY.newFolder();
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(ENV, false), null);
+		
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		
+		int id = 2;
+		PassiveType type = PassiveType.ITEM_SLOT;
+		EntityLocation location = new EntityLocation(1.0f, 2.0f, 3.3f);
+		EntityLocation velocity = new EntityLocation(-2.3f, -1.2f, -6.3f);
+		ItemSlot extendedData = ItemSlot.fromStack(new Items(STONE_ITEM, 3));
+		long lastAliveMillis = 1000L;
+		PassiveEntity passive = new PassiveEntity(id
+			, type
+			, location
+			, velocity
+			, extendedData
+			, lastAliveMillis
+		);
+		
+		loader.writeBackToDisk(List.of(new PackagedCuboid(cuboid, List.of(), List.of(), Map.of(), List.of(passive))), List.of());
+		// (the shutdown will wait for the queue to drain)
+		loader.shutdown();
+		
+		// Now, create a new loader to verify that we can read this.
+		loader = new ResourceLoader(worldDirectory, null, null);
+		long newLoadTimeMillis = 2000L;
+		SuspendedCuboid<CuboidData> loaded = _loadOneSuspendedWithTime(loader, address, newLoadTimeMillis);
+		loader.shutdown();
+		
+		Assert.assertEquals(0, loaded.creatures().size());
+		Assert.assertEquals(1, loaded.passives().size());
+		PassiveEntity loadedPassive = loaded.passives().get(0);
+		Assert.assertEquals(1, loadedPassive.id());
+		Assert.assertEquals(type, loadedPassive.type());
+		Assert.assertEquals(location, loadedPassive.location());
+		Assert.assertEquals(velocity, loadedPassive.velocity());
+		ItemSlot loadedSlot = (ItemSlot) loadedPassive.extendedData();
+		Assert.assertEquals(extendedData.stack, loadedSlot.stack);
+		Assert.assertEquals(newLoadTimeMillis, loadedPassive.lastAliveMillis());
+	}
+
 
 	private static CuboidData _waitForOne(ResourceLoader loader) throws InterruptedException
 	{
@@ -1130,14 +1178,19 @@ public class TestResourceLoader
 
 	private SuspendedCuboid<CuboidData> _loadOneSuspended(ResourceLoader loader, CuboidAddress address) throws InterruptedException
 	{
+		return _loadOneSuspendedWithTime(loader, address, 0L);
+	}
+
+	private SuspendedCuboid<CuboidData> _loadOneSuspendedWithTime(ResourceLoader loader, CuboidAddress address, long currentGameMillis) throws InterruptedException
+	{
 		List<SuspendedCuboid<CuboidData>> out_loadedCuboids = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(address), List.of(), 0L);
+		loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(address), List.of(), currentGameMillis);
 		// The first call should give us nothing so loop until we see an answer.
 		Assert.assertTrue(out_loadedCuboids.isEmpty());
 		for (int i = 0; (out_loadedCuboids.isEmpty()) && (i < 10); ++i)
 		{
 			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(), List.of(), 0L);
+			loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(), List.of(), currentGameMillis);
 		}
 		Assert.assertEquals(1, out_loadedCuboids.size());
 		return out_loadedCuboids.get(0);

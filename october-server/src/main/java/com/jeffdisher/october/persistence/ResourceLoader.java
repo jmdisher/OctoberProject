@@ -34,6 +34,7 @@ import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
+import com.jeffdisher.october.logic.PassiveIdAssigner;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
@@ -52,6 +53,7 @@ import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.MessageQueue;
@@ -121,6 +123,7 @@ public class ResourceLoader
 
 	// We directly expose the ID assigner since it is designed to be shared and is atomic.
 	public final CreatureIdAssigner creatureIdAssigner;
+	public final PassiveIdAssigner passiveIdAssigner;
 
 	// Shared data for passing information back from the background thread.
 	private final ReentrantLock _sharedDataLock;
@@ -149,6 +152,7 @@ public class ResourceLoader
 		}, "Cuboid Loader");
 		_backround_serializationBuffer = ByteBuffer.allocate(SERIALIZATION_BUFFER_SIZE_BYTES);
 		this.creatureIdAssigner = new CreatureIdAssigner();
+		this.passiveIdAssigner = new PassiveIdAssigner();
 		
 		_sharedDataLock = new ReentrantLock();
 		
@@ -233,6 +237,7 @@ public class ResourceLoader
 									, List.of()
 									, List.of()
 									, Map.of()
+									, List.of()
 							);
 						}
 						else if (null != _cuboidGenerator)
@@ -474,6 +479,9 @@ public class ResourceLoader
 					// ... and any periodic mutations.
 					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
 					
+					// Passives are stored much like creatures.
+					List<PassiveEntity> passives = _background_readPassives(context);
+					
 					// This should be fully read.
 					Assert.assertTrue(!buffer.hasRemaining());
 					
@@ -484,6 +492,7 @@ public class ResourceLoader
 							, creatures
 							, pendingMutations
 							, periodicMutations
+							, passives
 					);
 				};
 			}
@@ -500,6 +509,9 @@ public class ResourceLoader
 					// ... and any periodic mutations.
 					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
 					
+					// Passives added in V9.
+					List<PassiveEntity> passives = List.of();
+					
 					// This should be fully read.
 					Assert.assertTrue(!buffer.hasRemaining());
 					
@@ -510,6 +522,7 @@ public class ResourceLoader
 							, creatures
 							, pendingMutations
 							, periodicMutations
+							, passives
 					);
 				};
 			}
@@ -526,6 +539,9 @@ public class ResourceLoader
 					// ... and any periodic mutations.
 					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
 					
+					// Passives added in V9.
+					List<PassiveEntity> passives = List.of();
+					
 					// This should be fully read.
 					Assert.assertTrue(!buffer.hasRemaining());
 					
@@ -536,6 +552,7 @@ public class ResourceLoader
 							, creatures
 							, pendingMutations
 							, periodicMutations
+							, passives
 					);
 				};
 			}
@@ -553,6 +570,9 @@ public class ResourceLoader
 					// ... and any periodic mutations.
 					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
 					
+					// Passives added in V9.
+					List<PassiveEntity> passives = List.of();
+					
 					// This should be fully read.
 					Assert.assertTrue(!buffer.hasRemaining());
 					
@@ -563,6 +583,7 @@ public class ResourceLoader
 							, creatures
 							, pendingMutations
 							, periodicMutations
+							, passives
 					);
 				};
 			}
@@ -580,6 +601,9 @@ public class ResourceLoader
 					// ... and any periodic mutations.
 					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
 					
+					// Passives added in V9.
+					List<PassiveEntity> passives = List.of();
+					
 					// This should be fully read.
 					Assert.assertTrue(!buffer.hasRemaining());
 					
@@ -590,6 +614,7 @@ public class ResourceLoader
 							, creatures
 							, pendingMutations
 							, periodicMutations
+							, passives
 					);
 				};
 			}
@@ -607,6 +632,9 @@ public class ResourceLoader
 					// ... and any periodic mutations.
 					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
 					
+					// Passives added in V9.
+					List<PassiveEntity> passives = List.of();
+					
 					// This should be fully read.
 					Assert.assertTrue(!buffer.hasRemaining());
 					
@@ -617,6 +645,7 @@ public class ResourceLoader
 							, creatures
 							, pendingMutations
 							, periodicMutations
+							, passives
 					);
 				};
 			}
@@ -634,6 +663,9 @@ public class ResourceLoader
 					Map<BlockAddress, Long> periodicMutations = new HashMap<>();
 					_background_splitMutations(pendingMutations, periodicMutations, context);
 					
+					// Passives added in V9.
+					List<PassiveEntity> passives = List.of();
+					
 					// This should be fully read.
 					Assert.assertTrue(!buffer.hasRemaining());
 					
@@ -644,6 +676,7 @@ public class ResourceLoader
 							, creatures
 							, pendingMutations
 							, periodicMutations
+							, passives
 					);
 				};
 			}
@@ -668,6 +701,9 @@ public class ResourceLoader
 					Map<BlockAddress, Long> periodicMutations = new HashMap<>();
 					_background_splitMutations(pendingMutations, periodicMutations, context);
 					
+					// Passives added in V9.
+					List<PassiveEntity> passives = List.of();
+					
 					// This should be fully read.
 					Assert.assertTrue(!buffer.hasRemaining());
 					
@@ -678,6 +714,7 @@ public class ResourceLoader
 							, creatures
 							, pendingMutations
 							, periodicMutations
+							, passives
 					);
 				};
 			}
@@ -886,6 +923,19 @@ public class ResourceLoader
 		return creatures;
 	}
 
+	private List<PassiveEntity> _background_readPassives(DeserializationContext context)
+	{
+		ByteBuffer buffer = context.buffer();
+		int passiveCount = buffer.getInt();
+		List<PassiveEntity> passives = new ArrayList<>();
+		for (int i = 0; i < passiveCount; ++i)
+		{
+			PassiveEntity entity = CodecHelpers.readPassiveEntity(this.passiveIdAssigner.next(), context);
+			passives.add(entity);
+		}
+		return passives;
+	}
+
 	private void _background_splitMutations(List<ScheduledMutation> out_pendingMutations
 			, Map<BlockAddress, Long> out_periodicMutations
 			, DeserializationContext context
@@ -950,6 +1000,7 @@ public class ResourceLoader
 		// 3) creatures
 		// 4) suspended mutations
 		// 5) periodic mutations
+		// 6) passives
 		Assert.assertTrue(0 == _backround_serializationBuffer.position());
 		
 		// 1) Write the version header.
@@ -991,6 +1042,14 @@ public class ResourceLoader
 			_backround_serializationBuffer.put(block.y());
 			_backround_serializationBuffer.put(block.z());
 			_backround_serializationBuffer.putLong(millisUntilReady);
+		}
+		
+		// 6) Write passive entities.
+		List<PassiveEntity> passives = data.passives();
+		_backround_serializationBuffer.putInt(passives.size());
+		for (PassiveEntity passive : passives)
+		{
+			CodecHelpers.writePassiveEntity(_backround_serializationBuffer, passive);
 		}
 		
 		// We are done the write so flip the buffer and write it out.
