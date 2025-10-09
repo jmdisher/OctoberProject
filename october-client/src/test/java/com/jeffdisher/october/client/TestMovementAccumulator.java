@@ -1088,6 +1088,7 @@ public class TestMovementAccumulator
 			, null
 			, null
 			, null
+			, null
 			, (EventRecord event) -> {
 				// For now, we will just drop these but may want them in the future.
 			}

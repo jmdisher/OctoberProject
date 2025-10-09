@@ -30,6 +30,7 @@ import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.EntityChangeSendItem;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
+import com.jeffdisher.october.logic.PassiveIdAssigner;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.ScheduledMutation;
@@ -207,6 +208,7 @@ public class TestTickRunner
 	{
 		// Use extra threads here to stress further.
 		TickRunner runner = new TickRunner(8, MILLIS_PER_TICK
+				, null
 				, null
 				, (int bound) -> 0
 				, (TickRunner.Snapshot completed) -> {}
@@ -526,6 +528,7 @@ public class TestTickRunner
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
 				, MILLIS_PER_TICK
 				, null
+				, null
 				, (int bound) -> 0
 				, snapshotListener
 				, new WorldConfig()
@@ -596,6 +599,7 @@ public class TestTickRunner
 		};
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
 				, MILLIS_PER_TICK
+				, null
 				, null
 				, null
 				, snapshotListener
@@ -1501,6 +1505,7 @@ public class TestTickRunner
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
 				, MILLIS_PER_TICK
 				, null
+				, null
 				, (int bound) -> randomHolder[0] % bound
 				, (TickRunner.Snapshot completed) -> {}
 				, new WorldConfig()
@@ -1575,6 +1580,7 @@ public class TestTickRunner
 		config.difficulty = Difficulty.PEACEFUL;
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
 				, MILLIS_PER_TICK
+				, null
 				, null
 				, (int bound) -> randomHolder[0] % bound
 				, (TickRunner.Snapshot completed) -> {}
@@ -3490,6 +3496,7 @@ public class TestTickRunner
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
 				, MILLIS_PER_TICK
 				, new CreatureIdAssigner()
+				, new PassiveIdAssigner()
 				, (int bound) -> random.nextInt(bound)
 				, snapshotListener
 				, config

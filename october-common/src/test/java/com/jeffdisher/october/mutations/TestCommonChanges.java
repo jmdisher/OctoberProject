@@ -34,6 +34,7 @@ import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
+import com.jeffdisher.october.logic.PassiveIdAssigner;
 import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
@@ -54,6 +55,7 @@ import com.jeffdisher.october.subactions.EntityChangeSwim;
 import com.jeffdisher.october.subactions.EntityChangeUseSelectedItemOnBlock;
 import com.jeffdisher.october.subactions.EntityChangeUseSelectedItemOnEntity;
 import com.jeffdisher.october.subactions.EntityChangeUseSelectedItemOnSelf;
+import com.jeffdisher.october.subactions.EntitySubActionDropItemsAsPassive;
 import com.jeffdisher.october.subactions.EntitySubActionLadderAscend;
 import com.jeffdisher.october.subactions.EntitySubActionLadderDescend;
 import com.jeffdisher.october.subactions.EntitySubActionRequestSwapSpecialSlot;
@@ -88,6 +90,8 @@ import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
+import com.jeffdisher.october.types.PassiveEntity;
+import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
@@ -3013,6 +3017,65 @@ public class TestCommonChanges
 		Assert.assertTrue(stand.applyChange(context, mutable));
 		Assert.assertEquals(new EntityLocation(9.1f, 9.1f, 0.0f), mutable.newLocation);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutable.newVelocity);
+	}
+
+	@Test
+	public void dropItems() throws Throwable
+	{
+		Item pickaxe = ENV.items.getItemById("op.iron_pickaxe");
+		int startDurability = 300;
+		NonStackableItem sword = new NonStackableItem(pickaxe, Map.of(PropertyRegistry.DURABILITY, startDurability));
+		
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = new EntityLocation(6.1f, 0.2f, 11.0f);
+		newEntity.newInventory.addNonStackableBestEfforts(sword);
+		newEntity.newInventory.addAllItems(LOG_ITEM, 3);
+		newEntity.setSelectedKey(1);
+		
+		AbsoluteLocation targetStone = new AbsoluteLocation(6, 0, 10);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, targetStone.getBlockAddress(), STONE_ITEM.number());
+		
+		PassiveEntity[] out = new PassiveEntity[1];
+		long aliveTime = 1000L;
+		PassiveIdAssigner assigner = new PassiveIdAssigner();
+		TickProcessingContext context = ContextBuilder.build()
+			.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+				Assert.assertNull(out[0]);
+				out[0] = new PassiveEntity(assigner.next(), type, location, velocity, extendedData, aliveTime);
+			})
+			.finish()
+		;
+		
+		// Drop the sword and verify it clears selection key.
+		EntitySubActionDropItemsAsPassive drop1 = new EntitySubActionDropItemsAsPassive(1, false);
+		Assert.assertTrue(drop1.applyChange(context, newEntity));
+		PassiveEntity pass1 = out[0];
+		out[0] = null;
+		
+		// Drop the other items in 2 actions.
+		EntitySubActionDropItemsAsPassive drop2 = new EntitySubActionDropItemsAsPassive(2, false);
+		Assert.assertTrue(drop2.applyChange(context, newEntity));
+		PassiveEntity pass2 = out[0];
+		out[0] = null;
+		EntitySubActionDropItemsAsPassive drop3 = new EntitySubActionDropItemsAsPassive(2, true);
+		Assert.assertTrue(drop3.applyChange(context, newEntity));
+		PassiveEntity pass3 = out[0];
+		out[0] = null;
+		
+		// Verify the inventory is empty, nothing is selected, and the passives contain what is expected.
+		Assert.assertEquals(0, newEntity.newInventory.getCurrentEncumbrance());
+		Assert.assertEquals(0, newEntity.getSelectedKey());
+		
+		Assert.assertEquals(1, pass1.id());
+		Assert.assertEquals(newEntity.newLocation, pass1.location());
+		Assert.assertEquals(sword, ((ItemSlot)pass1.extendedData()).nonStackable);
+		Assert.assertEquals(2, pass2.id());
+		Assert.assertEquals(newEntity.newLocation, pass2.location());
+		Assert.assertEquals(new Items(LOG_ITEM, 1), ((ItemSlot)pass2.extendedData()).stack);
+		Assert.assertEquals(3, pass3.id());
+		Assert.assertEquals(newEntity.newLocation, pass3.location());
+		Assert.assertEquals(new Items(LOG_ITEM, 2), ((ItemSlot)pass3.extendedData()).stack);
 	}
 
 

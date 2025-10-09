@@ -94,6 +94,7 @@ public class ServerRunner
 		_tickRunner = new TickRunner(TICK_RUNNER_THREAD_COUNT
 				, _millisPerTick
 				, loader.creatureIdAssigner
+				, loader.passiveIdAssigner
 				, (int bound) -> random.nextInt(bound)
 				, tickListener
 				, config

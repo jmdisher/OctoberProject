@@ -56,6 +56,7 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 		EntitySubActionType.LADDER_DESCEND,
 		EntitySubActionType.ITEM_SLOT_REQUEST_SWAP,
 		EntitySubActionType.TRAVEL_VIA_BLOCK,
+		EntitySubActionType.DROP_ITEMS_AS_PASSIVE,
 		EntitySubActionType.TESTING_ONLY,
 	}).collect(Collectors.toSet());
 

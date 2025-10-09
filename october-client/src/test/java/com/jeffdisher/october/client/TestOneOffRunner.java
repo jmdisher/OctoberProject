@@ -11,8 +11,10 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.HeightMapHelpers;
+import com.jeffdisher.october.subactions.EntitySubActionDropItemsAsPassive;
 import com.jeffdisher.october.subactions.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -31,12 +33,14 @@ public class TestOneOffRunner
 	private static Environment ENV;
 	private static Item STONE_ITEM;
 	private static Item DIRT_ITEM;
+	private static Block STONE_BLOCK;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");
 		DIRT_ITEM = ENV.items.getItemById("op.dirt");
+		STONE_BLOCK = ENV.blocks.fromItem(STONE_ITEM);
 	}
 	@AfterClass
 	public static void tearDown()
@@ -137,6 +141,36 @@ public class TestOneOffRunner
 		Assert.assertEquals(EventRecord.Type.BLOCK_PLACED, catcher.event.type());
 		Assert.assertEquals(DIRT_ITEM.number(), end.world().get(address).getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(0, end.thisEntity().inventory().currentEncumbrance);
+	}
+
+	@Test
+	public void dropItemAsPassive() throws Throwable
+	{
+		// We should see the inventory change immediately but the passive will not appear (as it comes from the server).
+		int entityId = 1;
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		mutable.newInventory.addAllItems(DIRT_ITEM, 1);
+		mutable.setSelectedKey(1);
+		mutable.newLocation = new EntityLocation(1.0f, 2.0f, 1.0f);
+		Entity entity = mutable.freeze();
+		
+		AbsoluteLocation entityLocation = mutable.newLocation.getBlockLocation();
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE_BLOCK);
+		cuboid.setData15(AspectRegistry.BLOCK, entityLocation.getBlockAddress(), ENV.special.AIR.item().number());
+		
+		OneOffRunner.StatePackage start = new OneOffRunner.StatePackage(entity
+			, Map.of(address, cuboid)
+			, Map.of(address, HeightMapHelpers.buildHeightMap(cuboid))
+			, null
+			, Map.of()
+		);
+		EntitySubActionDropItemsAsPassive drop = new EntitySubActionDropItemsAsPassive(1, true);
+		OneOffRunner.StatePackage end = OneOffRunner.runOneChange(start, null, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(drop));
+		
+		Entity result = end.thisEntity();
+		Assert.assertEquals(0, result.inventory().currentEncumbrance);
+		Assert.assertEquals(0, MutableEntity.existing(result).getSelectedKey());
 	}
 
 

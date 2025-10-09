@@ -36,6 +36,7 @@ import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
+import com.jeffdisher.october.logic.PassiveIdAssigner;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
@@ -60,6 +61,7 @@ import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.PassiveEntity;
+import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
@@ -85,6 +87,7 @@ public class TickRunner
 	private final Thread[] _threads;
 	private final long _millisPerTick;
 	private final CreatureIdAssigner _idAssigner;
+	private final PassiveIdAssigner _passiveIdAssigner;
 	private final IntUnaryOperator _random;
 	private final Consumer<Snapshot> _tickCompletionListener;
 	private final WorldConfig _config;
@@ -123,6 +126,7 @@ public class TickRunner
 	public TickRunner(int threadCount
 			, long millisPerTick
 			, CreatureIdAssigner idAssigner
+			, PassiveIdAssigner passiveIdAssigner
 			, IntUnaryOperator randomInt
 			, Consumer<Snapshot> tickCompletionListener
 			, WorldConfig config
@@ -133,6 +137,7 @@ public class TickRunner
 		_threads = new Thread[threadCount];
 		_millisPerTick = millisPerTick;
 		_idAssigner = idAssigner;
+		_passiveIdAssigner = passiveIdAssigner;
 		_random = randomInt;
 		_tickCompletionListener = tickCompletionListener;
 		_config = config;
@@ -433,6 +438,9 @@ public class TickRunner
 			CommonChangeSink newChangeSink = new CommonChangeSink(materials.completedEntities.keySet(), materials.completedCreatures.keySet());
 			List<EventRecord> events = new ArrayList<>();
 			
+			// On the server, we just generate the tick time as purely abstract monotonic value.
+			long currentTickTimeMillis = (materials.thisGameTick * _millisPerTick);
+			
 			// We will capture the newly-spawned creatures into a basic list.
 			List<CreatureEntity> spawnedCreatures = new ArrayList<>();
 			TickProcessingContext.ICreatureSpawner spawnConsumer = (EntityType type, EntityLocation location, byte health) -> {
@@ -440,11 +448,13 @@ public class TickRunner
 				CreatureEntity entity = CreatureEntity.create(id, type, location, health);
 				spawnedCreatures.add(entity);
 			};
-			// TODO:  Implement a passive spawning mechanism in the context.
+			// Same with passives.
 			List<PassiveEntity> spawnedPassives = new ArrayList<>();
-			
-			// On the server, we just generate the tick time as purely abstract monotonic value.
-			long currentTickTimeMillis = (materials.thisGameTick * _millisPerTick);
+			TickProcessingContext.IPassiveSpawner passiveConsumer = (PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+				int id = _passiveIdAssigner.next();
+				PassiveEntity entity = new PassiveEntity(id, type, location, velocity, extendedData, currentTickTimeMillis);
+				spawnedPassives.add(entity);
+			};
 			Set<CuboidAddress> internallyMarkedAlive = new HashSet<>();
 			TickProcessingContext context = new TickProcessingContext(materials.thisGameTick
 					, cachingLoader
@@ -476,6 +486,7 @@ public class TickRunner
 					, newMutationSink
 					, newChangeSink
 					, spawnConsumer
+					, passiveConsumer
 					, _random
 					, (EventRecord event) -> events.add(event)
 					, (CuboidAddress address) -> internallyMarkedAlive.add(address)

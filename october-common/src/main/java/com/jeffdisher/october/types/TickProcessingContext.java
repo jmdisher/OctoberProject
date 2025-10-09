@@ -58,6 +58,11 @@ public class TickProcessingContext
 	public final ICreatureSpawner creatureSpawner;
 
 	/**
+	 * Used when spawning passives in the world.
+	 */
+	public final IPassiveSpawner passiveSpawner;
+
+	/**
 	 * Returns a random number when given a bound in the range:  [0..bound).
 	 */
 	public final IntUnaryOperator randomInt;
@@ -97,6 +102,7 @@ public class TickProcessingContext
 			, IMutationSink mutationSink
 			, IChangeSink newChangeSink
 			, ICreatureSpawner creatureSpawner
+			, IPassiveSpawner passiveSpawner
 			, IntUnaryOperator randomInt
 			, IEventSink eventSink
 			, Consumer<CuboidAddress> keepAliveSink
@@ -112,6 +118,7 @@ public class TickProcessingContext
 		this.mutationSink = mutationSink;
 		this.newChangeSink = newChangeSink;
 		this.creatureSpawner = creatureSpawner;
+		this.passiveSpawner = passiveSpawner;
 		this.randomInt = randomInt;
 		this.eventSink = eventSink;
 		this.keepAliveSink = keepAliveSink;
@@ -203,5 +210,14 @@ public class TickProcessingContext
 	public static interface ICreatureSpawner
 	{
 		void spawnCreature(EntityType type, EntityLocation location, byte health);
+	}
+
+	/**
+	 * When new passives are spawned, they use this interface.  The implementation is responsible for assigning the ID
+	 * to the new passive, instantiating it, and making sure that it is included in the next tick.
+	 */
+	public static interface IPassiveSpawner
+	{
+		void spawnPassive(PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData);
 	}
 }

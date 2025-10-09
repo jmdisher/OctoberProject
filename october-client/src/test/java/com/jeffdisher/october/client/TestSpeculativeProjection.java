@@ -49,6 +49,7 @@ import com.jeffdisher.october.subactions.EntityChangeCraft;
 import com.jeffdisher.october.subactions.EntityChangeCraftInBlock;
 import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.subactions.EntityChangePlaceMultiBlock;
+import com.jeffdisher.october.subactions.EntitySubActionDropItemsAsPassive;
 import com.jeffdisher.october.subactions.MutationEntityPushItems;
 import com.jeffdisher.october.subactions.MutationEntityRequestItemPickUp;
 import com.jeffdisher.october.subactions.MutationPlaceSelectedBlock;
@@ -2526,6 +2527,53 @@ public class TestSpeculativeProjection
 		// Verify the events.
 		Assert.assertEquals(1, listener.events.size());
 		Assert.assertEquals(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, targetLocation, 0, entityId), listener.events.get(0));
+	}
+
+	@Test
+	public void dropItemAsPassive() throws Throwable
+	{
+		// We should see the inventory change immediately but the passive will not appear (as it comes from the server).
+		int entityId = 1;
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		mutable.newInventory.addAllItems(STONE_ITEM, 2);
+		mutable.setSelectedKey(1);
+		mutable.newLocation = new EntityLocation(1.0f, 2.0f, 1.0f);
+		
+		AbsoluteLocation entityLocation = mutable.newLocation.getBlockLocation();
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
+		cuboid.setData15(AspectRegistry.BLOCK, entityLocation.getBlockAddress(), ENV.special.AIR.item().number());
+		
+		CountingListener listener = new CountingListener();
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		Entity entity = mutable.freeze();
+		projector.setThisEntity(entity);
+		long currentTimeMillis = 1L;
+		projector.applyChangesForServerTick(1L
+			, List.of()
+			, List.of(cuboid)
+			, null
+			, Collections.emptyMap()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, List.of()
+			, 0L
+			, currentTimeMillis
+		);
+		Assert.assertEquals(1, listener.loadCount);
+		Assert.assertEquals(0, listener.changeCount);
+		
+		// Run the sub-action to drop the items
+		currentTimeMillis += 100L;
+		EntitySubActionDropItemsAsPassive drop = new EntitySubActionDropItemsAsPassive(1, true);
+		long commit1 = _wrapAndApply(projector, entity, currentTimeMillis, drop);
+		Assert.assertEquals(1, commit1);
+		Assert.assertEquals(0, listener.changeCount);
+		
+		Entity result = listener.thisEntityState;
+		Assert.assertEquals(0, result.inventory().currentEncumbrance);
+		Assert.assertEquals(0, MutableEntity.existing(result).getSelectedKey());
 	}
 
 

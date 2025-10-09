@@ -45,6 +45,7 @@ public class ContextBuilder
 	public TickProcessingContext.IMutationSink mutationSink;
 	public TickProcessingContext.IChangeSink newChangeSink;
 	public TickProcessingContext.ICreatureSpawner creatureSpawner;
+	public TickProcessingContext.IPassiveSpawner passiveSpawner;
 	public IntUnaryOperator randomInt;
 	public TickProcessingContext.IEventSink eventSink;
 	public Consumer<CuboidAddress> keepAliveSink;
@@ -94,6 +95,12 @@ public class ContextBuilder
 	public ContextBuilder spawner(TickProcessingContext.ICreatureSpawner creatureSpawner)
 	{
 		this.creatureSpawner = creatureSpawner;
+		return this;
+	}
+
+	public ContextBuilder passive(TickProcessingContext.IPassiveSpawner passiveSpawner)
+	{
+		this.passiveSpawner = passiveSpawner;
 		return this;
 	}
 
@@ -151,6 +158,7 @@ public class ContextBuilder
 				, this.mutationSink
 				, this.newChangeSink
 				, this.creatureSpawner
+				, this.passiveSpawner
 				, this.randomInt
 				, this.eventSink
 				, this.keepAliveSink

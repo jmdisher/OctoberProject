@@ -39,6 +39,7 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -46,6 +47,7 @@ import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
@@ -719,6 +721,9 @@ public class SpeculativeProjection
 				, newChangeSink
 				// We never spawn creatures on the client so no ID assigner.
 				, null
+				, (PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+					// We might try to spawn passives here but they should just be ignored in one-off (since this isn't authoritative).
+				}
 				// We need a random number generator for a few cases (like attack) but the server will send us the authoritative result.
 				, (int bound) -> 0
 				, eventSink
