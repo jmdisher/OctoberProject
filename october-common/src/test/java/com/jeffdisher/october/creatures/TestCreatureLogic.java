@@ -406,22 +406,23 @@ public class TestCreatureLogic
 		TickProcessingContext context = ContextBuilder.build()
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 					@Override
-					public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+					public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 					{
-						Assert.fail();
+						throw new AssertionError();
 					}
 					@Override
-					public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+					public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 					{
-						Assert.fail();
+						throw new AssertionError();
 					}
 					@Override
-					public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+					public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 					{
 						Assert.assertEquals(0, targetId[0]);
 						Assert.assertNull(message[0]);
 						targetId[0] = targetCreatureId;
 						message[0] = change;
+						return true;
 					}})
 				.lookups(null, (Integer entityId) -> {
 					return creatures.containsKey(entityId)
@@ -603,22 +604,23 @@ public class TestCreatureLogic
 		IEntityAction<IMutablePlayerEntity>[] ref_change = new IEntityAction[1];
 		TickProcessingContext.IChangeSink changeSink = new TickProcessingContext.IChangeSink() {
 			@Override
-			public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+			public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 			{
 				Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, ref_targetEntityId[0]);
 				ref_targetEntityId[0] = targetEntityId;
 				Assert.assertNull(ref_change[0]);
 				ref_change[0] = change;
+				return true;
 			}
 			@Override
-			public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+			public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 			{
-				Assert.fail();
+				throw new AssertionError();
 			}
 			@Override
-			public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+			public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 			{
-				Assert.fail();
+				throw new AssertionError();
 			}
 		};
 		long millisPerTick = 100L;
@@ -811,20 +813,21 @@ public class TestCreatureLogic
 				.lookups(previousBlockLookUp, previousEntityLookUp)
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 					@Override
-					public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+					public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 					{
 						Assert.assertEquals(entityId, targetEntityId);
 						out[0] = true;
+						return true;
 					}
 					@Override
-					public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+					public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 					{
-						Assert.fail();
+						throw new AssertionError();
 					}
 					@Override
-					public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+					public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 					{
-						Assert.fail();
+						throw new AssertionError();
 					}
 				})
 				.finish()

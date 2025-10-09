@@ -82,27 +82,29 @@ public class FakeUpdateFactories
 				, new TickProcessingContext.IMutationSink()
 				{
 					@Override
-					public void next(IMutationBlock mutation)
+					public boolean next(IMutationBlock mutation)
 					{
+						return false;
 					}
 					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
+					public boolean future(IMutationBlock mutation, long millisToDelay)
 					{
 						throw Assert.unreachable();
 					}
 				}
 			, new TickProcessingContext.IChangeSink() {
 				@Override
-				public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+				public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 				{
+					return false;
 				}
 				@Override
-				public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+				public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 				{
 					throw Assert.unreachable();
 				}
 				@Override
-				public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+				public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 				{
 					throw Assert.unreachable();
 				}

@@ -231,15 +231,16 @@ public class TestFallingBehaviour
 					, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
-						public void next(IMutationBlock mutation)
+						public boolean next(IMutationBlock mutation)
 						{
 							Assert.assertNull(blockHolder[0]);
 							blockHolder[0] = mutation;
+							return true;
 						}
 						@Override
-						public void future(IMutationBlock mutation, long millisToDelay)
+						public boolean future(IMutationBlock mutation, long millisToDelay)
 						{
-							Assert.fail("Not used in test");
+							throw new AssertionError("Not expected in test");
 						}
 					}, null)
 				.finish()
@@ -334,7 +335,7 @@ public class TestFallingBehaviour
 				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
-						public void next(IMutationBlock mutation)
+						public boolean next(IMutationBlock mutation)
 						{
 							int thisIndex = 0;
 							while (null != blockHolder[thisIndex])
@@ -343,9 +344,10 @@ public class TestFallingBehaviour
 							}
 							Assert.assertNull(blockHolder[thisIndex]);
 							blockHolder[thisIndex] = mutation;
+							return true;
 						}
 						@Override
-						public void future(IMutationBlock mutation, long millisToDelay)
+						public boolean future(IMutationBlock mutation, long millisToDelay)
 						{
 							int thisIndex = 0;
 							while (null != blockHolder[thisIndex])
@@ -354,6 +356,7 @@ public class TestFallingBehaviour
 							}
 							Assert.assertNull(blockHolder[thisIndex]);
 							blockHolder[thisIndex] = mutation;
+							return true;
 						}
 					}, null)
 				.eventSink((EventRecord event) -> {

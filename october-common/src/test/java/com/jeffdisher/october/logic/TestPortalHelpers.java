@@ -113,19 +113,21 @@ public class TestPortalHelpers
 			}, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
-				public void next(IMutationBlock mutation)
+				public boolean next(IMutationBlock mutation)
 				{
 					Assert.assertTrue(mutation instanceof MutationBlockPlaceMultiBlock);
 					boolean didAdd = nextLocations.add(mutation.getAbsoluteLocation());
 					Assert.assertTrue(didAdd);
+					return true;
 				}
 				@Override
-				public void future(IMutationBlock mutation, long millisToDelay)
+				public boolean future(IMutationBlock mutation, long millisToDelay)
 				{
 					Assert.assertTrue(mutation instanceof MutationBlockPhase2Multi);
 					Assert.assertEquals(ContextBuilder.DEFAULT_MILLIS_PER_TICK, millisToDelay);
 					boolean didAdd = futureLocations.add(mutation.getAbsoluteLocation());
 					Assert.assertTrue(didAdd);
+					return true;
 				}
 			}, null)
 			.finish()
@@ -155,16 +157,17 @@ public class TestPortalHelpers
 			}, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
-				public void next(IMutationBlock mutation)
+				public boolean next(IMutationBlock mutation)
 				{
 					Assert.assertTrue(mutation instanceof MutationBlockReplace);
 					boolean didAdd = nextLocations.add(mutation.getAbsoluteLocation());
 					Assert.assertTrue(didAdd);
+					return true;
 				}
 				@Override
-				public void future(IMutationBlock mutation, long millisToDelay)
+				public boolean future(IMutationBlock mutation, long millisToDelay)
 				{
-					Assert.fail();
+					throw new AssertionError("Not in test");
 				}
 			}, null)
 			.finish()
@@ -193,16 +196,17 @@ public class TestPortalHelpers
 			}, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
-				public void next(IMutationBlock mutation)
+				public boolean next(IMutationBlock mutation)
 				{
 					Assert.assertTrue(mutation instanceof MutationBlockReplace);
 					boolean didAdd = nextLocations.add(mutation.getAbsoluteLocation());
 					Assert.assertTrue(didAdd);
+					return true;
 				}
 				@Override
-				public void future(IMutationBlock mutation, long millisToDelay)
+				public boolean future(IMutationBlock mutation, long millisToDelay)
 				{
-					Assert.fail();
+					throw new AssertionError("Not in test");
 				}
 			}, null)
 			.finish()

@@ -25,10 +25,10 @@ public class TestCommonMutationSink
 		MutationBlockIncrementalBreak next = new MutationBlockIncrementalBreak(location, (short)100, 0);
 		MutationBlockIncrementalBreak future = new MutationBlockIncrementalBreak(location, (short)200, 0);
 		
-		sink.future(future, 1000L);
-		sink.next(next);
-		sink.future(new MutationBlockIncrementalBreak(external, (short)100, 0), 1000L);
-		sink.next(new MutationBlockIncrementalBreak(external, (short)100, 0));
+		Assert.assertTrue(sink.future(future, 1000L));
+		Assert.assertTrue(sink.next(next));
+		Assert.assertFalse(sink.future(new MutationBlockIncrementalBreak(external, (short)100, 0), 1000L));
+		Assert.assertFalse(sink.next(new MutationBlockIncrementalBreak(external, (short)100, 0)));
 		
 		List<ScheduledMutation> mutations = sink.takeExportedMutations();
 		Assert.assertEquals(2, mutations.size());

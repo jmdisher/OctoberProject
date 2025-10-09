@@ -247,14 +247,16 @@ public class TestCommonMutations
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
-						public void next(IMutationBlock mutation)
+						public boolean next(IMutationBlock mutation)
 						{
 							out_mutation.add(mutation);
+							return true;
 						}
 						@Override
-						public void future(IMutationBlock mutation, long millisToDelay)
+						public boolean future(IMutationBlock mutation, long millisToDelay)
 						{
 							out_mutation.add(mutation);
+							return true;
 						}
 					}, null)
 				.eventSink(events)
@@ -332,14 +334,14 @@ public class TestCommonMutations
 				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
-						public void next(IMutationBlock mutation)
+						public boolean next(IMutationBlock mutation)
 						{
-							Assert.fail("Not expected in test");
+							throw new AssertionError("Not expected in test");
 						}
 						@Override
-						public void future(IMutationBlock mutation, long millisToDelay)
+						public boolean future(IMutationBlock mutation, long millisToDelay)
 						{
-							Assert.fail("Not used in test");
+							throw new AssertionError("Not expected in test");
 						}
 					}, null)
 				.eventSink(events)
@@ -372,14 +374,14 @@ public class TestCommonMutations
 				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
-						public void next(IMutationBlock mutation)
+						public boolean next(IMutationBlock mutation)
 						{
-							Assert.fail("Not expected in tets");
+							throw new AssertionError("Not expected in test");
 						}
 						@Override
-						public void future(IMutationBlock mutation, long millisToDelay)
+						public boolean future(IMutationBlock mutation, long millisToDelay)
 						{
-							Assert.fail("Not used in test");
+							throw new AssertionError("Not expected in test");
 						}
 					}, null)
 				.eventSink(events)
@@ -425,15 +427,16 @@ public class TestCommonMutations
 				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
-						public void next(IMutationBlock mutation)
+						public boolean next(IMutationBlock mutation)
 						{
 							Assert.assertNull(outMutation[0]);
 							outMutation[0] = mutation;
+							return true;
 						}
 						@Override
-						public void future(IMutationBlock mutation, long millisToDelay)
+						public boolean future(IMutationBlock mutation, long millisToDelay)
 						{
-							Assert.fail("Not used in test");
+							throw new AssertionError("Not expected in test");
 						}
 					}, null)
 				.finish()
@@ -497,14 +500,14 @@ public class TestCommonMutations
 				.skyLight((AbsoluteLocation blockLocation) -> (byte)0)
 				.sinks(new TickProcessingContext.IMutationSink() {
 							@Override
-							public void next(IMutationBlock mutation)
+							public boolean next(IMutationBlock mutation)
 							{
-								Assert.fail("Not expected in test");
+								throw new AssertionError("Not expected in test");
 							}
 							@Override
-							public void future(IMutationBlock mutation, long millisToDelay)
+							public boolean future(IMutationBlock mutation, long millisToDelay)
 							{
-								Assert.fail("Not used in test");
+								throw new AssertionError("Not expected in test");
 							}
 						}
 						, null)
@@ -623,14 +626,15 @@ public class TestCommonMutations
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
-						public void next(IMutationBlock mutation)
+						public boolean next(IMutationBlock mutation)
 						{
 							holder[0] = (MutationBlockFurnaceCraft) mutation;
+							return true;
 						}
 						@Override
-						public void future(IMutationBlock mutation, long millisToDelay)
+						public boolean future(IMutationBlock mutation, long millisToDelay)
 						{
-							Assert.fail("Not used in test");
+							throw new AssertionError("Not expected in test");
 						}
 					}, null)
 				.finish()
@@ -711,20 +715,21 @@ public class TestCommonMutations
 				}, null)
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 					@Override
-					public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+					public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 					{
 						Assert.assertNull(holder[0]);
 						holder[0] = (Deprecated_EntityChangeTakeDamageFromOther<IMutablePlayerEntity>) change;
+						return true;
 					}
 					@Override
-					public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+					public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 					{
-						Assert.fail();
+						throw new AssertionError("Not expected in test");
 					}
 					@Override
-					public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+					public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 					{
-						Assert.fail();
+						throw new AssertionError("Not expected in test");
 					}
 				})
 				.eventSink(events)
@@ -797,15 +802,16 @@ public class TestCommonMutations
 				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
-						public void next(IMutationBlock mutation)
+						public boolean next(IMutationBlock mutation)
 						{
 							Assert.assertNull(out_mutation[0]);
 							out_mutation[0] = mutation;
+							return true;
 						}
 						@Override
-						public void future(IMutationBlock mutation, long millisToDelay)
+						public boolean future(IMutationBlock mutation, long millisToDelay)
 						{
-							Assert.fail("Not used in test");
+							throw new AssertionError("Not expected in test");
 						}
 					}, null)
 				.eventSink(events)
@@ -853,7 +859,7 @@ public class TestCommonMutations
 				.skyLight((AbsoluteLocation blockLocation) -> PlantHelpers.MIN_LIGHT)
 				.sinks(new TickProcessingContext.IMutationSink() {
 							@Override
-							public void next(IMutationBlock mutation)
+							public boolean next(IMutationBlock mutation)
 							{
 								if (mutation instanceof MutationBlockOverwriteInternal)
 								{
@@ -864,11 +870,12 @@ public class TestCommonMutations
 									Assert.assertNull(out_mutation[0]);
 									out_mutation[0] = mutation;
 								}
+								return true;
 							}
 							@Override
-							public void future(IMutationBlock mutation, long millisToDelay)
+							public boolean future(IMutationBlock mutation, long millisToDelay)
 							{
-								Assert.fail("Not used in test");
+								throw new AssertionError("Not expected in test");
 							}
 						}
 						, null)
@@ -915,17 +922,18 @@ public class TestCommonMutations
 					}, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 					@Override
-					public void next(IMutationBlock mutation)
+					public boolean next(IMutationBlock mutation)
 					{
-						Assert.fail("Not in test");
+						throw new AssertionError("Not expected in test");
 					}
 					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
+					public boolean future(IMutationBlock mutation, long millisToDelay)
 					{
 						Assert.assertNotNull(mutation);
 						Assert.assertTrue(millisToDelay > 0L);
 						Assert.assertNull(out_mutation[0]);
 						out_mutation[0] = mutation;
+						return true;
 					}
 				}, null)
 				.finish()
@@ -959,14 +967,15 @@ public class TestCommonMutations
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
-						public void next(IMutationBlock mutation)
+						public boolean next(IMutationBlock mutation)
 						{
-							Assert.fail();
+							throw new AssertionError("Not expected in test");
 						}
 						@Override
-						public void future(IMutationBlock mutation, long millisToDelay)
+						public boolean future(IMutationBlock mutation, long millisToDelay)
 						{
 							out_mutation.add(mutation);
+							return true;
 						}
 					}, null)
 				.eventSink(events)
@@ -1013,15 +1022,16 @@ public class TestCommonMutations
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
-						public void next(IMutationBlock mutation)
+						public boolean next(IMutationBlock mutation)
 						{
-							Assert.fail();
+							throw new AssertionError("Not expected in test");
 						}
 						@Override
-						public void future(IMutationBlock mutation, long millisToDelay)
+						public boolean future(IMutationBlock mutation, long millisToDelay)
 						{
 							Assert.assertNull(out_mutation[0]);
 							out_mutation[0] = mutation;
+							return true;
 						}
 					}, null)
 				.eventSink(events)
@@ -1080,12 +1090,12 @@ public class TestCommonMutations
 				}, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 					@Override
-					public void next(IMutationBlock mutation)
+					public boolean next(IMutationBlock mutation)
 					{
-						Assert.fail("Not used");
+						throw new AssertionError("Not expected in test");
 					}
 					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
+					public boolean future(IMutationBlock mutation, long millisToDelay)
 					{
 						// We only expect one of each.
 						if (mutation instanceof MutationBlockStartFire)
@@ -1105,6 +1115,7 @@ public class TestCommonMutations
 							// In this case, we expect the liquid movement but we don't actually want to apply that.
 							Assert.assertTrue(mutation instanceof MutationBlockLiquidFlowInto);
 						}
+						return true;
 					}
 				}, null)
 				.finish()
@@ -1235,15 +1246,16 @@ public class TestCommonMutations
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 					@Override
-					public void next(IMutationBlock mutation)
+					public boolean next(IMutationBlock mutation)
 					{
-						Assert.fail("Not in test");
+						throw new AssertionError("Not expected in test");
 					}
 					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
+					public boolean future(IMutationBlock mutation, long millisToDelay)
 					{
 						// We only expect these to be to schedule the fire spreading or burning down.
 						Assert.assertTrue((mutation instanceof MutationBlockStartFire) || (mutation instanceof MutationBlockBurnDown));
+						return true;
 					}
 				}, null)
 				.finish()
@@ -1328,14 +1340,15 @@ public class TestCommonMutations
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 					@Override
-					public void next(IMutationBlock mutation)
+					public boolean next(IMutationBlock mutation)
 					{
 						out_mutations.add(mutation);
+						return true;
 					}
 					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
+					public boolean future(IMutationBlock mutation, long millisToDelay)
 					{
-						Assert.fail();
+						throw new AssertionError("Not expected in test");
 					}
 				}, null)
 				.finish()
@@ -1399,17 +1412,18 @@ public class TestCommonMutations
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 					@Override
-					public void next(IMutationBlock mutation)
+					public boolean next(IMutationBlock mutation)
 					{
-						Assert.fail();
+						throw new AssertionError("Not expected in test");
 					}
 					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
+					public boolean future(IMutationBlock mutation, long millisToDelay)
 					{
 						// These are only for this one purpose.
 						Assert.assertEquals(MutationBlockGrowGroundCover.SPREAD_DELAY_MILLIS, millisToDelay);
 						Assert.assertNull(out_mutations[0]);
 						out_mutations[0] = (MutationBlockGrowGroundCover) mutation;
+						return true;
 					}
 				}, null)
 				.eventSink((EventRecord event) -> {})
@@ -1493,15 +1507,16 @@ public class TestCommonMutations
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 					@Override
-					public void next(IMutationBlock mutation)
+					public boolean next(IMutationBlock mutation)
 					{
 						Assert.assertNull(out[0]);
 						out[0] = mutation;
+						return true;
 					}
 					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
+					public boolean future(IMutationBlock mutation, long millisToDelay)
 					{
-						Assert.fail("Not in test");
+						throw new AssertionError("Not expected in test");
 					}
 				}, null)
 				.finish()
@@ -1719,15 +1734,17 @@ public class TestCommonMutations
 			}, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
-				public void next(IMutationBlock mutation)
+				public boolean next(IMutationBlock mutation)
 				{
 					Assert.assertTrue(mutation instanceof MutationBlockReplace);
 					boolean didAdd = replaceLocations.add(mutation.getAbsoluteLocation());
 					Assert.assertTrue(didAdd);
+					return true;
 				}
 				@Override
-				public void future(IMutationBlock mutation, long millisToDelay)
+				public boolean future(IMutationBlock mutation, long millisToDelay)
 				{
+					throw new AssertionError("Not expected in test");
 				}
 			}, null)
 			.finish()
@@ -1841,7 +1858,7 @@ public class TestCommonMutations
 			}, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
-				public void next(IMutationBlock mutation)
+				public boolean next(IMutationBlock mutation)
 				{
 					// This is used for both phase1 and replace mutations.
 					if (mutation instanceof MutationBlockPlaceMultiBlock)
@@ -1854,15 +1871,17 @@ public class TestCommonMutations
 					}
 					boolean didAdd = nextLocations.add(mutation.getAbsoluteLocation());
 					Assert.assertTrue(didAdd);
+					return true;
 				}
 				@Override
-				public void future(IMutationBlock mutation, long millisToDelay)
+				public boolean future(IMutationBlock mutation, long millisToDelay)
 				{
 					// This test only uses this for phase2 mutations.
 					phase2.add((MutationBlockPhase2Multi) mutation);
 					Assert.assertEquals(ContextBuilder.DEFAULT_MILLIS_PER_TICK, millisToDelay);
 					boolean didAdd = futureLocations.add(mutation.getAbsoluteLocation());
 					Assert.assertTrue(didAdd);
+					return true;
 				}
 			}, null)
 			.finish()
@@ -2008,34 +2027,36 @@ public class TestCommonMutations
 						}, null)
 					.sinks(new TickProcessingContext.IMutationSink() {
 							@Override
-							public void next(IMutationBlock mutation)
+							public boolean next(IMutationBlock mutation)
 							{
 								ProcessingSinks.this.nextMutation = mutation;
+								return true;
 							}
 							@Override
-							public void future(IMutationBlock mutation, long millisToDelay)
+							public boolean future(IMutationBlock mutation, long millisToDelay)
 							{
-								Assert.fail("Not used in test");
+								throw new AssertionError("Not expected in test");
 							}
 						}
 						, new TickProcessingContext.IChangeSink() {
 							@Override
-							public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+							public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 							{
 								Assert.assertEquals(0, ProcessingSinks.this.nextTargetEntityId);
 								Assert.assertNull(ProcessingSinks.this.nextChange);
 								ProcessingSinks.this.nextTargetEntityId = targetEntityId;
 								ProcessingSinks.this.nextChange = change;
+								return true;
 							}
 							@Override
-							public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+							public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 							{
-								Assert.fail("Not expected in tets");
+								throw new AssertionError("Not expected in test");
 							}
 							@Override
-							public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+							public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 							{
-								Assert.fail("Not expected in tets");
+								throw new AssertionError("Not expected in test");
 							}
 						})
 					.eventSink(this.events)

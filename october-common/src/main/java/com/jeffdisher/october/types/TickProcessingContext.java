@@ -131,15 +131,19 @@ public class TickProcessingContext
 		 * Requests that a block mutation be scheduled for the next tick.
 		 * 
 		 * @param mutation The mutation to schedule.
+		 * @return True if the mutation was scheduled (will run even if target unloaded) and false if the target isn't
+		 * loaded and the mutation was NOT scheduled.
 		 */
-		void next(IMutationBlock mutation);
+		boolean next(IMutationBlock mutation);
 		/**
 		 * Requests that a block mutation be scheduled for the future.
 		 * 
 		 * @param mutation The mutation to schedule.
 		 * @param millisToDelay Milliseconds to delay before running the mutation.
+		 * @return True if the mutation was scheduled (will run even if target unloaded) and false if the target isn't
+		 * loaded and the mutation was NOT scheduled.
 		 */
-		void future(IMutationBlock mutation, long millisToDelay);
+		boolean future(IMutationBlock mutation, long millisToDelay);
 	}
 
 
@@ -154,23 +158,30 @@ public class TickProcessingContext
 		 * 
 		 * @param targetEntityId The ID of the entity which should run the change.
 		 * @param change The change to schedule.
+		 * @return True if the action was scheduled (will run even if target unloaded) and false if the target isn't
+		 * loaded and the action was NOT scheduled.
 		 */
-		void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change);
+		boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change);
 		/**
 		 * Requests that an entity change be scheduled in the future.
 		 * 
 		 * @param targetEntityId The ID of the entity which should run the change.
 		 * @param change The change to schedule.
 		 * @param millisToDelay Milliseconds to delay before running the mutation.
+		 * @return True if the action was scheduled (will run even if target unloaded) and false if the target isn't
+		 * loaded and the action was NOT scheduled.
 		 */
-		void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay);
+		boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay);
 		/**
 		 * Requests that the given change be scheduled against this creature in the next tick.
 		 * 
 		 * @param targetCreatureId The ID of the creature which should run the change.
 		 * @param change The change to run.
+		 * @return True if the action was scheduled and false if the target isn't loaded and the action was NOT
+		 * scheduled.  Note that creature actions can still return true here but NEVER be run if the creature is
+		 * unloaded on the next tick (as they aren't stored).
 		 */
-		void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change);
+		boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change);
 	}
 
 

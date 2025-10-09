@@ -557,14 +557,15 @@ public class TestCommonChanges
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
-						public void next(IMutationBlock mutation)
+						public boolean next(IMutationBlock mutation)
 						{
 							blockHolder.add(mutation);
+							return true;
 						}
 						@Override
-						public void future(IMutationBlock mutation, long millisToDelay)
+						public boolean future(IMutationBlock mutation, long millisToDelay)
 						{
-							Assert.fail("Not used in test");
+							throw new AssertionError("Not in test");
 						}
 					}, null)
 				.finish()
@@ -677,21 +678,22 @@ public class TestCommonChanges
 				.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)))
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 						@Override
-						public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+						public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 						{
 							Assert.assertNull(changeHolder[0]);
 							targetHolder[0] = targetEntityId;
 							changeHolder[0] = change;
+							return true;
 						}
 						@Override
-						public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+						public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 						{
-							Assert.fail("Not expected in tets");
+							throw new AssertionError("Not in test");
 						}
 						@Override
-						public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+						public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 						{
-							Assert.fail("Not expected in tets");
+							throw new AssertionError("Not in test");
 						}
 					})
 				.finish()
@@ -749,15 +751,16 @@ public class TestCommonChanges
 					}, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
-						public void next(IMutationBlock mutation)
+						public boolean next(IMutationBlock mutation)
 						{
 							Assert.assertNull(blockHolder[0]);
 							blockHolder[0] = mutation;
+							return true;
 						}
 						@Override
-						public void future(IMutationBlock mutation, long millisToDelay)
+						public boolean future(IMutationBlock mutation, long millisToDelay)
 						{
-							Assert.fail("Not used in test");
+							throw new AssertionError("Not in test");
 						}
 					}, null)
 				.eventSink(events)
@@ -829,21 +832,22 @@ public class TestCommonChanges
 				.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)))
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 						@Override
-						public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+						public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 						{
 							Assert.assertNull(changeHolder[0]);
 							targetHolder[0] = targetEntityId;
 							changeHolder[0] = change;
+							return true;
 						}
 						@Override
-						public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+						public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 						{
-							Assert.fail("Not expected in tets");
+							throw new AssertionError("Not in test");
 						}
 						@Override
-						public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+						public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 						{
-							Assert.fail("Not expected in tets");
+							throw new AssertionError("Not in test");
 						}
 					})
 				.eventSink(events)
@@ -1960,21 +1964,29 @@ public class TestCommonChanges
 		Assert.assertTrue(original == localMutable.freeze());
 		
 		// Periodic change should also not change anything even if we set a high energy deficit.
+		boolean[] didReschedule = new boolean[1];
 		TickProcessingContext context = ContextBuilder.build()
-				.sinks(null, new TickProcessingContext.IChangeSink() {
-					@Override
-					public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
-					{
-					}
-					@Override
-					public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
-					{
-					}
-					@Override
-					public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
-					{
-					}})
-				.finish()
+			.sinks(null, new TickProcessingContext.IChangeSink() {
+				@Override
+				public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+				{
+					throw new AssertionError("Not in test");
+				}
+				@Override
+				public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+				{
+					Assert.assertTrue(change instanceof EntityChangePeriodic);
+					Assert.assertFalse(didReschedule[0]);
+					didReschedule[0] = true;
+					return true;
+				}
+				@Override
+				public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+				{
+					throw new AssertionError("Not in test");
+				}
+			})
+			.finish()
 		;
 		EntityChangePeriodic periodic = new EntityChangePeriodic();
 		localMutable.setEnergyDeficit(10 * EntityChangePeriodic.ENERGY_PER_FOOD);
@@ -1984,6 +1996,7 @@ public class TestCommonChanges
 		Assert.assertEquals(food, end.food());
 		Assert.assertEquals(breath, end.breath());
 		Assert.assertEquals(energyDeficit, end.energyDeficit());
+		Assert.assertTrue(didReschedule[0]);
 	}
 
 	@Test
@@ -2147,32 +2160,35 @@ public class TestCommonChanges
 				}, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 					@Override
-					public void next(IMutationBlock mutation)
+					public boolean next(IMutationBlock mutation)
 					{
 						mutations.add(mutation);
+						return true;
 					}
 					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
+					public boolean future(IMutationBlock mutation, long millisToDelay)
 					{
 						Assert.assertTrue(ContextBuilder.DEFAULT_MILLIS_PER_TICK == millisToDelay);
 						futureMutations.add(mutation);
+						return true;
 					}
 				}, new TickProcessingContext.IChangeSink() {
 					@Override
-					public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+					public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 					{
 						Assert.assertNull(out_store[0]);
 						out_store[0] = (MutationEntityStoreToInventory) change;
+						return true;
 					}
 					@Override
-					public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+					public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 					{
-						Assert.fail("Not in test");
+						throw new AssertionError("Not in test");
 					}
 					@Override
-					public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+					public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 					{
-						Assert.fail("Not in test");
+						throw new AssertionError("Not in test");
 					}
 				})
 				.eventSink(new TickProcessingContext.IEventSink() {
@@ -2530,21 +2546,22 @@ public class TestCommonChanges
 			.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)))
 			.sinks(null, new TickProcessingContext.IChangeSink() {
 				@Override
-				public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+				public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 				{
 					Assert.assertEquals(targetId, targetEntityId);
 					Assert.assertTrue(change instanceof EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>);
 					changeHolder.add((EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>) change);
+					return true;
 				}
 				@Override
-				public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+				public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 				{
-					Assert.fail("Not expected in tets");
+					throw new AssertionError("Not in test");
 				}
 				@Override
-				public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+				public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 				{
-					Assert.fail("Not expected in tets");
+					throw new AssertionError("Not in test");
 				}
 			})
 			.eventSink(new TickProcessingContext.IEventSink()
@@ -3177,33 +3194,35 @@ public class TestCommonChanges
 					.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
 					.sinks(allowBlockMutation ? new TickProcessingContext.IMutationSink() {
 							@Override
-							public void next(IMutationBlock mutation)
+							public boolean next(IMutationBlock mutation)
 							{
 								Assert.assertNull(_ContextHolder.this.mutation);
 								_ContextHolder.this.mutation = mutation;
+								return true;
 							}
 							@Override
-							public void future(IMutationBlock mutation, long millisToDelay)
+							public boolean future(IMutationBlock mutation, long millisToDelay)
 							{
-								Assert.fail("Not used in test");
+								throw new AssertionError("Not in test");
 							}
 						} : null
 						, allowEntityChange ? new TickProcessingContext.IChangeSink() {
 							@Override
-							public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+							public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 							{
 								Assert.assertNull(_ContextHolder.this.change);
 								_ContextHolder.this.change = change;
+								return true;
 							}
 							@Override
-							public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+							public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 							{
-								Assert.fail("Not expected in tets");
+								throw new AssertionError("Not in test");
 							}
 							@Override
-							public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+							public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 							{
-								Assert.fail("Not expected in tets");
+								throw new AssertionError("Not in test");
 							}
 						} : null)
 					.eventSink(this.events)

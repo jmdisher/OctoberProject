@@ -32,33 +32,40 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 	}
 
 	@Override
-	public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+	public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 	{
 		Assert.assertTrue(targetEntityId > 0);
+		boolean didSchedule = false;
 		
 		if (_loadedEntities.contains(targetEntityId))
 		{
 			List<ScheduledChange> entityChanges = _getChangeList(targetEntityId);
 			entityChanges.add(new ScheduledChange(change, 0L));
+			didSchedule = true;
 		}
+		return didSchedule;
 	}
 
 	@Override
-	public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+	public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 	{
 		Assert.assertTrue(targetEntityId > 0);
+		boolean didSchedule = false;
 		
 		if (_loadedEntities.contains(targetEntityId))
 		{
 			List<ScheduledChange> entityChanges = _getChangeList(targetEntityId);
 			entityChanges.add(new ScheduledChange(change, millisToDelay));
+			didSchedule = true;
 		}
+		return didSchedule;
 	}
 
 	@Override
-	public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+	public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 	{
 		Assert.assertTrue(targetCreatureId < 0);
+		boolean didSchedule = false;
 		
 		if (_loadedCreatures.contains(targetCreatureId))
 		{
@@ -69,7 +76,9 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 				_exportedCreatureChanges.put(targetCreatureId, list);
 			}
 			list.add(change);
+			didSchedule = true;
 		}
+		return didSchedule;
 	}
 
 	/**

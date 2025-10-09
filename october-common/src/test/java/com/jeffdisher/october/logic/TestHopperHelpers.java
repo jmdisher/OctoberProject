@@ -75,14 +75,15 @@ public class TestHopperHelpers
 				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
-						public void next(IMutationBlock mutation)
+						public boolean next(IMutationBlock mutation)
 						{
 							outMutations.add(mutation);
+							return true;
 						}
 						@Override
-						public void future(IMutationBlock mutation, long millisToDelay)
+						public boolean future(IMutationBlock mutation, long millisToDelay)
 						{
-							Assert.fail("Not used in test");
+							throw new AssertionError("Not in test");
 						}
 					}, null)
 				.finish()

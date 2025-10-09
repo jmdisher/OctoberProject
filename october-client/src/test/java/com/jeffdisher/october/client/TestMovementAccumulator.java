@@ -1072,15 +1072,17 @@ public class TestMovementAccumulator
 			, null
 			, new TickProcessingContext.IMutationSink() {
 				@Override
-				public void next(IMutationBlock mutation)
+				public boolean next(IMutationBlock mutation)
 				{
 					// Pass this out to be used elsewhere.
 					mutationSink.accept(mutation);
+					return true;
 				}
 				@Override
-				public void future(IMutationBlock mutation, long millisToDelay)
+				public boolean future(IMutationBlock mutation, long millisToDelay)
 				{
 					// Do nothing.
+					return true;
 				}
 			}
 			, null

@@ -111,15 +111,16 @@ public class TestEngineCreatures
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid), null)
 				.sinks(new IMutationSink() {
 					@Override
-					public void next(IMutationBlock mutation)
+					public boolean next(IMutationBlock mutation)
 					{
 						Assert.assertNull(mutationHolder[0]);
 						mutationHolder[0] = mutation;
+						return true;
 					}
 					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
+					public boolean future(IMutationBlock mutation, long millisToDelay)
 					{
-						Assert.fail("Not used in test");
+						throw new AssertionError("Not used in test");
 					}
 				}, null)
 				.eventSink(events)
@@ -554,20 +555,21 @@ public class TestEngineCreatures
 		Map<Integer, IEntityAction<IMutableCreatureEntity>> changes = new HashMap<>();
 		context = _updateContextWithCreatures(context, creaturesById.values(), new IChangeSink() {
 			@Override
-			public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+			public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 			{
 				throw new AssertionError("Not in test");
 			}
 			@Override
-			public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+			public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 			{
 				throw new AssertionError("Not in test");
 			}
 			@Override
-			public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+			public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 			{
 				Assert.assertFalse(changes.containsKey(targetCreatureId));
 				changes.put(targetCreatureId, change);
+				return true;
 			}
 		}, null, null);
 		creaturesById = _runGroup(context
@@ -917,21 +919,22 @@ public class TestEngineCreatures
 				} , null)
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 					@Override
-					public void next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+					public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 					{
-						Assert.fail();
+						throw new AssertionError("Not in test");
 					}
 					@Override
-					public void future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+					public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 					{
-						Assert.fail();
+						throw new AssertionError("Not in test");
 					}
 					@Override
-					public void creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+					public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 					{
 						Assert.assertEquals(-1, targetCreatureId);
 						Assert.assertTrue(change instanceof EntityActionNudge);
 						out[0] = change;
+						return true;
 					}
 				})
 				.finish()

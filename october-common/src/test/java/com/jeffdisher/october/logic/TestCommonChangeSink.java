@@ -28,12 +28,12 @@ public class TestCommonChangeSink
 		EntityActionNudge<IMutablePlayerEntity> future = new EntityActionNudge<>(new EntityLocation(1.0f, 2.0f, 3.0f));
 		EntityActionNudge<IMutableCreatureEntity> creature = new EntityActionNudge<>(new EntityLocation(1.0f, 2.0f, 3.0f));
 		
-		sink.future(1, future, 1000L);
-		sink.next(1, next);
-		sink.creature(-2, creature);
-		sink.future(2, new EntityActionNudge<>(new EntityLocation(1.0f, 2.0f, 3.0f)), 1000L);
-		sink.next(2, new EntityActionNudge<>(new EntityLocation(1.0f, 2.0f, 3.0f)));
-		sink.creature(-1, new EntityActionNudge<>(new EntityLocation(1.0f, 2.0f, 3.0f)));
+		Assert.assertTrue(sink.future(1, future, 1000L));
+		Assert.assertTrue(sink.next(1, next));
+		Assert.assertTrue(sink.creature(-2, creature));
+		Assert.assertFalse(sink.future(2, new EntityActionNudge<>(new EntityLocation(1.0f, 2.0f, 3.0f)), 1000L));
+		Assert.assertFalse(sink.next(2, new EntityActionNudge<>(new EntityLocation(1.0f, 2.0f, 3.0f))));
+		Assert.assertFalse(sink.creature(-1, new EntityActionNudge<>(new EntityLocation(1.0f, 2.0f, 3.0f))));
 		
 		Map<Integer, List<ScheduledChange>> playerChanges = sink.takeExportedChanges();
 		Assert.assertEquals(1, playerChanges.size());

@@ -25,22 +25,28 @@ public class CommonMutationSink implements TickProcessingContext.IMutationSink
 	}
 
 	@Override
-	public void next(IMutationBlock mutation)
+	public boolean next(IMutationBlock mutation)
 	{
+		boolean didSchedule = false;
 		if (_loadedCuboids.contains(mutation.getAbsoluteLocation().getCuboidAddress()))
 		{
 			_exportedMutations.add(new ScheduledMutation(mutation, 0L));
+			didSchedule = true;
 		}
+		return didSchedule;
 	}
 
 	@Override
-	public void future(IMutationBlock mutation, long millisToDelay)
+	public boolean future(IMutationBlock mutation, long millisToDelay)
 	{
 		Assert.assertTrue(millisToDelay > 0L);
+		boolean didSchedule = false;
 		if (_loadedCuboids.contains(mutation.getAbsoluteLocation().getCuboidAddress()))
 		{
 			_exportedMutations.add(new ScheduledMutation(mutation, millisToDelay));
+			didSchedule = true;
 		}
+		return didSchedule;
 	}
 
 	/**
