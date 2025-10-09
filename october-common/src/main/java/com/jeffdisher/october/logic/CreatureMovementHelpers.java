@@ -264,39 +264,6 @@ public class CreatureMovementHelpers
 		return change;
 	}
 
-	/**
-	 * A helper to create a change just to stand in place and pass time (allowing for falling/coasting, etc).
-	 * 
-	 * @param supplier Looks up the viscosity of various blocks.
-	 * @param creatureLocation The creature's location.
-	 * @param creatureVelocity The creature's velocity.
-	 * @param yaw The creature's existing yaw.
-	 * @param pitch The creature's existing pitch.
-	 * @param creatureType The type of creature.
-	 * @param timeLimitMillis The number of milliseconds left in the tick.
-	 * @param viscosityFraction The viscosity of the current block ([0.0 .. 1.0]) where 1.0 is solid.
-	 * @param subAction The sub-action to embed in the change (can be null).
-	 * @return The change to pass time while standing (never null).
-	 */
-	public static EntityActionSimpleMove<IMutableCreatureEntity> buildStandingChange(ViscosityReader supplier
-		, EntityLocation creatureLocation
-		, EntityLocation creatureVelocity
-		, byte yaw
-		, byte pitch
-		, EntityType creatureType
-		, long timeLimitMillis
-		, float viscosityFraction
-	)
-	{
-		return new EntityActionSimpleMove<>(0.0f
-			, 0.0f
-			, EntityActionSimpleMove.Intensity.STANDING
-			, yaw
-			, pitch
-			, null
-		);
-	}
-
 
 	private static EntityActionSimpleMove<IMutableCreatureEntity> _moveByX(EntityLocation location, long timeLimitMillis, float currentCreatureSpeed, float viscosityFraction, float targetX)
 	{

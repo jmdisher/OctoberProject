@@ -5,12 +5,9 @@ import java.util.List;
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.creatures.CreatureLogic;
-import com.jeffdisher.october.logic.CreatureMovementHelpers;
 import com.jeffdisher.october.logic.DamageHelpers;
 import com.jeffdisher.october.logic.EntityCollection;
-import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.NudgeHelpers;
-import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EventRecord;
@@ -122,9 +119,13 @@ public class EngineCreatures
 			, MutableCreature mutable
 	)
 	{
-		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
-		float viscosity = EntityMovementHelpers.maxViscosityInEntityBlocks(mutable.newLocation, mutable.getType().volume(), context.previousBlockLookUp);
-		return CreatureMovementHelpers.buildStandingChange(reader, mutable.newLocation, mutable.newVelocity, mutable.newYaw, mutable.newPitch, mutable.getType(), context.millisPerTick, viscosity);
+		return new EntityActionSimpleMove<>(0.0f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.STANDING
+			, mutable.newYaw
+			, mutable.newPitch
+			, null
+		);
 	}
 
 
