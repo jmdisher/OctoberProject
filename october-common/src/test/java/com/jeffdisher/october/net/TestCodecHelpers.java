@@ -28,6 +28,7 @@ import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
+import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 
@@ -406,5 +407,25 @@ public class TestCodecHelpers
 		Assert.assertEquals(location, output.location());
 		Assert.assertEquals(sword, ((ItemSlot)output.extendedData()).nonStackable);
 		Assert.assertEquals(newAliveMillis, output.lastAliveMillis());
+		
+		// Make sure that this works for the partial variant, as well (used for the network case, only).
+		PartialPassive partial = new PartialPassive(input.id()
+			, input.type()
+			, input.location()
+			, input.velocity()
+			, input.extendedData()
+		);
+		buffer.clear();
+		CodecHelpers.writePartialPassive(buffer, partial);
+		
+		buffer.flip();
+		PartialPassive partialOut = CodecHelpers.readPartialPassive(buffer);
+		Assert.assertFalse(buffer.hasRemaining());
+		
+		Assert.assertEquals(input.id(), partialOut.id());
+		Assert.assertEquals(input.type(), partialOut.type());
+		Assert.assertEquals(input.location(), partialOut.location());
+		Assert.assertEquals(input.velocity(), partialOut.velocity());
+		Assert.assertEquals(((ItemSlot)input.extendedData()).nonStackable, ((ItemSlot)partialOut.extendedData()).nonStackable);
 	}
 }

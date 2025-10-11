@@ -32,6 +32,7 @@ import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.utils.Assert;
@@ -566,6 +567,41 @@ public class CodecHelpers
 		_writeEntityLocation(buffer, location);
 		_writeEntityLocation(buffer, velocity);
 		entity.type().extendedCodec().write(buffer, extendedData);
+	}
+
+	public static PartialPassive readPartialPassive(ByteBuffer buffer)
+	{
+		// Note that these are only passed over the network.
+		int id = buffer.getInt();
+		byte ordinal = buffer.get();
+		// We only have the item slot type, for now.
+		Assert.assertTrue((byte)1 == ordinal);
+		PassiveType type = PassiveType.ITEM_SLOT;
+		EntityLocation location = _readEntityLocation(buffer);
+		EntityLocation velocity = _readEntityLocation(buffer);
+		
+		// We need to fake-up a context with defaults to read this.
+		DeserializationContext context = new DeserializationContext(Environment.getShared(), buffer, 0L, false);
+		Object extendedData = type.extendedCodec().read(context);
+		
+		return new PartialPassive(id
+			, type
+			, location
+			, velocity
+			, extendedData
+		);
+	}
+
+	public static void writePartialPassive(ByteBuffer buffer, PartialPassive entity)
+	{
+		// Note that these are only passed over the network.
+		buffer.putInt(entity.id());
+		byte ordinal = entity.type().number();
+		Assert.assertTrue((byte)0 != ordinal);
+		buffer.put(ordinal);
+		_writeEntityLocation(buffer, entity.location());
+		_writeEntityLocation(buffer, entity.velocity());
+		entity.type().extendedCodec().write(buffer, entity.extendedData());
 	}
 
 
