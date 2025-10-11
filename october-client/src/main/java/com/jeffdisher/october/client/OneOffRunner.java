@@ -62,8 +62,10 @@ public class OneOffRunner
 		Set<Integer> allPlayerIds = new HashSet<>(state.otherEntities.keySet().stream().filter((Integer i) -> i > 0).toList());
 		allPlayerIds.add(state.thisEntity.id());
 		Set<Integer> allCreatureIds = state.otherEntities.keySet().stream().filter((Integer i) -> i < 0).collect(Collectors.toSet());
+		// TODO:  Get real passive IDs.
+		Set<Integer> allPassiveIds = Set.of();
 		CommonMutationSink newMutationSink = new CommonMutationSink(loadedCuboids);
-		CommonChangeSink newChangeSink = new CommonChangeSink(allPlayerIds, allCreatureIds);
+		CommonChangeSink newChangeSink = new CommonChangeSink(allPlayerIds, allCreatureIds, allPassiveIds);
 		TickProcessingContext context = _createContext(state, newMutationSink, newChangeSink, eventSink, millisPerTick, currentTickTimeMillis);
 		
 		// Run initial change.
@@ -100,7 +102,8 @@ public class OneOffRunner
 				splitMutations.get(address).add(imm);
 			}
 			// Note that we will need to capture output mutations from these sinks if there is an interest in running multiple ticks in advance here.
-			TickProcessingContext innerContext = _createContext(state, new CommonMutationSink(loadedCuboids), new CommonChangeSink(allPlayerIds, allCreatureIds), eventSink, millisPerTick, currentTickTimeMillis);
+			CommonChangeSink innerChangeSink = new CommonChangeSink(allPlayerIds, allCreatureIds, allPassiveIds);
+			TickProcessingContext innerContext = _createContext(state, new CommonMutationSink(loadedCuboids), innerChangeSink, eventSink, millisPerTick, currentTickTimeMillis);
 			changedCuboids = new HashMap<>();
 			heightFragment = new HashMap<>();
 			optionalBlockChanges = new HashMap<>();

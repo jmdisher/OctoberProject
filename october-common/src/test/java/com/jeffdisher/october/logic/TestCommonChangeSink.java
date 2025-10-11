@@ -12,6 +12,9 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.IPassiveAction;
+import com.jeffdisher.october.types.PassiveEntity;
+import com.jeffdisher.october.types.TickProcessingContext;
 
 
 public class TestCommonChangeSink
@@ -21,7 +24,7 @@ public class TestCommonChangeSink
 	{
 		Set<Integer> loadedEntities = Set.of(1);
 		Set<Integer> loadedCreatures = Set.of(-2);
-		CommonChangeSink sink = new CommonChangeSink(loadedEntities, loadedCreatures);
+		CommonChangeSink sink = new CommonChangeSink(loadedEntities, loadedCreatures, Set.of());
 		
 		
 		EntityActionNudge<IMutablePlayerEntity> next = new EntityActionNudge<>(new EntityLocation(1.0f, 2.0f, 3.0f));
@@ -49,5 +52,37 @@ public class TestCommonChangeSink
 		List<IEntityAction<IMutableCreatureEntity>> actions = creatureChanges.get(-2);
 		Assert.assertEquals(1, actions.size());
 		Assert.assertEquals(creature, actions.get(0));
+	}
+
+	@Test
+	public void passives()
+	{
+		Set<Integer> loadedEntities = Set.of();
+		Set<Integer> loadedCreatures = Set.of();
+		Set<Integer> loadedPassives = Set.of(1, 3);
+		CommonChangeSink sink = new CommonChangeSink(loadedEntities, loadedCreatures, loadedPassives);
+		
+		_PassiveAction one = new _PassiveAction();
+		_PassiveAction two = new _PassiveAction();
+		_PassiveAction three = new _PassiveAction();
+		Assert.assertTrue(sink.passive(1, one));
+		Assert.assertFalse(sink.passive(2, two));
+		Assert.assertTrue(sink.passive(3, three));
+		
+		Map<Integer, List<IPassiveAction>> passiveChanges = sink.takeExportedPassiveActions();
+		Assert.assertEquals(2, passiveChanges.size());
+		Assert.assertEquals(one, passiveChanges.get(1).get(0));
+		Assert.assertEquals(three, passiveChanges.get(3).get(0));
+	}
+
+
+	private static class _PassiveAction implements IPassiveAction
+	{
+		@Override
+		public PassiveEntity applyChange(TickProcessingContext context, PassiveEntity entity)
+		{
+			// This has no implementation as it is just a token to pass around.
+			throw new AssertionError("Not used in test");
+		}
 	}
 }

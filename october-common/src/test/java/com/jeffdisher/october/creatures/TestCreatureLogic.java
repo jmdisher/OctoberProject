@@ -31,6 +31,7 @@ import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -423,7 +424,13 @@ public class TestCreatureLogic
 						targetId[0] = targetCreatureId;
 						message[0] = change;
 						return true;
-					}})
+					}
+					@Override
+					public boolean passive(int targetPassiveId, IPassiveAction action)
+					{
+						throw new AssertionError();
+					}
+				})
 				.lookups(null, (Integer entityId) -> {
 					return creatures.containsKey(entityId)
 							? MinimalEntity.fromCreature(creatures.get(entityId))
@@ -619,6 +626,11 @@ public class TestCreatureLogic
 			}
 			@Override
 			public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+			{
+				throw new AssertionError();
+			}
+			@Override
+			public boolean passive(int targetPassiveId, IPassiveAction action)
 			{
 				throw new AssertionError();
 			}
@@ -826,6 +838,11 @@ public class TestCreatureLogic
 					}
 					@Override
 					public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+					{
+						throw new AssertionError();
+					}
+					@Override
+					public boolean passive(int targetPassiveId, IPassiveAction action)
 					{
 						throw new AssertionError();
 					}

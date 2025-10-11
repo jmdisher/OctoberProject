@@ -19,6 +19,7 @@ import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
@@ -105,6 +106,11 @@ public class FakeUpdateFactories
 				}
 				@Override
 				public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+				{
+					throw Assert.unreachable();
+				}
+				@Override
+				public boolean passive(int targetPassiveId, IPassiveAction action)
 				{
 					throw Assert.unreachable();
 				}

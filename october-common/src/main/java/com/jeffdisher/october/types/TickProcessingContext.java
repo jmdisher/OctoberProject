@@ -189,6 +189,15 @@ public class TickProcessingContext
 		 * unloaded on the next tick (as they aren't stored).
 		 */
 		boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change);
+		/**
+		 * Requests that the given action be scheduled on the target passive in the next tick.
+		 * 
+		 * @param targetPassiveId The ID of the passive entity which should run the action.
+		 * @param action The action to run.
+		 * @return True if this was scheduled, false if the passive isn't known.  Note that passive actions can still
+		 * return true here but NEVER be run if the passive is unloaded on the next tick (as they aren't stored).
+		 */
+		boolean passive(int targetPassiveId, IPassiveAction action);
 	}
 
 

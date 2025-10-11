@@ -42,6 +42,7 @@ import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
@@ -728,6 +729,11 @@ public class TestCommonMutations
 					}
 					@Override
 					public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+					{
+						throw new AssertionError("Not expected in test");
+					}
+					@Override
+					public boolean passive(int targetPassiveId, IPassiveAction action)
 					{
 						throw new AssertionError("Not expected in test");
 					}
@@ -2055,6 +2061,11 @@ public class TestCommonMutations
 							}
 							@Override
 							public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+							{
+								throw new AssertionError("Not expected in test");
+							}
+							@Override
+							public boolean passive(int targetPassiveId, IPassiveAction action)
 							{
 								throw new AssertionError("Not expected in test");
 							}

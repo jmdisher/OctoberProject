@@ -474,6 +474,8 @@ public class SpeculativeProjection
 		List<IEntityAction<IMutablePlayerEntity>> entityChangesToRun = List.of(change);
 		Set<Integer> allPlayerIds = _shadowState.getAllPlayerEntityIds();
 		Set<Integer> allCreatureIds = _shadowState.getAllCreatureEntityIds();
+		// TODO:  Get real passive IDs.
+		Set<Integer> passiveIds = Set.of();
 		List<IMutationBlock> blockMutationstoRun = List.of();
 		Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = Map.of();
 		Set<CuboidAddress> accumulatedLightingChangeCuboids = new HashSet<>();
@@ -483,7 +485,7 @@ public class SpeculativeProjection
 		{
 			// Create the context and mutation sinks for this invocation.
 			CommonMutationSink newMutationSink = new CommonMutationSink(_projectedState.projectedWorld.keySet());
-			CommonChangeSink newChangeSink = new CommonChangeSink(allPlayerIds, allCreatureIds);
+			CommonChangeSink newChangeSink = new CommonChangeSink(allPlayerIds, allCreatureIds, passiveIds);
 			TickProcessingContext context = _createContext(gameTick
 					, newMutationSink
 					, newChangeSink

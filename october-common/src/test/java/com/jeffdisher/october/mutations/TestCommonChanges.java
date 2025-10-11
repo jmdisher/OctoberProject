@@ -80,6 +80,7 @@ import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
@@ -699,6 +700,11 @@ public class TestCommonChanges
 						{
 							throw new AssertionError("Not in test");
 						}
+						@Override
+						public boolean passive(int targetPassiveId, IPassiveAction action)
+						{
+							throw new AssertionError("Not in test");
+						}
 					})
 				.finish()
 		;
@@ -853,6 +859,11 @@ public class TestCommonChanges
 						{
 							throw new AssertionError("Not in test");
 						}
+						@Override
+						public boolean passive(int targetPassiveId, IPassiveAction action)
+						{
+							throw new AssertionError("Not in test");
+						}
 					})
 				.eventSink(events)
 				.finish()
@@ -878,7 +889,7 @@ public class TestCommonChanges
 	public void entityPeriodic()
 	{
 		int entityId = 1;
-		CommonChangeSink changeSink = new CommonChangeSink(Set.of(entityId), Set.of());
+		CommonChangeSink changeSink = new CommonChangeSink(Set.of(entityId), Set.of(), Set.of());
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 				.sinks(null, changeSink)
@@ -1338,7 +1349,7 @@ public class TestCommonChanges
 				, new EntityLocation(9.0f, 9.0f, 0.0f)
 				, (byte) 100
 		);
-		CommonChangeSink changeSink = new CommonChangeSink(Set.of(attackerId), Set.of(targetId));
+		CommonChangeSink changeSink = new CommonChangeSink(Set.of(attackerId), Set.of(targetId), Set.of());
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
 				.lookups(null, (Integer id) -> {
@@ -1398,7 +1409,7 @@ public class TestCommonChanges
 				, new EntityLocation(9.0f, 9.0f, 0.0f)
 				, (byte) 100
 		);
-		CommonChangeSink changeSink = new CommonChangeSink(Set.of(entityId), Set.of(targetId));
+		CommonChangeSink changeSink = new CommonChangeSink(Set.of(entityId), Set.of(targetId), Set.of());
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
 				.lookups(null, (Integer id) -> {
@@ -1989,6 +2000,11 @@ public class TestCommonChanges
 				{
 					throw new AssertionError("Not in test");
 				}
+				@Override
+				public boolean passive(int targetPassiveId, IPassiveAction action)
+				{
+					throw new AssertionError("Not in test");
+				}
 			})
 			.finish()
 		;
@@ -2191,6 +2207,11 @@ public class TestCommonChanges
 					}
 					@Override
 					public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+					{
+						throw new AssertionError("Not in test");
+					}
+					@Override
+					public boolean passive(int targetPassiveId, IPassiveAction action)
 					{
 						throw new AssertionError("Not in test");
 					}
@@ -2564,6 +2585,11 @@ public class TestCommonChanges
 				}
 				@Override
 				public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+				{
+					throw new AssertionError("Not in test");
+				}
+				@Override
+				public boolean passive(int targetPassiveId, IPassiveAction action)
 				{
 					throw new AssertionError("Not in test");
 				}
@@ -2984,7 +3010,7 @@ public class TestCommonChanges
 		);
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
-		CommonChangeSink changeSink = new CommonChangeSink(Set.of(), Set.of(targetId));
+		CommonChangeSink changeSink = new CommonChangeSink(Set.of(), Set.of(targetId), Set.of());
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
 				.lookups((AbsoluteLocation location) -> {
@@ -3284,6 +3310,11 @@ public class TestCommonChanges
 							}
 							@Override
 							public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+							{
+								throw new AssertionError("Not in test");
+							}
+							@Override
+							public boolean passive(int targetPassiveId, IPassiveAction action)
 							{
 								throw new AssertionError("Not in test");
 							}

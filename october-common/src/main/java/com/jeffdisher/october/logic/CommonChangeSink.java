@@ -21,15 +21,19 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 {
 	private final Set<Integer> _loadedEntities;
 	private final Set<Integer> _loadedCreatures;
+	private final Set<Integer> _loadedPassives;
 	private Map<Integer, List<ScheduledChange>> _exportedEntityChanges;
 	private Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> _exportedCreatureChanges;
+	private Map<Integer, List<IPassiveAction>> _exportedPassiveActions;
 
-	public CommonChangeSink(Set<Integer> loadedEntities, Set<Integer> loadedCreatures)
+	public CommonChangeSink(Set<Integer> loadedEntities, Set<Integer> loadedCreatures, Set<Integer> loadedPassives)
 	{
 		_loadedEntities = loadedEntities;
 		_loadedCreatures = loadedCreatures;
+		_loadedPassives = loadedPassives;
 		_exportedEntityChanges = new HashMap<>();
 		_exportedCreatureChanges = new HashMap<>();
+		_exportedPassiveActions = new HashMap<>();
 	}
 
 	@Override
@@ -82,6 +86,26 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 		return didSchedule;
 	}
 
+	@Override
+	public boolean passive(int targetPassiveId, IPassiveAction action)
+	{
+		Assert.assertTrue(targetPassiveId > 0);
+		boolean didSchedule = false;
+		
+		if (_loadedPassives.contains(targetPassiveId))
+		{
+			List<IPassiveAction> list = _exportedPassiveActions.get(targetPassiveId);
+			if (null == list)
+			{
+				list = new LinkedList<>();
+				_exportedPassiveActions.put(targetPassiveId, list);
+			}
+			list.add(action);
+			didSchedule = true;
+		}
+		return didSchedule;
+	}
+
 	/**
 	 * Removes the collected exported changes.  Note that the receiver can no longer listen to changes after this call.
 	 * 
@@ -125,8 +149,14 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 	 */
 	public Map<Integer, List<IPassiveAction>> takeExportedPassiveActions()
 	{
-		// TODO:  Implement this once the interface populates it.
-		return Map.of();
+		try
+		{
+			return _exportedPassiveActions;
+		}
+		finally
+		{
+			_exportedPassiveActions = null;
+		}
 	}
 
 
