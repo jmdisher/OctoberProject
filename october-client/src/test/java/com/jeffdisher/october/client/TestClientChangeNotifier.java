@@ -26,6 +26,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 
@@ -255,6 +256,21 @@ public class TestClientChangeNotifier
 		}
 		@Override
 		public void otherEntityDidUnload(int id)
+		{
+			throw new AssertionError("Not in test");
+		}
+		@Override
+		public void passiveEntityDidLoad(PartialPassive entity)
+		{
+			throw new AssertionError("Not in test");
+		}
+		@Override
+		public void passiveEntityDidChange(PartialPassive entity)
+		{
+			throw new AssertionError("Not in test");
+		}
+		@Override
+		public void passiveEntityDidUnload(int id)
 		{
 			throw new AssertionError("Not in test");
 		}

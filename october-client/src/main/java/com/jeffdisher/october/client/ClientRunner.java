@@ -259,13 +259,16 @@ public class ClientRunner
 		private boolean _didInitialize = false;
 		private Entity _thisEntity = null;
 		private List<PartialEntity> _addedEntities = new ArrayList<>();
+		private List<PartialPassive> _addedPassives = new ArrayList<>();
 		private List<IReadOnlyCuboidData> _addedCuboids = new ArrayList<>();
 		
 		private IEntityUpdate _entityUpdate = null;
 		private Map<Integer, List<IPartialEntityUpdate>> _partialEntityUpdates = new HashMap<>();
+		private Map<Integer, PassiveUpdate> _passiveEntityUpdates = new HashMap<>();
 		private List<MutationBlockSetBlock> _cuboidUpdates = new ArrayList<>();
 		
 		private List<Integer> _removedEntities = new ArrayList<>();
+		private List<Integer> _removedPassives = new ArrayList<>();
 		private List<CuboidAddress> _removedCuboids = new ArrayList<>();
 		
 		private List<EventRecord> _events = new ArrayList<>();
@@ -313,17 +316,18 @@ public class ClientRunner
 		@Override
 		public void receivedPassive(PartialPassive partial)
 		{
-			// TODO:  Implement;
+			_addedPassives.add(partial);
 		}
 		@Override
 		public void receivedPassiveUpdate(int entityId, EntityLocation location, EntityLocation velocity)
 		{
-			// TODO:  Implement;
+			PassiveUpdate update = new PassiveUpdate(location, velocity);
+			_passiveEntityUpdates.put(entityId, update);
 		}
 		@Override
 		public void removePassive(int entityId)
 		{
-			// TODO:  Implement;
+			_removedPassives.add(entityId);
 		}
 		@Override
 		public void receivedCuboid(IReadOnlyCuboidData cuboid)
@@ -378,16 +382,22 @@ public class ClientRunner
 			_thisEntity = null;
 			List<PartialEntity> addedEntities = new ArrayList<>(_addedEntities);
 			_addedEntities.clear();
+			List<PartialPassive> addedPassives = new ArrayList<>(_addedPassives);
+			_addedPassives.clear();
 			List<IReadOnlyCuboidData> addedCuboids = new ArrayList<>(_addedCuboids);
 			_addedCuboids.clear();
 			IEntityUpdate entityChange = _entityUpdate;
 			_entityUpdate = null;
 			Map<Integer, List<IPartialEntityUpdate>> partialEntityChanges = new HashMap<>(_partialEntityUpdates);
 			_partialEntityUpdates.clear();
+			Map<Integer, PassiveUpdate> partialPassiveUpdates = new HashMap<>(_passiveEntityUpdates);
+			_passiveEntityUpdates.clear();
 			List<MutationBlockSetBlock> cuboidUpdates = new ArrayList<>(_cuboidUpdates);
 			_cuboidUpdates.clear();
 			List<Integer> removedEntities = new ArrayList<>(_removedEntities);
 			_removedEntities.clear();
+			List<Integer> removedPassives = new ArrayList<>(_removedPassives);
+			_removedPassives.clear();
 			List<CuboidAddress> removedCuboids = new ArrayList<>(_removedCuboids);
 			_removedCuboids.clear();
 			List<EventRecord> events = new ArrayList<>(_events);
@@ -408,11 +418,14 @@ public class ClientRunner
 				}
 				_projection.applyChangesForServerTick(tickNumber
 						, addedEntities
+						, addedPassives
 						, addedCuboids
 						, entityChange
 						, partialEntityChanges
+						, partialPassiveUpdates
 						, cuboidUpdates
 						, removedEntities
+						, removedPassives
 						, removedCuboids
 						, events
 						, latestLocalCommitIncluded
@@ -537,6 +550,24 @@ public class ClientRunner
 		{
 			_projectionListener.otherEntityDidUnload(id);
 			_accumulator.removeOtherEntity(id);
+		}
+		@Override
+		public void passiveEntityDidLoad(PartialPassive entity)
+		{
+			_projectionListener.passiveEntityDidLoad(entity);
+			// TODO:  Plumb this into accumulator once it is updated to handle these.
+		}
+		@Override
+		public void passiveEntityDidChange(PartialPassive entity)
+		{
+			_projectionListener.passiveEntityDidChange(entity);
+			// TODO:  Plumb this into accumulator once it is updated to handle these.
+		}
+		@Override
+		public void passiveEntityDidUnload(int id)
+		{
+			_projectionListener.passiveEntityDidUnload(id);
+			// TODO:  Plumb this into accumulator once it is updated to handle these.
 		}
 		@Override
 		public void tickDidComplete(long gameTick)

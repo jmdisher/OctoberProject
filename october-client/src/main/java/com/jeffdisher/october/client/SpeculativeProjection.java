@@ -47,6 +47,7 @@ import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
@@ -151,11 +152,14 @@ public class SpeculativeProjection
 	 * 
 	 * @param gameTick The server's game tick number where these changes were made (only useful for debugging).
 	 * @param addedEntities The list of entities which were added in this tick.
+	 * @param addedPassives The list of passives which were added in this tick.
 	 * @param addedCuboids The list of cuboids which were loaded in this tick.
 	 * @param thisEntityUpdate The update made to this entity which committed in this tick.
 	 * @param partialEntityUpdates The map of per-entity state update lists which committed in this tick.
+	 * @param partialPassiveUpdates The map of per-passive state update lists which committed in this tick.
 	 * @param cuboidUpdates The list of cuboid updates which committed in this tick.
 	 * @param removedEntities The list of entities which were removed in this tick.
+	 * @param removedPassives The list of passives which were removed in this tick.
 	 * @param removedCuboids The list of cuboids which were removed in this tick.
 	 * @param events The list of events which were generated in this tick.
 	 * @param latestLocalCommitIncluded The latest client-local commit number which was included in this tick.
@@ -165,13 +169,16 @@ public class SpeculativeProjection
 	public int applyChangesForServerTick(long gameTick
 			
 			, List<PartialEntity> addedEntities
+			, List<PartialPassive> addedPassives
 			, List<IReadOnlyCuboidData> addedCuboids
 			
 			, IEntityUpdate thisEntityUpdate
 			, Map<Integer, List<IPartialEntityUpdate>> partialEntityUpdates
+			, Map<Integer, PassiveUpdate> partialPassiveUpdates
 			, List<MutationBlockSetBlock> cuboidUpdates
 			
 			, List<Integer> removedEntities
+			, List<Integer> removedPassives
 			, List<CuboidAddress> removedCuboids
 			
 			, List<EventRecord> events
@@ -184,9 +191,9 @@ public class SpeculativeProjection
 		Map<CuboidAddress, IReadOnlyCuboidData> staleShadowWorld = _shadowState.getCopyOfWorld();
 		
 		// Before applying the updates, add the new data.
-		ShadowState.ApplicationSummary summary = _shadowState.absorbAuthoritativeChanges(addedEntities, addedCuboids
-				, thisEntityUpdate, partialEntityUpdates, cuboidUpdates
-				, removedEntities, removedCuboids
+		ShadowState.ApplicationSummary summary = _shadowState.absorbAuthoritativeChanges(addedEntities, addedPassives, addedCuboids
+				, thisEntityUpdate, partialEntityUpdates, partialPassiveUpdates, cuboidUpdates
+				, removedEntities, removedPassives, removedCuboids
 		);
 		
 		// Verify that all state changes to the shadow data actually did something (since this would be a needless change we should prune, otherwise).
@@ -356,6 +363,10 @@ public class SpeculativeProjection
 		{
 			_listener.otherEntityDidLoad(entity);
 		}
+		for (PartialPassive entity : addedPassives)
+		{
+			_listener.passiveEntityDidLoad(entity);
+		}
 		for (IReadOnlyCuboidData cuboid : addedCuboids)
 		{
 			CuboidAddress address = cuboid.getCuboidAddress();
@@ -371,7 +382,7 @@ public class SpeculativeProjection
 				, modifiedBlocks
 				, columnHeightMaps
 		);
-		_notifyEntityChanges(_shadowState.getThisEntity(), changedLocalEntity, summary.partialEntitiesChanged());
+		_notifyEntityChanges(_shadowState.getThisEntity(), changedLocalEntity, summary.partialEntitiesChanged(), summary.passiveEntitiesChanged());
 		
 		// Notify the listeners of what was removed.
 		for (Integer id : removedEntities)
@@ -379,6 +390,10 @@ public class SpeculativeProjection
 			// We shouldn't see ourself unload.
 			Assert.assertTrue(_localEntityId != id);
 			_listener.otherEntityDidUnload(id);
+		}
+		for (Integer id : removedPassives)
+		{
+			_listener.passiveEntityDidUnload(id);
 		}
 		for (CuboidAddress address : removedCuboids)
 		{
@@ -429,7 +444,7 @@ public class SpeculativeProjection
 					, modifiedBlocks
 					, lightOpt
 			);
-			_notifyEntityChanges(_shadowState.getThisEntity(), changedLocalEntity, Set.of());
+			_notifyEntityChanges(_shadowState.getThisEntity(), changedLocalEntity, Set.of(), Set.of());
 		}
 		else
 		{
@@ -445,6 +460,7 @@ public class SpeculativeProjection
 	private void _notifyEntityChanges(Entity authoritativeLocalEntity
 			, Entity updatedLocalEntity
 			, Set<Integer> otherEntityIds
+			, Set<Integer> changedPassiveIds
 	)
 	{
 		if (null != updatedLocalEntity)
@@ -454,6 +470,10 @@ public class SpeculativeProjection
 		for (Integer entityId : otherEntityIds)
 		{
 			_listener.otherEntityDidChange(_shadowState.getEntity(entityId));
+		}
+		for (Integer entityId : changedPassiveIds)
+		{
+			_listener.passiveEntityDidChange(_shadowState.getPassive(entityId));
 		}
 	}
 
@@ -474,8 +494,7 @@ public class SpeculativeProjection
 		List<IEntityAction<IMutablePlayerEntity>> entityChangesToRun = List.of(change);
 		Set<Integer> allPlayerIds = _shadowState.getAllPlayerEntityIds();
 		Set<Integer> allCreatureIds = _shadowState.getAllCreatureEntityIds();
-		// TODO:  Get real passive IDs.
-		Set<Integer> passiveIds = Set.of();
+		Set<Integer> passiveIds = _shadowState.getPassiveEntityIds();
 		List<IMutationBlock> blockMutationstoRun = List.of();
 		Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = Map.of();
 		Set<CuboidAddress> accumulatedLightingChangeCuboids = new HashSet<>();

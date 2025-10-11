@@ -50,6 +50,7 @@ import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -651,6 +652,21 @@ public class ClientProcess
 			_pendingCallbacks.add(() -> {
 				_listener.otherEntityDidUnload(id);
 			});
+		}
+		@Override
+		public void passiveEntityDidLoad(PartialPassive entity)
+		{
+			// TODO:  Send these through the listener once it is updated.
+		}
+		@Override
+		public void passiveEntityDidChange(PartialPassive entity)
+		{
+			// TODO:  Send these through the listener once it is updated.
+		}
+		@Override
+		public void passiveEntityDidUnload(int id)
+		{
+			// TODO:  Send these through the listener once it is updated.
 		}
 		@Override
 		public void tickDidComplete(long gameTick)

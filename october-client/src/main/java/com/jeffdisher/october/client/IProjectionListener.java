@@ -11,6 +11,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PartialPassive;
 
 
 /**
@@ -91,6 +92,27 @@ public interface IProjectionListener
 	 * @param id The ID of the entity to unload.
 	 */
 	void otherEntityDidUnload(int id);
+
+	/**
+	 * Called when a passive entity is loaded for the first time.
+	 * 
+	 * @param entity The server's entity data.
+	 */
+	void passiveEntityDidLoad(PartialPassive entity);
+
+	/**
+	 * Called when a previously-loaded passive's state changes.
+	 * 
+	 * @param entity The server's entity data.
+	 */
+	void passiveEntityDidChange(PartialPassive entity);
+
+	/**
+	 * Called when a passive should be unloaded as the server is no longer sending us updates.
+	 * 
+	 * @param id The ID of the entity to unload.
+	 */
+	void passiveEntityDidUnload(int id);
 
 	/**
 	 * Called when a game tick from the server has been fully processed.

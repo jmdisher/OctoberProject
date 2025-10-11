@@ -20,6 +20,7 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutablePartialEntity;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -32,12 +33,14 @@ public class ShadowState
 	private final Map<CuboidAddress, IReadOnlyCuboidData> _shadowWorld;
 	private final Map<CuboidAddress, CuboidHeightMap> _shadowHeightMap;
 	private final Map<Integer, PartialEntity> _shadowCrowd;
+	private final Map<Integer, PartialPassive> _shadowPassives;
 
 	public ShadowState()
 	{
 		_shadowWorld = new HashMap<>();
 		_shadowHeightMap = new HashMap<>();
 		_shadowCrowd = new HashMap<>();
+		_shadowPassives = new HashMap<>();
 	}
 
 	/**
@@ -69,13 +72,16 @@ public class ShadowState
 	}
 
 	public ApplicationSummary absorbAuthoritativeChanges(List<PartialEntity> addedEntities
+			, List<PartialPassive> addedPassives
 			, List<IReadOnlyCuboidData> addedCuboids
 			
 			, IEntityUpdate thisEntityUpdate
 			, Map<Integer, List<IPartialEntityUpdate>> partialEntityUpdates
+			, Map<Integer, PassiveUpdate> partialPassiveUpdates
 			, List<MutationBlockSetBlock> cuboidUpdates
 			
 			, List<Integer> removedEntities
+			, List<Integer> removedPassives
 			, List<CuboidAddress> removedCuboids
 	)
 	{
@@ -83,12 +89,13 @@ public class ShadowState
 		Assert.assertTrue(null != _thisShadowEntity);
 		
 		_shadowCrowd.putAll(addedEntities.stream().collect(Collectors.toMap((PartialEntity entity) -> entity.id(), (PartialEntity entity) -> entity)));
+		_shadowPassives.putAll(addedPassives.stream().collect(Collectors.toMap((PartialPassive entity) -> entity.id(), (PartialPassive entity) -> entity)));
 		_shadowWorld.putAll(addedCuboids.stream().collect(Collectors.toMap((IReadOnlyCuboidData cuboid) -> cuboid.getCuboidAddress(), (IReadOnlyCuboidData cuboid) -> cuboid)));
 		_shadowHeightMap.putAll(addedCuboids.stream().collect(Collectors.toMap((IReadOnlyCuboidData cuboid) -> cuboid.getCuboidAddress(), (IReadOnlyCuboidData cuboid) -> HeightMapHelpers.buildHeightMap(cuboid))));
 		
 		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
 		Map<AbsoluteLocation, MutationBlockSetBlock> updatesToApply = _createUpdateMap(cuboidUpdates, _shadowWorld.keySet());
-		_UpdateTuple shadowUpdates = _applyUpdatesToShadowState(thisEntityUpdate, partialEntityUpdates, updatesToApply);
+		_UpdateTuple shadowUpdates = _applyUpdatesToShadowState(thisEntityUpdate, partialEntityUpdates, partialPassiveUpdates, updatesToApply);
 		
 		// Apply these to the shadow collections.
 		// (we ignore exported changes or mutations since we will wait for the server to send those to us, once it commits them)
@@ -97,15 +104,17 @@ public class ShadowState
 			_thisShadowEntity = shadowUpdates.updatedShadowEntity;
 		}
 		_shadowCrowd.putAll(shadowUpdates.entitiesChangedInTick);
+		_shadowPassives.putAll(shadowUpdates.passivesChangedInTick);
 		_shadowWorld.putAll(shadowUpdates.stateFragment());
 		_shadowHeightMap.putAll(shadowUpdates.heightFragment());
 		
 		// Remove before moving on to our projection.
 		_shadowCrowd.keySet().removeAll(removedEntities);
+		_shadowPassives.keySet().removeAll(removedPassives);
 		_shadowWorld.keySet().removeAll(removedCuboids);
 		_shadowHeightMap.keySet().removeAll(removedCuboids);
 		
-		return new ApplicationSummary(shadowUpdates.entitiesChangedInTick.keySet(), updatesToApply);
+		return new ApplicationSummary(shadowUpdates.entitiesChangedInTick.keySet(), shadowUpdates.passivesChangedInTick.keySet(), updatesToApply);
 	}
 
 	public ProjectedState buildProjectedState(Map<AbsoluteLocation, MutationBlockSetBlock> projectedBlockChanges, Set<CuboidAddress> projectedUnsafeLight)
@@ -131,6 +140,16 @@ public class ShadowState
 		return _shadowCrowd.keySet().stream().filter((Integer i) -> i < 0).collect(Collectors.toSet());
 	}
 
+	public Set<Integer> getPassiveEntityIds()
+	{
+		return _shadowPassives.keySet();
+	}
+
+	public PartialPassive getPassive(int entityId)
+	{
+		return _shadowPassives.get(entityId);
+	}
+
 
 	private Map<AbsoluteLocation, MutationBlockSetBlock> _createUpdateMap(List<MutationBlockSetBlock> updates, Set<CuboidAddress> loadedCuboids)
 	{
@@ -151,11 +170,13 @@ public class ShadowState
 
 	private _UpdateTuple _applyUpdatesToShadowState(IEntityUpdate thisEntityUpdate
 			, Map<Integer, List<IPartialEntityUpdate>> partialEntityUpdates
+			, Map<Integer, PassiveUpdate> partialPassiveUpdates
 			, Map<AbsoluteLocation, MutationBlockSetBlock> updatesToApply
 	)
 	{
 		Entity updatedShadowEntity = _applyLocalEntityUpdatesToShadowState(thisEntityUpdate);
 		Map<Integer, PartialEntity> entitiesChangedInTick = _applyPartialEntityUpdatesToShadowState(partialEntityUpdates);
+		Map<Integer, PartialPassive> passivesChangedInTick = _applyPassiveEntityUpdatesToShadowState(partialPassiveUpdates);
 		
 		Map<CuboidAddress, IReadOnlyCuboidData> updatedCuboids = new HashMap<>();
 		Map<CuboidAddress, CuboidHeightMap> updatedMaps = new HashMap<>();
@@ -165,6 +186,7 @@ public class ShadowState
 		);
 		_UpdateTuple shadowUpdates = new _UpdateTuple(updatedShadowEntity
 				, entitiesChangedInTick
+				, passivesChangedInTick
 				, updatedCuboids
 				, updatedMaps
 		);
@@ -214,6 +236,27 @@ public class ShadowState
 		return entitiesChangedInTick;
 	}
 
+	private Map<Integer, PartialPassive> _applyPassiveEntityUpdatesToShadowState(Map<Integer, PassiveUpdate> partialPassiveUpdates)
+	{
+		Map<Integer, PartialPassive> passivesChangedInTick = new HashMap<>();
+		for (Map.Entry<Integer, PassiveUpdate> elt : partialPassiveUpdates.entrySet())
+		{
+			int entityId = elt.getKey();
+			PassiveUpdate update = elt.getValue();
+			PartialPassive passiveToChange = _shadowPassives.get(entityId);
+			// These must already exist if they are being updated.
+			Assert.assertTrue(null != passiveToChange);
+			PartialPassive updated = new PartialPassive(entityId
+				, passiveToChange.type()
+				, update.location()
+				, update.velocity()
+				, passiveToChange.extendedData()
+			);
+			passivesChangedInTick.put(entityId, updated);
+		}
+		return passivesChangedInTick;
+	}
+
 	private void _applyCuboidUpdatesToShadowState(Map<CuboidAddress, IReadOnlyCuboidData> out_updatedCuboids
 			, Map<CuboidAddress, CuboidHeightMap> out_updatedMaps
 			, Map<AbsoluteLocation, MutationBlockSetBlock> updatesToApply
@@ -250,11 +293,13 @@ public class ShadowState
 
 
 	public static record ApplicationSummary(Set<Integer> partialEntitiesChanged
+			, Set<Integer> passiveEntitiesChanged
 			, Map<AbsoluteLocation, MutationBlockSetBlock> changedBlocks
 	) {}
 
 	private static record _UpdateTuple(Entity updatedShadowEntity
 			, Map<Integer, PartialEntity> entitiesChangedInTick
+			, Map<Integer, PartialPassive> passivesChangedInTick
 			, Map<CuboidAddress, IReadOnlyCuboidData> stateFragment
 			, Map<CuboidAddress, CuboidHeightMap> heightFragment
 	) {}
