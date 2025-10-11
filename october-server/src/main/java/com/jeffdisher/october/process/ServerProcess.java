@@ -29,6 +29,9 @@ import com.jeffdisher.october.net.Packet_EventBlock;
 import com.jeffdisher.october.net.Packet_EventEntity;
 import com.jeffdisher.october.net.Packet_RemoveCuboid;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
+import com.jeffdisher.october.net.Packet_RemovePassive;
+import com.jeffdisher.october.net.Packet_SendPartialPassive;
+import com.jeffdisher.october.net.Packet_SendPartialPassiveUpdate;
 import com.jeffdisher.october.net.Packet_ServerSendConfigUpdate;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.server.IServerAdapter;
@@ -37,8 +40,10 @@ import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
 
@@ -344,6 +349,24 @@ public class ServerProcess
 		public void removeEntity(int clientId, int entityId)
 		{
 			Packet_RemoveEntity packet = new Packet_RemoveEntity(entityId);
+			_bufferPacket(clientId, packet);
+		}
+		@Override
+		public void sendPartialPassive(int clientId, PartialPassive partial)
+		{
+			Packet_SendPartialPassive packet = new Packet_SendPartialPassive(partial);
+			_bufferPacket(clientId, packet);
+		}
+		@Override
+		public void sendPartialPassiveUpdate(int clientId, int entityId, EntityLocation location, EntityLocation velocity)
+		{
+			Packet_SendPartialPassiveUpdate packet = new Packet_SendPartialPassiveUpdate(entityId, location, velocity);
+			_bufferPacket(clientId, packet);
+		}
+		@Override
+		public void removePassive(int clientId, int entityId)
+		{
+			Packet_RemovePassive packet = new Packet_RemovePassive(entityId);
 			_bufferPacket(clientId, packet);
 		}
 		@Override

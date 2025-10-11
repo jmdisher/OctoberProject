@@ -9,8 +9,10 @@ import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.WorldConfig;
 
 
@@ -69,6 +71,29 @@ public interface IServerAdapter
 	 * @param entityId The ID of the entity to remove.
 	 */
 	void removeEntity(int clientId, int entityId);
+	/**
+	 * Sends a new passive to the client.
+	 * 
+	 * @param clientId The ID of the client (as assigned by the adapter implementation).
+	 * @param partial The server's passive data.
+	 */
+	void sendPartialPassive(int clientId, PartialPassive partial);
+	/**
+	 * Tells the client to update the state of a passive.
+	 * 
+	 * @param clientId The ID of the client (as assigned by the adapter implementation).
+	 * @param entityId The ID of the passive to change.
+	 * @param location The new location to set.
+	 * @param velocity The new velocity to set.
+	 */
+	void sendPartialPassiveUpdate(int clientId, int entityId, EntityLocation location, EntityLocation velocity);
+	/**
+	 * Tells the client that this passive should be unloaded
+	 * 
+	 * @param clientId The ID of the client (as assigned by the adapter implementation).
+	 * @param entityId The ID of the passive to unload.
+	 */
+	void removePassive(int clientId, int entityId);
 	/**
 	 * Sends a full cuboid to the given client.
 	 * 

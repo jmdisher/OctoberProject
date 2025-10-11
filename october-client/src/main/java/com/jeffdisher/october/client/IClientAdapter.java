@@ -8,9 +8,11 @@ import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PartialPassive;
 
 
 /**
@@ -92,6 +94,26 @@ public interface IClientAdapter
 		 * @param entityId The ID of the entity to remove.
 		 */
 		void removeEntity(int entityId);
+		/**
+		 * Called when a passive entity is loaded for the first time.
+		 * 
+		 * @param partial The server's passive data.
+		 */
+		void receivedPassive(PartialPassive partial);
+		/**
+		 * Called when a previously-loaded passive's state changes.
+		 * 
+		 * @param entityId The ID of the passive to change.
+		 * @param location The new location to set.
+		 * @param velocity The new velocity to set.
+		 */
+		void receivedPassiveUpdate(int entityId, EntityLocation location, EntityLocation velocity);
+		/**
+		 * Called when a passive should be unloaded as the server is no longer sending us updates.
+		 * 
+		 * @param entityId The ID of the passive to unload.
+		 */
+		void removePassive(int entityId);
 		/**
 		 * Called when a full cuboid is received from the server.
 		 * 

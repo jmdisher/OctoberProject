@@ -38,7 +38,10 @@ import com.jeffdisher.october.net.Packet_EventBlock;
 import com.jeffdisher.october.net.Packet_EventEntity;
 import com.jeffdisher.october.net.Packet_RemoveCuboid;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
+import com.jeffdisher.october.net.Packet_RemovePassive;
 import com.jeffdisher.october.net.Packet_SendChatMessage;
+import com.jeffdisher.october.net.Packet_SendPartialPassive;
+import com.jeffdisher.october.net.Packet_SendPartialPassiveUpdate;
 import com.jeffdisher.october.net.Packet_ServerSendConfigUpdate;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -483,6 +486,21 @@ public class ClientProcess
 			{
 				Packet_RemoveEntity safe = (Packet_RemoveEntity)packet;
 				_messagesToClientRunner.removeEntity(safe.entityId);
+			}
+			else if (packet instanceof Packet_SendPartialPassive)
+			{
+				Packet_SendPartialPassive safe = (Packet_SendPartialPassive)packet;
+				_messagesToClientRunner.receivedPassive(safe.partial);
+			}
+			else if (packet instanceof Packet_SendPartialPassiveUpdate)
+			{
+				Packet_SendPartialPassiveUpdate safe = (Packet_SendPartialPassiveUpdate)packet;
+				_messagesToClientRunner.receivedPassiveUpdate(safe.entityId, safe.location, safe.velocity);
+			}
+			else if (packet instanceof Packet_RemovePassive)
+			{
+				Packet_RemovePassive safe = (Packet_RemovePassive)packet;
+				_messagesToClientRunner.removePassive(safe.entityId);
 			}
 			else if (packet instanceof Packet_RemoveCuboid)
 			{

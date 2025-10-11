@@ -114,6 +114,18 @@ public enum PacketType
 	 * connection).
 	 */
 	SERVER_RETURN_SERVER_STATUS,
-	
+	/**
+	 * Sent by the server to describe a new passive entity to the client.
+	 */
+	PARTIAL_PASSIVE,
+	/**
+	 * Sent by the server to describe an update to a previously-defined passive entity.
+	 */
+	PARTIAL_PASSIVE_UPDATE,
+	/**
+	 * Sent by the server to tell the client to discard a previously-defined passive entity.
+	 */
+	REMOVE_PASSIVE,
+
 	END_OF_LIST,
 }

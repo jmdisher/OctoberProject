@@ -56,6 +56,7 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.Encoding;
@@ -990,6 +991,21 @@ public class TestServerRunner
 			Assert.assertTrue(clientMap.containsKey(entityId));
 			clientMap.remove(entityId);
 			this.notifyAll();
+		}
+		@Override
+		public void sendPartialPassive(int clientId, PartialPassive partial)
+		{
+			throw new AssertionError("sendPartialPassive");
+		}
+		@Override
+		public void sendPartialPassiveUpdate(int clientId, int entityId, EntityLocation location, EntityLocation velocity)
+		{
+			throw new AssertionError("sendPartialPassiveUpdate");
+		}
+		@Override
+		public void removePassive(int clientId, int entityId)
+		{
+			throw new AssertionError("removePassive");
 		}
 		@Override
 		public synchronized void sendCuboid(int clientId, IReadOnlyCuboidData cuboid)

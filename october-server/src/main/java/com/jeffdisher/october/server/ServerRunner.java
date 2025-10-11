@@ -491,17 +491,17 @@ public class ServerRunner
 		@Override
 		public void network_sendPartialPassive(int clientId, PartialPassive partial)
 		{
-			// TODO:  Implement network support.
+			_network.sendPartialPassive(clientId, partial);
 		}
 		@Override
 		public void network_sendPartialPassiveUpdate(int clientId, int entityId, EntityLocation location, EntityLocation velocity)
 		{
-			// TODO:  Implement network support.
+			_network.sendPartialPassiveUpdate(clientId, entityId, location, velocity);
 		}
 		@Override
 		public void network_removePassive(int clientId, int entityId)
 		{
-			// TODO:  Implement network support.
+			_network.removePassive(clientId, entityId);
 		}
 		@Override
 		public void network_sendCuboid(int clientId, IReadOnlyCuboidData cuboid)

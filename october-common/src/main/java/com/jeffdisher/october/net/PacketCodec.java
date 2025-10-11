@@ -44,6 +44,9 @@ public class PacketCodec
 		Packet_ClientUpdateOptions.register(_CODEC_TABLE);
 		Packet_ClientPollServerStatus.register(_CODEC_TABLE);
 		Packet_ServerReturnServerStatus.register(_CODEC_TABLE);
+		Packet_SendPartialPassive.register(_CODEC_TABLE);
+		Packet_SendPartialPassiveUpdate.register(_CODEC_TABLE);
+		Packet_RemovePassive.register(_CODEC_TABLE);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)

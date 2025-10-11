@@ -22,10 +22,12 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -307,6 +309,21 @@ public class ClientRunner
 		public void removeEntity(int entityId)
 		{
 			_removedEntities.add(entityId);
+		}
+		@Override
+		public void receivedPassive(PartialPassive partial)
+		{
+			// TODO:  Implement;
+		}
+		@Override
+		public void receivedPassiveUpdate(int entityId, EntityLocation location, EntityLocation velocity)
+		{
+			// TODO:  Implement;
+		}
+		@Override
+		public void removePassive(int entityId)
+		{
+			// TODO:  Implement;
 		}
 		@Override
 		public void receivedCuboid(IReadOnlyCuboidData cuboid)
