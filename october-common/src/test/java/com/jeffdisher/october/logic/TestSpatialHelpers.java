@@ -12,6 +12,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -245,6 +246,32 @@ public class TestSpatialHelpers
 		
 		EntityLocation centre = SpatialHelpers.getCentreOfRegion(base, volume);
 		Assert.assertEquals(new EntityLocation(5.3f, -6.2f, 7.45f), centre);
+	}
+
+	@Test
+	public void distanceFromPlayerToEntity()
+	{
+		// Test these helpers as one is mostly just a convenience on the other.
+		EntityLocation targetLocation = new EntityLocation(1.2f, -2.3f, 3.4f);
+		CreatureEntity creature = new CreatureEntity(-1
+			, COW
+			, targetLocation
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, (byte)0
+			, (byte)0
+			, (byte)50
+			, (byte)50
+			, null
+			, null
+		);
+		MinimalEntity target = MinimalEntity.fromCreature(creature);
+		
+		EntityLocation playerBase = new EntityLocation(5.1f, -6.4f, 7.2f);
+		float distanceEntity = SpatialHelpers.distanceFromPlayerEyeToEntitySurface(playerBase, ENV.creatures.PLAYER, target);
+		float distanceManual = SpatialHelpers.distanceFromPlayerEyeToVolume(playerBase, ENV.creatures.PLAYER, targetLocation, COW.volume());
+		
+		Assert.assertEquals(6.43f, distanceEntity, 0.01f);
+		Assert.assertEquals(6.43f, distanceManual, 0.01f);
 	}
 
 

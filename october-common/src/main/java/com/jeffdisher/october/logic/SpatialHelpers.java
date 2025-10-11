@@ -146,6 +146,22 @@ public class SpatialHelpers
 	}
 
 	/**
+	 * Finds the distance from the eye of a player with base at eyeEntityBase to the bounding box of the given target.
+	 * 
+	 * @param eyeEntityBase The base of the player whose eye we are looking through.
+	 * @param playerType The type to use when finding the eye of the player.
+	 * @param targetBase The base of the target volume to check.
+	 * @param targetVolume The target volume size.
+	 * @return The diagonal distance from the eye to the target's bounding-box.
+	 */
+	public static float distanceFromPlayerEyeToVolume(EntityLocation eyeEntityBase, EntityType playerType, EntityLocation targetBase, EntityVolume targetVolume)
+	{
+		EntityLocation eye = _getEyeLocation(eyeEntityBase, playerType);
+		
+		return _distanceToTarget(eye, targetBase, targetVolume);
+	}
+
+	/**
 	 * Finds the distance from the eye of the given eyeEntity to the nearest edge of the given block.
 	 * 
 	 * @param eyeEntity The entity whose eye we are looking through.
