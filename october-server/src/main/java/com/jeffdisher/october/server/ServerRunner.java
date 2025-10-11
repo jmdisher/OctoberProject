@@ -21,10 +21,12 @@ import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.MessageQueue;
@@ -485,6 +487,21 @@ public class ServerRunner
 		public void network_removeEntity(int clientId, int entityId)
 		{
 			_network.removeEntity(clientId, entityId);
+		}
+		@Override
+		public void network_sendPartialPassive(int clientId, PartialPassive partial)
+		{
+			// TODO:  Implement network support.
+		}
+		@Override
+		public void network_sendPartialPassiveUpdate(int clientId, int entityId, EntityLocation location, EntityLocation velocity)
+		{
+			// TODO:  Implement network support.
+		}
+		@Override
+		public void network_removePassive(int clientId, int entityId)
+		{
+			// TODO:  Implement network support.
 		}
 		@Override
 		public void network_sendCuboid(int clientId, IReadOnlyCuboidData cuboid)

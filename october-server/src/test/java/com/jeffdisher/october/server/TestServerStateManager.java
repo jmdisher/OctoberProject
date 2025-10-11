@@ -41,8 +41,14 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
+import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PartialPassive;
+import com.jeffdisher.october.types.PassiveEntity;
+import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
@@ -805,6 +811,124 @@ public class TestServerStateManager
 		manager.shutdown();
 	}
 
+	@Test
+	public void observePassiveCallbacks()
+	{
+		// We will connect a client and create, move, then despawn an item stack passive.
+		_Callouts callouts = new _Callouts();
+		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
+		manager.setOwningThread();
+		int clientId1 = 1;
+		String clientName1 = "client1";
+		manager.clientConnected(clientId1, clientName1, 1);
+		
+		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(0, changes.newCuboids().size());
+		Assert.assertEquals(0, changes.newEntities().size());
+		
+		MutableEntity near = MutableEntity.createForTest(clientId1);
+		near.setLocation(new EntityLocation(5.0f, 5.0f, 0.0f));
+		callouts.loadedEntities.add(new SuspendedEntity(near.freeze(), List.of()));
+		changes = manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(0, changes.newCuboids().size());
+		Assert.assertEquals(1, changes.newEntities().size());
+		
+		// Load in the cuboid and passive.
+		int passiveId = 1;
+		EntityLocation passiveLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
+		EntityLocation passiveVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		Item stoneItem = ENV.items.getItemById("op.stone");
+		Items stack = new Items(stoneItem, 3);
+		ItemSlot slot = ItemSlot.fromStack(stack);
+		PassiveEntity passive = new PassiveEntity(passiveId, PassiveType.ITEM_SLOT, passiveLocation, passiveVelocity, slot, 1000L);
+		
+		CuboidData nearCuboid = CuboidGenerator.createFilledCuboid(near.newLocation.getBlockLocation().getCuboidAddress(), ENV.special.AIR);
+		callouts.loadedCuboids.add(new SuspendedCuboid<>(nearCuboid
+			, HeightMapHelpers.buildHeightMap(nearCuboid)
+			, List.of()
+			, List.of()
+			, Map.of()
+			, List.of(passive)
+		));
+		snapshot = _modifySnapshot(snapshot
+			, Map.of(
+			)
+			, Map.of(clientId1, new TickRunner.SnapshotEntity(near.freeze(), 1L, null, List.of()))
+			, snapshot.creatures()
+			, snapshot.passives()
+			, Map.of(
+			)
+			, Set.of()
+		);
+		changes = manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(1, changes.newCuboids().size());
+		
+		snapshot = _modifySnapshot(snapshot
+			, Map.of(
+				nearCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(nearCuboid, null, List.of(), Map.of())
+			)
+			, snapshot.entities()
+			, snapshot.creatures()
+			, Map.of(
+				passive.id(), new TickRunner.SnapshotPassive(passive, null)
+			)
+			, HeightMapHelpers.buildColumnMaps(Map.of(
+				nearCuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(nearCuboid)
+			))
+			, Set.of()
+		);
+		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
+		// We expect to see the callout to send the new passive.
+		PartialPassive output = callouts.partialPassivesPerClient.get(clientId1).get(passiveId);
+		Assert.assertEquals(passiveLocation, output.location());
+		Assert.assertEquals(passiveVelocity, output.velocity());
+		Assert.assertEquals(PassiveType.ITEM_SLOT, output.type());
+		Assert.assertEquals(stack, ((ItemSlot)output.extendedData()).stack);
+		
+		// Change the passive and see that the update is generated.
+		EntityLocation newLocation = new EntityLocation(10.0f, 10.0f, 9.0f);
+		EntityLocation newVelocity = new EntityLocation(0.0f, 0.0f, -1.0f);
+		PassiveEntity newPassive = new PassiveEntity(passive.id(), passive.type(), newLocation, newVelocity, passive.extendedData(), passive.lastAliveMillis());
+		
+		// Update the passive and show that we see the update.
+		snapshot = _modifySnapshot(snapshot
+			, snapshot.cuboids()
+			, snapshot.entities()
+			, snapshot.creatures()
+			, Map.of(
+				newPassive.id(), new TickRunner.SnapshotPassive(newPassive, newPassive)
+			)
+			, snapshot.completedHeightMaps()
+			, Set.of()
+		);
+		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
+		// We expect to see the callout to send the passive's new location.
+		output = callouts.partialPassivesPerClient.get(clientId1).get(passiveId);
+		Assert.assertEquals(newLocation, output.location());
+		Assert.assertEquals(newVelocity, output.velocity());
+		Assert.assertEquals(PassiveType.ITEM_SLOT, output.type());
+		Assert.assertEquals(stack, ((ItemSlot)output.extendedData()).stack);
+		
+		// Despawn the passive and show that we see it removed.
+		snapshot = _modifySnapshot(snapshot
+			, snapshot.cuboids()
+			, snapshot.entities()
+			, snapshot.creatures()
+			, Map.of(
+			)
+			, snapshot.completedHeightMaps()
+			, Set.of()
+		);
+		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
+		// We expect to see the callout remove the passive.
+		output = callouts.partialPassivesPerClient.get(clientId1).get(passiveId);
+		Assert.assertNull(output);
+		
+		manager.clientDisconnected(clientId1);
+		manager.setupNextTickAfterCompletion(snapshot);
+	}
+
 
 	private TickRunner.Snapshot _createEmptySnapshot()
 	{
@@ -933,6 +1057,7 @@ public class TestServerStateManager
 		public boolean didEnqueue = false;
 		public Map<Integer, Map<Integer, String>> joinedClients = new HashMap<>();
 		public Map<Integer, Set<Integer>> partialEntitiesPerClient = new HashMap<>();
+		public Map<Integer, Map<Integer, PartialPassive>> partialPassivesPerClient = new HashMap<>();
 		public Map<Integer, Set<CuboidAddress>> cuboidsSentToClient = new HashMap<>();
 		public boolean isNetworkWriteReady = true;
 		
@@ -1011,6 +1136,33 @@ public class TestServerStateManager
 				boolean didRemove = ids.remove(entityId);
 				Assert.assertTrue(didRemove);
 			}
+		}
+		@Override
+		public void network_sendPartialPassive(int clientId, PartialPassive partial)
+		{
+			if (!this.partialPassivesPerClient.containsKey(clientId))
+			{
+				this.partialPassivesPerClient.put(clientId, new HashMap<>());
+			}
+			this.partialPassivesPerClient.get(clientId).put(partial.id(), partial);
+		}
+		@Override
+		public void network_sendPartialPassiveUpdate(int clientId, int entityId, EntityLocation location, EntityLocation velocity)
+		{
+			PartialPassive original = this.partialPassivesPerClient.get(clientId).get(entityId);
+			PartialPassive update = new PartialPassive(entityId
+				, original.type()
+				, location
+				, velocity
+				, original.extendedData()
+			);
+			this.partialPassivesPerClient.get(clientId).put(update.id(), update);
+		}
+		@Override
+		public void network_removePassive(int clientId, int entityId)
+		{
+			PartialPassive original = this.partialPassivesPerClient.get(clientId).remove(entityId);
+			Assert.assertNotNull(original);
 		}
 		@Override
 		public void network_sendCuboid(int clientId, IReadOnlyCuboidData cuboid)

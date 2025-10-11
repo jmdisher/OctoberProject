@@ -45,6 +45,7 @@ import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
@@ -101,6 +102,7 @@ public class ServerStateManager
 	private Map<Integer, CreatureEntity> _completedCreatures;
 	private Map<Integer, CreatureEntity> _visiblyChangedCreatures;
 	private Map<Integer, PassiveEntity> _completedPassives;
+	private Map<Integer, PassiveEntity> _visiblyChangedPassives;
 	private Map<CuboidAddress, List<MutationBlockSetBlock>> _blockChanges;
 
 	public ServerStateManager(ICallouts callouts, long millisPerTick)
@@ -127,6 +129,7 @@ public class ServerStateManager
 		_completedCreatures = Collections.emptyMap();
 		_visiblyChangedCreatures = Collections.emptyMap();
 		_completedPassives = Collections.emptyMap();
+		_visiblyChangedPassives = Collections.emptyMap();
 		_blockChanges = Collections.emptyMap();
 	}
 
@@ -210,8 +213,16 @@ public class ServerStateManager
 				(Map.Entry<Integer, TickRunner.SnapshotCreature> elt) -> elt.getKey()
 				, (Map.Entry<Integer, TickRunner.SnapshotCreature> elt) -> elt.getValue().visiblyChanged()
 		));
-		// TODO:  Populate this once the passives are exposed in the snapshot.
-		_completedPassives = Map.of();
+		_completedPassives = snapshot.passives().entrySet().stream().collect(Collectors.toMap(
+				(Map.Entry<Integer, TickRunner.SnapshotPassive> elt) -> elt.getKey()
+				, (Map.Entry<Integer, TickRunner.SnapshotPassive> elt) -> elt.getValue().completed()
+		));
+		_visiblyChangedPassives = snapshot.passives().entrySet().stream().filter(
+				(Map.Entry<Integer, TickRunner.SnapshotPassive> elt) -> (null != elt.getValue().visiblyChanged())
+		).collect(Collectors.toMap(
+				(Map.Entry<Integer, TickRunner.SnapshotPassive> elt) -> elt.getKey()
+				, (Map.Entry<Integer, TickRunner.SnapshotPassive> elt) -> elt.getValue().visiblyChanged()
+		));
 		_blockChanges = snapshot.cuboids().entrySet().stream().filter(
 				(Map.Entry<CuboidAddress, TickRunner.SnapshotCuboid> elt) -> (null != elt.getValue().blockChanges())
 		).collect(Collectors.toMap(
@@ -671,6 +682,7 @@ public class ServerStateManager
 	{
 		_sendNewAndUpdatedEntities(clientId, state);
 		_sendNewAndUpdatedCreatures(clientId, state);
+		_sendNewAndUpdatedPassives(clientId, state);
 		
 		// If there are any entities in the state which aren't in the snapshot, remove them since they died or disconnected.
 		Set<Integer> allEntityIds = new HashSet<>(_completedEntities.keySet());
@@ -683,6 +695,16 @@ public class ServerStateManager
 			{
 				_callouts.network_removeEntity(clientId, entityId);
 				entityIterator.remove();
+			}
+		}
+		Iterator<Integer> passiveIterator = state.knownPassives.iterator();
+		while (passiveIterator.hasNext())
+		{
+			int passiveId = passiveIterator.next();
+			if (!_completedPassives.containsKey(passiveId))
+			{
+				_callouts.network_removePassive(clientId, passiveId);
+				passiveIterator.remove();
 			}
 		}
 	}
@@ -783,6 +805,50 @@ public class ServerStateManager
 				PartialEntity partial = PartialEntity.fromCreature(entity);
 				_callouts.network_sendPartialEntity(clientId, partial);
 				state.knownEntities.add(entityId);
+			}
+		}
+	}
+
+	private void _sendNewAndUpdatedPassives(int clientId, ClientState state)
+	{
+		// Note that this is similar to _sendNewAndUpdatedCreatures but duplicated to avoid spreading logic with extra levels of indirection.
+		EntityType playerType  = Environment.getShared().creatures.PLAYER;
+		for (Map.Entry<Integer, PassiveEntity> entry : _completedPassives.entrySet())
+		{
+			int entityId = entry.getKey();
+			PassiveEntity passive = entry.getValue();
+			float distance = SpatialHelpers.distanceFromPlayerEyeToVolume(state.location, playerType, passive.location(), passive.type().volume());
+			if (state.knownPassives.contains(entityId))
+			{
+				// See if they are too far away.
+				if (distance > ENTITY_VISIBLE_DISTANCE)
+				{
+					// This is too far away so discard it.
+					_callouts.network_removePassive(clientId, entityId);
+					state.knownPassives.remove(entityId);
+				}
+				else
+				{
+					// We know this passive so generate the update for this client.
+					PassiveEntity newEntity = _visiblyChangedPassives.get(entityId);
+					if (null != newEntity)
+					{
+						_callouts.network_sendPartialPassiveUpdate(clientId, entityId, passive.location(), passive.velocity());
+					}
+				}
+			}
+			else if (distance <= ENTITY_VISIBLE_DISTANCE)
+			{
+				// We don't know this passive, and they are close by, so send them.
+				PartialPassive partial = new PartialPassive(passive.id()
+					, passive.type()
+					, passive.location()
+					, passive.velocity()
+					// This data is defined by PassiveType, per-instance, and is persisted to disk and sent over the network.
+					, passive.extendedData()
+				);
+				_callouts.network_sendPartialPassive(clientId, partial);
+				state.knownPassives.add(entityId);
 			}
 		}
 	}
@@ -1059,6 +1125,9 @@ public class ServerStateManager
 		void network_sendFullEntity(int clientId, Entity entity);
 		void network_sendPartialEntity(int clientId, PartialEntity entity);
 		void network_removeEntity(int clientId, int entityId);
+		void network_sendPartialPassive(int clientId, PartialPassive partial);
+		void network_sendPartialPassiveUpdate(int clientId, int entityId, EntityLocation location, EntityLocation velocity);
+		void network_removePassive(int clientId, int entityId);
 		void network_sendCuboid(int clientId, IReadOnlyCuboidData cuboid);
 		void network_removeCuboid(int clientId, CuboidAddress address);
 		void network_sendEntityUpdate(int clientId, int entityId, IEntityUpdate update);
@@ -1098,6 +1167,7 @@ public class ServerStateManager
 		public int cuboidViewDistance;
 		public CuboidAddress lastComputedAddress;
 		public final Set<Integer> knownEntities;
+		public final Set<Integer> knownPassives;
 		public final Set<CuboidAddress> knownCuboids;
 		public final List<CuboidAddress> priorityMissingCuboids;
 		public final List<CuboidAddress> outerMissingCuboids;
@@ -1111,6 +1181,7 @@ public class ServerStateManager
 			// Create empty containers for what this client has observed.
 			this.lastComputedAddress = null;
 			this.knownEntities = new HashSet<>();
+			this.knownPassives = new HashSet<>();
 			this.knownCuboids = new HashSet<>();
 			this.priorityMissingCuboids = new ArrayList<>();
 			this.outerMissingCuboids = new ArrayList<>();
