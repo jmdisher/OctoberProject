@@ -5,6 +5,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.actions.MutationEntityStoreToInventory;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
@@ -14,6 +15,10 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.IEntityAction;
+import com.jeffdisher.october.types.IMutableCreatureEntity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
@@ -105,6 +110,52 @@ public class TestPassiveActions
 		PassiveEntity result = action.applyChange(context, start);
 		
 		Assert.assertNull(result);
+	}
+
+	@Test
+	public void passiveDespawnOnPickUp() throws Throwable
+	{
+		// We will show that a passive item slot will request that it despawn when picked up so long as the requesting player is still online.
+		PassiveEntity stackIngot = new PassiveEntity(1
+			, PassiveType.ITEM_SLOT
+			, new EntityLocation(5.0f, 5.0f, 5.0f)
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, ItemSlot.fromStack(new Items(STONE_ITEM, 2))
+			, 1000L
+		);
+		
+		int idLoaded = 1;
+		TickProcessingContext context = ContextBuilder.build()
+			.sinks(null, new TickProcessingContext.IChangeSink()
+			{
+				@Override
+				public boolean passive(int targetPassiveId, IPassiveAction action)
+				{
+					throw new AssertionError("Not in test");
+				}
+				@Override
+				public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+				{
+					Assert.assertTrue(change instanceof MutationEntityStoreToInventory);
+					return (idLoaded == targetEntityId);
+				}
+				@Override
+				public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+				{
+					throw new AssertionError("Not in test");
+				}
+				@Override
+				public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+				{
+					throw new AssertionError("Not in test");
+				}
+			})
+			.finish()
+		;
+		
+		// This should despawn if we ack the pick-up to the loaded ID, only.
+		Assert.assertNull(new PassiveActionPickUp(idLoaded).applyChange(context, stackIngot));
+		Assert.assertEquals(stackIngot, new PassiveActionPickUp(2).applyChange(context, stackIngot));
 	}
 
 

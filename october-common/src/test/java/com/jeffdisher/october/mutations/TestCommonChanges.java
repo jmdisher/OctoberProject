@@ -20,6 +20,7 @@ import com.jeffdisher.october.actions.EntityChangeOperatorSpawnCreature;
 import com.jeffdisher.october.actions.EntityChangePeriodic;
 import com.jeffdisher.october.actions.EntityChangeTakeDamageFromEntity;
 import com.jeffdisher.october.actions.MutationEntityStoreToInventory;
+import com.jeffdisher.october.actions.passive.PassiveActionPickUp;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
@@ -58,6 +59,7 @@ import com.jeffdisher.october.subactions.EntityChangeUseSelectedItemOnSelf;
 import com.jeffdisher.october.subactions.EntitySubActionDropItemsAsPassive;
 import com.jeffdisher.october.subactions.EntitySubActionLadderAscend;
 import com.jeffdisher.october.subactions.EntitySubActionLadderDescend;
+import com.jeffdisher.october.subactions.EntitySubActionPickUpPassive;
 import com.jeffdisher.october.subactions.EntitySubActionRequestSwapSpecialSlot;
 import com.jeffdisher.october.subactions.EntitySubActionTravelViaBlock;
 import com.jeffdisher.october.subactions.MutationEntityPushItems;
@@ -91,6 +93,7 @@ import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
+import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -3105,6 +3108,101 @@ public class TestCommonChanges
 		Assert.assertEquals(3, pass3.id());
 		Assert.assertEquals(newEntity.newLocation, pass3.location());
 		Assert.assertEquals(new Items(LOG_ITEM, 2), ((ItemSlot)pass3.extendedData()).stack);
+	}
+
+	@Test
+	public void sendPickUpToPassive() throws Throwable
+	{
+		// We want to see what happens when we try to pick up passives of different sizes and distances.
+		// We will fill up inventories with wheat seeds since they are only 1 unit.
+		Item wheatSeed = ENV.items.getItemById("op.wheat_seed");
+		Assert.assertEquals(1, ENV.encumbrance.getEncumbrance(wheatSeed));
+		
+		// We will leave enough space for 1 iron ingot (4) or iron pickaxe (4), which is smaller than a furnace (8).
+		Item ironIngot  = ENV.items.getItemById("op.iron_ingot");
+		Item pickaxe = ENV.items.getItemById("op.iron_pickaxe");
+		Item furnace = ENV.items.getItemById("op.furnace");
+		Assert.assertEquals(4, ENV.encumbrance.getEncumbrance(ironIngot));
+		Assert.assertEquals(4, ENV.encumbrance.getEncumbrance(pickaxe));
+		Assert.assertEquals(8, ENV.encumbrance.getEncumbrance(furnace));
+		
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newInventory.addAllItems(wheatSeed, mutable.newInventory.maxVacancyForItem(wheatSeed) - 4);
+		mutable.newLocation = new EntityLocation(5.0f, 5.0f, 5.0f);
+		
+		PartialPassive stackIngot = new PartialPassive(1
+			, PassiveType.ITEM_SLOT
+			, new EntityLocation(5.0f, 5.0f, 5.0f)
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, ItemSlot.fromStack(new Items(ironIngot, 2))
+		);
+		PartialPassive stackPick = new PartialPassive(2
+			, PassiveType.ITEM_SLOT
+			, new EntityLocation(5.0f, 5.0f, 5.0f)
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, ItemSlot.fromNonStack(PropertyHelpers.newItemWithDefaults(ENV, pickaxe))
+		);
+		PartialPassive stackFurnace = new PartialPassive(3
+			, PassiveType.ITEM_SLOT
+			, new EntityLocation(5.0f, 5.0f, 5.0f)
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, ItemSlot.fromStack(new Items(furnace, 2))
+		);
+		PartialPassive stackDistance = new PartialPassive(4
+			, PassiveType.ITEM_SLOT
+			, new EntityLocation(8.0f, 8.0f, 5.0f)
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, ItemSlot.fromStack(new Items(ironIngot, 2))
+		);
+		Map<Integer, PartialPassive> map = Map.of(stackIngot.id(), stackIngot
+			, stackPick.id(), stackPick
+			, stackFurnace.id(), stackFurnace
+			, stackDistance.id(), stackDistance
+		);
+		
+		int[] out = new int[1];
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups(null, null, (Integer id) -> map.get(id))
+			.sinks(null, new TickProcessingContext.IChangeSink()
+			{
+				@Override
+				public boolean passive(int targetPassiveId, IPassiveAction action)
+				{
+					Assert.assertTrue(action instanceof PassiveActionPickUp);
+					Assert.assertEquals(0, out[0]);
+					Assert.assertTrue(map.containsKey(targetPassiveId));
+					out[0] = targetPassiveId;
+					return true;
+				}
+				@Override
+				public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+				{
+					throw new AssertionError("Not in test");
+				}
+				@Override
+				public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+				{
+					throw new AssertionError("Not in test");
+				}
+				@Override
+				public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+				{
+					throw new AssertionError("Not in test");
+				}
+			})
+			.finish()
+		;
+		
+		Assert.assertTrue(new EntitySubActionPickUpPassive(1).applyChange(context, mutable));
+		Assert.assertEquals(1, out[0]);
+		out[0] = 0;
+		Assert.assertTrue(new EntitySubActionPickUpPassive(2).applyChange(context, mutable));
+		Assert.assertEquals(2, out[0]);
+		out[0] = 0;
+		Assert.assertFalse(new EntitySubActionPickUpPassive(3).applyChange(context, mutable));
+		Assert.assertEquals(0, out[0]);
+		Assert.assertFalse(new EntitySubActionPickUpPassive(4).applyChange(context, mutable));
+		Assert.assertEquals(0, out[0]);
 	}
 
 

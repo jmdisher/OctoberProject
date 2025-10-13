@@ -43,6 +43,7 @@ public enum EntitySubActionType
 	ITEM_SLOT_REQUEST_SWAP,
 	TRAVEL_VIA_BLOCK,
 	DROP_ITEMS_AS_PASSIVE,
+	PICK_UP_ITEMS_PASSIVE,
 	
 	/**
 	 * This testing type is never serialized so it should be kept at the end of the list.

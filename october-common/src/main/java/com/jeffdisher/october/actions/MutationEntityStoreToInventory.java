@@ -22,6 +22,7 @@ import com.jeffdisher.october.utils.Assert;
  * This is the final step in the process started by MutationEntityRequestItemPickUp.  Called more directly by
  * MutationBlockExtractItems.
  * Also called by MutationBlockIncrementalBreak in order to store new blocks to the entity's inventory.
+ * It is also used by PassiveActionPickUp.
  * If the inventory can't fit all the items, those which overflow are dropped onto the ground where the entity is with
  * MutationBlockStoreItems.
  */
