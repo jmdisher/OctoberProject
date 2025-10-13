@@ -371,11 +371,13 @@ public class MovementAccumulator
 	// Returns null if there was an error in toRun or _thisEntity, if it was a success but had no impact.
 	private Entity _generateLocalEntity(EntityActionSimpleMove<IMutablePlayerEntity> toRun, long millisToApply, long currentTimeMillis)
 	{
+		// TODO:  Plumb the passives in here.
 		OneOffRunner.StatePackage input = new OneOffRunner.StatePackage(_thisEntity
 			, _world
 			, _heights
 			, null
 			, _otherEntities
+			, Map.of()
 		);
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
 			// We can probably ignore events in this path since they will either be entity-related (hence sent by the

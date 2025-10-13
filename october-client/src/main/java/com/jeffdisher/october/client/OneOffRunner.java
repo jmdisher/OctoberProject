@@ -28,6 +28,7 @@ import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
@@ -62,8 +63,7 @@ public class OneOffRunner
 		Set<Integer> allPlayerIds = new HashSet<>(state.otherEntities.keySet().stream().filter((Integer i) -> i > 0).toList());
 		allPlayerIds.add(state.thisEntity.id());
 		Set<Integer> allCreatureIds = state.otherEntities.keySet().stream().filter((Integer i) -> i < 0).collect(Collectors.toSet());
-		// TODO:  Get real passive IDs.
-		Set<Integer> allPassiveIds = Set.of();
+		Set<Integer> allPassiveIds = state.passives.keySet();
 		CommonMutationSink newMutationSink = new CommonMutationSink(loadedCuboids);
 		CommonChangeSink newChangeSink = new CommonChangeSink(allPlayerIds, allCreatureIds, allPassiveIds);
 		TickProcessingContext context = _createContext(state, newMutationSink, newChangeSink, eventSink, millisPerTick, currentTickTimeMillis);
@@ -144,9 +144,10 @@ public class OneOffRunner
 			Map<CuboidAddress, IReadOnlyCuboidData> initialCuboids = new HashMap<>(state.world);
 			Map<CuboidAddress, CuboidHeightMap> initialHeights = new HashMap<>(state.heights);
 			Map<Integer, PartialEntity> initialCrowd = new HashMap<>(state.otherEntities);
+			Map<Integer, PartialPassive> initialPassives = new HashMap<>(state.passives);
 			initialCuboids.putAll(changedCuboids);
 			initialHeights.putAll(heightFragment);
-			updatedState = new StatePackage(updatedEntity, initialCuboids, initialHeights, optionalBlockChanges, initialCrowd);
+			updatedState = new StatePackage(updatedEntity, initialCuboids, initialHeights, optionalBlockChanges, initialCrowd, initialPassives);
 		}
 		return updatedState;
 	}
@@ -174,10 +175,7 @@ public class OneOffRunner
 				, (Integer entityId) -> (thisEntityId == entityId)
 					? MinimalEntity.fromEntity(state.thisEntity())
 					: MinimalEntity.fromPartialEntity(state.otherEntities.get(entityId))
-				, (Integer passiveId) -> {
-					// TODO:  Return correct passives once they are plumbed through here.
-					return null;
-				}
+				, (Integer passiveId) -> state.passives.get(passiveId)
 				, null
 				, newMutationSink
 				, newChangeSink
@@ -208,5 +206,6 @@ public class OneOffRunner
 		, Map<CuboidAddress, CuboidHeightMap> heights
 		, Map<CuboidAddress, List<BlockChangeDescription>> optionalBlockChanges
 		, Map<Integer, PartialEntity> otherEntities
+		, Map<Integer, PartialPassive> passives
 	) {}
 }
