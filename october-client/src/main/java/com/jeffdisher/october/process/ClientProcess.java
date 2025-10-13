@@ -656,17 +656,23 @@ public class ClientProcess
 		@Override
 		public void passiveEntityDidLoad(PartialPassive entity)
 		{
-			// TODO:  Send these through the listener once it is updated.
+			_pendingCallbacks.add(() -> {
+				_listener.passiveEntityDidLoad(entity);
+			});
 		}
 		@Override
 		public void passiveEntityDidChange(PartialPassive entity)
 		{
-			// TODO:  Send these through the listener once it is updated.
+			_pendingCallbacks.add(() -> {
+				_listener.passiveEntityDidChange(entity);
+			});
 		}
 		@Override
 		public void passiveEntityDidUnload(int id)
 		{
-			// TODO:  Send these through the listener once it is updated.
+			_pendingCallbacks.add(() -> {
+				_listener.passiveEntityDidUnload(id);
+			});
 		}
 		@Override
 		public void tickDidComplete(long gameTick)
@@ -829,6 +835,26 @@ public class ClientProcess
 		 * @param id The ID of the entity to unload.
 		 */
 		void otherEntityDidUnload(int id);
+
+		/**
+		 * Called when a passive entity is loaded for the first time.
+		 * 
+		 * @param entity The server's entity data.
+		 */
+		void passiveEntityDidLoad(PartialPassive entity);
+		/**
+		 * Called when a previously-loaded passive's state changes.
+		 * 
+		 * @param entity The server's entity data.
+		 */
+		void passiveEntityDidChange(PartialPassive entity);
+		/**
+		 * Called when a passive should be unloaded as the server is no longer sending us updates.
+		 * 
+		 * @param id The ID of the entity to unload.
+		 */
+		void passiveEntityDidUnload(int id);
+
 		/**
 		 * Called when a game tick from the server has been fully processed.
 		 * 

@@ -34,6 +34,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
@@ -614,6 +615,21 @@ public class TestProcesses
 		{
 			Object old = this.otherEntities.remove(id);
 			Assert.assertNotNull(old);
+		}
+		@Override
+		public void passiveEntityDidLoad(PartialPassive entity)
+		{
+			throw new AssertionError("Not in test");
+		}
+		@Override
+		public void passiveEntityDidChange(PartialPassive entity)
+		{
+			throw new AssertionError("Not in test");
+		}
+		@Override
+		public void passiveEntityDidUnload(int id)
+		{
+			throw new AssertionError("Not in test");
 		}
 		@Override
 		public void tickDidComplete(long gameTick)

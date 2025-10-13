@@ -555,19 +555,19 @@ public class ClientRunner
 		public void passiveEntityDidLoad(PartialPassive entity)
 		{
 			_projectionListener.passiveEntityDidLoad(entity);
-			// TODO:  Plumb this into accumulator once it is updated to handle these.
+			_accumulator.addPassive(entity);
 		}
 		@Override
 		public void passiveEntityDidChange(PartialPassive entity)
 		{
 			_projectionListener.passiveEntityDidChange(entity);
-			// TODO:  Plumb this into accumulator once it is updated to handle these.
+			_accumulator.updatePassive(entity);
 		}
 		@Override
 		public void passiveEntityDidUnload(int id)
 		{
 			_projectionListener.passiveEntityDidUnload(id);
-			// TODO:  Plumb this into accumulator once it is updated to handle these.
+			_accumulator.removePassive(id);
 		}
 		@Override
 		public void tickDidComplete(long gameTick)

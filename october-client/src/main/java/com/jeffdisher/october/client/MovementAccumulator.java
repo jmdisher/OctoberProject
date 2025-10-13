@@ -20,6 +20,7 @@ import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -51,6 +52,7 @@ public class MovementAccumulator
 	private final Map<CuboidAddress, IReadOnlyCuboidData> _world;
 	private final Map<CuboidAddress, CuboidHeightMap> _heights;
 	private final Map<Integer, PartialEntity> _otherEntities;
+	private final Map<Integer, PartialPassive> _passives;
 	private final Function<AbsoluteLocation, BlockProxy> _proxyLookup;
 	private final ViscosityReader _reader;
 
@@ -77,6 +79,7 @@ public class MovementAccumulator
 		_world = new HashMap<>();
 		_heights = new HashMap<>();
 		_otherEntities = new HashMap<>();
+		_passives = new HashMap<>();
 		
 		_discardAccumulation(currentTimeMillis);
 		
@@ -322,6 +325,39 @@ public class MovementAccumulator
 	}
 
 	/**
+	 * Adds a passive entity to the accumulator.
+	 * 
+	 * @param passive The new passive.
+	 */
+	public void addPassive(PartialPassive passive)
+	{
+		Object old = _passives.put(passive.id(), passive);
+		Assert.assertTrue(null == old);
+	}
+
+	/**
+	 * Updates a passive already known to the accumulator.
+	 * 
+	 * @param entity The updated passive state.
+	 */
+	public void updatePassive(PartialPassive entity)
+	{
+		PartialPassive old = _passives.get(entity.id());
+		Assert.assertTrue(null != old);
+		_passives.put(entity.id(), entity);
+	}
+
+	/**
+	 * Removes an already-known passive from the accumulator.
+	 * 
+	 * @param entityId The ID of the passive entity to remove.
+	 */
+	public void removePassive(int entityId)
+	{
+		Assert.assertTrue(null != _otherEntities.remove(entityId));
+	}
+
+	/**
 	 * Used to access the last accumulated Entity state kept internally.  Returns null if there is no accumulation.
 	 * 
 	 * @return The last Entity state sent via notification or null, if there is no accumulation.
@@ -371,13 +407,12 @@ public class MovementAccumulator
 	// Returns null if there was an error in toRun or _thisEntity, if it was a success but had no impact.
 	private Entity _generateLocalEntity(EntityActionSimpleMove<IMutablePlayerEntity> toRun, long millisToApply, long currentTimeMillis)
 	{
-		// TODO:  Plumb the passives in here.
 		OneOffRunner.StatePackage input = new OneOffRunner.StatePackage(_thisEntity
 			, _world
 			, _heights
 			, null
 			, _otherEntities
-			, Map.of()
+			, _passives
 		);
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
 			// We can probably ignore events in this path since they will either be entity-related (hence sent by the

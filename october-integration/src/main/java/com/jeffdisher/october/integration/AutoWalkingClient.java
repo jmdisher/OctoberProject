@@ -25,6 +25,7 @@ import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -253,6 +254,18 @@ public class AutoWalkingClient
 		public void otherEntityDidUnload(int id)
 		{
 			System.out.println("<Entity " + id);
+		}
+		@Override
+		public void passiveEntityDidLoad(PartialPassive entity)
+		{
+		}
+		@Override
+		public void passiveEntityDidChange(PartialPassive entity)
+		{
+		}
+		@Override
+		public void passiveEntityDidUnload(int id)
+		{
 		}
 		@Override
 		public void tickDidComplete(long gameTick)
