@@ -61,7 +61,7 @@ public class TestTickUtils
 		TickProcessingContext context = ContextBuilder.build()
 				.millisPerTick(millisPerTick)
 				.tick(MiscConstants.DAMAGE_ENVIRONMENT_CHECK_MILLIS * millisPerTick)
-				.lookups(previousBlockLookUp, null)
+				.lookups(previousBlockLookUp, null, null)
 				.eventSink(eventSink)
 				.finish()
 		;
@@ -92,7 +92,7 @@ public class TestTickUtils
 		TickProcessingContext context = ContextBuilder.build()
 				.millisPerTick(millisPerTick)
 				.tick(MiscConstants.DAMAGE_ENVIRONMENT_CHECK_MILLIS * millisPerTick)
-				.lookups(previousBlockLookUp, null)
+				.lookups(previousBlockLookUp, null, null)
 				.eventSink(eventSink)
 				.finish()
 		;
@@ -128,7 +128,7 @@ public class TestTickUtils
 		TickProcessingContext context = ContextBuilder.build()
 				.millisPerTick(millisPerTick)
 				.tick(MiscConstants.DAMAGE_ENVIRONMENT_CHECK_MILLIS * millisPerTick)
-				.lookups(previousBlockLookUp, null)
+				.lookups(previousBlockLookUp, null, null)
 				.eventSink(eventSink)
 				.finish()
 		;

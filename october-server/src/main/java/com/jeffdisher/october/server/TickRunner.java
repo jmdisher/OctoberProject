@@ -60,6 +60,7 @@ import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.MinimalEntity;
+import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -461,6 +462,18 @@ public class TickRunner
 					, (Integer entityId) -> (entityId > 0)
 						? MinimalEntity.fromEntity(thisTickMaterials.completedEntities.get(entityId))
 						: MinimalEntity.fromCreature(thisTickMaterials.completedCreatures.get(entityId))
+					, (Integer passiveId) -> {
+						PassiveEntity passive = thisTickMaterials.completedPassives.get(passiveId);
+						return (null != passive)
+							? new PartialPassive(passive.id()
+								, passive.type()
+								, passive.location()
+								, passive.velocity()
+								, passive.extendedData()
+							)
+							: null
+						;
+					}
 					, (AbsoluteLocation blockLocation) -> {
 						CuboidColumnAddress column = blockLocation.getCuboidAddress().getColumn();
 						BlockAddress blockAddress = blockLocation.getBlockAddress();

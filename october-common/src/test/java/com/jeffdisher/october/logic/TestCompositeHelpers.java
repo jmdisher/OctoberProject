@@ -57,7 +57,7 @@ public class TestCompositeHelpers
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
 				return new BlockProxy(location.getBlockAddress(), cuboid);
-			}, null)
+			}, null, null)
 			.finish()
 		;
 		MutableBlockProxy onProxy = new MutableBlockProxy(onLamp, cuboid);
@@ -90,7 +90,7 @@ public class TestCompositeHelpers
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
 				return new BlockProxy(location.getBlockAddress(), cuboid);
-			}, null)
+			}, null, null)
 			.finish()
 		;
 		MutableBlockProxy onProxy = new MutableBlockProxy(centre, cuboid);
@@ -134,7 +134,7 @@ public class TestCompositeHelpers
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
 				return new BlockProxy(location.getBlockAddress(), cuboid);
-			}, null)
+			}, null, null)
 			.finish()
 		;
 		MutableBlockProxy onProxy = new MutableBlockProxy(centre, cuboid);

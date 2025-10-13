@@ -85,7 +85,7 @@ public class TestPortalHelpers
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
 				return new BlockProxy(location.getBlockAddress(), cuboid);
-			}, null)
+			}, null, null)
 			.finish()
 		;
 		
@@ -110,7 +110,7 @@ public class TestPortalHelpers
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
 				return new BlockProxy(location.getBlockAddress(), cuboid);
-			}, null)
+			}, null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)
@@ -154,7 +154,7 @@ public class TestPortalHelpers
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
 				return new BlockProxy(location.getBlockAddress(), cuboid);
-			}, null)
+			}, null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)
@@ -193,7 +193,7 @@ public class TestPortalHelpers
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
 				return location.getCuboidAddress().equals(cuboidAddress) ? new BlockProxy(location.getBlockAddress(), cuboid) : null;
-			}, null)
+			}, null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)

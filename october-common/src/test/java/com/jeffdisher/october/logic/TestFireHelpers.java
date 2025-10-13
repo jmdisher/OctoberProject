@@ -51,7 +51,7 @@ public class TestFireHelpers
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
 					return new BlockProxy(location.getBlockAddress(), cuboid);
-				}, null)
+				}, null, null)
 				.finish()
 		;
 		List<AbsoluteLocation> neighbours = FireHelpers.findFlammableNeighbours(ENV, context, centre);
@@ -68,7 +68,7 @@ public class TestFireHelpers
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
 					return new BlockProxy(location.getBlockAddress(), cuboid);
-				}, null)
+				}, null, null)
 				.finish()
 		;
 		List<AbsoluteLocation> neighbours = FireHelpers.findFlammableNeighbours(ENV, context, centre);
@@ -85,7 +85,7 @@ public class TestFireHelpers
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
 					return new BlockProxy(location.getBlockAddress(), cuboid);
-				}, null)
+				}, null, null)
 				.finish()
 		;
 		Assert.assertTrue(FireHelpers.isNearFireSource(ENV, context, centre.getRelative(1, 0, 0)));
@@ -107,7 +107,7 @@ public class TestFireHelpers
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
 					return new BlockProxy(location.getBlockAddress(), cuboid);
-				}, null)
+				}, null, null)
 				.finish()
 		;
 		Assert.assertTrue(FireHelpers.canIgnite(ENV, context, canStart, new BlockProxy(canStart.getBlockAddress(), cuboid)));
@@ -131,7 +131,7 @@ public class TestFireHelpers
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
 					return new BlockProxy(location.getBlockAddress(), cuboid);
-				}, null)
+				}, null, null)
 				.finish()
 		;
 		Assert.assertFalse(FireHelpers.shouldExtinguish(ENV, context, burnNoWater, new BlockProxy(burnNoWater.getBlockAddress(), cuboid)));

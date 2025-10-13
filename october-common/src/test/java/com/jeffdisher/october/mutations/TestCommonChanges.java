@@ -559,7 +559,10 @@ public class TestCommonChanges
 		
 		List<IMutationBlock> blockHolder = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+					, null
+					, null
+				)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
 						public boolean next(IMutationBlock mutation)
@@ -680,7 +683,7 @@ public class TestCommonChanges
 		IEntityAction<IMutablePlayerEntity>[] changeHolder = new IEntityAction[1];
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
-				.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)))
+				.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)), null)
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 						@Override
 						public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
@@ -758,7 +761,7 @@ public class TestCommonChanges
 							proxy = new BlockProxy(block, stoneCuboid);
 						}
 						return proxy;
-					}, null)
+					}, null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
 						public boolean next(IMutationBlock mutation)
@@ -839,7 +842,7 @@ public class TestCommonChanges
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
-				.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)))
+				.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)), null)
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 						@Override
 						public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
@@ -1355,7 +1358,7 @@ public class TestCommonChanges
 				.lookups(null, (Integer id) -> {
 						Assert.assertEquals(targetId, id.intValue());
 						return MinimalEntity.fromCreature(creature);
-					})
+					}, null)
 				.sinks(null, changeSink)
 				.finish()
 		;
@@ -1415,7 +1418,7 @@ public class TestCommonChanges
 				.lookups(null, (Integer id) -> {
 						Assert.assertEquals(targetId, id.intValue());
 						return MinimalEntity.fromCreature(creature);
-					})
+					}, null)
 				.sinks(null, changeSink)
 				.finish()
 		;
@@ -2177,7 +2180,7 @@ public class TestCommonChanges
 							? new BlockProxy(location.getBlockAddress(), cuboid)
 							: null
 					;
-				}, null)
+				}, null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 					@Override
 					public boolean next(IMutationBlock mutation)
@@ -2568,7 +2571,7 @@ public class TestCommonChanges
 		int[] eventCounter = new int[1];
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(5L)
-			.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)))
+			.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)), null)
 			.sinks(null, new TickProcessingContext.IChangeSink() {
 				@Override
 				public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
@@ -2653,7 +2656,7 @@ public class TestCommonChanges
 					? new BlockProxy(location.getBlockAddress(), air)
 					: new BlockProxy(location.getBlockAddress(), stone)
 				;
-			}, null)
+			}, null, null)
 			.finish()
 		;
 		EntitySubActionLadderAscend<IMutablePlayerEntity> ascend = new EntitySubActionLadderAscend<>();
@@ -2847,7 +2850,7 @@ public class TestCommonChanges
 		
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(200L)
-			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
 			.finish()
 		;
 		
@@ -2876,7 +2879,7 @@ public class TestCommonChanges
 		
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(200L)
-			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
 			.finish()
 		;
 		
@@ -2896,7 +2899,7 @@ public class TestCommonChanges
 		cuboid.setData15(AspectRegistry.BLOCK, blockLocation.getBlockAddress(), STONE.item().number());
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
 			.finish()
 		;
 		
@@ -2948,7 +2951,7 @@ public class TestCommonChanges
 		
 		TickProcessingContext context = ContextBuilder.build()
 			.millisPerTick(100L)
-			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
 			.finish()
 		;
 		
@@ -2967,7 +2970,7 @@ public class TestCommonChanges
 		// Try again with a different tick rate.
 		context = ContextBuilder.build()
 			.millisPerTick(10L)
-			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
 			.finish()
 		;
 		
@@ -2985,7 +2988,7 @@ public class TestCommonChanges
 		// Test an error case we noticed with sign handling when clamping.
 		context = ContextBuilder.build()
 			.millisPerTick(50L)
-			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
 			.finish()
 		;
 		
@@ -3019,7 +3022,7 @@ public class TestCommonChanges
 				}, (Integer id) -> {
 					Assert.assertEquals(targetId, id.intValue());
 					return MinimalEntity.fromCreature(creature);
-				})
+				}, null)
 				.sinks(null, changeSink)
 				.finish()
 		;
@@ -3125,7 +3128,7 @@ public class TestCommonChanges
 		CuboidData stone = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
-				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone), null)
+				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone), null, null)
 				.eventSink(events)
 				.finish()
 		;
@@ -3140,7 +3143,7 @@ public class TestCommonChanges
 								? new BlockProxy(location.getBlockAddress(), cuboid)
 								: null
 						;
-					}, null)
+					}, null, null)
 				.finish()
 		;
 		return context;
@@ -3280,7 +3283,7 @@ public class TestCommonChanges
 		{
 			this.context = ContextBuilder.build()
 					.tick(5L)
-					.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+					.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
 					.sinks(allowBlockMutation ? new TickProcessingContext.IMutationSink() {
 							@Override
 							public boolean next(IMutationBlock mutation)

@@ -737,6 +737,7 @@ public class SpeculativeProjection
 				, (Integer entityId) -> (_localEntityId == entityId)
 					? MinimalEntity.fromEntity(_shadowState.getThisEntity())
 					: MinimalEntity.fromPartialEntity(_shadowState.getEntity(entityId))
+				, (Integer passiveId) -> _shadowState.getPassive(passiveId)
 				, null
 				, newMutationSink
 				, newChangeSink

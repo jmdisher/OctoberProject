@@ -174,6 +174,10 @@ public class OneOffRunner
 				, (Integer entityId) -> (thisEntityId == entityId)
 					? MinimalEntity.fromEntity(state.thisEntity())
 					: MinimalEntity.fromPartialEntity(state.otherEntities.get(entityId))
+				, (Integer passiveId) -> {
+					// TODO:  Return correct passives once they are plumbed through here.
+					return null;
+				}
 				, null
 				, newMutationSink
 				, newChangeSink

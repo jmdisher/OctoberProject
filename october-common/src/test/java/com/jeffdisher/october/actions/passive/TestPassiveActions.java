@@ -116,7 +116,7 @@ public class TestPassiveActions
 						? new BlockProxy(location.getBlockAddress(), cuboid)
 						: null
 				;
-			}, null)
+			}, null, null)
 			.tick(tickNumber)
 			.finish()
 		;

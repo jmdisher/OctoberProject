@@ -34,6 +34,14 @@ public class TickProcessingContext
 	public final Function<Integer, MinimalEntity> previousEntityLookUp;
 
 	/**
+	 * A helper to look up loaded passive entities at the end of the previous tick.  This exclusively looks up passives
+	 * and expects a positive ID.  Note that passive IDs, like creature IDs, are not permanent, and will change each
+	 * time the instance is loaded.
+	 * Returns null if the requested passive isn't loaded.
+	 */
+	public final Function<Integer, PartialPassive> previousPassiveLookUp;
+
+	/**
 	 * Looks up the sky light landing on the block at the given location as of the previous tick.
 	 * Note that this means the sky light will account for the current time of day as well as the height map, such that
 	 * only the highest non-air block in the z-column will return non-0 (everything above and below is always 0).
@@ -98,6 +106,7 @@ public class TickProcessingContext
 	public TickProcessingContext(long currentTick
 			, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
 			, Function<Integer, MinimalEntity> previousEntityLookUp
+			, Function<Integer, PartialPassive> previousPassiveLookUp
 			, IByteLookup<AbsoluteLocation> skyLight
 			, IMutationSink mutationSink
 			, IChangeSink newChangeSink
@@ -114,6 +123,7 @@ public class TickProcessingContext
 		this.currentTick = currentTick;
 		this.previousBlockLookUp = previousBlockLookUp;
 		this.previousEntityLookUp = previousEntityLookUp;
+		this.previousPassiveLookUp = previousPassiveLookUp;
 		this.skyLight = skyLight;
 		this.mutationSink = mutationSink;
 		this.newChangeSink = newChangeSink;

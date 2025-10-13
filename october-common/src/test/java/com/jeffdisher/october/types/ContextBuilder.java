@@ -26,7 +26,7 @@ public class ContextBuilder
 	{
 		ContextBuilder builder = new ContextBuilder()
 				.tick(previous.currentTick + ticksToAdvance)
-				.lookups(previous.previousBlockLookUp, previous.previousEntityLookUp)
+				.lookups(previous.previousBlockLookUp, previous.previousEntityLookUp, previous.previousPassiveLookUp)
 				.sinks(previous.mutationSink, previous.newChangeSink)
 				.spawner(previous.creatureSpawner)
 				.eventSink(previous.eventSink)
@@ -41,6 +41,7 @@ public class ContextBuilder
 	public long currentTick;
 	public Function<AbsoluteLocation, BlockProxy> previousBlockLookUp;
 	public Function<Integer, MinimalEntity> previousEntityLookUp;
+	public Function<Integer, PartialPassive> previousPassiveLookUp;
 	public IByteLookup<AbsoluteLocation> skyLight;
 	public TickProcessingContext.IMutationSink mutationSink;
 	public TickProcessingContext.IChangeSink newChangeSink;
@@ -71,10 +72,13 @@ public class ContextBuilder
 	}
 
 	public ContextBuilder lookups(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
-			, Function<Integer, MinimalEntity> previousEntityLookUp)
+		, Function<Integer, MinimalEntity> previousEntityLookUp
+		, Function<Integer, PartialPassive> previousPassiveLookUp
+	)
 	{
 		this.previousBlockLookUp = previousBlockLookUp;
 		this.previousEntityLookUp = previousEntityLookUp;
+		this.previousPassiveLookUp = previousPassiveLookUp;
 		return this;
 	}
 
@@ -154,6 +158,7 @@ public class ContextBuilder
 		return new TickProcessingContext(this.currentTick
 				, this.previousBlockLookUp
 				, this.previousEntityLookUp
+				, this.previousPassiveLookUp
 				, this.skyLight
 				, this.mutationSink
 				, this.newChangeSink

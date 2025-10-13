@@ -109,7 +109,7 @@ public class TestEngineCreatures
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
-				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid), null)
+				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid), null, null)
 				.sinks(new IMutationSink() {
 					@Override
 					public boolean next(IMutationBlock mutation)
@@ -726,7 +726,7 @@ public class TestEngineCreatures
 								? new BlockProxy(location.getBlockAddress(), cuboid)
 								: null
 							;
-						}, (Integer id) -> minimalEntitiesById.get(id))
+						}, (Integer id) -> minimalEntitiesById.get(id), null)
 					// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 					.fixedRandom(1)
 					.finish()
@@ -778,7 +778,7 @@ public class TestEngineCreatures
 								? new BlockProxy(location.getBlockAddress(), cuboid)
 								: null
 							;
-						}, null)
+						}, null, null)
 					// We return a fixed "0" for the random generator to make sure that we select a reasonable plan for all tests.
 					.fixedRandom(0)
 					.finish()
@@ -829,7 +829,7 @@ public class TestEngineCreatures
 							? new BlockProxy(location.getBlockAddress(), cuboid)
 							: null
 						;
-					}, null)
+					}, null, null)
 				.eventSink(events)
 				.finish()
 		;
@@ -873,7 +873,7 @@ public class TestEngineCreatures
 				;
 			}, (Integer id) -> {
 				return MinimalEntity.fromEntity(indirect[0]);
-			})
+			}, null)
 			.finish()
 		;
 		boolean didChange = false;
@@ -922,7 +922,7 @@ public class TestEngineCreatures
 						? new BlockProxy(location.getBlockAddress(), stoneCuboid)
 						: new BlockProxy(location.getBlockAddress(), airCuboid)
 					;
-				} , null)
+				} , null, null)
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 					@Override
 					public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
@@ -986,7 +986,7 @@ public class TestEngineCreatures
 							? new BlockProxy(location.getBlockAddress(), stoneCuboid)
 							: new BlockProxy(location.getBlockAddress(), airCuboid)
 						;
-					} , null)
+					} , null, null)
 				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 				.fixedRandom(1)
 				.eventSink(events)
@@ -1006,7 +1006,7 @@ public class TestEngineCreatures
 							? new BlockProxy(location.getBlockAddress(), cuboid)
 							: null
 						;
-					} , null)
+					} , null, null)
 				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 				.fixedRandom(1)
 				.finish()
@@ -1027,7 +1027,7 @@ public class TestEngineCreatures
 		};
 		Map<Integer, MinimalEntity> minimal = creatures.stream().collect(Collectors.toMap((CreatureEntity creature) -> creature.id(), (CreatureEntity creature) -> MinimalEntity.fromCreature(creature)));
 		TickProcessingContext context = ContextBuilder.nextTick(existing, 1L)
-				.lookups(existing.previousBlockLookUp, (Integer id) -> minimal.get(id))
+				.lookups(existing.previousBlockLookUp, (Integer id) -> minimal.get(id), null)
 				.sinks(null, newChangeSink)
 				.spawner(spawner)
 				.finish()
@@ -1052,7 +1052,7 @@ public class TestEngineCreatures
 						;
 					}
 					return ret;
-				})
+				}, null)
 				.sinks(null, null)
 				.spawner(null)
 				.finish()

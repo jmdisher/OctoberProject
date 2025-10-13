@@ -162,7 +162,7 @@ public class TestCreatureLogic
 							? new BlockProxy(location.getBlockAddress(), input)
 							: null
 					;
-				}, null)
+				}, null, null)
 				.fixedRandom(0)
 				.finish()
 		;
@@ -261,7 +261,7 @@ public class TestCreatureLogic
 		};
 		TickProcessingContext context = ContextBuilder.build()
 				.tick((CreatureLogic.MINIMUM_MILLIS_TO_ACTION / 100L) + 1L)
-				.lookups(previousBlockLookUp, previousEntityLookUp)
+				.lookups(previousBlockLookUp, previousEntityLookUp, null)
 				.finish()
 		;
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
@@ -333,7 +333,7 @@ public class TestCreatureLogic
 		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> null;
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(startTick)
-				.lookups(previousBlockLookUp, previousEntityLookUp)
+				.lookups(previousBlockLookUp, previousEntityLookUp, null)
 				.finish()
 		;
 		MutableCreature mutableCow = MutableCreature.existing(cow);
@@ -354,7 +354,7 @@ public class TestCreatureLogic
 		// Now, advance time and do the same, seeing the despawn of the orc but not the cow.
 		context = ContextBuilder.build()
 				.tick(startTick + (CreatureLogic.MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick))
-				.lookups(previousBlockLookUp, previousEntityLookUp)
+				.lookups(previousBlockLookUp, previousEntityLookUp, null)
 				.finish()
 		;
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
@@ -436,7 +436,7 @@ public class TestCreatureLogic
 							? MinimalEntity.fromCreature(creatures.get(entityId))
 							: null
 					;
-				})
+				}, null)
 				.finish()
 		;
 		
@@ -553,7 +553,7 @@ public class TestCreatureLogic
 		TickProcessingContext context = ContextBuilder.build()
 				.millisPerTick(millisPerTick)
 				.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
-				.lookups(previousBlockLookUp, previousEntityLookUp)
+				.lookups(previousBlockLookUp, previousEntityLookUp, null)
 				.finish()
 		;
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
@@ -640,7 +640,7 @@ public class TestCreatureLogic
 				.millisPerTick(millisPerTick)
 				.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
 				.sinks(null, changeSink)
-				.lookups(previousBlockLookUp, previousEntityLookUp)
+				.lookups(previousBlockLookUp, previousEntityLookUp, null)
 				.finish()
 		;
 		
@@ -691,7 +691,7 @@ public class TestCreatureLogic
 		context = ContextBuilder.build()
 				.tick(context.currentTick + CreatureLogic.MILLIS_ATTACK_COOLDOWN / context.millisPerTick)
 				.sinks(null, changeSink)
-				.lookups(previousBlockLookUp, previousEntityLookUp)
+				.lookups(previousBlockLookUp, previousEntityLookUp, null)
 				.finish()
 		;
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
@@ -732,7 +732,7 @@ public class TestCreatureLogic
 		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> entities.get(id);
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(1000L)
-				.lookups(previousBlockLookUp, previousEntityLookUp)
+				.lookups(previousBlockLookUp, previousEntityLookUp, null)
 				.finish()
 		;
 		
@@ -822,7 +822,7 @@ public class TestCreatureLogic
 		boolean[] out = new boolean[1];
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(1000L)
-				.lookups(previousBlockLookUp, previousEntityLookUp)
+				.lookups(previousBlockLookUp, previousEntityLookUp, null)
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 					@Override
 					public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
@@ -888,7 +888,7 @@ public class TestCreatureLogic
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
 				return new BlockProxy(location.getBlockAddress(), input);
-			}, null)
+			}, null, null)
 			.finish()
 		;
 		
@@ -903,7 +903,7 @@ public class TestCreatureLogic
 	private static TickProcessingContext _createContext(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp, int random)
 	{
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups(previousBlockLookUp, null)
+				.lookups(previousBlockLookUp, null, null)
 				.fixedRandom(random)
 				.finish()
 		;

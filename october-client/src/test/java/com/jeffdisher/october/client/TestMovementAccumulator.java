@@ -1071,6 +1071,7 @@ public class TestMovementAccumulator
 			}
 			, null
 			, null
+			, null
 			, new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)

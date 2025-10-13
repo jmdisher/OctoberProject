@@ -58,7 +58,7 @@ public class TestMultiBlockUtils
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
 					return new BlockProxy(location.getBlockAddress(), cuboid);
-				}, null)
+				}, null, null)
 				.finish()
 		;
 		
@@ -85,7 +85,7 @@ public class TestMultiBlockUtils
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
 					return new BlockProxy(location.getBlockAddress(), cuboid);
-				}, null)
+				}, null, null)
 				.finish()
 		;
 		
@@ -171,7 +171,7 @@ public class TestMultiBlockUtils
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
 				return new BlockProxy(location.getBlockAddress(), cuboid);
-			}, null)
+			}, null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)
@@ -223,7 +223,7 @@ public class TestMultiBlockUtils
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
 				return new BlockProxy(location.getBlockAddress(), cuboid);
-			}, null)
+			}, null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)

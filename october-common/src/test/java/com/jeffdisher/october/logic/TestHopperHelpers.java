@@ -72,7 +72,10 @@ public class TestHopperHelpers
 		
 		List<IMutationBlock> outMutations = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null, null)
+				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
+					, null
+					, null
+				)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
 						public boolean next(IMutationBlock mutation)

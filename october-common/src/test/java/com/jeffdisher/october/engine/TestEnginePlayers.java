@@ -73,7 +73,7 @@ public class TestEnginePlayers
 					? new BlockProxy(location.getBlockAddress(), cuboid)
 					: null
 				;
-			}, null)
+			}, null, null)
 			.eventSink(events)
 			.finish()
 		;

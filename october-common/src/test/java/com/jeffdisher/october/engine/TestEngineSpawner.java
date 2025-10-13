@@ -114,7 +114,7 @@ public class TestEngineSpawner
 								? new BlockProxy(location.getBlockAddress(), oneCuboid)
 								: null
 						;
-					}, null)
+					}, null, null)
 				.boundedRandom(randomValue)
 				.config(config)
 				.finish()
@@ -283,7 +283,7 @@ public class TestEngineSpawner
 								? new BlockProxy(location.getBlockAddress(), cuboid)
 								: null
 						;
-					}, null)
+					}, null, null)
 				.spawner(spawner)
 				.boundedRandom(randomValue)
 				.finish()
