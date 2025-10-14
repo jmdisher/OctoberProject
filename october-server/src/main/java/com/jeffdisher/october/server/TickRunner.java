@@ -940,8 +940,8 @@ public class TickRunner
 				Map<CuboidAddress, CuboidHeightMap> nextTickMutableHeightMaps = new HashMap<>(startingMaterials.cuboidHeightMaps);
 				nextTickMutableHeightMaps.putAll(masterFragment.world.heightFragment());
 				_poopulateWorldWithNewCuboids(mutableWorldState, nextTickMutableHeightMaps, newCuboids);
-				_addCreaturesInNewCuboidsWithMillis(mutableCreatureState, newCuboids, _snapshot.tickNumber * _millisPerTick);
-				_addPassivesInNewCuboidsWithMillis(mutablePassiveState, newCuboids, _snapshot.tickNumber * _millisPerTick);
+				_addCreaturesInNewCuboidsWithMillis(mutableCreatureState, newCuboids);
+				_addPassivesInNewCuboidsWithMillis(mutablePassiveState, newCuboids);
 				Map<CuboidAddress, List<ScheduledMutation>> pendingMutations = _extractPendingMutationsFromNewCuboids(newCuboids, snapshotBlockMutations);
 				Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutations = _extractPeriodicMutationsFromNewCuboids(newCuboids, masterFragment);
 				
@@ -1238,7 +1238,7 @@ public class TickRunner
 	}
 
 	// NOTE:  Modifies out_mutableCreatureState.
-	private static void _addCreaturesInNewCuboidsWithMillis(Map<Integer, CreatureEntity> out_mutableCreatureState, List<SuspendedCuboid<IReadOnlyCuboidData>> newCuboids, long tickMillis)
+	private static void _addCreaturesInNewCuboidsWithMillis(Map<Integer, CreatureEntity> out_mutableCreatureState, List<SuspendedCuboid<IReadOnlyCuboidData>> newCuboids)
 	{
 		if (null != newCuboids)
 		{
@@ -1254,7 +1254,7 @@ public class TickRunner
 	}
 
 	// NOTE:  Modifies out_mutablePassiveState.
-	private static void _addPassivesInNewCuboidsWithMillis(Map<Integer, PassiveEntity> out_mutablePassiveState, List<SuspendedCuboid<IReadOnlyCuboidData>> newCuboids, long tickMillis)
+	private static void _addPassivesInNewCuboidsWithMillis(Map<Integer, PassiveEntity> out_mutablePassiveState, List<SuspendedCuboid<IReadOnlyCuboidData>> newCuboids)
 	{
 		if (null != newCuboids)
 		{
