@@ -76,7 +76,7 @@ public class ShadowState
 			, List<IReadOnlyCuboidData> addedCuboids
 			
 			, IEntityUpdate thisEntityUpdate
-			, Map<Integer, List<IPartialEntityUpdate>> partialEntityUpdates
+			, Map<Integer, IPartialEntityUpdate> partialEntityUpdates
 			, Map<Integer, PassiveUpdate> partialPassiveUpdates
 			, List<MutationBlockSetBlock> cuboidUpdates
 			
@@ -169,7 +169,7 @@ public class ShadowState
 	}
 
 	private _UpdateTuple _applyUpdatesToShadowState(IEntityUpdate thisEntityUpdate
-			, Map<Integer, List<IPartialEntityUpdate>> partialEntityUpdates
+			, Map<Integer, IPartialEntityUpdate> partialEntityUpdates
 			, Map<Integer, PassiveUpdate> partialPassiveUpdates
 			, Map<AbsoluteLocation, MutationBlockSetBlock> updatesToApply
 	)
@@ -213,25 +213,24 @@ public class ShadowState
 		return updatedShadowEntity;
 	}
 
-	private Map<Integer, PartialEntity> _applyPartialEntityUpdatesToShadowState(Map<Integer, List<IPartialEntityUpdate>> partialEntityUpdates)
+	private Map<Integer, PartialEntity> _applyPartialEntityUpdatesToShadowState(Map<Integer, IPartialEntityUpdate> partialEntityUpdates)
 	{
 		Map<Integer, PartialEntity> entitiesChangedInTick = new HashMap<>();
-		for (Map.Entry<Integer, List<IPartialEntityUpdate>> elt : partialEntityUpdates.entrySet())
+		for (Map.Entry<Integer, IPartialEntityUpdate> elt : partialEntityUpdates.entrySet())
 		{
 			int entityId = elt.getKey();
+			IPartialEntityUpdate update = elt.getValue();
+			
 			PartialEntity partialEntityToChange = _shadowCrowd.get(entityId);
 			// These must already exist if they are being updated.
 			Assert.assertTrue(null != partialEntityToChange);
 			MutablePartialEntity mutable = MutablePartialEntity.existing(partialEntityToChange);
-			for (IPartialEntityUpdate update : elt.getValue())
-			{
-				update.applyToEntity(mutable);
-			}
+			update.applyToEntity(mutable);
 			PartialEntity frozen = mutable.freeze();
-			if (partialEntityToChange != frozen)
-			{
-				entitiesChangedInTick.put(entityId, frozen);
-			}
+			
+			// If this was sent to us, it means that it MUST make a state change (otherwise, the server is sending useless data).
+			Assert.assertTrue(partialEntityToChange != frozen);
+			entitiesChangedInTick.put(entityId, frozen);
 		}
 		return entitiesChangedInTick;
 	}

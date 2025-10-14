@@ -419,7 +419,7 @@ public class TestTickRunner
 		runner.startNextTick();
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(commit1, snapshot.entities().get(entityId1).commitLevel());
-		Assert.assertNotNull(snapshot.entities().get(entityId1).updated());
+		Assert.assertNotNull(snapshot.entities().get(entityId1).previousVersion());
 		Assert.assertEquals(0, snapshot.entities().get(entityId1).scheduledMutations().size());
 		Assert.assertEquals(1, snapshot.entities().get(entityId2).scheduledMutations().size());
 		// (run a tick to run the final change)
@@ -429,7 +429,7 @@ public class TestTickRunner
 		runner.shutdown();
 		
 		// Now, check for results.
-		Assert.assertNotNull(finalSnapshot.entities().get(entityId2).updated());
+		Assert.assertNotNull(finalSnapshot.entities().get(entityId2).previousVersion());
 		Entity sender = finalSnapshot.entities().get(entityId1).completed();
 		Entity receiver = finalSnapshot.entities().get(entityId2).completed();
 		Assert.assertEquals(0, sender.inventory().sortedKeys().size());

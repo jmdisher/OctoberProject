@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.MutablePartialEntity;
 import com.jeffdisher.october.types.PartialEntity;
 
@@ -18,6 +19,23 @@ public class MutationEntitySetPartialEntity implements IPartialEntityUpdate
 	{
 		PartialEntity entity = CodecHelpers.readPartialEntity(buffer);
 		return new MutationEntitySetPartialEntity(entity);
+	}
+
+	/**
+	 * Checks if this change encoding would even show anything.  This is used in cases where the change to an entity
+	 * might be in data not relevant for PartialEntity instances, meaning it can be skipped.
+	 * 
+	 * @param previousEntityVersion The version of the entity from the previous tick.
+	 * @param currentEntityVersion The current version of the entity from this tick.
+	 * @return
+	 */
+	public static boolean canDescribeChange(Entity previousEntityVersion, Entity currentEntityVersion)
+	{
+		return (!previousEntityVersion.location().equals(currentEntityVersion.location()))
+			|| (previousEntityVersion.yaw() != currentEntityVersion.yaw())
+			|| (previousEntityVersion.pitch() != currentEntityVersion.pitch())
+			|| (previousEntityVersion.health() != currentEntityVersion.health())
+		;
 	}
 
 

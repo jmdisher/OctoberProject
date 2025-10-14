@@ -263,7 +263,7 @@ public class ClientRunner
 		private List<IReadOnlyCuboidData> _addedCuboids = new ArrayList<>();
 		
 		private IEntityUpdate _entityUpdate = null;
-		private Map<Integer, List<IPartialEntityUpdate>> _partialEntityUpdates = new HashMap<>();
+		private Map<Integer, IPartialEntityUpdate> _partialEntityUpdates = new HashMap<>();
 		private Map<Integer, PassiveUpdate> _passiveEntityUpdates = new HashMap<>();
 		private List<MutationBlockSetBlock> _cuboidUpdates = new ArrayList<>();
 		
@@ -349,13 +349,9 @@ public class ClientRunner
 		@Override
 		public void receivedPartialEntityUpdate(int entityId, IPartialEntityUpdate update)
 		{
-			List<IPartialEntityUpdate> oneQueue = _partialEntityUpdates.get(entityId);
-			if (null == oneQueue)
-			{
-				oneQueue = new LinkedList<>();
-				_partialEntityUpdates.put(entityId, oneQueue);
-			}
-			oneQueue.add(update);
+			// We expect to only receive at most 1 update for each entity, per tick.
+			Object old = _partialEntityUpdates.put(entityId, update);
+			Assert.assertTrue(null == old);
 		}
 		@Override
 		public void receivedBlockUpdate(MutationBlockSetBlock stateUpdate)
@@ -388,7 +384,7 @@ public class ClientRunner
 			_addedCuboids.clear();
 			IEntityUpdate entityChange = _entityUpdate;
 			_entityUpdate = null;
-			Map<Integer, List<IPartialEntityUpdate>> partialEntityChanges = new HashMap<>(_partialEntityUpdates);
+			Map<Integer, IPartialEntityUpdate> partialEntityChanges = new HashMap<>(_partialEntityUpdates);
 			_partialEntityUpdates.clear();
 			Map<Integer, PassiveUpdate> partialPassiveUpdates = new HashMap<>(_passiveEntityUpdates);
 			_passiveEntityUpdates.clear();

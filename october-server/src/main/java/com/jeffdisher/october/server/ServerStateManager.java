@@ -97,7 +97,7 @@ public class ServerStateManager
 	private Map<CuboidAddress, Map<BlockAddress, Long>> _periodicBlockMutations;
 	private Map<Integer, List<ScheduledChange>> _scheduledEntityMutations;
 	private Map<Integer, Entity> _completedEntities;
-	private Map<Integer, Entity> _updatedEntities;
+	private Map<Integer, Entity> _previousEntityVersions;
 	private Map<Integer, Long> _commitLevels;
 	private Map<Integer, CreatureEntity> _completedCreatures;
 	private Map<Integer, CreatureEntity> _visiblyChangedCreatures;
@@ -124,7 +124,7 @@ public class ServerStateManager
 		_periodicBlockMutations = Collections.emptyMap();
 		_scheduledEntityMutations = Collections.emptyMap();
 		_completedEntities = Collections.emptyMap();
-		_updatedEntities = Collections.emptyMap();
+		_previousEntityVersions = Collections.emptyMap();
 		_commitLevels = Collections.emptyMap();
 		_completedCreatures = Collections.emptyMap();
 		_visiblyChangedCreatures = Collections.emptyMap();
@@ -193,11 +193,11 @@ public class ServerStateManager
 				(Map.Entry<Integer, TickRunner.SnapshotEntity> elt) -> elt.getKey()
 				, (Map.Entry<Integer, TickRunner.SnapshotEntity> elt) -> elt.getValue().completed()
 		));
-		_updatedEntities = snapshot.entities().entrySet().stream().filter(
-				(Map.Entry<Integer, TickRunner.SnapshotEntity> elt) -> (null != elt.getValue().updated())
+		_previousEntityVersions = snapshot.entities().entrySet().stream().filter(
+				(Map.Entry<Integer, TickRunner.SnapshotEntity> elt) -> (null != elt.getValue().previousVersion())
 		).collect(Collectors.toMap(
 				(Map.Entry<Integer, TickRunner.SnapshotEntity> elt) -> elt.getKey()
-				, (Map.Entry<Integer, TickRunner.SnapshotEntity> elt) -> elt.getValue().completed()
+				, (Map.Entry<Integer, TickRunner.SnapshotEntity> elt) -> elt.getValue().previousVersion()
 		));
 		_commitLevels = snapshot.entities().entrySet().stream().collect(Collectors.toMap(
 				(Map.Entry<Integer, TickRunner.SnapshotEntity> elt) -> elt.getKey()
@@ -729,9 +729,9 @@ public class ServerStateManager
 				}
 				else
 				{
-					// We know this entity so generate the update for this client.
-					Entity newEntity = _updatedEntities.get(entityId);
-					if (null != newEntity)
+					// They are in range and we know about them so send the update if they changed.
+					Entity previousEntityVersion = _previousEntityVersions.get(entityId);
+					if (null != previousEntityVersion)
 					{
 						// TODO:  This should only send the changed data, not entire entities or partials.
 						if (clientId == entityId)
@@ -740,7 +740,7 @@ public class ServerStateManager
 							IEntityUpdate update = new MutationEntitySetEntity(entity);
 							_callouts.network_sendEntityUpdate(clientId, entityId, update);
 						}
-						else
+						else if (MutationEntitySetPartialEntity.canDescribeChange(previousEntityVersion, entity))
 						{
 							// The client will have a partial so just send that.
 							IPartialEntityUpdate update = new MutationEntitySetPartialEntity(PartialEntity.fromEntity(entity));

@@ -1720,6 +1720,11 @@ public class TickRunner
 			long commitLevel = startingMaterials.commitLevels.get(key);
 			Entity updated = updatedEntities.get(key);
 			
+			Entity previousVersionOrNull = (null != updated)
+				? startingMaterials.completedEntities.get(key)
+				: null
+			;
+			
 			// Get the scheduled mutations (note that this is often null but we don't want to store null).
 			List<ScheduledChange> scheduledMutations = snapshotEntityMutations.get(key);
 			if (null == scheduledMutations)
@@ -1728,8 +1733,8 @@ public class TickRunner
 			}
 			SnapshotEntity snapshot = new SnapshotEntity(
 					completed
+					, previousVersionOrNull
 					, commitLevel
-					, updated
 					, scheduledMutations
 			);
 			entities.put(key, snapshot);
@@ -1981,12 +1986,12 @@ public class TickRunner
 	{}
 
 	public static record SnapshotEntity(
-			// Never null.
+			// The version of the entity at the end of the tick (never null).
 			Entity completed
+			// The previous version of the entity (null if not changed in this tick).
+			, Entity previousVersion
 			// The last commit level from the connected client.
 			, long commitLevel
-			// Null if not changed in this tick.
-			, Entity updated
 			// Never null but can be empty.
 			, List<ScheduledChange> scheduledMutations
 	)

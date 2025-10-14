@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -819,24 +818,6 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, FakeUpdateFactories.entityUpdate(Map.of(), listener.authoritativeEntityState, _wrap(entity, send))
 				, Map.of()
-				, Map.of()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, List.of()
-				, commit1
-				, currentTimeMillis
-		);
-		Assert.assertEquals(0, speculativeCount);
-		// NOTE:  The other half of the transfer is going to be run against the second entity, on the server, but we
-		// just see the partial update, on the client (if even that - the server may realize there is no change).
-		speculativeCount = projector.applyChangesForServerTick(3L
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, null
-				, Map.of(entityId2, new LinkedList<>(List.of(new MutationEntitySetPartialEntity(otherEntity))))
 				, Map.of()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -2221,7 +2202,7 @@ public class TestSpeculativeProjection
 				, List.of()
 				, List.of()
 				, new MutationEntitySetEntity(localEntity)
-				, Map.of(orc.id(), List.of(new MutationEntitySetPartialEntity(PartialEntity.fromCreature(orc))))
+				, Map.of(orc.id(), new MutationEntitySetPartialEntity(PartialEntity.fromCreature(orc)))
 				, Map.of()
 				, Collections.emptyList()
 				, Collections.emptyList()
