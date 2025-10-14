@@ -40,7 +40,6 @@ import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.properties.PropertyRegistry;
-import com.jeffdisher.october.subactions.EntityChangeAcceptItems;
 import com.jeffdisher.october.subactions.EntityChangeAttackEntity;
 import com.jeffdisher.october.subactions.EntityChangeChangeHotbarSlot;
 import com.jeffdisher.october.subactions.EntityChangeCraft;
@@ -184,7 +183,7 @@ public class TestCommonChanges
 		TickProcessingContext context = _createSimpleContext();
 		
 		// Give the entity some items and verify that they default to selected.
-		EntityChangeAcceptItems accept = new EntityChangeAcceptItems(new Items(LOG_ITEM, 1));
+		MutationEntityStoreToInventory accept = new MutationEntityStoreToInventory(new Items(LOG_ITEM, 1), null);
 		Assert.assertTrue(accept.applyChange(context, newEntity));
 		Assert.assertEquals(LOG_ITEM, _selectedItemType(newEntity));
 		

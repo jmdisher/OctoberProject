@@ -1,4 +1,4 @@
-package com.jeffdisher.october.logic;
+package com.jeffdisher.october.actions;
 
 import java.nio.ByteBuffer;
 

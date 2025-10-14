@@ -1,4 +1,4 @@
-package com.jeffdisher.october.logic;
+package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
@@ -6,8 +6,6 @@ import java.util.function.Consumer;
 import com.jeffdisher.october.aspects.DamageAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.IMutableBlockProxy;
-import com.jeffdisher.october.mutations.IMutationBlock;
-import com.jeffdisher.october.mutations.MutationBlockType;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.TickProcessingContext;
