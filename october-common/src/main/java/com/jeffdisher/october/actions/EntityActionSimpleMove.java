@@ -199,8 +199,8 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 	@Override
 	public boolean canSaveToDisk()
 	{
-		// Common case.
-		return true;
+		// Whether or not this can be serialized depends on the sub-action.
+		return (null == _subAction) || _subAction.canSaveToDisk();
 	}
 
 	@Override

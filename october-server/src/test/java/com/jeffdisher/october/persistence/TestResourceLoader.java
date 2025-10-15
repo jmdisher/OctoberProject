@@ -19,8 +19,8 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.jeffdisher.october.actions.Deprecated_EntityActionAttackEntity;
 import com.jeffdisher.october.actions.Deprecated_EntityChangeMove;
+import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.actions.EntityChangePeriodic;
 import com.jeffdisher.october.actions.MutationEntityStoreToInventory;
 import com.jeffdisher.october.aspects.AspectRegistry;
@@ -45,6 +45,7 @@ import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV1;
+import com.jeffdisher.october.subactions.EntityChangeAttackEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -57,6 +58,7 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.FuelState;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
@@ -449,9 +451,16 @@ public class TestResourceLoader
 		
 		// Create the entity changes we want.
 		MutationEntityStoreToInventory persistentChange  = new MutationEntityStoreToInventory(new Items(STONE.item(), 2), null);
-		// (note that we still use this deprecated action since it is convenient but should be changed in the future)
-		@SuppressWarnings("deprecation")
-		Deprecated_EntityActionAttackEntity ephemeralChange = new Deprecated_EntityActionAttackEntity(targetId);
+		
+		// Originally, this used the top-level attack action but that has been deprecated so now we use the appropriate sub-action in a standing top-level action.
+		EntityChangeAttackEntity subAction = new EntityChangeAttackEntity(targetId);
+		EntityActionSimpleMove<IMutablePlayerEntity> ephemeralChange = new EntityActionSimpleMove<>(0.0f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.STANDING
+			, (byte)0
+			, (byte)0
+			, subAction
+		);
 		
 		// Create the cuboid mutations we want.
 		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
@@ -487,6 +496,7 @@ public class TestResourceLoader
 		Assert.assertEquals(1, cuboids.get(0).pendingMutations().size());
 		Assert.assertEquals(0, cuboids.get(0).periodicMutationMillis().size());
 		Assert.assertEquals(1, entities.get(0).changes().size());
+		Assert.assertTrue(entities.get(0).changes().get(0).change() instanceof MutationEntityStoreToInventory);
 		loader.shutdown();
 	}
 
