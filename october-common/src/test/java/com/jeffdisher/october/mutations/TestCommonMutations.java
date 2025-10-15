@@ -12,7 +12,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.jeffdisher.october.actions.Deprecated_EntityChangeTakeDamageFromOther;
 import com.jeffdisher.october.actions.MutationEntityStoreToInventory;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
@@ -705,8 +704,6 @@ public class TestCommonMutations
 		Assert.assertEquals((byte)(2 * MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND), entity.getHealth());
 		
 		// Now, do one at the end of the second to see the breath run out.
-		@SuppressWarnings("unchecked")
-		Deprecated_EntityChangeTakeDamageFromOther<IMutablePlayerEntity>[] holder = new Deprecated_EntityChangeTakeDamageFromOther[1];
 		_Events events = new _Events();
 		context = ContextBuilder.build()
 				.tick(50L)
@@ -718,9 +715,7 @@ public class TestCommonMutations
 					@Override
 					public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 					{
-						Assert.assertNull(holder[0]);
-						holder[0] = (Deprecated_EntityChangeTakeDamageFromOther<IMutablePlayerEntity>) change;
-						return true;
+						throw new AssertionError("Not expected in test");
 					}
 					@Override
 					public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
@@ -744,14 +739,12 @@ public class TestCommonMutations
 		TickUtils.endOfTick(context, entity);
 		Assert.assertEquals((byte)0, entity.getBreath());
 		Assert.assertEquals((byte)(2 * MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND), entity.getHealth());
-		Assert.assertNull(holder[0]);
 		
 		// Run again to show the damage taken.
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.SUFFOCATION, entity.newLocation.getBlockLocation(), entity.getId(), 0));
 		TickUtils.endOfTick(context, entity);
 		Assert.assertEquals((byte)0, entity.getBreath());
 		Assert.assertEquals(MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND, entity.getHealth());
-		Assert.assertNull(holder[0]);
 	}
 
 	@Test
