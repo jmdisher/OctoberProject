@@ -17,7 +17,7 @@ import java.util.function.LongSupplier;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.october.actions.EntityChangePeriodic;
+import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.net.NetworkServer.ConnectingClientDescription;
 
@@ -252,7 +252,7 @@ public class TestNetworkServer
 		// (this requires that we manually build the buffer, since the code normally rejects this).
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		buffer.position(PacketCodec.HEADER_BYTES);
-		EntityActionCodec.serializeToBuffer(buffer, new EntityChangePeriodic());
+		EntityActionCodec.serializeToBuffer(buffer, new EntityActionPeriodic());
 		buffer.putLong(1L);
 		int size = buffer.position();
 		

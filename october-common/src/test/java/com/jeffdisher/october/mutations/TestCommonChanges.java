@@ -12,14 +12,14 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
-import com.jeffdisher.october.actions.EntityChangeApplyItemToCreature;
+import com.jeffdisher.october.actions.EntityActionApplyItemToCreature;
 import com.jeffdisher.october.actions.EntityActionNudge;
-import com.jeffdisher.october.actions.EntityChangeOperatorSetCreative;
-import com.jeffdisher.october.actions.EntityChangeOperatorSetLocation;
-import com.jeffdisher.october.actions.EntityChangeOperatorSpawnCreature;
-import com.jeffdisher.october.actions.EntityChangePeriodic;
-import com.jeffdisher.october.actions.EntityChangeTakeDamageFromEntity;
-import com.jeffdisher.october.actions.MutationEntityStoreToInventory;
+import com.jeffdisher.october.actions.EntityActionOperatorSetCreative;
+import com.jeffdisher.october.actions.EntityActionOperatorSetLocation;
+import com.jeffdisher.october.actions.EntityActionOperatorSpawnCreature;
+import com.jeffdisher.october.actions.EntityActionPeriodic;
+import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
+import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.actions.passive.PassiveActionPickUp;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
@@ -183,7 +183,7 @@ public class TestCommonChanges
 		TickProcessingContext context = _createSimpleContext();
 		
 		// Give the entity some items and verify that they default to selected.
-		MutationEntityStoreToInventory accept = new MutationEntityStoreToInventory(new Items(LOG_ITEM, 1), null);
+		EntityActionStoreToInventory accept = new EntityActionStoreToInventory(new Items(LOG_ITEM, 1), null);
 		Assert.assertTrue(accept.applyChange(context, newEntity));
 		Assert.assertEquals(LOG_ITEM, _selectedItemType(newEntity));
 		
@@ -275,7 +275,7 @@ public class TestCommonChanges
 		Assert.assertEquals(Entity.NO_SELECTION, newEntity.getSelectedKey());
 		
 		// We should see the request to store data, now.
-		Assert.assertTrue(holder.change instanceof MutationEntityStoreToInventory);
+		Assert.assertTrue(holder.change instanceof EntityActionStoreToInventory);
 		Assert.assertTrue(holder.change.applyChange(holder.context, newEntity));
 		
 		// We can now verify the final result of this - we should see the one item moved and selected since nothing else was.
@@ -656,7 +656,7 @@ public class TestCommonChanges
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
 		// Create the change.
-		MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(STONE_ITEM, 1), null);
+		EntityActionStoreToInventory store = new EntityActionStoreToInventory(new Items(STONE_ITEM, 1), null);
 		Assert.assertTrue(store.applyChange(holder.context, newEntity));
 		
 		// We should see the attempt to drop this item onto the ground since it won't fit.
@@ -721,7 +721,7 @@ public class TestCommonChanges
 		// Check the hit.
 		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, attacker));
 		Assert.assertEquals(targetId, targetHolder[0]);
-		Assert.assertTrue(changeHolder[0] instanceof EntityChangeTakeDamageFromEntity);
+		Assert.assertTrue(changeHolder[0] instanceof EntityActionTakeDamageFromEntity);
 	}
 
 	@Test
@@ -800,7 +800,7 @@ public class TestCommonChanges
 		target.newLocation = new EntityLocation(target.newLocation.x() - 1.0f, target.newLocation.y() - 1.0f, target.newLocation.z());
 		
 		// Now, we will attack in 2 swipes to verify damage is taken but also the respawn logic works.
-		EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromEntity<>(BodyPart.HEAD, 60, attackerId);
+		EntityActionTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityActionTakeDamageFromEntity<>(BodyPart.HEAD, 60, attackerId);
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, target.newLocation.getBlockLocation(), targetId, attackerId));
 		Assert.assertTrue(takeDamage.applyChange(context, target));
 		Assert.assertEquals((byte)40, target.newHealth);
@@ -877,12 +877,12 @@ public class TestCommonChanges
 		// Check that the sword durability changed and that we scheduled the hit.
 		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, attacker));
 		Assert.assertEquals(targetId, targetHolder[0]);
-		Assert.assertTrue(changeHolder[0] instanceof EntityChangeTakeDamageFromEntity);
+		Assert.assertTrue(changeHolder[0] instanceof EntityActionTakeDamageFromEntity);
 		int endDurability = PropertyHelpers.getDurability(attacker.newInventory.getNonStackableForKey(attacker.getSelectedKey()));
 		Assert.assertEquals(1, (startDurability - endDurability));
 		
 		// Apply the hit and verify that the target health changed.
-		EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> change = (EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>) changeHolder[0];
+		EntityActionTakeDamageFromEntity<IMutablePlayerEntity> change = (EntityActionTakeDamageFromEntity<IMutablePlayerEntity>) changeHolder[0];
 		targetHolder[0] = 0;
 		changeHolder[0] = null;
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, target.newLocation.getBlockLocation(), targetId, attackerId));
@@ -902,7 +902,7 @@ public class TestCommonChanges
 				.finish()
 		;
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
-		EntityChangePeriodic periodic = new EntityChangePeriodic();
+		EntityActionPeriodic periodic = new EntityActionPeriodic();
 		// We should only see this change after applying it 100 times.
 		for (int i = 0; i < 99; ++i)
 		{
@@ -1022,7 +1022,7 @@ public class TestCommonChanges
 		Assert.assertTrue(holder.events.didPost());
 		Assert.assertNull(holder.mutation);
 		Assert.assertNotNull(holder.change);
-		MutationEntityStoreToInventory store = (MutationEntityStoreToInventory) holder.change;
+		EntityActionStoreToInventory store = (EntityActionStoreToInventory) holder.change;
 		holder.change = null;
 		
 		// We should see an attempt to drop the items, since they won't fit.
@@ -1202,27 +1202,27 @@ public class TestCommonChanges
 		
 		// Hit them in a different place and see the whole damage applied.
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, mutable.newLocation.getBlockLocation(), entityId, attackerId));
-		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.TORSO, 10, attackerId).applyChange(context,  mutable));
+		Assert.assertTrue(new EntityActionTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.TORSO, 10, attackerId).applyChange(context,  mutable));
 		Assert.assertEquals((byte)90, mutable.newHealth);
 		
 		// Hit them in the head with 1 damage and see it applied, with no durability loss.
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, mutable.newLocation.getBlockLocation(), entityId, attackerId));
 		context = ContextBuilder.nextTick(context, MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK).finish();
-		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.HEAD, 1, attackerId).applyChange(context,  mutable));
+		Assert.assertTrue(new EntityActionTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.HEAD, 1, attackerId).applyChange(context,  mutable));
 		Assert.assertEquals((byte)89, mutable.newHealth);
 		Assert.assertEquals(startDurability, PropertyHelpers.getDurability(mutable.newArmour[BodyPart.HEAD.ordinal()]));
 		
 		// Hit them in the head with 10 damage (what the armour blocks) see the durability loss and damage reduced.
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, mutable.newLocation.getBlockLocation(), entityId, attackerId));
 		context = ContextBuilder.nextTick(context, MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK).finish();
-		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.HEAD, 10, attackerId).applyChange(context,  mutable));
+		Assert.assertTrue(new EntityActionTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.HEAD, 10, attackerId).applyChange(context,  mutable));
 		Assert.assertEquals((byte)88, mutable.newHealth);
 		Assert.assertEquals(6, PropertyHelpers.getDurability(mutable.newArmour[BodyPart.HEAD.ordinal()]));
 		
 		// Hit them in the head with 10 damage, again to see the armour break and damage reduced.
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, mutable.newLocation.getBlockLocation(), entityId, attackerId));
 		context = ContextBuilder.nextTick(context, MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK).finish();
-		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.HEAD, 10, attackerId).applyChange(context,  mutable));
+		Assert.assertTrue(new EntityActionTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.HEAD, 10, attackerId).applyChange(context,  mutable));
 		Assert.assertEquals((byte)87, mutable.newHealth);
 		Assert.assertNull(mutable.newArmour[BodyPart.HEAD.ordinal()]);
 	}
@@ -1316,7 +1316,7 @@ public class TestCommonChanges
 		Assert.assertTrue(holder.mutation instanceof MutationBlockExtractItems);
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
 		holder.mutation = null;
-		Assert.assertTrue(holder.change instanceof MutationEntityStoreToInventory);
+		Assert.assertTrue(holder.change instanceof EntityActionStoreToInventory);
 		Assert.assertTrue(holder.change.applyChange(holder.context, newEntity));
 		// We expect to see the removed item selected now since we had nothing selected before.
 		Assert.assertEquals(2, newEntity.getSelectedKey());
@@ -1329,7 +1329,7 @@ public class TestCommonChanges
 		Assert.assertTrue(holder.mutation instanceof MutationBlockExtractItems);
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
 		holder.mutation = null;
-		Assert.assertTrue(holder.change instanceof MutationEntityStoreToInventory);
+		Assert.assertTrue(holder.change instanceof EntityActionStoreToInventory);
 		Assert.assertTrue(holder.change.applyChange(holder.context, newEntity));
 		holder.change = null;
 		mutable.writeBack(cuboid);
@@ -1372,7 +1372,7 @@ public class TestCommonChanges
 		List<IEntityAction<IMutableCreatureEntity>> list = creatureChanges.get(targetId);
 		Assert.assertEquals(1, list.size());
 		IEntityAction<IMutableCreatureEntity> change = list.get(0);
-		Assert.assertTrue(change instanceof EntityChangeTakeDamageFromEntity<IMutableCreatureEntity>);
+		Assert.assertTrue(change instanceof EntityActionTakeDamageFromEntity<IMutableCreatureEntity>);
 	}
 
 	@Test
@@ -1434,7 +1434,7 @@ public class TestCommonChanges
 		List<IEntityAction<IMutableCreatureEntity>> list = creatureChanges.get(targetId);
 		Assert.assertEquals(1, list.size());
 		IEntityAction<IMutableCreatureEntity> change = list.get(0);
-		Assert.assertTrue(change instanceof EntityChangeApplyItemToCreature);
+		Assert.assertTrue(change instanceof EntityActionApplyItemToCreature);
 		
 		// Verify that the apply works.
 		MutableCreature mutable = MutableCreature.existing(creature);
@@ -1917,7 +1917,7 @@ public class TestCommonChanges
 		_ContextHolder holder = new _ContextHolder(cuboid, false, false);
 		Assert.assertFalse(newEntity.freeze().isCreativeMode());
 		
-		EntityChangeOperatorSetCreative set = new EntityChangeOperatorSetCreative(true);
+		EntityActionOperatorSetCreative set = new EntityActionOperatorSetCreative(true);
 		Assert.assertTrue(set.applyChange(holder.context, newEntity));
 		Assert.assertTrue(newEntity.freeze().isCreativeMode());
 		Assert.assertEquals(0, newEntity.newHotbar[newEntity.newHotbarIndex]);
@@ -1925,7 +1925,7 @@ public class TestCommonChanges
 		Assert.assertTrue(select.applyChange(holder.context, newEntity));
 		Assert.assertEquals(10, newEntity.newHotbar[newEntity.newHotbarIndex]);
 		
-		EntityChangeOperatorSetCreative clear = new EntityChangeOperatorSetCreative(false);
+		EntityActionOperatorSetCreative clear = new EntityActionOperatorSetCreative(false);
 		Assert.assertTrue(clear.applyChange(holder.context, newEntity));
 		Assert.assertFalse(newEntity.freeze().isCreativeMode());
 		Assert.assertEquals(0, newEntity.newHotbar[newEntity.newHotbarIndex]);
@@ -1941,7 +1941,7 @@ public class TestCommonChanges
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.freeze().location());
 		
 		EntityLocation destination = new EntityLocation(15.5f, -50.0f, 11.0f);
-		EntityChangeOperatorSetLocation set = new EntityChangeOperatorSetLocation(destination);
+		EntityActionOperatorSetLocation set = new EntityActionOperatorSetLocation(destination);
 		Assert.assertTrue(set.applyChange(holder.context, newEntity));
 		Assert.assertEquals(destination, newEntity.freeze().location());
 	}
@@ -1995,7 +1995,7 @@ public class TestCommonChanges
 				@Override
 				public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
 				{
-					Assert.assertTrue(change instanceof EntityChangePeriodic);
+					Assert.assertTrue(change instanceof EntityActionPeriodic);
 					Assert.assertFalse(didReschedule[0]);
 					didReschedule[0] = true;
 					return true;
@@ -2013,8 +2013,8 @@ public class TestCommonChanges
 			})
 			.finish()
 		;
-		EntityChangePeriodic periodic = new EntityChangePeriodic();
-		localMutable.setEnergyDeficit(10 * EntityChangePeriodic.ENERGY_PER_FOOD);
+		EntityActionPeriodic periodic = new EntityActionPeriodic();
+		localMutable.setEnergyDeficit(10 * EntityActionPeriodic.ENERGY_PER_FOOD);
 		periodic.applyChange(context, localMutable);
 		Entity end = localMutable.freeze();
 		Assert.assertEquals(health, end.health());
@@ -2174,7 +2174,7 @@ public class TestCommonChanges
 		// We know that multiple mutations are sent for multi-block changes so we will capture in a list.
 		List<IMutationBlock> mutations = new ArrayList<>();
 		List<IMutationBlock> futureMutations = new ArrayList<>();
-		MutationEntityStoreToInventory[] out_store = new MutationEntityStoreToInventory[1];
+		EntityActionStoreToInventory[] out_store = new EntityActionStoreToInventory[1];
 		EventRecord[] out_record = new EventRecord[1];
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
@@ -2202,7 +2202,7 @@ public class TestCommonChanges
 					public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 					{
 						Assert.assertNull(out_store[0]);
-						out_store[0] = (MutationEntityStoreToInventory) change;
+						out_store[0] = (EntityActionStoreToInventory) change;
 						return true;
 					}
 					@Override
@@ -2397,7 +2397,7 @@ public class TestCommonChanges
 				.finish()
 		;
 		
-		EntityChangeOperatorSpawnCreature spawn = new EntityChangeOperatorSpawnCreature(cow, destination);
+		EntityActionOperatorSpawnCreature spawn = new EntityActionOperatorSpawnCreature(cow, destination);
 		Assert.assertTrue(spawn.applyChange(context, null));
 		Assert.assertEquals(1, count[0]);
 	}
@@ -2527,7 +2527,7 @@ public class TestCommonChanges
 		Assert.assertTrue(didApply);
 		Assert.assertEquals(newLocation, newEntity.newLocation);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.newVelocity);
-		Assert.assertEquals(EntityChangePeriodic.ENERGY_COST_PER_TICK_RUNNING, newEntity.newEnergyDeficit);
+		Assert.assertEquals(EntityActionPeriodic.ENERGY_COST_PER_TICK_RUNNING, newEntity.newEnergyDeficit);
 		Assert.assertEquals(5, newEntity.newYaw);
 		Assert.assertEquals(6, newEntity.newPitch);
 	}
@@ -2569,7 +2569,7 @@ public class TestCommonChanges
 		
 		Entity baselineTarget = target.freeze();
 		Map<Integer, Entity> targetsById = Map.of(targetId, baselineTarget);
-		List<EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>> changeHolder = new ArrayList<>();
+		List<EntityActionTakeDamageFromEntity<IMutablePlayerEntity>> changeHolder = new ArrayList<>();
 		int[] eventCounter = new int[1];
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(5L)
@@ -2579,8 +2579,8 @@ public class TestCommonChanges
 				public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 				{
 					Assert.assertEquals(targetId, targetEntityId);
-					Assert.assertTrue(change instanceof EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>);
-					changeHolder.add((EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>) change);
+					Assert.assertTrue(change instanceof EntityActionTakeDamageFromEntity<IMutablePlayerEntity>);
+					changeHolder.add((EntityActionTakeDamageFromEntity<IMutablePlayerEntity>) change);
 					return true;
 				}
 				@Override
@@ -2768,7 +2768,7 @@ public class TestCommonChanges
 		proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
 		Assert.assertTrue(mutation.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
-		MutationEntityStoreToInventory store = (MutationEntityStoreToInventory) holder.change;
+		EntityActionStoreToInventory store = (EntityActionStoreToInventory) holder.change;
 		holder.change = null;
 		Assert.assertTrue(store.applyChange(holder.context, newEntity));
 		newEntity = MutableEntity.existing(newEntity.freeze());

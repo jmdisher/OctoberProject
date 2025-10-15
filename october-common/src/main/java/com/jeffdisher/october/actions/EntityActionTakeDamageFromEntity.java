@@ -21,17 +21,17 @@ import com.jeffdisher.october.utils.Assert;
  * Note that the entity may no longer exist when this is processed so care must be taken in resolving it (it could have
  * died in the same tick where it sent this).
  */
-public class EntityChangeTakeDamageFromEntity<T extends IMutableMinimalEntity> implements IEntityAction<T>
+public class EntityActionTakeDamageFromEntity<T extends IMutableMinimalEntity> implements IEntityAction<T>
 {
 	public static final EntityActionType TYPE = EntityActionType.TAKE_DAMAGE_FROM_ENTITY;
 
-	public static <T extends IMutableMinimalEntity> EntityChangeTakeDamageFromEntity<T> deserialize(DeserializationContext context)
+	public static <T extends IMutableMinimalEntity> EntityActionTakeDamageFromEntity<T> deserialize(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
 		BodyPart target = CodecHelpers.readBodyPart(buffer);
 		int damage = buffer.getInt();
 		int sourceEntityId = buffer.getInt();
-		return new EntityChangeTakeDamageFromEntity<>(target, damage, sourceEntityId);
+		return new EntityActionTakeDamageFromEntity<>(target, damage, sourceEntityId);
 	}
 
 
@@ -39,7 +39,7 @@ public class EntityChangeTakeDamageFromEntity<T extends IMutableMinimalEntity> i
 	private final int _damage;
 	private final int _sourceEntityId;
 
-	public EntityChangeTakeDamageFromEntity(BodyPart target, int damage, int sourceEntityId)
+	public EntityActionTakeDamageFromEntity(BodyPart target, int damage, int sourceEntityId)
 	{
 		Assert.assertTrue(null != target);
 		Assert.assertTrue(damage > 0);

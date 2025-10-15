@@ -3,7 +3,7 @@ package com.jeffdisher.october.subactions;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
-import com.jeffdisher.october.actions.EntityChangePeriodic;
+import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
@@ -72,7 +72,7 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IEntit
 			newEntity.resetLongRunningOperations();
 			
 			// Swimming expends energy.
-			newEntity.applyEnergyCost(EntityChangePeriodic.ENERGY_COST_PER_SWIM_UP);
+			newEntity.applyEnergyCost(EntityActionPeriodic.ENERGY_COST_PER_SWIM_UP);
 		}
 		return didApply;
 	}

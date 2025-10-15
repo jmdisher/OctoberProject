@@ -11,8 +11,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
-import com.jeffdisher.october.actions.EntityChangeImpregnateCreature;
-import com.jeffdisher.october.actions.EntityChangeTakeDamageFromEntity;
+import com.jeffdisher.october.actions.EntityActionImpregnateCreature;
+import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
@@ -449,7 +449,7 @@ public class TestCreatureLogic
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(mother.id(), targetId[0]);
 		targetId[0] = 0;
-		Assert.assertTrue(message[0] instanceof EntityChangeImpregnateCreature);
+		Assert.assertTrue(message[0] instanceof EntityActionImpregnateCreature);
 		message[0] = null;
 		father = mutable.freeze();
 		creatures.put(father.id(), father);
@@ -673,7 +673,7 @@ public class TestCreatureLogic
 		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
 		Assert.assertEquals(player.id(), ref_targetEntityId[0]);
 		// We should see the orc send the attack message
-		Assert.assertTrue(ref_change[0] instanceof EntityChangeTakeDamageFromEntity);
+		Assert.assertTrue(ref_change[0] instanceof EntityActionTakeDamageFromEntity);
 		ref_targetEntityId[0] = CreatureEntity.NO_TARGET_ENTITY_ID;
 		ref_change[0] = null;
 		
@@ -701,7 +701,7 @@ public class TestCreatureLogic
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
 		Assert.assertEquals(player.id(), ref_targetEntityId[0]);
-		Assert.assertTrue(ref_change[0] instanceof EntityChangeTakeDamageFromEntity);
+		Assert.assertTrue(ref_change[0] instanceof EntityActionTakeDamageFromEntity);
 	}
 
 	@Test

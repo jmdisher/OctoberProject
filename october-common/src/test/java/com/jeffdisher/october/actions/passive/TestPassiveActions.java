@@ -5,7 +5,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.jeffdisher.october.actions.MutationEntityStoreToInventory;
+import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
@@ -136,7 +136,7 @@ public class TestPassiveActions
 				@Override
 				public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 				{
-					Assert.assertTrue(change instanceof MutationEntityStoreToInventory);
+					Assert.assertTrue(change instanceof EntityActionStoreToInventory);
 					return (idLoaded == targetEntityId);
 				}
 				@Override

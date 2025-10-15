@@ -12,7 +12,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.jeffdisher.october.actions.EntityChangeOperatorSpawnCreature;
+import com.jeffdisher.october.actions.EntityActionOperatorSpawnCreature;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.engine.EnginePlayers;
 import com.jeffdisher.october.server.MonitoringAgent;
@@ -295,7 +295,7 @@ public class TestConsoleHandler
 			public void submitEntityMutation(int clientId, IEntityAction<IMutablePlayerEntity> command)
 			{
 				Assert.assertEquals(EnginePlayers.OPERATOR_ENTITY_ID, clientId);
-				Assert.assertTrue(command instanceof EntityChangeOperatorSpawnCreature);
+				Assert.assertTrue(command instanceof EntityActionOperatorSpawnCreature);
 				didBroadcast[0] = true;
 			}
 		});

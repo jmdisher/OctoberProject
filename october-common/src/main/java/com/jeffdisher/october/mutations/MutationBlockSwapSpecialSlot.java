@@ -2,7 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.actions.MutationEntityStoreToInventory;
+import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IMutableBlockProxy;
@@ -77,7 +77,7 @@ public class MutationBlockSwapSpecialSlot implements IMutationBlock
 				}
 				if ((null != existing) && (_returnEntityId > 0) && canRemoveOrDrop)
 				{
-					MutationEntityStoreToInventory storeAction = new MutationEntityStoreToInventory(existing.stack, existing.nonStackable);
+					EntityActionStoreToInventory storeAction = new EntityActionStoreToInventory(existing.stack, existing.nonStackable);
 					context.newChangeSink.next(_returnEntityId, storeAction);
 				}
 			}
@@ -88,7 +88,7 @@ public class MutationBlockSwapSpecialSlot implements IMutationBlock
 		// If we failed to apply this, send the items back.
 		if (!didApply && (_returnEntityId > 0))
 		{
-			MutationEntityStoreToInventory storeAction = new MutationEntityStoreToInventory(_slot.stack, _slot.nonStackable);
+			EntityActionStoreToInventory storeAction = new EntityActionStoreToInventory(_slot.stack, _slot.nonStackable);
 			context.newChangeSink.next(_returnEntityId, storeAction);
 		}
 		return didApply;

@@ -2,7 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.util.List;
 
-import com.jeffdisher.october.actions.MutationEntityStoreToInventory;
+import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
@@ -307,7 +307,7 @@ public class CommonBlockMutationHelpers
 				Item[] droppedItems = _getItemsDroppedWhenBreakingBlock(env, context, block);
 				for (Item dropped : droppedItems)
 				{
-					MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(dropped, 1), null);
+					EntityActionStoreToInventory store = new EntityActionStoreToInventory(new Items(dropped, 1), null);
 					context.newChangeSink.next(optionalEntityForStorage, store);
 				}
 			}

@@ -11,9 +11,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
-import com.jeffdisher.october.actions.EntityChangeOperatorSetCreative;
-import com.jeffdisher.october.actions.EntityChangeOperatorSpawnCreature;
-import com.jeffdisher.october.actions.EntityChangePeriodic;
+import com.jeffdisher.october.actions.EntityActionOperatorSetCreative;
+import com.jeffdisher.october.actions.EntityActionOperatorSpawnCreature;
+import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
@@ -2052,13 +2052,13 @@ public class TestTickRunner
 		Assert.assertFalse(snapshot.entities().get(entityId).completed().isCreativeMode());
 		
 		// Enqueue the operator command, run the tick, and observe this change.
-		runner.enqueueOperatorMutation(entityId, new EntityChangeOperatorSetCreative(true));
+		runner.enqueueOperatorMutation(entityId, new EntityActionOperatorSetCreative(true));
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertTrue(snapshot.entities().get(entityId).completed().isCreativeMode());
 		
 		// Verify that it can be cleared.
-		runner.enqueueOperatorMutation(entityId, new EntityChangeOperatorSetCreative(false));
+		runner.enqueueOperatorMutation(entityId, new EntityActionOperatorSetCreative(false));
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertFalse(snapshot.entities().get(entityId).completed().isCreativeMode());
@@ -2400,7 +2400,7 @@ public class TestTickRunner
 		
 		// Enqueue the operator command, run the tick, and observe this change.
 		EntityLocation location = new EntityLocation(1.2f, -3.4f, 5.0f);
-		runner.enqueueOperatorMutation(EnginePlayers.OPERATOR_ENTITY_ID, new EntityChangeOperatorSpawnCreature(COW, location));
+		runner.enqueueOperatorMutation(EnginePlayers.OPERATOR_ENTITY_ID, new EntityActionOperatorSpawnCreature(COW, location));
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.creatures().size());
@@ -3242,7 +3242,7 @@ public class TestTickRunner
 		Entity newEntity = snapshot.entities().get(entityId).completed();
 		Assert.assertEquals(newLocation, newEntity.location());
 		Assert.assertEquals(newVelocity, newEntity.velocity());
-		Assert.assertEquals(EntityChangePeriodic.ENERGY_COST_PER_TICK_WALKING, newEntity.energyDeficit());
+		Assert.assertEquals(EntityActionPeriodic.ENERGY_COST_PER_TICK_WALKING, newEntity.energyDeficit());
 		
 		runner.shutdown();
 	}

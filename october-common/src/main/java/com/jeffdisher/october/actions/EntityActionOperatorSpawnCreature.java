@@ -4,6 +4,8 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.mutations.EntityActionType;
+import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -11,38 +13,33 @@ import com.jeffdisher.october.utils.Assert;
 
 
 /**
- * An entity mutation for local use by an operator at the server console to set or clear the creative flag on an Entity.
+ * An entity mutation for local use by an operator at the server console to spawn a specific creature in a specific
+ * location (with default health).
  */
-public class EntityChangeOperatorSetCreative implements IEntityAction<IMutablePlayerEntity>
+public class EntityActionOperatorSpawnCreature implements IEntityAction<IMutablePlayerEntity>
 {
-	public static final EntityActionType TYPE = EntityActionType.OPERATOR_SET_CREATIVE;
+	public static final EntityActionType TYPE = EntityActionType.OPERATOR_SPAWN_CREATURE;
 
-	public static EntityChangeOperatorSetCreative deserialize(DeserializationContext context)
+	public static EntityActionOperatorSpawnCreature deserialize(DeserializationContext context)
 	{
 		// This is never serialized.
 		throw Assert.unreachable();
 	}
 
 
-	private final boolean _setCreative;
+	private final EntityType _type;
+	private final EntityLocation _location;
 
-	public EntityChangeOperatorSetCreative(boolean setCreative)
+	public EntityActionOperatorSpawnCreature(EntityType type, EntityLocation location)
 	{
-		_setCreative = setCreative;
+		_type = type;
+		_location = location;
 	}
 
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
-		newEntity.setCreativeMode(_setCreative);
-		// We need to clear the hotbar since this is changing the interpretation of the inventory (we may want to change how we access this).
-		for (int key : newEntity.copyHotbar())
-		{
-			if (key > 0)
-			{
-				newEntity.clearHotBarWithKey(key);
-			}
-		}
+		context.creatureSpawner.spawnCreature(_type, _location, _type.maxHealth());
 		return true;
 	}
 
@@ -69,6 +66,6 @@ public class EntityChangeOperatorSetCreative implements IEntityAction<IMutablePl
 	@Override
 	public String toString()
 	{
-		return "Operator-SetCreative " + _setCreative;
+		return "Operator-SpawnCreature" + _location;
 	}
 }

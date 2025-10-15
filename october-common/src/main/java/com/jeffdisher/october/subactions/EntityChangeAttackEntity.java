@@ -2,8 +2,8 @@ package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.actions.EntityChangePeriodic;
-import com.jeffdisher.october.actions.EntityChangeTakeDamageFromEntity;
+import com.jeffdisher.october.actions.EntityActionPeriodic;
+import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.logic.PropertyHelpers;
@@ -90,12 +90,12 @@ public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayer
 			int sourceEntityId = newEntity.getId();
 			if (_targetEntityId > 0)
 			{
-				EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromEntity<>(target, damageToApply, sourceEntityId);
+				EntityActionTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityActionTakeDamageFromEntity<>(target, damageToApply, sourceEntityId);
 				context.newChangeSink.next(_targetEntityId, takeDamage);
 			}
 			else
 			{
-				EntityChangeTakeDamageFromEntity<IMutableCreatureEntity> takeDamage = new EntityChangeTakeDamageFromEntity<>(target, damageToApply, sourceEntityId);
+				EntityActionTakeDamageFromEntity<IMutableCreatureEntity> takeDamage = new EntityActionTakeDamageFromEntity<>(target, damageToApply, sourceEntityId);
 				context.newChangeSink.creature(_targetEntityId, takeDamage);
 			}
 			
@@ -124,7 +124,7 @@ public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayer
 			}
 			
 			// Attacking expends a lot of energy.
-			newEntity.applyEnergyCost(EntityChangePeriodic.ENERGY_COST_PER_ATTACK);
+			newEntity.applyEnergyCost(EntityActionPeriodic.ENERGY_COST_PER_ATTACK);
 			
 			// Rate-limit us by updating the special action time.
 			newEntity.setLastSpecialActionMillis(context.currentTickTimeMillis);

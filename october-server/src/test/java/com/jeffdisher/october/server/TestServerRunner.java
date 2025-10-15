@@ -16,7 +16,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
-import com.jeffdisher.october.actions.EntityChangeOperatorSetLocation;
+import com.jeffdisher.october.actions.EntityActionOperatorSetLocation;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
@@ -596,7 +596,7 @@ public class TestServerRunner
 		// Now, teleport one of the entities to the other island.
 		EntityLocation islandBase = otherIsland.getBase().toEntityLocation();
 		EntityLocation teleportTarget = new EntityLocation(islandBase.x() + 1.0f, islandBase.y() + 1.0f, islandBase.z() + 1.0f);
-		EntityChangeOperatorSetLocation command = new EntityChangeOperatorSetLocation(teleportTarget);
+		EntityActionOperatorSetLocation command = new EntityActionOperatorSetLocation(teleportTarget);
 		monitoringAgent.getCommandSink().submitEntityMutation(clientId2, command);
 		
 		// Wait for the old entities to disappear and the new cow to appear.

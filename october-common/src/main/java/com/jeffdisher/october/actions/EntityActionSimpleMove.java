@@ -224,8 +224,8 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 	public static enum Intensity
 	{
 		STANDING(0.0f, 0),
-		WALKING(1.0f, EntityChangePeriodic.ENERGY_COST_PER_TICK_WALKING),
-		RUNNING(2.0f, EntityChangePeriodic.ENERGY_COST_PER_TICK_RUNNING),
+		WALKING(1.0f, EntityActionPeriodic.ENERGY_COST_PER_TICK_WALKING),
+		RUNNING(2.0f, EntityActionPeriodic.ENERGY_COST_PER_TICK_RUNNING),
 		;
 		public final float speedMultipler;
 		public final int energyCostPerTick;

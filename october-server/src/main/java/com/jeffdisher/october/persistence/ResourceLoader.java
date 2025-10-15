@@ -20,7 +20,7 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
-import com.jeffdisher.october.actions.EntityChangePeriodic;
+import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
@@ -1233,7 +1233,7 @@ public class ResourceLoader
 	private static SuspendedEntity _buildDefaultEntity(int id, EntityLocation spawn, boolean isCreative)
 	{
 		List<ScheduledChange> initialChanges = List.of(
-				new ScheduledChange(new EntityChangePeriodic(), EntityChangePeriodic.MILLIS_BETWEEN_PERIODIC_UPDATES)
+				new ScheduledChange(new EntityActionPeriodic(), EntityActionPeriodic.MILLIS_BETWEEN_PERIODIC_UPDATES)
 		);
 		MutableEntity entity = MutableEntity.createWithLocation(id, spawn, spawn);
 		entity.isCreativeMode = isCreative;

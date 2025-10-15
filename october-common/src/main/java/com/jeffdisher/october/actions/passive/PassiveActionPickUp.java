@@ -1,6 +1,6 @@
 package com.jeffdisher.october.actions.passive;
 
-import com.jeffdisher.october.actions.MutationEntityStoreToInventory;
+import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.PassiveEntity;
@@ -35,7 +35,7 @@ public class PassiveActionPickUp implements IPassiveAction
 		Assert.assertTrue(PassiveType.ITEM_SLOT == type);
 		
 		ItemSlot slot = (ItemSlot) entity.extendedData();
-		MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(slot.stack, slot.nonStackable);
+		EntityActionStoreToInventory store = new EntityActionStoreToInventory(slot.stack, slot.nonStackable);
 		
 		boolean didSchedule = context.newChangeSink.next(_callingEntityId, store);
 		

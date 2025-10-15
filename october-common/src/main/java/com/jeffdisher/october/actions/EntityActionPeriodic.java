@@ -18,7 +18,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * -healing
  * -digesting food
  */
-public class EntityChangePeriodic implements IEntityAction<IMutablePlayerEntity>
+public class EntityActionPeriodic implements IEntityAction<IMutablePlayerEntity>
 {
 	public static final EntityActionType TYPE = EntityActionType.PERIODIC;
 
@@ -80,13 +80,13 @@ public class EntityChangePeriodic implements IEntityAction<IMutablePlayerEntity>
 	 */
 	public static final int ENERGY_COST_PER_HEALTH_HEAL = 100;
 
-	public static EntityChangePeriodic deserialize(DeserializationContext context)
+	public static EntityActionPeriodic deserialize(DeserializationContext context)
 	{
-		return new EntityChangePeriodic();
+		return new EntityActionPeriodic();
 	}
 
 
-	public EntityChangePeriodic()
+	public EntityActionPeriodic()
 	{
 	}
 

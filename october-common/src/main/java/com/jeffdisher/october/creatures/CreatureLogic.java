@@ -6,8 +6,8 @@ import java.util.Map;
 import java.util.function.Function;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
-import com.jeffdisher.october.actions.EntityChangeImpregnateCreature;
-import com.jeffdisher.october.actions.EntityChangeTakeDamageFromEntity;
+import com.jeffdisher.october.actions.EntityActionImpregnateCreature;
+import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
@@ -711,7 +711,7 @@ public class CreatureLogic
 			if ((distance <= matingDistance) && (targetEntity.id() < creature.getId()))
 			{
 				// Send the message to impregnate them.
-				EntityChangeImpregnateCreature sperm = new EntityChangeImpregnateCreature(creature.newLocation);
+				EntityActionImpregnateCreature sperm = new EntityActionImpregnateCreature(creature.newLocation);
 				context.newChangeSink.creature(creature.newTargetEntityId, sperm);
 				// We can also now clear our plans since we are done with them.
 				creature.newInLoveMode = false;
@@ -745,7 +745,7 @@ public class CreatureLogic
 				// We can attack them so choose the target.
 				int index = context.randomInt.applyAsInt(BodyPart.values().length);
 				BodyPart target = BodyPart.values()[index];
-				EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromEntity<>(target, creatureType.attackDamage(), creature.getId());
+				EntityActionTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityActionTakeDamageFromEntity<>(target, creatureType.attackDamage(), creature.getId());
 				context.newChangeSink.next(creature.newTargetEntityId, takeDamage);
 				// Since we sent the attack, put us on attack cooldown.
 				creature.newLastAttackMillis = context.currentTickTimeMillis;

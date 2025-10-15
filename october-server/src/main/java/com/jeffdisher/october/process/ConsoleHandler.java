@@ -9,9 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.jeffdisher.october.actions.EntityChangeOperatorSetCreative;
-import com.jeffdisher.october.actions.EntityChangeOperatorSetLocation;
-import com.jeffdisher.october.actions.EntityChangeOperatorSpawnCreature;
+import com.jeffdisher.october.actions.EntityActionOperatorSetCreative;
+import com.jeffdisher.october.actions.EntityActionOperatorSetLocation;
+import com.jeffdisher.october.actions.EntityActionOperatorSpawnCreature;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.engine.EnginePlayers;
 import com.jeffdisher.october.logic.PropagationHelpers;
@@ -256,7 +256,7 @@ public class ConsoleHandler
 				{
 					// Pass in the operator command.
 					MonitoringAgent monitoringAgent = state.monitoringAgent;
-					EntityChangeOperatorSetCreative command = new EntityChangeOperatorSetCreative(setCreative);
+					EntityActionOperatorSetCreative command = new EntityActionOperatorSetCreative(setCreative);
 					monitoringAgent.getCommandSink().submitEntityMutation(clientId, command);
 				}
 				else
@@ -315,7 +315,7 @@ public class ConsoleHandler
 					// Pass in the operator command.
 					MonitoringAgent monitoringAgent = state.monitoringAgent;
 					EntityLocation location = new AbsoluteLocation(x, y, z).toEntityLocation();
-					EntityChangeOperatorSetLocation command = new EntityChangeOperatorSetLocation(location);
+					EntityActionOperatorSetLocation command = new EntityActionOperatorSetLocation(location);
 					monitoringAgent.getCommandSink().submitEntityMutation(clientId, command);
 				}
 				else
@@ -434,7 +434,7 @@ public class ConsoleHandler
 					// Pass in the operator command.
 					MonitoringAgent monitoringAgent = state.monitoringAgent;
 					EntityLocation location = new AbsoluteLocation(x, y, z).toEntityLocation();
-					EntityChangeOperatorSpawnCreature command = new EntityChangeOperatorSpawnCreature(entityType, location);
+					EntityActionOperatorSpawnCreature command = new EntityActionOperatorSpawnCreature(entityType, location);
 					monitoringAgent.getCommandSink().submitEntityMutation(EnginePlayers.OPERATOR_ENTITY_ID, command);
 				}
 				else

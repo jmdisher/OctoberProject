@@ -2,7 +2,7 @@ package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.actions.EntityChangeApplyItemToCreature;
+import com.jeffdisher.october.actions.EntityActionApplyItemToCreature;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.logic.SpatialHelpers;
@@ -91,7 +91,7 @@ public class EntityChangeUseSelectedItemOnEntity implements IEntitySubAction<IMu
 			}
 			
 			// Pass this to the entity.
-			context.newChangeSink.creature(_entityId, new EntityChangeApplyItemToCreature(itemType));
+			context.newChangeSink.creature(_entityId, new EntityActionApplyItemToCreature(itemType));
 			didApply = true;
 			
 			// Rate-limit us by updating the special action time.

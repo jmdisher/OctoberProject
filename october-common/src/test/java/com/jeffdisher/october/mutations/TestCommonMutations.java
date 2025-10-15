@@ -12,7 +12,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.jeffdisher.october.actions.MutationEntityStoreToInventory;
+import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
@@ -171,7 +171,7 @@ public class TestCommonMutations
 		Inventory inv = proxy.getInventory();
 		Assert.assertEquals(0, inv.sortedKeys().size());
 		Assert.assertEquals(clientId, sinks.nextTargetEntityId);
-		Assert.assertTrue(sinks.nextChange instanceof MutationEntityStoreToInventory);
+		Assert.assertTrue(sinks.nextChange instanceof EntityActionStoreToInventory);
 	}
 
 	@Test

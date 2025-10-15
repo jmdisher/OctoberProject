@@ -2,7 +2,7 @@ package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.actions.EntityChangePeriodic;
+import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.aspects.CraftAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.mutations.EntitySubActionType;
@@ -134,7 +134,7 @@ public class EntityChangeCraft implements IEntitySubAction<IMutablePlayerEntity>
 		if (isValid)
 		{
 			// Crafting expends energy.
-			int cost = EntityChangePeriodic.ENERGY_COST_PER_TICK_INVENTORY_CRAFT;
+			int cost = EntityActionPeriodic.ENERGY_COST_PER_TICK_INVENTORY_CRAFT;
 			newEntity.applyEnergyCost(cost);
 			
 			// While this is an action which is considered primary, it should actually delay secondary actions, too.

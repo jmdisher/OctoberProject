@@ -8,7 +8,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.actions.Deprecated_EntityAction;
-import com.jeffdisher.october.actions.EntityChangeTakeDamageFromEntity;
+import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.mutations.EntityActionType;
@@ -36,7 +36,7 @@ public class TestEntityActionCodec
 	{
 		int damage = 50;
 		int sourceEntityId = -2;
-		EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> change = new EntityChangeTakeDamageFromEntity<>(BodyPart.HEAD, damage, sourceEntityId);
+		EntityActionTakeDamageFromEntity<IMutablePlayerEntity> change = new EntityActionTakeDamageFromEntity<>(BodyPart.HEAD, damage, sourceEntityId);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		EntityActionCodec.serializeToBuffer(buffer, change);
@@ -46,7 +46,7 @@ public class TestEntityActionCodec
 			, 0L
 			, false
 		));
-		Assert.assertTrue(read instanceof EntityChangeTakeDamageFromEntity);
+		Assert.assertTrue(read instanceof EntityActionTakeDamageFromEntity);
 		Assert.assertEquals(0, buffer.remaining());
 	}
 

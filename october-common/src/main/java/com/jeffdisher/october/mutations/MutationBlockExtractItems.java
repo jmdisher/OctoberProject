@@ -2,7 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.actions.MutationEntityStoreToInventory;
+import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -115,7 +115,7 @@ public class MutationBlockExtractItems implements IMutationBlock
 					nonStackToSend = nonStack;
 				}
 				_putInventory(newBlock, mutable.freeze());
-				context.newChangeSink.next(_returnEntityId, new MutationEntityStoreToInventory(stackToSend, nonStackToSend));
+				context.newChangeSink.next(_returnEntityId, new EntityActionStoreToInventory(stackToSend, nonStackToSend));
 				didApply = true;
 			}
 		}

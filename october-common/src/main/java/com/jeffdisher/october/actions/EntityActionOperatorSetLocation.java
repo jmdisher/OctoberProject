@@ -5,7 +5,6 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -13,33 +12,32 @@ import com.jeffdisher.october.utils.Assert;
 
 
 /**
- * An entity mutation for local use by an operator at the server console to spawn a specific creature in a specific
- * location (with default health).
+ * An entity mutation for local use by an operator at the server console to teleport a player entity to a specific
+ * location (also resets velocity).
  */
-public class EntityChangeOperatorSpawnCreature implements IEntityAction<IMutablePlayerEntity>
+public class EntityActionOperatorSetLocation implements IEntityAction<IMutablePlayerEntity>
 {
-	public static final EntityActionType TYPE = EntityActionType.OPERATOR_SPAWN_CREATURE;
+	public static final EntityActionType TYPE = EntityActionType.OPERATOR_SET_LOCATION;
 
-	public static EntityChangeOperatorSpawnCreature deserialize(DeserializationContext context)
+	public static EntityActionOperatorSetLocation deserialize(DeserializationContext context)
 	{
 		// This is never serialized.
 		throw Assert.unreachable();
 	}
 
 
-	private final EntityType _type;
 	private final EntityLocation _location;
 
-	public EntityChangeOperatorSpawnCreature(EntityType type, EntityLocation location)
+	public EntityActionOperatorSetLocation(EntityLocation location)
 	{
-		_type = type;
 		_location = location;
 	}
 
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
-		context.creatureSpawner.spawnCreature(_type, _location, _type.maxHealth());
+		newEntity.setLocation(_location);
+		newEntity.setVelocityVector(new EntityLocation(0.0f, 0.0f, 0.0f));
 		return true;
 	}
 
@@ -66,6 +64,6 @@ public class EntityChangeOperatorSpawnCreature implements IEntityAction<IMutable
 	@Override
 	public String toString()
 	{
-		return "Operator-SpawnCreature" + _location;
+		return "Operator-SetLocation" + _location;
 	}
 }

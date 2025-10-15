@@ -3,7 +3,7 @@ package com.jeffdisher.october.subactions;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
-import com.jeffdisher.october.actions.EntityChangePeriodic;
+import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
@@ -72,7 +72,7 @@ public class EntityChangeJump<T extends IMutableMinimalEntity> implements IEntit
 			newEntity.resetLongRunningOperations();
 			
 			// Jumping expends energy.
-			newEntity.applyEnergyCost(EntityChangePeriodic.ENERGY_COST_PER_JUMP);
+			newEntity.applyEnergyCost(EntityActionPeriodic.ENERGY_COST_PER_JUMP);
 		}
 		return didApply;
 	}

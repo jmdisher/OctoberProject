@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.mutations.EntityActionType;
-import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -12,32 +11,38 @@ import com.jeffdisher.october.utils.Assert;
 
 
 /**
- * An entity mutation for local use by an operator at the server console to teleport a player entity to a specific
- * location (also resets velocity).
+ * An entity mutation for local use by an operator at the server console to set or clear the creative flag on an Entity.
  */
-public class EntityChangeOperatorSetLocation implements IEntityAction<IMutablePlayerEntity>
+public class EntityActionOperatorSetCreative implements IEntityAction<IMutablePlayerEntity>
 {
-	public static final EntityActionType TYPE = EntityActionType.OPERATOR_SET_LOCATION;
+	public static final EntityActionType TYPE = EntityActionType.OPERATOR_SET_CREATIVE;
 
-	public static EntityChangeOperatorSetLocation deserialize(DeserializationContext context)
+	public static EntityActionOperatorSetCreative deserialize(DeserializationContext context)
 	{
 		// This is never serialized.
 		throw Assert.unreachable();
 	}
 
 
-	private final EntityLocation _location;
+	private final boolean _setCreative;
 
-	public EntityChangeOperatorSetLocation(EntityLocation location)
+	public EntityActionOperatorSetCreative(boolean setCreative)
 	{
-		_location = location;
+		_setCreative = setCreative;
 	}
 
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
-		newEntity.setLocation(_location);
-		newEntity.setVelocityVector(new EntityLocation(0.0f, 0.0f, 0.0f));
+		newEntity.setCreativeMode(_setCreative);
+		// We need to clear the hotbar since this is changing the interpretation of the inventory (we may want to change how we access this).
+		for (int key : newEntity.copyHotbar())
+		{
+			if (key > 0)
+			{
+				newEntity.clearHotBarWithKey(key);
+			}
+		}
 		return true;
 	}
 
@@ -64,6 +69,6 @@ public class EntityChangeOperatorSetLocation implements IEntityAction<IMutablePl
 	@Override
 	public String toString()
 	{
-		return "Operator-SetLocation" + _location;
+		return "Operator-SetCreative " + _setCreative;
 	}
 }

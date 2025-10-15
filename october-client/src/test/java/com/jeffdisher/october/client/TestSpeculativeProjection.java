@@ -14,7 +14,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
-import com.jeffdisher.october.actions.MutationEntityStoreToInventory;
+import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.CraftAspect;
@@ -1508,7 +1508,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(ENV.encumbrance.getEncumbrance(STONE_ITEM), listener.thisEntityState.inventory().currentEncumbrance);
 		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
 		
-		MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(STONE_ITEM, 1), null);
+		EntityActionStoreToInventory store = new EntityActionStoreToInventory(new Items(STONE_ITEM, 1), null);
 		currentTimeMillis += 100L;
 		speculative = projector.applyChangesForServerTick(4L
 				, List.of()
@@ -2342,7 +2342,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, FakeUpdateFactories.entityUpdate(Map.of(address, serverCuboid), listener.thisEntityState, new MutationEntityStoreToInventory(new Items(dirt, 1), null))
+				, FakeUpdateFactories.entityUpdate(Map.of(address, serverCuboid), listener.thisEntityState, new EntityActionStoreToInventory(new Items(dirt, 1), null))
 				, Map.of()
 				, Map.of()
 				, List.of()

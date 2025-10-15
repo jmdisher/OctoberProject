@@ -12,9 +12,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.actions.EntityActionNudge;
-import com.jeffdisher.october.actions.EntityChangeApplyItemToCreature;
-import com.jeffdisher.october.actions.EntityChangeImpregnateCreature;
-import com.jeffdisher.october.actions.EntityChangeTakeDamageFromEntity;
+import com.jeffdisher.october.actions.EntityActionApplyItemToCreature;
+import com.jeffdisher.october.actions.EntityActionImpregnateCreature;
+import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
@@ -88,7 +88,7 @@ public class TestEngineCreatures
 		_Events events = new _Events();
 		TickProcessingContext context = _createContextWithEvents(events);
 		int sourceId = 1;
-		EntityChangeTakeDamageFromEntity<IMutableCreatureEntity> change = new EntityChangeTakeDamageFromEntity<>(BodyPart.FEET, 10, sourceId);
+		EntityActionTakeDamageFromEntity<IMutableCreatureEntity> change = new EntityActionTakeDamageFromEntity<>(BodyPart.FEET, 10, sourceId);
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
 			, EntityCollection.emptyCollection()
@@ -128,7 +128,7 @@ public class TestEngineCreatures
 				.finish()
 		;
 		int sourceId = 1;
-		EntityChangeTakeDamageFromEntity<IMutableCreatureEntity> change = new EntityChangeTakeDamageFromEntity<>(BodyPart.FEET, 120, sourceId);
+		EntityActionTakeDamageFromEntity<IMutableCreatureEntity> change = new EntityActionTakeDamageFromEntity<>(BodyPart.FEET, 120, sourceId);
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_KILLED, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
 			, EntityCollection.emptyCollection()
@@ -355,7 +355,7 @@ public class TestEngineCreatures
 		result = EngineCreatures.processOneCreature(context
 			, EntityCollection.emptyCollection()
 			, creature
-			, List.of(new EntityChangeTakeDamageFromEntity<>(BodyPart.FEET, damage, sourceId))
+			, List.of(new EntityActionTakeDamageFromEntity<>(BodyPart.FEET, damage, sourceId))
 		);
 		
 		updated = result.updatedEntity();
@@ -526,8 +526,8 @@ public class TestEngineCreatures
 		creaturesById = _runGroup(context
 			, List.of(player)
 			, creaturesById
-			, Map.of(cowId1, List.of(new EntityChangeApplyItemToCreature(wheat_item))
-				, cowId2, List.of(new EntityChangeApplyItemToCreature(wheat_item))
+			, Map.of(cowId1, List.of(new EntityActionApplyItemToCreature(wheat_item))
+				, cowId2, List.of(new EntityActionApplyItemToCreature(wheat_item))
 			)
 		);
 		
@@ -586,7 +586,7 @@ public class TestEngineCreatures
 		
 		// Verify that cow1 sent a message to cow2.
 		Assert.assertEquals(1, changes.size());
-		Assert.assertTrue(changes.get(cowId2) instanceof EntityChangeImpregnateCreature);
+		Assert.assertTrue(changes.get(cowId2) instanceof EntityActionImpregnateCreature);
 		
 		// Run another tick to see the mother receive this request and spawn the offspring.
 		CreatureEntity[] out = new CreatureEntity[1];

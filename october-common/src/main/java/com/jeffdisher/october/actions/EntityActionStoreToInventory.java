@@ -26,23 +26,23 @@ import com.jeffdisher.october.utils.Assert;
  * If the inventory can't fit all the items, those which overflow are dropped onto the ground where the entity is with
  * MutationBlockStoreItems.
  */
-public class MutationEntityStoreToInventory implements IEntityAction<IMutablePlayerEntity>
+public class EntityActionStoreToInventory implements IEntityAction<IMutablePlayerEntity>
 {
 	public static final EntityActionType TYPE = EntityActionType.ITEMS_STORE_TO_INVENTORY;
 
-	public static MutationEntityStoreToInventory deserialize(DeserializationContext context)
+	public static EntityActionStoreToInventory deserialize(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
 		Items stack = CodecHelpers.readItems(buffer);
 		NonStackableItem nonStack = CodecHelpers.readNonStackableItem(context);
-		return new MutationEntityStoreToInventory(stack, nonStack);
+		return new EntityActionStoreToInventory(stack, nonStack);
 	}
 
 
 	private final Items _stack;
 	private final NonStackableItem _nonStack;
 
-	public MutationEntityStoreToInventory(Items stack, NonStackableItem nonStack)
+	public EntityActionStoreToInventory(Items stack, NonStackableItem nonStack)
 	{
 		// Precisely one of these must be non-null.
 		Assert.assertTrue((null != stack) != (null != nonStack));

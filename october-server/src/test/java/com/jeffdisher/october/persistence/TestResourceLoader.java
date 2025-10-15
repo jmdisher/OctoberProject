@@ -21,8 +21,8 @@ import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.october.actions.Deprecated_EntityAction;
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
-import com.jeffdisher.october.actions.EntityChangePeriodic;
-import com.jeffdisher.october.actions.MutationEntityStoreToInventory;
+import com.jeffdisher.october.actions.EntityActionPeriodic;
+import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LogicAspect;
@@ -291,7 +291,7 @@ public class TestResourceLoader
 		}
 		
 		// Verify that this is the default.
-		Assert.assertTrue(results.get(0).changes().get(0).change() instanceof EntityChangePeriodic);
+		Assert.assertTrue(results.get(0).changes().get(0).change() instanceof EntityActionPeriodic);
 		Assert.assertEquals(MutableEntity.TESTING_LOCATION, results.get(0).entity().location());
 		
 		// Modify the entity and create a mutation to store with it.
@@ -299,7 +299,7 @@ public class TestResourceLoader
 		EntityLocation location = mutable.newLocation;
 		EntityLocation newLocation = new EntityLocation(2.0f * location.x(), 3.0f * location.y(), 4.0f * location.z());
 		mutable.newLocation = newLocation;
-		MutationEntityStoreToInventory mutation = new MutationEntityStoreToInventory(new Items(STONE.item(), 2), null);
+		EntityActionStoreToInventory mutation = new EntityActionStoreToInventory(new Items(STONE.item(), 2), null);
 		
 		loader.writeBackToDisk(List.of(), List.of(new SuspendedEntity(mutable.freeze(), List.of(new ScheduledChange(mutation, 0L)))));
 		// (the shutdown will wait for the queue to drain)
@@ -322,7 +322,7 @@ public class TestResourceLoader
 		SuspendedEntity suspended = results.get(0);
 		Assert.assertEquals(newLocation, suspended.entity().location());
 		Assert.assertEquals(1, suspended.changes().size());
-		Assert.assertTrue(suspended.changes().get(0).change() instanceof MutationEntityStoreToInventory);
+		Assert.assertTrue(suspended.changes().get(0).change() instanceof EntityActionStoreToInventory);
 		loader.shutdown();
 	}
 
@@ -450,7 +450,7 @@ public class TestResourceLoader
 		}
 		
 		// Create the entity changes we want.
-		MutationEntityStoreToInventory persistentChange  = new MutationEntityStoreToInventory(new Items(STONE.item(), 2), null);
+		EntityActionStoreToInventory persistentChange  = new EntityActionStoreToInventory(new Items(STONE.item(), 2), null);
 		
 		// Originally, this used the top-level attack action but that has been deprecated so now we use the appropriate sub-action in a standing top-level action.
 		EntityChangeAttackEntity subAction = new EntityChangeAttackEntity(targetId);
@@ -496,7 +496,7 @@ public class TestResourceLoader
 		Assert.assertEquals(1, cuboids.get(0).pendingMutations().size());
 		Assert.assertEquals(0, cuboids.get(0).periodicMutationMillis().size());
 		Assert.assertEquals(1, entities.get(0).changes().size());
-		Assert.assertTrue(entities.get(0).changes().get(0).change() instanceof MutationEntityStoreToInventory);
+		Assert.assertTrue(entities.get(0).changes().get(0).change() instanceof EntityActionStoreToInventory);
 		loader.shutdown();
 	}
 
