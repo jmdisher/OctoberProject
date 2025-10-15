@@ -7,10 +7,11 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.jeffdisher.october.actions.Deprecated_EntityChangeTakeDamageFromOther;
+import com.jeffdisher.october.actions.Deprecated_EntityAction;
 import com.jeffdisher.october.actions.EntityChangeTakeDamageFromEntity;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
+import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -52,19 +53,28 @@ public class TestEntityActionCodec
 	@Test
 	public void deprecatedTakeDamageOther() throws Throwable
 	{
-		int damage = 50;
-		@SuppressWarnings("deprecation")
-		Deprecated_EntityChangeTakeDamageFromOther<IMutablePlayerEntity> change = new Deprecated_EntityChangeTakeDamageFromOther<>(BodyPart.HEAD, damage, Deprecated_EntityChangeTakeDamageFromOther.CAUSE_FALL);
-		
+		// Note that this IEntityAction is fully deprecated to the point where only the deserializer still exists so we inline the old logic to serialize, here.
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		EntityActionCodec.serializeToBuffer(buffer, change);
+		
+		// Write the type.
+		EntityActionType type = EntityActionType.DEPRECATED_TAKE_DAMAGE_FROM_OTHER_V4;
+		buffer.put((byte) type.ordinal());
+		// Write the rest of the action.
+		BodyPart target = BodyPart.HEAD;
+		int damage = 50;
+		// CAUSE_FALL
+		byte cause = 3;
+		CodecHelpers.writeBodyPart(buffer, target);
+		buffer.putInt(damage);
+		buffer.put(cause);
+		
 		buffer.flip();
 		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV
 			, buffer
 			, 0L
 			, false
 		));
-		Assert.assertTrue(read instanceof Deprecated_EntityChangeTakeDamageFromOther);
+		Assert.assertTrue(read instanceof Deprecated_EntityAction);
 		Assert.assertEquals(0, buffer.remaining());
 	}
 }

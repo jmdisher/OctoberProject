@@ -19,7 +19,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.jeffdisher.october.actions.Deprecated_EntityChangeMove;
+import com.jeffdisher.october.actions.Deprecated_EntityAction;
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.actions.EntityChangePeriodic;
 import com.jeffdisher.october.actions.MutationEntityStoreToInventory;
@@ -633,7 +633,8 @@ public class TestResourceLoader
 		Assert.assertEquals((byte)0, entity.yaw());
 		List<ScheduledChange> changes = results.get(0).changes();
 		Assert.assertEquals(1, changes.size());
-		Assert.assertTrue(changes.get(0).change() instanceof Deprecated_EntityChangeMove);
+		// This is a deprecated movement so just make sure that we loaded it.
+		Assert.assertTrue(changes.get(0).change() instanceof Deprecated_EntityAction);
 		
 		loader.shutdown();
 	}
