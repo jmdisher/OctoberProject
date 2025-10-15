@@ -100,9 +100,9 @@ public class ServerStateManager
 	private Map<Integer, Entity> _previousEntityVersions;
 	private Map<Integer, Long> _commitLevels;
 	private Map<Integer, CreatureEntity> _completedCreatures;
-	private Map<Integer, CreatureEntity> _visiblyChangedCreatures;
+	private Map<Integer, CreatureEntity> _previousCreatureVersions;
 	private Map<Integer, PassiveEntity> _completedPassives;
-	private Map<Integer, PassiveEntity> _visiblyChangedPassives;
+	private Map<Integer, PassiveEntity> _previousPassiveVersions;
 	private Map<CuboidAddress, List<MutationBlockSetBlock>> _blockChanges;
 
 	public ServerStateManager(ICallouts callouts, long millisPerTick)
@@ -127,9 +127,9 @@ public class ServerStateManager
 		_previousEntityVersions = Collections.emptyMap();
 		_commitLevels = Collections.emptyMap();
 		_completedCreatures = Collections.emptyMap();
-		_visiblyChangedCreatures = Collections.emptyMap();
+		_previousCreatureVersions = Collections.emptyMap();
 		_completedPassives = Collections.emptyMap();
-		_visiblyChangedPassives = Collections.emptyMap();
+		_previousPassiveVersions = Collections.emptyMap();
 		_blockChanges = Collections.emptyMap();
 	}
 
@@ -207,21 +207,21 @@ public class ServerStateManager
 				(Map.Entry<Integer, TickRunner.SnapshotCreature> elt) -> elt.getKey()
 				, (Map.Entry<Integer, TickRunner.SnapshotCreature> elt) -> elt.getValue().completed()
 		));
-		_visiblyChangedCreatures = snapshot.creatures().entrySet().stream().filter(
-				(Map.Entry<Integer, TickRunner.SnapshotCreature> elt) -> (null != elt.getValue().visiblyChanged())
+		_previousCreatureVersions = snapshot.creatures().entrySet().stream().filter(
+			(Map.Entry<Integer, TickRunner.SnapshotCreature> elt) -> (null != elt.getValue().previousVersion())
 		).collect(Collectors.toMap(
-				(Map.Entry<Integer, TickRunner.SnapshotCreature> elt) -> elt.getKey()
-				, (Map.Entry<Integer, TickRunner.SnapshotCreature> elt) -> elt.getValue().visiblyChanged()
+			(Map.Entry<Integer, TickRunner.SnapshotCreature> elt) -> elt.getKey()
+			, (Map.Entry<Integer, TickRunner.SnapshotCreature> elt) -> elt.getValue().previousVersion()
 		));
 		_completedPassives = snapshot.passives().entrySet().stream().collect(Collectors.toMap(
 				(Map.Entry<Integer, TickRunner.SnapshotPassive> elt) -> elt.getKey()
 				, (Map.Entry<Integer, TickRunner.SnapshotPassive> elt) -> elt.getValue().completed()
 		));
-		_visiblyChangedPassives = snapshot.passives().entrySet().stream().filter(
-				(Map.Entry<Integer, TickRunner.SnapshotPassive> elt) -> (null != elt.getValue().visiblyChanged())
+		_previousPassiveVersions = snapshot.passives().entrySet().stream().filter(
+			(Map.Entry<Integer, TickRunner.SnapshotPassive> elt) -> (null != elt.getValue().previousVersion())
 		).collect(Collectors.toMap(
-				(Map.Entry<Integer, TickRunner.SnapshotPassive> elt) -> elt.getKey()
-				, (Map.Entry<Integer, TickRunner.SnapshotPassive> elt) -> elt.getValue().visiblyChanged()
+			(Map.Entry<Integer, TickRunner.SnapshotPassive> elt) -> elt.getKey()
+			, (Map.Entry<Integer, TickRunner.SnapshotPassive> elt) -> elt.getValue().previousVersion()
 		));
 		_blockChanges = snapshot.cuboids().entrySet().stream().filter(
 				(Map.Entry<CuboidAddress, TickRunner.SnapshotCuboid> elt) -> (null != elt.getValue().blockChanges())
@@ -788,9 +788,9 @@ public class ServerStateManager
 				}
 				else
 				{
-					// We know this entity so generate the update for this client.
-					CreatureEntity newEntity = _visiblyChangedCreatures.get(entityId);
-					if (null != newEntity)
+					// They are in range and we know about them so send the update if they changed.
+					CreatureEntity previousCreatureVersion = _previousCreatureVersions.get(entityId);
+					if ((null != previousCreatureVersion) && MutationEntitySetPartialEntity.canDescribeCreatureChange(previousCreatureVersion, entity))
 					{
 						// Creatures are always partial.
 						IPartialEntityUpdate update = new MutationEntitySetPartialEntity(PartialEntity.fromCreature(entity));
@@ -829,9 +829,9 @@ public class ServerStateManager
 				}
 				else
 				{
-					// We know this passive so generate the update for this client.
-					PassiveEntity newEntity = _visiblyChangedPassives.get(entityId);
-					if (null != newEntity)
+					// They are in range and we know about them so send the update if they changed.
+					PassiveEntity previousPassiveVersion = _previousPassiveVersions.get(entityId);
+					if ((null != previousPassiveVersion) && _canDescribePassiveChange(previousPassiveVersion, passive))
 					{
 						_callouts.network_sendPartialPassiveUpdate(clientId, entityId, passive.location(), passive.velocity());
 					}
@@ -1100,6 +1100,14 @@ public class ServerStateManager
 		}
 	}
 
+	private static boolean _canDescribePassiveChange(PassiveEntity previousPassiveVersion, PassiveEntity currentPassiveVersion)
+	{
+		// Only the location and velocity are relevant to the passive.
+		return !previousPassiveVersion.location().equals(currentPassiveVersion.location())
+			|| !previousPassiveVersion.velocity().equals(currentPassiveVersion.velocity())
+		;
+	}
+
 
 	public static interface ICallouts
 	{
@@ -1122,16 +1130,20 @@ public class ServerStateManager
 		// IServerAdapter.
 		PacketFromClient network_peekOrRemoveNextPacketFromClient(int clientId, PacketFromClient toRemove);
 		boolean network_isNetworkWriteReady(int clientId);
+		
 		void network_sendFullEntity(int clientId, Entity entity);
+		void network_sendEntityUpdate(int clientId, int entityId, IEntityUpdate update);
+		
 		void network_sendPartialEntity(int clientId, PartialEntity entity);
+		void network_sendPartialEntityUpdate(int clientId, int entityId, IPartialEntityUpdate update);
 		void network_removeEntity(int clientId, int entityId);
+		
 		void network_sendPartialPassive(int clientId, PartialPassive partial);
 		void network_sendPartialPassiveUpdate(int clientId, int entityId, EntityLocation location, EntityLocation velocity);
 		void network_removePassive(int clientId, int entityId);
+		
 		void network_sendCuboid(int clientId, IReadOnlyCuboidData cuboid);
 		void network_removeCuboid(int clientId, CuboidAddress address);
-		void network_sendEntityUpdate(int clientId, int entityId, IEntityUpdate update);
-		void network_sendPartialEntityUpdate(int clientId, int entityId, IPartialEntityUpdate update);
 		void network_sendBlockUpdate(int clientId, MutationBlockSetBlock update);
 		void network_sendBlockEvent(int clientId, EventRecord.Type type, AbsoluteLocation location, int entitySource);
 		void network_sendEntityEvent(int clientId, EventRecord.Type type, EventRecord.Cause cause, AbsoluteLocation optionalLocation, int entityTarget, int entitySource);

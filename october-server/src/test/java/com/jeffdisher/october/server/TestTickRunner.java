@@ -1794,7 +1794,7 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		
 		// We should see the creature take damage.
-		CreatureEntity updated = snapshot.creatures().get(creatureId).visiblyChanged();
+		CreatureEntity updated = snapshot.creatures().get(creatureId).completed();
 		Assert.assertEquals((byte)5, updated.health());
 		
 		// Hitting them again should cause them to de-spawn and drop items.
@@ -3385,7 +3385,7 @@ public class TestTickRunner
 		runner.startNextTick();
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.passives().size());
-		Assert.assertNotNull(snapshot.passives().get(id).visiblyChanged());
+		Assert.assertNotNull(snapshot.passives().get(id).completed());
 		Assert.assertEquals(location, snapshot.passives().get(id).completed().location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.1f), snapshot.passives().get(id).completed().velocity());
 		int processedPassives = 0;
@@ -3403,7 +3403,7 @@ public class TestTickRunner
 			runner.startNextTick();
 			snapshot = runner.waitForPreviousTick();
 			Assert.assertEquals(1, snapshot.passives().size());
-			Assert.assertNotNull(snapshot.passives().get(id).visiblyChanged());
+			Assert.assertNotNull(snapshot.passives().get(id).completed());
 			float newZ = snapshot.passives().get(id).completed().velocity().z();
 			Assert.assertTrue(newZ < vZ);
 			vZ = newZ;

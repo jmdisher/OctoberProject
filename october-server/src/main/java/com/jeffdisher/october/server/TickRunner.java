@@ -846,7 +846,9 @@ public class TickRunner
 			
 			Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = _extractSnapshotBlockMutations(masterFragment);
 			Map<Integer, List<ScheduledChange>> snapshotEntityMutations = _extractPlayerEntityChanges(masterFragment);
-			Map<Integer, Entity> updatedEntities = _extractChangedPlayerEntitiesOnly(masterFragment);
+			Set<Integer> updatedEntities = _extractChangedPlayerEntitiesOnly(masterFragment);
+			Set<Integer> updatedCreatures = masterFragment.creatures.updatedCreatures.keySet();
+			Set<Integer> updatedPassives = masterFragment.passives.updatedPassives.keySet();
 			
 			// Collect the time stamps for stats.
 			long endMillisPostamble = System.currentTimeMillis();
@@ -868,6 +870,8 @@ public class TickRunner
 				, snapshotBlockMutations
 				, snapshotEntityMutations
 				, updatedEntities
+				, updatedCreatures
+				, updatedPassives
 				, _threadStats.clone()
 				, millisTickParallelPhase
 				, millisTickPostamble
@@ -1187,20 +1191,19 @@ public class TickRunner
 		return snapshotEntityMutations;
 	}
 
-	private static Map<Integer, Entity> _extractChangedPlayerEntitiesOnly(_PartialHandoffData masterFragment)
+	private static Set<Integer> _extractChangedPlayerEntitiesOnly(_PartialHandoffData masterFragment)
 	{
-		Map<Integer, Entity> updatedEntities = new HashMap<>();
+		Set<Integer> updatedEntities = new HashSet<>();
 		for (Map.Entry<Integer, _OutputEntity> processed : masterFragment.crowd.entityOutput().entrySet())
 		{
-			Integer key = processed.getKey();
 			_OutputEntity value = processed.getValue();
 			Entity updated = value.entity();
 			
 			// Note that this is documented to be null if nothing changed.
 			if (null != updated)
 			{
-				Entity old = updatedEntities.put(key, updated);
-				Assert.assertTrue(null == old);
+				Integer key = processed.getKey();
+				updatedEntities.add(key);
 			}
 		}
 		return updatedEntities;
@@ -1670,7 +1673,9 @@ public class TickRunner
 		, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
 		, Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations
 		, Map<Integer, List<ScheduledChange>> snapshotEntityMutations
-		, Map<Integer, Entity> updatedEntities
+		, Set<Integer> updatedEntities
+		, Set<Integer> updatedCreatures
+		, Set<Integer> updatedPassives
 		, ProcessorElement.PerThreadStats[] threadStats
 		, long millisTickParallelPhase
 		, long millisTickPostamble
@@ -1717,13 +1722,11 @@ public class TickRunner
 			Integer key = ent.getKey();
 			Assert.assertTrue(key > 0);
 			Entity completed = ent.getValue();
-			long commitLevel = startingMaterials.commitLevels.get(key);
-			Entity updated = updatedEntities.get(key);
-			
-			Entity previousVersionOrNull = (null != updated)
+			Entity previousVersionOrNull = updatedEntities.contains(key)
 				? startingMaterials.completedEntities.get(key)
 				: null
 			;
+			long commitLevel = startingMaterials.commitLevels.get(key);
 			
 			// Get the scheduled mutations (note that this is often null but we don't want to store null).
 			List<ScheduledChange> scheduledMutations = snapshotEntityMutations.get(key);
@@ -1745,11 +1748,14 @@ public class TickRunner
 			Integer key = ent.getKey();
 			Assert.assertTrue(key < 0);
 			CreatureEntity completed = ent.getValue();
-			CreatureEntity visiblyChanged = masterFragment.creatures.updatedCreatures().get(key);
+			CreatureEntity previousVersionOrNull = updatedCreatures.contains(key)
+				? startingMaterials.completedCreatures.get(key)
+				: null
+			;
 			
 			SnapshotCreature snapshot = new SnapshotCreature(
-					completed
-					, visiblyChanged
+				completed
+				, previousVersionOrNull
 			);
 			creatures.put(key, snapshot);
 		}
@@ -1760,11 +1766,14 @@ public class TickRunner
 			// Passives are expected to have positive IDs.
 			Assert.assertTrue(key > 0);
 			PassiveEntity completed = ent.getValue();
-			PassiveEntity visiblyChanged = masterFragment.passives.updatedPassives().get(key);
+			PassiveEntity previousVersionOrNull = updatedPassives.contains(key)
+				? startingMaterials.completedPassives.get(key)
+				: null
+			;
 			
 			SnapshotPassive snapshot = new SnapshotPassive(
-					completed
-					, visiblyChanged
+				completed
+				, previousVersionOrNull
 			);
 			passives.put(key, snapshot);
 		}
@@ -2000,16 +2009,16 @@ public class TickRunner
 	public static record SnapshotCreature(
 			// Never null.
 			CreatureEntity completed
-			// Null if not visibly changed in this tick.
-			, CreatureEntity visiblyChanged
+			// The previous version of the entity (null if not changed in this tick).
+			, CreatureEntity previousVersion
 	)
 	{}
 
 	public static record SnapshotPassive(
 			// Never null.
 			PassiveEntity completed
-			// Null if not visibly changed in this tick.
-			, PassiveEntity visiblyChanged
+			// The previous version of the entity (null if not changed in this tick).
+			, PassiveEntity previousVersion
 	)
 	{}
 

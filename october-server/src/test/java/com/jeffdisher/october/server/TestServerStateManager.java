@@ -44,7 +44,9 @@ import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.MutablePartialEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
@@ -897,7 +899,7 @@ public class TestServerStateManager
 			, snapshot.entities()
 			, snapshot.creatures()
 			, Map.of(
-				newPassive.id(), new TickRunner.SnapshotPassive(newPassive, newPassive)
+				newPassive.id(), new TickRunner.SnapshotPassive(newPassive, passive)
 			)
 			, snapshot.completedHeightMaps()
 			, Set.of()
@@ -924,6 +926,139 @@ public class TestServerStateManager
 		// We expect to see the callout remove the passive.
 		output = callouts.partialPassivesPerClient.get(clientId1).get(passiveId);
 		Assert.assertNull(output);
+		
+		manager.clientDisconnected(clientId1);
+		manager.setupNextTickAfterCompletion(snapshot);
+	}
+
+	@Test
+	public void observeCreatureAndPassiveUpdates()
+	{
+		// We want to show that any updates to creatures or passives MUST actually change the partial counterpart.
+		_Callouts callouts = new _Callouts();
+		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
+		manager.setOwningThread();
+		int clientId1 = 1;
+		String clientName1 = "client1";
+		manager.clientConnected(clientId1, clientName1, 1);
+		
+		// Load the initial player entity so we will send the updates somewhere.
+		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot);
+		MutableEntity near = MutableEntity.createForTest(clientId1);
+		near.setLocation(new EntityLocation(5.0f, 5.0f, 0.0f));
+		callouts.loadedEntities.add(new SuspendedEntity(near.freeze(), List.of()));
+		changes = manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(0, changes.newCuboids().size());
+		Assert.assertEquals(1, changes.newEntities().size());
+		
+		// Load in a cuboid with 2 creatures and 2 passives (changing and unchanging).
+		int creatureChangeId = -1;
+		int creatureUnchangeId = -2;
+		int passiveChangeId = 1;
+		int passiveUnchangeId = 2;
+		EntityLocation creatureLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
+		EntityLocation passiveLocation = new EntityLocation(20.0f, 20.0f, 0.0f);
+		CreatureEntity creatureChange = CreatureEntity.create(creatureChangeId, COW, creatureLocation, (byte)50);
+		CreatureEntity creatureUnchange = CreatureEntity.create(creatureUnchangeId, COW, creatureLocation, (byte)50);
+		Item stoneItem = ENV.items.getItemById("op.stone");
+		Items stack = new Items(stoneItem, 3);
+		ItemSlot slot = ItemSlot.fromStack(stack);
+		PassiveEntity passiveChange = new PassiveEntity(passiveChangeId, PassiveType.ITEM_SLOT, passiveLocation, new EntityLocation(0.0f, 0.0f, 0.0f), slot, 1000L);
+		PassiveEntity passiveUnchange = new PassiveEntity(passiveUnchangeId, PassiveType.ITEM_SLOT, passiveLocation, new EntityLocation(0.0f, 0.0f, 0.0f), slot, 1000L);
+		
+		// Inject the cuboid so that the ServerStateManager will see it coming back from the loader.
+		CuboidData nearCuboid = CuboidGenerator.createFilledCuboid(near.newLocation.getBlockLocation().getCuboidAddress(), ENV.special.AIR);
+		callouts.loadedCuboids.add(new SuspendedCuboid<>(nearCuboid
+			, HeightMapHelpers.buildHeightMap(nearCuboid)
+			, List.of(creatureChange, creatureUnchange)
+			, List.of()
+			, Map.of()
+			, List.of(passiveChange, passiveUnchange)
+		));
+		
+		// Create the snapshot of the player entity loading (we should see the new cuboid in the changes).
+		snapshot = _modifySnapshot(snapshot
+			, Map.of(
+			)
+			, Map.of(clientId1, new TickRunner.SnapshotEntity(near.freeze(), null, 1L, List.of()))
+			, snapshot.creatures()
+			, snapshot.passives()
+			, Map.of(
+			)
+			, Set.of()
+		);
+		changes = manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(1, changes.newCuboids().size());
+		// (note that this is the first time we will see the full entity, too)
+		Assert.assertTrue(callouts.fullEntitiesSent.contains(clientId1));
+		
+		// We now expect the snapshot to include the cuboid with its creature and passive we just loaded.
+		snapshot = _modifySnapshot(snapshot
+			, Map.of(
+				nearCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(nearCuboid, null, List.of(), Map.of())
+			)
+			, snapshot.entities()
+			, Map.of(
+				creatureChange.id(), new TickRunner.SnapshotCreature(creatureChange, null)
+				, creatureUnchange.id(), new TickRunner.SnapshotCreature(creatureUnchange, null)
+			)
+			, Map.of(
+				passiveChange.id(), new TickRunner.SnapshotPassive(passiveChange, null)
+				, passiveUnchange.id(), new TickRunner.SnapshotPassive(passiveUnchange, null)
+			)
+			, HeightMapHelpers.buildColumnMaps(Map.of(
+				nearCuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(nearCuboid)
+			))
+			, Set.of()
+		);
+		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
+		
+		// We should see the callouts to send the new cuboid, creature, and passive.
+		// -cuboid
+		Assert.assertTrue(callouts.cuboidsSentToClient.get(clientId1).contains(nearCuboid.getCuboidAddress()));
+		// -creature
+		Assert.assertEquals(creatureLocation, callouts.partialEntitiesPerClient.get(clientId1).get(creatureChange.id()).location());
+		Assert.assertEquals(creatureLocation, callouts.partialEntitiesPerClient.get(clientId1).get(creatureUnchange.id()).location());
+		// -passive
+		Assert.assertEquals(passiveLocation, callouts.partialPassivesPerClient.get(clientId1).get(passiveChange.id()).location());
+		Assert.assertEquals(passiveLocation, callouts.partialPassivesPerClient.get(clientId1).get(passiveUnchange.id()).location());
+		
+		// Make non-visible changes to a creature and a passive (this is just faked for future-proofing since passives don't currently change lastAliveMillis).
+		EntityLocation newCreatureLocation = new EntityLocation(11.0f, 9.0f, 0.0f);
+		MutableCreature mutable = MutableCreature.existing(creatureChange);
+		mutable.newLocation = newCreatureLocation;
+		CreatureEntity newCreatureChange = mutable.freeze();
+		mutable = MutableCreature.existing(creatureUnchange);
+		mutable.newBreath = (byte)(mutable.newBreath - 1);
+		CreatureEntity newCreatureUnchange = mutable.freeze();
+		EntityLocation newPassiveLocation = new EntityLocation(10.0f, 10.0f, 9.0f);
+		PassiveEntity newPassiveChange = new PassiveEntity(passiveChange.id(), passiveChange.type(), newPassiveLocation, passiveChange.velocity(), passiveChange.extendedData(), passiveChange.lastAliveMillis());
+		PassiveEntity newPassiveUnchange = new PassiveEntity(passiveUnchange.id(), passiveUnchange.type(), passiveUnchange.location(), passiveUnchange.velocity(), passiveUnchange.extendedData(), passiveUnchange.lastAliveMillis() + 100L);
+		
+		// Pass in the updates.
+		snapshot = _modifySnapshot(snapshot
+			, snapshot.cuboids()
+			, snapshot.entities()
+			, Map.of(
+				newCreatureChange.id(), new TickRunner.SnapshotCreature(newCreatureChange, creatureChange)
+				, newCreatureUnchange.id(), new TickRunner.SnapshotCreature(newCreatureUnchange, creatureUnchange)
+			)
+			, Map.of(
+				newPassiveChange.id(), new TickRunner.SnapshotPassive(newPassiveChange, passiveChange)
+				, newPassiveUnchange.id(), new TickRunner.SnapshotPassive(newPassiveUnchange, passiveUnchange)
+			)
+			, snapshot.completedHeightMaps()
+			, Set.of()
+		);
+		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
+		
+		// We expect to see the visible changes passing through the callouts.
+		// Note:  The callouts verify that the change actually makes a real change.
+		PartialEntity outputCreature = callouts.partialEntitiesPerClient.get(clientId1).get(creatureChange.id());
+		PartialPassive outputPassive = callouts.partialPassivesPerClient.get(clientId1).get(passiveChange.id());
+		Assert.assertEquals(newCreatureLocation, outputCreature.location());
+		Assert.assertEquals(newPassiveLocation, outputPassive.location());
 		
 		manager.clientDisconnected(clientId1);
 		manager.setupNextTickAfterCompletion(snapshot);
@@ -1056,7 +1191,7 @@ public class TestServerStateManager
 		public Function<PacketFromClient, PacketFromClient> peekHandler = null;
 		public boolean didEnqueue = false;
 		public Map<Integer, Map<Integer, String>> joinedClients = new HashMap<>();
-		public Map<Integer, Set<Integer>> partialEntitiesPerClient = new HashMap<>();
+		public Map<Integer, Map<Integer, PartialEntity>> partialEntitiesPerClient = new HashMap<>();
 		public Map<Integer, Map<Integer, PartialPassive>> partialPassivesPerClient = new HashMap<>();
 		public Map<Integer, Set<CuboidAddress>> cuboidsSentToClient = new HashMap<>();
 		public boolean isNetworkWriteReady = true;
@@ -1106,37 +1241,46 @@ public class TestServerStateManager
 		{
 			return this.isNetworkWriteReady;
 		}
+		
 		@Override
 		public void network_sendFullEntity(int clientId, Entity entity)
 		{
 			Assert.assertTrue(this.fullEntitiesSent.add(clientId));
 		}
 		@Override
+		public void network_sendEntityUpdate(int clientId, int entityId, IEntityUpdate update)
+		{
+			throw new AssertionError("networkSendEntityUpdate");
+		}
+		
+		@Override
 		public void network_sendPartialEntity(int clientId, PartialEntity entity)
 		{
-			Set<Integer> ids = this.partialEntitiesPerClient.get(clientId);
-			if (null == ids)
+			if (!this.partialEntitiesPerClient.containsKey(clientId))
 			{
-				ids = new HashSet<>();
-				this.partialEntitiesPerClient.put(clientId, ids);
+				this.partialEntitiesPerClient.put(clientId, new HashMap<>());
 			}
-			boolean didAdd = ids.add(entity.id());
-			Assert.assertTrue(didAdd);
+			Object old = this.partialEntitiesPerClient.get(clientId).put(entity.id(), entity);
+			Assert.assertNull(old);
+		}
+		@Override
+		public void network_sendPartialEntityUpdate(int clientId, int entityId, IPartialEntityUpdate update)
+		{
+			PartialEntity original = this.partialEntitiesPerClient.get(clientId).get(entityId);
+			MutablePartialEntity mutable = MutablePartialEntity.existing(original);
+			update.applyToEntity(mutable);
+			PartialEntity updated = mutable.freeze();
+			Assert.assertFalse(original.equals(updated));
+			this.partialEntitiesPerClient.get(clientId).put(updated.id(), updated);
 		}
 		@Override
 		public void network_removeEntity(int clientId, int entityId)
 		{
-			if (entityId > 0)
-			{
-				throw new AssertionError("networkRemoveEntity");
-			}
-			else
-			{
-				Set<Integer> ids = this.partialEntitiesPerClient.get(clientId);
-				boolean didRemove = ids.remove(entityId);
-				Assert.assertTrue(didRemove);
-			}
+			Map<Integer, PartialEntity> partials = this.partialEntitiesPerClient.get(clientId);
+			PartialEntity didRemove = partials.remove(entityId);
+			Assert.assertNotNull(didRemove);
 		}
+		
 		@Override
 		public void network_sendPartialPassive(int clientId, PartialPassive partial)
 		{
@@ -1144,7 +1288,8 @@ public class TestServerStateManager
 			{
 				this.partialPassivesPerClient.put(clientId, new HashMap<>());
 			}
-			this.partialPassivesPerClient.get(clientId).put(partial.id(), partial);
+			Object old = this.partialPassivesPerClient.get(clientId).put(partial.id(), partial);
+			Assert.assertNull(old);
 		}
 		@Override
 		public void network_sendPartialPassiveUpdate(int clientId, int entityId, EntityLocation location, EntityLocation velocity)
@@ -1164,6 +1309,7 @@ public class TestServerStateManager
 			PartialPassive original = this.partialPassivesPerClient.get(clientId).remove(entityId);
 			Assert.assertNotNull(original);
 		}
+		
 		@Override
 		public void network_sendCuboid(int clientId, IReadOnlyCuboidData cuboid)
 		{
@@ -1179,16 +1325,6 @@ public class TestServerStateManager
 		{
 			boolean didRemove = this.cuboidsSentToClient.get(clientId).remove(address);
 			Assert.assertTrue(didRemove);
-		}
-		@Override
-		public void network_sendEntityUpdate(int clientId, int entityId, IEntityUpdate update)
-		{
-			throw new AssertionError("networkSendEntityUpdate");
-		}
-		@Override
-		public void network_sendPartialEntityUpdate(int clientId, int entityId, IPartialEntityUpdate update)
-		{
-			throw new AssertionError("network_sendPartialEntityUpdate");
 		}
 		@Override
 		public void network_sendBlockUpdate(int clientId, MutationBlockSetBlock update)
