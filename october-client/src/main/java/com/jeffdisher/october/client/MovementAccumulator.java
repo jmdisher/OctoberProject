@@ -354,7 +354,7 @@ public class MovementAccumulator
 	 */
 	public void removePassive(int entityId)
 	{
-		Assert.assertTrue(null != _otherEntities.remove(entityId));
+		Assert.assertTrue(null != _passives.remove(entityId));
 	}
 
 	/**

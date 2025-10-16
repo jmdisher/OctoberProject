@@ -36,6 +36,7 @@ import com.jeffdisher.october.subactions.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
@@ -47,6 +48,7 @@ import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
+import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
@@ -955,6 +957,48 @@ public class TestMovementAccumulator
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(5.8f, 5.56f, 6.0f), entity.location());
+	}
+
+	@Test
+	public void addUpdateRemove() throws Throwable
+	{
+		// This just shows that we can correctly handle add/update/remove actions related to cuboids, creatures, and passives.
+		long millisPerTick = 100L;
+		long currentTimeMillis = 1000L;
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Set the entity (just for completeness).  This is normally set first.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = new EntityLocation(5.8f, 5.8f, 6.0f);
+		Entity entity = mutable.freeze();
+		accumulator.setThisEntity(entity);
+		
+		// Create, update, remove a cuboid.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidHeightMap cuboidMap = HeightMapHelpers.buildHeightMap(cuboid);
+		accumulator.setCuboid(cuboid, cuboidMap);
+		// (these are just set again).
+		accumulator.setCuboid(cuboid, cuboidMap);
+		accumulator.removeCuboid(cuboid.getCuboidAddress());
+		
+		// Create, update, remove other entity (either a creature or other player).
+		PartialEntity partial = PartialEntity.fromCreature(CreatureEntity.create(-1, ENV.creatures.PLAYER, new EntityLocation(1.2f, -2.3f, 3.4f), (byte)20));
+		accumulator.setOtherEntity(partial);
+		// (these are just set again).
+		accumulator.setOtherEntity(partial);
+		accumulator.removeOtherEntity(partial.id());
+		
+		// Create, update, remove passive entity.
+		PartialPassive passive = new PartialPassive(1
+			, PassiveType.ITEM_SLOT
+			, new EntityLocation(1.2f, 2.3f, -3.4f)
+			, new EntityLocation(0.0f, 0.0f, -0.5f)
+			, null
+		);
+		accumulator.addPassive(passive);
+		accumulator.updatePassive(passive);
+		accumulator.removePassive(passive.id());
 	}
 
 
