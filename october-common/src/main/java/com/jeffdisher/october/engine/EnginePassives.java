@@ -3,6 +3,9 @@ package com.jeffdisher.october.engine;
 import java.util.List;
 
 import com.jeffdisher.october.actions.passive.PassiveActionEveryTick;
+import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.logic.DamageHelpers;
+import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -47,6 +50,17 @@ public class EnginePassives
 		{
 			PassiveActionEveryTick action = new PassiveActionEveryTick();
 			working = action.applyChange(context, working);
+		}
+		// Finally, see if we need to check for environmental damage to force despawn.
+		if ((null != working) && TickUtils.canApplyEnvironmentalDamageInTick(context))
+		{
+			Environment env = Environment.getShared();
+			int blockDamage = DamageHelpers.findEnvironmentalDamageInVolume(env, context.previousBlockLookUp, passive.location(), passive.type().volume());
+			if (blockDamage > 0)
+			{
+				// If the environment does any damage at all, despawn.
+				working = null;
+			}
 		}
 		return working;
 	}
