@@ -107,19 +107,10 @@ public class TickUtils
 			}
 			
 			// See if this block actually applies damage.
-			int blockDamage = env.blocks.getBlockDamage(headBlock);
+			int blockDamage = DamageHelpers.findEnvironmentalDamageInVolume(env, context.previousBlockLookUp, newEntity.getLocation(), newEntity.getType().volume());
 			if (blockDamage > 0)
 			{
 				DamageHelpers.applyDamageDirectlyAndPostEvent(context, newEntity, (byte)blockDamage, EventRecord.Cause.BLOCK_DAMAGE);
-			}
-			else
-			{
-				// If not damaging us directly, see if the block under us is on fire.
-				BlockProxy underFoot = context.previousBlockLookUp.apply(newEntity.getLocation().getBlockLocation().getRelative(0, 0, -1));
-				if ((null != underFoot) && FlagsAspect.isSet(underFoot.getFlags(), FlagsAspect.FLAG_BURNING))
-				{
-					DamageHelpers.applyDamageDirectlyAndPostEvent(context, newEntity, MiscConstants.FIRE_DAMAGE_PER_SECOND, EventRecord.Cause.BLOCK_DAMAGE);
-				}
 			}
 		}
 	}
