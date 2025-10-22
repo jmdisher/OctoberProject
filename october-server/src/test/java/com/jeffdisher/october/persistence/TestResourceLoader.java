@@ -999,12 +999,15 @@ public class TestResourceLoader
 		SuspendedCuboid<CuboidData> result = results.get(0);
 		CuboidData cuboid = result.cuboid();
 		
-		// Verify our assumptions.
-		Inventory inv = cuboid.getDataSpecial(AspectRegistry.INVENTORY, blockLocation);
-		Assert.assertEquals(10, inv.maxEncumbrance);
-		Assert.assertEquals(4, inv.currentEncumbrance);
-		Assert.assertEquals(IRON_SWORD, inv.getNonStackableForKey(1).type());
-		Assert.assertEquals(103, PropertyHelpers.getDurability(inv.getNonStackableForKey(1)));
+		// Note that we should see this inventory converted to passives.
+		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, blockLocation));
+		List<PassiveEntity> passives = result.passives();
+		Assert.assertEquals(1, passives.size());
+		PassiveEntity passive1 = passives.get(0);
+		Assert.assertEquals(PassiveType.ITEM_SLOT, passive1.type());
+		ItemSlot slot1 = (ItemSlot) passive1.extendedData();
+		Assert.assertEquals(IRON_SWORD, slot1.nonStackable.type());
+		Assert.assertEquals(103, PropertyHelpers.getDurability(slot1.nonStackable));
 	}
 
 	@Test
@@ -1070,13 +1073,20 @@ public class TestResourceLoader
 		SuspendedCuboid<CuboidData> cuboidData = cuboidResults.get(0);
 		Assert.assertEquals(1, entityResults.size());
 		
-		// Verify our assumptions.
+		// Show that the inventory has been converted to 2 passives.
 		CuboidData cuboid = cuboidData.cuboid();
-		Inventory inv = cuboid.getDataSpecial(AspectRegistry.INVENTORY, invLocation);
-		ItemSlot slot1 = inv.getSlotForKey(1);
+		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, invLocation));
+		
+		List<PassiveEntity> passives = cuboidData.passives();
+		Assert.assertEquals(2, passives.size());
+		PassiveEntity passive1 = passives.get(0);
+		PassiveEntity passive2 = passives.get(1);
+		Assert.assertEquals(PassiveType.ITEM_SLOT, passive1.type());
+		Assert.assertEquals(PassiveType.ITEM_SLOT, passive2.type());
+		ItemSlot slot1 = (ItemSlot) passive1.extendedData();
+		ItemSlot slot2 = (ItemSlot) passive2.extendedData();
 		Assert.assertEquals(STONE_ITEM, slot1.stack.type());
 		Assert.assertEquals(2, slot1.stack.count());
-		ItemSlot slot2 = inv.getSlotForKey(2);
 		Assert.assertEquals(IRON_SWORD, slot2.nonStackable.type());
 		Assert.assertEquals(500, PropertyHelpers.getDurability(slot2.nonStackable));
 		

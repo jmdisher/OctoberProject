@@ -44,6 +44,8 @@ import com.jeffdisher.october.net.EntityActionCodec;
 import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV1;
 import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV8;
 import com.jeffdisher.october.persistence.legacy.LegacyEntityV1;
+import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -52,8 +54,11 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PassiveEntity;
+import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.MessageQueue;
@@ -509,8 +514,12 @@ public class ResourceLoader
 					// ... and any periodic mutations.
 					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
 					
-					// Passives added in V9.
-					List<PassiveEntity> passives = List.of();
+					// Passives added in V9, extracted from empty item inventory slots.
+					List<PassiveEntity> convertedPassives = _convertCuboidPre9(env, currentGameMillis, cuboid, address.getBase());
+					List<PassiveEntity> passives = (null != convertedPassives)
+						? convertedPassives
+						: List.of()
+					;
 					
 					// This should be fully read.
 					Assert.assertTrue(!buffer.hasRemaining());
@@ -539,8 +548,12 @@ public class ResourceLoader
 					// ... and any periodic mutations.
 					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
 					
-					// Passives added in V9.
-					List<PassiveEntity> passives = List.of();
+					// Passives added in V9, extracted from empty item inventory slots.
+					List<PassiveEntity> convertedPassives = _convertCuboidPre9(env, currentGameMillis, cuboid, address.getBase());
+					List<PassiveEntity> passives = (null != convertedPassives)
+						? convertedPassives
+						: List.of()
+					;
 					
 					// This should be fully read.
 					Assert.assertTrue(!buffer.hasRemaining());
@@ -570,8 +583,12 @@ public class ResourceLoader
 					// ... and any periodic mutations.
 					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
 					
-					// Passives added in V9.
-					List<PassiveEntity> passives = List.of();
+					// Passives added in V9, extracted from empty item inventory slots.
+					List<PassiveEntity> convertedPassives = _convertCuboidPre9(env, currentGameMillis, cuboid, address.getBase());
+					List<PassiveEntity> passives = (null != convertedPassives)
+						? convertedPassives
+						: List.of()
+					;
 					
 					// This should be fully read.
 					Assert.assertTrue(!buffer.hasRemaining());
@@ -601,8 +618,12 @@ public class ResourceLoader
 					// ... and any periodic mutations.
 					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
 					
-					// Passives added in V9.
-					List<PassiveEntity> passives = List.of();
+					// Passives added in V9, extracted from empty item inventory slots.
+					List<PassiveEntity> convertedPassives = _convertCuboidPre9(env, currentGameMillis, cuboid, address.getBase());
+					List<PassiveEntity> passives = (null != convertedPassives)
+						? convertedPassives
+						: List.of()
+					;
 					
 					// This should be fully read.
 					Assert.assertTrue(!buffer.hasRemaining());
@@ -632,8 +653,12 @@ public class ResourceLoader
 					// ... and any periodic mutations.
 					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
 					
-					// Passives added in V9.
-					List<PassiveEntity> passives = List.of();
+					// Passives added in V9, extracted from empty item inventory slots.
+					List<PassiveEntity> convertedPassives = _convertCuboidPre9(env, currentGameMillis, cuboid, address.getBase());
+					List<PassiveEntity> passives = (null != convertedPassives)
+						? convertedPassives
+						: List.of()
+					;
 					
 					// This should be fully read.
 					Assert.assertTrue(!buffer.hasRemaining());
@@ -663,8 +688,12 @@ public class ResourceLoader
 					Map<BlockAddress, Long> periodicMutations = new HashMap<>();
 					_background_splitMutations(pendingMutations, periodicMutations, context);
 					
-					// Passives added in V9.
-					List<PassiveEntity> passives = List.of();
+					// Passives added in V9, extracted from empty item inventory slots.
+					List<PassiveEntity> convertedPassives = _convertCuboidPre9(env, currentGameMillis, cuboid, address.getBase());
+					List<PassiveEntity> passives = (null != convertedPassives)
+						? convertedPassives
+						: List.of()
+					;
 					
 					// This should be fully read.
 					Assert.assertTrue(!buffer.hasRemaining());
@@ -701,8 +730,12 @@ public class ResourceLoader
 					Map<BlockAddress, Long> periodicMutations = new HashMap<>();
 					_background_splitMutations(pendingMutations, periodicMutations, context);
 					
-					// Passives added in V9.
-					List<PassiveEntity> passives = List.of();
+					// Passives added in V9, extracted from empty item inventory slots.
+					List<PassiveEntity> convertedPassives = _convertCuboidPre9(env, currentGameMillis, cuboid, address.getBase());
+					List<PassiveEntity> passives = (null != convertedPassives)
+						? convertedPassives
+						: List.of()
+					;
 					
 					// This should be fully read.
 					Assert.assertTrue(!buffer.hasRemaining());
@@ -1244,5 +1277,51 @@ public class ResourceLoader
 	{
 		String fileName = "config.tablist";
 		return new File(saveDirectory, fileName);
+	}
+
+	// NOTE:  This will modify input and return the extracted passives or null, if there weren't any and input was unchanged.
+	private List<PassiveEntity> _convertCuboidPre9(Environment env, long currentGameMillis, CuboidData input, AbsoluteLocation baseLocation)
+	{
+		List<BlockAddress> toClear = new ArrayList<>();
+		List<PassiveEntity> passives = new ArrayList<>();
+		input.walkData(AspectRegistry.INVENTORY, new IOctree.IWalkerCallback<Inventory>() {
+			@Override
+			public void visit(BlockAddress base, byte size, Inventory value)
+			{
+				short blockNumber = input.getData15(AspectRegistry.BLOCK, base);
+				Block block = env.blocks.fromItem(env.items.ITEMS_BY_TYPE[blockNumber]);
+				int inventorySize = env.stations.getNormalInventorySize(block);
+				if (0 == inventorySize)
+				{
+					// This must be an empty inventory so convert its contents to passives.
+					PassiveType type = PassiveType.ITEM_SLOT;
+					EntityLocation passiveLocation = baseLocation.relativeForBlock(base).toEntityLocation();
+					EntityLocation passiveVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+					for (Integer key : value.sortedKeys())
+					{
+						ItemSlot slot = value.getSlotForKey(key);
+						PassiveEntity passive = new PassiveEntity(ResourceLoader.this.passiveIdAssigner.next()
+							, type
+							, passiveLocation
+							, passiveVelocity
+							, slot
+							, currentGameMillis
+						);
+						passives.add(passive);
+					}
+					toClear.add(base);
+				}
+			}
+		}, null);
+		
+		// Clear out these inventory slots.
+		for (BlockAddress address : toClear)
+		{
+			input.setDataSpecial(AspectRegistry.INVENTORY, address, null);
+		}
+		return passives.isEmpty()
+			? null
+			: passives
+		;
 	}
 }
