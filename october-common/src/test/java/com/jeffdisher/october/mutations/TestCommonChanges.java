@@ -154,20 +154,29 @@ public class TestCommonChanges
 		{
 			context = _createNextTick(context, 50L);
 			_stand(context, newEntity);
-			TickUtils.endOfTick(context, newEntity);
+			if (TickUtils.canApplyEnvironmentalDamageInTick(context))
+			{
+				TickUtils.applyEnvironmentalDamage(context, newEntity);
+			}
 			Assert.assertTrue(newEntity.newLocation.z() > 0.0f);
 		}
 		// The next step puts us back on the ground.
 		context = _createNextTick(context, 100L);
 		_stand(context, newEntity);
-		TickUtils.endOfTick(context, newEntity);
+		if (TickUtils.canApplyEnvironmentalDamageInTick(context))
+		{
+			TickUtils.applyEnvironmentalDamage(context, newEntity);
+		}
 		Assert.assertEquals(0.0f, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(0.0f, newEntity.newVelocity.z(), 0.01f);
 		
 		// Fall one last time to finalize "impact".
 		context = _createNextTick(context, 100L);
 		_stand(context, newEntity);
-		TickUtils.endOfTick(context, newEntity);
+		if (TickUtils.canApplyEnvironmentalDamageInTick(context))
+		{
+			TickUtils.applyEnvironmentalDamage(context, newEntity);
+		}
 		Assert.assertEquals(0.0f, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(0.0f, newEntity.newVelocity.z(), 0.01f);
 	}
@@ -484,7 +493,10 @@ public class TestCommonChanges
 			context = _createNextTick(context, context.millisPerTick);
 			Assert.assertTrue(craft.applyChange(context, newEntity));
 			_stand(context, newEntity);
-			TickUtils.endOfTick(context, newEntity);
+			if (TickUtils.canApplyEnvironmentalDamageInTick(context))
+			{
+				TickUtils.applyEnvironmentalDamage(context, newEntity);
+			}
 		}
 		Assert.assertEquals(14.61f, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(-9.8, newEntity.newVelocity.z(), 0.01f);
@@ -1721,7 +1733,10 @@ public class TestCommonChanges
 		
 		// Try a few ticks to see how our motion changes - the specific values are derived from how we implement _stand, so they aren't too important.
 		_stand(context, newEntity);
-		TickUtils.endOfTick(context, newEntity);
+		if (TickUtils.canApplyEnvironmentalDamageInTick(context))
+		{
+			TickUtils.applyEnvironmentalDamage(context, newEntity);
+		}
 		Assert.assertEquals(5.25f, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(2.45f, newEntity.newVelocity.z(), 0.01f);
 		// See how long it takes for the viscosity to slow us and gravity to act on us until we start to descend.
@@ -1729,7 +1744,10 @@ public class TestCommonChanges
 		while (newEntity.newVelocity.z() > 0.0f)
 		{
 			_stand(context, newEntity);
-			TickUtils.endOfTick(context, newEntity);
+			if (TickUtils.canApplyEnvironmentalDamageInTick(context))
+			{
+				TickUtils.applyEnvironmentalDamage(context, newEntity);
+			}
 			ticks += 1;
 		}
 		// Verify the expected tick count, location, and velocity (experimentally derived).

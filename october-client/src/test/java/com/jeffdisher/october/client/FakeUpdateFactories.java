@@ -59,7 +59,10 @@ public class FakeUpdateFactories
 		MutableEntity newEntity = MutableEntity.existing(entity);
 		mutation.applyChange(context, newEntity);
 		// We also need the corresponding end of tick.
-		TickUtils.endOfTick(context, newEntity);
+		if (TickUtils.canApplyEnvironmentalDamageInTick(context))
+		{
+			TickUtils.applyEnvironmentalDamage(context, newEntity);
+		}
 		return new MutationEntitySetEntity(newEntity.freeze());
 	}
 

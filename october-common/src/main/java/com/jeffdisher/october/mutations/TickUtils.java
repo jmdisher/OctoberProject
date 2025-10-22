@@ -39,23 +39,6 @@ public class TickUtils
 		// There is no need to instantiate this.
 	}
 
-	public static void endOfTick(TickProcessingContext context, IMutableMinimalEntity newEntity)
-	{
-		// Note that we handle food/starvation in EntityChangePeriodic, since it is specific to player entities, but we handle breath/drowning here, since it is common.
-		
-		// We will only apply the breath mechanics once per second so see if that is this tick.
-		// Note that currentTick is set to 0 when running speculatively on the client so skip it there (always >0 when run on server).
-		if (context.currentTick > 0L)
-		{
-			long ticksPerInterval = (MiscConstants.DAMAGE_ENVIRONMENT_CHECK_MILLIS / context.millisPerTick);
-			boolean isBeginningOfSecond = (0 == (context.currentTick % ticksPerInterval));
-			if (isBeginningOfSecond)
-			{
-				_applyEndOfTickBreathAndDamage(context, newEntity);
-			}
-		}
-	}
-
 	/**
 	 * Calculates the damage to apply based on the loss of falling velocity.
 	 * TODO:  This currently assumes the given value is negative but it should be a threshold in all directions.
@@ -68,10 +51,40 @@ public class TickUtils
 		return _calculateFallDamage(deceleration);
 	}
 
-
-	private static void _applyEndOfTickBreathAndDamage(TickProcessingContext context, IMutableMinimalEntity newEntity)
+	/**
+	 * Checks whether this tick is one where periodic environmental damage should be applied.  "Environmental damage"
+	 * includes things like drowning, burning, and block damage.
+	 * Note that this explicitly avoids cases where the currentTick is 0 since that tick number never appears on the
+	 * server.
+	 * 
+	 * @param context The current tick context.
+	 * @return True if environmental damage should be applied.
+	 */
+	public static boolean canApplyEnvironmentalDamageInTick(TickProcessingContext context)
 	{
-		// Note that we handle food/starvation in EntityChangePeriodic, since it is specific to player entities, but we handle breath/drowning here, since it is common.
+		// Environmental damage (breath/drowning/burning) is only applied periodically so check that here.
+		
+		// We will only apply the breath mechanics once per second so see if that is this tick.
+		// Note that currentTick is set to 0 when running speculatively on the client so skip it there (always >0 when run on server).
+		boolean shouldApply = false;
+		if (context.currentTick > 0L)
+		{
+			long ticksPerInterval = (MiscConstants.DAMAGE_ENVIRONMENT_CHECK_MILLIS / context.millisPerTick);
+			shouldApply = (0 == (context.currentTick % ticksPerInterval));
+		}
+		return shouldApply;
+	}
+
+	/**
+	 * Applies end of tick "environmental damage" (that is, things like drowning, burning, and block damage).
+	 * NOTE:  This is expected to be called only on ticks where canApplyEnvironmentalDamageInTick() returns true.
+	 * 
+	 * @param context The current tick context.
+	 * @param newEntity The entity to process.
+	 */
+	public static void applyEnvironmentalDamage(TickProcessingContext context, IMutableMinimalEntity newEntity)
+	{
+		// Note that we handle food/starvation in EntityActionPeriodic, since it is specific to player entities, but we handle breath/drowning/burning here, since it is common.
 		BlockProxy headProxy = _getHeadProxy(context, newEntity);
 		if (null != headProxy)
 		{
@@ -114,6 +127,7 @@ public class TickUtils
 			}
 		}
 	}
+
 
 	private static byte _calculateFallDamage(float deceleration)
 	{

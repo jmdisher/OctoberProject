@@ -69,7 +69,8 @@ public class TestTickUtils
 		MutableEntity player = MutableEntity.createForTest(1);
 		player.newBreath = 0;
 		player.newHealth = startHealth;
-		TickUtils.endOfTick(context, player);
+		Assert.assertTrue(TickUtils.canApplyEnvironmentalDamageInTick(context));
+		TickUtils.applyEnvironmentalDamage(context, player);
 		Assert.assertEquals(0, player.newBreath);
 		Assert.assertEquals(startHealth - MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND, player.newHealth);
 		Assert.assertEquals(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.SUFFOCATION, player.newLocation.getBlockLocation(), player.getId(), 0), out_events[0]);
@@ -101,7 +102,8 @@ public class TestTickUtils
 		MutableEntity player = MutableEntity.createForTest(1);
 		player.newBreath = startBreath;
 		player.newHealth = startHealth;
-		TickUtils.endOfTick(context, player);
+		Assert.assertTrue(TickUtils.canApplyEnvironmentalDamageInTick(context));
+		TickUtils.applyEnvironmentalDamage(context, player);
 		Assert.assertEquals(startBreath - MiscConstants.SUFFOCATION_BREATH_PER_SECOND, player.newBreath);
 		Assert.assertEquals(startHealth - 10, player.newHealth);
 		Assert.assertEquals(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.BLOCK_DAMAGE, player.newLocation.getBlockLocation(), player.getId(), 0), out_events[0]);
@@ -136,7 +138,8 @@ public class TestTickUtils
 		MutableEntity player = MutableEntity.createForTest(1);
 		player.newHealth = startHealth;
 		player.newLocation = platform.getRelative(0, 0, 1).toEntityLocation();
-		TickUtils.endOfTick(context, player);
+		Assert.assertTrue(TickUtils.canApplyEnvironmentalDamageInTick(context));
+		TickUtils.applyEnvironmentalDamage(context, player);
 		Assert.assertEquals(startHealth - MiscConstants.FIRE_DAMAGE_PER_SECOND, player.newHealth);
 		Assert.assertEquals(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.BLOCK_DAMAGE, player.newLocation.getBlockLocation(), player.getId(), 0), out_events[0]);
 	}

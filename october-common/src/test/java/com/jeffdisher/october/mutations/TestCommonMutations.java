@@ -699,7 +699,10 @@ public class TestCommonMutations
 				.eventSink(new _Events())
 				.finish();
 		
-		TickUtils.endOfTick(context, entity);
+		if (TickUtils.canApplyEnvironmentalDamageInTick(context))
+		{
+			TickUtils.applyEnvironmentalDamage(context, entity);
+		}
 		Assert.assertEquals((byte)1, entity.getBreath());
 		Assert.assertEquals((byte)(2 * MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND), entity.getHealth());
 		
@@ -736,13 +739,19 @@ public class TestCommonMutations
 				.eventSink(events)
 				.finish();
 		
-		TickUtils.endOfTick(context, entity);
+		if (TickUtils.canApplyEnvironmentalDamageInTick(context))
+		{
+			TickUtils.applyEnvironmentalDamage(context, entity);
+		}
 		Assert.assertEquals((byte)0, entity.getBreath());
 		Assert.assertEquals((byte)(2 * MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND), entity.getHealth());
 		
 		// Run again to show the damage taken.
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.SUFFOCATION, entity.newLocation.getBlockLocation(), entity.getId(), 0));
-		TickUtils.endOfTick(context, entity);
+		if (TickUtils.canApplyEnvironmentalDamageInTick(context))
+		{
+			TickUtils.applyEnvironmentalDamage(context, entity);
+		}
 		Assert.assertEquals((byte)0, entity.getBreath());
 		Assert.assertEquals(MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND, entity.getHealth());
 	}

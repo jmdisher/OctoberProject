@@ -106,7 +106,10 @@ public class EnginePlayers
 		// See if we need to "nudge" anyone this tick.
 		NudgeHelpers.nudgeAsPlayer(Environment.getShared(), context, entityCollection, entity);
 		// Perform common end of tick processing.
-		TickUtils.endOfTick(context, mutable);
+		if (TickUtils.canApplyEnvironmentalDamageInTick(context))
+		{
+			TickUtils.applyEnvironmentalDamage(context, mutable);
+		}
 		
 		// If there was a change, we want to send it back so that the snapshot can be updated and clients can be informed.
 		// This freeze() call will return the original instance if it is identical.
