@@ -1,6 +1,5 @@
 package com.jeffdisher.october.logic;
 
-import java.util.Iterator;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -92,7 +91,7 @@ public class EntityMovementHelpers
 	 */
 	public static AbsoluteLocation checkTypeIntersection(EntityLocation entityBase, EntityVolume volume, Predicate<AbsoluteLocation> predicate)
 	{
-		_VolumeIterator iterator = _iteratorForEntity(entityBase, volume);
+		VolumeIterator iterator = new VolumeIterator(entityBase, volume);
 		
 		AbsoluteLocation match = null;
 		for (AbsoluteLocation loc : iterator)
@@ -194,7 +193,7 @@ public class EntityMovementHelpers
 
 	private static float _maxViscosityInEntityBlocks(EntityLocation entityBase, EntityVolume volume, IViscosityLookup helper, boolean fromAbove)
 	{
-		_VolumeIterator iterator = _iteratorForEntity(entityBase, volume);
+		VolumeIterator iterator = new VolumeIterator(entityBase, volume);
 		
 		float maxViscosity = 0.0f;
 		for (AbsoluteLocation loc : iterator)
@@ -373,18 +372,6 @@ public class EntityMovementHelpers
 		}
 	}
 
-	private static _VolumeIterator _iteratorForEntity(EntityLocation entityBase, EntityVolume volume)
-	{
-		EntityLocation entityEdge = new EntityLocation(entityBase.x() + volume.width()
-			, entityBase.y() + volume.width()
-			, entityBase.z() + volume.height()
-		);
-		AbsoluteLocation baseBlock = entityBase.getBlockLocation();
-		AbsoluteLocation edgeBlock = entityEdge.getBlockLocation();
-		
-		return new _VolumeIterator(baseBlock, edgeBlock);
-	}
-
 	private static float _clampByAirTerminal(float v)
 	{
 		float out;
@@ -509,67 +496,4 @@ public class EntityMovementHelpers
 	 * The location is provided directly but the velocity is kept as components in case it must be further processed.
 	 */
 	public static record HighLevelMovementResult(EntityLocation location, float vX, float vY, float vZ) {}
-
-
-	private static class _VolumeIterator implements Iterable<AbsoluteLocation>
-	{
-		private final AbsoluteLocation _start;
-		private final AbsoluteLocation _end;
-		
-		public _VolumeIterator(AbsoluteLocation start, AbsoluteLocation end)
-		{
-			_start = start;
-			_end = end;
-		}
-		
-		@Override
-		public Iterator<AbsoluteLocation> iterator()
-		{
-			return new Iterator<>() {
-				private final int _startX = _start.x();
-				private final int _startY = _start.y();
-				private final int _startZ = _start.z();
-				private final int _endX = _end.x();
-				private final int _endY = _end.y();
-				private final int _endZ = _end.z();
-				private int _x = _startX;
-				private int _y = _startY;
-				private int _z = _startZ;
-				
-				@Override
-				public boolean hasNext()
-				{
-					return (_x <= _endX) && (_y <= _endY) && (_z <= _endZ);
-				}
-				
-				@Override
-				public AbsoluteLocation next()
-				{
-					AbsoluteLocation next;
-					if ((_x <= _endX) && (_y <= _endY) && (_z <= _endZ))
-					{
-						next = new AbsoluteLocation(_x, _y, _z);
-					}
-					else
-					{
-						// This would be a failure of hasNext().
-						throw Assert.unreachable();
-					}
-					
-					_x += 1;
-					if (_x > _endX)
-					{
-						_x = _startX;
-						_y += 1;
-						if (_y > _endY)
-						{
-							_y = _startY;
-							_z += 1;
-						}
-					}
-					return next;
-				}
-			};
-		}
-	}
 }
