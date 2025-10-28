@@ -17,6 +17,7 @@ import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -24,6 +25,7 @@ import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
+import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -265,8 +267,8 @@ public class CommonBlockMutationHelpers
 	/**
 	 * Handles the complex idiom of breaking a block:
 	 * 1) Determine the appropriate block to put in its place (potentially scheduling liquid movement).
-	 * 2) Drop any inventory on the ground.
-	 * 3) Determine the block type and add it to the inventory or send it back to the entity.
+	 * 2) Drop any inventory on the ground as passives.
+	 * 3) Determine the block type and drop it to the ground as a passive or send it back to the entity.
 	 * 4) Determine if any fires need to start or spread (never, in this case).
 	 * 5) Schedule the inventory to fall into a lower block, if applicable.
 	 * 
@@ -288,11 +290,11 @@ public class CommonBlockMutationHelpers
 			context.mutationSink.future(new MutationBlockLiquidFlowInto(location), millisDelay);
 		}
 		
-		// Create the inventory for this type.
-		// None of the broken blocks are "active".
-		boolean isActive = false;
-		MutableInventory newInventory = new MutableInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, emptyBlock, isActive));
-		_fillInventoryFromBlockWithoutLimit(newInventory, proxy);
+		// We will populate a MutableInventory (since it can collect like types) and then walk this union of all
+		// drops to generate passives.
+		// NOTE:  This approach assumes that a flowing block CANNOT also have an inventory.
+		MutableInventory tempInventory = new MutableInventory(Inventory.start(Integer.MAX_VALUE).finish());
+		_fillInventoryFromBlockWithoutLimit(tempInventory, proxy);
 		
 		// We are going to break this block so see if we should send it back to an entity.
 		// (note that we drop the existing inventory on the ground, either way).
@@ -314,23 +316,17 @@ public class CommonBlockMutationHelpers
 			else
 			{
 				// Just drop this in the target location.
-				_populateInventoryWhenBreakingBlock(env, context, newInventory, block);
+				_populateInventoryWhenBreakingBlock(env, context, tempInventory, block);
 			}
 		}
 		
-		// Break the block and replace it with the empty type, storing the inventory into it (may be over-filled).
 		// NOTE:  We use this common helper just as a consistent idiom but setting to air never starts fires.
 		// This isn't an explicit block placement, so it has no direction.
 		OrientationAspect.Direction outputDirection = null;
 		_setBlockCheckingFire(env, context, location, proxy, emptyBlock, outputDirection);
-		Inventory inventory = newInventory.freeze();
-		proxy.setInventory(inventory);
 		
-		// See if the inventory should drop from this block.
-		if (inventory.currentEncumbrance > 0)
-		{
-			_dropInventoryDownIfNeeded(context, location, proxy);
-		}
+		// Spawn any related passives from the dropped blocks.
+		_dropTempInventoryAsPassives(context, location, tempInventory);
 	}
 
 
@@ -627,6 +623,18 @@ public class CommonBlockMutationHelpers
 		for (Item dropped : _getItemsDroppedWhenBreakingBlock(env, context, block))
 		{
 			out_inventory.addItemsAllowingOverflow(dropped, 1);
+		}
+	}
+
+	private static void _dropTempInventoryAsPassives(TickProcessingContext context, AbsoluteLocation location, MutableInventory tempInventory)
+	{
+		Inventory frozen = tempInventory.freeze();
+		EntityLocation passiveLocation = location.toEntityLocation();
+		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		for (Integer key : frozen.sortedKeys())
+		{
+			ItemSlot slot = frozen.getSlotForKey(key);
+			context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, passiveLocation, velocity, slot);
 		}
 	}
 }

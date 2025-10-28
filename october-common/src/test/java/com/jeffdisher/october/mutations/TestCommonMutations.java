@@ -36,6 +36,7 @@ import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.IEntityAction;
@@ -48,6 +49,8 @@ import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
+import com.jeffdisher.october.types.PassiveEntity;
+import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
@@ -92,6 +95,7 @@ public class TestCommonMutations
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		_Events events = new _Events();
+		List<PassiveEntity> out_passives = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
 						return cuboidAddress.equals(location.getCuboidAddress())
@@ -100,6 +104,17 @@ public class TestCommonMutations
 						;
 					}, null, null)
 				.eventSink(events)
+				.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+					long lastAliveMillis = 1000L;
+					PassiveEntity passive = new PassiveEntity(out_passives.size() + 1
+						, type
+						, location
+						, velocity
+						, extendedData
+						, lastAliveMillis
+					);
+					out_passives.add(passive);
+				})
 				.finish()
 		;
 		events.expected(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, target, 0, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY));
@@ -108,9 +123,11 @@ public class TestCommonMutations
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
-		Inventory inv = proxy.getInventory();
-		Assert.assertEquals(1, inv.sortedKeys().size());
-		Assert.assertEquals(1, inv.getCount(STONE_ITEM));
+		Assert.assertEquals(1, out_passives.size());
+		Assert.assertEquals(target.toEntityLocation(), out_passives.get(0).location());
+		ItemSlot firstSlot = (ItemSlot)out_passives.get(0).extendedData();
+		Assert.assertEquals(STONE_ITEM, firstSlot.getType());
+		Assert.assertEquals(1, firstSlot.getCount());
 	}
 
 	@Test
@@ -243,6 +260,7 @@ public class TestCommonMutations
 		
 		_Events events = new _Events();
 		List<IMutationBlock> out_mutation = new ArrayList<>();
+		List<PassiveEntity> out_passives = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
@@ -259,6 +277,17 @@ public class TestCommonMutations
 							return true;
 						}
 					}, null)
+				.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+					long lastAliveMillis = 1000L;
+					PassiveEntity passive = new PassiveEntity(out_passives.size() + 1
+						, type
+						, location
+						, velocity
+						, extendedData
+						, lastAliveMillis
+					);
+					out_passives.add(passive);
+				})
 				.eventSink(events)
 				.finish()
 		;
@@ -272,9 +301,9 @@ public class TestCommonMutations
 		
 		// This should cause a delayed water flow so we should see air there until the next update.
 		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
-		Assert.assertEquals(2, out_mutation.size());
+		Assert.assertEquals(1, out_mutation.size());
+		Assert.assertEquals(1, out_passives.size());
 		Assert.assertTrue(out_mutation.get(0) instanceof MutationBlockLiquidFlowInto);
-		Assert.assertTrue(out_mutation.get(1) instanceof MutationBlockStoreItems);
 		IMutationBlock internal = out_mutation.get(0);
 		out_mutation.clear();
 		proxy = new MutableBlockProxy(target, cuboid);
@@ -1586,11 +1615,13 @@ public class TestCommonMutations
 		// A test to show that the special slot contents of a pedestal drop in the world.
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 1);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
-		Block pedestalBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.pedestal"));
+		Item pedestalItem = ENV.items.getItemById("op.pedestal");
+		Block pedestalBlock = ENV.blocks.fromItem(pedestalItem);
 		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
 		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), pedestalBlock.item().number());
 		cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, target.getBlockAddress(), ItemSlot.fromStack(new Items(STONE_ITEM, 2)));
 		
+		List<PassiveEntity> out_passives = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation blockLocation) -> {
 				return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
@@ -1601,6 +1632,17 @@ public class TestCommonMutations
 				{
 				}
 			})
+			.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+				long lastAliveMillis = 1000L;
+				PassiveEntity passive = new PassiveEntity(out_passives.size() + 1
+					, type
+					, location
+					, velocity
+					, extendedData
+					, lastAliveMillis
+				);
+				out_passives.add(passive);
+			})
 			.finish()
 		;
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
@@ -1610,9 +1652,15 @@ public class TestCommonMutations
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
-		Inventory inv = cuboid.getDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress());
-		Assert.assertEquals(1, inv.getCount(pedestalBlock.item()));
-		Assert.assertEquals(2, inv.getCount(STONE_ITEM));
+		Assert.assertEquals(2, out_passives.size());
+		Assert.assertEquals(target.toEntityLocation(), out_passives.get(0).location());
+		Assert.assertEquals(target.toEntityLocation(), out_passives.get(1).location());
+		ItemSlot firstSlot = (ItemSlot)out_passives.get(0).extendedData();
+		ItemSlot secondSlot = (ItemSlot)out_passives.get(1).extendedData();
+		Assert.assertEquals(STONE_ITEM, firstSlot.getType());
+		Assert.assertEquals(2, firstSlot.getCount());
+		Assert.assertEquals(pedestalItem, secondSlot.getType());
+		Assert.assertEquals(1, secondSlot.getCount());
 	}
 
 	@Test

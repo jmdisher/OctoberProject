@@ -1350,9 +1350,8 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(5L, commit5);
 		proxy = new BlockProxy(blockLocation, listener.lastData);
 		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
-		Assert.assertEquals(2, proxy.getInventory().sortedKeys().size());
-		Assert.assertEquals(1, proxy.getInventory().getCount(STONE_ITEM));
-		Assert.assertEquals(1, proxy.getInventory().getCount(STONE_BRICK_ITEM));
+		// Note that the table inventory will spawn as passives, which aren't synthesized in the projection (remove this when empty inventories are completely removed).
+		Assert.assertEquals(0, proxy.getInventory().currentEncumbrance);
 		Assert.assertEquals(-1, listener.lastHeightMap.getHeight(1, 1));
 		
 		Inventory entityInventory = listener.authoritativeEntityState.inventory();
@@ -1630,9 +1629,8 @@ public class TestSpeculativeProjection
 		}
 		proxy = new BlockProxy(blockLocation, listener.lastData);
 		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
-		Assert.assertEquals(2, proxy.getInventory().sortedKeys().size());
-		Assert.assertEquals(1, proxy.getInventory().getCount(STONE_ITEM));
-		Assert.assertEquals(1, proxy.getInventory().getCount(PLANK_ITEM));
+		// Note that the furnace's various inventories will spawn as passives, which aren't synthesized in the projection (remove this when empty inventories are completely removed).
+		Assert.assertEquals(0, proxy.getInventory().currentEncumbrance);
 		
 		Inventory entityInventory = listener.authoritativeEntityState.inventory();
 		Assert.assertEquals(3, entityInventory.sortedKeys().size());

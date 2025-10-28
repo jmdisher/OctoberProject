@@ -15,12 +15,14 @@ import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
@@ -120,7 +122,9 @@ public class FakeUpdateFactories
 				}
 			}
 			, null
-			, null
+			, (PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+				// We don't spawn passives in this case so we just need a non-null handler.
+			}
 			// We will just use 0 as a fixed random value.
 			, (int limit) -> 0
 			, (EventRecord record) -> {}
