@@ -286,7 +286,7 @@ public class Structure
 									cuboid.setData15(AspectRegistry.BLOCK, blockAddress, block.item().number());
 									if (null != aspectData.normalInventory)
 									{
-										Assert.assertTrue((env.stations.getNormalInventorySize(block) > 0) || env.blocks.hasEmptyBlockInventory(block, isActive));
+										Assert.assertTrue(env.stations.getNormalInventorySize(block) > 0);
 										cuboid.setDataSpecial(AspectRegistry.INVENTORY, blockAddress, aspectData.normalInventory);
 									}
 									if (null != aspectData.orientation)
