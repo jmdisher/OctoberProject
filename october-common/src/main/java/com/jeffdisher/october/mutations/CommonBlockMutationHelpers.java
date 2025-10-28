@@ -329,6 +329,21 @@ public class CommonBlockMutationHelpers
 		_dropTempInventoryAsPassives(context, location, tempInventory);
 	}
 
+	/**
+	 * A helper to drop all the items in tempInventory as passives in the block at location.  Note that this doesn't
+	 * check that the passives are allowed to exist in this space and will drop them there, either way.
+	 * This help exists since it is a useful idiom to use MutableInventory to package a large collection of items to
+	 * properly stack the stackable items and just use this as a temporary container.
+	 * 
+	 * @param context The context for looking up blocks and scheduling mutations.
+	 * @param location The location where the inventory should drop.
+	 * @param tempInventory The container of the items to drop on the ground as passives.
+	 */
+	public static void dropTempInventoryAsPassives(TickProcessingContext context, AbsoluteLocation location, MutableInventory tempInventory)
+	{
+		_dropTempInventoryAsPassives(context, location, tempInventory);
+	}
+
 
 	private static void _combineInventory(MutableInventory mutable, Inventory oldInventory)
 	{

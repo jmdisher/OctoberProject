@@ -15,6 +15,7 @@ import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -101,17 +102,16 @@ public class MutationBlockUpdate implements IMutationBlock
 				}
 				else
 				{
-					// Create the inventory for this type.
-					boolean isActive = false;
-					MutableInventory newInventory = new MutableInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, emptyBlock, isActive));
-					CommonBlockMutationHelpers.fillInventoryFromBlockWithoutLimit(newInventory, newBlock);
+					// Create a temporary inventory to drain everything.
+					MutableInventory tempInventory = new MutableInventory(Inventory.start(Integer.MAX_VALUE).finish());
+					CommonBlockMutationHelpers.fillInventoryFromBlockWithoutLimit(tempInventory, newBlock);
+					CommonBlockMutationHelpers.populateInventoryWhenBreakingBlock(env, context, tempInventory, thisBlock);
 					
-					// Add this block's drops to the inventory.
-					CommonBlockMutationHelpers.populateInventoryWhenBreakingBlock(env, context, newInventory, thisBlock);
-					
-					// Break the block and replace it with the empty type, storing the inventory into it (may be over-filled).
+					// Set the actual block type.
 					CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _blockLocation, newBlock, emptyBlock);
-					newBlock.setInventory(newInventory.freeze());
+					
+					// Drop this fake inventory as passives.
+					CommonBlockMutationHelpers.dropTempInventoryAsPassives(context, _blockLocation, tempInventory);
 				}
 				didApply = true;
 			}
