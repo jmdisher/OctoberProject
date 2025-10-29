@@ -6,7 +6,6 @@ import java.util.List;
 
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -121,7 +120,8 @@ public class MutableCreature implements IMutableCreatureEntity
 		EntityLocation entityCentre = SpatialHelpers.getCentreFeetLocation(this);
 		for (Items toDrop : _creature.type().drops())
 		{
-			context.mutationSink.next(new MutationBlockStoreItems(entityCentre.getBlockLocation(), toDrop, null, Inventory.INVENTORY_ASPECT_INVENTORY));
+			// Drop the drops as passives.
+			context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, entityCentre, new EntityLocation(0.0f, 0.0f, 0.0f), ItemSlot.fromStack(toDrop));
 		}
 		this.newHealth = 0;
 	}

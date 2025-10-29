@@ -1693,19 +1693,16 @@ public class TestTickRunner
 		
 		// (run an extra tick to unwrap the entity change)
 		snapshot = runner.startNextTick();
+		Assert.assertEquals(0, snapshot.passives().size());
 		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
 		snapshot = runner.waitForPreviousTick();
 		
-		// We should see the creature is now gone.
+		// We should see the creature is now gone and their drops have appeared as passives.
 		Assert.assertNull(snapshot.creatures().get(creatureId));
-		
-		// Run another tick and we should see their drops.
-		runner.startNextTick();
-		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
-		Inventory blockInventory = snapshot.cuboids().get(address).completed().getDataSpecial(AspectRegistry.INVENTORY, spawn.getBlockAddress());
-		Assert.assertEquals(1, blockInventory.sortedKeys().size());
-		Assert.assertEquals(5, blockInventory.getCount(ENV.items.getItemById("op.beef")));
+		Assert.assertEquals(1, snapshot.passives().size());
+		ItemSlot drop = (ItemSlot)snapshot.passives().values().iterator().next().completed().extendedData();
+		Assert.assertEquals(5, drop.getCount());
+		Assert.assertEquals(ENV.items.getItemById("op.beef"), drop.getType());
 		
 		runner.shutdown();
 	}

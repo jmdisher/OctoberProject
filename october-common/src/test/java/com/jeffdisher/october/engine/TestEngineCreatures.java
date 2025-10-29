@@ -1,5 +1,6 @@
 package com.jeffdisher.october.engine;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +27,6 @@ import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.NudgeHelpers;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.mutations.IMutationBlock;
-import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -51,6 +51,8 @@ import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
+import com.jeffdisher.october.types.PassiveEntity;
+import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.types.TickProcessingContext.IChangeSink;
@@ -107,6 +109,7 @@ public class TestEngineCreatures
 		IMutationBlock[] mutationHolder = new IMutationBlock[1];
 		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
 		_Events events = new _Events();
+		List<PassiveEntity> out_passives = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid), null, null)
@@ -125,6 +128,15 @@ public class TestEngineCreatures
 					}
 				}, null)
 				.eventSink(events)
+				.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+					out_passives.add(new PassiveEntity(out_passives.size() + 1
+						, type
+						, location
+						, velocity
+						, extendedData
+						, 1000L
+					));
+				})
 				.finish()
 		;
 		int sourceId = 1;
@@ -138,7 +150,7 @@ public class TestEngineCreatures
 		
 		Assert.assertNull(result.updatedEntity());
 		// This is a cow so we should see it drop an item.
-		Assert.assertTrue(mutationHolder[0] instanceof MutationBlockStoreItems);
+		Assert.assertEquals(1, out_passives.size());
 	}
 
 	@Test
