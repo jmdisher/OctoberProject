@@ -117,12 +117,11 @@ public class PlantHelpers
 		Block leaf = env.blocks.fromItem(env.items.getItemById("op.leaf"));
 		// Replace this with a log and leaf blocks.
 		// TODO:  Figure out how to make more interesting trees.
+		
+		// We assume that the plant doesn't have an inventory so it can be replaced.
 		Inventory inventoryToMove = CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, context, location, newBlock, log);
-		if (null != inventoryToMove)
-		{
-			// Since we know we are placing a block above this one, skip trying to drop the inventory there.
-			CommonBlockMutationHelpers.pushInventoryToNeighbour(env, context, location, inventoryToMove, true);
-		}
+		Assert.assertTrue(null == inventoryToMove);
+		
 		_tryScheduleBlockOverwrite(env, context, location,  log,  0,  0,  1);
 		_tryScheduleBlockOverwrite(env, context, location, leaf, -1,  0,  1);
 		_tryScheduleBlockOverwrite(env, context, location, leaf,  1,  0,  1);

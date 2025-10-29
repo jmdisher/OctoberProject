@@ -160,22 +160,6 @@ public class CommonBlockMutationHelpers
 	}
 
 	/**
-	 * Tries to find a neighbour which isn't a solid block in which to store the given inventoryToMove.  The search
-	 * order is:  Up, North, South, East, West.  If none of those are loaded, non-solid blocks, the inventory is
-	 * silently discarded.
-	 * 
-	 * @param env The environment.
-	 * @param context The context for scheduling the follow-up storage mutations or looking up blocks.
-	 * @param location The location where the inventorytToMove originated.
-	 * @param inventoryToMove The inventory which should be pushed into a neighbouring block.
-	 * @param skipAbove True if we should skip the "up" check (since some cases explicitly know this will fail.
-	 */
-	public static void pushInventoryToNeighbour(Environment env, TickProcessingContext context, AbsoluteLocation location, Inventory inventoryToMove, boolean skipAbove)
-	{
-		_pushInventoryToNeighbour(env, context, location, inventoryToMove, skipAbove);
-	}
-
-	/**
 	 * Checks the blocks around a location where one is being replaced and schedules a liquid flow mutation for the
 	 * future if there should be a flow into that location.
 	 * 

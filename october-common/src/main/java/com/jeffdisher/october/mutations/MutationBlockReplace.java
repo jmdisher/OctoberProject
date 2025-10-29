@@ -10,11 +10,12 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
- * Replaces the block with the new block type, preserving the inventory on the ground, but only if the existing block
- * type is what is expected.  On failure, changes nothing and does nothing.
+ * Replaces the block with the new block type, but only if the existing block type is what is expected.  On failure,
+ * changes nothing and does nothing.
  * NOTE:  This can ONLY be used if both types are the replaceable (this could change in the future but narrows testing
  * surface in the near-term).
  */
@@ -60,11 +61,10 @@ public class MutationBlockReplace implements IMutationBlock
 		if (oldType == _originalType)
 		{
 			Environment env = Environment.getShared();
+			
+			// Since this can only be used on replaceable blocks, we assume that they have no inventory.
 			Inventory inventoryToMove = CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, context, _location, newBlock, _newType);
-			if (null != inventoryToMove)
-			{
-				CommonBlockMutationHelpers.pushInventoryToNeighbour(env, context, _location, inventoryToMove, false);
-			}
+			Assert.assertTrue(null == inventoryToMove);
 			
 			// See if we might need to reflow water (consider if this was a bucket picking up a source).
 			CommonBlockMutationHelpers.scheduleLiquidFlowIfRequired(env, context, _location, oldType, _newType);
