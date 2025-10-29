@@ -7,7 +7,6 @@ import com.jeffdisher.october.mutations.CommonBlockMutationHelpers;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
-import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -91,9 +90,7 @@ public class PlantHelpers
 		if (null != nextPhase)
 		{
 			// Become that next phase.
-			Inventory inventory = CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, context, location, newBlock, nextPhase);
-			// Normal plants should always be able to hold inventories.
-			Assert.assertTrue(null == inventory);
+			CommonBlockMutationHelpers.setBlockCheckingFire(env, context, location, newBlock, nextPhase);
 			// Reschedule if that block is also growable.
 			shouldReschedule = (env.plants.growthDivisor(nextPhase) > 0);
 		}
@@ -118,10 +115,7 @@ public class PlantHelpers
 		// Replace this with a log and leaf blocks.
 		// TODO:  Figure out how to make more interesting trees.
 		
-		// We assume that the plant doesn't have an inventory so it can be replaced.
-		Inventory inventoryToMove = CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, context, location, newBlock, log);
-		Assert.assertTrue(null == inventoryToMove);
-		
+		CommonBlockMutationHelpers.setBlockCheckingFire(env, context, location, newBlock, log);
 		_tryScheduleBlockOverwrite(env, context, location,  log,  0,  0,  1);
 		_tryScheduleBlockOverwrite(env, context, location, leaf, -1,  0,  1);
 		_tryScheduleBlockOverwrite(env, context, location, leaf,  1,  0,  1);

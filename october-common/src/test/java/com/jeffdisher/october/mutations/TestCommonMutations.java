@@ -255,8 +255,6 @@ public class TestCommonMutations
 		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress(), WATER_WEAK.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, down.getBlockAddress(), ENV.special.AIR.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, downOver.getBlockAddress(), ENV.special.AIR.item().number());
-		// We will also store inventory in one of these blocks to show that flowing water doesn't break it.
-		cuboid.setDataSpecial(AspectRegistry.INVENTORY, downOver.getBlockAddress(), Inventory.start(10).addStackable(CHARCOAL_ITEM, 2).finish());
 		
 		_Events events = new _Events();
 		List<IMutationBlock> out_mutation = new ArrayList<>();
@@ -344,7 +342,6 @@ public class TestCommonMutations
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(WATER_WEAK, proxy.getBlock());
-		Assert.assertEquals(2, proxy.getInventory().getCount(CHARCOAL_ITEM));
 	}
 
 	@Test
@@ -382,45 +379,6 @@ public class TestCommonMutations
 		Assert.assertTrue(proxy.didChange());
 		Assert.assertEquals(wheatSeedling, proxy.getBlock());
 		Assert.assertEquals(10000L, proxy.periodicDelayMillis);
-	}
-
-	@Test
-	public void overwriteExistingInventory()
-	{
-		// This is to verify that we don't destroy an existing inventory in this block if we replace it with something which allows entity movement (air-equivalent).
-		Block tilled = ENV.blocks.fromItem(ENV.items.getItemById("op.tilled_soil"));
-		Block wheatSeedling = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_seedling"));
-		int entityId = 1;
-		AbsoluteLocation target = new AbsoluteLocation(5, 5, 5);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
-		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), tilled.item().number());
-		cuboid.setDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(CHARCOAL_ITEM, 1).finish());
-		
-		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(target, wheatSeedling, null, entityId);
-		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
-		_Events events = new _Events();
-		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null, null, null)
-				.sinks(new TickProcessingContext.IMutationSink() {
-						@Override
-						public boolean next(IMutationBlock mutation)
-						{
-							throw new AssertionError("Not expected in test");
-						}
-						@Override
-						public boolean future(IMutationBlock mutation, long millisToDelay)
-						{
-							throw new AssertionError("Not expected in test");
-						}
-					}, null)
-				.eventSink(events)
-				.finish()
-		;
-		events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, target, 0, entityId));
-		Assert.assertTrue(mutation.applyMutation(context, proxy));
-		Assert.assertTrue(proxy.didChange());
-		Assert.assertEquals(wheatSeedling, proxy.getBlock());
-		Assert.assertEquals(1, proxy.getInventory().getCount(CHARCOAL_ITEM));
 	}
 
 	@Test
@@ -518,8 +476,6 @@ public class TestCommonMutations
 		Block wheatYoung = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_young"));
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 0), STONE.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 1), wheatSeedling.item().number());
-		// We will also place inventory in that block to show that growth doesn't destroy it.
-		cuboid.setDataSpecial(AspectRegistry.INVENTORY, BlockAddress.fromInt(1, 1, 1), Inventory.start(10).addStackable(CHARCOAL_ITEM, 2).finish());
 		
 		// First, we want to make sure that the wheat fails to grow due to darkness.
 		TickProcessingContext context = ContextBuilder.build()
@@ -562,7 +518,6 @@ public class TestCommonMutations
 		Assert.assertTrue(proxy.didChange());
 		Assert.assertEquals(wheatYoung, proxy.getBlock());
 		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS, proxy.periodicDelayMillis);
-		Assert.assertEquals(2, proxy.getInventory().getCount(CHARCOAL_ITEM));
 	}
 
 	@Test
@@ -818,59 +773,6 @@ public class TestCommonMutations
 		Assert.assertTrue(repairValid.applyMutation(null, validProxy));
 		Assert.assertEquals((short)0, validProxy.getDamage());
 		Assert.assertFalse(repairValid.applyMutation(null, validProxy));
-	}
-
-	@Test
-	public void inventoryMovesOnOverwrite()
-	{
-		// This is to demonstrate that the inventory in an empty block will move to the block above (on the next tick) when a solid block is written in place.
-		Block dirt = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
-		int entityId = 1;
-		AbsoluteLocation target = new AbsoluteLocation(5, 5, 5);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
-		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), dirt.item().number());
-		cuboid.setDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(CHARCOAL_ITEM, 1).finish());
-		
-		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(target, dirt, null, entityId);
-		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
-		_Events events = new _Events();
-		IMutationBlock[] out_mutation = new IMutationBlock[1];
-		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null, null, null)
-				.sinks(new TickProcessingContext.IMutationSink() {
-						@Override
-						public boolean next(IMutationBlock mutation)
-						{
-							Assert.assertNull(out_mutation[0]);
-							out_mutation[0] = mutation;
-							return true;
-						}
-						@Override
-						public boolean future(IMutationBlock mutation, long millisToDelay)
-						{
-							throw new AssertionError("Not expected in test");
-						}
-					}, null)
-				.eventSink(events)
-				.finish()
-		;
-		events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, target, 0, entityId));
-		Assert.assertTrue(mutation.applyMutation(context, proxy));
-		Assert.assertTrue(proxy.didChange());
-		Assert.assertEquals(dirt, proxy.getBlock());
-		Assert.assertNull(proxy.getInventory());
-		proxy.writeBack(cuboid);
-		
-		AbsoluteLocation above = target.getRelative(0, 0, 1);
-		MutationBlockStoreItems followUp = (MutationBlockStoreItems)out_mutation[0];
-		out_mutation[0] = null;
-		Assert.assertEquals(above, followUp.getAbsoluteLocation());
-		proxy = new MutableBlockProxy(above, cuboid);
-		Assert.assertTrue(followUp.applyMutation(context, proxy));
-		Assert.assertNull(out_mutation[0]);
-		Assert.assertTrue(proxy.didChange());
-		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
-		Assert.assertEquals(1, proxy.getInventory().getCount(CHARCOAL_ITEM));
 	}
 
 	@Test

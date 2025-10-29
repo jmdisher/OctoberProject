@@ -8,9 +8,7 @@ import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
-import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -62,9 +60,7 @@ public class MutationBlockReplace implements IMutationBlock
 		{
 			Environment env = Environment.getShared();
 			
-			// Since this can only be used on replaceable blocks, we assume that they have no inventory.
-			Inventory inventoryToMove = CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, context, _location, newBlock, _newType);
-			Assert.assertTrue(null == inventoryToMove);
+			CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _location, newBlock, _newType);
 			
 			// See if we might need to reflow water (consider if this was a bucket picking up a source).
 			CommonBlockMutationHelpers.scheduleLiquidFlowIfRequired(env, context, _location, oldType, _newType);

@@ -80,8 +80,7 @@ public class MutationBlockPhase2Multi implements IMutationBlock
 		{
 			Block oldType = newBlock.getBlock();
 			
-			// This is not a normal case so we will just destroy the inventory (these cases are unlikely to have an inventory, anyway).
-			CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, context, _location, newBlock, _revertType);
+			CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _location, newBlock, _revertType);
 			
 			// See if we might need to reflow water (if this multi-block failed to be placed in water).
 			CommonBlockMutationHelpers.scheduleLiquidFlowIfRequired(env, context, _location, oldType, _revertType);

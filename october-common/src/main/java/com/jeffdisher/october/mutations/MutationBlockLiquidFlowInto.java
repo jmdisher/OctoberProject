@@ -12,7 +12,6 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -58,9 +57,7 @@ public class MutationBlockLiquidFlowInto implements IMutationBlock
 			Block newType = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, thisBlock);
 			if (newType != thisBlock)
 			{
-				Inventory inv = CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, context, _blockLocation, newBlock, newType);
-				// The inventory should be restored if these are all empty block types.
-				Assert.assertTrue(null == inv);
+				CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _blockLocation, newBlock, newType);
 				thisBlock = newType;
 				didApply = true;
 			}

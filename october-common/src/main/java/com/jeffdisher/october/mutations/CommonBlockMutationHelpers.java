@@ -103,12 +103,7 @@ public class CommonBlockMutationHelpers
 			// Note that failing to place this means that the block will be destroyed and nothing changes.
 			if (blockIsSupported)
 			{
-				// Do the standard inventory handling.
-				Inventory inventoryToMove = _replaceBlockAndRestoreInventory(env, context, location, newBlock, blockType, outputDirection);
-				if (null != inventoryToMove)
-				{
-					_pushInventoryToNeighbour(env, context, location, inventoryToMove, false);
-				}
+				_setBlockCheckingFire(env, context, location, newBlock, blockType, outputDirection);
 				
 				if (env.plants.growthDivisor(blockType) > 0)
 				{
@@ -135,28 +130,6 @@ public class CommonBlockMutationHelpers
 			_scheduleLiquidFlowIfRequired(env, context, location, oldBlock, blockType);
 		}
 		return didApply;
-	}
-
-	/**
-	 * Changes the block type in newBlock to be block, attempting to restore any previous inventory into the new block.
-	 * The inventory is restored if the block type is non-solid (air, plants, etc) or has a standard inventory (chest,
-	 * etc).
-	 * Will return the inventory if it was non-empty and couldn't be restored so that the caller can decide what to do
-	 * with it.
-	 * 
-	 * @param env The environment.
-	 * @param context The context for scheduling any follow-up mutations related to fire.
-	 * @param location The location of newBlock.
-	 * @param newBlock The block to modify.
-	 * @param block The new block type to set.
-	 * @return Null if there was no inventory or if it could be restored (only non-null when there is an inventory this
-	 * helper can't restore).
-	 */
-	public static Inventory replaceBlockAndRestoreInventory(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock, Block block)
-	{
-		// This isn't an explicit block placement, so it has no direction.
-		OrientationAspect.Direction outputDirection = null;
-		return _replaceBlockAndRestoreInventory(env, context, location, newBlock, block, outputDirection);
 	}
 
 	/**
@@ -385,71 +358,6 @@ public class CommonBlockMutationHelpers
 				{
 					inventoryToFill.addNonStackableBestEfforts(oldSlot.nonStackable);
 				}
-			}
-		}
-	}
-
-	private static Inventory _replaceBlockAndRestoreInventory(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock, Block block, OrientationAspect.Direction outputDirection)
-	{
-		// Get the existing inventory (note that this will return an empty inventory if the block type can support an
-		// inventory but there is nothing there).
-		Inventory original = newBlock.getInventory();
-		if ((null != original) && (0 == original.currentEncumbrance))
-		{
-			// We will ignore empty inventories.
-			original = null;
-		}
-		_setBlockCheckingFire(env, context, location, newBlock, block, outputDirection);
-		
-		// If we have an inventory and the block type is either empty with an inventory or a station with an inventory, store there.
-		if ((null != original)
-				&& (env.blocks.hasEmptyBlockInventory(block, FlagsAspect.isSet(newBlock.getFlags(), FlagsAspect.FLAG_ACTIVE))
-						|| (0 != env.stations.getNormalInventorySize(block)))
-		)
-		{
-			// Note that we only want to store the inventory if this block doesn't destroy it.
-			if (0 == env.blocks.getBlockDamage(block))
-			{
-				// We need to restore this since it is an empty block or a normal inventory.
-				newBlock.setInventory(original);
-			}
-			// We have resolved this.
-			original = null;
-		}
-		return original;
-	}
-
-	private static void _pushInventoryToNeighbour(Environment env, TickProcessingContext context, AbsoluteLocation location, Inventory inventoryToMove, boolean skipAbove)
-	{
-		// The inventory must not be empty.
-		Assert.assertTrue(inventoryToMove.currentEncumbrance > 0);
-		
-		// We will try to drop this inventory in the first non-solid block we find in this search order:  Above, North, South, East, West.
-		AbsoluteLocation[] locations = new AbsoluteLocation[] {
-				location.getRelative(0, 0, 1),
-				location.getRelative(0, 1, 0),
-				location.getRelative(0, -1, 0),
-				location.getRelative(1, 0, 0),
-				location.getRelative(-1, 0, 0),
-		};
-		// If none of these can hold it, the inventory will be lost.  Note that we don't check for stations.
-		// Since we send the inventory via a mutation, the block may have changed by the time it gets there,
-		boolean didPlace = false;
-		for (int i = skipAbove ? 1 : 0; !didPlace && (i < locations.length); ++i)
-		{
-			AbsoluteLocation target = locations[i];
-			BlockProxy test = context.previousBlockLookUp.apply(target);
-			if ((null != test) && env.blocks.hasEmptyBlockInventory(test.getBlock(), FlagsAspect.isSet(test.getFlags(), FlagsAspect.FLAG_ACTIVE)))
-			{
-				for (Integer key : inventoryToMove.sortedKeys())
-				{
-					Items stackable = inventoryToMove.getStackForKey(key);
-					NonStackableItem nonStackable = inventoryToMove.getNonStackableForKey(key);
-					// Precisely one of these must be non-null.
-					Assert.assertTrue((null != stackable) != (null != nonStackable));
-					context.mutationSink.next(new MutationBlockStoreItems(target, stackable, nonStackable, Inventory.INVENTORY_ASPECT_INVENTORY));
-				}
-				didPlace = true;
 			}
 		}
 	}
