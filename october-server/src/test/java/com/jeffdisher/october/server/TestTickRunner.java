@@ -291,9 +291,10 @@ public class TestTickRunner
 		// Just add, add, and remove some inventory items.
 		AbsoluteLocation testBlock = new AbsoluteLocation(0, 0, 1);
 		Item stoneItem = STONE_ITEM;
+		Block table = ENV.blocks.fromItem(ENV.items.getItemById("op.crafting_table"));
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
-		cuboid.setData15(AspectRegistry.BLOCK, testBlock.getRelative(0, 0, -1).getBlockAddress(), STONE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, testBlock.getBlockAddress(), table.item().number());
 		
 		// Create a tick runner with a single cuboid and get it running.
 		TickRunner runner = _createTestRunner();
@@ -494,11 +495,9 @@ public class TestTickRunner
 		Assert.assertEquals(ENV.special.AIR, proxy2.getBlock());
 		Assert.assertEquals((short) 0, proxy2.getDamage());
 		
-		// Run another tick to see the item move to the entity inventory (the item should be in the entity inventory, not the ground).
+		// Run another tick to see the item move to the entity inventory.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		Inventory blockInventory = proxy2.getInventory();
-		Assert.assertEquals(0, blockInventory.sortedKeys().size());
 		entity = snapshot.entities().get(entityId).completed();
 		Inventory entityInventory = entity.inventory();
 		Assert.assertEquals(1, entityInventory.getCount(STONE_ITEM));

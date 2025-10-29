@@ -6,9 +6,7 @@ import java.util.Set;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.OrientationAspect;
-import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -25,17 +23,9 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class BlockProxy implements IBlockProxy
 {
-	public static Inventory getDefaultNormalOrEmptyBlockInventory(Environment env, Block block, boolean isActive)
+	public static Inventory getDefaultNormalInventory(Environment env, Block block)
 	{
 		int size = env.stations.getNormalInventorySize(block);
-		if (0 == size)
-		{
-			// If this is 0, it means that it isn't a station so we will also check if this is a block which is "empty".
-			if (env.blocks.hasEmptyBlockInventory(block, isActive))
-			{
-				size = StationRegistry.CAPACITY_BLOCK_EMPTY;
-			}
-		}
 		return (size > 0)
 				? Inventory.start(size).finish()
 				: null
@@ -72,9 +62,7 @@ public class BlockProxy implements IBlockProxy
 		// We can't return null if this block can support one.
 		if (null == inv)
 		{
-			byte flags = _getData7(AspectRegistry.FLAGS);
-			boolean isActive = FlagsAspect.isSet(flags, FlagsAspect.FLAG_ACTIVE);
-			inv = BlockProxy.getDefaultNormalOrEmptyBlockInventory(_env, _cachedBlock, isActive);
+			inv = BlockProxy.getDefaultNormalInventory(_env, _cachedBlock);
 		}
 		return inv;
 	}

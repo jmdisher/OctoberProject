@@ -133,6 +133,7 @@ public class TestCommonMutations
 	@Test
 	public void breakBlockFailure()
 	{
+		// Just shows that nothing happens when we try to break an unbreakable block.
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)1000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
@@ -141,8 +142,6 @@ public class TestCommonMutations
 		Assert.assertFalse(didApply);
 		Assert.assertFalse(proxy.didChange());
 		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
-		Inventory inv = proxy.getInventory();
-		Assert.assertEquals(0, inv.currentEncumbrance);
 	}
 
 	@Test
@@ -184,9 +183,6 @@ public class TestCommonMutations
 		}
 		
 		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
-		// There should be nothing in the block inventory but we should see a change scheduled to store the item into the entity.
-		Inventory inv = proxy.getInventory();
-		Assert.assertEquals(0, inv.sortedKeys().size());
 		Assert.assertEquals(clientId, sinks.nextTargetEntityId);
 		Assert.assertTrue(sinks.nextChange instanceof EntityActionStoreToInventory);
 	}
@@ -819,56 +815,6 @@ public class TestCommonMutations
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
 		Assert.assertTrue(out_mutation[0] instanceof MutationBlockLiquidFlowInto);
-	}
-
-	@Test
-	public void lavaFlowDestroysItems()
-	{
-		// We want to verify what happens in a situation where we expect the water to flow into some gaps after breaking a block.
-		Block lavaSource = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.lava_source"));
-		Block lavaStrong = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.lava_strong"));
-		AbsoluteLocation source = new AbsoluteLocation(15, 15, 15);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(source.getCuboidAddress(), STONE);
-		AbsoluteLocation items = source.getRelative(1, 0, 0);
-		cuboid.setData15(AspectRegistry.BLOCK, source.getBlockAddress(), lavaSource.item().number());
-		cuboid.setData15(AspectRegistry.BLOCK, items.getBlockAddress(), ENV.special.AIR.item().number());
-		cuboid.setDataSpecial(AspectRegistry.INVENTORY, items.getBlockAddress(), Inventory.start(10).addStackable(CHARCOAL_ITEM, 2).finish());
-		
-		_Events events = new _Events();
-		List<IMutationBlock> out_mutation = new ArrayList<>();
-		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
-				.sinks(new TickProcessingContext.IMutationSink() {
-						@Override
-						public boolean next(IMutationBlock mutation)
-						{
-							throw new AssertionError("Not expected in test");
-						}
-						@Override
-						public boolean future(IMutationBlock mutation, long millisToDelay)
-						{
-							out_mutation.add(mutation);
-							return true;
-						}
-					}, null)
-				.eventSink(events)
-				.finish()
-		;
-		
-		MutableBlockProxy proxy = new MutableBlockProxy(items, cuboid);
-		Assert.assertTrue(new MutationBlockUpdate(items).applyMutation(context, proxy));
-		proxy.writeBack(cuboid);
-		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
-		Assert.assertEquals(2, proxy.getInventory().getCount(CHARCOAL_ITEM));
-		Assert.assertEquals(1, out_mutation.size());
-		Assert.assertTrue(out_mutation.get(0) instanceof MutationBlockLiquidFlowInto);
-		MutationBlockLiquidFlowInto internal = (MutationBlockLiquidFlowInto)out_mutation.get(0);
-		out_mutation.clear();
-		Assert.assertTrue(internal.applyMutation(context, proxy));
-		Assert.assertTrue(proxy.didChange());
-		proxy.writeBack(cuboid);
-		Assert.assertEquals(lavaStrong, proxy.getBlock());
-		Assert.assertEquals(0, proxy.getInventory().getCount(CHARCOAL_ITEM));
 	}
 
 	@Test

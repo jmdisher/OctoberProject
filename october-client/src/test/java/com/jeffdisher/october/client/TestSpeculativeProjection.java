@@ -31,7 +31,6 @@ import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
-import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
@@ -49,7 +48,6 @@ import com.jeffdisher.october.subactions.EntityChangePlaceMultiBlock;
 import com.jeffdisher.october.subactions.EntityChangeSendItem;
 import com.jeffdisher.october.subactions.EntitySubActionDropItemsAsPassive;
 import com.jeffdisher.october.subactions.MutationEntityPushItems;
-import com.jeffdisher.october.subactions.MutationEntityRequestItemPickUp;
 import com.jeffdisher.october.subactions.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -663,10 +661,13 @@ public class TestSpeculativeProjection
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		Block table = ENV.blocks.fromItem(CRAFTING_TABLE_ITEM);
 		AbsoluteLocation block1 = new AbsoluteLocation(1, 1, 1);
 		AbsoluteLocation block2 = new AbsoluteLocation(3, 3, 3);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, block1.getBlockAddress(), table.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, block1.getRelative(0, 0, -1).getBlockAddress(), STONE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, block2.getBlockAddress(), table.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, block2.getRelative(0, 0, -1).getBlockAddress(), STONE.item().number());
 		CuboidData serverCuboid = CuboidData.mutableClone(cuboid);
 		projector.applyChangesForServerTick(2L
@@ -1352,7 +1353,6 @@ public class TestSpeculativeProjection
 		proxy = new BlockProxy(blockLocation, listener.lastData);
 		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
 		// Note that the table inventory will spawn as passives, which aren't synthesized in the projection (remove this when empty inventories are completely removed).
-		Assert.assertEquals(0, proxy.getInventory().currentEncumbrance);
 		Assert.assertEquals(-1, listener.lastHeightMap.getHeight(1, 1));
 		
 		Inventory entityInventory = listener.authoritativeEntityState.inventory();
@@ -1411,145 +1411,6 @@ public class TestSpeculativeProjection
 		// There should be no active operation.
 		Assert.assertNull(listener.authoritativeEntityState.localCraftOperation());
 		Assert.assertNull(listener.thisEntityState.localCraftOperation());
-		Assert.assertTrue(listener.events.isEmpty());
-	}
-
-	@Test
-	public void pickUpTwice()
-	{
-		// Create a cuboid with a single item on the ground and try to pick it up twice, showing that the projection is consistent at all points and doesn't duplicate an item.
-		// Test the in-inventory crafting operation.
-		CountingListener listener = new CountingListener();
-		int localEntityId = 1;
-		long currentTimeMillis = 1000L;
-		SpeculativeProjection projector = new SpeculativeProjection(localEntityId, listener, MILLIS_PER_TICK);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		BlockAddress block = BlockAddress.fromInt(0, 0, 0);
-		Inventory inv = Inventory.start(10).addStackable(STONE_ITEM, 1).finish();
-		int stoneKey = inv.getIdOfStackableType(STONE_ITEM);
-		cuboid.setDataSpecial(AspectRegistry.INVENTORY, block, inv);
-		CuboidData serverCuboid = CuboidData.mutableClone(cuboid);
-		Entity entity = MutableEntity.createForTest(localEntityId).freeze();
-		projector.setThisEntity(entity);
-		projector.applyChangesForServerTick(1L
-				, List.of()
-				, List.of()
-				, List.of(cuboid)
-				, null
-				, Collections.emptyMap()
-				, Collections.emptyMap()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, List.of()
-				, 0L
-				, currentTimeMillis
-		);
-		Assert.assertEquals(0, listener.authoritativeEntityState.inventory().currentEncumbrance);
-		Assert.assertEquals(0, listener.thisEntityState.inventory().currentEncumbrance);
-		
-		// Issue the command to pick up the item.
-		AbsoluteLocation location = new AbsoluteLocation(0, 0, 0);
-		int blockInventoryKey = stoneKey;
-		int countRequested = 1;
-		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(location, blockInventoryKey, countRequested, Inventory.INVENTORY_ASPECT_INVENTORY);
-		long commit1 = _wrapAndApply(projector, entity, currentTimeMillis, request);
-		Assert.assertEquals(0, listener.authoritativeEntityState.inventory().currentEncumbrance);
-		Assert.assertEquals(ENV.encumbrance.getEncumbrance(STONE_ITEM), listener.thisEntityState.inventory().currentEncumbrance);
-		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
-		
-		// Apply the commit from the server and show it still works.
-		currentTimeMillis += 100L;
-		int speculative = projector.applyChangesForServerTick(2L
-				, List.of()
-				, List.of()
-				, List.of()
-				, null
-				, Map.of()
-				, Map.of()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, List.of()
-				, commit1
-				, currentTimeMillis
-		);
-		Assert.assertEquals(0, speculative);
-		// (the authoritative copy only made the request and doesn't synthesize the follow-up so it won't have the inventory until the authoritative change arrives).
-		Assert.assertEquals(0, listener.authoritativeEntityState.inventory().currentEncumbrance);
-		Assert.assertEquals(ENV.encumbrance.getEncumbrance(STONE_ITEM), listener.thisEntityState.inventory().currentEncumbrance);
-		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
-		
-		// Now, try to apply it again (this should fail since it won't be able to find the slot to validate the count).
-		Assert.assertEquals(0, _wrapAndApply(projector, entity, currentTimeMillis, request));
-		
-		// Apply another 2 ticks, each with the correct part of the multi-step change and verify that the values still match.
-		MutationBlockExtractItems extract = new MutationBlockExtractItems(location, blockInventoryKey, countRequested, Inventory.INVENTORY_ASPECT_INVENTORY, localEntityId);
-		currentTimeMillis += 100L;
-		speculative = projector.applyChangesForServerTick(3L
-				, List.of()
-				, List.of()
-				, List.of()
-				, null
-				, Map.of()
-				, Map.of()
-				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, extract))
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, List.of()
-				, commit1
-				, currentTimeMillis
-		);
-		Assert.assertEquals(0, speculative);
-		Assert.assertEquals(0, listener.authoritativeEntityState.inventory().currentEncumbrance);
-		Assert.assertEquals(ENV.encumbrance.getEncumbrance(STONE_ITEM), listener.thisEntityState.inventory().currentEncumbrance);
-		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
-		
-		EntityActionStoreToInventory store = new EntityActionStoreToInventory(new Items(STONE_ITEM, 1), null);
-		currentTimeMillis += 100L;
-		speculative = projector.applyChangesForServerTick(4L
-				, List.of()
-				, List.of()
-				, List.of()
-				, FakeUpdateFactories.entityUpdate(Map.of(), listener.authoritativeEntityState, store)
-				, Map.of()
-				, Map.of()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, List.of()
-				, commit1
-				, currentTimeMillis
-		);
-		Assert.assertEquals(0, speculative);
-		Assert.assertEquals(ENV.encumbrance.getEncumbrance(STONE_ITEM), listener.authoritativeEntityState.inventory().currentEncumbrance);
-		Assert.assertEquals(ENV.encumbrance.getEncumbrance(STONE_ITEM), listener.thisEntityState.inventory().currentEncumbrance);
-		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
-		
-		currentTimeMillis += 100L;
-		speculative = projector.applyChangesForServerTick(5L
-				, List.of()
-				, List.of()
-				, List.of()
-				, null
-				, Map.of()
-				, Map.of()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, List.of()
-				, commit1
-				, currentTimeMillis
-		);
-		Assert.assertEquals(0, speculative);
-		Assert.assertEquals(ENV.encumbrance.getEncumbrance(STONE_ITEM), listener.authoritativeEntityState.inventory().currentEncumbrance);
-		Assert.assertEquals(ENV.encumbrance.getEncumbrance(STONE_ITEM), listener.thisEntityState.inventory().currentEncumbrance);
-		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
 		Assert.assertTrue(listener.events.isEmpty());
 	}
 
@@ -1631,7 +1492,6 @@ public class TestSpeculativeProjection
 		proxy = new BlockProxy(blockLocation, listener.lastData);
 		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
 		// Note that the furnace's various inventories will spawn as passives, which aren't synthesized in the projection (remove this when empty inventories are completely removed).
-		Assert.assertEquals(0, proxy.getInventory().currentEncumbrance);
 		
 		Inventory entityInventory = listener.authoritativeEntityState.inventory();
 		Assert.assertEquals(3, entityInventory.sortedKeys().size());
@@ -1644,68 +1504,6 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(2, listener.events.size());
 		Assert.assertEquals(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, location, 0, localEntityId), listener.events.get(0));
 		Assert.assertEquals(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, location, 0, localEntityId), listener.events.get(1));
-	}
-
-	@Test
-	public void breakBlockFullInventory()
-	{
-		// Break a simple block with a full inventory and verify that it drops at your feet.
-		Block dirt = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
-		CountingListener listener = new CountingListener();
-		int entityId = 1;
-		MutableEntity mutable = MutableEntity.createForTest(entityId);
-		int stored = mutable.newInventory.addItemsBestEfforts(dirt.item(), 200);
-		Assert.assertTrue(stored < 200);
-		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
-		
-		AbsoluteLocation targetLocation = new AbsoluteLocation(1, 1, 1);
-		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
-		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress(), dirt.item().number());
-		long currentTimeMillis = 1L;
-		Entity entity = mutable.freeze();
-		projector.setThisEntity(entity);
-		projector.applyChangesForServerTick(1L
-				, List.of()
-				, List.of()
-				, List.of(cuboid)
-				, null
-				, Collections.emptyMap()
-				, Collections.emptyMap()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, List.of()
-				, 0L
-				, currentTimeMillis
-		);
-		Assert.assertEquals(1, listener.loadCount);
-		Assert.assertEquals(0, listener.changeCount);
-		
-		// Break the block and verify it drops at the feet of the entity, not where the block is.
-		int hitsToBreak = (int) (ENV.damage.getToughness(dirt) / MILLIS_PER_TICK);
-		long nextCommit = 1L;
-		int changes = 0;
-		for (int i = 0; i < hitsToBreak; ++i)
-		{
-			currentTimeMillis += 100L;
-			EntityChangeIncrementalBlockBreak blockBreak = new EntityChangeIncrementalBlockBreak(targetLocation);
-			long commit1 = _wrapAndApply(projector, entity, currentTimeMillis, blockBreak);
-			changes += 1;
-			Assert.assertEquals(nextCommit, commit1);
-			Assert.assertEquals(changes, listener.changeCount);
-			nextCommit += 1L;
-		}
-		Assert.assertEquals(ENV.special.AIR.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
-		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()));
-		Inventory feetInventory = listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, mutable.newLocation.getBlockLocation().getBlockAddress());
-		Assert.assertEquals(1, feetInventory.sortedKeys().size());
-		Assert.assertEquals(1, feetInventory.getCount(dirt.item()));
-		
-		// Verify the events.
-		Assert.assertEquals(1, listener.events.size());
-		Assert.assertEquals(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, targetLocation, 0, entityId), listener.events.get(0));
 	}
 
 	@Test
@@ -1844,12 +1642,12 @@ public class TestSpeculativeProjection
 		Assert.assertNotNull(listener.authoritativeEntityState);
 		Assert.assertNotNull(listener.thisEntityState);
 		
-		// Create and add an empty cuboid.
+		// Create and add an empty cuboid with an inventory block.
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		AbsoluteLocation target = new AbsoluteLocation(0, 1, 2);
+		Block table = ENV.blocks.fromItem(ENV.items.getItemById("op.crafting_table"));
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
-		// We are going to try interacting with an inventory so write a solid block under it.
-		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), table.item().number());
 		CuboidData serverCuboid = CuboidData.mutableClone(cuboid);
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(2L
@@ -1869,21 +1667,21 @@ public class TestSpeculativeProjection
 		);
 		Assert.assertEquals(1, listener.loadCount);
 		Assert.assertEquals(0, listener.changeCount);
-		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(1, _countBlocks(listener.lastData, table.item().number()));
 		Assert.assertEquals(Integer.MIN_VALUE, listener.lastHeightMap.getHeight(0, 0));
 		
 		// Apply a single local mutation.
-		ReplaceBlockMutation mutation = new ReplaceBlockMutation(target, ENV.special.AIR.item().number(), STONE_ITEM.number());
+		AbsoluteLocation blockChangeTarget = target.getRelative(0, 1, 0);
+		ReplaceBlockMutation mutation = new ReplaceBlockMutation(blockChangeTarget, ENV.special.AIR.item().number(), STONE_ITEM.number());
 		EntityChangeMutation lone = new EntityChangeMutation(mutation);
 		long commit = _wrapAndApply(projector, entity, currentTimeMillis, lone);
 		Assert.assertEquals(1, listener.changeCount);
-		Assert.assertEquals(2, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
-		Assert.assertTrue(listener.lastChangedBlocks.contains(target.getBlockAddress()));
+		Assert.assertTrue(listener.lastChangedBlocks.contains(blockChangeTarget.getBlockAddress()));
 		Assert.assertEquals(1, listener.lastChangedAspects.size());
 		Assert.assertTrue(listener.lastChangedAspects.contains(AspectRegistry.BLOCK));
-		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
-		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress()));
+		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 2));
 		
 		// Commit an unrelated mutation (from the server) to change the inventory (this is air, so it can hold data and placing the block will overwrite it).
 		MutationBlockStoreItems storeItems = new MutationBlockStoreItems(target, new Items(STONE_ITEM, 1), null, Inventory.INVENTORY_ASPECT_INVENTORY);
@@ -1906,17 +1704,15 @@ public class TestSpeculativeProjection
 		// like there is still an inventory in the block but it will be resolved when the final local change commits.
 		Assert.assertEquals(1, speculativeCount);
 		Assert.assertEquals(2, listener.changeCount);
-		Assert.assertEquals(2, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
 		Assert.assertTrue(listener.lastChangedBlocks.contains(target.getBlockAddress()));
 		Assert.assertEquals(1, listener.lastChangedAspects.size());
 		Assert.assertTrue(listener.lastChangedAspects.contains(AspectRegistry.INVENTORY));
-		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
-		// NOTE:  This inventory will be eventually consistent (logically, should be null as it was over-written locally).
-		Assert.assertNotNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress()));
+		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 2));
 		
 		// Now commit a conflicting change and notice that there is still inconsistency.
-		ReplaceBlockMutation conflict = new ReplaceBlockMutation(target, ENV.special.AIR.item().number(), LOG_ITEM.number());
+		ReplaceBlockMutation conflict = new ReplaceBlockMutation(blockChangeTarget, ENV.special.AIR.item().number(), LOG_ITEM.number());
 		speculativeCount = projector.applyChangesForServerTick(4L
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -1936,12 +1732,11 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, speculativeCount);
 		Assert.assertEquals(3, listener.changeCount);
 		// The local change will be written on top of the authoritative server change but will become eventually consistent.
-		Assert.assertEquals(2, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(0, _countBlocks(listener.lastData, LOG_ITEM.number()));
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
 		Assert.assertEquals(1, listener.lastChangedAspects.size());
-		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
-		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress()));
+		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 2));
 		
 		// Account for the commit level update.
 		speculativeCount = projector.applyChangesForServerTick(5L
@@ -1962,10 +1757,10 @@ public class TestSpeculativeProjection
 		// This should retire the change with no updates but won't become consistent for another tick.
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(3, listener.changeCount);
-		Assert.assertEquals(2, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(0, _countBlocks(listener.lastData, LOG_ITEM.number()));
-		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
-		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress()));
+		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 2));
+		Assert.assertEquals(4, listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress()).currentEncumbrance);
 		Assert.assertTrue(listener.events.isEmpty());
 		
 		// Run another 2 ticks to let the follow-up changes become consistent.
@@ -2002,10 +1797,10 @@ public class TestSpeculativeProjection
 		// Now, we should see another update to make the block consistent.
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(4, listener.changeCount);
-		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(0, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, _countBlocks(listener.lastData, LOG_ITEM.number()));
-		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
-		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress()));
+		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 2));
+		Assert.assertEquals(4, listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress()).currentEncumbrance);
 		Assert.assertTrue(listener.events.isEmpty());
 	}
 

@@ -310,17 +310,17 @@ public class TestCommonChanges
 	@Test
 	public void dropStackbleItems() throws Throwable
 	{
-		// Create an air cuboid and an entity with some items, then try to drop them onto a block.
+		// Create an air cuboid and an entity with some items, then try to drop them into an inventory block.
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
 		Entity original = mutable.freeze();
+		Block table = ENV.blocks.fromItem(ENV.items.getItemById("op.crafting_table"));
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
-		// We need to make sure that there is a solid block under the target location so it doesn't just fall.
-		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
+		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress(), table.item().number());
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
@@ -364,7 +364,7 @@ public class TestCommonChanges
 	@Test
 	public void dropNonStackableItems() throws Throwable
 	{
-		// Create an air cuboid and an entity with an item, then try to drop it onto a block.
+		// Create an air cuboid and an entity with an item, then try to drop it into an inventory a block.
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
@@ -373,10 +373,10 @@ public class TestCommonChanges
 		int idOfPick = 1;
 		mutable.setSelectedKey(idOfPick);
 		Entity original = mutable.freeze();
+		Block table = ENV.blocks.fromItem(ENV.items.getItemById("op.crafting_table"));
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
-		// We need to make sure that there is a solid block under the target location so it doesn't just fall.
-		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
+		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress(), table.item().number());
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
@@ -558,10 +558,11 @@ public class TestCommonChanges
 		mutable2.newInventory.addAllItems(STONE_ITEM, 1);
 		mutable2.setSelectedKey(mutable2.newInventory.getIdOfStackableType(STONE_ITEM));
 		
+		// We will build an air cuboid but place a table where we will run the test.
+		Block table = ENV.blocks.fromItem(ENV.items.getItemById("op.crafting_table"));
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 9);
-		// We need to make sure that there is a solid block under the target location so it doesn't just fall.
-		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
+		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress(), table.item().number());
 		// Fill the inventory.
 		MutableBlockProxy proxy = new MutableBlockProxy(targetLocation, cuboid);
 		MutableInventory mutInv = new MutableInventory(proxy.getInventory());
@@ -1824,7 +1825,7 @@ public class TestCommonChanges
 	@Test
 	public void dropItemsCreative() throws Throwable
 	{
-		// Create an entity in an air block, in creative mode, then drop some of the items and observe the inventory is unchanged.
+		// Create an entity in an inventory block, in creative mode, then drop some of the items and observe the inventory is unchanged.
 		int entityId = 1;
 		Inventory inventory = Inventory.start(StationRegistry.CAPACITY_PLAYER).finish();
 		Entity original = new Entity(entityId
@@ -1845,9 +1846,10 @@ public class TestCommonChanges
 				, MutableEntity.TESTING_LOCATION
 				, Entity.EMPTY_DATA
 		);
+		Block table = ENV.blocks.fromItem(ENV.items.getItemById("op.crafting_table"));
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
-		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
+		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress(), table.item().number());
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
 		// This is a multi-step process which starts by asking the entity to start the 2 drops.
@@ -2095,42 +2097,6 @@ public class TestCommonChanges
 		EntityChangeIncrementalBlockRepair repairValid = new EntityChangeIncrementalBlockRepair(valid);
 		Assert.assertTrue(repairValid.applyChange(holder.context, newEntity));
 		Assert.assertTrue(holder.mutation instanceof MutationBlockIncrementalRepair);
-	}
-
-	@Test
-	public void lavaBucketDestroysItems() throws Throwable
-	{
-		// Show that placing a lava bucket in a block with items will destroy them.
-		Item emptyBucket = ENV.items.getItemById("op.bucket_empty");
-		Item lavaBucket = ENV.items.getItemById("op.bucket_lava");
-		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
-		short lavaSourceItemNumber = ENV.items.getItemById("op.lava_source").number();
-		
-		MutableEntity newEntity = MutableEntity.createForTest(1);
-		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
-		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(lavaBucket, Map.of(PropertyRegistry.DURABILITY, 0)));
-		newEntity.setSelectedKey(1);
-		
-		AbsoluteLocation target = new AbsoluteLocation(6, 0, 10);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), stone);
-		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), ENV.special.AIR.item().number());
-		cuboid.setDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress(), Inventory.start(10).addStackable(CHARCOAL_ITEM, 2).finish());
-		
-		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
-		
-		// Place the lava source.
-		EntityChangeUseSelectedItemOnBlock exchange = new EntityChangeUseSelectedItemOnBlock(target);
-		Assert.assertTrue(exchange.applyChange(holder.context, newEntity));
-		Assert.assertNotNull(holder.mutation);
-		MutationBlockReplace replace = (MutationBlockReplace) holder.mutation;
-		holder.mutation = null;
-		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
-		Assert.assertTrue(replace.applyMutation(holder.context, proxy));
-		proxy.writeBack(cuboid);
-		Assert.assertEquals(0, proxy.getInventory().getCount(CHARCOAL_ITEM));
-		Assert.assertEquals(emptyBucket, newEntity.newInventory.getNonStackableForKey(1).type());
-		Assert.assertEquals(lavaSourceItemNumber, cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
-		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress()));
 	}
 
 	@Test

@@ -94,9 +94,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		// We can't return null if this block can support one.
 		if (null == inv)
 		{
-			byte flags = _getData7(AspectRegistry.FLAGS);
-			boolean isActive = FlagsAspect.isSet(flags, FlagsAspect.FLAG_ACTIVE);
-			inv = BlockProxy.getDefaultNormalOrEmptyBlockInventory(_env, _cachedBlock, isActive);
+			inv = BlockProxy.getDefaultNormalInventory(_env, _cachedBlock);
 		}
 		return inv;
 	}
