@@ -37,21 +37,6 @@ import com.jeffdisher.october.utils.Assert;
 public class CommonBlockMutationHelpers
 {
 	/**
-	 * Checks if the inventory stored in newBlock (which is expected to be an "empty" block type) should fall into the
-	 * block below it, scheduling the appropriate mutations if required.  On return, the newBlock inventory will be
-	 * empty if the function returned true (note that it MUST be non-empty before calling).
-	 * 
-	 * @param context The context.
-	 * @param location The location of newBlock.
-	 * @param newBlock The block being checked and modified.
-	 * @return True if the block below can accept items.
-	 */
-	public static boolean dropInventoryDownIfNeeded(TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
-	{
-		return _dropInventoryDownIfNeeded(context, location, newBlock);
-	}
-
-	/**
 	 * Looks at the blocks around the given location to determine what the correct "empty" block type should be put in
 	 * this location.
 	 * Note that this doesn't account for the current block type in the location so this shouldn't be used if that value
@@ -363,41 +348,6 @@ public class CommonBlockMutationHelpers
 				}
 			}
 		}
-	}
-
-	private static boolean _dropInventoryDownIfNeeded(TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
-	{
-		Environment env = Environment.getShared();
-		
-		// Note that this should ONLY be called if the existing block is "empty".
-		Block blockType = newBlock.getBlock();
-		boolean isActive = FlagsAspect.isSet(newBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
-		Assert.assertTrue(env.blocks.hasEmptyBlockInventory(blockType, isActive));
-		// This should also have a non-empty inventory (otherwise, this shouldn't be called).
-		Assert.assertTrue(newBlock.getInventory().currentEncumbrance > 0);
-		
-		// We now check if the block below this one is also "empty" and will drop the entire inventory into it via mutations.
-		boolean didDropInventory = false;
-		AbsoluteLocation belowLocation = location.getRelative(0, 0, -1);
-		BlockProxy below = context.previousBlockLookUp.apply(belowLocation);
-		if ((null != below) && env.blocks.hasEmptyBlockInventory(below.getBlock(), FlagsAspect.isSet(below.getFlags(), FlagsAspect.FLAG_ACTIVE)))
-		{
-			// We want to drop this inventory into the below block.
-			Inventory inventory = newBlock.getInventory();
-			for (Integer key : inventory.sortedKeys())
-			{
-				Items stackable = inventory.getStackForKey(key);
-				NonStackableItem nonStackable = inventory.getNonStackableForKey(key);
-				// Precisely one of these must be non-null.
-				Assert.assertTrue((null != stackable) != (null != nonStackable));
-				context.mutationSink.next(new MutationBlockStoreItems(belowLocation, stackable, nonStackable, Inventory.INVENTORY_ASPECT_INVENTORY));
-			}
-			
-			// Now, clear the inventory by saving back whatever the default was.
-			newBlock.setInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, blockType, isActive));
-			didDropInventory = true;
-		}
-		return didDropInventory;
 	}
 
 	private static Block _determineEmptyBlockType(TickProcessingContext context, AbsoluteLocation location, Block currentBlock)

@@ -7,7 +7,6 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
@@ -102,56 +101,6 @@ public class TestFallingBehaviour
 		AbsoluteLocation finalLocation = targetLocation.getRelative(0, 0, -2);
 		Inventory blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, finalLocation.getBlockAddress());
 		Assert.assertEquals(1, blockInventory.getCount(STONE_ITEM));
-	}
-
-	@Test
-	public void bottomOfCuboid() throws Throwable
-	{
-		// Create an air cuboid with some items in the bottom block, then load another air cuboid and verify that they fall.
-		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
-		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
-		cuboid.setDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(STONE_ITEM, 2).finish());
-		IMutationBlock[] blockHolder = new IMutationBlock[1];
-		TickProcessingContext context = _createTestContext(cuboid, blockHolder);
-		
-		// Send an update event and verify that nothing happens.
-		MutationBlockUpdate update = new MutationBlockUpdate(targetLocation);
-		MutableBlockProxy proxy = new MutableBlockProxy(targetLocation, cuboid);
-		Assert.assertFalse(update.applyMutation(context, proxy));
-		proxy.writeBack(cuboid);
-		Assert.assertNull(blockHolder[0]);
-		Assert.assertEquals(2, cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()).getCount(STONE_ITEM));
-		
-		// Use a new context with a new cuboid to show that the items fall if updated now.
-		CuboidAddress cuboidAddress1 = CuboidAddress.fromInt(0, 0, -1);
-		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
-		context = ContextBuilder.build()
-				.lookups((AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress())
-						? new BlockProxy(location.getBlockAddress(), cuboid)
-						: cuboidAddress1.equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid1) : null
-					, null, null)
-				.sinks(new TickProcessingContext.IMutationSink() {
-						@Override
-						public boolean next(IMutationBlock mutation)
-						{
-							Assert.assertNull(blockHolder[0]);
-							blockHolder[0] = mutation;
-							return true;
-						}
-						@Override
-						public boolean future(IMutationBlock mutation, long millisToDelay)
-						{
-							throw new AssertionError("Not expected in test");
-						}
-					}, null)
-				.finish()
-		;
-		proxy = new MutableBlockProxy(targetLocation, cuboid);
-		Assert.assertTrue(update.applyMutation(context, proxy));
-		proxy.writeBack(cuboid);
-		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
-		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()));
 	}
 
 

@@ -124,14 +124,6 @@ public class MutationBlockUpdate implements IMutationBlock
 			}
 		}
 		
-		// Check to see if this has an inventory which should fall (an empty block inventory).
-		if (env.blocks.hasEmptyBlockInventory(thisBlock, FlagsAspect.isSet(newBlock.getFlags(), FlagsAspect.FLAG_ACTIVE)) && (newBlock.getInventory().currentEncumbrance > 0))
-		{
-			// We want to say that this did apply if anything happened, including dropping the inventory.
-			didApply = CommonBlockMutationHelpers.dropInventoryDownIfNeeded(context, _blockLocation, newBlock)
-					|| didApply;
-		}
-		
 		// Handle the case where this might be a hopper.
 		if (!didApply && HopperHelpers.isHopper(_blockLocation, newBlock))
 		{

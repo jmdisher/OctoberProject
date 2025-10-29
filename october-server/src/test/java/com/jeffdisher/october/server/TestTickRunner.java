@@ -88,7 +88,6 @@ public class TestTickRunner
 	public static final long MILLIS_PER_TICK = 10L;
 	private static Environment ENV;
 	private static Item STONE_ITEM;
-	private static Item STONE_BRICK_ITEM;
 	private static Item LOG_ITEM;
 	private static Item PLANK_ITEM;
 	private static Item CHARCOAL_ITEM;
@@ -114,7 +113,6 @@ public class TestTickRunner
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");
-		STONE_BRICK_ITEM = ENV.items.getItemById("op.stone_brick");
 		LOG_ITEM = ENV.items.getItemById("op.log");
 		PLANK_ITEM = ENV.items.getItemById("op.plank");
 		CHARCOAL_ITEM = ENV.items.getItemById("op.charcoal");
@@ -940,68 +938,6 @@ public class TestTickRunner
 	}
 
 	@Test
-	public void fallOnUpdate()
-	{
-		// Create a single cuboid and load some items into a block.
-		// Verify that nothing happens until we change a block adjacent to it, and then it updates.
-		WorldConfig config = new WorldConfig();
-		TickRunner runner = _createTestRunnerWithConfig(config);
-		runner.start();
-		
-		// We need an entity to generate the change which will trigger the update.
-		int entityId = 1;
-		MutableEntity mutable = MutableEntity.createForTest(entityId);
-		mutable.newInventory.addAllItems(STONE_BRICK_ITEM, 3);
-		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_BRICK_ITEM));
-		Entity entity = mutable.freeze();
-		
-		// Load the initial cuboid and run a tick to verify nothing happens.
-		AbsoluteLocation startLocation = new AbsoluteLocation(0, 0, 2);
-		CuboidAddress address0 = CuboidAddress.fromInt(0, 0, 0);
-		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
-		cuboid0.setDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(STONE_ITEM, 2).finish());
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, HeightMapHelpers.buildHeightMap(cuboid0), List.of(), List.of(), Map.of(), List.of()))
-				, null
-				, List.of(new SuspendedEntity(entity, List.of()))
-				, null
-		);
-		runner.startNextTick();
-		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(1, snapshot.cuboids().size());
-		Assert.assertEquals(0, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
-		Assert.assertEquals(2, snapshot.cuboids().get(address0).completed().getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()).getCount(STONE_ITEM));
-		
-		// Now, apply a mutation to an adjacent block.
-		AbsoluteLocation targetLocation = startLocation.getRelative(1, 0, 0);
-		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new MutationPlaceSelectedBlock(targetLocation, targetLocation)), 1L);
-		
-		// Run a tick and see MutationBlockOverwrite enqueued.
-		runner.startNextTick();
-		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(1, snapshot.cuboids().size());
-		Assert.assertEquals(1, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
-		Assert.assertTrue(snapshot.cuboids().get(address0).scheduledBlockMutations().get(0).mutation() instanceof MutationBlockOverwriteByEntity);
-		Assert.assertEquals(2, snapshot.cuboids().get(address0).completed().getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()).getCount(STONE_ITEM));
-		
-		// Run another tick and we shouldn't see anything scheduled (since updated don't go through that path).
-		runner.startNextTick();
-		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(1, snapshot.cuboids().size());
-		Assert.assertEquals(0, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
-		Assert.assertEquals(2, snapshot.cuboids().get(address0).completed().getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()).getCount(STONE_ITEM));
-		
-		// Run another tick where we should see the items start falling.
-		runner.startNextTick();
-		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(1, snapshot.cuboids().size());
-		Assert.assertEquals(1, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
-		Assert.assertTrue(snapshot.cuboids().get(address0).scheduledBlockMutations().get(0).mutation() instanceof MutationBlockStoreItems);
-		Assert.assertNull(snapshot.cuboids().get(address0).completed().getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()));
-		
-		runner.shutdown();
-	}
-
-	@Test
 	public void fallAcrossUnload()
 	{
 		// We will load a cuboid which already has a falling item and verify that it continues falling across ticks while being unloaded and reloaded.
@@ -1063,50 +999,6 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
 		// (since the block was never modified, we won't see the updates, only the next mutation)
 		Assert.assertTrue(snapshot.cuboids().values().iterator().next().scheduledBlockMutations().get(0).mutation() instanceof MutationBlockStoreItems);
-		
-		runner.shutdown();
-	}
-
-	@Test
-	public void fallIntoLoadedCuboid()
-	{
-		// Create a world with a single cuboid with some items in the bottom block and run a tick.
-		// Then, load another cuboid below it and observe that the items fall into the new cuboid.
-		WorldConfig config = new WorldConfig();
-		config.shouldSynthesizeUpdatesOnLoad = true;
-		TickRunner runner = _createTestRunnerWithConfig(config);
-		runner.start();
-		
-		// Load the initial cuboid and run a tick to verify nothing happens.
-		AbsoluteLocation startLocation = new AbsoluteLocation(32, 32, 32);
-		CuboidAddress address0 = startLocation.getCuboidAddress();
-		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
-		cuboid0.setDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(STONE_ITEM, 2).finish());
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, HeightMapHelpers.buildHeightMap(cuboid0), List.of(), List.of(), Map.of(), List.of()))
-				, null
-				, null
-				, null
-		);
-		runner.startNextTick();
-		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(1, snapshot.cuboids().size());
-		Assert.assertEquals(0, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
-		Assert.assertEquals(2, snapshot.cuboids().get(address0).completed().getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()).getCount(STONE_ITEM));
-		
-		// Now, load an air cuboid below this and verify that the items start falling.
-		CuboidAddress address1 = address0.getRelative(0, 0, -1);
-		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ENV.special.AIR);
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid1, HeightMapHelpers.buildHeightMap(cuboid1), List.of(), List.of(), Map.of(), List.of()))
-				, null
-				, null
-				, null
-		);
-		runner.startNextTick();
-		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(2, snapshot.cuboids().size());
-		Assert.assertEquals(1, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
-		Assert.assertTrue(snapshot.cuboids().get(address1).scheduledBlockMutations().get(0).mutation() instanceof MutationBlockStoreItems);
-		Assert.assertNull(snapshot.cuboids().get(address0).completed().getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()));
 		
 		runner.shutdown();
 	}
