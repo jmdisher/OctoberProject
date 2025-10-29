@@ -618,44 +618,6 @@ public class TestCommonChanges
 	}
 
 	@Test
-	public void itemDropOverfill() throws Throwable
-	{
-		// Fill 2 blocks in the column and show that the top falls into the bottom, even making it over-full.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 9);
-		// We need to make sure that there is a solid block under the target location so it doesn't just fall.
-		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
-		// Fill the inventory.
-		MutableBlockProxy proxy = new MutableBlockProxy(targetLocation, cuboid);
-		MutableInventory mutInv = new MutableInventory(proxy.getInventory());
-		int added = mutInv.addItemsBestEfforts(STONE_ITEM, 50);
-		Assert.assertTrue(added < 50);
-		proxy.setInventory(mutInv.freeze());
-		proxy.writeBack(cuboid);
-		
-		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
-		
-		// Just directly create the mutation to push items into the block above this one.
-		AbsoluteLocation dropLocation = targetLocation.getRelative(0, 0, 1);
-		MutationBlockStoreItems mutations = new MutationBlockStoreItems(dropLocation, new Items(STONE_ITEM, added), null, Inventory.INVENTORY_ASPECT_INVENTORY);
-		proxy = new MutableBlockProxy(dropLocation, cuboid);
-		Assert.assertTrue(mutations.applyMutation(holder.context, proxy));
-		proxy.writeBack(cuboid);
-		
-		// This should cause a follow-up so run that.
-		Assert.assertTrue(holder.mutation instanceof MutationBlockStoreItems);
-		AbsoluteLocation mutationTarget = holder.mutation.getAbsoluteLocation();
-		Assert.assertEquals(targetLocation, mutationTarget);
-		proxy = new MutableBlockProxy(mutationTarget, cuboid);
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
-		proxy.writeBack(cuboid);
-		
-		// Verify we see only the one inventory, and over-filled.
-		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, dropLocation.getBlockAddress()));
-		Assert.assertEquals(2 * added, cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()).getCount(STONE_ITEM));
-	}
-
-	@Test
 	public void storeItemInFullInventory() throws Throwable
 	{
 		// Normally, we won't try to store an item if the inventory is already full but something like breaking a block bypasses that check so see what happens when the inventory is full.

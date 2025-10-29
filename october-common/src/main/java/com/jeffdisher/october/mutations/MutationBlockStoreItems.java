@@ -3,15 +3,12 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.FlagsAspect;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.CraftingBlockSupport;
 import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -68,54 +65,29 @@ public class MutationBlockStoreItems implements IMutationBlock
 	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
-		Block block = newBlock.getBlock();
+		boolean didApply = false;
 		
-		// We will abort this if we are trying to store into a block which has damage associated with it.
-		boolean didApply = (env.blocks.getBlockDamage(block) > 0);
-		
-		// We want to check the special case of trying to store items into an air block above an air block, since we should just shift down, in the case.
-		if (!didApply && (Inventory.INVENTORY_ASPECT_INVENTORY == _inventoryAspect))
+		Inventory existing = _getInventory(newBlock);
+		if (null != existing)
 		{
-			boolean isActive = FlagsAspect.isSet(newBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
-			if (env.blocks.hasEmptyBlockInventory(block, isActive))
+			MutableInventory inv = new MutableInventory(existing);
+			if (null != _stackable)
 			{
-				// This block has an empty inventory but we want to drop it down a block, if it has an empty inventory.
-				AbsoluteLocation belowLocation = _blockLocation.getRelative(0, 0, -1);
-				BlockProxy below = context.previousBlockLookUp.apply(belowLocation);
-				if ((null != below) && env.blocks.hasEmptyBlockInventory(below.getBlock(), FlagsAspect.isSet(below.getFlags(), FlagsAspect.FLAG_ACTIVE)))
-				{
-					// We want to drop this into the below block.
-					context.mutationSink.next(new MutationBlockStoreItems(belowLocation, _stackable, _nonStackable, _inventoryAspect));
-					didApply = true;
-				}
+				inv.addItemsAllowingOverflow(_stackable.type(), _stackable.count());
 			}
-		}
-		
-		// If that didn't work, just apply the common case of storing into the block.
-		if (!didApply)
-		{
-			Inventory existing = _getInventory(newBlock);
-			if (null != existing)
+			else
 			{
-				MutableInventory inv = new MutableInventory(existing);
-				if (null != _stackable)
-				{
-					inv.addItemsAllowingOverflow(_stackable.type(), _stackable.count());
-				}
-				else
-				{
-					Assert.assertTrue(null != _nonStackable);
-					inv.addNonStackableAllowingOverflow(_nonStackable);
-				}
-				_putInventory(newBlock, inv.freeze());
-				
-				// See if we might need to trigger an automatic crafting operation in this block.
-				if (null != CraftingBlockSupport.getValidFuelledCraft(env, newBlock))
-				{
-					context.mutationSink.next(new MutationBlockFurnaceCraft(_blockLocation));
-				}
-				didApply = true;
+				Assert.assertTrue(null != _nonStackable);
+				inv.addNonStackableAllowingOverflow(_nonStackable);
 			}
+			_putInventory(newBlock, inv.freeze());
+			
+			// See if we might need to trigger an automatic crafting operation in this block.
+			if (null != CraftingBlockSupport.getValidFuelledCraft(env, newBlock))
+			{
+				context.mutationSink.next(new MutationBlockFurnaceCraft(_blockLocation));
+			}
+			didApply = true;
 		}
 		
 		// Handle the case where this might be a hopper.
