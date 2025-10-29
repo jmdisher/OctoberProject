@@ -35,6 +35,7 @@ import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.EntityChangeFutureBlock;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
@@ -42,7 +43,6 @@ import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.mutations.MutationBlockSetLogicState;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
-import com.jeffdisher.october.mutations.PickUpItemMutation;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.mutations.SaturatingDamage;
 import com.jeffdisher.october.mutations.ShockwaveMutation;
@@ -323,7 +323,8 @@ public class TestTickRunner
 		Assert.assertEquals(3, block.getInventory().getCount(stoneItem));
 		
 		// Remove everything and make sure that we end up with an empty inventory.
-		snapshot = _runTickLockStep(runner, entity.entity(), new PickUpItemMutation(testBlock, stoneItem, 3));
+		int stoneKey = 1;
+		snapshot = _runTickLockStep(runner, entity.entity(), new MutationBlockExtractItems(testBlock, stoneKey, 3, Inventory.INVENTORY_ASPECT_INVENTORY, entityId));
 		block = _getBlockProxy(snapshot, testBlock);
 		Assert.assertEquals(0, block.getInventory().currentEncumbrance);
 		
