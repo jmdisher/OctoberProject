@@ -29,6 +29,7 @@ public class ContextBuilder
 				.lookups(previous.previousBlockLookUp, previous.previousEntityLookUp, previous.previousPassiveLookUp)
 				.sinks(previous.mutationSink, previous.newChangeSink)
 				.spawner(previous.creatureSpawner)
+				.passive(previous.passiveSpawner)
 				.eventSink(previous.eventSink)
 		;
 		builder.randomInt = previous.randomInt;

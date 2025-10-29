@@ -4,7 +4,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -234,10 +233,8 @@ public class MutableEntity implements IMutablePlayerEntity
 		EntityLocation entityCentre = SpatialHelpers.getCentreFeetLocation(this);
 		for (Integer key : this.newInventory.freeze().sortedKeys())
 		{
-			Items stackable = this.newInventory.getStackForKey(key);
-			NonStackableItem nonStackable = this.newInventory.getNonStackableForKey(key);
-			Assert.assertTrue((null != stackable) != (null != nonStackable));
-			context.mutationSink.next(new MutationBlockStoreItems(entityCentre.getBlockLocation(), stackable, nonStackable, Inventory.INVENTORY_ASPECT_INVENTORY));
+			ItemSlot slot = this.newInventory.getSlotForKey(key);
+			context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, entityCentre, new EntityLocation(0.0f, 0.0f, 0.0f), slot);
 		}
 		
 		// Respawn them.

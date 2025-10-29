@@ -758,6 +758,7 @@ public class TestCommonChanges
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		long tickNumber = 100L;
 		_Events events = new _Events();
+		List<PassiveEntity> out_passives = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(tickNumber)
 				.lookups((AbsoluteLocation location) ->
@@ -791,6 +792,15 @@ public class TestCommonChanges
 						}
 					}, null)
 				.eventSink(events)
+				.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+					out_passives.add(new PassiveEntity(out_passives.size() + 1
+						, type
+						, location
+						, velocity
+						, extendedData
+						, 1000L
+					));
+				})
 				.finish()
 		;
 		
@@ -809,7 +819,8 @@ public class TestCommonChanges
 		EntityLocation spawnLocation = target.newSpawn;
 		
 		// Move slightly so that we see the location update on respawn.
-		target.newLocation = new EntityLocation(target.newLocation.x() - 1.0f, target.newLocation.y() - 1.0f, target.newLocation.z());
+		EntityLocation deathLocation = new EntityLocation(target.newLocation.x() - 1.0f, target.newLocation.y() - 1.0f, target.newLocation.z());
+		target.newLocation = deathLocation;
 		
 		// Now, we will attack in 2 swipes to verify damage is taken but also the respawn logic works.
 		EntityActionTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityActionTakeDamageFromEntity<>(BodyPart.HEAD, 60, attackerId);
@@ -829,7 +840,15 @@ public class TestCommonChanges
 		Assert.assertEquals(0, target.newInventory.freeze().sortedKeys().size());
 		Assert.assertEquals(Entity.NO_SELECTION, target.getSelectedKey());
 		Assert.assertEquals(spawnLocation, target.newLocation);
-		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
+		
+		// We should also see the dropped inventory as passives.
+		Assert.assertEquals(1, out_passives.size());
+		PassiveEntity passive = out_passives.get(0);
+		float halfPlayerWidth = ENV.creatures.PLAYER.volume().width() / 2.0f;
+		Assert.assertEquals(new EntityLocation(deathLocation.x() + halfPlayerWidth, deathLocation.y() + halfPlayerWidth, deathLocation.z()), passive.location());
+		ItemSlot drop = (ItemSlot)passive.extendedData();
+		Assert.assertEquals(2, drop.getCount());
+		Assert.assertEquals(STONE_ITEM, drop.getType());
 	}
 
 	@Test
