@@ -139,14 +139,6 @@ public class MutationBlockUpdate implements IMutationBlock
 			didApply = true;
 		}
 		
-		// Check if we need to destroy any inventory due to fire.
-		if (FireHelpers.shouldBurnUpItems(env, context, _blockLocation, newBlock))
-		{
-			boolean isActive = FlagsAspect.isSet(newBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
-			newBlock.setInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, thisBlock, isActive));
-			didApply = true;
-		}
-		
 		// Check if this change was changing the block on top of a ground cover block.
 		if (env.groundCover.isGroundCover(newBlock.getBlock()))
 		{

@@ -8,7 +8,6 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.CraftingBlockSupport;
-import com.jeffdisher.october.logic.FireHelpers;
 import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -123,14 +122,6 @@ public class MutationBlockStoreItems implements IMutationBlock
 		if (didApply && HopperHelpers.isHopper(_blockLocation, newBlock))
 		{
 			newBlock.requestFutureMutation(MutationBlockPeriodic.MILLIS_BETWEEN_HOPPER_CALLS);
-		}
-		
-		// Check if we need to destroy any inventory due to fire.
-		if (FireHelpers.shouldBurnUpItems(env, context, _blockLocation, newBlock))
-		{
-			boolean isActive = FlagsAspect.isSet(newBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
-			newBlock.setInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, block, isActive));
-			didApply = true;
 		}
 		return didApply;
 	}
