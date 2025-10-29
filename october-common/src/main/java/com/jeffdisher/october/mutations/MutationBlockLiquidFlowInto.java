@@ -3,7 +3,6 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -69,23 +68,16 @@ public class MutationBlockLiquidFlowInto implements IMutationBlock
 			Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, emptyBlock);
 			if (emptyBlock != eventualBlock)
 			{
-				// We need to drop the block, first.
-				// If this is being broken, it will default into an inactive state.
-				boolean isActive = false;
-				Inventory inv = BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, eventualBlock, isActive);
-				if (null != inv)
-				{
-					MutableInventory newInventory = new MutableInventory(inv);
-					CommonBlockMutationHelpers.fillInventoryFromBlockWithoutLimit(newInventory, newBlock);
-					CommonBlockMutationHelpers.populateInventoryWhenBreakingBlock(env, context, newInventory, thisBlock);
-					// Break the block and replace it with the flowing type, storing the inventory into it (may be over-filled).
-					CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _blockLocation, newBlock, eventualBlock);
-					newBlock.setInventory(newInventory.freeze());
-				}
-				else
-				{
-					CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _blockLocation, newBlock, eventualBlock);
-				}
+				// We will populate a MutableInventory (since it can collect like types) and then walk this union of all
+				// drops to generate passives.
+				// NOTE:  This approach assumes that a flowing block CANNOT also have an inventory.
+				MutableInventory tempInventory = new MutableInventory(Inventory.start(Integer.MAX_VALUE).finish());
+				CommonBlockMutationHelpers.populateInventoryWhenBreakingBlock(env, context, tempInventory, thisBlock);
+				CommonBlockMutationHelpers.fillInventoryFromBlockWithoutLimit(tempInventory, newBlock);
+				CommonBlockMutationHelpers.dropTempInventoryAsPassives(context, _blockLocation, tempInventory);
+				
+				// Break the block and replace it with the flowing type.
+				CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _blockLocation, newBlock, eventualBlock);
 				
 				didApply = true;
 			}

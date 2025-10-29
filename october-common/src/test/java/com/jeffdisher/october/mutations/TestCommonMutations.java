@@ -890,6 +890,7 @@ public class TestCommonMutations
 		
 		_Events events = new _Events();
 		IMutationBlock[] out_mutation = new IMutationBlock[1];
+		List<PassiveEntity> out_passives = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
 				.fixedRandom(0)
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
@@ -908,10 +909,21 @@ public class TestCommonMutations
 						}
 					}, null)
 				.eventSink(events)
+				.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+					long lastAliveMillis = 1000L;
+					PassiveEntity passive = new PassiveEntity(out_passives.size() + 1
+						, type
+						, location
+						, velocity
+						, extendedData
+						, lastAliveMillis
+					);
+					out_passives.add(passive);
+				})
 				.finish()
 		;
 		
-		// We should see the block between the water and lava replaced by water, thus destroying the block inventory.
+		// We should see the block between the water and lava replaced by water.
 		MutableBlockProxy proxy1 = new MutableBlockProxy(wheat1, cuboid);
 		Assert.assertTrue(new MutationBlockUpdate(wheat1).applyMutation(context, proxy1));
 		proxy1.writeBack(cuboid);
@@ -919,9 +931,11 @@ public class TestCommonMutations
 		MutationBlockLiquidFlowInto internal = (MutationBlockLiquidFlowInto)out_mutation[0];
 		Assert.assertTrue(internal instanceof MutationBlockLiquidFlowInto);
 		out_mutation[0] = null;
+		Assert.assertEquals(0, out_passives.size());
 		Assert.assertTrue(internal.applyMutation(context, proxy1));
 		proxy1.writeBack(cuboid);
 		Assert.assertNull(out_mutation[0]);
+		Assert.assertEquals(2, out_passives.size());
 		Assert.assertNull(proxy1.getInventory());
 		Assert.assertEquals(STONE, proxy1.getBlock());
 		
@@ -933,10 +947,11 @@ public class TestCommonMutations
 		internal = (MutationBlockLiquidFlowInto)out_mutation[0];
 		Assert.assertTrue(internal instanceof MutationBlockLiquidFlowInto);
 		out_mutation[0] = null;
+		Assert.assertEquals(2, out_passives.size());
 		Assert.assertTrue(internal.applyMutation(context, proxy2));
 		proxy2.writeBack(cuboid);
 		Assert.assertNull(out_mutation[0]);
-		Assert.assertEquals(6, proxy2.getInventory().currentEncumbrance);
+		Assert.assertEquals(4, out_passives.size());
 		Assert.assertEquals(WATER_STRONG, proxy2.getBlock());
 	}
 
