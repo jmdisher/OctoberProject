@@ -29,7 +29,6 @@ import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.OrientationHelpers;
-import com.jeffdisher.october.mutations.DropItemMutation;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
@@ -664,7 +663,11 @@ public class TestSpeculativeProjection
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		AbsoluteLocation block1 = new AbsoluteLocation(1, 1, 1);
+		AbsoluteLocation block2 = new AbsoluteLocation(3, 3, 3);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, block1.getRelative(0, 0, -1).getBlockAddress(), STONE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, block2.getRelative(0, 0, -1).getBlockAddress(), STONE.item().number());
 		CuboidData serverCuboid = CuboidData.mutableClone(cuboid);
 		projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
@@ -687,11 +690,9 @@ public class TestSpeculativeProjection
 		// Try to drop a few items.
 		int encumbrance = 4;
 		Item stoneItem = STONE_ITEM;
-		AbsoluteLocation block1 = new AbsoluteLocation(1, 1, 1);
-		IMutationBlock mutation1 = new DropItemMutation(block1, stoneItem, 1);
+		IMutationBlock mutation1 = new MutationBlockStoreItems(block1, new Items(stoneItem, 1), null, Inventory.INVENTORY_ASPECT_INVENTORY);
 		EntityChangeMutation lone1 = new EntityChangeMutation(mutation1);
-		AbsoluteLocation block2 = new AbsoluteLocation(3, 3, 3);
-		IMutationBlock mutation2 = new DropItemMutation(block2, stoneItem, 3);
+		IMutationBlock mutation2 = new MutationBlockStoreItems(block2, new Items(stoneItem, 3), null, Inventory.INVENTORY_ASPECT_INVENTORY);
 		EntityChangeMutation lone2 = new EntityChangeMutation(mutation2);
 		long commit1 = _wrapAndApply(projector, entity, currentTimeMillis, lone1);
 		long commit2 = _wrapAndApply(projector, entity, currentTimeMillis, lone2);

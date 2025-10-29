@@ -20,7 +20,6 @@ import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.aspects.OrientationAspect;
-import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
@@ -33,7 +32,6 @@ import com.jeffdisher.october.logic.PassiveIdAssigner;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.ScheduledMutation;
-import com.jeffdisher.october.mutations.DropItemMutation;
 import com.jeffdisher.october.mutations.EntityChangeFutureBlock;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
@@ -291,10 +289,11 @@ public class TestTickRunner
 	public void basicInventoryOperations()
 	{
 		// Just add, add, and remove some inventory items.
-		AbsoluteLocation testBlock = new AbsoluteLocation(0, 0, 0);
+		AbsoluteLocation testBlock = new AbsoluteLocation(0, 0, 1);
 		Item stoneItem = STONE_ITEM;
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, testBlock.getRelative(0, 0, -1).getBlockAddress(), STONE.item().number());
 		
 		// Create a tick runner with a single cuboid and get it running.
 		TickRunner runner = _createTestRunner();
@@ -314,17 +313,12 @@ public class TestTickRunner
 		Assert.assertEquals(0, block.getInventory().currentEncumbrance);
 		
 		// Apply the first mutation to add data.
-		snapshot = _runTickLockStep(runner, entity.entity(), new DropItemMutation(testBlock, stoneItem, 1));
-		block = _getBlockProxy(snapshot, testBlock);
-		Assert.assertEquals(1, block.getInventory().getCount(stoneItem));
-		
-		// Try to drop too much to fit and verify that nothing changes.
-		snapshot = _runTickLockStep(runner, entity.entity(), new DropItemMutation(testBlock, stoneItem, StationRegistry.CAPACITY_BLOCK_EMPTY / 4));
+		snapshot = _runTickLockStep(runner, entity.entity(), new MutationBlockStoreItems(testBlock, new Items(stoneItem, 1), null, Inventory.INVENTORY_ASPECT_INVENTORY));
 		block = _getBlockProxy(snapshot, testBlock);
 		Assert.assertEquals(1, block.getInventory().getCount(stoneItem));
 		
 		// Add a little more data and make sure that it updates.
-		snapshot = _runTickLockStep(runner, entity.entity(), new DropItemMutation(testBlock, stoneItem, 2));
+		snapshot = _runTickLockStep(runner, entity.entity(), new MutationBlockStoreItems(testBlock, new Items(stoneItem, 2), null, Inventory.INVENTORY_ASPECT_INVENTORY));
 		block = _getBlockProxy(snapshot, testBlock);
 		Assert.assertEquals(3, block.getInventory().getCount(stoneItem));
 		
