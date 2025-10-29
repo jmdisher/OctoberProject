@@ -8,9 +8,11 @@ import org.junit.Test;
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -32,11 +34,13 @@ public class TestPassiveActions
 {
 	private static Environment ENV;
 	private static Item STONE_ITEM;
+	private static Block LOG_BLOCK;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");
+		LOG_BLOCK = ENV.blocks.fromItem(ENV.items.getItemById("op.log"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -156,6 +160,28 @@ public class TestPassiveActions
 		// This should despawn if we ack the pick-up to the loaded ID, only.
 		Assert.assertNull(new PassiveActionPickUp(idLoaded).applyChange(context, stackIngot));
 		Assert.assertEquals(stackIngot, new PassiveActionPickUp(2).applyChange(context, stackIngot));
+	}
+
+	@Test
+	public void passiveBurnUp()
+	{
+		// Show that a passive item slot instance despawns when in a block above a burning block.
+		int id = 1;
+		EntityLocation location = new EntityLocation(10.0f, 10.0f, 10.5f);
+		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		ItemSlot slot = ItemSlot.fromStack(new Items(STONE_ITEM, 5));
+		long createMillis = 1000L;
+		PassiveEntity start = new PassiveEntity(id, PassiveType.ITEM_SLOT, location, velocity, slot, createMillis);
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(10, 10, 9), LOG_BLOCK.item().number());
+		cuboid.setData7(AspectRegistry.FLAGS, BlockAddress.fromInt(10, 10, 9), FlagsAspect.FLAG_BURNING);
+		TickProcessingContext context = _createSingleCuboidContext(cuboid, 1L);
+		
+		PassiveActionEveryTick action = new PassiveActionEveryTick();
+		PassiveEntity result = action.applyChange(context, start);
+		
+		Assert.assertNull(result);
 	}
 
 

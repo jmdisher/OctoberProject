@@ -1,5 +1,7 @@
 package com.jeffdisher.october.actions.passive;
 
+import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.logic.DamageHelpers;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
@@ -20,6 +22,8 @@ public class PassiveActionEveryTick implements IPassiveAction
 	@Override
 	public PassiveEntity applyChange(TickProcessingContext context, PassiveEntity entity)
 	{
+		Environment env = Environment.getShared();
+		
 		// Currently, we only have the ItemSlot type.
 		PassiveType type = entity.type();
 		Assert.assertTrue(PassiveType.ITEM_SLOT == type);
@@ -31,6 +35,11 @@ public class PassiveActionEveryTick implements IPassiveAction
 		if (context.currentTickTimeMillis >= despawnMillis)
 		{
 			// We can despawn this.
+			result = null;
+		}
+		else if (DamageHelpers.findEnvironmentalDamageInVolume(env, context.previousBlockLookUp, entity.location(), entity.type().volume()) > 0)
+		{
+			// Passives immediately despawn upon taking damage.
 			result = null;
 		}
 		else
