@@ -4,16 +4,17 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.mutations.EntityActionType;
-import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
-import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.NonStackableItem;
+import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -86,17 +87,21 @@ public class EntityActionStoreToInventory implements IEntityAction<IMutablePlaye
 			newEntity.setSelectedKey(itemKeyToSelect);
 		}
 		
-		// If there are items left over, drop them on the ground.
+		// If there are items left over, drop them on the ground as passives.
 		if (itemsToStore > stored)
 		{
-			Items stack = null;
+			ItemSlot slot;
 			if (null != _stack)
 			{
 				int itemsToDrop = itemsToStore - stored;
-				stack = new Items(_stack.type(), itemsToDrop);
+				Items stack = new Items(_stack.type(), itemsToDrop);
+				slot = ItemSlot.fromStack(stack);
 			}
-			MutationBlockStoreItems drop = new MutationBlockStoreItems(newEntity.getLocation().getBlockLocation(), stack, _nonStack, Inventory.INVENTORY_ASPECT_INVENTORY);
-			context.mutationSink.next(drop);
+			else
+			{
+				slot = ItemSlot.fromNonStack(_nonStack);
+			}
+			context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, newEntity.getLocation(), new EntityLocation(0.0f, 0.0f, 0.0f), slot);
 		}
 		
 		// Since we did _something_, this is always true.

@@ -635,7 +635,7 @@ public class TestCommonChanges
 		Assert.assertTrue(store.applyChange(holder.context, newEntity));
 		
 		// We should see the attempt to drop this item onto the ground since it won't fit.
-		Assert.assertTrue(holder.mutation instanceof MutationBlockStoreItems);
+		Assert.assertTrue(null != holder.passive);
 	}
 
 	@Test
@@ -1021,7 +1021,8 @@ public class TestCommonChanges
 		
 		// We should see an attempt to drop the items, since they won't fit.
 		Assert.assertTrue(store.applyChange(holder.context, newEntity));
-		Assert.assertTrue(holder.mutation instanceof MutationBlockStoreItems);
+		Assert.assertTrue(null != holder.passive);
+		Assert.assertNull(holder.mutation);
 		Assert.assertNull(holder.change);
 		
 		// The block should be broken but our inventory should be the same size.
@@ -3340,6 +3341,7 @@ public class TestCommonChanges
 		public IEntityAction<IMutablePlayerEntity> change;
 		public IMutationBlock mutation;
 		public final _Events events = new _Events();
+		public PassiveEntity passive;
 		
 		public _ContextHolder(IReadOnlyCuboidData cuboid, boolean allowEntityChange, boolean allowBlockMutation)
 		{
@@ -3385,6 +3387,16 @@ public class TestCommonChanges
 							}
 						} : null)
 					.eventSink(this.events)
+					.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+						Assert.assertNull(this.passive);
+						this.passive = new PassiveEntity(1
+							, type
+							, location
+							, velocity
+							, extendedData
+							, 1000L
+						);
+					})
 					.finish()
 			;
 		}
