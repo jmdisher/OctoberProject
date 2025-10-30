@@ -6,7 +6,6 @@ import java.util.function.Predicate;
 
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -40,80 +39,6 @@ public class RayCastHelpers
 			;
 		};
 		return _findFirstCollision(builder, start, end, stopPredicate);
-	}
-
-	/**
-	 * Runs the ray-casting collision algorithm on all points defining this base and volume, returning the final
-	 * location of the volume moving with velocity.
-	 * 
-	 * @param base The bottom-south-west point defining the bounds of this entity.
-	 * @param volume The volume of the entity.
-	 * @param velocity The velocity vector of the entity.
-	 * @param stopPredicate Returns true if the block at the given location should be considered a collision.
-	 * @return A description of the final entity location (never null but axis may be null if it never collided with
-	 * anything).
-	 */
-	public static RayMovement applyMovement(EntityLocation base, EntityVolume volume, EntityLocation velocity, Predicate<AbsoluteLocation> stopPredicate)
-	{
-		float vX = velocity.x();
-		float vY = velocity.y();
-		float vZ = velocity.z();
-		EntityLocation[] points = new EntityLocation[] {
-				base,
-				new EntityLocation(base.x(), base.y(), base.z() + volume.height()),
-				new EntityLocation(base.x(), base.y() + volume.width(), base.z()),
-				new EntityLocation(base.x(), base.y() + volume.width(), base.z() + volume.height()),
-				new EntityLocation(base.x() + volume.width(), base.y(), base.z()),
-				new EntityLocation(base.x() + volume.width(), base.y(), base.z() + volume.height()),
-				new EntityLocation(base.x() + volume.width(), base.y() + volume.width(), base.z()),
-				new EntityLocation(base.x() + volume.width(), base.y() + volume.width(), base.z() + volume.height()),
-		};
-		_ResultBuilder<RayBlock> builder = (Axis collisionAxis
-				, List<AbsoluteLocation> path
-				, AbsoluteLocation stopBlock
-				, AbsoluteLocation preStopBlock
-				, float rayDistance
-		) -> {
-			return (null != collisionAxis)
-					? new RayBlock(stopBlock, preStopBlock, collisionAxis, rayDistance)
-					: null
-			;
-		};
-		
-		float rayLength = (float)Math.sqrt(vX * vX + vY * vY + vZ * vZ);
-		float distance = rayLength;
-		Axis axis = null;
-		for (int i = 0; (distance > 0.0f) && (i < points.length); ++i)
-		{
-			EntityLocation point = points[i];
-			EntityLocation edge = new EntityLocation(point.x() + vX, point.y() + vY, point.z() + vZ);
-			RayBlock result = _findFirstCollision(builder, point, edge, stopPredicate);
-			if (null != result)
-			{
-				float one = result.rayDistance;
-				if (one < distance)
-				{
-					distance = one;
-					axis = result.collisionAxis;
-				}
-			}
-		}
-		
-		EntityLocation finalState;
-		if (distance > 0.0f)
-		{
-			float multiplier = distance / rayLength;
-			float finalX = vX * multiplier;
-			float finalY = vY * multiplier;
-			float finalZ = vZ * multiplier;
-			
-			finalState = new EntityLocation(base.x() + finalX, base.y() + finalY, base.z() + finalZ);
-		}
-		else
-		{
-			finalState = base;
-		}
-		return new RayMovement(finalState, axis, distance);
 	}
 
 	/**

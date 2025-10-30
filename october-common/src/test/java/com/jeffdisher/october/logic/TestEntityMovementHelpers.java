@@ -295,4 +295,85 @@ public class TestEntityMovementHelpers
 		Assert.assertEquals(0.0f, result.vY(), 0.01f);
 		Assert.assertEquals(-0.98f, result.vZ(), 0.01f);
 	}
+
+	@Test
+	public void bigStuckInBlock()
+	{
+		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
+		EntityVolume volume = new EntityVolume(2.1f, 2.2f);
+		EntityLocation velocity = new EntityLocation(0.0f, 2.0f, 0.0f);
+		AbsoluteLocation block = new AbsoluteLocation(1, 3, 1);
+		EntityLocation expected = new EntityLocation(0.0f, 0.79f, 0.0f);
+		EntityMovementHelpers.interactiveEntityMove(location, volume, velocity, new EntityMovementHelpers.IInteractiveHelper() {
+			@Override
+			public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
+			{
+				Assert.assertEquals(expected, finalLocation);
+				Assert.assertFalse(cancelX);
+				Assert.assertTrue(cancelY);
+				Assert.assertFalse(cancelZ);
+			}
+			@Override
+			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
+			{
+				return block.equals(location)
+					? 1.0f
+					: 0.0f
+				;
+			}
+		});
+	}
+
+	@Test
+	public void moveByLongDistanceVector() throws Throwable
+	{
+		// Show that we move the full distance of the velocity vector when we don't hit anything.
+		EntityLocation start = new EntityLocation(-1.2f, -2.3f, -3.4f);
+		EntityLocation vector = new EntityLocation(7.8f, 6.7f, 5.6f);
+		EntityVolume volume = ENV.creatures.PLAYER.volume();
+		EntityLocation expected = new EntityLocation(start.x() + vector.x(), start.y() + vector.y(), start.z() + vector.z());
+		EntityMovementHelpers.interactiveEntityMove(start, volume, vector, new EntityMovementHelpers.IInteractiveHelper() {
+			@Override
+			public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
+			{
+				Assert.assertEquals(expected, finalLocation);
+				Assert.assertFalse(cancelX);
+				Assert.assertFalse(cancelY);
+				Assert.assertFalse(cancelZ);
+			}
+			@Override
+			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
+			{
+				return 0.0f;
+			}
+		});
+	}
+
+	@Test
+	public void moveHitCeiling() throws Throwable
+	{
+		// Show that we coast along the ceiling after hitting it.
+		EntityLocation start = new EntityLocation(-1.2f, -2.3f, -3.4f);
+		EntityLocation vector = new EntityLocation(7.8f, 6.7f, 5.6f);
+		EntityVolume volume = ENV.creatures.PLAYER.volume();
+		EntityLocation expected = new EntityLocation(6.6f, 4.4f, -volume.height() - 0.01f);
+		EntityMovementHelpers.interactiveEntityMove(start, volume, vector, new EntityMovementHelpers.IInteractiveHelper() {
+			@Override
+			public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
+			{
+				Assert.assertEquals(expected, finalLocation);
+				Assert.assertFalse(cancelX);
+				Assert.assertFalse(cancelY);
+				Assert.assertTrue(cancelZ);
+			}
+			@Override
+			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
+			{
+				return 0 == location.z()
+					? 1.0f
+					: 0.0f
+				;
+			}
+		});
+	}
 }
