@@ -278,7 +278,7 @@ public class CreatureRegistry
 		this.PLAYER = _packageEntity((byte)1
 				, FAKE_PLAYER_ID
 				, "PLAYER"
-				, new EntityVolume(0.9f, 0.4f)
+				, new EntityVolume(1.7f, 0.4f)
 				, 4.0f
 				, (byte)100
 				, 0.0f

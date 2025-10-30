@@ -2415,7 +2415,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		AbsoluteLocation entityLocation = new AbsoluteLocation(31, 15, 15);
 		AbsoluteLocation dirtLocation = entityLocation.getRelative(0, 0, -1);
-		AbsoluteLocation lanternLocation = entityLocation.getRelative(0, 0, 1);
+		AbsoluteLocation lanternLocation = entityLocation.getRelative(0, 0, 2);
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newInventory.addAllItems(lantern.item(), 1);

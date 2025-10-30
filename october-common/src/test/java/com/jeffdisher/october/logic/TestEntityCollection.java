@@ -168,7 +168,7 @@ public class TestEntityCollection
 		
 		counts[0] = 0;
 		counts[1] = 0;
-		collection.findIntersections(ENV, new EntityLocation(1.0f, 1.0f, 0.0f), 0.8f, entityCounter, creatureCounter);
+		collection.findIntersections(ENV, new EntityLocation(1.0f, 1.0f, 0.0f), 0.95f, entityCounter, creatureCounter);
 		Assert.assertArrayEquals(new int[] {1, 1}, counts);
 		
 		counts[0] = 0;
