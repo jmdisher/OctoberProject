@@ -20,12 +20,6 @@ import com.jeffdisher.october.types.Block;
  */
 public class StationRegistry
 {
-	/**
-	 * We treat air, water, and some other cases as "empty" and they have a small capacity since it is just "on the
-	 * ground" and we want containers to be used.  That said, these blocks are often over-filled to avoid destroying
-	 * items.
-	 */
-	public static final int CAPACITY_BLOCK_EMPTY = 100;
 	public static final int CAPACITY_PLAYER = 200;
 
 	public static final String FIELD_INVENTORY = "inventory";

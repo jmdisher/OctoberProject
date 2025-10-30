@@ -259,9 +259,11 @@ public class TestCommonChanges
 		int entityId = 1;
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		Block table = ENV.blocks.fromItem(ENV.items.getItemById("op.crafting_table"));
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
-		Inventory blockInventory = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(STONE_ITEM, 2).finish();
+		Inventory blockInventory = Inventory.start(ENV.stations.getNormalInventorySize(table)).addStackable(STONE_ITEM, 2).finish();
+		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress(), table.item().number());
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress(), blockInventory);
 		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
 		

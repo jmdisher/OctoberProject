@@ -10,7 +10,6 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
-import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -94,13 +93,15 @@ public class TestMutableBlockProxy
 		
 		// Store into the block's inventory and see how that serializes.
 		MutableBlockProxy proxy = new MutableBlockProxy(location, input);
-		proxy.setInventory(Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(stoneItem, 1).finish());
+		Block table = ENV.blocks.fromItem(ENV.items.getItemById("op.crafting_table"));
+		proxy.setBlockAndClear(table);
+		proxy.setInventory(Inventory.start(ENV.stations.getNormalInventorySize(table)).addStackable(stoneItem, 1).finish());
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(input);
 		proxy.serializeToBuffer(buffer);
 		// (verified experimentally).
-		Assert.assertEquals(16, buffer.position());
+		Assert.assertEquals(19, buffer.position());
 		byte[] raw = new byte[buffer.position()];
 		buffer.flip().get(raw);
 		MutationBlockSetBlock setBlock = new MutationBlockSetBlock(location, raw);

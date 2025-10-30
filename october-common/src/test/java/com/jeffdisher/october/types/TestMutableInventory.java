@@ -8,11 +8,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.StationRegistry;
 
 
 public class TestMutableInventory
 {
+	private static int INVENTORY_SIZE = 100;
 	private static Environment ENV;
 	private static Item STONE_ITEM;
 	private static Item LOG_ITEM;
@@ -38,7 +38,7 @@ public class TestMutableInventory
 	@Test
 	public void createFromEmpty() throws Throwable
 	{
-		Inventory original = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).finish();
+		Inventory original = Inventory.start(INVENTORY_SIZE).finish();
 		MutableInventory inv = new MutableInventory(original);
 		
 		Inventory frozen = inv.freeze();
@@ -50,7 +50,7 @@ public class TestMutableInventory
 	@Test
 	public void basicAddition() throws Throwable
 	{
-		Inventory original = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).finish();
+		Inventory original = Inventory.start(INVENTORY_SIZE).finish();
 		MutableInventory inv = new MutableInventory(original);
 		Assert.assertEquals(0, inv.getCount(LOG_ITEM));
 		Assert.assertEquals(25, inv.maxVacancyForItem(LOG_ITEM));
@@ -70,7 +70,7 @@ public class TestMutableInventory
 	@Test
 	public void basicRemoval() throws Throwable
 	{
-		Inventory original = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(LOG_ITEM, 2).finish();
+		Inventory original = Inventory.start(INVENTORY_SIZE).addStackable(LOG_ITEM, 2).finish();
 		MutableInventory inv = new MutableInventory(original);
 		Assert.assertEquals(2, inv.getCount(LOG_ITEM));
 		Assert.assertEquals(23, inv.maxVacancyForItem(LOG_ITEM));
@@ -90,7 +90,7 @@ public class TestMutableInventory
 	@Test
 	public void addRemoveUnchanged() throws Throwable
 	{
-		Inventory original = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(LOG_ITEM, 2).finish();
+		Inventory original = Inventory.start(INVENTORY_SIZE).addStackable(LOG_ITEM, 2).finish();
 		MutableInventory inv = new MutableInventory(original);
 		inv.addAllItems(STONE_ITEM, 1);
 		inv.removeStackableItems(LOG_ITEM, 1);
@@ -104,7 +104,7 @@ public class TestMutableInventory
 	@Test
 	public void clearAndAdd() throws Throwable
 	{
-		Inventory original = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(STONE_ITEM, 1).finish();
+		Inventory original = Inventory.start(INVENTORY_SIZE).addStackable(STONE_ITEM, 1).finish();
 		MutableInventory inv = new MutableInventory(original);
 		Assert.assertEquals(1, inv.getCount(STONE_ITEM));
 		Assert.assertTrue(inv.addAllItems(LOG_ITEM, 4));
@@ -123,8 +123,8 @@ public class TestMutableInventory
 	@Test
 	public void clearAndReplace() throws Throwable
 	{
-		Inventory original = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(STONE_ITEM, 1).finish();
-		Inventory replacement = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(PLANK_ITEM, 3).addStackable(STONE_ITEM, 2).finish();
+		Inventory original = Inventory.start(INVENTORY_SIZE).addStackable(STONE_ITEM, 1).finish();
+		Inventory replacement = Inventory.start(INVENTORY_SIZE).addStackable(PLANK_ITEM, 3).addStackable(STONE_ITEM, 2).finish();
 		MutableInventory inv = new MutableInventory(original);
 		Assert.assertEquals(1, inv.getCount(STONE_ITEM));
 		Assert.assertTrue(inv.addAllItems(LOG_ITEM, 4));
@@ -148,9 +148,9 @@ public class TestMutableInventory
 	{
 		// Verify that we freeze correctly without assuming that keys aren't always matching stack/non-stack (since "clear" will reset).
 		NonStackableItem first = new NonStackableItem(SWORD_ITEM, Map.of());
-		Inventory original = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addNonStackable(first).addStackable(STONE_ITEM, 1).finish();
+		Inventory original = Inventory.start(INVENTORY_SIZE).addNonStackable(first).addStackable(STONE_ITEM, 1).finish();
 		NonStackableItem second = new NonStackableItem(SWORD_ITEM, Map.of());
-		Inventory replacement = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(PLANK_ITEM, 2).addNonStackable(second).finish();
+		Inventory replacement = Inventory.start(INVENTORY_SIZE).addStackable(PLANK_ITEM, 2).addNonStackable(second).finish();
 		MutableInventory inv = new MutableInventory(original);
 		inv.clearInventory(replacement);
 		Inventory frozen = inv.freeze();
@@ -163,7 +163,7 @@ public class TestMutableInventory
 	public void integerOverflow() throws Throwable
 	{
 		// Normally, we can over-fill inventories but verify that this is cleared if the current encumbrance overflows.
-		Inventory original = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).finish();
+		Inventory original = Inventory.start(INVENTORY_SIZE).finish();
 		MutableInventory inv = new MutableInventory(original);
 		int itemEncumbrance = ENV.encumbrance.getEncumbrance(LOG_ITEM);
 		int countToOverflow = (Integer.MAX_VALUE / itemEncumbrance) + 1;
@@ -181,7 +181,7 @@ public class TestMutableInventory
 	public void checkFreezeOrder() throws Throwable
 	{
 		// Verify that we correctly check the types and the count when updating after freeze.
-		Inventory original = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(STONE_ITEM, 1).finish();
+		Inventory original = Inventory.start(INVENTORY_SIZE).addStackable(STONE_ITEM, 1).finish();
 		MutableInventory inv = new MutableInventory(original);
 		inv.clearInventory(null);
 		inv.addAllItems(LOG_ITEM, 1);
@@ -198,7 +198,7 @@ public class TestMutableInventory
 		NonStackableItem sword2 = new NonStackableItem(SWORD_ITEM, Map.of());
 		NonStackableItem sword3 = new NonStackableItem(SWORD_ITEM, Map.of());
 		NonStackableItem sword4 = new NonStackableItem(SWORD_ITEM, Map.of());
-		Inventory original = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY)
+		Inventory original = Inventory.start(INVENTORY_SIZE)
 				.addNonStackable(sword1)
 				.addStackable(STONE_ITEM, 1)
 				.addNonStackable(sword2)
@@ -246,7 +246,7 @@ public class TestMutableInventory
 	@Test
 	public void bestEffortsFull() throws Throwable
 	{
-		Inventory original = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).finish();
+		Inventory original = Inventory.start(INVENTORY_SIZE).finish();
 		MutableInventory inv = new MutableInventory(original);
 		int planksToAdd = inv.maxVacancyForItem(PLANK_ITEM) - 1;
 		int added = inv.addItemsBestEfforts(PLANK_ITEM, planksToAdd);

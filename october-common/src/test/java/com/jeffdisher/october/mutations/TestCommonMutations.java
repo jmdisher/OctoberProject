@@ -19,7 +19,6 @@ import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.aspects.OrientationAspect;
-import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.DeserializationContext;
@@ -402,7 +401,7 @@ public class TestCommonMutations
 		AbsoluteLocation sink = new AbsoluteLocation(5, 5, 5);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(source.getCuboidAddress(), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, source.getBlockAddress(), chest.item().number());
-		cuboid.setDataSpecial(AspectRegistry.INVENTORY, source.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(CHARCOAL_ITEM, 2).finish());
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, source.getBlockAddress(), Inventory.start(ENV.stations.getNormalInventorySize(chest)).addStackable(CHARCOAL_ITEM, 2).finish());
 		cuboid.setData15(AspectRegistry.BLOCK, sink.getBlockAddress(), chest.item().number());
 		
 		IMutationBlock[] outMutation = new IMutationBlock[1];
