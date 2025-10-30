@@ -142,6 +142,41 @@ public class TestEntityCollection
 		Assert.assertArrayEquals(new int[] {1, 0}, counts);
 	}
 
+	@Test
+	public void elipsoidDistances()
+	{
+		// Just some basic tests to show the recent change to compute distances using elipsoid radii instead of spherical radii.
+		// (this is still just an approximation but it better handles volumes where the height and width are very different).
+		Map<Integer, Entity> players = Map.of(1, _buildPlayer(1, new EntityLocation(1.0f, 1.0f, 1.0f))
+				, 2, _buildPlayer(2, new EntityLocation(2.0f, 2.0f, 2.0f))
+		);
+		Map<Integer, CreatureEntity> creatures = Map.of(-1, _buildCreature(-1, new EntityLocation(1.0f, 1.0f, 1.0f))
+				, -2, _buildCreature(-2, new EntityLocation(2.0f, 2.0f, 2.0f))
+		);
+		
+		int[] counts = new int[2];
+		EntityCollection.IIntersector<Entity> entityCounter = (Entity data, EntityLocation centre, float radius) -> {
+			counts[0] += 1;
+		};
+		EntityCollection.IIntersector<CreatureEntity> creatureCounter = (CreatureEntity data, EntityLocation centre, float radius) -> {
+			counts[1] += 1;
+		};
+		
+		EntityCollection collection = EntityCollection.fromMaps(players, creatures);
+		collection.findIntersections(ENV, new EntityLocation(0.0f, 0.0f, 0.0f), 2.0f, entityCounter, creatureCounter);
+		Assert.assertArrayEquals(new int[] {1, 1}, counts);
+		
+		counts[0] = 0;
+		counts[1] = 0;
+		collection.findIntersections(ENV, new EntityLocation(1.0f, 1.0f, 0.0f), 0.8f, entityCounter, creatureCounter);
+		Assert.assertArrayEquals(new int[] {1, 1}, counts);
+		
+		counts[0] = 0;
+		counts[1] = 0;
+		collection.findIntersections(ENV, new EntityLocation(1.0f, 0.0f, 1.0f), 0.78f, entityCounter, creatureCounter);
+		Assert.assertArrayEquals(new int[] {1, 1}, counts);
+	}
+
 
 	private static Entity _buildPlayer(int id, EntityLocation location)
 	{

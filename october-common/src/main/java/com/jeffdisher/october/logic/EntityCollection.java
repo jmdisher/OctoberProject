@@ -166,11 +166,10 @@ public class EntityCollection
 		if (null != entityVisit)
 		{
 			EntityVolume volume = env.creatures.PLAYER.volume();
-			// We will just use the XY radius.
-			float radius = volume.width() / 2.0f;
-			float squareRadius = radius * radius;
+			float halfWidth = volume.width() / 2.0f;
+			float halfHeight = volume.height() / 2.0f;
 			// We are summing square radii in 3-space so we need to multiply.
-			float squareSums = 3 * (squareRange + squareRadius);
+			float squareSums = 3 * squareRange + 2 * halfWidth * halfWidth + halfHeight * halfHeight;
 			for (Entity player : _players.values())
 			{
 				EntityLocation playerLocation = player.location();
@@ -182,7 +181,7 @@ public class EntityCollection
 				
 				if (squareDistance <= squareSums)
 				{
-					entityVisit.intersect(player, playerCentre, radius);
+					entityVisit.intersect(player, playerCentre, halfWidth);
 				}
 			}
 		}
@@ -199,13 +198,13 @@ public class EntityCollection
 				float squareDistance = dx * dx + dy * dy + dz * dz;
 				
 				// We will just use the XY radius.
-				float radius = volume.width() / 2.0f;
-				float squareRadius = radius * radius;
+				float halfWidth = volume.width() / 2.0f;
+				float halfHeight = volume.height() / 2.0f;
 				// We are summing square radii in 3-space so we need to multiply.
-				float squareSums = 3 * (squareRange + squareRadius);
+				float squareSums = 3 * squareRange + 2 * halfWidth * halfWidth + halfHeight * halfHeight;
 				if (squareDistance <= squareSums)
 				{
-					creatureVisit.intersect(creature, creatureCentre, radius);
+					creatureVisit.intersect(creature, creatureCentre, halfWidth);
 				}
 			}
 		}
