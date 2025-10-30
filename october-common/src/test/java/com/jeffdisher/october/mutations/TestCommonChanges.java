@@ -59,6 +59,7 @@ import com.jeffdisher.october.subactions.EntitySubActionDropItemsAsPassive;
 import com.jeffdisher.october.subactions.EntitySubActionLadderAscend;
 import com.jeffdisher.october.subactions.EntitySubActionLadderDescend;
 import com.jeffdisher.october.subactions.EntitySubActionPickUpPassive;
+import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
 import com.jeffdisher.october.subactions.EntitySubActionRequestSwapSpecialSlot;
 import com.jeffdisher.october.subactions.EntitySubActionTravelViaBlock;
 import com.jeffdisher.october.subactions.MutationEntityPushItems;
@@ -77,6 +78,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
@@ -3170,6 +3172,57 @@ public class TestCommonChanges
 		Assert.assertEquals(0, out[0]);
 		Assert.assertFalse(new EntitySubActionPickUpPassive(4).applyChange(context, mutable));
 		Assert.assertEquals(0, out[0]);
+	}
+
+	@Test
+	public void popOutBehaviour() throws Throwable
+	{
+		// We want to demonstrate a few basic uses of the pop-out sub-action.
+		AbsoluteLocation fixedBlock = new AbsoluteLocation(5, 5, 5);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, fixedBlock.getBlockAddress(), STONE.item().number());
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation location) -> {
+				return new BlockProxy(location.getBlockAddress(), cuboid);
+			}, null, null)
+			.finish()
+		;
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		EntityVolume volume = mutable.getType().volume();
+		
+		// Show some successful attempts.
+		mutable.newLocation = new EntityLocation(5.3f, 5.8f, 3.4f);
+		EntityLocation down = EntitySubActionPopOutOfBlock.popOutLocation(context.previousBlockLookUp, mutable.newLocation, volume);
+		Assert.assertEquals(new EntityLocation(5.3f, 5.8f, 3.29f), down);
+		Assert.assertTrue(new EntitySubActionPopOutOfBlock<>(down).applyChange(context, mutable));
+		Assert.assertEquals(down, mutable.newLocation);
+		
+		mutable.newLocation = new EntityLocation(5.3f, 5.8f, 4.0f);
+		EntityLocation north = EntitySubActionPopOutOfBlock.popOutLocation(context.previousBlockLookUp, mutable.newLocation, volume);
+		Assert.assertEquals(new EntityLocation(5.3f, 6.0f, 4.0f), north);
+		Assert.assertTrue(new EntitySubActionPopOutOfBlock<>(north).applyChange(context, mutable));
+		Assert.assertEquals(north, mutable.newLocation);
+		
+		mutable.newLocation = new EntityLocation(4.7f, 5.5f, 4.0f);
+		EntityLocation west = EntitySubActionPopOutOfBlock.popOutLocation(context.previousBlockLookUp, mutable.newLocation, volume);
+		Assert.assertEquals(new EntityLocation(4.59f, 5.5f, 4.0f), west);
+		Assert.assertTrue(new EntitySubActionPopOutOfBlock<>(west).applyChange(context, mutable));
+		Assert.assertEquals(west, mutable.newLocation);
+		
+		// Show some failed attempts.
+		// -no point.
+		mutable.newLocation = new EntityLocation(6.0f, 6.0f, 6.0f);
+		Assert.assertNull(EntitySubActionPopOutOfBlock.popOutLocation(context.previousBlockLookUp, mutable.newLocation, volume));
+		Assert.assertFalse(new EntitySubActionPopOutOfBlock<>(new EntityLocation(6.0f, 6.0f, 6.2f)).applyChange(context, mutable));
+		
+		// -still colliding.
+		mutable.newLocation = new EntityLocation(5.5f, 5.5f, 5.5f);
+		Assert.assertNull(EntitySubActionPopOutOfBlock.popOutLocation(context.previousBlockLookUp, mutable.newLocation, volume));
+		Assert.assertFalse(new EntitySubActionPopOutOfBlock<>(new EntityLocation(5.5f, 5.5f, 5.7f)).applyChange(context, mutable));
+		
+		// -too far.
+		mutable.newLocation = new EntityLocation(5.5f, 5.5f, 5.5f);
+		Assert.assertFalse(new EntitySubActionPopOutOfBlock<>(new EntityLocation(5.5f, 5.5f, 6.0f)).applyChange(context, mutable));
 	}
 
 

@@ -13,6 +13,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.subactions.EntitySubActionDropItemsAsPassive;
 import com.jeffdisher.october.subactions.EntitySubActionPickUpPassive;
+import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
 import com.jeffdisher.october.subactions.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -21,6 +22,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
@@ -221,6 +223,34 @@ public class TestOneOffRunner
 		// Show that this works when in range, but fails when out of range.
 		Assert.assertNotNull(OneOffRunner.runOneChange(start, null, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(new EntitySubActionPickUpPassive(near.id()))));
 		Assert.assertNull(OneOffRunner.runOneChange(start, null, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(new EntitySubActionPickUpPassive(far.id()))));
+	}
+
+	@Test
+	public void popOutOfBlock() throws Throwable
+	{
+		// Just show a basic instance of popping out of a block.
+		int entityId = 1;
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		mutable.newLocation = new EntityLocation(1.0f, 2.0f, 1.8f);
+		Entity entity = mutable.freeze();
+		
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, mutable.newLocation.getBlockLocation().getBlockAddress(), STONE_BLOCK.item().number());
+		
+		OneOffRunner.StatePackage start = new OneOffRunner.StatePackage(entity
+			, Map.of(address, cuboid)
+			, Map.of(address, HeightMapHelpers.buildHeightMap(cuboid))
+			, null
+			, Map.of()
+			, Map.of()
+		);
+		EntityLocation target = new EntityLocation(1.0f, 2.0f, 2.0f);
+		EntitySubActionPopOutOfBlock<IMutablePlayerEntity> pop = new EntitySubActionPopOutOfBlock<>(target);
+		OneOffRunner.StatePackage end = OneOffRunner.runOneChange(start, null, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(pop));
+		
+		Entity result = end.thisEntity();
+		Assert.assertEquals(target, result.location());
 	}
 
 

@@ -44,6 +44,7 @@ public enum EntitySubActionType
 	TRAVEL_VIA_BLOCK,
 	DROP_ITEMS_AS_PASSIVE,
 	PICK_UP_ITEMS_PASSIVE,
+	POP_OUT,
 	
 	/**
 	 * This testing type is never serialized so it should be kept at the end of the list.

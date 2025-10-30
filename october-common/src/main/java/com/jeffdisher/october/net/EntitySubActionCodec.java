@@ -23,6 +23,7 @@ import com.jeffdisher.october.subactions.EntitySubActionDropItemsAsPassive;
 import com.jeffdisher.october.subactions.EntitySubActionLadderAscend;
 import com.jeffdisher.october.subactions.EntitySubActionLadderDescend;
 import com.jeffdisher.october.subactions.EntitySubActionPickUpPassive;
+import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
 import com.jeffdisher.october.subactions.EntitySubActionRequestSwapSpecialSlot;
 import com.jeffdisher.october.subactions.EntitySubActionTravelViaBlock;
 import com.jeffdisher.october.subactions.MutationEntityPushItems;
@@ -77,6 +78,7 @@ public class EntitySubActionCodec
 		_CODEC_TABLE[EntitySubActionTravelViaBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> EntitySubActionTravelViaBlock.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntitySubActionDropItemsAsPassive.TYPE.ordinal()] = (ByteBuffer buffer) -> EntitySubActionDropItemsAsPassive.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntitySubActionPickUpPassive.TYPE.ordinal()] = (ByteBuffer buffer) -> EntitySubActionPickUpPassive.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[EntitySubActionPopOutOfBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> EntitySubActionPopOutOfBlock.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntitySubActionType.TESTING_ONLY.ordinal()] = (ByteBuffer buffer) -> { throw Assert.unreachable(); };
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
