@@ -3,6 +3,7 @@ package com.jeffdisher.october.actions.passive;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.DamageHelpers;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
+import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IPassiveAction;
@@ -48,6 +49,16 @@ public class PassiveActionEveryTick implements IPassiveAction
 			EntityLocation startLocation = entity.location();
 			EntityLocation startVelocity = entity.velocity();
 			EntityVolume volume = type.volume();
+			
+			// Check to see if we need to pop-out of a block.
+			EntityLocation popOut = EntitySubActionPopOutOfBlock.popOutLocation(context.previousBlockLookUp, startLocation, volume);
+			if (null != popOut)
+			{
+				startLocation = popOut;
+				startVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+			}
+			
+			// Now apply normal movement.
 			float seconds = (float)context.millisPerTick / EntityMovementHelpers.FLOAT_MILLIS_PER_SECOND;
 			EntityMovementHelpers.HighLevelMovementResult movement = EntityMovementHelpers.commonMovementIdiom(context.previousBlockLookUp
 				, startLocation
@@ -62,7 +73,7 @@ public class PassiveActionEveryTick implements IPassiveAction
 			EntityLocation finalVelocity = new EntityLocation(movement.vX(), movement.vY(), movement.vZ());
 			
 			// We need to determine if this moved.
-			if (!finalLocation.equals(startLocation) || !finalVelocity.equals(startVelocity))
+			if (!finalLocation.equals(entity.location()) || !finalVelocity.equals(entity.velocity()))
 			{
 				// This changed location so rebuild it.
 				result = new PassiveEntity(entity.id()

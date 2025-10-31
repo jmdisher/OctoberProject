@@ -211,6 +211,27 @@ public class TestEnginePassives
 		Assert.assertNull(result);
 	}
 
+	@Test
+	public void popOut()
+	{
+		int passiveId = 1;
+		EntityLocation location = new EntityLocation(0.0f, 0.0f, -0.2f);
+		ItemSlot slot = ItemSlot.fromStack(new Items(STONE_ITEM, 2));
+		long lastAliveMillis = PassiveType.ITEM_SLOT_DESPAWN_MILLIS + 1L;
+		PassiveEntity passive = new PassiveEntity(passiveId
+			, PassiveType.ITEM_SLOT
+			, location
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, slot
+			, lastAliveMillis
+		);
+		
+		TickProcessingContext context = _createContextWithSink(null);
+		
+		PassiveEntity result = EnginePassives.processOneCreature(context, passive, List.of());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), result.location());
+	}
+
 
 	private static TickProcessingContext _createContextWithTopCuboid(CuboidData airCuboid)
 	{
