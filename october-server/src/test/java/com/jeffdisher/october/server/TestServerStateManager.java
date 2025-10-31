@@ -1179,6 +1179,118 @@ public class TestServerStateManager
 		manager.setupNextTickAfterCompletion(snapshot);
 	}
 
+	@Test
+	public void entityViewDistance()
+	{
+		// Show that we don't see creatures or passives if they are too far away.
+		_Callouts callouts = new _Callouts();
+		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
+		manager.setOwningThread();
+		int clientId1 = 1;
+		String clientName1 = "client1";
+		int viewDistance = 3;
+		manager.clientConnected(clientId1, clientName1, viewDistance);
+		
+		// Load the initial player entity so we will send the updates somewhere.
+		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot);
+		MutableEntity near = MutableEntity.createForTest(clientId1);
+		EntityLocation clientLocation = new EntityLocation(5.0f, 5.0f, 0.0f);
+		near.setLocation(clientLocation);
+		callouts.loadedEntities.add(new SuspendedEntity(near.freeze(), List.of()));
+		changes = manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(0, changes.newCuboids().size());
+		Assert.assertEquals(1, changes.newEntities().size());
+		
+		// Load 2 cuboids, each with a creature and passive, where one of the cuboids is outside of entity view distance.
+		int creatureNearId = -1;
+		int creatureFarId = -2;
+		int passiveNearId = 1;
+		int passiveFarId = 2;
+		EntityLocation creatureNearLocation = new EntityLocation(5.0f, clientLocation.y() + 64.0f, clientLocation.z());
+		EntityLocation creatureFarLocation = new EntityLocation(5.0f, clientLocation.y() + 96.0f, clientLocation.z());
+		EntityLocation passiveNearLocation = new EntityLocation(5.0f, clientLocation.y() + 64.0f, clientLocation.z());
+		EntityLocation passiveFarLocation = new EntityLocation(5.0f, clientLocation.y() + 96.0f, clientLocation.z());
+		CreatureEntity creatureNear = CreatureEntity.create(creatureNearId, COW, creatureNearLocation, (byte)50);
+		CreatureEntity creatureFar = CreatureEntity.create(creatureFarId, COW, creatureFarLocation, (byte)50);
+		Item stoneItem = ENV.items.getItemById("op.stone");
+		Items stack = new Items(stoneItem, 3);
+		ItemSlot slot = ItemSlot.fromStack(stack);
+		PassiveEntity passiveNear = new PassiveEntity(passiveNearId, PassiveType.ITEM_SLOT, passiveNearLocation, new EntityLocation(0.0f, 0.0f, 0.0f), slot, 1000L);
+		PassiveEntity passiveFar = new PassiveEntity(passiveFarId, PassiveType.ITEM_SLOT, passiveFarLocation, new EntityLocation(0.0f, 0.0f, 0.0f), slot, 1000L);
+		
+		// Inject the cuboids so that the ServerStateManager will see it coming back from the loader.
+		CuboidData nearCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 2, 0), ENV.special.AIR);
+		CuboidData farCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 3, 0), ENV.special.AIR);
+		callouts.loadedCuboids.add(new SuspendedCuboid<>(nearCuboid
+			, HeightMapHelpers.buildHeightMap(nearCuboid)
+			, List.of(creatureNear)
+			, List.of()
+			, Map.of()
+			, List.of(passiveNear)
+		));
+		callouts.loadedCuboids.add(new SuspendedCuboid<>(farCuboid
+			, HeightMapHelpers.buildHeightMap(farCuboid)
+			, List.of(creatureFar)
+			, List.of()
+			, Map.of()
+			, List.of(passiveFar)
+		));
+		
+		// Create the snapshot of the player entity loading (we should see the new cuboid in the changes).
+		snapshot = _modifySnapshot(snapshot
+			, Map.of(
+			)
+			, Map.of(clientId1, new TickRunner.SnapshotEntity(near.freeze(), null, 1L, List.of()))
+			, snapshot.creatures()
+			, snapshot.passives()
+			, Map.of(
+			)
+			, Set.of()
+		);
+		changes = manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(2, changes.newCuboids().size());
+		// (note that this is the first time we will see the full entity, too)
+		Assert.assertTrue(callouts.fullEntitiesSent.contains(clientId1));
+		
+		// We now expect the snapshot to include the cuboid with its creature and passive we just loaded.
+		snapshot = _modifySnapshot(snapshot
+			, Map.of(
+				nearCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(nearCuboid, null, List.of(), Map.of())
+				, farCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(farCuboid, null, List.of(), Map.of())
+			)
+			, snapshot.entities()
+			, Map.of(
+				creatureNear.id(), new TickRunner.SnapshotCreature(creatureNear, null)
+				, creatureFar.id(), new TickRunner.SnapshotCreature(creatureFar, null)
+			)
+			, Map.of(
+				passiveNear.id(), new TickRunner.SnapshotPassive(passiveNear, null)
+				, passiveFar.id(), new TickRunner.SnapshotPassive(passiveFar, null)
+			)
+			, HeightMapHelpers.buildColumnMaps(Map.of(
+				nearCuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(nearCuboid)
+				, farCuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(farCuboid)
+			))
+			, Set.of()
+		);
+		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
+		
+		// We expect to see the callouts for both cuboids but only the near creature and passive.
+		// -cuboids
+		Assert.assertTrue(callouts.cuboidsSentToClient.get(clientId1).contains(nearCuboid.getCuboidAddress()));
+		Assert.assertTrue(callouts.cuboidsSentToClient.get(clientId1).contains(farCuboid.getCuboidAddress()));
+		// -creature
+		Assert.assertEquals(1, callouts.partialEntitiesPerClient.get(clientId1).size());
+		Assert.assertEquals(creatureNearLocation, callouts.partialEntitiesPerClient.get(clientId1).get(creatureNear.id()).location());
+		// -passive
+		Assert.assertEquals(1, callouts.partialPassivesPerClient.get(clientId1).size());
+		Assert.assertEquals(passiveNearLocation, callouts.partialPassivesPerClient.get(clientId1).get(passiveNear.id()).location());
+		
+		manager.clientDisconnected(clientId1);
+		manager.setupNextTickAfterCompletion(snapshot);
+	}
+
 
 	private TickRunner.Snapshot _createEmptySnapshot()
 	{

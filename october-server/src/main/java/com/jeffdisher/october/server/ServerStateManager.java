@@ -49,6 +49,7 @@ import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
+import com.jeffdisher.october.utils.Encoding;
 
 
 /**
@@ -58,10 +59,6 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class ServerStateManager
 {
-	/**
-	 * Entities further than this distance away (horizontal sums, for now) are not visible to the clients.
-	 */
-	public static final float ENTITY_VISIBLE_DISTANCE = 50.0f;
 	/**
 	 * How often, in terms of ticks, that the remaining (not being unloaded) resources are written to disk.
 	 */
@@ -680,9 +677,10 @@ public class ServerStateManager
 
 	private void _sendEntityUpdates(int clientId, ClientState state)
 	{
-		_sendNewAndUpdatedEntities(clientId, state);
-		_sendNewAndUpdatedCreatures(clientId, state);
-		_sendNewAndUpdatedPassives(clientId, state);
+		float entityVisibleDistance = state.getEntityVisibleDistance();
+		_sendNewAndUpdatedEntities(clientId, state, entityVisibleDistance);
+		_sendNewAndUpdatedCreatures(clientId, state, entityVisibleDistance);
+		_sendNewAndUpdatedPassives(clientId, state, entityVisibleDistance);
 		
 		// If there are any entities in the state which aren't in the snapshot, remove them since they died or disconnected.
 		Set<Integer> allEntityIds = new HashSet<>(_completedEntities.keySet());
@@ -709,7 +707,7 @@ public class ServerStateManager
 		}
 	}
 
-	private void _sendNewAndUpdatedEntities(int clientId, ClientState state)
+	private void _sendNewAndUpdatedEntities(int clientId, ClientState state, float entityVisibleDistance)
 	{
 		// Note that this is similar to _sendNewAndUpdatedCreatures but duplicated to avoid spreading logic with extra levels of indirection.
 		EntityType playerType  = Environment.getShared().creatures.PLAYER;
@@ -721,7 +719,7 @@ public class ServerStateManager
 			if (state.knownEntities.contains(entityId))
 			{
 				// See if they are too far away.
-				if (distance > ENTITY_VISIBLE_DISTANCE)
+				if (distance > entityVisibleDistance)
 				{
 					// This is too far away so discard it.
 					_callouts.network_removeEntity(clientId, entityId);
@@ -749,7 +747,7 @@ public class ServerStateManager
 					}
 				}
 			}
-			else if (distance <= ENTITY_VISIBLE_DISTANCE)
+			else if (distance <= entityVisibleDistance)
 			{
 				// We don't know this entity, and they are close by, so send them.
 				// See if this is "them" or someone else.
@@ -768,7 +766,7 @@ public class ServerStateManager
 		}
 	}
 
-	private void _sendNewAndUpdatedCreatures(int clientId, ClientState state)
+	private void _sendNewAndUpdatedCreatures(int clientId, ClientState state, float entityVisibleDistance)
 	{
 		// Note that this is similar to _sendNewAndUpdatedEntities but duplicated to avoid spreading logic with extra levels of indirection.
 		EntityType playerType  = Environment.getShared().creatures.PLAYER;
@@ -780,7 +778,7 @@ public class ServerStateManager
 			if (state.knownEntities.contains(entityId))
 			{
 				// See if they are too far away.
-				if (distance > ENTITY_VISIBLE_DISTANCE)
+				if (distance > entityVisibleDistance)
 				{
 					// This is too far away so discard it.
 					_callouts.network_removeEntity(clientId, entityId);
@@ -798,7 +796,7 @@ public class ServerStateManager
 					}
 				}
 			}
-			else if (distance <= ENTITY_VISIBLE_DISTANCE)
+			else if (distance <= entityVisibleDistance)
 			{
 				// We don't know this entity, and they are close by, so send them.
 				// Creatures are always partial.
@@ -809,7 +807,7 @@ public class ServerStateManager
 		}
 	}
 
-	private void _sendNewAndUpdatedPassives(int clientId, ClientState state)
+	private void _sendNewAndUpdatedPassives(int clientId, ClientState state, float entityVisibleDistance)
 	{
 		// Note that this is similar to _sendNewAndUpdatedCreatures but duplicated to avoid spreading logic with extra levels of indirection.
 		EntityType playerType  = Environment.getShared().creatures.PLAYER;
@@ -821,7 +819,7 @@ public class ServerStateManager
 			if (state.knownPassives.contains(entityId))
 			{
 				// See if they are too far away.
-				if (distance > ENTITY_VISIBLE_DISTANCE)
+				if (distance > entityVisibleDistance)
 				{
 					// This is too far away so discard it.
 					_callouts.network_removePassive(clientId, entityId);
@@ -837,7 +835,7 @@ public class ServerStateManager
 					}
 				}
 			}
-			else if (distance <= ENTITY_VISIBLE_DISTANCE)
+			else if (distance <= entityVisibleDistance)
 			{
 				// We don't know this passive, and they are close by, so send them.
 				PartialPassive partial = new PartialPassive(passive.id()
@@ -1197,6 +1195,13 @@ public class ServerStateManager
 			this.knownCuboids = new HashSet<>();
 			this.priorityMissingCuboids = new ArrayList<>();
 			this.outerMissingCuboids = new HashSet<>();
+		}
+		
+		public float getEntityVisibleDistance()
+		{
+			// We will build our estimate of distance based on the cuboid view distance minus 1 with a minimum of 1.
+			int cuboidDistance = Math.max(1, this.cuboidViewDistance - 1);
+			return (float)(cuboidDistance * Encoding.CUBOID_EDGE_SIZE);
 		}
 	}
 }
