@@ -215,7 +215,7 @@ public class TestEnginePassives
 	public void popOut()
 	{
 		int passiveId = 1;
-		EntityLocation location = new EntityLocation(0.0f, 0.0f, -0.2f);
+		EntityLocation location = new EntityLocation(0.0f, 0.0f, -1.0f);
 		ItemSlot slot = ItemSlot.fromStack(new Items(STONE_ITEM, 2));
 		long lastAliveMillis = PassiveType.ITEM_SLOT_DESPAWN_MILLIS + 1L;
 		PassiveEntity passive = new PassiveEntity(passiveId

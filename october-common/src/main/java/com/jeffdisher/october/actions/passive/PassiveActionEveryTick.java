@@ -3,7 +3,6 @@ package com.jeffdisher.october.actions.passive;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.DamageHelpers;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
-import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IPassiveAction;
@@ -20,6 +19,11 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class PassiveActionEveryTick implements IPassiveAction
 {
+	/**
+	 * We allow passives to move by a whole block to satisfy this requirement.
+	 */
+	public static final float POP_OUT_MAX_DISTANCE = 1.0f;
+
 	@Override
 	public PassiveEntity applyChange(TickProcessingContext context, PassiveEntity entity)
 	{
@@ -51,7 +55,7 @@ public class PassiveActionEveryTick implements IPassiveAction
 			EntityVolume volume = type.volume();
 			
 			// Check to see if we need to pop-out of a block.
-			EntityLocation popOut = EntitySubActionPopOutOfBlock.popOutLocation(context.previousBlockLookUp, startLocation, volume);
+			EntityLocation popOut = EntityMovementHelpers.popOutLocation(context.previousBlockLookUp, startLocation, volume, POP_OUT_MAX_DISTANCE);
 			if (null != popOut)
 			{
 				startLocation = popOut;

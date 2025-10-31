@@ -183,6 +183,106 @@ public class EntityMovementHelpers
 		return out[0];
 	}
 
+	/**
+	 * Finds a reasonable location where the entity at location should "pop" to if it is stuck inside a block.  This
+	 * accounts for the volume of the entity and the given maxPopOutDistance.  Returns null if not needed or if there is
+	 * no valid destination in range.
+	 * 
+	 * @param previousBlockLookUp Looks up BlockProxy instances by location.
+	 * @param location The base location of the entity being checked.
+	 * @param volume The volume of the entity being checked.
+	 * @param maxPopOutDistance The maximum distance that the entity can move from location to satisfy the request.
+	 * @return The new location of the entity or null if it doesn't need to pop out or can't find a valid destination in
+	 * range.
+	 */
+	public static EntityLocation popOutLocation(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+		, EntityLocation location
+		, EntityVolume volume
+		, float maxPopOutDistance
+	)
+	{
+		EntityLocation poppedLocation = null;
+		ViscosityReader reader = new ViscosityReader(Environment.getShared(), previousBlockLookUp);
+		if (!SpatialHelpers.canExistInLocation(reader, location, volume))
+		{
+			// Find if there is a location in an adjacent block where we could stand.
+			// We will prioritize pop-out in this order:  up, down, north, south, east, west.
+			if (null == poppedLocation)
+			{
+				float edgeZ = location.z() + volume.height();
+				float upZMove = 1.0f - SpatialHelpers.getPositiveFractionalComponent(location.z());
+				float downZMove = SpatialHelpers.getPositiveFractionalComponent(edgeZ) + EntityMovementHelpers.POSITIVE_EDGE_COLLISION_FUDGE_FACTOR;
+				if (upZMove <= maxPopOutDistance)
+				{
+					// Up is in range but does it work?
+					EntityLocation newLocation = new EntityLocation(location.x(), location.y(), location.z() + upZMove);
+					if (SpatialHelpers.canExistInLocation(reader, newLocation, volume))
+					{
+						poppedLocation = newLocation;
+					}
+				}
+				if ((null == poppedLocation) && (downZMove <= maxPopOutDistance))
+				{
+					// Down is in range but does it work?
+					EntityLocation newLocation = new EntityLocation(location.x(), location.y(), location.z() - downZMove);
+					if (SpatialHelpers.canExistInLocation(reader, newLocation, volume))
+					{
+						poppedLocation = newLocation;
+					}
+				}
+			}
+			if (null == poppedLocation)
+			{
+				float edgeY = location.y() + volume.width();
+				float northYMove = 1.0f - SpatialHelpers.getPositiveFractionalComponent(location.y());
+				float southYMove = SpatialHelpers.getPositiveFractionalComponent(edgeY) + EntityMovementHelpers.POSITIVE_EDGE_COLLISION_FUDGE_FACTOR;
+				if (northYMove <= maxPopOutDistance)
+				{
+					// Up is in range but does it work?
+					EntityLocation newLocation = new EntityLocation(location.x(), location.y() + northYMove, location.z());
+					if (SpatialHelpers.canExistInLocation(reader, newLocation, volume))
+					{
+						poppedLocation = newLocation;
+					}
+				}
+				if ((null == poppedLocation) && (southYMove <= maxPopOutDistance))
+				{
+					// Down is in range but does it work?
+					EntityLocation newLocation = new EntityLocation(location.x(), location.y() - southYMove, location.z());
+					if (SpatialHelpers.canExistInLocation(reader, newLocation, volume))
+					{
+						poppedLocation = newLocation;
+					}
+				}
+			}
+			if (null == poppedLocation)
+			{
+				float edgeX = location.x() + volume.width();
+				float eastXMove = 1.0f - SpatialHelpers.getPositiveFractionalComponent(location.x());
+				float westXMove = SpatialHelpers.getPositiveFractionalComponent(edgeX) + EntityMovementHelpers.POSITIVE_EDGE_COLLISION_FUDGE_FACTOR;
+				if (eastXMove <= maxPopOutDistance)
+				{
+					// Up is in range but does it work?
+					EntityLocation newLocation = new EntityLocation(location.x() + eastXMove, location.y(), location.z());
+					if (SpatialHelpers.canExistInLocation(reader, newLocation, volume))
+					{
+						poppedLocation = newLocation;
+					}
+				}
+				if ((null == poppedLocation) && (westXMove <= maxPopOutDistance))
+				{
+					// Down is in range but does it work?
+					EntityLocation newLocation = new EntityLocation(location.x() - westXMove, location.y(), location.z());
+					if (SpatialHelpers.canExistInLocation(reader, newLocation, volume))
+					{
+						poppedLocation = newLocation;
+					}
+				}
+			}
+		}
+		return poppedLocation;
+	}
+
 
 	private static boolean _canOccupyLocation(EntityLocation movingStart, EntityVolume volume, IViscosityLookup helper, boolean fromAbove)
 	{
