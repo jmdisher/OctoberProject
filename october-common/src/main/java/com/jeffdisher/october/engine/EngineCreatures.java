@@ -9,7 +9,9 @@ import com.jeffdisher.october.logic.DamageHelpers;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.NudgeHelpers;
 import com.jeffdisher.october.mutations.TickUtils;
+import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
 import com.jeffdisher.october.types.CreatureEntity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
@@ -122,12 +124,19 @@ public class EngineCreatures
 			, MutableCreature mutable
 	)
 	{
+		// In this case, we will also check to see if we need to "pop out" of a block.
+		EntitySubActionPopOutOfBlock<IMutableCreatureEntity> subAction = null;
+		EntityLocation popOut = EntitySubActionPopOutOfBlock.popOutLocation(context.previousBlockLookUp, mutable.newLocation, mutable.getType().volume());
+		if (null != popOut)
+		{
+			subAction = new EntitySubActionPopOutOfBlock<>(popOut);
+		}
 		return new EntityActionSimpleMove<>(0.0f
 			, 0.0f
 			, EntityActionSimpleMove.Intensity.STANDING
 			, mutable.newYaw
 			, mutable.newPitch
-			, null
+			, subAction
 		);
 	}
 

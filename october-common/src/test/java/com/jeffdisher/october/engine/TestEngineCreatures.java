@@ -973,6 +973,22 @@ public class TestEngineCreatures
 		Assert.assertEquals(new EntityLocation(-0.2f, 0.3f, -0.3f), mutable.newVelocity);
 	}
 
+	@Test
+	public void popOut()
+	{
+		CreatureEntity creature = CreatureEntity.create(-1, COW, new EntityLocation(0.0f, 0.0f, -0.2f), (byte)100);
+		_Events events = new _Events();
+		TickProcessingContext context = _createContextWithEvents(events);
+		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+			, EntityCollection.emptyCollection()
+			, creature
+			, List.of()
+		);
+		
+		CreatureEntity updated = result.updatedEntity();
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), updated.location());
+	}
+
 
 	private static TickProcessingContext _createContext()
 	{
