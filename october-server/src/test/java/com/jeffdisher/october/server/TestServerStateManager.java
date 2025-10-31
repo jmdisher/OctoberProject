@@ -1064,6 +1064,121 @@ public class TestServerStateManager
 		manager.setupNextTickAfterCompletion(snapshot);
 	}
 
+	@Test
+	public void cuboidPartialLoading()
+	{
+		// Show that the new set traversal for missing cuboids can still make progress with sparse load order.
+		_Callouts callouts = new _Callouts();
+		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
+		manager.setOwningThread();
+		int clientId1 = 1;
+		String clientName1 = "client1";
+		int viewDistance = 2;
+		manager.clientConnected(clientId1, clientName1, viewDistance);
+		
+		// Load the initial player entity so we will send the updates somewhere.
+		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot);
+		MutableEntity near = MutableEntity.createForTest(clientId1);
+		EntityLocation clientLocation = new EntityLocation(5.0f, 5.0f, 0.0f);
+		near.setLocation(clientLocation);
+		callouts.loadedEntities.add(new SuspendedEntity(near.freeze(), List.of()));
+		changes = manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(0, changes.newCuboids().size());
+		Assert.assertEquals(1, changes.newEntities().size());
+		
+		// Load 2 cuboids, one near and one further away to show that we see both.
+		// Inject the cuboids so that the ServerStateManager will see it coming back from the loader.
+		CuboidData nearCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 1, 0), ENV.special.AIR);
+		CuboidData farCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 2, 0), ENV.special.AIR);
+		callouts.loadedCuboids.add(new SuspendedCuboid<>(nearCuboid
+			, HeightMapHelpers.buildHeightMap(nearCuboid)
+			, List.of()
+			, List.of()
+			, Map.of()
+			, List.of()
+		));
+		callouts.loadedCuboids.add(new SuspendedCuboid<>(farCuboid
+			, HeightMapHelpers.buildHeightMap(farCuboid)
+			, List.of()
+			, List.of()
+			, Map.of()
+			, List.of()
+		));
+		
+		// Create the snapshot of the player entity loading (we should see the new cuboid in the changes).
+		snapshot = _modifySnapshot(snapshot
+			, Map.of(
+			)
+			, Map.of(clientId1, new TickRunner.SnapshotEntity(near.freeze(), null, 1L, List.of()))
+			, snapshot.creatures()
+			, snapshot.passives()
+			, Map.of(
+			)
+			, Set.of()
+		);
+		changes = manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(2, changes.newCuboids().size());
+		// (note that this is the first time we will see the full entity, too)
+		Assert.assertTrue(callouts.fullEntitiesSent.contains(clientId1));
+		
+		// Now, load a third cuboid at a far distance and make sure that it loads correctly.
+		CuboidData farCuboid2 = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, 2, 0), ENV.special.AIR);
+		callouts.loadedCuboids.add(new SuspendedCuboid<>(farCuboid2
+			, HeightMapHelpers.buildHeightMap(farCuboid2)
+			, List.of()
+			, List.of()
+			, Map.of()
+			, List.of()
+		));
+		
+		// We now expect the snapshot to include these 2 cuboids.
+		snapshot = _modifySnapshot(snapshot
+			, Map.of(
+				nearCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(nearCuboid, null, List.of(), Map.of())
+				, farCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(farCuboid, null, List.of(), Map.of())
+			)
+			, snapshot.entities()
+			, snapshot.creatures()
+			, snapshot.passives()
+			, HeightMapHelpers.buildColumnMaps(Map.of(
+				nearCuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(nearCuboid)
+				, farCuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(farCuboid)
+			))
+			, Set.of()
+		);
+		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
+		Assert.assertEquals(1, changes.newCuboids().size());
+		Assert.assertTrue(callouts.cuboidsSentToClient.get(clientId1).contains(nearCuboid.getCuboidAddress()));
+		Assert.assertTrue(callouts.cuboidsSentToClient.get(clientId1).contains(farCuboid.getCuboidAddress()));
+		
+		// We now expect the snapshot to include all 3 cuboids.
+		snapshot = _modifySnapshot(snapshot
+			, Map.of(
+				nearCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(nearCuboid, null, List.of(), Map.of())
+				, farCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(farCuboid, null, List.of(), Map.of())
+				, farCuboid2.getCuboidAddress(), new TickRunner.SnapshotCuboid(farCuboid2, null, List.of(), Map.of())
+			)
+			, snapshot.entities()
+			, snapshot.creatures()
+			, snapshot.passives()
+			, HeightMapHelpers.buildColumnMaps(Map.of(
+				nearCuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(nearCuboid)
+				, farCuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(farCuboid)
+				, farCuboid2.getCuboidAddress(), HeightMapHelpers.buildHeightMap(farCuboid2)
+			))
+			, Set.of()
+		);
+		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
+		Assert.assertEquals(0, changes.newCuboids().size());
+		Assert.assertTrue(callouts.cuboidsSentToClient.get(clientId1).contains(nearCuboid.getCuboidAddress()));
+		Assert.assertTrue(callouts.cuboidsSentToClient.get(clientId1).contains(farCuboid.getCuboidAddress()));
+		Assert.assertTrue(callouts.cuboidsSentToClient.get(clientId1).contains(farCuboid2.getCuboidAddress()));
+		
+		manager.clientDisconnected(clientId1);
+		manager.setupNextTickAfterCompletion(snapshot);
+	}
+
 
 	private TickRunner.Snapshot _createEmptySnapshot()
 	{

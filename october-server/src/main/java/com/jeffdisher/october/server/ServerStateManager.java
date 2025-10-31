@@ -901,20 +901,20 @@ public class ServerStateManager
 			// Attempt any more we can fit.
 			if ((cuboidsSent < CUBOIDS_SENT_PER_TICK) && !state.outerMissingCuboids.isEmpty())
 			{
-				iter = state.outerMissingCuboids.iterator();
+				// NOTE:  Building this set might be a little expensive but allows us to figure out what we can send with an intersection.
+				HashSet<CuboidAddress> set = new HashSet<>(state.outerMissingCuboids);
+				set.retainAll(_completedCuboids.keySet());
+				iter = set.iterator();
 				while ((cuboidsSent < CUBOIDS_SENT_PER_TICK) && iter.hasNext())
 				{
 					CuboidAddress address = iter.next();
 					// We haven't seen this yet so just send it.
 					IReadOnlyCuboidData cuboidData = _completedCuboids.get(address);
-					// This may not yet be loaded.
-					if (null != cuboidData)
-					{
-						_callouts.network_sendCuboid(clientId, cuboidData);
-						state.knownCuboids.add(address);
-						iter.remove();
-					}
-					// We don't want to search this list too aggressively (it can be large) so we count not just how many we send but how many we attempt.
+					// We created this set with an intersection so this must be here.
+					Assert.assertTrue(null != cuboidData);
+					_callouts.network_sendCuboid(clientId, cuboidData);
+					state.knownCuboids.add(address);
+					state.outerMissingCuboids.remove(address);
 					cuboidsSent += 1;
 				}
 			}
@@ -1182,7 +1182,7 @@ public class ServerStateManager
 		public final Set<Integer> knownPassives;
 		public final Set<CuboidAddress> knownCuboids;
 		public final List<CuboidAddress> priorityMissingCuboids;
-		public final List<CuboidAddress> outerMissingCuboids;
+		public final Set<CuboidAddress> outerMissingCuboids;
 		
 		public ClientState(String name, EntityLocation initialLocation, int cuboidViewDistance)
 		{
@@ -1196,7 +1196,7 @@ public class ServerStateManager
 			this.knownPassives = new HashSet<>();
 			this.knownCuboids = new HashSet<>();
 			this.priorityMissingCuboids = new ArrayList<>();
-			this.outerMissingCuboids = new ArrayList<>();
+			this.outerMissingCuboids = new HashSet<>();
 		}
 	}
 }
