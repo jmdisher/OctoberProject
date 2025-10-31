@@ -9,12 +9,15 @@ import com.jeffdisher.october.logic.CraftingBlockSupport;
 import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
+import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -23,6 +26,7 @@ import com.jeffdisher.october.utils.Assert;
  * Called by MutationEntityPushItems to store items into the inventory in a given block.
  * Note that this mutation can over-fill the inventory so users of this mutation should be sure that this is what they
  * expect.
+ * If the target block doesn't the expected inventory, the items will be dropped in that block as a passive.
  */
 public class MutationBlockStoreItems implements IMutationBlock
 {
@@ -87,6 +91,16 @@ public class MutationBlockStoreItems implements IMutationBlock
 			{
 				context.mutationSink.next(new MutationBlockFurnaceCraft(_blockLocation));
 			}
+			didApply = true;
+		}
+		else
+		{
+			// There is no inventory so just drop within the block as a passive (just so this doesn't disappear due to timing, etc).
+			ItemSlot slot = (null != _stackable)
+				? ItemSlot.fromStack(_stackable)
+				: ItemSlot.fromNonStack(_nonStackable)
+			;
+			context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, _blockLocation.toEntityLocation(), new EntityLocation(0.0f, 0.0f, 0.0f), slot);
 			didApply = true;
 		}
 		

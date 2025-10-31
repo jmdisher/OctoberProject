@@ -1705,6 +1705,38 @@ public class TestCommonMutations
 		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 	}
 
+	@Test
+	public void failStoreItems()
+	{
+		// Show that we spawn the payload as a passive if we fail to store into a block.
+		AbsoluteLocation target = new AbsoluteLocation(15, 15, 15);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), STONE);
+		PassiveEntity[] out_passive = new PassiveEntity[1];
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
+			.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+				Assert.assertNull(out_passive[0]);
+				out_passive[0] = new PassiveEntity(1
+					, type
+					, location
+					, velocity
+					, extendedData
+					, 1000L
+				);
+			})
+			.finish()
+		;
+		
+		Item saplingTime = ENV.items.getItemById("op.sapling");
+		MutationBlockStoreItems storeItems = new MutationBlockStoreItems(target, new Items(saplingTime, 1), null, Inventory.INVENTORY_ASPECT_INVENTORY);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		Assert.assertTrue(storeItems.applyMutation(context, proxy));
+		Assert.assertFalse(proxy.didChange());
+		proxy.writeBack(cuboid);
+		
+		Assert.assertEquals(saplingTime, ((ItemSlot)out_passive[0].extendedData()).getType());
+	}
+
 
 	private static Set<AbsoluteLocation> _getEastFacingPortalVoidStones(AbsoluteLocation keystoneLocation)
 	{
