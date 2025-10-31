@@ -1001,6 +1001,57 @@ public class TestMovementAccumulator
 		accumulator.removePassive(passive.id());
 	}
 
+	@Test
+	public void localCraftSpillOver() throws Throwable
+	{
+		// Show what happens when we start a crafting operation but it spills over into the next accumulated tick without completing.
+		long millisPerTick = 100L;
+		long currentTimeMillis = 1000L;
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidData blockingCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		CuboidHeightMap cuboidMap = HeightMapHelpers.buildHeightMap(cuboid);
+		CuboidHeightMap blockingMap = HeightMapHelpers.buildHeightMap(blockingCuboid);
+		ColumnHeightMap columnMap = HeightMapHelpers.buildColumnMaps(Map.of(cuboid.getCuboidAddress(), cuboidMap
+			, blockingCuboid.getCuboidAddress(), blockingMap
+		)).values().iterator().next();
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Create the baseline data we need.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newInventory.addAllItems(LOG_ITEM, 1);
+		Entity entity = mutable.freeze();
+		accumulator.setThisEntity(entity);
+		accumulator.setCuboid(cuboid, cuboidMap);
+		accumulator.setCuboid(blockingCuboid, blockingMap);
+		listener.thisEntityDidLoad(entity);
+		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
+		listener.cuboidDidLoad(blockingCuboid, blockingMap, columnMap);
+		accumulator.clearAccumulation();
+		
+		// Enqueue a craft operation and run a standing iteration.
+		currentTimeMillis += (millisPerTick / 2L);
+		accumulator.enqueueSubAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.log_to_planks")), currentTimeMillis);
+		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
+		Assert.assertNull(out);
+		// We shouldn't see anything until we apply the accumulation.
+		Assert.assertNull(listener.thisEntity.localCraftOperation());
+		accumulator.applyLocalAccumulation();
+		Assert.assertNotNull(listener.thisEntity.localCraftOperation());
+		
+		// Show what happens when we spill over into the next tick.
+		currentTimeMillis += millisPerTick;
+		accumulator.enqueueSubAction(new EntityChangeCraft(null), currentTimeMillis);
+		out = accumulator.stand(currentTimeMillis);
+		Assert.assertNotNull(out);
+		Assert.assertTrue(out.test_getSubAction() instanceof EntityChangeCraft);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid, blockingCuboid), entity, out, accumulator, listener);
+		// We should see the active operation since it was in this last action.
+		Assert.assertNotNull(listener.thisEntity.localCraftOperation());
+		accumulator.applyLocalAccumulation();
+		Assert.assertNotNull(listener.thisEntity.localCraftOperation());
+	}
+
 
 	private Entity _runFallingTest(long millisPerMove, int iterationCount, CuboidData cuboid, Entity entity)
 	{

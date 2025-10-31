@@ -136,7 +136,7 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 					forceFailure = true;
 				}
 			}
-			else
+			else if (_intensity != Intensity.STANDING)
 			{
 				// If there is no sub-action, clear whatever partial action we may have been performing.
 				newEntity.resetLongRunningOperations();
