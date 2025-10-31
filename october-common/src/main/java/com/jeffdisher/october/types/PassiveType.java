@@ -21,7 +21,7 @@ public record PassiveType(byte number
 	public static final long ITEM_SLOT_DESPAWN_MILLIS = 5L * 60L * 1000L;
 
 	public static final PassiveType ITEM_SLOT = new PassiveType((byte)1
-		, new EntityVolume(0.1f, 0.1f)
+		, new EntityVolume(0.2f, 0.2f)
 		, new IExtendedCodec() {
 			@Override
 			public Object read(DeserializationContext context)
