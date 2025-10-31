@@ -229,6 +229,11 @@ public class MovementAccumulator
 			_subAction = subAction;
 			EntityActionSimpleMove<IMutablePlayerEntity> toRun = _moveFromAccumulation();
 			long millisToApply = _accumulationMillis;
+			if (0L == millisToApply)
+			{
+				// We need to apply at least some time, just to see if this will work.
+				millisToApply = 1L;
+			}
 			Entity newEntity = _generateLocalEntity(toRun, millisToApply, currentTimeMillis);
 			if (null == newEntity)
 			{

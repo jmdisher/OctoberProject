@@ -29,6 +29,7 @@ import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.subactions.EntityChangeChangeHotbarSlot;
 import com.jeffdisher.october.subactions.EntityChangeCraft;
+import com.jeffdisher.october.subactions.EntityChangeCraftInBlock;
 import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.subactions.EntityChangeJump;
 import com.jeffdisher.october.subactions.EntityChangeSwim;
@@ -1050,6 +1051,46 @@ public class TestMovementAccumulator
 		Assert.assertNotNull(listener.thisEntity.localCraftOperation());
 		accumulator.applyLocalAccumulation();
 		Assert.assertNotNull(listener.thisEntity.localCraftOperation());
+	}
+
+	@Test
+	public void enqueueBlockCraftWithoutAccumulation() throws Throwable
+	{
+		// Show that we are still able to enqueue a block crafting sub-action even when no time has accumulated.
+		long millisPerTick = 100L;
+		long currentTimeMillis = 1000L;
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		Block table = ENV.blocks.fromItem(ENV.items.getItemById("op.crafting_table"));
+		AbsoluteLocation tableLocation = new AbsoluteLocation(1, 1, 0);
+		cuboid.setData15(AspectRegistry.BLOCK, tableLocation.getBlockAddress(), table.item().number());
+		CuboidData blockingCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		CuboidHeightMap cuboidMap = HeightMapHelpers.buildHeightMap(cuboid);
+		CuboidHeightMap blockingMap = HeightMapHelpers.buildHeightMap(blockingCuboid);
+		ColumnHeightMap columnMap = HeightMapHelpers.buildColumnMaps(Map.of(cuboid.getCuboidAddress(), cuboidMap
+			, blockingCuboid.getCuboidAddress(), blockingMap
+		)).values().iterator().next();
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Create the baseline data we need.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		Entity entity = mutable.freeze();
+		accumulator.setThisEntity(entity);
+		accumulator.setCuboid(cuboid, cuboidMap);
+		accumulator.setCuboid(blockingCuboid, blockingMap);
+		listener.thisEntityDidLoad(entity);
+		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
+		listener.cuboidDidLoad(blockingCuboid, blockingMap, columnMap);
+		accumulator.clearAccumulation();
+		
+		// Try to craft something in the table, where normal validation that the sub-task is value will fail witout any accumulation.
+		accumulator.enqueueSubAction(new EntityChangeCraftInBlock(tableLocation, ENV.crafting.getCraftById("op.log_to_planks")), currentTimeMillis);
+		currentTimeMillis += millisPerTick;
+		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
+		Assert.assertNotNull(out);
+		Assert.assertTrue(out.test_getSubAction() instanceof EntityChangeCraftInBlock);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid, blockingCuboid), entity, out, accumulator, listener);
+		accumulator.applyLocalAccumulation();
 	}
 
 
