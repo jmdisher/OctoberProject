@@ -13,6 +13,8 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -230,6 +232,58 @@ public class TestEnginePassives
 		
 		PassiveEntity result = EnginePassives.processOneCreature(context, passive, List.of());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), result.location());
+	}
+
+	@Test
+	public void enterHopper()
+	{
+		int passiveId = 1;
+		EntityLocation passiveLocation = new EntityLocation(5.1f, 6.2f, 7.3f);
+		ItemSlot slot = ItemSlot.fromStack(new Items(STONE_ITEM, 2));
+		long lastAliveMillis = PassiveType.ITEM_SLOT_DESPAWN_MILLIS + 1L;
+		PassiveEntity passive = new PassiveEntity(passiveId
+			, PassiveType.ITEM_SLOT
+			, passiveLocation
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, slot
+			, lastAliveMillis
+		);
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		Block hopper = ENV.blocks.fromItem(ENV.items.getItemById("op.hopper"));
+		AbsoluteLocation hopperLocation = passiveLocation.getBlockLocation().getRelative(0, 0, -1);
+		cuboid.setData15(AspectRegistry.BLOCK, hopperLocation.getBlockAddress(), hopper.item().number());
+		long tickNumber = 1L;
+		MutationBlockStoreItems[] out_mutation = new MutationBlockStoreItems[1];
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(tickNumber)
+			.sinks(new TickProcessingContext.IMutationSink() {
+				@Override
+				public boolean next(IMutationBlock mutation)
+				{
+					Assert.assertNull(out_mutation[0]);
+					out_mutation[0] = (MutationBlockStoreItems) mutation;
+					return true;
+				}
+				@Override
+				public boolean future(IMutationBlock mutation, long millisToDelay)
+				{
+					throw new AssertionError("Not in test");
+				}
+			}, null)
+			.lookups((AbsoluteLocation location) -> {
+				return cuboid.getCuboidAddress().equals(location.getCuboidAddress())
+					? new BlockProxy(location.getBlockAddress(), cuboid)
+					: null
+				;
+			} , null, null)
+			.finish()
+		;
+		
+		PassiveEntity result = EnginePassives.processOneCreature(context, passive, List.of());
+		Assert.assertNull(result);
+		Assert.assertNotNull(out_mutation[0]);
+		Assert.assertEquals(hopperLocation, out_mutation[0].getAbsoluteLocation());
 	}
 
 

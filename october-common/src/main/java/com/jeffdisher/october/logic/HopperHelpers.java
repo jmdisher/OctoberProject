@@ -2,6 +2,7 @@ package com.jeffdisher.october.logic;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IBlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.mutations.MutationBlockPushToBlock;
@@ -11,9 +12,11 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
+import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -71,6 +74,31 @@ public class HopperHelpers
 			}
 			_processHopper(context, hopperLocation, hopperBlock, sourceLocation, sourceInventory, sinkLocation, sinkInventory, inventoryType);
 		}
+	}
+
+	public static PassiveEntity tryAbsorbingIntoHopper(TickProcessingContext context, PassiveEntity entity)
+	{
+		AbsoluteLocation currentLocation = entity.location().getBlockLocation();
+		AbsoluteLocation below = currentLocation.getRelative(0, 0, -1);
+		BlockProxy belowProxy = context.previousBlockLookUp.apply(below);
+		PassiveEntity stillAlive = entity;
+		if ((null != belowProxy) && belowProxy.getBlock().item().id().equals(HOPPER))
+		{
+			// We will allow this if it fits or if it is less than half full (since we will over-fill it).
+			Environment env = Environment.getShared();
+			Inventory inv = belowProxy.getInventory();
+			ItemSlot slot = (ItemSlot)entity.extendedData();
+			int size = env.encumbrance.getEncumbrance(slot.getType()) * slot.getCount();
+			int available = inv.maxEncumbrance - inv.currentEncumbrance;
+			if ((size <= available) || (((float)inv.currentEncumbrance / (float)inv.maxEncumbrance) < 0.5f))
+			{
+				// We will send this to the hopper and then despawn.
+				MutationBlockStoreItems storeToSink = new MutationBlockStoreItems(below, slot.stack, slot.nonStackable, Inventory.INVENTORY_ASPECT_INVENTORY);
+				context.mutationSink.next(storeToSink);
+				stillAlive = null;
+			}
+		}
+		return stillAlive;
 	}
 
 

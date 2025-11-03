@@ -5,6 +5,7 @@ import java.util.List;
 import com.jeffdisher.october.actions.passive.PassiveActionEveryTick;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.DamageHelpers;
+import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.PassiveEntity;
@@ -50,6 +51,12 @@ public class EnginePassives
 		{
 			PassiveActionEveryTick action = new PassiveActionEveryTick();
 			working = action.applyChange(context, working);
+		}
+		if (null != working)
+		{
+			// See if this should be drawn into a hopper - just check the block under this one.
+			// TODO:  This should probably be a decision made by the hopper but that would require determining poll rate and creating a new way to look up passives from TickProcessingContext.
+			working = HopperHelpers.tryAbsorbingIntoHopper(context, working);
 		}
 		// Finally, see if we need to check for environmental damage to force despawn.
 		if ((null != working) && TickUtils.canApplyEnvironmentalDamageInTick(context))
