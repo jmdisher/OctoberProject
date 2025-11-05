@@ -695,7 +695,7 @@ public class TestEngineCreatures
 		}
 		
 		// By this point we should be on the ground, in the right block, with no plan.
-		Assert.assertEquals(7.59f, updated.location().x(), 0.01f);
+		Assert.assertEquals(7.57f, updated.location().x(), 0.01f);
 		Assert.assertEquals(9.01f, updated.location().y(), 0.01f);
 		Assert.assertEquals(2.0f, updated.location().z(), 0.01f);
 		Assert.assertEquals(0.0f, updated.velocity().x(), 0.01f);

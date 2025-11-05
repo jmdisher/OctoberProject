@@ -152,7 +152,7 @@ public class TestMovementAccumulator
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(0.0f, 0.44f, 0.0f), listener.thisEntity.location());
 		// Motion too little to detect collision.
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.1f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(0.0f, 4.0f, -0.1f), listener.thisEntity.velocity());
 	}
 
 	@Test
@@ -223,7 +223,7 @@ public class TestMovementAccumulator
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(10.0f, 9.92f, 0.11f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 5.68f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(0.0f, -4.0f, 5.68f), listener.thisEntity.velocity());
 		
 		currentTimeMillis += 90L;
 		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
@@ -231,10 +231,10 @@ public class TestMovementAccumulator
 		Assert.assertTrue(out.test_getSubAction() instanceof EntityChangeJump);
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
 		Assert.assertEquals(new EntityLocation(10.0f, 9.6f, 0.49f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 4.9f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(0.0f, -4.0f, 4.9f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(10.0f, 9.56f, 0.54f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 4.8f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(0.0f, -4.0f, 4.8f), listener.thisEntity.velocity());
 	}
 
 	@Test
@@ -390,7 +390,7 @@ public class TestMovementAccumulator
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(15.0f, 15.04f, 15.06f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 2.79f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(0.0f, 2.0f, 2.79f), listener.thisEntity.velocity());
 		
 		currentTimeMillis += 90L;
 		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
@@ -398,29 +398,29 @@ public class TestMovementAccumulator
 		Assert.assertTrue(out.test_getSubAction() instanceof EntityChangeSwim);
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
 		Assert.assertEquals(new EntityLocation(15.0f, 15.2f, 15.24f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 2.4f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(0.0f, 2.0f, 2.4f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(15.0f, 15.22f, 15.25f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 1.15f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(0.0f, 2.0f, 1.15f), listener.thisEntity.velocity());
 		
 		// We now want to coast for a bit and see how they move.
 		currentTimeMillis += 50L;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
-		Assert.assertEquals(new EntityLocation(15.0f, 15.22f, 15.29f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.91f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(15.0f, 15.28f, 15.29f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 1.33f, 0.91f), listener.thisEntity.velocity());
 		
 		currentTimeMillis += 50L;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		Assert.assertNull(out.test_getSubAction());
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
-		Assert.assertEquals(new EntityLocation(15.0f, 15.22f, 15.31f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.71f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(15.0f, 15.32f, 15.31f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 1.2f, 0.71f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
-		Assert.assertEquals(new EntityLocation(15.0f, 15.22f, 15.31f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.31f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(15.0f, 15.33f, 15.31f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.6f, 0.31f), listener.thisEntity.velocity());
 	}
 
 	@Test
@@ -564,7 +564,7 @@ public class TestMovementAccumulator
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(0.0f, 0.4f, 0.0f), listener.thisEntity.location());
 		// Motion too little to detect collision.
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.01f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(0.0f, 4.0f, -0.01f), listener.thisEntity.velocity());
 	}
 
 	@Test
@@ -874,7 +874,7 @@ public class TestMovementAccumulator
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(0.0f, 0.64f, 0.0f), listener.thisEntity.location());
 		// Motion too little to detect collision.
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.1f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(0.0f, 4.0f, -0.1f), listener.thisEntity.velocity());
 	}
 
 	@Test

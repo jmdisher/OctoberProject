@@ -140,10 +140,10 @@ public class CreatureMovementHelpers
 				? 0.5f
 				: 1.0f
 		;
-		EntityActionSimpleMove<IMutableCreatureEntity> move = _moveByX(creatureLocation, timeLimitMillis, speed * speedMultiplier, viscosityFraction, targetX);
+		EntityActionSimpleMove<IMutableCreatureEntity> move = _moveByX(creatureLocation, timeLimitMillis, speed * speedMultiplier, viscosityFraction, targetX, creatureVelocity.x());
 		if (null == move)
 		{
-			move = _moveByY(creatureLocation, timeLimitMillis, speed * speedMultiplier, viscosityFraction, targetY);
+			move = _moveByY(creatureLocation, timeLimitMillis, speed * speedMultiplier, viscosityFraction, targetY, creatureVelocity.y());
 		}
 		return move;
 	}
@@ -248,11 +248,11 @@ public class CreatureMovementHelpers
 				;
 				if (maxHorizontal == distanceX)
 				{
-					change = _moveByX(creatureLocation, timeLimitMillis, speed * speedMultiplier, viscosityFraction, stepLocation.x());
+					change = _moveByX(creatureLocation, timeLimitMillis, speed * speedMultiplier, viscosityFraction, stepLocation.x(), creatureVelocity.x());
 				}
 				else
 				{
-					change = _moveByY(creatureLocation, timeLimitMillis, speed * speedMultiplier, viscosityFraction, stepLocation.y());
+					change = _moveByY(creatureLocation, timeLimitMillis, speed * speedMultiplier, viscosityFraction, stepLocation.y(), creatureVelocity.y());
 				}
 			}
 			else
@@ -265,7 +265,7 @@ public class CreatureMovementHelpers
 	}
 
 
-	private static EntityActionSimpleMove<IMutableCreatureEntity> _moveByX(EntityLocation location, long timeLimitMillis, float currentCreatureSpeed, float viscosityFraction, float targetX)
+	private static EntityActionSimpleMove<IMutableCreatureEntity> _moveByX(EntityLocation location, long timeLimitMillis, float currentCreatureSpeed, float viscosityFraction, float targetX, float passiveVelocityX)
 	{
 		// NOTE:  This call assumes that moving in X is possible (on solid ground or swimming).
 		float moveX = targetX - location.x();
@@ -274,7 +274,7 @@ public class CreatureMovementHelpers
 		if (absoluteMove > FLOAT_THRESHOLD)
 		{
 			// Note that we use viscosity to estimate how far we will move but the actual units of movement are just in terms of our basic speed.
-			float distanceToMove = _findRawMoveInTime(currentCreatureSpeed, viscosityFraction, moveX, timeLimitMillis);
+			float distanceToMove = _findRawMoveInTime(currentCreatureSpeed, viscosityFraction, moveX, passiveVelocityX, timeLimitMillis);
 			
 			move = new EntityActionSimpleMove<>(distanceToMove
 				, 0.0f
@@ -287,7 +287,7 @@ public class CreatureMovementHelpers
 		return move;
 	}
 
-	private static EntityActionSimpleMove<IMutableCreatureEntity> _moveByY(EntityLocation location, long timeLimitMillis, float currentCreatureSpeed, float viscosityFraction, float targetY)
+	private static EntityActionSimpleMove<IMutableCreatureEntity> _moveByY(EntityLocation location, long timeLimitMillis, float currentCreatureSpeed, float viscosityFraction, float targetY, float passiveVelocityY)
 	{
 		// NOTE:  This call assumes that moving in Y is possible (on solid ground or swimming).
 		float moveY = targetY - location.y();
@@ -296,7 +296,7 @@ public class CreatureMovementHelpers
 		if (absoluteMove > FLOAT_THRESHOLD)
 		{
 			// Note that we use viscosity to estimate how far we will move but the actual units of movement are just in terms of our basic speed.
-			float distanceToMove = _findRawMoveInTime(currentCreatureSpeed, viscosityFraction, moveY, timeLimitMillis);
+			float distanceToMove = _findRawMoveInTime(currentCreatureSpeed, viscosityFraction, moveY, passiveVelocityY, timeLimitMillis);
 			
 			move = new EntityActionSimpleMove<>(0.0f
 				, distanceToMove
@@ -312,6 +312,7 @@ public class CreatureMovementHelpers
 	private static float _findRawMoveInTime(float currentCreatureSpeed
 		, float viscosityFraction
 		, float move
+		, float passiveVelocity
 		, long timeLimitMillis
 	)
 	{
@@ -326,6 +327,8 @@ public class CreatureMovementHelpers
 		
 		float rawDistanceInTime = currentCreatureSpeed * seconds;
 		float distanceToMove = rawDistanceInTime * fractionToMove;
-		return Math.signum(move) * distanceToMove;
+		float activeDistance = Math.signum(move) * distanceToMove;
+		float effectivePassiveMovement = inverseViscosity * passiveVelocity * seconds;
+		return activeDistance - effectivePassiveMovement;
 	}
 }

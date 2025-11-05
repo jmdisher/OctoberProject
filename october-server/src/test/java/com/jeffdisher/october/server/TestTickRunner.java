@@ -3042,7 +3042,7 @@ public class TestTickRunner
 		// Just submit the single movement.
 		EntityLocation newLocation = new EntityLocation(0.04f, 0.0f, 1.0f);
 		// (note that this tick is small enough to not intersect with the ground)
-		EntityLocation newVelocity = new EntityLocation(0.0f, 0.0f, -0.1f);
+		EntityLocation newVelocity = new EntityLocation(4.0f, 0.0f, -0.1f);
 		EntityActionSimpleMove<IMutablePlayerEntity> action = new EntityActionSimpleMove<>(0.04f
 			, 0.0f
 			, EntityActionSimpleMove.Intensity.WALKING

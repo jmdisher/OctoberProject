@@ -165,10 +165,7 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 				, intensityVelocityPerSecond
 				, seconds
 			);
-			
-			// TODO:  For now, we cancel all velocity to make this feel responsive but we probably need a quadratic drag
-			// approximation here in order to explosion knockback, etc, to look/feel right.
-			EntityLocation finalVelocity = new EntityLocation(0.0f, 0.0f, result.vZ());
+			EntityLocation finalVelocity = new EntityLocation(result.vX(), result.vY(), result.vZ());
 			
 			// Save back final state.
 			newEntity.setLocation(result.location());
