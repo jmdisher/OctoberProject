@@ -2969,8 +2969,8 @@ public class TestCommonChanges
 		newEntity.newVelocity = new EntityLocation(-1.66f, -1.66f, 0.98f);
 		
 		Assert.assertTrue(new EntityActionSimpleMove<>(-0.14f, -0.14f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(19.8f, 19.8f, 20.02f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(-4.0f, -4.0f, 0.49f), newEntity.newVelocity);
+		Assert.assertEquals(new EntityLocation(19.86f, 19.86f, 20.02f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(-2.83f, -2.83f, 0.49f), newEntity.newVelocity);
 	}
 
 	@Test

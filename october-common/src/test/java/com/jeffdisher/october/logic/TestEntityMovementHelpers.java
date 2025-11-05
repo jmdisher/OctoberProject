@@ -376,4 +376,49 @@ public class TestEntityMovementHelpers
 			}
 		});
 	}
+
+	@Test
+	public void diagonalCoastingAtTerminal()
+	{
+		// Test how we coast diagonally through the air with commonMovementIdiom when at terminal velocity.  We expect
+		// that we can't accelerate above terminal velocity and it should be the same, no matter the facing direction.
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
+			return new BlockProxy(location.getBlockAddress(), airCuboid);
+		};
+		EntityVolume volume = new EntityVolume(2.2f, 1.7f);
+		float maxVelocityPerSecond = 4.0f;
+		float seconds = 0.05f;
+		
+		EntityLocation location = new EntityLocation(10.0f, 10.0f, 10.0f);
+		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		
+		EntityMovementHelpers.HighLevelMovementResult result = EntityMovementHelpers.commonMovementIdiom(previousBlockLookUp
+			, location
+			, velocity
+			, volume
+			, 0.19f
+			, 0.05f
+			, maxVelocityPerSecond
+			, seconds
+		);
+		location = result.location();
+		velocity = new EntityLocation(result.vX(), result.vY(), result.vZ());
+		Assert.assertEquals(new EntityLocation(10.19f, 10.05f, 9.98f), location);
+		Assert.assertEquals(new EntityLocation(3.8f, 1.0f, -0.49f), velocity);
+		
+		result = EntityMovementHelpers.commonMovementIdiom(previousBlockLookUp
+			, location
+			, velocity
+			, volume
+			, 0.01f
+			, 0.0f
+			, maxVelocityPerSecond
+			, seconds
+		);
+		location = result.location();
+		velocity = new EntityLocation(result.vX(), result.vY(), result.vZ());
+		Assert.assertEquals(new EntityLocation(10.38f, 10.1f, 9.93f), location);
+		Assert.assertEquals(new EntityLocation(3.88f, 0.97f, -0.98f), velocity);
+	}
 }

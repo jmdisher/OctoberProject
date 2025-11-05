@@ -486,33 +486,6 @@ public class EntityMovementHelpers
 		return out;
 	}
 
-	private static float _clampHorizontalAcceleration(float passive, float active, float intensityVelocityPerSecond)
-	{
-		float sum;
-		if (Math.signum(passive) == Math.signum(active))
-		{
-			// We need to account for various clamping here.
-			if (Math.abs(passive) > intensityVelocityPerSecond)
-			{
-				sum = Math.signum(passive) * intensityVelocityPerSecond;
-			}
-			else
-			{
-				sum = passive + active;
-				if (Math.abs(sum) > intensityVelocityPerSecond)
-				{
-					sum = Math.signum(sum) * intensityVelocityPerSecond;
-				}
-			}
-		}
-		else
-		{
-			// This is deceleration so just sum.
-			sum = passive + active;
-		}
-		return sum;
-	}
-
 	private static EntityLocation _adjustVelocityForMovement(EntityLocation inputVelocity, float activeXMovement, float activeYMovement, float maxVelocityPerSecond, float seconds, float startViscosity)
 	{
 		// We calculate the effective velocity at the start of the action (which will be applied and further refined later):
@@ -530,9 +503,34 @@ public class EntityMovementHelpers
 		float activeVY = activeYMovement / seconds;
 		float activeVZ = EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND * seconds;
 		
-		// We want to limit XY velocity from this active movement to the maximum of the entity's velocity.
-		float sumVX = _clampHorizontalAcceleration(passiveX, activeVX, maxVelocityPerSecond);
-		float sumVY = _clampHorizontalAcceleration(passiveY, activeVY, maxVelocityPerSecond);
+		// XY velocity are the ones we can actively change so we will consider them together, limited by maxVelocityPerSecond.
+		float sumVX = passiveX + activeVX;
+		float sumVY = passiveY + activeVY;
+		float squareMax = maxVelocityPerSecond * maxVelocityPerSecond;
+		float squareX = sumVX * sumVX;
+		float squareY = sumVY * sumVY;
+		if ((squareX + squareY) > squareMax)
+		{
+			// We need to clamp these, somehow.
+			float squarePassive = passiveX * passiveX + passiveY * passiveY;
+			if ((squareX + squareY) < squarePassive)
+			{
+				// Deceleration is still considered valid.
+			}
+			else if (squarePassive > squareMax)
+			{
+				// If we were already at maximum speed, leave it unchanged.
+				sumVX = passiveX;
+				sumVY = passiveY;
+			}
+			else
+			{
+				// Otherwise, saturate proportionally.
+				float fractionX = squareX / (squareX + squareY);
+				sumVX = Math.signum(sumVX) * (float) Math.sqrt(fractionX * squareMax);
+				sumVY = Math.signum(sumVY) * (float) Math.sqrt((1.0f - fractionX) * squareMax);
+			}
+		}
 		float sumVZ = passiveZ + activeVZ;
 		
 		// We now clamp everything by air terminal velocity.
