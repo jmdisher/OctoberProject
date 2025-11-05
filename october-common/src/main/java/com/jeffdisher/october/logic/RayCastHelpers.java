@@ -4,8 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.CreatureEntity;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -62,6 +66,69 @@ public class RayCastHelpers
 		EntityLocation floatEnd = end.toEntityLocation();
 		Predicate<AbsoluteLocation> stopPredicate = (AbsoluteLocation location) -> false;
 		return _findFirstCollision(builder, floatStart, floatEnd, stopPredicate);
+	}
+
+	/**
+	 * Finds the closest entity in entities to start which is within the ray up to end.
+	 * 
+	 * @param env The environment.
+	 * @param start The starting-point of the ray.
+	 * @param end The end-point of the ray.
+	 * @param entities The collection of entities to consider.
+	 * @return The closest entity/creature id or 0 if none were within this ray.
+	 */
+	public static int findFirstCollisionInCollection(Environment env, EntityLocation start, EntityLocation end, EntityCollection entities)
+	{
+		// We will check each entity for intersections with the ray and AABB using the common "Slab Method".
+		// Good summary found here:  https://en.wikipedia.org/wiki/Slab_method
+		
+		// First, get the set of entities which we could possibly intersect.
+		List<_PartialEntity> closeEntities = new ArrayList<>();
+		EntityVolume playerVolume = env.creatures.PLAYER.volume();
+		EntityLocation base = new EntityLocation(Math.min(start.x(), end.x()), Math.min(start.y(), end.y()), Math.min(start.z(), end.z()));
+		EntityLocation edge = new EntityLocation(Math.max(start.x(), end.x()), Math.max(start.y(), end.y()), Math.max(start.z(), end.z()));
+		entities.walkAlignedIntersections(env, base, edge, (Entity entity) -> {
+			closeEntities.add(new _PartialEntity(entity.id(), entity.location(), playerVolume));
+		}, (CreatureEntity creature) -> {
+			closeEntities.add(new _PartialEntity(creature.id(), creature.location(), creature.type().volume()));
+		});
+		
+		// Extract the axis-aligned components of the ray.
+		// (we will handle the axis-parallel rays as special-cases)
+		boolean isFixedX = (end.x() == start.x());
+		boolean isFixedY = (end.y() == start.y());
+		boolean isFixedZ = (end.z() == start.z());
+		float compX = isFixedX
+				? start.x()
+				: end.x() - start.x()
+		;
+		float compY = isFixedY
+				? start.y()
+				: end.y() - start.y()
+		;
+		float compZ = isFixedZ
+				? start.z()
+				: end.z() - start.z()
+		;
+		
+		int closeId = 0;
+		float distance = Float.MAX_VALUE;
+		for (_PartialEntity partial : closeEntities)
+		{
+			float close = _findDistanceToIntersect(start, partial.base, partial.volume
+					, isFixedX, compX
+					, isFixedY, compY
+					, isFixedZ, compZ
+			);
+			
+			if (close < distance)
+			{
+				closeId = partial.id;
+				distance = close;
+			}
+		}
+		
+		return closeId;
 	}
 
 
@@ -236,6 +303,75 @@ public class RayCastHelpers
 		return builder.build(collisionAxis, path, thisStep, lastFalse, rayDistance);
 	}
 
+	private static float _findDistanceToIntersect(EntityLocation start, EntityLocation base, EntityVolume volume, boolean isFixedX, float compX, boolean isFixedY, float compY, boolean isFixedZ, float compZ)
+	{
+		float west = base.x();
+		float east = base.x() + volume.width();
+		float south = base.y();
+		float north = base.y() + volume.width();
+		float bottom = base.z();
+		float top = base.z() + volume.height();
+		
+		// We will calculate the t-values relative to the end of the vector so any match will be when all axes have t values in [0..1].
+		float closeX = Float.MIN_VALUE;
+		float farX;
+		if (isFixedX)
+		{
+			farX = ((west <= compX) && (compX <= east))
+					? Float.MAX_VALUE
+					: Float.MIN_VALUE
+			;
+		}
+		else
+		{
+			float txLow = (west - start.x()) / compX;
+			float txHigh = (east - start.x()) / compX;
+			closeX = Math.min(txLow, txHigh);
+			farX = Math.max(txLow, txHigh);
+		}
+		float closeY = Float.MIN_VALUE;
+		float farY;
+		if (isFixedY)
+		{
+			farY = ((south <= compY) && (compY <= north))
+					? Float.MAX_VALUE
+					: Float.MIN_VALUE
+			;
+		}
+		else
+		{
+			float tyLow = (south - start.y()) / compY;
+			float tyHigh = (north - start.y()) / compY;
+			closeY = Math.min(tyLow, tyHigh);
+			farY = Math.max(tyLow, tyHigh);
+		}
+		float closeZ = Float.MIN_VALUE;
+		float farZ;
+		if (isFixedZ)
+		{
+			farZ = ((bottom <= compZ) && (compZ <= top))
+					? Float.MAX_VALUE
+					: Float.MIN_VALUE
+			;
+		}
+		else
+		{
+			float tzLow = (bottom - start.z()) / compZ;
+			float tzHigh = (top - start.z()) / compZ;
+			closeZ = Math.min(tzLow, tzHigh);
+			farZ = Math.max(tzLow, tzHigh);
+		}
+		
+		float close = Math.max(closeX, Math.max(closeY, closeZ));
+		float far = Math.min(farX, Math.min(farY, farZ));
+		
+		// NOTE:  "close" is not the physical distance, but a proportional one, so actually calculate the distance.
+		return ((close <= far) && (close >= 0.0f) && (far <= 1.0f))
+				? SpatialHelpers.distanceFromLocationToVolume(new EntityLocation(start.x(), start.y(), start.z()), base, volume)
+				: Float.MAX_VALUE
+		;
+	}
+
 
 	public static record RayBlock(AbsoluteLocation stopBlock
 			, AbsoluteLocation preStopBlock
@@ -271,4 +407,6 @@ public class RayCastHelpers
 				, float rayDistance
 		);
 	}
+
+	private static record _PartialEntity(int id, EntityLocation base, EntityVolume volume) {}
 }

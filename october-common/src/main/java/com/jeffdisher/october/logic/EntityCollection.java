@@ -210,6 +210,52 @@ public class EntityCollection
 		}
 	}
 
+	/**
+	 * Finds all player entities and creatures which intersect the region at base of volume size, calling the given
+	 * consumers for each one.  This checks intersections by considering the region and all entities and creatures as
+	 * axis-aligned bounding boxes.
+	 * 
+	 * @param env The environment.
+	 * @param base The base of the region to check (west, south, bottom corner).
+	 * @param edge The edge of the region to check (east, north, up corner).
+	 * @param entityVisit The consumer for player entities found (can be null).
+	 * @param creatureVisit The consumer for creatures found (can be null).
+	 */
+	public void walkAlignedIntersections(Environment env, EntityLocation base, EntityLocation edge, Consumer<Entity> entityVisit, Consumer<CreatureEntity> creatureVisit)
+	{
+		// Note that the edge needs to be greater than the base.
+		Assert.assertTrue(base.x() <= edge.x());
+		Assert.assertTrue(base.y() <= edge.y());
+		Assert.assertTrue(base.z() <= edge.z());
+		
+		// TODO:  This is VERY inefficient when a large world is loaded so we need to redesign this based on a different way of organizing or indexing the entities and creatures.
+		if (null != entityVisit)
+		{
+			EntityVolume playerVolume = env.creatures.PLAYER.volume();
+			
+			for (Entity player : _players.values())
+			{
+				EntityLocation playerLocation = player.location();
+				if (_regionsIntersect(base, edge, playerLocation, playerVolume))
+				{
+					entityVisit.accept(player);
+				}
+			}
+		}
+		if (null != creatureVisit)
+		{
+			for (CreatureEntity creature : _creatures.values())
+			{
+				EntityLocation creatureLocation = creature.location();
+				EntityVolume creatureVolume = creature.type().volume();
+				if (_regionsIntersect(base, edge, creatureLocation, creatureVolume))
+				{
+					creatureVisit.accept(creature);
+				}
+			}
+		}
+	}
+
 
 	private static <T> boolean _checkInstance(IMutableMinimalEntity source, MinimalEntity dest, float maxRange, Consumer<T> consumer, T arg)
 	{
@@ -220,6 +266,26 @@ public class EntityCollection
 			isInRange = true;
 		}
 		return isInRange;
+	}
+
+	private static boolean _regionsIntersect(EntityLocation base, EntityLocation edge, EntityLocation checkLocation, EntityVolume checkVolume)
+	{
+		float deltaX = base.x() - checkLocation.x();
+		boolean intersectX = (deltaX >= 0.0f)
+			? (deltaX <= checkVolume.width())
+			: (-deltaX <= (edge.x() - base.x()))
+		;
+		float deltaY = base.y() - checkLocation.y();
+		boolean intersectY = (deltaY >= 0.0f)
+			? (deltaY <= checkVolume.width())
+			: (-deltaY <= (edge.y() - base.y()))
+		;
+		float deltaZ = base.z() - checkLocation.z();
+		boolean intersectZ = (deltaZ >= 0.0f)
+			? (deltaZ <= checkVolume.height())
+			: (-deltaZ <= (edge.z() - base.z()))
+		;
+		return intersectX && intersectY && intersectZ;
 	}
 
 

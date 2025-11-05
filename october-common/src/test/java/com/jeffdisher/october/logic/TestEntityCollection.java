@@ -1,6 +1,7 @@
 package com.jeffdisher.october.logic;
 
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -174,6 +175,60 @@ public class TestEntityCollection
 		counts[0] = 0;
 		counts[1] = 0;
 		collection.findIntersections(ENV, new EntityLocation(1.0f, 0.0f, 1.0f), 0.78f, entityCounter, creatureCounter);
+		Assert.assertArrayEquals(new int[] {1, 1}, counts);
+	}
+
+	@Test
+	public void regionIntersections()
+	{
+		Map<Integer, Entity> players = Map.of(1, _buildPlayer(1, new EntityLocation(1.0f, 1.0f, 1.0f))
+				, 2, _buildPlayer(2, new EntityLocation(2.0f, 2.0f, 2.0f))
+		);
+		Map<Integer, CreatureEntity> creatures = Map.of(-1, _buildCreature(-1, new EntityLocation(1.0f, 1.0f, 1.0f))
+				, -2, _buildCreature(-2, new EntityLocation(2.0f, 2.0f, 2.0f))
+		);
+		
+		int[] counts = new int[2];
+		Consumer<Entity> entityConsumer = (Entity entity) -> {
+			counts[0] += 1;
+		};
+		Consumer<CreatureEntity> creatureConsumer = (CreatureEntity creature) -> {
+			counts[1] += 1;
+		};
+		
+		// Intersect everything.
+		EntityCollection collection = EntityCollection.fromMaps(players, creatures);
+		collection.walkAlignedIntersections(ENV, new EntityLocation(1.0f, 1.0f, 1.0f), new EntityLocation(2.0f, 2.0f, 3.0f), entityConsumer, creatureConsumer);
+		Assert.assertArrayEquals(new int[] {2, 2}, counts);
+		
+		// Intersect nothing.
+		counts[0] = 0;
+		counts[1] = 0;
+		collection.walkAlignedIntersections(ENV, new EntityLocation(3.0f, 3.0f, 3.0f), new EntityLocation(4.0f, 4.0f, 5.0f), entityConsumer, creatureConsumer);
+		Assert.assertArrayEquals(new int[] {0, 0}, counts);
+		
+		// Intersect edge of base.
+		counts[0] = 0;
+		counts[1] = 0;
+		collection.walkAlignedIntersections(ENV, new EntityLocation(0.8f, 0.8f, 0.8f), new EntityLocation(1.1f, 1.1f, 1.2f), entityConsumer, creatureConsumer);
+		Assert.assertArrayEquals(new int[] {1, 1}, counts);
+		
+		// Intersect edge of creatures.
+		counts[0] = 0;
+		counts[1] = 0;
+		collection.walkAlignedIntersections(ENV, new EntityLocation(2.1f, 2.1f, 2.1f), new EntityLocation(3.1f, 3.1f, 4.1f), entityConsumer, creatureConsumer);
+		Assert.assertArrayEquals(new int[] {1, 1}, counts);
+		
+		// Contain all.
+		counts[0] = 0;
+		counts[1] = 0;
+		collection.walkAlignedIntersections(ENV, new EntityLocation(0.0f, 0.0f, 0.0f), new EntityLocation(10.0f, 10.0f, 10.0f), entityConsumer, creatureConsumer);
+		Assert.assertArrayEquals(new int[] {2, 2}, counts);
+		
+		// Inside only.
+		counts[0] = 0;
+		counts[1] = 0;
+		collection.walkAlignedIntersections(ENV, new EntityLocation(2.1f, 2.1f, 2.1f), new EntityLocation(2.2f, 2.2f, 2.2f), entityConsumer, creatureConsumer);
 		Assert.assertArrayEquals(new int[] {1, 1}, counts);
 	}
 

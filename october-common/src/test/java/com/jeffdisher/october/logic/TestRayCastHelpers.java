@@ -1,16 +1,35 @@
 package com.jeffdisher.october.logic;
 
 import java.util.List;
+import java.util.Map;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.MutableEntity;
 
 
 public class TestRayCastHelpers
 {
+	private static Environment ENV;
+	@BeforeClass
+	public static void setup()
+	{
+		ENV = Environment.createSharedInstance();
+	}
+	@AfterClass
+	public static void tearDown()
+	{
+		Environment.clearSharedInstance();
+	}
+
 	@Test
 	public void positiveRayNoMatch() throws Throwable
 	{
@@ -155,6 +174,32 @@ public class TestRayCastHelpers
 		_checkPathOneBlockStep(path);
 	}
 
+	@Test
+	public void intersectPlayers() throws Throwable
+	{
+		// Create some players in a collection and intersect 
+		Map<Integer, Entity> players = Map.of(1, _buildPlayer(1, new EntityLocation(1.0f, 1.0f, 1.0f))
+			, 2, _buildPlayer(2, new EntityLocation(2.0f, 2.0f, 2.0f))
+			, 3, _buildPlayer(3, new EntityLocation(-1.0f, -1.0f, -1.0f))
+		);
+		EntityCollection collection = EntityCollection.fromMaps(players, Map.of());
+		
+		int id = RayCastHelpers.findFirstCollisionInCollection(ENV, new EntityLocation(3.0f, 3.0f, 3.0f), new EntityLocation(-5.0f, -5.0f, -5.0f), collection);
+		Assert.assertEquals(2, id);
+		
+		id = RayCastHelpers.findFirstCollisionInCollection(ENV, new EntityLocation(3.0f, 3.0f, 3.0f), new EntityLocation(5.0f, 5.0f, 5.0f), collection);
+		Assert.assertEquals(0, id);
+		
+		id = RayCastHelpers.findFirstCollisionInCollection(ENV, new EntityLocation(0.0f, 0.0f, 0.0f), new EntityLocation(5.0f, 5.0f, 5.0f), collection);
+		Assert.assertEquals(1, id);
+		
+		id = RayCastHelpers.findFirstCollisionInCollection(ENV, new EntityLocation(-5.0f, -5.0f, -5.0f), new EntityLocation(5.0f, 5.0f, 5.0f), collection);
+		Assert.assertEquals(3, id);
+		
+		id = RayCastHelpers.findFirstCollisionInCollection(ENV, new EntityLocation(2.0f, -3.0f, -1.5f), new EntityLocation(-2.0f, 3.0f, 1.5f), collection);
+		Assert.assertEquals(0, id);
+	}
+
 
 	private static void _checkPathOneBlockStep(List<AbsoluteLocation> path)
 	{
@@ -167,5 +212,27 @@ public class TestRayCastHelpers
 			int dZ = Math.abs(current.z() - prev.z());
 			Assert.assertEquals(1, dX + dY + dZ);
 		}
+	}
+
+	private static Entity _buildPlayer(int id, EntityLocation location)
+	{
+		return new Entity(id
+			, false
+			, location
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, (byte)0
+			, (byte)0
+			, null
+			, null
+			, 0
+			, null
+			, null
+			, (byte)0
+			, (byte)0
+			, MiscConstants.MAX_BREATH
+			, 0
+			, MutableEntity.TESTING_LOCATION
+			, Entity.EMPTY_DATA
+		);
 	}
 }
