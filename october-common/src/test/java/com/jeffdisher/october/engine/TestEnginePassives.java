@@ -13,6 +13,7 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -70,8 +71,9 @@ public class TestEnginePassives
 		);
 		
 		TickProcessingContext context = _createContextWithSink(null);
+		EntityCollection entityCollection = EntityCollection.emptyCollection();
 		
-		PassiveEntity result = EnginePassives.processOneCreature(context, passive, List.of());
+		PassiveEntity result = EnginePassives.processOneCreature(context, entityCollection, passive, List.of());
 		Assert.assertNotNull(result);
 	}
 
@@ -91,8 +93,9 @@ public class TestEnginePassives
 		);
 		
 		TickProcessingContext context = _createContextWithSink(null);
+		EntityCollection entityCollection = EntityCollection.emptyCollection();
 		
-		PassiveEntity result = EnginePassives.processOneCreature(context, passive, List.of());
+		PassiveEntity result = EnginePassives.processOneCreature(context, entityCollection, passive, List.of());
 		Assert.assertNotNull(result);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 4.9f), result.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.98f), result.velocity());
@@ -114,8 +117,9 @@ public class TestEnginePassives
 		);
 		
 		TickProcessingContext context = _createContextWithSink(null);
+		EntityCollection entityCollection = EntityCollection.emptyCollection();
 		
-		PassiveEntity result = EnginePassives.processOneCreature(context, passive, List.of());
+		PassiveEntity result = EnginePassives.processOneCreature(context, entityCollection, passive, List.of());
 		Assert.assertNull(result);
 	}
 
@@ -147,9 +151,10 @@ public class TestEnginePassives
 			}
 		};
 		TickProcessingContext context = _createContextWithSink(sink);
+		EntityCollection entityCollection = EntityCollection.emptyCollection();
 		
 		PassiveActionPickUp pickUp = new PassiveActionPickUp(entityId);
-		PassiveEntity result = EnginePassives.processOneCreature(context, passive, List.of(pickUp));
+		PassiveEntity result = EnginePassives.processOneCreature(context, entityCollection, passive, List.of(pickUp));
 		Assert.assertNull(result);
 		Assert.assertNotNull(out[0]);
 	}
@@ -183,9 +188,10 @@ public class TestEnginePassives
 			}
 		};
 		TickProcessingContext context = _createContextWithSink(sink);
+		EntityCollection entityCollection = EntityCollection.emptyCollection();
 		
 		PassiveActionPickUp pickUp = new PassiveActionPickUp(entityId);
-		PassiveEntity result = EnginePassives.processOneCreature(context, passive, List.of(pickUp));
+		PassiveEntity result = EnginePassives.processOneCreature(context, entityCollection, passive, List.of(pickUp));
 		Assert.assertNotNull(result);
 		Assert.assertNotNull(out[0]);
 	}
@@ -208,8 +214,9 @@ public class TestEnginePassives
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		airCuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 0), LAVA_SOURCE.item().number());
 		TickProcessingContext context = _createContextWithTopCuboid(airCuboid);
+		EntityCollection entityCollection = EntityCollection.emptyCollection();
 		
-		PassiveEntity result = EnginePassives.processOneCreature(context, passive, List.of());
+		PassiveEntity result = EnginePassives.processOneCreature(context, entityCollection, passive, List.of());
 		Assert.assertNull(result);
 	}
 
@@ -229,8 +236,9 @@ public class TestEnginePassives
 		);
 		
 		TickProcessingContext context = _createContextWithSink(null);
+		EntityCollection entityCollection = EntityCollection.emptyCollection();
 		
-		PassiveEntity result = EnginePassives.processOneCreature(context, passive, List.of());
+		PassiveEntity result = EnginePassives.processOneCreature(context, entityCollection, passive, List.of());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), result.location());
 	}
 
@@ -279,11 +287,34 @@ public class TestEnginePassives
 			} , null, null)
 			.finish()
 		;
+		EntityCollection entityCollection = EntityCollection.emptyCollection();
 		
-		PassiveEntity result = EnginePassives.processOneCreature(context, passive, List.of());
+		PassiveEntity result = EnginePassives.processOneCreature(context, entityCollection, passive, List.of());
 		Assert.assertNull(result);
 		Assert.assertNotNull(out_mutation[0]);
 		Assert.assertEquals(hopperLocation, out_mutation[0].getAbsoluteLocation());
+	}
+
+	@Test
+	public void arrowFly()
+	{
+		int passiveId = 1;
+		EntityLocation location = new EntityLocation(10.0f, 10.0f, 10.0f);
+		EntityLocation velocity = new EntityLocation(2.0f, 0.0f, 0.0f);
+		PassiveEntity passive = new PassiveEntity(passiveId
+			, PassiveType.PROJECTILE_ARROW
+			, location
+			, velocity
+			, null
+			, 0L
+		);
+		
+		TickProcessingContext context = _createContextWithSink(null);
+		EntityCollection entityCollection = EntityCollection.emptyCollection();
+		
+		PassiveEntity result = EnginePassives.processOneCreature(context, entityCollection, passive, List.of());
+		Assert.assertEquals(new EntityLocation(10.2f, 10.0f, 9.9f), result.location());
+		Assert.assertEquals(new EntityLocation(2.0f, 0.0f, -0.98f), result.velocity());
 	}
 
 

@@ -43,7 +43,7 @@ public class EntityActionTakeDamageFromEntity<T extends IMutableMinimalEntity> i
 	{
 		Assert.assertTrue(null != target);
 		Assert.assertTrue(damage > 0);
-		Assert.assertTrue(0 != sourceEntityId);
+		// Note that sourceEntityId will be valid during melee attacks but things like projectile attacks don't come from a specific entity.
 		
 		_target = target;
 		_damage = damage;

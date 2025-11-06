@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -32,6 +33,26 @@ public record PassiveType(byte number
 			public void write(ByteBuffer buffer, Object extendedData)
 			{
 				CodecHelpers.writeSlot(buffer, (ItemSlot)extendedData);
+			}
+		}
+	);
+
+	/**
+	 * Currently, the projectile has no extended data but that may be used for projectile effects or specific types in
+	 * the future.
+	 */
+	public static final PassiveType PROJECTILE_ARROW  = new PassiveType((byte)2
+		, new EntityVolume(0.05f, 0.05f)
+		, new IExtendedCodec() {
+			@Override
+			public Object read(DeserializationContext context)
+			{
+				return null;
+			}
+			@Override
+			public void write(ByteBuffer buffer, Object extendedData)
+			{
+				Assert.assertTrue(null == extendedData);
 			}
 		}
 	);

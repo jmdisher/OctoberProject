@@ -3,8 +3,10 @@ package com.jeffdisher.october.engine;
 import java.util.List;
 
 import com.jeffdisher.october.actions.passive.PassiveSynth_ItemSlot;
+import com.jeffdisher.october.actions.passive.PassiveSynth_ProjectileArrow;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.DamageHelpers;
+import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.PassiveEntity;
@@ -28,11 +30,13 @@ public class EnginePassives
 	 * updated instance (null if the instance was destroyed or despawned).
 	 * 
 	 * @param context The context used for running changes.
+	 * @param entityCollection The entities in the world.
 	 * @param passive The passive to process.
 	 * @param actionsToRun A list of actions to run on this passive in this tick.
 	 * @return An updated instance of the passive (potentially null).
 	 */
 	public static PassiveEntity processOneCreature(TickProcessingContext context
+		, EntityCollection entitiyCollection
 		, PassiveEntity passive
 		, List<IPassiveAction> actionsToRun
 	)
@@ -54,6 +58,10 @@ public class EnginePassives
 			if (PassiveType.ITEM_SLOT == type)
 			{
 				working = PassiveSynth_ItemSlot.applyChange(context, working);
+			}
+			else if (PassiveType.PROJECTILE_ARROW == type)
+			{
+				working = PassiveSynth_ProjectileArrow.applyChange(context, entitiyCollection, working);
 			}
 			else
 			{

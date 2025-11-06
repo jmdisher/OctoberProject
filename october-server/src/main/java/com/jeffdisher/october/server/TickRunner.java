@@ -762,7 +762,7 @@ public class TickRunner
 				List<IPassiveAction> actions = passiveUnit.actions;
 				processor.passivesProcessed += 1;
 				processor.passiveActionsProcessed += actions.size();
-				PassiveEntity result = EnginePassives.processOneCreature(context, passive, actions);
+				PassiveEntity result = EnginePassives.processOneCreature(context, materials.entityCollection, passive, actions);
 				Integer id = passive.id();
 				if (null == result)
 				{
