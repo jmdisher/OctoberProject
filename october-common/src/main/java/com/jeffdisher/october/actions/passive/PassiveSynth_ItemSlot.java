@@ -3,9 +3,9 @@ package com.jeffdisher.october.actions.passive;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.DamageHelpers;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
+import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
-import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -13,23 +13,25 @@ import com.jeffdisher.october.utils.Assert;
 
 
 /**
- * These are synthesized by the system for every tick and applied to every loaded passive entity.
+ * These are synthesized by the system for every tick and applied to every loaded ITEM_SLOT passive entity.
  * This means that it is responsible for normal movement (which is just passively applying existing velocity and
  * gravity) but also despawn logic.
  */
-public class PassiveActionEveryTick implements IPassiveAction
+public class PassiveSynth_ItemSlot
 {
 	/**
 	 * We allow passives to move by a whole block to satisfy this requirement.
 	 */
 	public static final float POP_OUT_MAX_DISTANCE = 1.0f;
 
-	@Override
-	public PassiveEntity applyChange(TickProcessingContext context, PassiveEntity entity)
+	private PassiveSynth_ItemSlot()
+	{
+		// No point in instantiating these.
+	}
+
+	public static PassiveEntity applyChange(TickProcessingContext context, PassiveEntity entity)
 	{
 		Environment env = Environment.getShared();
-		
-		// Currently, we only have the ItemSlot type.
 		PassiveType type = entity.type();
 		Assert.assertTrue(PassiveType.ITEM_SLOT == type);
 		
@@ -92,6 +94,13 @@ public class PassiveActionEveryTick implements IPassiveAction
 			{
 				// Unmoved so just retain the instance.
 				result = entity;
+			}
+			
+			// See if this should be drawn into a hopper - just check the block under this one.
+			// TODO:  This should probably be a decision made by the hopper but that would require determining poll rate and creating a new way to look up passives from TickProcessingContext.
+			if (null != result)
+			{
+				result = HopperHelpers.tryAbsorbingIntoHopper(context, result);
 			}
 		}
 		return result;

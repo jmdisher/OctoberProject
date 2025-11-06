@@ -63,8 +63,7 @@ public class TestPassiveActions
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(10, 10, 9), STONE_ITEM.number());
 		TickProcessingContext context = _createSingleCuboidContext(cuboid, 1L);
 		
-		PassiveActionEveryTick action = new PassiveActionEveryTick();
-		PassiveEntity result = action.applyChange(context, start);
+		PassiveEntity result = PassiveSynth_ItemSlot.applyChange(context, start);
 		
 		Assert.assertTrue(start == result);
 	}
@@ -83,8 +82,7 @@ public class TestPassiveActions
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		TickProcessingContext context = _createSingleCuboidContext(cuboid, 1L);
 		
-		PassiveActionEveryTick action = new PassiveActionEveryTick();
-		PassiveEntity result = action.applyChange(context, start);
+		PassiveEntity result = PassiveSynth_ItemSlot.applyChange(context, start);
 		
 		Assert.assertEquals(id, result.id());
 		Assert.assertEquals(PassiveType.ITEM_SLOT, result.type());
@@ -110,8 +108,7 @@ public class TestPassiveActions
 		long testTick = (createMillis + PassiveType.ITEM_SLOT_DESPAWN_MILLIS) / ContextBuilder.DEFAULT_MILLIS_PER_TICK;
 		TickProcessingContext context = _createSingleCuboidContext(cuboid, testTick);
 		
-		PassiveActionEveryTick action = new PassiveActionEveryTick();
-		PassiveEntity result = action.applyChange(context, start);
+		PassiveEntity result = PassiveSynth_ItemSlot.applyChange(context, start);
 		
 		Assert.assertNull(result);
 	}
@@ -178,8 +175,7 @@ public class TestPassiveActions
 		cuboid.setData7(AspectRegistry.FLAGS, BlockAddress.fromInt(10, 10, 9), FlagsAspect.FLAG_BURNING);
 		TickProcessingContext context = _createSingleCuboidContext(cuboid, 1L);
 		
-		PassiveActionEveryTick action = new PassiveActionEveryTick();
-		PassiveEntity result = action.applyChange(context, start);
+		PassiveEntity result = PassiveSynth_ItemSlot.applyChange(context, start);
 		
 		Assert.assertNull(result);
 	}

@@ -2,14 +2,15 @@ package com.jeffdisher.october.engine;
 
 import java.util.List;
 
-import com.jeffdisher.october.actions.passive.PassiveActionEveryTick;
+import com.jeffdisher.october.actions.passive.PassiveSynth_ItemSlot;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.DamageHelpers;
-import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.PassiveEntity;
+import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -49,14 +50,16 @@ public class EnginePassives
 		// Now, apply the default action.
 		if (null != working)
 		{
-			PassiveActionEveryTick action = new PassiveActionEveryTick();
-			working = action.applyChange(context, working);
-		}
-		if (null != working)
-		{
-			// See if this should be drawn into a hopper - just check the block under this one.
-			// TODO:  This should probably be a decision made by the hopper but that would require determining poll rate and creating a new way to look up passives from TickProcessingContext.
-			working = HopperHelpers.tryAbsorbingIntoHopper(context, working);
+			PassiveType type = working.type();
+			if (PassiveType.ITEM_SLOT == type)
+			{
+				working = PassiveSynth_ItemSlot.applyChange(context, working);
+			}
+			else
+			{
+				// Missing type.
+				throw Assert.unreachable();
+			}
 		}
 		// Finally, see if we need to check for environmental damage to force despawn.
 		if ((null != working) && TickUtils.canApplyEnvironmentalDamageInTick(context))
