@@ -47,6 +47,7 @@ import com.jeffdisher.october.persistence.legacy.LegacyEntityV1;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -57,6 +58,7 @@ import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.WorldConfig;
@@ -1149,7 +1151,18 @@ public class ResourceLoader
 			
 			Supplier<SuspendedEntity> dataReader;
 			if ((VERSION_ENTITY == version)
-					|| (VERSION_ENTITY_V2 == version)
+			)
+			{
+				// Do nothing special - just stops old versions from being broken.
+				dataReader = () -> {
+					Entity entity = CodecHelpers.readEntityDisk(context);
+					
+					// Now, load any suspended changes.
+					List<ScheduledChange> suspended = _background_readSuspendedMutations(context);
+					return new SuspendedEntity(entity, suspended);
+				};
+			}
+			else if ((VERSION_ENTITY_V2 == version)
 					|| (VERSION_ENTITY_V3 == version)
 					|| (VERSION_ENTITY_V4 == version)
 					|| (VERSION_ENTITY_V5 == version)
@@ -1159,9 +1172,9 @@ public class ResourceLoader
 					|| (VERSION_ENTITY_V9 == version)
 			)
 			{
-				// Do nothing special - just stops old versions from being broken.
+				// These versions used a different on-disk entity shape.
 				dataReader = () -> {
-					Entity entity = CodecHelpers.readEntity(context);
+					Entity entity = _readEntityPre10(context);
 					
 					// Now, load any suspended changes.
 					List<ScheduledChange> suspended = _background_readSuspendedMutations(context);
@@ -1224,7 +1237,7 @@ public class ResourceLoader
 		
 		Entity entity = suspended.entity();
 		List<ScheduledChange> changes = suspended.changes();
-		CodecHelpers.writeEntity(_backround_serializationBuffer, entity);
+		CodecHelpers.writeEntityDisk(_backround_serializationBuffer, entity);
 		
 		// We now write any suspended changes.
 		for (ScheduledChange scheduled : changes)
@@ -1329,5 +1342,55 @@ public class ResourceLoader
 			? null
 			: passives
 		;
+	}
+
+	private static Entity _readEntityPre10(DeserializationContext context)
+	{
+		ByteBuffer buffer = context.buffer();
+		int id = buffer.getInt();
+		boolean isCreativeMode = CodecHelpers.readBoolean(buffer);
+		EntityLocation location = CodecHelpers.readEntityLocation(buffer);
+		EntityLocation velocity = CodecHelpers.readEntityLocation(buffer);
+		byte yaw = buffer.get();
+		byte pitch = buffer.get();
+		Inventory inventory = CodecHelpers.readInventory(context);
+		int[] hotbar = new int[Entity.HOTBAR_SIZE];
+		for (int i = 0; i < hotbar.length; ++i)
+		{
+			hotbar[i] = buffer.getInt();
+		}
+		int hotbarIndex = buffer.getInt();
+		NonStackableItem[] armour = new NonStackableItem[BodyPart.values().length];
+		for (int i = 0; i < armour.length; ++i)
+		{
+			armour[i] = CodecHelpers.readNonStackableItem(context);
+		}
+		// We ignore localCraftOperation as it is now ephemeral.
+		CodecHelpers.readCraftOperation(buffer);
+		byte health = buffer.get();
+		byte food = buffer.get();
+		byte breath = buffer.get();
+		// We ignore int energyDeficit as it is now ephemeral.
+		buffer.getInt();
+		EntityLocation spawn = CodecHelpers.readEntityLocation(buffer);
+		
+		return new Entity(id
+			, isCreativeMode
+			, location
+			, velocity
+			, yaw
+			, pitch
+			, inventory
+			, hotbar
+			, hotbarIndex
+			, armour
+			, health
+			, food
+			, breath
+			, spawn
+			
+			, Entity.EMPTY_SHARED
+			, Entity.EMPTY_LOCAL
+		);
 	}
 }

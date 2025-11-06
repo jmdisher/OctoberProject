@@ -1118,8 +1118,8 @@ public class TestSpeculativeProjection
 			nextCommit += 1L;
 		}
 		// Verify that we finished the craft (no longer in progress).
-		Assert.assertNull(listener.authoritativeEntityState.localCraftOperation());
-		Assert.assertNull(listener.thisEntityState.localCraftOperation());
+		Assert.assertNull(listener.authoritativeEntityState.ephemeralShared().localCraftOperation());
+		Assert.assertNull(listener.thisEntityState.ephemeralShared().localCraftOperation());
 		
 		// Check the inventory to see the craft completed.
 		Inventory inv = listener.authoritativeEntityState.inventory();
@@ -1196,8 +1196,8 @@ public class TestSpeculativeProjection
 			nextCommit += 1L;
 		}
 		Assert.assertEquals(nextCommit - 1L, listener.entityChangeCount);
-		Assert.assertNull(listener.authoritativeEntityState.localCraftOperation());
-		Assert.assertNotNull(listener.thisEntityState.localCraftOperation());
+		Assert.assertNull(listener.authoritativeEntityState.ephemeralShared().localCraftOperation());
+		Assert.assertNotNull(listener.thisEntityState.ephemeralShared().localCraftOperation());
 		
 		for (long spent = 0L; spent < 1000L; spent += MILLIS_PER_TICK)
 		{
@@ -1207,8 +1207,8 @@ public class TestSpeculativeProjection
 			nextCommit += 1L;
 		}
 		Assert.assertEquals(nextCommit - 1L, listener.entityChangeCount);
-		Assert.assertNull(listener.authoritativeEntityState.localCraftOperation());
-		Assert.assertNull(listener.thisEntityState.localCraftOperation());
+		Assert.assertNull(listener.authoritativeEntityState.ephemeralShared().localCraftOperation());
+		Assert.assertNull(listener.thisEntityState.ephemeralShared().localCraftOperation());
 		
 		// Check the inventory to see the craft completed.
 		Inventory inv = listener.authoritativeEntityState.inventory();
@@ -1409,8 +1409,8 @@ public class TestSpeculativeProjection
 		// This should fail to apply.
 		Assert.assertEquals(0, commit);
 		// There should be no active operation.
-		Assert.assertNull(listener.authoritativeEntityState.localCraftOperation());
-		Assert.assertNull(listener.thisEntityState.localCraftOperation());
+		Assert.assertNull(listener.authoritativeEntityState.ephemeralShared().localCraftOperation());
+		Assert.assertNull(listener.thisEntityState.ephemeralShared().localCraftOperation());
 		Assert.assertTrue(listener.events.isEmpty());
 	}
 

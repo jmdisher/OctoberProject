@@ -226,13 +226,12 @@ public class TestRayCastHelpers
 			, null
 			, 0
 			, null
-			, null
 			, (byte)0
 			, (byte)0
 			, MiscConstants.MAX_BREATH
-			, 0
 			, MutableEntity.TESTING_LOCATION
-			, Entity.EMPTY_DATA
+			, Entity.EMPTY_SHARED
+			, Entity.EMPTY_LOCAL
 		);
 	}
 }

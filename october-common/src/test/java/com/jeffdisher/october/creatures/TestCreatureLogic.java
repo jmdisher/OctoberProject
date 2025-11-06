@@ -225,13 +225,12 @@ public class TestCreatureLogic
 				, new int[1]
 				, 0
 				, null
-				, null
 				, (byte)0
 				, (byte)0
 				, MiscConstants.MAX_BREATH
-				, 0
 				, MutableEntity.TESTING_LOCATION
-				, Entity.EMPTY_DATA
+				, Entity.EMPTY_SHARED
+				, Entity.EMPTY_LOCAL
 		) };
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
@@ -291,13 +290,12 @@ public class TestCreatureLogic
 				, new int[1]
 				, 0
 				, null
-				, null
 				, (byte)0
 				, (byte)0
 				, MiscConstants.MAX_BREATH
-				, 0
 				, MutableEntity.TESTING_LOCATION
-				, Entity.EMPTY_DATA
+				, Entity.EMPTY_SHARED
+				, Entity.EMPTY_LOCAL
 		);
 		// Special action is where we account for this targeting update but it doesn't count as a special action.
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context

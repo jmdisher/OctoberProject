@@ -80,6 +80,7 @@ public class TestResourceLoader
 	private static Environment ENV;
 	private static Item STONE_ITEM;
 	private static Item IRON_SWORD;
+	private static Item LOG_ITEM;
 	private static Block STONE;
 	private static EntityType COW;
 	@BeforeClass
@@ -88,6 +89,7 @@ public class TestResourceLoader
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");
 		IRON_SWORD = ENV.items.getItemById("op.iron_sword");
+		LOG_ITEM = ENV.items.getItemById("op.log");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 		COW = ENV.creatures.getTypeById("op.cow");
 	}
@@ -629,7 +631,7 @@ public class TestResourceLoader
 		Entity entity = results.get(0).entity();
 		Assert.assertEquals(location, entity.location());
 		Assert.assertEquals(BodyPart.values().length, entity.armourSlots().length);
-		Assert.assertNull(entity.localCraftOperation());
+		Assert.assertNull(entity.ephemeralShared().localCraftOperation());
 		Assert.assertEquals((byte)0, entity.yaw());
 		List<ScheduledChange> changes = results.get(0).changes();
 		Assert.assertEquals(1, changes.size());
@@ -1147,6 +1149,96 @@ public class TestResourceLoader
 		ItemSlot loadedSlot = (ItemSlot) loadedPassive.extendedData();
 		Assert.assertEquals(extendedData.stack, loadedSlot.stack);
 		Assert.assertEquals(newLoadTimeMillis, loadedPassive.lastAliveMillis());
+	}
+
+	@Test
+	public void readEntityV9() throws Throwable
+	{
+		File worldDirectory = DIRECTORY.newFolder();
+		
+		// This test shows that we can read V9 data, where localCraftOperation and energyDeficit were still persistent (they were made ephemeral in V10).
+		int id = 1;
+		EntityLocation location = new EntityLocation(1.0f, 2.0f, 3.0f);
+		byte yaw = 5;
+		byte health = 50;
+		EntityLocation spawnLocation = new EntityLocation(-1.2f, -2.0f, 3.6f);
+		/*
+		// Original generation of V9 data shown here.
+		boolean isCreativeMode = false;
+		EntityLocation velocity = new EntityLocation(4.0f, -2.0f, 8.3f);
+		byte pitch = -10;
+		Inventory inventory = Inventory.start(20).addStackable(LOG_ITEM, 2).finish();
+		int[] hotbarItems = new int[Entity.HOTBAR_SIZE];
+		int hotbarIndex = 5;
+		NonStackableItem[] armourSlots = new NonStackableItem[BodyPart.values().length];
+		CraftOperation localCraftOperation = new CraftOperation(ENV.crafting.getCraftById("op.log_to_planks"), 100L);
+		byte food = 50;
+		byte breath = 100;
+		int energyDeficit = 1234;
+		Entity player = new Entity(id
+			, isCreativeMode
+			, location
+			, velocity
+			, yaw
+			, pitch
+			, inventory
+			, hotbarItems
+			, hotbarIndex
+			, armourSlots
+			, localCraftOperation
+			, health
+			, food
+			, breath
+			, energyDeficit
+			, spawnLocation
+			
+			, Entity.EMPTY_DATA
+		);
+		ResourceLoader loader = new ResourceLoader(worldDirectory, null, new WorldConfig());
+		loader.writeBackToDisk(List.of(), List.of(new SuspendedEntity(player, List.of())));
+		loader.shutdown();
+		
+		String fileName = "entity_" + id + ".entity";
+		System.out.println(Arrays.toString(Files.readAllBytes(new File(worldDirectory, fileName).toPath())));
+		*/
+		
+		String fileName = "entity_" + id + ".entity";
+		byte[] v9Data = new byte[] {0, 0, 0, 9, 0, 0, 0, 1, 0, 63, -128, 0, 0, 64, 0, 0, 0, 64, 64, 0, 0, 64, -128, 0, 0, -64, 0, 0, 0, 65, 4, -52, -51, 5, -10, 0, 0, 0, 20, 1, 0, 0, 0, 1, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, -1, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 50, 50, 100, 0, 0, 4, -46, -65, -103, -103, -102, -64, 0, 0, 0, 64, 102, 102, 102};
+		try (
+			RandomAccessFile aFile = new RandomAccessFile(new File(worldDirectory, fileName), "rw");
+			FileChannel outChannel = aFile.getChannel();
+		)
+		{
+			ByteBuffer buffer = ByteBuffer.wrap(v9Data);
+			int written = outChannel.write(buffer);
+			outChannel.truncate((long)written);
+		}
+		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
+		
+		// Now, read the data and verify that it is correct.
+		WorldConfig config = new WorldConfig();
+		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
+		List<SuspendedEntity> results = new ArrayList<>();
+		loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(id), 0L);
+		Assert.assertTrue(results.isEmpty());
+		for (int i = 0; (results.size() < 1) && (i < 10); ++i)
+		{
+			Thread.sleep(10L);
+			loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(), 0L);
+		}
+		Assert.assertEquals(1, results.size());
+		Entity entity = results.get(0).entity();
+		
+		// Verify that this matches the input or is missing whatever we no longer consider persistent.
+		Assert.assertEquals(location, entity.location());
+		Assert.assertEquals(yaw, entity.yaw());
+		Assert.assertEquals(2, entity.inventory().getCount(LOG_ITEM));
+		Assert.assertEquals(health, entity.health());
+		Assert.assertEquals(spawnLocation, entity.spawnLocation());
+		Assert.assertNull(entity.ephemeralShared().localCraftOperation());
+		Assert.assertEquals(0, entity.ephemeralLocal().energyDeficit());
+		
+		loader.shutdown();
 	}
 
 

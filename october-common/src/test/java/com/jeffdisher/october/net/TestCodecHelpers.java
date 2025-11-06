@@ -198,9 +198,9 @@ public class TestCodecHelpers
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		Entity test = MutableEntity.createForTest(1).freeze();
-		CodecHelpers.writeEntity(buffer, test);
+		CodecHelpers.writeEntityDisk(buffer, test);
 		buffer.flip();
-		Entity output = CodecHelpers.readEntity(new DeserializationContext(ENV
+		Entity output = CodecHelpers.readEntityDisk(new DeserializationContext(ENV
 			, buffer
 			, 0L
 			, false
@@ -219,16 +219,16 @@ public class TestCodecHelpers
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocalCraftOperation = new CraftOperation(ENV.crafting.getCraftById("op.stone_to_stone_brick"), 50L);
 		Entity test = mutable.freeze();
-		CodecHelpers.writeEntity(buffer, test);
+		CodecHelpers.writeEntityNetwork(buffer, test);
 		buffer.flip();
-		Entity output = CodecHelpers.readEntity(new DeserializationContext(ENV
+		Entity output = CodecHelpers.readEntityNetwork(new DeserializationContext(ENV
 			, buffer
 			, 0L
 			, false
 		));
 		
 		Assert.assertEquals(test.id(), output.id());
-		Assert.assertEquals(test.localCraftOperation(), output.localCraftOperation());
+		Assert.assertEquals(test.ephemeralShared().localCraftOperation(), output.ephemeralShared().localCraftOperation());
 	}
 
 	@Test

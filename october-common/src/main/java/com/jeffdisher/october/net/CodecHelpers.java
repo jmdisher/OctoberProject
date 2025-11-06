@@ -20,6 +20,7 @@ import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.Entity.Ephemeral_Shared;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.FuelState;
@@ -201,7 +202,7 @@ public class CodecHelpers
 		_writeCraft(buffer, operation);
 	}
 
-	public static Entity readEntity(DeserializationContext context)
+	public static Entity readEntityDisk(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
 		int id = buffer.getInt();
@@ -222,34 +223,32 @@ public class CodecHelpers
 		{
 			armour[i] = _readNonStackableItem(context);
 		}
-		CraftOperation localCraftOperation = _readCraftOperation(buffer);
 		byte health = buffer.get();
 		byte food = buffer.get();
 		byte breath = buffer.get();
-		int energyDeficit = buffer.getInt();
 		EntityLocation spawn = _readEntityLocation(buffer);
 		
 		return new Entity(id
-				, isCreativeMode
-				, location
-				, velocity
-				, yaw
-				, pitch
-				, inventory
-				, hotbar
-				, hotbarIndex
-				, armour
-				, localCraftOperation
-				, health
-				, food
-				, breath
-				, energyDeficit
-				, spawn
-				, Entity.EMPTY_DATA
+			, isCreativeMode
+			, location
+			, velocity
+			, yaw
+			, pitch
+			, inventory
+			, hotbar
+			, hotbarIndex
+			, armour
+			, health
+			, food
+			, breath
+			, spawn
+			
+			, Entity.EMPTY_SHARED
+			, Entity.EMPTY_LOCAL
 		);
 	}
 
-	public static void writeEntity(ByteBuffer buffer, Entity entity)
+	public static void writeEntityDisk(ByteBuffer buffer, Entity entity)
 	{
 		int id = entity.id();
 		boolean isCreativeMode = entity.isCreativeMode();
@@ -261,7 +260,6 @@ public class CodecHelpers
 		int[] hotbar = entity.hotbarItems();
 		int hotbarIndex = entity.hotbarIndex();
 		NonStackableItem[] armour = entity.armourSlots();
-		CraftOperation localCraftOperation = entity.localCraftOperation();
 		
 		buffer.putInt(id);
 		_writeBoolean(buffer, isCreativeMode);
@@ -279,12 +277,95 @@ public class CodecHelpers
 		{
 			_writeNonStackableItem(buffer, piece);
 		}
-		_writeCraftOperation(buffer, localCraftOperation);
 		buffer.put(entity.health());
 		buffer.put(entity.food());
 		buffer.put(entity.breath());
-		buffer.putInt(entity.energyDeficit());
 		_writeEntityLocation(buffer, entity.spawnLocation());
+	}
+
+	public static Entity readEntityNetwork(DeserializationContext context)
+	{
+		ByteBuffer buffer = context.buffer();
+		int id = buffer.getInt();
+		boolean isCreativeMode = _readBoolean(buffer);
+		EntityLocation location = _readEntityLocation(buffer);
+		EntityLocation velocity = _readEntityLocation(buffer);
+		byte yaw = buffer.get();
+		byte pitch = buffer.get();
+		Inventory inventory = _readInventory(context);
+		int[] hotbar = new int[Entity.HOTBAR_SIZE];
+		for (int i = 0; i < hotbar.length; ++i)
+		{
+			hotbar[i] = buffer.getInt();
+		}
+		int hotbarIndex = buffer.getInt();
+		NonStackableItem[] armour = new NonStackableItem[BodyPart.values().length];
+		for (int i = 0; i < armour.length; ++i)
+		{
+			armour[i] = _readNonStackableItem(context);
+		}
+		byte health = buffer.get();
+		byte food = buffer.get();
+		byte breath = buffer.get();
+		EntityLocation spawn = _readEntityLocation(buffer);
+		
+		Entity.Ephemeral_Shared ephemeralShared = _readEntityEphemeralShared(context);
+		
+		return new Entity(id
+			, isCreativeMode
+			, location
+			, velocity
+			, yaw
+			, pitch
+			, inventory
+			, hotbar
+			, hotbarIndex
+			, armour
+			, health
+			, food
+			, breath
+			, spawn
+			
+			, ephemeralShared
+			, Entity.EMPTY_LOCAL
+		);
+	}
+
+	public static void writeEntityNetwork(ByteBuffer buffer, Entity entity)
+	{
+		int id = entity.id();
+		boolean isCreativeMode = entity.isCreativeMode();
+		EntityLocation location = entity.location();
+		EntityLocation velocity = entity.velocity();
+		byte yaw = entity.yaw();
+		byte pitch = entity.pitch();
+		Inventory inventory = entity.inventory();
+		int[] hotbar = entity.hotbarItems();
+		int hotbarIndex = entity.hotbarIndex();
+		NonStackableItem[] armour = entity.armourSlots();
+		
+		buffer.putInt(id);
+		_writeBoolean(buffer, isCreativeMode);
+		_writeEntityLocation(buffer, location);
+		_writeEntityLocation(buffer, velocity);
+		buffer.put(yaw);
+		buffer.put(pitch);
+		_writeInventory(buffer, inventory);
+		for (int key : hotbar)
+		{
+			buffer.putInt(key);
+		}
+		buffer.putInt(hotbarIndex);
+		for (NonStackableItem piece : armour)
+		{
+			_writeNonStackableItem(buffer, piece);
+		}
+		buffer.put(entity.health());
+		buffer.put(entity.food());
+		buffer.put(entity.breath());
+		_writeEntityLocation(buffer, entity.spawnLocation());
+		
+		_writeEntityEphemeralShared(buffer, entity.ephemeralShared());
 	}
 
 	public static PartialEntity readPartialEntity(ByteBuffer buffer)
@@ -945,5 +1026,17 @@ public class CodecHelpers
 			// We just write a null item type.
 			_writeItem(buffer, null);
 		}
+	}
+
+	private static Ephemeral_Shared _readEntityEphemeralShared(DeserializationContext context)
+	{
+		CraftOperation localCraftOperation = _readCraftOperation(context.buffer());
+		return new Ephemeral_Shared(localCraftOperation
+		);
+	}
+
+	private static void _writeEntityEphemeralShared(ByteBuffer buffer, Ephemeral_Shared ephemeralShared)
+	{
+		_writeCraftOperation(buffer, ephemeralShared.localCraftOperation());
 	}
 }

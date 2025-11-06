@@ -24,21 +24,20 @@ public record Entity(int id
 		, int hotbarIndex
 		// The armour slots don't count as part of the inventory so they keep the non-stackables inline.
 		, NonStackableItem[] armourSlots
-		// This is typically null but is used in the case where the entity is currently crafting something.
-		, CraftOperation localCraftOperation
 		// The health value of the entity.  Currently, we just use a byte since it is in the range of [1..100].
 		, byte health
 		// The food level stored within the entity.  Currently, we just use a byte since it is in the range of [0..100].
 		, byte food
 		// The breath the entity has (for drowning).
 		, byte breath
-		// The energy deficit is used as an intermediary to decide when to consume food.  It changes in response to many actions.
-		, int energyDeficit
 		// The location where the entity is sent when they spawn for the first time or die and respawn.
 		, EntityLocation spawnLocation
 		
-		// Note that ephemeral data isn't persisted or passed over the network.
-		, Ephemeral ephemeral
+		// We have some ephemeral data which is still passed to the client, just never persisted to disk.
+		, Ephemeral_Shared ephemeralShared
+		
+		// We have some private ephemeral data which is server-local and never passed to the client or stored to disk.
+		, Ephemeral_Local ephemeralLocal
 )
 {
 	public static final int HOTBAR_SIZE = 9;
@@ -48,20 +47,38 @@ public record Entity(int id
 	 * code which would otherwise just have an inline constant 0.
 	 */
 	public static final int NO_SELECTION = 0;
+
 	/**
-	 * The empty ephemeral data used when loading a new instance.
+	 * The empty ephemeral shared data used when loading a new instance.
 	 */
-	public static final Ephemeral EMPTY_DATA = new Ephemeral(0L
-			, 0L
+	public static final Ephemeral_Shared EMPTY_SHARED = new Ephemeral_Shared(null
 	);
+
+	/**
+	 * The empty ephemeral local data used when loading a new instance.
+	 */
+	public static final Ephemeral_Local EMPTY_LOCAL = new Ephemeral_Local(0L
+		, 0L
+		, 0
+	);
+
+	/**
+	 * All data stored in this class is shared with the client but never persisted to disk.
+	 */
+	public static record Ephemeral_Shared(
+		// This is typically null but is used in the case where the entity is currently crafting something.
+		CraftOperation localCraftOperation
+	) {}
 
 	/**
 	 * All data stored in this class is considered ephemeral and local:  It is not persisted, nor sent over the network.
 	 */
-	public static record Ephemeral(
-			// The last millisecond when the entity took a special action.
-			long lastSpecialActionMillis
-			// The millisecond time when this entity last took damage.
-			, long lastDamageTakenMillis
+	public static record Ephemeral_Local(
+		// The last millisecond when the entity took a special action.
+		long lastSpecialActionMillis
+		// The millisecond time when this entity last took damage.
+		, long lastDamageTakenMillis
+		// The energy deficit is used as an intermediary to decide when to consume food.  It changes in response to many actions.
+		, int energyDeficit
 	) {}
 }

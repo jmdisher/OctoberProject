@@ -80,6 +80,7 @@ public record LegacyEntityV1(int id
 
 	public Entity toEntity()
 	{
+		// We just drop localCraftingOperation and energyDeficity here since they are now ephemeral.
 		byte yaw = 0;
 		byte pitch = 0;
 		return new Entity(this.id
@@ -92,13 +93,12 @@ public record LegacyEntityV1(int id
 				, this.hotbarItems
 				, this.hotbarIndex
 				, this.armourSlots
-				, this.localCraftOperation
 				, this.health
 				, this.food
 				, this.breath
-				, this.energyDeficit
 				, this.spawnLocation
-				, Entity.EMPTY_DATA
+				, Entity.EMPTY_SHARED
+				, Entity.EMPTY_LOCAL
 		);
 	}
 }

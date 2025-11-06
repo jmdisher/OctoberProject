@@ -21,7 +21,7 @@ public class Packet_Entity extends PacketFromServer
 				, 0L
 				, false
 			);
-			Entity entity = CodecHelpers.readEntity(context);
+			Entity entity = CodecHelpers.readEntityNetwork(context);
 			return new Packet_Entity(entity);
 		};
 	}
@@ -38,6 +38,6 @@ public class Packet_Entity extends PacketFromServer
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		CodecHelpers.writeEntity(buffer, this.entity);
+		CodecHelpers.writeEntityNetwork(buffer, this.entity);
 	}
 }

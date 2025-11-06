@@ -24,7 +24,7 @@ public class MutationEntitySetEntity implements IEntityUpdate
 			, 0L
 			, false
 		);
-		Entity entity = CodecHelpers.readEntity(context);
+		Entity entity = CodecHelpers.readEntityNetwork(context);
 		return new MutationEntitySetEntity(entity);
 	}
 
@@ -47,7 +47,7 @@ public class MutationEntitySetEntity implements IEntityUpdate
 		newEntity.newVelocity = _entity.velocity();
 		newEntity.newYaw = _entity.yaw();
 		newEntity.newPitch = _entity.pitch();
-		newEntity.newLocalCraftOperation = _entity.localCraftOperation();
+		newEntity.newLocalCraftOperation = _entity.ephemeralShared().localCraftOperation();
 		newEntity.newHealth = _entity.health();
 		newEntity.newFood = _entity.food();
 		newEntity.newBreath = _entity.breath();
@@ -64,6 +64,6 @@ public class MutationEntitySetEntity implements IEntityUpdate
 	@Override
 	public void serializeToNetworkBuffer(ByteBuffer buffer)
 	{
-		CodecHelpers.writeEntity(buffer, _entity);
+		CodecHelpers.writeEntityNetwork(buffer, _entity);
 	}
 }

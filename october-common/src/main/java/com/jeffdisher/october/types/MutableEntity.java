@@ -66,13 +66,12 @@ public class MutableEntity implements IMutablePlayerEntity
 				, new int[Entity.HOTBAR_SIZE]
 				, 0
 				, new NonStackableItem[BodyPart.values().length]
-				, null
 				, env.creatures.PLAYER.maxHealth()
 				, MiscConstants.PLAYER_MAX_FOOD
 				, MiscConstants.MAX_BREATH
-				, 0
 				, spawn
-				, Entity.EMPTY_DATA
+				, Entity.EMPTY_SHARED
+				, Entity.EMPTY_LOCAL
 		);
 		return new MutableEntity(entity);
 	}
@@ -111,15 +110,15 @@ public class MutableEntity implements IMutablePlayerEntity
 		this.newHotbar = original.hotbarItems().clone();
 		this.newHotbarIndex = original.hotbarIndex();
 		this.newArmour = original.armourSlots().clone();
-		this.newLocalCraftOperation = original.localCraftOperation();
+		this.newLocalCraftOperation = original.ephemeralShared().localCraftOperation();
 		this.newHealth = original.health();
 		this.newFood = original.food();
 		this.newBreath = original.breath();
-		this.newEnergyDeficit = original.energyDeficit();
+		this.newEnergyDeficit = original.ephemeralLocal().energyDeficit();
 		this.isCreativeMode = original.isCreativeMode();
 		this.newSpawn = original.spawnLocation();
-		this.ephemeral_lastSpecialActionMillis = original.ephemeral().lastSpecialActionMillis();
-		this.ephemeral_newLastDamageTakenMillis = original.ephemeral().lastDamageTakenMillis();
+		this.ephemeral_lastSpecialActionMillis = original.ephemeralLocal().lastSpecialActionMillis();
+		this.ephemeral_newLastDamageTakenMillis = original.ephemeralLocal().lastDamageTakenMillis();
 	}
 
 	@Override
@@ -445,8 +444,11 @@ public class MutableEntity implements IMutablePlayerEntity
 				break;
 			}
 		}
-		Entity.Ephemeral ephemeral = new Entity.Ephemeral(this.ephemeral_lastSpecialActionMillis
-				, this.ephemeral_newLastDamageTakenMillis
+		Entity.Ephemeral_Shared ephemeralShared = new Entity.Ephemeral_Shared(this.newLocalCraftOperation
+		);
+		Entity.Ephemeral_Local ephemeralLocal = new Entity.Ephemeral_Local(this.ephemeral_lastSpecialActionMillis
+			, this.ephemeral_newLastDamageTakenMillis
+			, this.newEnergyDeficit
 		);
 		Entity newInstance = new Entity(_original.id()
 				, this.isCreativeMode
@@ -458,13 +460,12 @@ public class MutableEntity implements IMutablePlayerEntity
 				, didHotbarChange ? this.newHotbar : _original.hotbarItems()
 				, this.newHotbarIndex
 				, didArmourChange ? this.newArmour : _original.armourSlots()
-				, this.newLocalCraftOperation
 				, this.newHealth
 				, this.newFood
 				, this.newBreath
-				, this.newEnergyDeficit
 				, this.newSpawn
-				, ephemeral.equals(_original.ephemeral()) ? _original.ephemeral() : ephemeral
+				, ephemeralShared.equals(_original.ephemeralShared()) ? _original.ephemeralShared() : ephemeralShared
+				, ephemeralLocal.equals(_original.ephemeralLocal()) ? _original.ephemeralLocal() : ephemeralLocal
 		);
 		// See if these are identical.
 		return _original.equals(newInstance)

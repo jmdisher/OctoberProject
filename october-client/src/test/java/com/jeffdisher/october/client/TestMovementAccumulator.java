@@ -604,7 +604,7 @@ public class TestMovementAccumulator
 		Assert.assertTrue(out.test_getSubAction() instanceof EntityChangeCraft);
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid, blockingCuboid), entity, out, accumulator, listener);
 		accumulator.applyLocalAccumulation();
-		Assert.assertNotNull(listener.thisEntity.localCraftOperation());
+		Assert.assertNotNull(listener.thisEntity.ephemeralShared().localCraftOperation());
 		
 		// Now, run another standing tick and see that it is dropped.
 		// NOTE:  We need to move to force the generation of the actual action or we will be considered doing nothing and it will still wait.
@@ -614,7 +614,7 @@ public class TestMovementAccumulator
 		Assert.assertNull(out.test_getSubAction());
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid, blockingCuboid), entity, out, accumulator, listener);
 		accumulator.applyLocalAccumulation();
-		Assert.assertNull(listener.thisEntity.localCraftOperation());
+		Assert.assertNull(listener.thisEntity.ephemeralShared().localCraftOperation());
 		Assert.assertEquals(4, listener.thisEntity.inventory().currentEncumbrance);
 	}
 
@@ -1036,9 +1036,9 @@ public class TestMovementAccumulator
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
 		// We shouldn't see anything until we apply the accumulation.
-		Assert.assertNull(listener.thisEntity.localCraftOperation());
+		Assert.assertNull(listener.thisEntity.ephemeralShared().localCraftOperation());
 		accumulator.applyLocalAccumulation();
-		Assert.assertNotNull(listener.thisEntity.localCraftOperation());
+		Assert.assertNotNull(listener.thisEntity.ephemeralShared().localCraftOperation());
 		
 		// Show what happens when we spill over into the next tick.
 		currentTimeMillis += millisPerTick;
@@ -1048,9 +1048,9 @@ public class TestMovementAccumulator
 		Assert.assertTrue(out.test_getSubAction() instanceof EntityChangeCraft);
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid, blockingCuboid), entity, out, accumulator, listener);
 		// We should see the active operation since it was in this last action.
-		Assert.assertNotNull(listener.thisEntity.localCraftOperation());
+		Assert.assertNotNull(listener.thisEntity.ephemeralShared().localCraftOperation());
 		accumulator.applyLocalAccumulation();
-		Assert.assertNotNull(listener.thisEntity.localCraftOperation());
+		Assert.assertNotNull(listener.thisEntity.ephemeralShared().localCraftOperation());
 	}
 
 	@Test

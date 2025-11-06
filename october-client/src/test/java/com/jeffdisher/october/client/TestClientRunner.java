@@ -274,14 +274,14 @@ public class TestClientRunner
 		runner.commonApplyEntityAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.log_to_planks")), currentTimeMillis);
 		runner.standStill(currentTimeMillis);
 		// Verify that we now see this in the entity.
-		Assert.assertNotNull(projection.thisEntity.localCraftOperation());
+		Assert.assertNotNull(projection.thisEntity.ephemeralShared().localCraftOperation());
 		
 		// Now, walk off without re-issuing the craft command to see that we drop it.
 		currentTimeMillis += 100L;
 		runner.setOrientation(OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT);
 		runner.walk(MovementAccumulator.Relative.FORWARD, false, currentTimeMillis);
 		// Verify that the craft operation was aborted and that we moved.
-		Assert.assertNull(projection.thisEntity.localCraftOperation());
+		Assert.assertNull(projection.thisEntity.ephemeralShared().localCraftOperation());
 		Assert.assertEquals(2, projection.thisEntity.inventory().getCount(LOG_ITEM));
 		float stepDistance = ENV.creatures.PLAYER.blocksPerSecond() / 10.0f;
 		Assert.assertEquals(new EntityLocation(stepDistance, 0.0f, 0.0f), projection.thisEntity.location());

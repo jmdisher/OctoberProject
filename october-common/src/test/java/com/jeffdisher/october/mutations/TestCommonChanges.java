@@ -1843,13 +1843,12 @@ public class TestCommonChanges
 				, new int[Entity.HOTBAR_SIZE]
 				, 0
 				, new NonStackableItem[BodyPart.values().length]
-				, null
 				, ENV.creatures.PLAYER.maxHealth()
 				, MiscConstants.PLAYER_MAX_FOOD
 				, MiscConstants.MAX_BREATH
-				, 0
 				, MutableEntity.TESTING_LOCATION
-				, Entity.EMPTY_DATA
+				, Entity.EMPTY_SHARED
+				, Entity.EMPTY_LOCAL
 		);
 		Block table = ENV.blocks.fromItem(ENV.items.getItemById("op.crafting_table"));
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
@@ -1972,13 +1971,12 @@ public class TestCommonChanges
 				, new int[Entity.HOTBAR_SIZE]
 				, 0
 				, new NonStackableItem[BodyPart.values().length]
-				, null
 				, health
 				, food
 				, breath
-				, energyDeficit
 				, MutableEntity.TESTING_LOCATION
-				, Entity.EMPTY_DATA
+				, Entity.EMPTY_SHARED
+				, new Entity.Ephemeral_Local(0L, 0L, energyDeficit)
 		);
 		
 		// Try to change these values and verify that nothing happens.
@@ -2026,7 +2024,7 @@ public class TestCommonChanges
 		Assert.assertEquals(health, end.health());
 		Assert.assertEquals(food, end.food());
 		Assert.assertEquals(breath, end.breath());
-		Assert.assertEquals(energyDeficit, end.energyDeficit());
+		Assert.assertEquals(energyDeficit, end.ephemeralLocal().energyDeficit());
 		Assert.assertTrue(didReschedule[0]);
 	}
 
