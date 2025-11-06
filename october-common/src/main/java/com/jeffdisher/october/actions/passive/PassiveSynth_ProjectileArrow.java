@@ -14,6 +14,8 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.ItemSlot;
+import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -81,7 +83,8 @@ public class PassiveSynth_ProjectileArrow
 			if (null != solidCollision)
 			{
 				// We hit a solid block so convert into an item.
-				// TODO:  Drop the arrow as an ITEM_STACK once we have the item.
+				ItemSlot stack = ItemSlot.fromStack(new Items(env.items.getItemById("op.arrow"), 1));
+				context.passiveSpawner.spawnPassive(PassiveType.PROJECTILE_ARROW, startLocation, startVelocity, stack);
 				result = null;
 			}
 			else

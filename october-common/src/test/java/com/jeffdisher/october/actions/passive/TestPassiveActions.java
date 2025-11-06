@@ -206,7 +206,7 @@ public class TestPassiveActions
 	@Test
 	public void passiveArrowHitCreature()
 	{
-		// Show that an arrow will move if it doesn't hit anything.
+		// Show that an arrow will despawn and deal damage to an entity it hits.
 		int id = 1;
 		EntityLocation location = new EntityLocation(10.0f, 10.0f, 10.5f);
 		EntityLocation velocity = new EntityLocation(2.0f, 0.0f, 0.0f);
@@ -267,6 +267,45 @@ public class TestPassiveActions
 		PassiveEntity result = PassiveSynth_ProjectileArrow.applyChange(context, entityCollection, start);
 		Assert.assertNull(result);
 		Assert.assertNotNull(out[0]);
+	}
+
+	@Test
+	public void passiveArrowHitWall()
+	{
+		// Show that an arrow will respawn as an item if it hits a solid surface.
+		int id = 1;
+		EntityLocation location = new EntityLocation(10.8f, 10.0f, 10.5f);
+		EntityLocation velocity = new EntityLocation(2.0f, 0.0f, 0.0f);
+		long createMillis = 1000L;
+		PassiveEntity start = new PassiveEntity(id, PassiveType.PROJECTILE_ARROW, location, velocity, null, createMillis);
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, location.getBlockLocation().getRelative(1, 0, 0).getBlockAddress(), STONE_ITEM.number());
+		PassiveEntity[] out = new PassiveEntity[1];
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation l) -> {
+				return (l.getCuboidAddress().equals(cuboid.getCuboidAddress()))
+						? new BlockProxy(l.getBlockAddress(), cuboid)
+						: null
+				;
+			}, null, null)
+			.passive((PassiveType type, EntityLocation l, EntityLocation v, Object extendedData) -> {
+				Assert.assertNull(out[0]);
+				out[0] = new PassiveEntity(2
+					, type
+					, l
+					, v
+					, extendedData
+					, createMillis
+				);
+			})
+			.tick(1L)
+			.finish()
+		;
+		
+		PassiveEntity result = PassiveSynth_ProjectileArrow.applyChange(context, EntityCollection.emptyCollection(), start);
+		Assert.assertNull(result);
+		Assert.assertEquals("op.arrow", ((ItemSlot)out[0].extendedData()).stack.type().id());
 	}
 
 
