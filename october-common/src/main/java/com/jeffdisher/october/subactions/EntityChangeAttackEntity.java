@@ -8,9 +8,9 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.mutations.CommonEntityMutationHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.BodyPart;
-import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutableInventory;
@@ -73,7 +73,8 @@ public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayer
 			// We will just use the tool speed modifier of the selected item to figure out the damage.
 			// TODO:  Filter this based on some kind of target type so a sword hits harder than a pick-axe.
 			IMutableInventory mutableInventory = newEntity.accessMutableInventory();
-			NonStackableItem nonStack = mutableInventory.getNonStackableForKey(newEntity.getSelectedKey());
+			int selectedKey = newEntity.getSelectedKey();
+			NonStackableItem nonStack = mutableInventory.getNonStackableForKey(selectedKey);
 			Environment env = Environment.getShared();
 			
 			// Stackable or empty hand default to 1 damage.
@@ -99,29 +100,7 @@ public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayer
 				context.newChangeSink.creature(_targetEntityId, takeDamage);
 			}
 			
-			// If we have a tool with finite durability equipped, apply this amount of time to wear it down.
-			if (null != nonStack)
-			{
-				int totalDurability = env.durability.getDurability(nonStack.type());
-				if (totalDurability > 0)
-				{
-					// No matter what they hit, this counts as one "weapon use".
-					int selectedKey = newEntity.getSelectedKey();
-					int randomNumberTo255 = context.randomInt.applyAsInt(256);
-					NonStackableItem updated = PropertyHelpers.reduceDurabilityOrBreak(nonStack, 1, randomNumberTo255);
-					if (null != updated)
-					{
-						// Write this back.
-						mutableInventory.replaceNonStackable(selectedKey, updated);
-					}
-					else
-					{
-						// Remove this and clear the selection.
-						mutableInventory.removeNonStackableItems(selectedKey);
-						newEntity.setSelectedKey(Entity.NO_SELECTION);
-					}
-				}
-			}
+			CommonEntityMutationHelpers.decrementToolDurability(env, context, newEntity, mutableInventory, selectedKey, nonStack);
 			
 			// Attacking expends a lot of energy.
 			newEntity.applyEnergyCost(EntityActionPeriodic.ENERGY_COST_PER_ATTACK);

@@ -6,12 +6,12 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.mutations.CommonEntityMutationHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.mutations.MultiBlockUtils;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -100,26 +100,7 @@ public class EntityChangeIncrementalBlockBreak implements IEntitySubAction<IMuta
 			}, lookup);
 			
 			// If we have a tool with finite durability equipped, decrement its durability by one.
-			if ((null != selected) && !newEntity.isCreativeMode())
-			{
-				int totalDurability = env.durability.getDurability(selected.type());
-				if (totalDurability > 0)
-				{
-					int randomNumberTo255 = context.randomInt.applyAsInt(256);
-					NonStackableItem updated = PropertyHelpers.reduceDurabilityOrBreak(selected, 1, randomNumberTo255);
-					if (null != updated)
-					{
-						// Write this back.
-						mutableInventory.replaceNonStackable(selectedKey, updated);
-					}
-					else
-					{
-						// Remove this and clear the selection.
-						mutableInventory.removeNonStackableItems(selectedKey);
-						newEntity.setSelectedKey(Entity.NO_SELECTION);
-					}
-				}
-			}
+			CommonEntityMutationHelpers.decrementToolDurability(env, context, newEntity, mutableInventory, selectedKey, selected);
 			didApply = true;
 			
 			// Do other state reset.

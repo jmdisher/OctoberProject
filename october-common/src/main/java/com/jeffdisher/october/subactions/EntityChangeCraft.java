@@ -5,11 +5,11 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.aspects.CraftAspect;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.mutations.CommonEntityMutationHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
-import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -101,17 +101,7 @@ public class EntityChangeCraft implements IEntitySubAction<IMutablePlayerEntity>
 				Assert.assertTrue(didCraft);
 				
 				// Make sure that this cleared the hotbar, if we used the last of them (we need to check all of the hotbar slots).
-				for (int key : newEntity.copyHotbar())
-				{
-					if ((Entity.NO_SELECTION != key)
-						&& (null == newEntity.accessMutableInventory().getStackForKey(key))
-						&& (null == newEntity.accessMutableInventory().getNonStackableForKey(key))
-					)
-					{
-						// This needs to be cleared.
-						newEntity.clearHotBarWithKey(key);
-					}
-				}
+				CommonEntityMutationHelpers.rationalizeHotbar(newEntity);
 				
 				// Clear the current operation since we are done.
 				newEntity.setCurrentCraftingOperation(null);
