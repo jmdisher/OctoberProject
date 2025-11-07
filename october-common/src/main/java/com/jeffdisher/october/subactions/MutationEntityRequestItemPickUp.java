@@ -106,6 +106,7 @@ public class MutationEntityRequestItemPickUp implements IEntitySubAction<IMutabl
 				{
 					// Request that the items be extracted and sent back to us.
 					context.mutationSink.next(new MutationBlockExtractItems(_blockLocation, _blockInventoryKey, toFetch, _inventoryAspect, newEntity.getId()));
+					newEntity.setCurrentChargeMillis(0);
 					didApply = true;
 				}
 			}

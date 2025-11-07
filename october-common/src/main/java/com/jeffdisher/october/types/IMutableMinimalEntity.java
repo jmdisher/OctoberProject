@@ -41,6 +41,12 @@ public interface IMutableMinimalEntity
 
 	void setArmour(BodyPart part, NonStackableItem item);
 
+	/**
+	 * Resets any internal counters for operations which require multiple ticks of accumulation.  This includes things
+	 * like in-inventory crafting but also charging weapons.  In the future, other operations will likely be covered in
+	 * this way and/or this method may be split out or parameterized into more precise resets (for example, if walking
+	 * should reset crafting, but not weapon charging).
+	 */
 	void resetLongRunningOperations();
 
 	/**

@@ -100,6 +100,7 @@ public class EntitySubActionRequestSwapSpecialSlot implements IEntitySubAction<I
 			// Send the block mutation to swap (toPush could be null, but that is ok).
 			MutationBlockSwapSpecialSlot mutation = new MutationBlockSwapSpecialSlot(_blockLocation, toPush, newEntity.getId());
 			context.mutationSink.next(mutation);
+			newEntity.setCurrentChargeMillis(0);
 			didApply = true;
 		}
 		return didApply;

@@ -47,6 +47,7 @@ public class MutationEntitySelectItem implements IEntitySubAction<IMutablePlayer
 			// Remove from any other slots and select in the current slot.
 			newEntity.clearHotBarWithKey(_inventoryId);
 			newEntity.setSelectedKey(_inventoryId);
+			newEntity.setCurrentChargeMillis(0);
 			didApply = true;
 		}
 		return didApply;

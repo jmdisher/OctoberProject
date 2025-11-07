@@ -124,6 +124,7 @@ public class MutationEntityPushItems implements IEntitySubAction<IMutablePlayerE
 				{
 					newEntity.clearHotBarWithKey(_localInventoryId);
 				}
+				newEntity.setCurrentChargeMillis(0);
 				didApply = true;
 			}
 		}

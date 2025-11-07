@@ -221,8 +221,9 @@ public class MutableEntity implements IMutablePlayerEntity
 	@Override
 	public void resetLongRunningOperations()
 	{
-		// The only thing we worry about here is any crafting operation.
+		// Crafting and charging should be reset here.
 		this.newLocalCraftOperation = null;
+		this.chargeMillis = 0;
 	}
 
 	@Override
@@ -407,6 +408,18 @@ public class MutableEntity implements IMutablePlayerEntity
 	public void setSpawnLocation(EntityLocation spawnLocation)
 	{
 		this.newSpawn = spawnLocation;
+	}
+
+	@Override
+	public int getCurrentChargeMillis()
+	{
+		return this.chargeMillis;
+	}
+
+	@Override
+	public void setCurrentChargeMillis(int chargeMillis)
+	{
+		this.chargeMillis = chargeMillis;
 	}
 
 	/**

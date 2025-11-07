@@ -129,6 +129,7 @@ public class EntityChangeCraft implements IEntitySubAction<IMutablePlayerEntity>
 			
 			// While this is an action which is considered primary, it should actually delay secondary actions, too.
 			newEntity.setLastSpecialActionMillis(context.currentTickTimeMillis);
+			newEntity.setCurrentChargeMillis(0);
 		}
 		return isValid;
 	}

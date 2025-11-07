@@ -60,6 +60,7 @@ public class EntityChangeUseSelectedItemOnSelf implements IEntitySubAction<IMuta
 			{
 				// Rate-limit us by updating the special action time.
 				newEntity.setLastSpecialActionMillis(context.currentTickTimeMillis);
+				newEntity.setCurrentChargeMillis(0);
 			}
 		}
 		return didApply;

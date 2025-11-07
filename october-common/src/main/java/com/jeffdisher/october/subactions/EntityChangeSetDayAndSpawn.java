@@ -62,6 +62,7 @@ public class EntityChangeSetDayAndSpawn implements IEntitySubAction<IMutablePlay
 			// We will reset the day start in the shared WorldConfig instance (note that doing so is racy but should be harmless) and ServerRunner will observe this and broadcast.
 			context.config.dayStartTick = (int)PropagationHelpers.startDayThisTick(context.currentTick, context.config.ticksPerDay);
 			
+			newEntity.setCurrentChargeMillis(0);
 			didApply = true;
 		}
 		return didApply;

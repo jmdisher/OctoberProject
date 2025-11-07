@@ -44,4 +44,16 @@ public interface IMutablePlayerEntity extends IMutableMinimalEntity
 	void setLastSpecialActionMillis(long millis);
 
 	void setSpawnLocation(EntityLocation spawnLocation);
+
+	/**
+	 * @return The current charge level of the selected weapon (typically 0 if nothing is being charged).
+	 */
+	int getCurrentChargeMillis();
+
+	/**
+	 * Sets the internal charge level to chargeMillis, assuming that the caller has validated this value.
+	 * 
+	 * @param chargeMillis The new charge millis to set.
+	 */
+	void setCurrentChargeMillis(int chargeMillis);
 }
