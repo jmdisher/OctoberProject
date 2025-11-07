@@ -274,6 +274,18 @@ public class TestSpatialHelpers
 		Assert.assertEquals(6.89f, distanceManual, 0.01f);
 	}
 
+	@Test
+	public void facingVectors()
+	{
+		Assert.assertEquals(new EntityLocation(0.0f, 1.0f, 0.0f), SpatialHelpers.getUnitFacingVector((byte)0, (byte)0));
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 1.0f), SpatialHelpers.getUnitFacingVector((byte)0, (byte)64));
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -1.0f), SpatialHelpers.getUnitFacingVector((byte)0, (byte)-64));
+		Assert.assertEquals(new EntityLocation(0.0f, -1.0f, 0.0f), SpatialHelpers.getUnitFacingVector((byte)-128, (byte)0));
+		Assert.assertEquals(new EntityLocation(-1.0f, 0.0f, 0.0f), SpatialHelpers.getUnitFacingVector((byte)64, (byte)0));
+		Assert.assertEquals(new EntityLocation(0.71f, 0.71f, 0.0f), SpatialHelpers.getUnitFacingVector((byte)-32, (byte)0));
+		Assert.assertEquals(new EntityLocation(0.5f, 0.5f, 0.71f), SpatialHelpers.getUnitFacingVector((byte)-32, (byte)32));
+	}
+
 
 	private static class _EndpointHelper implements EntityMovementHelpers.IInteractiveHelper
 	{

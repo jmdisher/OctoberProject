@@ -235,6 +235,39 @@ public class SpatialHelpers
 		return new EntityLocation(base.x() + width, base.y() + width, base.z() + height);
 	}
 
+	/**
+	 * Converts an entity's yaw and pitch into an actual facing vector, sized as a unit vector (magnitude 1.0).
+	 * 
+	 * @param yaw The yaw ([-128..127] - 0 points North, positive values turn to the left).
+	 * @param pitch The pitch ([-64..64] - 0 is "level", -64 is "straight down", and 64 is "straight up").
+	 * @return The unit-magnitude facing vector.
+	 */
+	public static EntityLocation getUnitFacingVector(byte yaw, byte pitch)
+	{
+		// We will assume that we are looking at (0, 1, 0) when at 0 yaw and 0 pitch.
+		
+		// Radians for each kind of rotation.
+		float fullCircle = 2.0f * (float)Math.PI;
+		float halfCircle = (float)Math.PI;
+		
+		// Note that yawRadians is counter-clockwise around the positive Z (yaw - positive value turns to the left).
+		float yawRadians = fullCircle * (float)yaw / 256.0f;
+		
+		// Note that pitchRadians is counter-clockwise around the positive X (pitch - positive value looks up).
+		float pitchRadians = halfCircle * (float)pitch / 128.0f;
+		
+		float lookX = -(float)Math.sin(yawRadians);
+		float lookY = (float)Math.cos(yawRadians);
+		float lookZ = (float)Math.sin(pitchRadians);
+		float distanceZ = (float)Math.cos(pitchRadians);
+		
+		float rawX = lookX * distanceZ;
+		float rawY = lookY * distanceZ;
+		float rawZ = lookZ;
+		float magnitude = (float)Math.sqrt((rawX * rawX) + (rawY * rawY) + (rawZ * rawZ));
+		return new EntityLocation(rawX / magnitude, rawY / magnitude, rawZ / magnitude);
+	}
+
 
 	private static boolean _isBlockAligned(float coord)
 	{
