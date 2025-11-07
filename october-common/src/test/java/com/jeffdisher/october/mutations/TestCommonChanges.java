@@ -55,11 +55,13 @@ import com.jeffdisher.october.subactions.EntityChangeSwim;
 import com.jeffdisher.october.subactions.EntityChangeUseSelectedItemOnBlock;
 import com.jeffdisher.october.subactions.EntityChangeUseSelectedItemOnEntity;
 import com.jeffdisher.october.subactions.EntityChangeUseSelectedItemOnSelf;
+import com.jeffdisher.october.subactions.EntitySubActionChargeWeapon;
 import com.jeffdisher.october.subactions.EntitySubActionDropItemsAsPassive;
 import com.jeffdisher.october.subactions.EntitySubActionLadderAscend;
 import com.jeffdisher.october.subactions.EntitySubActionLadderDescend;
 import com.jeffdisher.october.subactions.EntitySubActionPickUpPassive;
 import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
+import com.jeffdisher.october.subactions.EntitySubActionReleaseWeapon;
 import com.jeffdisher.october.subactions.EntitySubActionRequestSwapSpecialSlot;
 import com.jeffdisher.october.subactions.EntitySubActionTravelViaBlock;
 import com.jeffdisher.october.subactions.MutationEntityPushItems;
@@ -3221,6 +3223,82 @@ public class TestCommonChanges
 		// -too far.
 		mutable.newLocation = new EntityLocation(5.5f, 5.5f, 5.5f);
 		Assert.assertFalse(new EntitySubActionPopOutOfBlock<>(new EntityLocation(5.5f, 5.5f, 6.0f)).applyChange(context, mutable));
+	}
+
+	@Test
+	public void chargeWeaponBehaviour() throws Throwable
+	{
+		// Demonstrate a few of the behaviours related to charging a weapon and releasing it.
+		// We just need millisPerTick in context and an entity with a bow and arrows.
+		TickProcessingContext context = ContextBuilder.build()
+			.millisPerTick(100L)
+			.finish()
+		;
+		Item arrow = ENV.items.getItemById("op.arrow");
+		Item bowItem = ENV.items.getItemById("op.bow");
+		NonStackableItem bow = PropertyHelpers.newItemWithDefaults(ENV, bowItem);
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newInventory.addNonStackableAllowingOverflow(bow);
+		mutable.newInventory.addAllItems(arrow, 2);
+		mutable.newHotbar[0] = 1;
+		mutable.newHotbar[1] = 2;
+		mutable.newHotbarIndex = 2;
+		
+		// Show that we can't charge with no bow selected.
+		Assert.assertFalse(new EntitySubActionChargeWeapon().applyChange(context, mutable));
+		
+		// Show that we can't release with no charge.
+		mutable.newHotbarIndex = 0;
+		Assert.assertFalse(new EntitySubActionReleaseWeapon().applyChange(context, mutable));
+		
+		// Show that we can now charge.
+		Assert.assertTrue(new EntitySubActionChargeWeapon().applyChange(context, mutable));
+		Assert.assertEquals(100, mutable.getCurrentChargeMillis());
+		
+		// Nearly fill the charge and show that it saturates.
+		int maxCharge = ENV.tools.getChargeMillis(bowItem);
+		mutable.setCurrentChargeMillis(maxCharge - 50);
+		Assert.assertTrue(new EntitySubActionChargeWeapon().applyChange(context, mutable));
+		Assert.assertEquals(maxCharge, mutable.getCurrentChargeMillis());
+		
+		// Release this and see that we fire the arrow.
+		PassiveEntity[] out = new PassiveEntity[1];
+		context = ContextBuilder.build()
+			.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+				Assert.assertNull(out[0]);
+				out[0] = new PassiveEntity(1
+					, type
+					, location
+					, velocity
+					, extendedData
+					, 1000L
+				);
+			})
+			.millisPerTick(100L)
+			.finish()
+		;
+		Assert.assertTrue(new EntitySubActionReleaseWeapon().applyChange(context, mutable));
+		Assert.assertEquals(0, mutable.getCurrentChargeMillis());
+		Assert.assertEquals(PassiveType.PROJECTILE_ARROW, out[0].type());
+		Assert.assertEquals(new EntityLocation(0.2f, 0.2f, 1.53f), out[0].location());
+		Assert.assertEquals(new EntityLocation(0.0f, 10.0f, 0.0f), out[0].velocity());
+		Assert.assertNull(out[0].extendedData());
+		Assert.assertEquals(1, mutable.newInventory.getCount(arrow));
+		
+		// Show that we can run out of arrows.
+		out[0] = null;
+		mutable.setCurrentChargeMillis(maxCharge / 2);
+		Assert.assertTrue(new EntitySubActionReleaseWeapon().applyChange(context, mutable));
+		Assert.assertEquals(0, mutable.getCurrentChargeMillis());
+		Assert.assertEquals(PassiveType.PROJECTILE_ARROW, out[0].type());
+		Assert.assertEquals(new EntityLocation(0.2f, 0.2f, 1.53f), out[0].location());
+		Assert.assertEquals(new EntityLocation(0.0f, 5.0f, 0.0f), out[0].velocity());
+		Assert.assertNull(out[0].extendedData());
+		Assert.assertEquals(0, mutable.newInventory.getCount(arrow));
+		Assert.assertEquals(0, mutable.newHotbar[1]);
+		
+		// We should now fail to charge.
+		Assert.assertFalse(new EntitySubActionChargeWeapon().applyChange(context, mutable));
 	}
 
 

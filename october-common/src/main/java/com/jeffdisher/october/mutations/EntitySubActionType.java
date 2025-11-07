@@ -45,6 +45,8 @@ public enum EntitySubActionType
 	DROP_ITEMS_AS_PASSIVE,
 	PICK_UP_ITEMS_PASSIVE,
 	POP_OUT,
+	CHARGE_WEAPON,
+	TRIGGER_CHARGED_WEAPON,
 	
 	/**
 	 * This testing type is never serialized so it should be kept at the end of the list.

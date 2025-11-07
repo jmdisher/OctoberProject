@@ -59,6 +59,8 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 		EntitySubActionType.DROP_ITEMS_AS_PASSIVE,
 		EntitySubActionType.PICK_UP_ITEMS_PASSIVE,
 		EntitySubActionType.POP_OUT,
+		EntitySubActionType.CHARGE_WEAPON,
+		EntitySubActionType.TRIGGER_CHARGED_WEAPON,
 		EntitySubActionType.TESTING_ONLY,
 	}).collect(Collectors.toSet());
 
