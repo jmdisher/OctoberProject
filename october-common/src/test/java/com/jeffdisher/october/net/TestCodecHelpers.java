@@ -428,4 +428,33 @@ public class TestCodecHelpers
 		Assert.assertEquals(input.velocity(), partialOut.velocity());
 		Assert.assertEquals(((ItemSlot)input.extendedData()).nonStackable, ((ItemSlot)partialOut.extendedData()).nonStackable);
 	}
+
+	@Test
+	public void entitySerializationDifferences() throws Throwable
+	{
+		// Show that charge millis appears in the network but not the disk.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.chargeMillis = 1234;
+		Entity test = mutable.freeze();
+		
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		CodecHelpers.writeEntityNetwork(buffer, test);
+		buffer.flip();
+		Entity network = CodecHelpers.readEntityNetwork(new DeserializationContext(ENV
+			, buffer
+			, 0L
+			, false
+		));
+		Assert.assertEquals(1234, network.ephemeralShared().chargeMillis());
+		
+		buffer = buffer.clear();
+		CodecHelpers.writeEntityDisk(buffer, test);
+		buffer.flip();
+		Entity disk = CodecHelpers.readEntityDisk(new DeserializationContext(ENV
+			, buffer
+			, 0L
+			, false
+		));
+		Assert.assertEquals(0, disk.ephemeralShared().chargeMillis());
+	}
 }

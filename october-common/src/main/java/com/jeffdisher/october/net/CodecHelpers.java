@@ -1030,13 +1030,17 @@ public class CodecHelpers
 
 	private static Ephemeral_Shared _readEntityEphemeralShared(DeserializationContext context)
 	{
-		CraftOperation localCraftOperation = _readCraftOperation(context.buffer());
+		ByteBuffer buffer = context.buffer();
+		CraftOperation localCraftOperation = _readCraftOperation(buffer);
+		int chargeMillis = buffer.getInt();
 		return new Ephemeral_Shared(localCraftOperation
+			, chargeMillis
 		);
 	}
 
 	private static void _writeEntityEphemeralShared(ByteBuffer buffer, Ephemeral_Shared ephemeralShared)
 	{
 		_writeCraftOperation(buffer, ephemeralShared.localCraftOperation());
+		buffer.putInt(ephemeralShared.chargeMillis());
 	}
 }

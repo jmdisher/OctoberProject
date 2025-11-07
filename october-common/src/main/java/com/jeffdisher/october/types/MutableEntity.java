@@ -98,6 +98,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	public EntityLocation newSpawn;
 	public long ephemeral_lastSpecialActionMillis;
 	public long ephemeral_newLastDamageTakenMillis;
+	public int chargeMillis;
 
 	private MutableEntity(Entity original)
 	{
@@ -119,6 +120,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		this.newSpawn = original.spawnLocation();
 		this.ephemeral_lastSpecialActionMillis = original.ephemeralLocal().lastSpecialActionMillis();
 		this.ephemeral_newLastDamageTakenMillis = original.ephemeralLocal().lastDamageTakenMillis();
+		this.chargeMillis = original.ephemeralShared().chargeMillis();
 	}
 
 	@Override
@@ -445,6 +447,7 @@ public class MutableEntity implements IMutablePlayerEntity
 			}
 		}
 		Entity.Ephemeral_Shared ephemeralShared = new Entity.Ephemeral_Shared(this.newLocalCraftOperation
+			, this.chargeMillis
 		);
 		Entity.Ephemeral_Local ephemeralLocal = new Entity.Ephemeral_Local(this.ephemeral_lastSpecialActionMillis
 			, this.ephemeral_newLastDamageTakenMillis

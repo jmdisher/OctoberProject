@@ -52,6 +52,7 @@ public record Entity(int id
 	 * The empty ephemeral shared data used when loading a new instance.
 	 */
 	public static final Ephemeral_Shared EMPTY_SHARED = new Ephemeral_Shared(null
+		, 0
 	);
 
 	/**
@@ -68,6 +69,8 @@ public record Entity(int id
 	public static record Ephemeral_Shared(
 		// This is typically null but is used in the case where the entity is currently crafting something.
 		CraftOperation localCraftOperation
+		// The number of milliseconds accumulated in "charging" a weapon.  Usually 0 as this is reset by many things.
+		, int chargeMillis
 	) {}
 
 	/**
