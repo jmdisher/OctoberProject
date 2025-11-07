@@ -2,11 +2,17 @@
 # ID<TAB>material
 # <TAB>material_multiplier<TAB>int
 # <TAB>weapon_damage<TAB>int
+# [<TAB>charge_millis_max<TAB>int]
+# [<TAB>ammunition_type<TAB>ID]
 # 
 # The given material describes what kind of tool this is in terms of the block_material in block_aspect (BlockMaterial
 # enum type - NO_MATERIAL to ignore).  When the tool is used on a block which matches this type, the damage done is
 # multiplied by material_multiplier (whereas other tools, or none at all, use a multiplier of 1).
 # When used against an entity, weapon_damage is used as the damage, whereas non-tools apply a damage of 1.
+# Note that charge_millis_max is optional and only used for things like bows, showing the milliseconds of charge
+# required for "full charge" before release.  If not specified, this is not a tool which charges.
+# "ammunition_type" must reference a stackable item type.
+# Note that "charge_millis_max" and "ammunition_type" are optional but, if one appears, the other is also required.
 # Note that the ID is from item_registry.tablist.
 
 op.iron_pickaxe	PICKAXE
@@ -60,3 +66,8 @@ op.diamond_axe	AXE
 op.diamond_sword	NO_MATERIAL
 	material_multiplier	1
 	weapon_damage	15
+op.bow	NO_MATERIAL
+	material_multiplier	1
+	weapon_damage	1
+	charge_millis_max	3000
+	ammunition_type	op.arrow

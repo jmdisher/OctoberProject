@@ -150,4 +150,20 @@ public class TestMiscAspects
 		Assert.assertFalse(ENV.specialSlot.hasSpecialSlot(stone));
 		Assert.assertFalse(ENV.specialSlot.canRemoveOrDrop(stone));
 	}
+
+	@Test
+	public void bowDetails() throws Throwable
+	{
+		// The bow introduces some new tool information so verify that those are as expected.
+		Item arrow = ENV.items.getItemById("op.arrow");
+		Item bow = ENV.items.getItemById("op.bow");
+		
+		Assert.assertEquals(1, ENV.tools.toolWeaponDamage(arrow));
+		Assert.assertEquals(0, ENV.tools.getChargeMillis(arrow));
+		Assert.assertEquals(null, ENV.tools.getAmmunitionType(arrow));
+		
+		Assert.assertEquals(1, ENV.tools.toolWeaponDamage(bow));
+		Assert.assertEquals(3000, ENV.tools.getChargeMillis(bow));
+		Assert.assertEquals(arrow, ENV.tools.getAmmunitionType(bow));
+	}
 }
