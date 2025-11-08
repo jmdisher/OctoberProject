@@ -76,7 +76,7 @@ public class PassiveSynth_ItemSlot
 				, seconds
 			);
 			EntityLocation finalLocation = movement.location();
-			EntityLocation finalVelocity = new EntityLocation(movement.vX(), movement.vY(), movement.vZ());
+			EntityLocation finalVelocity = movement.velocity();
 			
 			// We need to determine if this moved.
 			if (!finalLocation.equals(entity.location()) || !finalVelocity.equals(entity.velocity()))

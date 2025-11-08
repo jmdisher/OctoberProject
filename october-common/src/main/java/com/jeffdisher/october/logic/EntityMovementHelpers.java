@@ -147,40 +147,9 @@ public class EntityMovementHelpers
 		);
 		
 		// Apply the effective movement to find collisions.
-		HighLevelMovementResult[] out = new HighLevelMovementResult[1];
-		IInteractiveHelper helper = new IInteractiveHelper()
-		{
-			@Override
-			public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
-			{
-				// Derive final velocity by checking these collisions (note that we also account for XY surface friction if on the ground).
-				boolean isOnGround = false;
-				float finX = effectiveVelocity.x();
-				float finY = effectiveVelocity.y();
-				float finZ = effectiveVelocity.z();
-				if (cancelZ)
-				{
-					finZ = 0.0f;
-					isOnGround = (effectiveMovement.z() <= 0.0f);
-				}
-				if (cancelX || isOnGround)
-				{
-					finX = 0.0f;
-				}
-				if (cancelY || isOnGround)
-				{
-					finY = 0.0f;
-				}
-				out[0] = new HighLevelMovementResult(finalLocation, finX, finY, finZ);
-			}
-			@Override
-			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
-			{
-				return reader.getViscosityFraction(location, fromAbove);
-			}
-		};
+		_IInteractiveHelper helper = new _IInteractiveHelper(reader, effectiveVelocity, effectiveMovement.z());
 		_interactiveEntityMove(startLocation, volume, effectiveMovement, helper);
-		return out[0];
+		return helper.result;
 	}
 
 	/**
@@ -591,7 +560,51 @@ public class EntityMovementHelpers
 
 	/**
 	 * Used to return the final result of commonMovementIdiom().
-	 * The location is provided directly but the velocity is kept as components in case it must be further processed.
 	 */
-	public static record HighLevelMovementResult(EntityLocation location, float vX, float vY, float vZ) {}
+	public static record HighLevelMovementResult(EntityLocation location, EntityLocation velocity, boolean isOnGround) {}
+
+
+	private static class _IInteractiveHelper implements IInteractiveHelper
+	{
+		private final ViscosityReader _reader;
+		private final EntityLocation _effectiveVelocity;
+		private final float _effectiveZMovement;
+		public HighLevelMovementResult result;
+		
+		public _IInteractiveHelper(ViscosityReader reader, EntityLocation effectiveVelocity, float effectiveZMovement)
+		{
+			_reader = reader;
+			_effectiveVelocity = effectiveVelocity;
+			_effectiveZMovement = effectiveZMovement;
+		}
+		@Override
+		public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
+		{
+			// Derive final velocity by checking these collisions (note that we also account for XY surface friction if on the ground).
+			boolean isOnGround = false;
+			float finX = _effectiveVelocity.x();
+			float finY = _effectiveVelocity.y();
+			float finZ = _effectiveVelocity.z();
+			if (cancelZ)
+			{
+				finZ = 0.0f;
+				isOnGround = (_effectiveZMovement <= 0.0f);
+			}
+			if (cancelX || isOnGround)
+			{
+				finX = 0.0f;
+			}
+			if (cancelY || isOnGround)
+			{
+				finY = 0.0f;
+			}
+			EntityLocation velocity = new EntityLocation(finX, finY, finZ);
+			this.result = new HighLevelMovementResult(finalLocation, velocity, isOnGround);
+		}
+		@Override
+		public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
+		{
+			return _reader.getViscosityFraction(location, fromAbove);
+		}
+	}
 }

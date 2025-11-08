@@ -167,11 +167,10 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 				, intensityVelocityPerSecond
 				, seconds
 			);
-			EntityLocation finalVelocity = new EntityLocation(result.vX(), result.vY(), result.vZ());
 			
 			// Save back final state.
 			newEntity.setLocation(result.location());
-			newEntity.setVelocityVector(finalVelocity);
+			newEntity.setVelocityVector(result.velocity());
 			newEntity.setOrientation(_yaw, _pitch);
 			
 			newEntity.applyEnergyCost(_intensity.energyCostPerTick);

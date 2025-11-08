@@ -258,9 +258,8 @@ public class TestEntityMovementHelpers
 		);
 		
 		Assert.assertEquals(new EntityLocation(0.4f, 0.0f, 0.0f), result.location());
-		Assert.assertEquals(0.0f, result.vX(), 0.01f);
-		Assert.assertEquals(0.0f, result.vY(), 0.01f);
-		Assert.assertEquals(0.0f, result.vZ(), 0.01f);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), result.velocity());
+		Assert.assertTrue(result.isOnGround());
 	}
 
 	@Test
@@ -291,9 +290,8 @@ public class TestEntityMovementHelpers
 		);
 		
 		Assert.assertEquals(new EntityLocation(10.0f, 10.0f, 9.9f), result.location());
-		Assert.assertEquals(0.0f, result.vX(), 0.01f);
-		Assert.assertEquals(0.0f, result.vY(), 0.01f);
-		Assert.assertEquals(-0.98f, result.vZ(), 0.01f);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.98f), result.velocity());
+		Assert.assertFalse(result.isOnGround());
 	}
 
 	@Test
@@ -403,9 +401,10 @@ public class TestEntityMovementHelpers
 			, seconds
 		);
 		location = result.location();
-		velocity = new EntityLocation(result.vX(), result.vY(), result.vZ());
+		velocity = result.velocity();
 		Assert.assertEquals(new EntityLocation(10.19f, 10.05f, 9.98f), location);
 		Assert.assertEquals(new EntityLocation(3.8f, 1.0f, -0.49f), velocity);
+		Assert.assertFalse(result.isOnGround());
 		
 		result = EntityMovementHelpers.commonMovementIdiom(previousBlockLookUp
 			, location
@@ -417,8 +416,9 @@ public class TestEntityMovementHelpers
 			, seconds
 		);
 		location = result.location();
-		velocity = new EntityLocation(result.vX(), result.vY(), result.vZ());
+		velocity = result.velocity();
 		Assert.assertEquals(new EntityLocation(10.38f, 10.1f, 9.93f), location);
 		Assert.assertEquals(new EntityLocation(3.88f, 0.97f, -0.98f), velocity);
+		Assert.assertFalse(result.isOnGround());
 	}
 }
