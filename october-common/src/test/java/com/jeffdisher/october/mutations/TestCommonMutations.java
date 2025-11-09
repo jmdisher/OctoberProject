@@ -1822,6 +1822,73 @@ public class TestCommonMutations
 		Assert.assertEquals(new Items(wheatItem, 2), ((ItemSlot)item.extendedData()).stack);
 	}
 
+	@Test
+	public void gravityBlock()
+	{
+		// Show that placing an unsupported gravity block schedules a block update and that an update on an unsupported block causes it to fall.
+		AbsoluteLocation target = new AbsoluteLocation(15, 15, 15);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
+		MutationBlockUpdate[] out_mutation = new MutationBlockUpdate[1];
+		PassiveEntity[] out_passive = new PassiveEntity[1];
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
+			.sinks(new TickProcessingContext.IMutationSink() {
+				@Override
+				public boolean next(IMutationBlock mutation)
+				{
+					Assert.assertNull(out_mutation[0]);
+					out_mutation[0] = (MutationBlockUpdate) mutation;
+					return true;
+				}
+				@Override
+				public boolean future(IMutationBlock mutation, long millisToDelay)
+				{
+					throw new AssertionError("Not in test");
+				}
+			}, null)
+			.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+				Assert.assertNull(out_passive[0]);
+				out_passive[0] = new PassiveEntity(1
+					, type
+					, location
+					, velocity
+					, extendedData
+					, 1000L
+				);
+			})
+			.eventSink((EventRecord event) -> {
+				// Ignore.
+			})
+			.finish()
+		;
+		
+		Block sand = ENV.blocks.fromItem(ENV.items.getItemById("op.sand"));
+		MutationBlockOverwriteByEntity write = new MutationBlockOverwriteByEntity(target, sand, null, 1);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		Assert.assertTrue(write.applyMutation(context, proxy));
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(sand.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		
+		Assert.assertNull(out_passive[0]);
+		Assert.assertNotNull(out_mutation[0]);
+		
+		MutationBlockUpdate update = out_mutation[0];
+		out_mutation[0] = null;
+		Assert.assertEquals(target, update.getAbsoluteLocation());
+		proxy = new MutableBlockProxy(target, cuboid);
+		Assert.assertTrue(update.applyMutation(context, proxy));
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		
+		Assert.assertNotNull(out_passive[0]);
+		Assert.assertNull(out_mutation[0]);
+		Assert.assertEquals(PassiveType.FALLING_BLOCK, out_passive[0].type());
+		Assert.assertEquals(sand, (Block)(out_passive[0].extendedData()));
+		Assert.assertEquals(target.toEntityLocation(), out_passive[0].location());
+	}
+
 
 	private static Set<AbsoluteLocation> _getEastFacingPortalVoidStones(AbsoluteLocation keystoneLocation)
 	{

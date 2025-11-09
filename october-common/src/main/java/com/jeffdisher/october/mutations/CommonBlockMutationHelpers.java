@@ -86,13 +86,13 @@ public class CommonBlockMutationHelpers
 		{
 			// See if the block we are changing needs a special logic mode.
 			boolean shouldSetHigh = LogicLayerHelpers.shouldSetActive(env, context.previousBlockLookUp, location, outputDirection, blockType);
+			BlockProxy belowBlock = context.previousBlockLookUp.apply(location.getRelative(0, 0, -1));
 			
 			// Make sure that this block can be supported by the one under it.
 			// Note that multi-blocks only honour their support block for their root.
 			boolean blockIsSupported = true;
 			if (!isMultiBlockExtension)
 			{
-				BlockProxy belowBlock = context.previousBlockLookUp.apply(location.getRelative(0, 0, -1));
 				// If the cuboid beneath this isn't loaded, we will just treat it as supported (best we can do in this situation).
 				if (null != belowBlock)
 				{
@@ -114,6 +114,20 @@ public class CommonBlockMutationHelpers
 				{
 					byte flags = FlagsAspect.set(newBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
 					newBlock.setFlags(flags);
+				}
+				
+				// Gravity blocks are placed once and then fall after an update, so see if that matters here.
+				if (env.blocks.hasGravity(blockType))
+				{
+					// If we think this should fall, schedule a block update (if something else changes, they will get an update, either way).
+					if (null != belowBlock)
+					{
+						boolean belowActive = FlagsAspect.isSet(belowBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
+						if (!env.blocks.isSupportedAgainstGravity(blockType, belowBlock.getBlock(), belowActive))
+						{
+							context.mutationSink.next(new MutationBlockUpdate(location));
+						}
+					}
 				}
 				
 				didApply = true;

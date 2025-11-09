@@ -49,6 +49,7 @@ public class BlockAspect
 	private static final String FLAG_IS_MULTIBLOCK = "is_multiblock";
 	private static final String FLAG_IS_LADDER = "is_ladder";
 	private static final String FLAG_IS_COMPOSITION = "is_composition";
+	private static final String FLAG_HAS_GRAVITY = "has_gravity";
 	private static final String SUB_PLACED_FROM = "placed_from";
 	private static final String SUB_REQUIRES_SUPPORT = "requires_support";
 	private static final String SUB_SPECIAL_DROP = "special_drop";
@@ -112,6 +113,7 @@ public class BlockAspect
 				, parser.blockMaterials
 				, parser.isLadder
 				, parser.isComposition
+				, parser.hasGravity
 		);
 	}
 
@@ -131,6 +133,7 @@ public class BlockAspect
 	private final Map<Block, BlockMaterial> _blockMaterials;
 	private final Set<Block> _ladderType;
 	private final Set<Block> _isComposition;
+	private final Set<Block> _hasGravity;
 
 	private BlockAspect(ItemRegistry items
 			, Block[] blocksByType
@@ -149,6 +152,7 @@ public class BlockAspect
 			, Map<Block, BlockMaterial> blockMaterials
 			, Set<Block> ladderType
 			, Set<Block> isComposition
+			, Set<Block> hasGravity
 	)
 	{
 		_blocksByItemNumber = blocksByType;
@@ -168,6 +172,7 @@ public class BlockAspect
 		_blockMaterials = Collections.unmodifiableMap(blockMaterials);
 		_ladderType = Collections.unmodifiableSet(ladderType);
 		_isComposition = Collections.unmodifiableSet(isComposition);
+		_hasGravity = Collections.unmodifiableSet(hasGravity);
 	}
 
 	/**
@@ -249,8 +254,7 @@ public class BlockAspect
 	 */
 	public boolean isSolid(Block block, boolean isActive)
 	{
-		// Note that the _nonSolidViscosity ONLY contains non-solid blocks (< SOLID_VISCOSITY).
-		return !_nonSolidViscosityMap(isActive).containsKey(block);
+		return _isSolid(block, isActive);
 	}
 
 	/**
@@ -462,6 +466,39 @@ public class BlockAspect
 		return _isComposition.contains(block);
 	}
 
+	/**
+	 * A simple helper which just states whether or not the given block is subject to gravity.  This can be used to
+	 * determine if other checks are required.
+	 * 
+	 * @param block The block.
+	 * @return True if this block is subject to gravity (can only rest on a solid block).
+	 */
+	public boolean hasGravity(Block block)
+	{
+		return _hasGravity.contains(block);
+	}
+
+	/**
+	 * Used in the case of a gravity block to see if it should fall or stay.  If topBlock doesn't have gravity, it will
+	 * always stay where it is, but otherwise will only stay if bottomBlock is a solid block.
+	 * 
+	 * @param topBlock The block being checked (on top).
+	 * @param bottomBlock The block underneath (null if not loaded).
+	 * @param isBottomActive True if the bottom block is in an active state.
+	 * @return True if topBlock should remain as a fixed block or false if it should drop as a falling passive.
+	 */
+	public boolean isSupportedAgainstGravity(Block topBlock, Block bottomBlock, boolean isBottomActive)
+	{
+		// Relatively few blocks are gravity blocks.
+		boolean isSupported = !_hasGravity.contains(topBlock);
+		if (!isSupported)
+		{
+			// See the block under it can support it.
+			isSupported = _isSolid(bottomBlock, isBottomActive);
+		}
+		return isSupported;
+	}
+
 
 	private Map<Block, Integer> _nonSolidViscosityMap(boolean isActive)
 	{
@@ -469,6 +506,12 @@ public class BlockAspect
 				? _activeNonSolidViscosity
 				: _nonSolidViscosity
 		;
+	}
+
+	private boolean _isSolid(Block block, boolean isActive)
+	{
+		// Note that the _nonSolidViscosity ONLY contains non-solid blocks (< SOLID_VISCOSITY).
+		return !_nonSolidViscosityMap(isActive).containsKey(block);
 	}
 
 
@@ -488,6 +531,7 @@ public class BlockAspect
 		public Set<Block> isMultiBlock = new HashSet<>();
 		public Set<Block> isLadder  = new HashSet<>();
 		public Set<Block> isComposition = new HashSet<>();
+		public Set<Block> hasGravity = new HashSet<>();
 		public Map<Block, Integer> nonSolidViscosity = new HashMap<>();
 		public Map<Block, Integer> blockDamage = new HashMap<>();
 		public Map<Block, Set<Block>> specialBlockSupport = new HashMap<>();
@@ -551,6 +595,10 @@ public class BlockAspect
 				else if (FLAG_IS_COMPOSITION.equals(value))
 				{
 					this.isComposition.add(_currentBlock);
+				}
+				else if (FLAG_HAS_GRAVITY.equals(value))
+				{
+					this.hasGravity.add(_currentBlock);
 				}
 				else
 				{
