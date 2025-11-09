@@ -15,6 +15,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.MutationBlockReplaceDropExisting;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -315,6 +316,63 @@ public class TestEnginePassives
 		PassiveEntity result = EnginePassives.processOneCreature(context, entityCollection, passive, List.of());
 		Assert.assertEquals(new EntityLocation(10.2f, 10.0f, 9.9f), result.location());
 		Assert.assertEquals(new EntityLocation(2.0f, 0.0f, -0.98f), result.velocity());
+	}
+
+	@Test
+	public void dropBlock()
+	{
+		int passiveId = 1;
+		EntityLocation passiveLocation = new EntityLocation(3.0f, 3.0f, 5.1f);
+		long lastAliveMillis = PassiveType.ITEM_SLOT_DESPAWN_MILLIS + 1L;
+		PassiveEntity passive = new PassiveEntity(passiveId
+			, PassiveType.FALLING_BLOCK
+			, passiveLocation
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, STONE
+			, lastAliveMillis
+		);
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(3, 3, 5), ENV.special.AIR.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(3, 3, 6), ENV.special.AIR.item().number());
+		long tickNumber = 1L;
+		MutationBlockReplaceDropExisting[] out_mutation = new MutationBlockReplaceDropExisting[1];
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(tickNumber)
+			.sinks(new TickProcessingContext.IMutationSink() {
+				@Override
+				public boolean next(IMutationBlock mutation)
+				{
+					Assert.assertNull(out_mutation[0]);
+					out_mutation[0] = (MutationBlockReplaceDropExisting) mutation;
+					return true;
+				}
+				@Override
+				public boolean future(IMutationBlock mutation, long millisToDelay)
+				{
+					throw new AssertionError("Not in test");
+				}
+			}, null)
+			.lookups((AbsoluteLocation location) -> {
+				return cuboid.getCuboidAddress().equals(location.getCuboidAddress())
+					? new BlockProxy(location.getBlockAddress(), cuboid)
+					: null
+				;
+			} , null, null)
+			.finish()
+		;
+		EntityCollection entityCollection = EntityCollection.emptyCollection();
+		
+		// Show that it will fall a bit before hitting bottom.
+		PassiveEntity result = EnginePassives.processOneCreature(context, entityCollection, passive, List.of());
+		Assert.assertNotNull(result);
+		Assert.assertEquals(new EntityLocation(3.0f, 3.0f, 5.0f), result.location());
+		Assert.assertNull(out_mutation[0]);
+		
+		passive = result;
+		result = EnginePassives.processOneCreature(context, entityCollection, passive, List.of());
+		Assert.assertNull(result);
+		Assert.assertEquals(new AbsoluteLocation(3, 3, 5), out_mutation[0].getAbsoluteLocation());
 	}
 
 

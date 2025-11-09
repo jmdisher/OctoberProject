@@ -2,6 +2,7 @@ package com.jeffdisher.october.engine;
 
 import java.util.List;
 
+import com.jeffdisher.october.actions.passive.PassiveSynth_FallingBlock;
 import com.jeffdisher.october.actions.passive.PassiveSynth_ItemSlot;
 import com.jeffdisher.october.actions.passive.PassiveSynth_ProjectileArrow;
 import com.jeffdisher.october.aspects.Environment;
@@ -62,6 +63,10 @@ public class EnginePassives
 			else if (PassiveType.PROJECTILE_ARROW == type)
 			{
 				working = PassiveSynth_ProjectileArrow.applyChange(context, entitiyCollection, working);
+			}
+			else if (PassiveType.FALLING_BLOCK == type)
+			{
+				working = PassiveSynth_FallingBlock.applyChange(context, working);
 			}
 			else
 			{

@@ -57,6 +57,26 @@ public record PassiveType(byte number
 		}
 	);
 
+	/**
+	 * A falling block just contains the block type as the extended data.
+	 */
+	public static final PassiveType FALLING_BLOCK = new PassiveType((byte)3
+		// Make this volume just less than a block so it can fit through gaps.
+		, new EntityVolume(0.99f, 0.99f)
+		, new IExtendedCodec() {
+			@Override
+			public Object read(DeserializationContext context)
+			{
+				return CodecHelpers.readBlock(context.buffer());
+			}
+			@Override
+			public void write(ByteBuffer buffer, Object extendedData)
+			{
+				CodecHelpers.writeBlock(buffer, (Block)extendedData);
+			}
+		}
+	);
+
 
 	/**
 	 * The interface which defines PassiveEntity.extendedData.
