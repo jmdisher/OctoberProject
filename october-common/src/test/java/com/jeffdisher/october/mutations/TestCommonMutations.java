@@ -1737,6 +1737,91 @@ public class TestCommonMutations
 		Assert.assertEquals(saplingTime, ((ItemSlot)out_passive[0].extendedData()).getType());
 	}
 
+	@Test
+	public void replaceDropExisting()
+	{
+		// Show the behavioural modes of MutationBlockReplaceDropExisting.
+		Block tilled = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.tilled_soil"));
+		Block wheat = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.wheat_mature"));
+		Item wheatSeed = ENV.items.getItemById("op.wheat_seed");
+		Item wheatItem = ENV.items.getItemById("op.wheat_item");
+		AbsoluteLocation airLocation = new AbsoluteLocation (1, 1, 0);
+		AbsoluteLocation stoneLocation = new AbsoluteLocation (3, 3, -1);
+		AbsoluteLocation waterLocation = new AbsoluteLocation (5, 5, -1);
+		AbsoluteLocation plantLocation = new AbsoluteLocation (9, 9, -1);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		stoneCuboid.setData15(AspectRegistry.BLOCK, waterLocation.getBlockAddress(), WATER_SOURCE.item().number());
+		stoneCuboid.setData15(AspectRegistry.BLOCK, plantLocation.getRelative(0, 0, -1).getBlockAddress(), tilled.item().number());
+		stoneCuboid.setData15(AspectRegistry.BLOCK, plantLocation.getBlockAddress(), wheat.item().number());
+		List<PassiveEntity> out_passive = new ArrayList<>();
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation location) -> {
+				CuboidData cuboid = airCuboid.getCuboidAddress().equals(location.getCuboidAddress())
+					? airCuboid
+					: stoneCuboid
+				;
+				return new BlockProxy(location.getBlockAddress(), cuboid);
+			}, null, null)
+			.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+				PassiveEntity passive = new PassiveEntity(1
+					, type
+					, location
+					, velocity
+					, extendedData
+					, 1000L
+				);
+				out_passive.add(passive);
+			})
+			.fixedRandom(1)
+			.finish()
+		;
+		
+		// Air applies without issue.
+		MutableBlockProxy proxy = new MutableBlockProxy(airLocation, airCuboid);
+		Assert.assertTrue(new MutationBlockReplaceDropExisting(airLocation, STONE).applyMutation(context, proxy));
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(airCuboid);
+		Assert.assertEquals(STONE.item().number(), airCuboid.getData15(AspectRegistry.BLOCK, airLocation.getBlockAddress()));
+		Assert.assertEquals(0, out_passive.size());
+		
+		// Stone fails to apply and drops this block as a passive.
+		proxy = new MutableBlockProxy(stoneLocation, stoneCuboid);
+		Assert.assertTrue(new MutationBlockReplaceDropExisting(stoneLocation, STONE).applyMutation(context, proxy));
+		Assert.assertFalse(proxy.didChange());
+		proxy.writeBack(stoneCuboid);
+		Assert.assertEquals(STONE.item().number(), stoneCuboid.getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
+		Assert.assertEquals(1, out_passive.size());
+		PassiveEntity one = out_passive.remove(0);
+		Assert.assertEquals(PassiveType.ITEM_SLOT, one.type());
+		Assert.assertEquals(stoneLocation.getRelative(0, 0, 1).toEntityLocation(), one.location());
+		Assert.assertEquals(new Items(STONE_ITEM, 1), ((ItemSlot)one.extendedData()).stack);
+		
+		// Water applies without issue.
+		proxy = new MutableBlockProxy(waterLocation, stoneCuboid);
+		Assert.assertTrue(new MutationBlockReplaceDropExisting(waterLocation, STONE).applyMutation(context, proxy));
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(stoneCuboid);
+		Assert.assertEquals(STONE.item().number(), stoneCuboid.getData15(AspectRegistry.BLOCK, waterLocation.getBlockAddress()));
+		Assert.assertEquals(0, out_passive.size());
+		
+		// Dropping on a plant will cause the drops to spawn as items.
+		proxy = new MutableBlockProxy(plantLocation, stoneCuboid);
+		Assert.assertTrue(new MutationBlockReplaceDropExisting(plantLocation, STONE).applyMutation(context, proxy));
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(stoneCuboid);
+		Assert.assertEquals(STONE.item().number(), stoneCuboid.getData15(AspectRegistry.BLOCK, plantLocation.getBlockAddress()));
+		Assert.assertEquals(2, out_passive.size());
+		PassiveEntity seed = out_passive.remove(0);
+		PassiveEntity item = out_passive.remove(0);
+		Assert.assertEquals(PassiveType.ITEM_SLOT, seed.type());
+		Assert.assertEquals(PassiveType.ITEM_SLOT, item.type());
+		Assert.assertEquals(plantLocation.getRelative(0, 0, 1).toEntityLocation(), seed.location());
+		Assert.assertEquals(plantLocation.getRelative(0, 0, 1).toEntityLocation(), item.location());
+		Assert.assertEquals(new Items(wheatSeed, 2), ((ItemSlot)seed.extendedData()).stack);
+		Assert.assertEquals(new Items(wheatItem, 2), ((ItemSlot)item.extendedData()).stack);
+	}
+
 
 	private static Set<AbsoluteLocation> _getEastFacingPortalVoidStones(AbsoluteLocation keystoneLocation)
 	{
