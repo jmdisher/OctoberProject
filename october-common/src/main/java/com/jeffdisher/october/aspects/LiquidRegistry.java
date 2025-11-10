@@ -25,6 +25,10 @@ public class LiquidRegistry
 	public static final String SUB_WEAK_FLOW = "weak_flow";
 	public static final String SUB_SOLID_BLOCK = "solid_block";
 
+	public static final int FLOW_SOURCE = 3;
+	public static final int FLOW_STRONG = 2;
+	public static final int FLOW_WEAK = 1;
+	public static final int FLOW_NONE = 0;
 
 	public static LiquidRegistry loadRegistry(ItemRegistry items, BlockAspect blocks, InputStream stream) throws IOException, TabListReader.TabListException
 	{
@@ -407,6 +411,18 @@ public class LiquidRegistry
 		return Math.min(_flowDelayMillis(env, type1), _flowDelayMillis(env, type2));
 	}
 
+	/**
+	 * Returns an integer representing the flow strength of the given block.  This is an integer since it is usually
+	 * used in maximum value calculations or direct comparisons.
+	 * 
+	 * @param block The block type to check.
+	 * @return The flow strength (0 if not a liquid, 1 for weak, 2 for strong, 3 for source).
+	 */
+	public int getFlowStrength(Block block)
+	{
+		return _getFlowStrength(block);
+	}
+
 
 	private long _flowDelayMillis(Environment env, Block type)
 	{
@@ -451,10 +467,10 @@ public class LiquidRegistry
 		else if (1 == size)
 		{
 			// This might become a liquid or it might remain air (if liquid is weak).
-			int eastStrength = _getFromMap(_blocksToStrength, east, 0);
-			int westStrength = _getFromMap(_blocksToStrength, west, 0);
-			int northStrength = _getFromMap(_blocksToStrength, north, 0);
-			int southStrength = _getFromMap(_blocksToStrength, south, 0);
+			int eastStrength = _getFlowStrength(east);
+			int westStrength = _getFlowStrength(west);
+			int northStrength = _getFlowStrength(north);
+			int southStrength = _getFlowStrength(south);
 			int maxStrength = Math.max(Math.max(eastStrength, westStrength), Math.max(northStrength, southStrength));
 			if (maxStrength > 1)
 			{
@@ -468,19 +484,19 @@ public class LiquidRegistry
 					if (_sourceCreationSources.contains(sourceType))
 					{
 						int sourceCount = 0;
-						if (3 == eastStrength)
+						if (FLOW_SOURCE == eastStrength)
 						{
 							sourceCount += 1;
 						}
-						if (3 == westStrength)
+						if (FLOW_SOURCE == westStrength)
 						{
 							sourceCount += 1;
 						}
-						if (3 == northStrength)
+						if (FLOW_SOURCE == northStrength)
 						{
 							sourceCount += 1;
 						}
-						if (3 == southStrength)
+						if (FLOW_SOURCE == southStrength)
 						{
 							sourceCount += 1;
 						}
@@ -521,7 +537,7 @@ public class LiquidRegistry
 			// Check the fastest flow type of strength at least 2 and solidify that (air if none are >= 2).
 			long chosenFlowRate = Long.MAX_VALUE;
 			Block chosenBlock = env.special.AIR;
-			if (_blocksToStrength.getOrDefault(east, 0) >= 2)
+			if (_getFlowStrength(east) >= FLOW_STRONG)
 			{
 				long flow = _sourceToDelayMillis.get(eastType);
 				if (flow < chosenFlowRate)
@@ -530,7 +546,7 @@ public class LiquidRegistry
 					chosenBlock = _sourceToSolid.get(eastType);
 				}
 			}
-			if (_blocksToStrength.getOrDefault(west, 0) >= 2)
+			if (_getFlowStrength(west) >= FLOW_STRONG)
 			{
 				long flow = _sourceToDelayMillis.get(westType);
 				if (flow < chosenFlowRate)
@@ -539,7 +555,7 @@ public class LiquidRegistry
 					chosenBlock = _sourceToSolid.get(westType);
 				}
 			}
-			if (_blocksToStrength.getOrDefault(north, 0) >= 2)
+			if (_getFlowStrength(north) >= FLOW_STRONG)
 			{
 				long flow = _sourceToDelayMillis.get(northType);
 				if (flow < chosenFlowRate)
@@ -548,7 +564,7 @@ public class LiquidRegistry
 					chosenBlock = _sourceToSolid.get(northType);
 				}
 			}
-			if (_blocksToStrength.getOrDefault(south, 0) >= 2)
+			if (_getFlowStrength(south) >= FLOW_STRONG)
 			{
 				long flow = _sourceToDelayMillis.get(southType);
 				if (flow < chosenFlowRate)
@@ -584,5 +600,13 @@ public class LiquidRegistry
 	private static <T> T _getFromMap(Map<Block, T> map, Block key, T defaultValue)
 	{
 		return (null != key) ? map.getOrDefault(key, defaultValue) : defaultValue;
+	}
+
+	private int _getFlowStrength(Block block)
+	{
+		return (null != block)
+			? _blocksToStrength.getOrDefault(block, FLOW_NONE)
+			: FLOW_NONE
+		;
 	}
 }

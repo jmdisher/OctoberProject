@@ -166,4 +166,19 @@ public class TestMiscAspects
 		Assert.assertEquals(3000, ENV.tools.getChargeMillis(bow));
 		Assert.assertEquals(arrow, ENV.tools.getAmmunitionType(bow));
 	}
+
+	@Test
+	public void liquidFlow() throws Throwable
+	{
+		// Show liquid flow strength.
+		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		Block waterStrong = ENV.blocks.fromItem(ENV.items.getItemById("op.water_strong"));
+		Block waterWeak = ENV.blocks.fromItem(ENV.items.getItemById("op.water_weak"));
+		
+		Assert.assertEquals(LiquidRegistry.FLOW_NONE, ENV.liquids.getFlowStrength(stone));
+		Assert.assertEquals(LiquidRegistry.FLOW_WEAK, ENV.liquids.getFlowStrength(waterWeak));
+		Assert.assertEquals(LiquidRegistry.FLOW_STRONG, ENV.liquids.getFlowStrength(waterStrong));
+		Assert.assertEquals(LiquidRegistry.FLOW_SOURCE, ENV.liquids.getFlowStrength(waterSource));
+	}
 }
