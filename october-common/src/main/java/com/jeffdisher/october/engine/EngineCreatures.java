@@ -47,6 +47,12 @@ public class EngineCreatures
 	)
 	{
 		MutableCreature mutable = MutableCreature.existing(creature);
+		
+		// Apply any environmental acceleration.
+		EntityLocation envVector = EntityMovementHelpers.getEnvironmentalVector(Environment.getShared(), context.previousBlockLookUp, mutable.newLocation, mutable.getType().volume());
+		EntityLocation startVelocity = mutable.newVelocity;
+		mutable.newVelocity = EntityMovementHelpers.saturateVectorAddition(startVelocity, envVector);
+		
 		float startZVelocity = mutable.newVelocity.z();
 		
 		// Determine if we need to schedule movements.

@@ -56,19 +56,23 @@ public class PassiveSynth_ItemSlot
 			EntityLocation startVelocity = entity.velocity();
 			EntityVolume volume = type.volume();
 			
+			// Allow the environment to influence our starting velocity.
+			EntityLocation envVector = EntityMovementHelpers.getEnvironmentalVector(Environment.getShared(), context.previousBlockLookUp, startLocation, volume);
+			EntityLocation preVelocity = EntityMovementHelpers.saturateVectorAddition(startVelocity, envVector);
+			
 			// Check to see if we need to pop-out of a block.
 			EntityLocation popOut = EntityMovementHelpers.popOutLocation(context.previousBlockLookUp, startLocation, volume, POP_OUT_MAX_DISTANCE);
 			if (null != popOut)
 			{
 				startLocation = popOut;
-				startVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+				preVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 			}
 			
 			// Now apply normal movement.
 			float seconds = (float)context.millisPerTick / EntityMovementHelpers.FLOAT_MILLIS_PER_SECOND;
 			EntityMovementHelpers.HighLevelMovementResult movement = EntityMovementHelpers.commonMovementIdiom(context.previousBlockLookUp
 				, startLocation
-				, startVelocity
+				, preVelocity
 				, volume
 				, 0.0f
 				, 0.0f

@@ -42,6 +42,8 @@ public class TestEnginePassives
 	private static Item STONE_ITEM;
 	private static Block STONE;
 	private static Block LAVA_SOURCE;
+	private static Block WATER_SOURCE;
+	private static Block WATER_STRONG;
 	@BeforeClass
 	public static void setup()
 	{
@@ -49,6 +51,8 @@ public class TestEnginePassives
 		STONE_ITEM = ENV.items.getItemById("op.stone");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 		LAVA_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_source"));
+		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		WATER_STRONG = ENV.blocks.fromItem(ENV.items.getItemById("op.water_strong"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -373,6 +377,46 @@ public class TestEnginePassives
 		result = EnginePassives.processOneCreature(context, entityCollection, passive, List.of());
 		Assert.assertNull(result);
 		Assert.assertEquals(new AbsoluteLocation(3, 3, 5), out_mutation[0].getAbsoluteLocation());
+	}
+
+	@Test
+	public void waterStreamItems()
+	{
+		// Show that a water stream will push items.
+		int passiveId = 1;
+		EntityLocation passiveLocation = new EntityLocation(5.1f, 6.2f, 7.3f);
+		ItemSlot slot = ItemSlot.fromStack(new Items(STONE_ITEM, 2));
+		long lastAliveMillis = PassiveType.ITEM_SLOT_DESPAWN_MILLIS + 1L;
+		PassiveEntity passive = new PassiveEntity(passiveId
+			, PassiveType.ITEM_SLOT
+			, passiveLocation
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, slot
+			, lastAliveMillis
+		);
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		AbsoluteLocation strongLocation = passiveLocation.getBlockLocation();
+		AbsoluteLocation sourceLocation = strongLocation.getRelative(1, 0, 0);
+		cuboid.setData15(AspectRegistry.BLOCK, sourceLocation.getBlockAddress(), WATER_SOURCE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, strongLocation.getBlockAddress(), WATER_STRONG.item().number());
+		long tickNumber = 1L;
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(tickNumber)
+			.lookups((AbsoluteLocation location) -> {
+				return cuboid.getCuboidAddress().equals(location.getCuboidAddress())
+					? new BlockProxy(location.getBlockAddress(), cuboid)
+					: null
+				;
+			} , null, null)
+			.finish()
+		;
+		EntityCollection entityCollection = EntityCollection.emptyCollection();
+		
+		// We should see them get pushed slightly to the West (since the flow is running East->West).
+		PassiveEntity result = EnginePassives.processOneCreature(context, entityCollection, passive, List.of());
+		Assert.assertEquals(new EntityLocation(5.08f, 6.2f, 7.25f), result.location());
+		Assert.assertEquals(new EntityLocation(-0.25f, 0.0f, -0.49f), result.velocity());
 	}
 
 

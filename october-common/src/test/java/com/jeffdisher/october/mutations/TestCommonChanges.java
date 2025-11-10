@@ -114,6 +114,9 @@ public class TestCommonChanges
 	private static Item IRON_AXE_ITEM;
 	private static Block STONE;
 	private static Block LADDER;
+	private static Block WATER_SOURCE;
+	private static Block WATER_STRONG;
+	private static Block WATER_WEAK;
 	private static EntityType COW;
 	@BeforeClass
 	public static void setup()
@@ -127,6 +130,9 @@ public class TestCommonChanges
 		IRON_AXE_ITEM = ENV.items.getItemById("op.iron_axe");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 		LADDER = ENV.blocks.fromItem(ENV.items.getItemById("op.ladder"));
+		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		WATER_STRONG = ENV.blocks.fromItem(ENV.items.getItemById("op.water_strong"));
+		WATER_WEAK = ENV.blocks.fromItem(ENV.items.getItemById("op.water_weak"));
 		COW = ENV.creatures.getTypeById("op.cow");
 	}
 	@AfterClass
@@ -1087,7 +1093,7 @@ public class TestCommonChanges
 		Item waterBucket = ENV.items.getItemById("op.bucket_water");
 		Item lavaBucket = ENV.items.getItemById("op.bucket_lava");
 		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
-		short waterSourceItemNumber = ENV.items.getItemById("op.water_source").number();
+		short waterSourceItemNumber = WATER_SOURCE.item().number();
 		short lavaSourceItemNumber = ENV.items.getItemById("op.lava_source").number();
 		
 		MutableEntity newEntity = MutableEntity.createForTest(1);
@@ -1379,15 +1385,13 @@ public class TestCommonChanges
 		Item waterBucket = ENV.items.getItemById("op.bucket_water");
 		Item breadItem = ENV.items.getItemById("op.bread");
 		Item fertilizerItem = ENV.items.getItemById("op.fertilizer");
-		Block waterSource = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.water_source"));
-		Block waterWeak = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.water_weak"));
 		Block wheatYoung = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.wheat_young"));
 		Block wheatMature = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.wheat_mature"));
 		
-		Assert.assertTrue(EntityChangeUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, waterSource));
-		Assert.assertTrue(EntityChangeUseSelectedItemOnBlock.canUseOnBlock(waterBucket, waterWeak));
-		Assert.assertFalse(EntityChangeUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, waterWeak));
-		Assert.assertFalse(EntityChangeUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, waterWeak));
+		Assert.assertTrue(EntityChangeUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, WATER_SOURCE));
+		Assert.assertTrue(EntityChangeUseSelectedItemOnBlock.canUseOnBlock(waterBucket, WATER_WEAK));
+		Assert.assertFalse(EntityChangeUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, WATER_WEAK));
+		Assert.assertFalse(EntityChangeUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, WATER_WEAK));
 		Assert.assertTrue(EntityChangeUseSelectedItemOnBlock.canUseOnBlock(fertilizerItem, wheatYoung));
 		Assert.assertFalse(EntityChangeUseSelectedItemOnBlock.canUseOnBlock(fertilizerItem, wheatMature));
 		
@@ -1702,8 +1706,7 @@ public class TestCommonChanges
 	{
 		// Swim and see how our vector changes.
 		EntityLocation oldLocation = new EntityLocation(5.0f, 5.0f, 5.0f);
-		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), waterSource);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), WATER_SOURCE);
 		TickProcessingContext context = _createSingleCuboidContext(cuboid);
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = oldLocation;
@@ -1745,8 +1748,7 @@ public class TestCommonChanges
 	public void swimVersusJump()
 	{
 		// Create a water cuboid with a solid block in it to show that a jump or swim will work on the block but only swimming works in the water.
-		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), waterSource);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), WATER_SOURCE);
 		AbsoluteLocation stoneLocation = cuboid.getCuboidAddress().getBase().getRelative(5, 5, 5);
 		cuboid.setData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress(), STONE.item().number());
 		TickProcessingContext context = _createSingleCuboidContext(cuboid);
@@ -3298,6 +3300,32 @@ public class TestCommonChanges
 		
 		// We should now fail to charge.
 		Assert.assertFalse(new EntitySubActionChargeWeapon().applyChange(context, mutable));
+	}
+
+	@Test
+	public void standInRunningWater()
+	{
+		// Show that standing in flowing water will push us around.
+		EntityLocation oldLocation = new EntityLocation(0.8f, 0.8f, 0.0f);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = oldLocation;
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0), WATER_SOURCE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 1, 0), WATER_STRONG.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 0, 0), WATER_STRONG.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 0), WATER_WEAK.item().number());
+		TickProcessingContext context = _createSingleCuboidContext(cuboid);
+		EntityActionSimpleMove<IMutablePlayerEntity> action = new EntityActionSimpleMove<>(0.0f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.STANDING
+			, (byte)5
+			, (byte)6
+			, null
+		);
+		boolean didApply = action.applyChange(context, newEntity);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(new EntityLocation(0.85f, 0.85f, 0.0f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.newVelocity);
 	}
 
 

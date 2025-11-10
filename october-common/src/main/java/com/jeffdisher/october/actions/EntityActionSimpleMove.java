@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.mutations.EntityActionType;
@@ -158,9 +159,14 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 			EntityLocation startLocation = newEntity.getLocation();
 			EntityLocation startVelocity = newEntity.getVelocityVector();
 			EntityVolume volume = newEntity.getType().volume();
+			
+			// Allow the environment to influence our starting velocity.
+			EntityLocation envVector = EntityMovementHelpers.getEnvironmentalVector(Environment.getShared(), context.previousBlockLookUp, startLocation, volume);
+			EntityLocation preVelocity = EntityMovementHelpers.saturateVectorAddition(startVelocity, envVector);
+			
 			EntityMovementHelpers.HighLevelMovementResult result = EntityMovementHelpers.commonMovementIdiom(context.previousBlockLookUp
 				, startLocation
-				, startVelocity
+				, preVelocity
 				, volume
 				, _activeX
 				, _activeY

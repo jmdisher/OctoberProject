@@ -66,6 +66,9 @@ public class TestEngineCreatures
 	private static Environment ENV;
 	private static Block AIR;
 	private static Block STONE;
+	private static Block WATER_SOURCE;
+	private static Block WATER_STRONG;
+	private static Block WATER_WEAK;
 	private static EntityType COW;
 	private static EntityType ORC;
 	@BeforeClass
@@ -74,6 +77,9 @@ public class TestEngineCreatures
 		ENV = Environment.createSharedInstance();
 		AIR = ENV.blocks.fromItem(ENV.items.getItemById("op.air"));
 		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		WATER_STRONG = ENV.blocks.fromItem(ENV.items.getItemById("op.water_strong"));
+		WATER_WEAK = ENV.blocks.fromItem(ENV.items.getItemById("op.water_weak"));
 		COW = ENV.creatures.getTypeById("op.cow");
 		ORC = ENV.creatures.getTypeById("op.orc");
 	}
@@ -710,7 +716,7 @@ public class TestEngineCreatures
 		// Demonstrate that the walking speed through water and air is different.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), AIR);
 		_setCuboidLayer(cuboid, (byte)0, STONE.item().number());
-		_setCuboidLayer(cuboid, (byte)1, ENV.items.getItemById("op.water_source").number());
+		_setCuboidLayer(cuboid, (byte)1, WATER_SOURCE.item().number());
 		_setCuboidLayer(cuboid, (byte)16, STONE.item().number());
 		
 		EntityLocation waterStart = new EntityLocation(2.0f, 2.0f, 1.0f);
@@ -765,7 +771,7 @@ public class TestEngineCreatures
 	{
 		// Show a creature swimming to the surface of a body of water.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), AIR);
-		short waterSourceNumber = ENV.items.getItemById("op.water_source").number();
+		short waterSourceNumber = WATER_SOURCE.item().number();
 		_setCuboidLayer(cuboid, (byte)0, STONE.item().number());
 		_setCuboidLayer(cuboid, (byte)1, waterSourceNumber);
 		_setCuboidLayer(cuboid, (byte)2, waterSourceNumber);
@@ -987,6 +993,41 @@ public class TestEngineCreatures
 		
 		CreatureEntity updated = result.updatedEntity();
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), updated.location());
+	}
+
+	@Test
+	public void waterStream()
+	{
+		// Show that a water stream will push a creature.
+		EntityLocation creatureLocation = new EntityLocation(0.8f, 0.8f, 0.0f);
+		CreatureEntity creature = CreatureEntity.create(-1, COW, creatureLocation, (byte)100);
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0), WATER_SOURCE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 1, 0), WATER_STRONG.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 0, 0), WATER_STRONG.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 0), WATER_WEAK.item().number());
+		long tickNumber = 1L;
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(tickNumber)
+			.lookups((AbsoluteLocation location) -> {
+				return cuboid.getCuboidAddress().equals(location.getCuboidAddress())
+					? new BlockProxy(location.getBlockAddress(), cuboid)
+					: null
+				;
+			} , null, null)
+			.finish()
+		;
+		EntityCollection entityCollection = EntityCollection.emptyCollection();
+		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+			, entityCollection
+			, creature
+			, List.of()
+		);
+		
+		CreatureEntity updated = result.updatedEntity();
+		Assert.assertEquals(new EntityLocation(0.85f, 0.85f, 0.0f), updated.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), updated.velocity());
 	}
 
 
