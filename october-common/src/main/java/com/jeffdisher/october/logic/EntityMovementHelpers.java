@@ -4,6 +4,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.LiquidRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
@@ -46,6 +47,14 @@ public class EntityMovementHelpers
 	 * Just a helpful constant.
 	 */
 	public static final float FLOAT_MILLIS_PER_SECOND = 1000.0f;
+	/**
+	 * The velocity added by a block in the environment.
+	 */
+	public static final float FLOW_VELOCITY_ADDED = 0.5f;
+	/**
+	 * The maximum magnitude of flow to add due to water.
+	 */
+	public static final float MAX_FLOW_VELOCITY_MAGNITUDE = 2.0f;
 
 	/**
 	 * Finds a path from start, along vectorToMove, using the interactive helper.  This will handle collisions with
@@ -250,6 +259,81 @@ public class EntityMovementHelpers
 			}
 		}
 		return poppedLocation;
+	}
+
+	/**
+	 * Calculates a vector to add to the velocity of some entity in response to the environment.  This applies to
+	 * flowing liquids.
+	 * 
+	 * @param env The environment.
+	 * @param previousBlockLookUp Look-up for previous tick blocks.
+	 * @param base The base of the entity.
+	 * @param volume The volume of the entity.
+	 * @return The velocity vector applied by the environment.
+	 */
+	public static EntityLocation getEnvironmentalVector(Environment env
+		, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+		, EntityLocation base
+		, EntityVolume volume
+	)
+	{
+		// WARNING:  This algorithm is pretty expensive (5x lookups per intersected block) so we might want to re-think
+		// this in the future (potentially even storing this flow adjacency as an aspect).
+		VolumeIterator iterator = new VolumeIterator(base, volume);
+		float x = 0.0f;
+		float y = 0.0f;
+		float z = 0.0f;
+		boolean shouldCompute = false;
+		for (AbsoluteLocation location : iterator)
+		{
+			BlockProxy proxy = previousBlockLookUp.apply(location);
+			if (null != proxy)
+			{
+				int strength = env.liquids.getFlowStrength(proxy.getBlock());
+				if ((LiquidRegistry.FLOW_WEAK == strength) || (LiquidRegistry.FLOW_STRONG == strength))
+				{
+					// This has a liquid so see if an adjacent block is "flowing in" to it.
+					z += -1.0f * _accumulateFlow(env, previousBlockLookUp, location.getRelative(0, 0, 1), strength);
+					y += -1.0f * _accumulateFlow(env, previousBlockLookUp, location.getRelative(0, 1, 0), strength);
+					y += 1.0f * _accumulateFlow(env, previousBlockLookUp, location.getRelative(0, -1, 0), strength);
+					x += -1.0f * _accumulateFlow(env, previousBlockLookUp, location.getRelative(1, 0, 0), strength);
+					x += 1.0f * _accumulateFlow(env, previousBlockLookUp, location.getRelative(-1, 0, 0), strength);
+					shouldCompute = true;
+				}
+			}
+		}
+		
+		EntityLocation flowVelocity;
+		if (shouldCompute)
+		{
+			flowVelocity = new EntityLocation(x, y, z);
+			float magnitude = flowVelocity.getMagnitude();
+			if (magnitude > MAX_FLOW_VELOCITY_MAGNITUDE)
+			{
+				flowVelocity = flowVelocity.makeScaledInstance(MAX_FLOW_VELOCITY_MAGNITUDE / magnitude);
+			}
+		}
+		else
+		{
+			flowVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		}
+		return flowVelocity;
+	}
+
+	/**
+	 * Adds together start and saturatingAddend but restricting the final magnitude of each component to
+	 * saturatingAddend.
+	 * 
+	 * @param start The base vector.
+	 * @param saturatingAddend The vector to add and use as a saturating limit.
+	 * @return The saturated sum of the vectors.
+	 */
+	public static EntityLocation saturateVectorAddition(EntityLocation start, EntityLocation saturatingAddend)
+	{
+		float x = _saturateComponentAddition(start.x(), saturatingAddend.x());
+		float y = _saturateComponentAddition(start.y(), saturatingAddend.y());
+		float z = _saturateComponentAddition(start.z(), saturatingAddend.z());
+		return new EntityLocation(x, y, z);
 	}
 
 
@@ -514,6 +598,30 @@ public class EntityMovementHelpers
 		float visY = startInverseViscosity * airY;
 		float visZ = startInverseViscosity * airZ;
 		return new EntityLocation(visX, visY, visZ);
+	}
+
+	private static float _accumulateFlow(Environment env, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp, AbsoluteLocation relative, int testAgainst)
+	{
+		BlockProxy proxy = previousBlockLookUp.apply(relative);
+		int flow = (null != proxy)
+			? env.liquids.getFlowStrength(proxy.getBlock())
+			: LiquidRegistry.FLOW_NONE
+		;
+		return (flow > testAgainst)
+			? FLOW_VELOCITY_ADDED
+			: 0.0f
+		;
+	}
+
+	private static float _saturateComponentAddition(float start, float saturatingAddend)
+	{
+		float sum = start + saturatingAddend;
+		float abs = Math.abs(sum);
+		if ((abs > Math.abs(start)) && (abs > Math.abs(saturatingAddend)))
+		{
+			sum = saturatingAddend;
+		}
+		return sum;
 	}
 
 

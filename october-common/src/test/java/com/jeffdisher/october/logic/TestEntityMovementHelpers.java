@@ -421,4 +421,35 @@ public class TestEntityMovementHelpers
 		Assert.assertEquals(new EntityLocation(3.88f, 0.97f, -0.98f), velocity);
 		Assert.assertFalse(result.isOnGround());
 	}
+
+	@Test
+	public void environmentVector()
+	{
+		// Tests the velocity vector added due to flowing water.
+		Block waterStrong = ENV.blocks.fromItem(ENV.items.getItemById("op.water_strong"));
+		Block waterWeak = ENV.blocks.fromItem(ENV.items.getItemById("op.water_weak"));
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 1), WATER_SOURCE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0), waterStrong.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 1, 0), waterWeak.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 0, 0), waterWeak.item().number());
+		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
+			return new BlockProxy(location.getBlockAddress(), cuboid);
+		};
+		EntityVolume volume = new EntityVolume(2.2f, 1.7f);
+		
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), EntityMovementHelpers.getEnvironmentalVector(ENV, previousBlockLookUp, new EntityLocation(1.6f, 2.1f, 3.0f), volume));
+		Assert.assertEquals(new EntityLocation(0.5f, 0.5f, -0.5f), EntityMovementHelpers.getEnvironmentalVector(ENV, previousBlockLookUp, new EntityLocation(0.0f, 0.0f, 0.0f), volume));
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), EntityMovementHelpers.getEnvironmentalVector(ENV, previousBlockLookUp, new EntityLocation(0.0f, 0.0f, 1.0f), volume));
+		Assert.assertEquals(new EntityLocation(0.5f, 0.0f, 0.0f), EntityMovementHelpers.getEnvironmentalVector(ENV, previousBlockLookUp, new EntityLocation(1.0f, 0.0f, 0.0f), volume));
+	}
+
+	@Test
+	public void saturatingAddition()
+	{
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), EntityMovementHelpers.saturateVectorAddition(new EntityLocation(0.0f, 0.0f, 0.0f), new EntityLocation(0.0f, 0.0f, 0.0f)));
+		Assert.assertEquals(new EntityLocation(1.0f, -2.0f, 3.0f), EntityMovementHelpers.saturateVectorAddition(new EntityLocation(0.0f, 0.0f, 0.0f), new EntityLocation(1.0f, -2.0f, 3.0f)));
+		Assert.assertEquals(new EntityLocation(1.0f, -2.0f, 3.0f), EntityMovementHelpers.saturateVectorAddition(new EntityLocation(1.0f, -2.0f, 3.0f), new EntityLocation(1.0f, -2.0f, 3.0f)));
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), EntityMovementHelpers.saturateVectorAddition(new EntityLocation(-1.0f, 2.0f, -3.0f), new EntityLocation(1.0f, -2.0f, 3.0f)));
+	}
 }
