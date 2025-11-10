@@ -261,11 +261,9 @@ public class SpatialHelpers
 		float lookZ = (float)Math.sin(pitchRadians);
 		float distanceZ = (float)Math.cos(pitchRadians);
 		
-		float rawX = lookX * distanceZ;
-		float rawY = lookY * distanceZ;
-		float rawZ = lookZ;
-		float magnitude = (float)Math.sqrt((rawX * rawX) + (rawY * rawY) + (rawZ * rawZ));
-		return new EntityLocation(rawX / magnitude, rawY / magnitude, rawZ / magnitude);
+		EntityLocation raw = new EntityLocation(lookX * distanceZ, lookY * distanceZ, lookZ);
+		float magnitude = raw.getMagnitude();
+		return raw.makeScaledInstance(1.0f / magnitude);
 	}
 
 

@@ -37,6 +37,23 @@ public final record EntityLocation(float x, float y, float z)
 	}
 
 	/**
+	 * @return The magnitude of the receiver, interpreted as a vector.
+	 */
+	public final float getMagnitude()
+	{
+		return (float)Math.sqrt((this.x * this.x) + (this.y * this.y) + (this.z * this.z));
+	}
+
+	/**
+	 * @param scale The scale to multiply by the coordinates.
+	 * @return A new instance, scaling the receiver by the scale, interpreting it as a vector.
+	 */
+	public final EntityLocation makeScaledInstance(float scale)
+	{
+		return new EntityLocation(this.x * scale, this.y * scale, this.z * scale);
+	}
+
+	/**
 	 * This helper rounds the given float to the nearest 0.01.
 	 * 
 	 * @param f The float to round.

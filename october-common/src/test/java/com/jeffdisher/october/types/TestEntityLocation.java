@@ -62,4 +62,22 @@ public class TestEntityLocation
 		Assert.assertEquals(-1.88f, EntityLocation.roundToHundredths(-1.885f), 0.0001f);
 		Assert.assertEquals(-2.35f, EntityLocation.roundToHundredths(-2.347f), 0.0001f);
 	}
+
+	@Test
+	public void magnitude()
+	{
+		Assert.assertEquals(0.0f, new EntityLocation(0.0f, 0.0f, 0.0f).getMagnitude(), 0.01f);
+		Assert.assertEquals(1.0f, new EntityLocation(-1.0f, 0.0f, 0.0f).getMagnitude(), 0.01f);
+		Assert.assertEquals(3.09f, new EntityLocation(-0.1f, -1.5f, -2.7f).getMagnitude(), 0.01f);
+		Assert.assertEquals(1003.67f, new EntityLocation(10.0f, -5.6f, 1003.6f).getMagnitude(), 0.01f);
+	}
+
+	@Test
+	public void scaledInstance()
+	{
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), new EntityLocation(0.0f, 0.0f, 0.0f).makeScaledInstance(-1.5f));
+		Assert.assertEquals(new EntityLocation(-25.6f, 0.0f, 0.0f), new EntityLocation(-1.0f, 0.0f, 0.0f).makeScaledInstance(25.6f));
+		Assert.assertEquals(new EntityLocation(-0.04f, -0.6f, -1.08f), new EntityLocation(-0.1f, -1.5f, -2.7f).makeScaledInstance(0.4f));
+		Assert.assertEquals(new EntityLocation(0.5f, -0.28f, 50.18f), new EntityLocation(10.0f, -5.6f, 1003.6f).makeScaledInstance(0.05f));
+	}
 }
