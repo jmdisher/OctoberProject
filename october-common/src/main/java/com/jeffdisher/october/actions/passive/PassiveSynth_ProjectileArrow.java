@@ -1,5 +1,6 @@
 package com.jeffdisher.october.actions.passive;
 
+import com.jeffdisher.october.actions.EntityActionNudge;
 import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
@@ -30,6 +31,10 @@ import com.jeffdisher.october.utils.Assert;
 public class PassiveSynth_ProjectileArrow
 {
 	public static final int DAMAGE_ARROW = 30;
+	/**
+	 * The knockback applied by an arrow is based on its velocity, scaled by this factor.
+	 */
+	public static final float KNOCKBACK_SCALE = 0.1f;
 
 	private PassiveSynth_ProjectileArrow()
 	{
@@ -97,6 +102,9 @@ public class PassiveSynth_ProjectileArrow
 					BodyPart target = BodyPart.values()[context.randomInt.applyAsInt(BodyPart.values().length)];
 					EntityActionTakeDamageFromEntity<IMutablePlayerEntity> damage = new EntityActionTakeDamageFromEntity<>(target, DAMAGE_ARROW, 0);
 					context.newChangeSink.next(targetId, damage);
+					EntityLocation knockbackPower = startVelocity.makeScaledInstance(KNOCKBACK_SCALE);
+					EntityActionNudge<IMutablePlayerEntity> knockback = new EntityActionNudge<>(knockbackPower);
+					context.newChangeSink.next(targetId, knockback);
 					
 					result = null;
 				}
@@ -106,6 +114,9 @@ public class PassiveSynth_ProjectileArrow
 					BodyPart target = BodyPart.values()[context.randomInt.applyAsInt(BodyPart.values().length)];
 					EntityActionTakeDamageFromEntity<IMutableCreatureEntity> damage = new EntityActionTakeDamageFromEntity<>(target, DAMAGE_ARROW, 0);
 					context.newChangeSink.creature(targetId, damage);
+					EntityLocation knockbackPower = startVelocity.makeScaledInstance(KNOCKBACK_SCALE);
+					EntityActionNudge<IMutableCreatureEntity> knockback = new EntityActionNudge<>(knockbackPower);
+					context.newChangeSink.creature(targetId, knockback);
 					
 					result = null;
 				}

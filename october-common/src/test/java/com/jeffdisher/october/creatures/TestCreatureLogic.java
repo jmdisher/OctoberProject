@@ -1,5 +1,6 @@
 package com.jeffdisher.october.creatures;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.actions.EntityActionImpregnateCreature;
+import com.jeffdisher.october.actions.EntityActionNudge;
 import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
@@ -604,17 +606,13 @@ public class TestCreatureLogic
 			}
 			return min;
 		};
-		int[] ref_targetEntityId = new int[1];
-		@SuppressWarnings("unchecked")
-		IEntityAction<IMutablePlayerEntity>[] ref_change = new IEntityAction[1];
+		List<IEntityAction<IMutablePlayerEntity>> outChanges = new ArrayList<>();
 		TickProcessingContext.IChangeSink changeSink = new TickProcessingContext.IChangeSink() {
 			@Override
 			public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 			{
-				Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, ref_targetEntityId[0]);
-				ref_targetEntityId[0] = targetEntityId;
-				Assert.assertNull(ref_change[0]);
-				ref_change[0] = change;
+				Assert.assertEquals(player.id(), targetEntityId);
+				outChanges.add(change);
 				return true;
 			}
 			@Override
@@ -669,11 +667,10 @@ public class TestCreatureLogic
 		);
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
-		Assert.assertEquals(player.id(), ref_targetEntityId[0]);
-		// We should see the orc send the attack message
-		Assert.assertTrue(ref_change[0] instanceof EntityActionTakeDamageFromEntity);
-		ref_targetEntityId[0] = CreatureEntity.NO_TARGET_ENTITY_ID;
-		ref_change[0] = null;
+		Assert.assertEquals(2, outChanges.size());
+		Assert.assertTrue(outChanges.get(0) instanceof EntityActionTakeDamageFromEntity);
+		Assert.assertTrue(outChanges.get(1) instanceof EntityActionNudge);
+		outChanges.clear();
 		
 		// A second attack on the following tick should fail since we are on cooldown.
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
@@ -682,8 +679,7 @@ public class TestCreatureLogic
 		);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
-		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, ref_targetEntityId[0]);
-		Assert.assertNull(ref_change[0]);
+		Assert.assertEquals(0, outChanges.size());
 		
 		// But will work if we advance tick number further.
 		context = ContextBuilder.build()
@@ -698,8 +694,9 @@ public class TestCreatureLogic
 		);
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
-		Assert.assertEquals(player.id(), ref_targetEntityId[0]);
-		Assert.assertTrue(ref_change[0] instanceof EntityActionTakeDamageFromEntity);
+		Assert.assertEquals(2, outChanges.size());
+		Assert.assertTrue(outChanges.get(0) instanceof EntityActionTakeDamageFromEntity);
+		Assert.assertTrue(outChanges.get(1) instanceof EntityActionNudge);
 	}
 
 	@Test

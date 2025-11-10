@@ -1,5 +1,7 @@
 package com.jeffdisher.october.actions.passive;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.AfterClass;
@@ -7,6 +9,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.actions.EntityActionNudge;
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.aspects.AspectRegistry;
@@ -226,8 +229,7 @@ public class TestPassiveActions
 		
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(), Map.of(creature.id(), creature));
-		@SuppressWarnings("unchecked")
-		EntityActionTakeDamageFromEntity<IMutableCreatureEntity>[] out = new EntityActionTakeDamageFromEntity[1];
+		List<IEntityAction<IMutableCreatureEntity>> outChanges = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation l) -> {
 				return (l.getCuboidAddress().equals(cuboid.getCuboidAddress()))
@@ -249,9 +251,8 @@ public class TestPassiveActions
 				@Override
 				public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
 				{
-					Assert.assertNull(out[0]);
 					Assert.assertEquals(creature.id(), targetCreatureId);
-					out[0] = (EntityActionTakeDamageFromEntity<IMutableCreatureEntity>) change;
+					outChanges.add(change);
 					return true;
 				}
 				@Override
@@ -266,7 +267,9 @@ public class TestPassiveActions
 		
 		PassiveEntity result = PassiveSynth_ProjectileArrow.applyChange(context, entityCollection, start);
 		Assert.assertNull(result);
-		Assert.assertNotNull(out[0]);
+		Assert.assertEquals(2, outChanges.size());
+		Assert.assertTrue(outChanges.get(0) instanceof EntityActionTakeDamageFromEntity);
+		Assert.assertTrue(outChanges.get(1) instanceof EntityActionNudge);
 	}
 
 	@Test

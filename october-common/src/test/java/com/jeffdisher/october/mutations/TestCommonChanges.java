@@ -661,9 +661,7 @@ public class TestCommonChanges
 		miss.newLocation = new EntityLocation(12.0f, 10.0f, 0.0f);
 		
 		Map<Integer, Entity> targetsById = Map.of(targetId, target.freeze(), missId, miss.freeze());
-		int[] targetHolder = new int[1];
-		@SuppressWarnings("unchecked")
-		IEntityAction<IMutablePlayerEntity>[] changeHolder = new IEntityAction[1];
+		List<IEntityAction<IMutablePlayerEntity>> outChanges = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
 				.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)), null)
@@ -671,9 +669,8 @@ public class TestCommonChanges
 						@Override
 						public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 						{
-							Assert.assertNull(changeHolder[0]);
-							targetHolder[0] = targetEntityId;
-							changeHolder[0] = change;
+							Assert.assertEquals(targetId, targetEntityId);
+							outChanges.add(change);
 							return true;
 						}
 						@Override
@@ -697,12 +694,13 @@ public class TestCommonChanges
 		
 		// Check the miss.
 		Assert.assertFalse(new EntityChangeAttackEntity(missId).applyChange(context, attacker));
-		Assert.assertNull(changeHolder[0]);
+		Assert.assertEquals(0, outChanges.size());
 		
 		// Check the hit.
 		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, attacker));
-		Assert.assertEquals(targetId, targetHolder[0]);
-		Assert.assertTrue(changeHolder[0] instanceof EntityActionTakeDamageFromEntity);
+		Assert.assertEquals(2, outChanges.size());
+		Assert.assertTrue(outChanges.get(0) instanceof EntityActionTakeDamageFromEntity);
+		Assert.assertTrue(outChanges.get(1) instanceof EntityActionNudge);
 	}
 
 	@Test
@@ -838,9 +836,7 @@ public class TestCommonChanges
 		target.setSelectedKey(target.newInventory.getIdOfStackableType(STONE_ITEM));
 		
 		Map<Integer, Entity> targetsById = Map.of(targetId, target.freeze());
-		int[] targetHolder = new int[1];
-		@SuppressWarnings("unchecked")
-		IEntityAction<IMutablePlayerEntity>[] changeHolder = new IEntityAction[1];
+		List<IEntityAction<IMutablePlayerEntity>> outChanges = new ArrayList<>();
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
@@ -849,9 +845,8 @@ public class TestCommonChanges
 						@Override
 						public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 						{
-							Assert.assertNull(changeHolder[0]);
-							targetHolder[0] = targetEntityId;
-							changeHolder[0] = change;
+							Assert.assertEquals(targetId, targetEntityId);
+							outChanges.add(change);
 							return true;
 						}
 						@Override
@@ -876,17 +871,18 @@ public class TestCommonChanges
 		
 		// Check that the sword durability changed and that we scheduled the hit.
 		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, attacker));
-		Assert.assertEquals(targetId, targetHolder[0]);
-		Assert.assertTrue(changeHolder[0] instanceof EntityActionTakeDamageFromEntity);
+		Assert.assertEquals(2, outChanges.size());
+		Assert.assertTrue(outChanges.get(0) instanceof EntityActionTakeDamageFromEntity);
+		Assert.assertTrue(outChanges.get(1) instanceof EntityActionNudge);
 		int endDurability = PropertyHelpers.getDurability(attacker.newInventory.getNonStackableForKey(attacker.getSelectedKey()));
 		Assert.assertEquals(1, (startDurability - endDurability));
 		
 		// Apply the hit and verify that the target health changed.
-		EntityActionTakeDamageFromEntity<IMutablePlayerEntity> change = (EntityActionTakeDamageFromEntity<IMutablePlayerEntity>) changeHolder[0];
-		targetHolder[0] = 0;
-		changeHolder[0] = null;
+		EntityActionTakeDamageFromEntity<IMutablePlayerEntity> damage = (EntityActionTakeDamageFromEntity<IMutablePlayerEntity>) outChanges.remove(0);
+		EntityActionNudge<IMutablePlayerEntity> nudge = (EntityActionNudge<IMutablePlayerEntity>) outChanges.remove(0);
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, target.newLocation.getBlockLocation(), targetId, attackerId));
-		Assert.assertTrue(change.applyChange(context, target));
+		Assert.assertTrue(damage.applyChange(context, target));
+		Assert.assertTrue(nudge.applyChange(context, target));
 		Assert.assertEquals(90, target.newHealth);
 	}
 
@@ -1371,9 +1367,9 @@ public class TestCommonChanges
 		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureChanges = changeSink.takeExportedCreatureChanges();
 		Assert.assertEquals(1, creatureChanges.size());
 		List<IEntityAction<IMutableCreatureEntity>> list = creatureChanges.get(targetId);
-		Assert.assertEquals(1, list.size());
-		IEntityAction<IMutableCreatureEntity> change = list.get(0);
-		Assert.assertTrue(change instanceof EntityActionTakeDamageFromEntity<IMutableCreatureEntity>);
+		Assert.assertEquals(2, list.size());
+		Assert.assertTrue(list.get(0) instanceof EntityActionTakeDamageFromEntity);
+		Assert.assertTrue(list.get(1) instanceof EntityActionNudge);
 	}
 
 	@Test
@@ -2539,7 +2535,7 @@ public class TestCommonChanges
 		
 		Entity baselineTarget = target.freeze();
 		Map<Integer, Entity> targetsById = Map.of(targetId, baselineTarget);
-		List<EntityActionTakeDamageFromEntity<IMutablePlayerEntity>> changeHolder = new ArrayList<>();
+		List<IEntityAction<IMutablePlayerEntity>> outChanges = new ArrayList<>();
 		int[] eventCounter = new int[1];
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(5L)
@@ -2549,8 +2545,7 @@ public class TestCommonChanges
 				public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
 				{
 					Assert.assertEquals(targetId, targetEntityId);
-					Assert.assertTrue(change instanceof EntityActionTakeDamageFromEntity<IMutablePlayerEntity>);
-					changeHolder.add((EntityActionTakeDamageFromEntity<IMutablePlayerEntity>) change);
+					outChanges.add(change);
 					return true;
 				}
 				@Override
@@ -2585,22 +2580,26 @@ public class TestCommonChanges
 		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, axeAttacker));
 		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, stoneAttacker));
 		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, enchantedSwordAttacker));
-		Assert.assertEquals(4, changeHolder.size());
+		Assert.assertEquals(8, outChanges.size());
 		Assert.assertEquals(0, eventCounter[0]);
 		
 		// Check applying these to the entity to see the damage they do.
 		Assert.assertEquals(100, target.newHealth);
 		target = MutableEntity.existing(baselineTarget);
-		Assert.assertTrue(changeHolder.remove(0).applyChange(context, target));
+		Assert.assertTrue(outChanges.remove(0).applyChange(context, target));
+		Assert.assertTrue(outChanges.remove(0).applyChange(context, target));
 		Assert.assertEquals(90, target.newHealth);
 		target = MutableEntity.existing(baselineTarget);
-		Assert.assertTrue(changeHolder.remove(0).applyChange(context, target));
+		Assert.assertTrue(outChanges.remove(0).applyChange(context, target));
+		Assert.assertTrue(outChanges.remove(0).applyChange(context, target));
 		Assert.assertEquals(96, target.newHealth);
 		target = MutableEntity.existing(baselineTarget);
-		Assert.assertTrue(changeHolder.remove(0).applyChange(context, target));
+		Assert.assertTrue(outChanges.remove(0).applyChange(context, target));
+		Assert.assertTrue(outChanges.remove(0).applyChange(context, target));
 		Assert.assertEquals(99, target.newHealth);
 		target = MutableEntity.existing(baselineTarget);
-		Assert.assertTrue(changeHolder.remove(0).applyChange(context, target));
+		Assert.assertTrue(outChanges.remove(0).applyChange(context, target));
+		Assert.assertTrue(outChanges.remove(0).applyChange(context, target));
 		Assert.assertEquals(87, target.newHealth);
 		Assert.assertEquals(4, eventCounter[0]);
 	}

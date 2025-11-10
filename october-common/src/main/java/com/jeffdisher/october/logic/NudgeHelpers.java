@@ -28,6 +28,18 @@ public class NudgeHelpers
 	public static int CREATURE_NUDGE_TICK_FREQUENCY = 100;
 
 	/**
+	 * Knockback from a melee attack will not be applied it if the distance between the attacker and target centres is
+	 * this value or lower (made to avoid bizarre scaling with small vectors).
+	 */
+	public static float MELEE_KNOCKBACK_MINIMUM_DISTANCE = 0.1f;
+
+	/**
+	 * Melee knockback is applied based on the vector between the attacker and the target, scaled to a unit vector, then
+	 * multiplied by this magnitude (so the vector of the force will always be this number).
+	 */
+	public static float MELEE_KNOCKBACK_MAGNITUDE = 5.0f;
+
+	/**
 	 * Checks if this player entity is colliding with any other entity, if it is time to check, and sends nudges to them
 	 * in order to push them away.
 	 * 
@@ -73,6 +85,41 @@ public class NudgeHelpers
 			EntityVolume volume = creature.type().volume();
 			_findAndDispatch(env, context, entityCollection, creature, base, volume);
 		}
+	}
+
+	/**
+	 * Determines the melee knockback force to apply based on the source and target, as well as their volumes.  This
+	 * might return null if their arrangement doesn't imply a knockback should be applied.
+	 * 
+	 * @param source The source of the melee attack.
+	 * @param sourceVolume The volume of the source.
+	 * @param target The target of the melee attack.
+	 * @param targetVolume The volume of the target.
+	 * @return The knockback vector to apply or null if there should be no knockback.
+	 */
+	public static EntityLocation meleeAttackKnockback(EntityLocation source
+		, EntityVolume sourceVolume
+		, EntityLocation target
+		, EntityVolume targetVolume
+	)
+	{
+		EntityLocation sourceCentre = SpatialHelpers.getCentreOfRegion(source, sourceVolume);
+		EntityLocation targetCentre = SpatialHelpers.getCentreOfRegion(target, targetVolume);
+		EntityLocation delta = new EntityLocation(targetCentre.x() - sourceCentre.x()
+			, targetCentre.y() - sourceCentre.y()
+			, targetCentre.z() - sourceCentre.z()
+		);
+		float magnitude = delta.getMagnitude();
+		EntityLocation knockbackVector;
+		if (magnitude > MELEE_KNOCKBACK_MINIMUM_DISTANCE)
+		{
+			knockbackVector = delta.makeScaledInstance(MELEE_KNOCKBACK_MAGNITUDE / magnitude);
+		}
+		else
+		{
+			knockbackVector = null;
+		}
+		return knockbackVector;
 	}
 
 
