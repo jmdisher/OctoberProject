@@ -13,12 +13,10 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityVolume;
 
 
 public class TestPathFinder
 {
-	private static final EntityVolume VOLUME = new EntityVolume(1.8f, 0.5f);
 	@BeforeClass
 	public static void setup()
 	{
@@ -39,7 +37,7 @@ public class TestPathFinder
 		EntityLocation target = new EntityLocation(4.5f, 6.5f, 5.0f);
 		int floor = 4;
 		Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsUser = (AbsoluteLocation location) -> (floor == location.z()) ? PathFinder.BlockKind.SOLID : PathFinder.BlockKind.WALKABLE;
-		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, VOLUME, source, target);
+		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, source, target);
 		
 		// We expect to see 29 steps, since the source counts as a step.
 		int xSteps = 4 + 11;
@@ -54,7 +52,7 @@ public class TestPathFinder
 		EntityLocation source = new EntityLocation(-10.5f, -6.5f, -5.0f);
 		EntityLocation target = new EntityLocation(4.5f, 6.5f, 7.0f);
 		Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsUser = (AbsoluteLocation location) -> (location.y() == location.z()) ? PathFinder.BlockKind.SOLID : PathFinder.BlockKind.WALKABLE;
-		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, VOLUME, source, target);
+		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, source, target);
 		
 		// This is walking directly so the path should involve as many steps as difference in each axis (+1 for the start).
 		int xSteps = 4 + 11;
@@ -76,7 +74,7 @@ public class TestPathFinder
 					: PathFinder.BlockKind.WALKABLE
 			;
 		};
-		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, VOLUME, source, target);
+		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, source, target);
 		Assert.assertNull(path);
 	}
 
@@ -93,7 +91,7 @@ public class TestPathFinder
 					: PathFinder.BlockKind.WALKABLE
 			;
 		};
-		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, VOLUME, source, target);
+		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, source, target);
 		Assert.assertNull(path);
 	}
 
@@ -115,7 +113,7 @@ public class TestPathFinder
 				"AAAASAAAAA",
 				"AAAAAAAAAA",
 		});
-		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, VOLUME, source, target);
+		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, source, target);
 		_printMap2D(9, 9, path);
 	}
 
@@ -170,7 +168,7 @@ public class TestPathFinder
 					"SSSSS",
 			}
 		});
-		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, VOLUME, source, target);
+		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, source, target);
 		// This is a direct walk, with a fall in the middle, so it should just be the difference in locations +1 to start.
 		int xSteps = 2;
 		int ySteps = 0;
@@ -196,9 +194,9 @@ public class TestPathFinder
 				"AAAAAAAAAA",
 		});
 		// We want to show what is reachable in the maze for different distances.
-		Map<AbsoluteLocation, AbsoluteLocation> places = PathFinder.findPlacesWithinLimit(blockPermitsUser, VOLUME, source, 2.0f);
+		Map<AbsoluteLocation, AbsoluteLocation> places = PathFinder.findPlacesWithinLimit(blockPermitsUser, source, 2.0f);
 		_printStepMap2D(10, 9, 5, places);
-		places = PathFinder.findPlacesWithinLimit(blockPermitsUser, VOLUME, source, 4.0f);
+		places = PathFinder.findPlacesWithinLimit(blockPermitsUser, source, 4.0f);
 		_printStepMap2D(10, 9, 5, places);
 	}
 
@@ -253,7 +251,7 @@ public class TestPathFinder
 					"SSSSS",
 			}
 		});
-		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, VOLUME, source, target);
+		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, source, target);
 		int xSteps = 2;
 		int ySteps = 0;
 		int zSteps = 3;
@@ -299,7 +297,7 @@ public class TestPathFinder
 					"SSSSS",
 			}
 		});
-		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, VOLUME, source, target);
+		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, source, target);
 		int xSteps = 2;
 		int ySteps = 0;
 		int zSteps = 0;
