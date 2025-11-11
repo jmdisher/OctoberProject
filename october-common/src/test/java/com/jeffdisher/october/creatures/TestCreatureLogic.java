@@ -872,6 +872,9 @@ public class TestCreatureLogic
 		AbsoluteLocation waterLocation = new AbsoluteLocation(5, 5, 1);
 		short waterSourceNumber = ENV.items.getItemById("op.water_source").number();
 		input.setData15(AspectRegistry.BLOCK, waterLocation.getBlockAddress(), waterSourceNumber);
+		input.setData15(AspectRegistry.BLOCK, waterLocation.getRelative(0, 1, 0).getBlockAddress(), waterSourceNumber);
+		input.setData15(AspectRegistry.BLOCK, waterLocation.getRelative(1, 0, 0).getBlockAddress(), waterSourceNumber);
+		input.setData15(AspectRegistry.BLOCK, waterLocation.getRelative(1, 1, 0).getBlockAddress(), waterSourceNumber);
 		
 		EntityLocation startLocation = new EntityLocation(5.0f, 5.0f, 1.4f);
 		EntityLocation startVelocity = new EntityLocation(0.0f, 0.0f, -2.17f);

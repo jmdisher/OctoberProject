@@ -513,7 +513,7 @@ public class TestEngineCreatures
 		// Create 2 cows close to each other, feed both of them, and observe the messages related to how they breed.
 		CreatureIdAssigner idAssigner = new CreatureIdAssigner();
 		EntityLocation location1 = new EntityLocation(0.0f, 0.0f, 0.0f);
-		EntityLocation location2 = new EntityLocation(1.7f, 0.0f, 0.0f);
+		EntityLocation location2 = new EntityLocation(1.9f, 0.0f, 0.0f);
 		EntityLocation playerLocation = new EntityLocation(0.5f, 0.5f, 0.0f);
 		Item wheat_item = ENV.items.getItemById("op.wheat_item");
 		MutableEntity mutablePlayer = MutableEntity.createWithLocation(1, playerLocation, playerLocation);
@@ -913,7 +913,7 @@ public class TestEngineCreatures
 		}
 		
 		// At this point, we will be close enough that we have stopped moving but we still see some "coasting" residual velocity.
-		Assert.assertEquals(new EntityLocation(16.69f, 16.0f, 1.0f), creature.location());
+		Assert.assertEquals(new EntityLocation(16.5f, 16.0f, 1.0f), creature.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), creature.velocity());
 	}
 
@@ -976,7 +976,7 @@ public class TestEngineCreatures
 		@SuppressWarnings("unchecked")
 		EntityActionNudge<IMutableCreatureEntity> nudge = (EntityActionNudge<IMutableCreatureEntity>) out[0];
 		Assert.assertTrue(nudge.applyChange(context, mutable));
-		Assert.assertEquals(new EntityLocation(-0.2f, 0.3f, -0.3f), mutable.newVelocity);
+		Assert.assertEquals(new EntityLocation(-0.4f, 0.5f, -0.5f), mutable.newVelocity);
 	}
 
 	@Test

@@ -155,7 +155,7 @@ public class TestSpatialHelpers
 		AbsoluteLocation block1 = new AbsoluteLocation(-3, 2, -1);
 		
 		float entityDistance = SpatialHelpers.distanceFromMutableEyeToEntitySurface(entity1, entity2);
-		Assert.assertEquals(0.67f, entityDistance, 0.01f);
+		Assert.assertEquals(0.6f, entityDistance, 0.01f);
 		float blockDistanceMutable = SpatialHelpers.distanceFromMutableEyeToBlockSurface(entity1, block1);
 		Assert.assertEquals(14.18f, blockDistanceMutable, 0.01f);
 		float blockDistancePlayer = SpatialHelpers.distanceFromPlayerEyeToBlockSurface(entity1.newLocation, entity1.getType(), block1);
@@ -270,8 +270,8 @@ public class TestSpatialHelpers
 		float distanceEntity = SpatialHelpers.distanceFromPlayerEyeToEntitySurface(playerBase, ENV.creatures.PLAYER, target);
 		float distanceManual = SpatialHelpers.distanceFromPlayerEyeToVolume(playerBase, ENV.creatures.PLAYER, targetLocation, COW.volume());
 		
-		Assert.assertEquals(6.89f, distanceEntity, 0.01f);
-		Assert.assertEquals(6.89f, distanceManual, 0.01f);
+		Assert.assertEquals(6.58f, distanceEntity, 0.01f);
+		Assert.assertEquals(6.58f, distanceManual, 0.01f);
 	}
 
 	@Test

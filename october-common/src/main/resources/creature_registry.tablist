@@ -15,7 +15,7 @@
 # "breeding_item" presence means that the creature can be bread.
 
 op.cow	Cow
-	volume	0.7	0.8
+	volume	0.9	1.2
 	blocks_per_second	1.0
 	max_health	40
 	view_distance	7.0

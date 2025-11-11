@@ -168,7 +168,7 @@ public class TestCreatureMovementHelpers
 	public void centreFromBetweenBlocks()
 	{
 		// Create a cow which is intersecting with a bunch of blocks.
-		EntityLocation location = new EntityLocation(1.8f, 1.8f, 1.0f);
+		EntityLocation location = new EntityLocation(1.9f, 1.9f, 1.0f);
 		CreatureEntity creature = _createCow(location);
 		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
 		

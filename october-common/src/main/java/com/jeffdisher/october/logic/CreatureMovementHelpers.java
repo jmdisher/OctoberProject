@@ -51,10 +51,11 @@ public class CreatureMovementHelpers
 		
 		// First, make sure that any edge of the entity isn't outside of its current block or directionHint.
 		// NOTE:  These bounds are for the specific base location, not width (as it accounts for width).
+		float widthEdge = (float)Math.ceil(width) - width;
 		float westBound = (float)baseLocation.x() + FLOAT_THRESHOLD;
-		float eastBound = (float)baseLocation.x() + 1.0f - width - FLOAT_THRESHOLD;
+		float eastBound = (float)baseLocation.x() + widthEdge - FLOAT_THRESHOLD;
 		float southBound = (float)baseLocation.y() + FLOAT_THRESHOLD;
-		float northBound = (float)baseLocation.y() + 1.0f - width - FLOAT_THRESHOLD;
+		float northBound = (float)baseLocation.y() + widthEdge - FLOAT_THRESHOLD;
 		
 		float targetX = creatureLocation.x();
 		float targetY = creatureLocation.y();
