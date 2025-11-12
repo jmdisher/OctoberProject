@@ -16,6 +16,7 @@ public record EntityType(byte number
 		, byte attackDamage
 		, Items[] drops
 		, Item breedingItem
+		, EntityType adultType
 		, IExtendedCodec extendedCodec
 )
 {
@@ -52,6 +53,14 @@ public record EntityType(byte number
 	public boolean isHostile()
 	{
 		return (this.attackDamage > 0);
+	}
+
+	/**
+	 * @return True if this is the baby version of an adult creature.
+	 */
+	public boolean isBaby()
+	{
+		return (null != this.adultType);
 	}
 
 

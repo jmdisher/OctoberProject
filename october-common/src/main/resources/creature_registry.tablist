@@ -30,3 +30,11 @@ op.orc	Orc
 	action_distance	1.0
 	drops	op.iron_dust	1
 	attack_damage	5
+op.cow_baby	Calf
+	volume	0.4	0.6
+	blocks_per_second	0.8
+	max_health	20
+	view_distance	5.0
+	action_distance	1.0
+	drops	op.beef	1
+	adult_type	op.cow

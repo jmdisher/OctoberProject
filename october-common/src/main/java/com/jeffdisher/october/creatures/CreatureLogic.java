@@ -227,11 +227,15 @@ public class CreatureLogic
 			{
 				isDone = _didTakeLivestockAction(context, mutable);
 			}
+			else if (creatureType.isHostile())
+			{
+				isDone = _didTakeHostileAction(context, mutable);
+			}
 			else
 			{
-				// We assume that anything is either livestock or hostile.
-				Assert.assertTrue(creatureType.isHostile());
-				isDone = _didTakeHostileAction(context, mutable);
+				// Something neither hostile nor livestock is probably a baby of what will change in to a livestock animal, later.
+				Assert.assertTrue(creatureType.isBaby());
+				isDone = false;
 			}
 		}
 		return isDone;
@@ -657,7 +661,9 @@ public class CreatureLogic
 		if (null != creature.newOffspringLocation)
 		{
 			// Spawn the creature and clear our offspring location.
-			context.creatureSpawner.spawnCreature(creatureType, creature.newOffspringLocation, creatureType.maxHealth());
+			Environment env = Environment.getShared();
+			EntityType offspringType = env.creatures.getOffspringType(creatureType);
+			context.creatureSpawner.spawnCreature(offspringType, creature.newOffspringLocation, offspringType.maxHealth());
 			creature.newOffspringLocation = null;
 			_clearTargetAndPlan(creature);
 			isDone = true;

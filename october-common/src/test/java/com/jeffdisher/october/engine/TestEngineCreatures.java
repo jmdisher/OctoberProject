@@ -70,6 +70,7 @@ public class TestEngineCreatures
 	private static Block WATER_STRONG;
 	private static Block WATER_WEAK;
 	private static EntityType COW;
+	private static EntityType COW_BABY;
 	private static EntityType ORC;
 	@BeforeClass
 	public static void setup()
@@ -81,6 +82,7 @@ public class TestEngineCreatures
 		WATER_STRONG = ENV.blocks.fromItem(ENV.items.getItemById("op.water_strong"));
 		WATER_WEAK = ENV.blocks.fromItem(ENV.items.getItemById("op.water_weak"));
 		COW = ENV.creatures.getTypeById("op.cow");
+		COW_BABY = ENV.creatures.getTypeById("op.cow_baby");
 		ORC = ENV.creatures.getTypeById("op.orc");
 	}
 	@AfterClass
@@ -617,7 +619,7 @@ public class TestEngineCreatures
 		Assert.assertNotNull(out[0]);
 		CreatureEntity offspring = out[0];
 		Assert.assertEquals(-3, offspring.id());
-		Assert.assertEquals(COW, offspring.type());
+		Assert.assertEquals(COW_BABY, offspring.type());
 		
 		// Run another tick to observe that nothing special happens.
 		Assert.assertNull(creaturesById.get(cowId2).ephemeral().movementPlan());
