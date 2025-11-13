@@ -44,7 +44,6 @@ public record CreatureEntity(int id
 			, NO_TARGET_ENTITY_ID
 			, null
 			, 0L
-			, false
 			, null
 			, 0L
 		);
@@ -68,8 +67,6 @@ public record CreatureEntity(int id
 			, AbsoluteLocation targetPreviousLocation
 			// The last game millisecond when this creature last sent an attack.
 			, long lastAttackMillis
-			// True if this is a breedable creature which should now search for a partner.
-			, boolean inLoveMode
 			// Non-null if this is a breedable creature who is ready to spawn offspring.
 			, EntityLocation offspringLocation
 			// The millisecond time when this creature last took damage.
@@ -119,7 +116,7 @@ public record CreatureEntity(int id
 				, this.pitch
 				, this.health
 				, this.breath
-				, this.type.extendedCodec().buildDefault()
+				, this.extendedData
 				
 				, new Ephemeral(
 						this.ephemeral.movementPlan
@@ -129,7 +126,6 @@ public record CreatureEntity(int id
 						, this.ephemeral.targetEntityId
 						, this.ephemeral.targetPreviousLocation
 						, this.ephemeral.lastAttackMillis
-						, this.ephemeral.inLoveMode
 						, this.ephemeral.offspringLocation
 						, this.ephemeral().lastDamageTakenMillis
 				)

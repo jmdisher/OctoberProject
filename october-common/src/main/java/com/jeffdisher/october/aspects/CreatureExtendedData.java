@@ -2,12 +2,15 @@ package com.jeffdisher.october.aspects;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.utils.Assert;
 
 
 /**
  * Contains the definitions of creature extended data and associated data.
+ * Note that, for historical reasons (storage version 9), all codecs need to handle reading a 1-byte 0x0 value as "null"
+ * and then interpreting that as some useful default.
  */
 public class CreatureExtendedData
 {
@@ -36,4 +39,60 @@ public class CreatureExtendedData
 			buffer.put(header);
 		}
 	};
+
+	/**
+	 * This codec stores information associated with livestock.
+	 */
+	public static class LivestockCodec implements EntityType.IExtendedCodec
+	{
+		@Override
+		public Object buildDefault()
+		{
+			return _buildDefault();
+		}
+		@Override
+		public Object read(ByteBuffer buffer)
+		{
+			// If the header is 0, this is default, otherwise we will read the fields of LivestockData.
+			Object result;
+			byte header = buffer.get();
+			if ((byte)0 == header)
+			{
+				// Just use the default structure.
+				result = _buildDefault();
+			}
+			else
+			{
+				Assert.assertTrue((byte)1 == header);
+				
+				// All this data was added in storage version 10.
+				boolean inLoveMode = CodecHelpers.readBoolean(buffer);
+				result = new LivestockData(inLoveMode
+				);
+			}
+			return result;
+		}
+		@Override
+		public void write(ByteBuffer buffer, Object extendedData)
+		{
+			// We never store the null value (it is mostly just a hold-over from storage version 9) so write a 1 byte.
+			byte header = 1;
+			buffer.put(header);
+			
+			// Now, write everything else.
+			LivestockData safe = (LivestockData) extendedData;
+			CodecHelpers.writeBoolean(buffer, safe.inLoveMode);
+		}
+		private Object _buildDefault()
+		{
+			return new LivestockData(false
+			);
+		}
+	};
+
+
+	public static record LivestockData(
+		// True if this is a breedable creature which should now search for a partner.
+		boolean inLoveMode
+	) {}
 }

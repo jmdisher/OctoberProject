@@ -63,6 +63,7 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
@@ -733,6 +734,7 @@ public class TestResourceLoader
 		Assert.assertEquals(-1, entity.id());
 		Assert.assertEquals((byte)0, entity.yaw());
 		Assert.assertEquals(loadingGameMillis, entity.ephemeral().despawnKeepAliveMillis());
+		Assert.assertFalse(MutableCreature.existing(entity).isInLoveMode());
 		
 		loader.shutdown();
 	}

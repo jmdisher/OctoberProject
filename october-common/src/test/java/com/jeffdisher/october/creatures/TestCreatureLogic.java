@@ -378,7 +378,7 @@ public class TestCreatureLogic
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100);
 		MutableCreature mutable = MutableCreature.existing(cow);
 		CreatureLogic.applyItemToCreature(WHEAT, mutable);
-		Assert.assertTrue(mutable.newInLoveMode);
+		Assert.assertTrue(mutable.isInLoveMode());
 	}
 
 	@Test
@@ -392,11 +392,11 @@ public class TestCreatureLogic
 		// Start with them both in a love mode.
 		MutableCreature mutable = MutableCreature.existing(father);
 		mutable.newTargetEntityId = mother.id();
-		mutable.newInLoveMode = true;
+		mutable.setLoveMode(true);
 		father = mutable.freeze();
 		mutable = MutableCreature.existing(mother);
 		mutable.newTargetEntityId = father.id();
-		mutable.newInLoveMode = true;
+		mutable.setLoveMode(true);
 		mother = mutable.freeze();
 		Map<Integer, CreatureEntity> creatures = new HashMap<>();
 		creatures.put(father.id(), father);
@@ -466,8 +466,8 @@ public class TestCreatureLogic
 		creatures.put(mother.id(), mother);
 		
 		// The father should no longer be in love mode but the mother should be.
-		Assert.assertFalse(father.ephemeral().inLoveMode());
-		Assert.assertTrue(mother.ephemeral().inLoveMode());
+		Assert.assertFalse(MutableCreature.existing(father).isInLoveMode());
+		Assert.assertTrue(MutableCreature.existing(mother).isInLoveMode());
 	}
 
 	@Test
@@ -478,11 +478,11 @@ public class TestCreatureLogic
 		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100);
 		MutableCreature mutable = MutableCreature.existing(mother);
-		mutable.newInLoveMode = true;
+		mutable.setLoveMode(true);
 		
 		boolean didBecomePregnant = CreatureLogic.setCreaturePregnant(mutable, fatherLocation);
 		Assert.assertTrue(didBecomePregnant);
-		Assert.assertFalse(mutable.newInLoveMode);
+		Assert.assertFalse(mutable.isInLoveMode());
 		Assert.assertEquals(new EntityLocation(0.4f, 0.0f, 0.0f), mutable.newOffspringLocation);
 	}
 
@@ -940,7 +940,6 @@ public class TestCreatureLogic
 				, original.ephemeral().targetEntityId()
 				, original.ephemeral().targetPreviousLocation()
 				, original.ephemeral().lastAttackMillis()
-				, original.ephemeral().inLoveMode()
 				, original.ephemeral().offspringLocation()
 				, original.ephemeral().lastDamageTakenMillis()
 			)

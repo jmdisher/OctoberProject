@@ -10,6 +10,7 @@ import com.jeffdisher.october.actions.EntityActionImpregnateCreature;
 import com.jeffdisher.october.actions.EntityActionNudge;
 import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
@@ -599,7 +600,8 @@ public class CreatureLogic
 		int thisCreatureId = creature.getId();
 		entityCollection.walkCreaturesInViewDistance(creature, (CreatureEntity check) -> {
 			// Ignore ourselves and make sure that they are the same type and in love mode.
-			if ((thisCreatureId != check.id()) && (thisType == check.type()) && check.ephemeral().inLoveMode())
+			CreatureExtendedData.LivestockData safe = (CreatureExtendedData.LivestockData)check.extendedData();
+			if ((thisCreatureId != check.id()) && (thisType == check.type()) && safe.inLoveMode())
 			{
 				// See how far away they are so we choose the closest.
 				EntityLocation end = check.location();
@@ -668,7 +670,7 @@ public class CreatureLogic
 			_clearTargetAndPlan(creature);
 			isDone = true;
 		}
-		else if (creature.newInLoveMode && (CreatureEntity.NO_TARGET_ENTITY_ID != creature.newTargetEntityId))
+		else if (creature.isInLoveMode() && (CreatureEntity.NO_TARGET_ENTITY_ID != creature.newTargetEntityId))
 		{
 			// We are in love mode, and have found a target, so see if we are close enough to impregnate our target.
 			// We have a target so see if we are in love mode and if they are in range to breed.
@@ -685,7 +687,7 @@ public class CreatureLogic
 				EntityActionImpregnateCreature sperm = new EntityActionImpregnateCreature(creature.newLocation);
 				context.newChangeSink.creature(creature.newTargetEntityId, sperm);
 				// We can also now clear our plans since we are done with them.
-				creature.newInLoveMode = false;
+				creature.setLoveMode(false);
 				_clearTargetAndPlan(creature);
 				isDone = true;
 			}
@@ -773,14 +775,19 @@ public class CreatureLogic
 		if (creatureType.isLivestock())
 		{
 			// This may be a player or a partner creature, depending on state.
-			if (mutable.newInLoveMode)
+			if (mutable.isInLoveMode())
 			{
 				// We must be looking at a partner so make sure that they are here and still in breeding mode.
 				CreatureEntity partner = entityCollection.getCreatureById(targetId);
-				isValid = (null != partner)
-						? partner.ephemeral().inLoveMode()
-						: false
-				;
+				if (null != partner)
+				{
+					CreatureExtendedData.LivestockData safe = (CreatureExtendedData.LivestockData)partner.extendedData();
+					isValid = safe.inLoveMode();
+				}
+				else
+				{
+					isValid = false;
+				}
 			}
 			else
 			{

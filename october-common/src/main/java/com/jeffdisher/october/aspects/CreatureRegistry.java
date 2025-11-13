@@ -100,6 +100,17 @@ public class CreatureRegistry
 				// Add 2 to the number since 0 is reserved as an error and 1 is for the player.
 				Assert.assertTrue(creatures.size() < 253);
 				byte number = (byte)(creatures.size() + 2);
+				EntityType.IExtendedCodec codec;
+				if (null != _breedingItem)
+				{
+					// If this can breed, we will treat it as livestock.
+					codec = new CreatureExtendedData.LivestockCodec();
+				}
+				else
+				{
+					// This has no specific codec.
+					codec = new CreatureExtendedData.NullCodec();
+				}
 				EntityType type = _packageEntity(number
 						, _id
 						, _name
@@ -112,7 +123,7 @@ public class CreatureRegistry
 						, _drops
 						, _breedingItem
 						, _adultType
-						, new CreatureExtendedData.NullCodec()
+						, codec
 				);
 				typesById.put(_id, type);
 				if (null != _breedingItem)

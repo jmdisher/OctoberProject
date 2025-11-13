@@ -219,7 +219,6 @@ public class TestEngineCreatures
 					, CreatureEntity.NO_TARGET_ENTITY_ID
 					, null
 					, 0L
-					, false
 					, null
 					, 0L
 				)
@@ -263,7 +262,6 @@ public class TestEngineCreatures
 					, CreatureEntity.NO_TARGET_ENTITY_ID
 					, null
 					, 0L
-					, false
 					, null
 					, 0L
 				)
@@ -308,7 +306,6 @@ public class TestEngineCreatures
 					, CreatureEntity.NO_TARGET_ENTITY_ID
 					, null
 					, 0L
-					, false
 					, null
 					, 0L
 				)
@@ -1207,7 +1204,6 @@ public class TestEngineCreatures
 					, targetEntityId
 					, targetPreviousLocation
 					, entity.ephemeral().lastAttackMillis()
-					, entity.ephemeral().inLoveMode()
 					, entity.ephemeral().offspringLocation()
 					, entity.ephemeral().lastDamageTakenMillis()
 				)

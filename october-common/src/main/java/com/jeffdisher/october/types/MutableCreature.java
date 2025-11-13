@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.utils.Assert;
@@ -45,7 +46,6 @@ public class MutableCreature implements IMutableCreatureEntity
 	public int newTargetEntityId;
 	public AbsoluteLocation newTargetPreviousLocation;
 	public long newLastAttackMillis;
-	public boolean newInLoveMode;
 	public EntityLocation newOffspringLocation;
 	public long newLastDamageTakenMillis;
 
@@ -67,7 +67,6 @@ public class MutableCreature implements IMutableCreatureEntity
 		this.newTargetEntityId = creature.ephemeral().targetEntityId();
 		this.newTargetPreviousLocation = creature.ephemeral().targetPreviousLocation();
 		this.newLastAttackMillis = creature.ephemeral().lastAttackMillis();
-		this.newInLoveMode = creature.ephemeral().inLoveMode();
 		this.newOffspringLocation = creature.ephemeral().offspringLocation();
 		this.newLastDamageTakenMillis = creature.ephemeral().lastDamageTakenMillis();
 	}
@@ -254,13 +253,19 @@ public class MutableCreature implements IMutableCreatureEntity
 	@Override
 	public void setLoveMode(boolean isInLoveMode)
 	{
-		this.newInLoveMode = isInLoveMode;
+		// We assume that this is the right type if this is being called.
+		Assert.assertTrue(this.newExtendedData instanceof CreatureExtendedData.LivestockData);
+		this.newExtendedData = new CreatureExtendedData.LivestockData(
+			isInLoveMode
+		);
 	}
 
 	@Override
 	public boolean isInLoveMode()
 	{
-		return this.newInLoveMode;
+		// We assume that this is the right type if this is being called.
+		CreatureExtendedData.LivestockData safe = (CreatureExtendedData.LivestockData)this.newExtendedData;
+		return safe.inLoveMode();
 	}
 
 	/**
@@ -284,7 +289,6 @@ public class MutableCreature implements IMutableCreatureEntity
 							, this.newTargetEntityId
 							, this.newTargetPreviousLocation
 							, this.newLastAttackMillis
-							, this.newInLoveMode
 							, this.newOffspringLocation
 							, this.newLastDamageTakenMillis
 			);
