@@ -28,7 +28,7 @@ public class EntityActionImpregnateCreature implements IEntityAction<IMutableCre
 	public boolean applyChange(TickProcessingContext context, IMutableCreatureEntity newEntity)
 	{
 		// We will say that this worked if the logic helper says they were set pregnant.
-		return CreatureLogic.setCreaturePregnant(newEntity, _sireLocation);
+		return CreatureLogic.setCreaturePregnant(newEntity, _sireLocation, context.currentTickTimeMillis);
 	}
 
 	@Override

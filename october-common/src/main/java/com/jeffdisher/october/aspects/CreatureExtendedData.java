@@ -69,8 +69,11 @@ public class CreatureExtendedData
 				// All this data was added in storage version 10.
 				boolean inLoveMode = CodecHelpers.readBoolean(buffer);
 				EntityLocation offspringLocation = CodecHelpers.readNullableEntityLocation(buffer);
+				int millisRemaining = buffer.getInt();
+				long breedingReadyMillis = gameTimeMillis + (long)millisRemaining;
 				result = new LivestockData(inLoveMode
 					, offspringLocation
+					, breedingReadyMillis
 				);
 			}
 			return result;
@@ -86,11 +89,18 @@ public class CreatureExtendedData
 			LivestockData safe = (LivestockData) extendedData;
 			CodecHelpers.writeBoolean(buffer, safe.inLoveMode);
 			CodecHelpers.writeNullableEntityLocation(buffer, safe.offspringLocation);
+			long spill = safe.breedingReadyMillis - gameTimeMillis;
+			int millisRemaining = (spill > 0L)
+				? (int)spill
+				: 0
+			;
+			buffer.putInt(millisRemaining);
 		}
 		private Object _buildDefault()
 		{
 			return new LivestockData(false
 				, null
+				, 0L
 			);
 		}
 	};
@@ -101,5 +111,7 @@ public class CreatureExtendedData
 		boolean inLoveMode
 		// Non-null if this is a breedable creature who is ready to spawn offspring.
 		, EntityLocation offspringLocation
+		// The gameTimeMillis when breeding becomes available again (cooldown).
+		, long breedingReadyMillis
 	) {}
 }

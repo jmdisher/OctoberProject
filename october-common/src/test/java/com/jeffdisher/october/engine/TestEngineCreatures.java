@@ -475,11 +475,11 @@ public class TestEngineCreatures
 		EntityLocation startLocation = new EntityLocation(0.19f, 0.0f, 0.0f);
 		Item wheat_item = ENV.items.getItemById("op.wheat_item");
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, COW, startLocation, (byte)100));
-		CreatureLogic.applyItemToCreature(wheat_item, mutable);
+		CreatureLogic.applyItemToCreature(wheat_item, mutable, 1000L);
 		CreatureEntity fedCow = mutable.freeze();
 		CreatureEntity otherCow = CreatureEntity.create(-2, COW, new EntityLocation(2.0f, 0.0f, 0.0f),(byte)100);
 		mutable = MutableCreature.existing(CreatureEntity.create(-3, COW, new EntityLocation(5.0f, 0.0f, 0.0f), (byte)100));
-		CreatureLogic.applyItemToCreature(wheat_item, mutable);
+		CreatureLogic.applyItemToCreature(wheat_item, mutable, 1000L);
 		CreatureEntity targetCow = mutable.freeze();
 		Map<Integer, CreatureEntity> creaturesById = Map.of(fedCow.id(), fedCow
 				, otherCow.id(), otherCow

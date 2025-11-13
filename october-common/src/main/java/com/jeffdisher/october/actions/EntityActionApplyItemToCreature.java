@@ -29,7 +29,7 @@ public class EntityActionApplyItemToCreature implements IEntityAction<IMutableCr
 	public boolean applyChange(TickProcessingContext context, IMutableCreatureEntity newEntity)
 	{
 		// We will say that this worked if the logic helper says it applied.
-		return CreatureLogic.applyItemToCreature(_itemType, newEntity);
+		return CreatureLogic.applyItemToCreature(_itemType, newEntity, context.currentTickTimeMillis);
 	}
 
 	@Override

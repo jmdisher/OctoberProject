@@ -378,7 +378,7 @@ public class TestCreatureLogic
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100);
 		MutableCreature mutable = MutableCreature.existing(cow);
-		CreatureLogic.applyItemToCreature(WHEAT, mutable);
+		CreatureLogic.applyItemToCreature(WHEAT, mutable, 1000L);
 		Assert.assertTrue(((CreatureExtendedData.LivestockData)mutable.getExtendedData()).inLoveMode());
 	}
 
@@ -393,11 +393,11 @@ public class TestCreatureLogic
 		// Start with them both in a love mode.
 		MutableCreature mutable = MutableCreature.existing(father);
 		mutable.newTargetEntityId = mother.id();
-		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null));
+		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null, 0L));
 		father = mutable.freeze();
 		mutable = MutableCreature.existing(mother);
 		mutable.newTargetEntityId = father.id();
-		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null));
+		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null, 0L));
 		mother = mutable.freeze();
 		Map<Integer, CreatureEntity> creatures = new HashMap<>();
 		creatures.put(father.id(), father);
@@ -479,12 +479,14 @@ public class TestCreatureLogic
 		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100);
 		MutableCreature mutable = MutableCreature.existing(mother);
-		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null));
+		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null, 0L));
 		
-		boolean didBecomePregnant = CreatureLogic.setCreaturePregnant(mutable, fatherLocation);
+		long gameTimeMillis = 1000L;
+		boolean didBecomePregnant = CreatureLogic.setCreaturePregnant(mutable, fatherLocation, gameTimeMillis);
 		Assert.assertTrue(didBecomePregnant);
 		Assert.assertFalse(((CreatureExtendedData.LivestockData)mutable.getExtendedData()).inLoveMode());
 		Assert.assertEquals(new EntityLocation(0.4f, 0.0f, 0.0f), ((CreatureExtendedData.LivestockData)mutable.getExtendedData()).offspringLocation());
+		Assert.assertEquals(gameTimeMillis + CreatureLogic.MILLIS_BREEDING_COOLDOWN, ((CreatureExtendedData.LivestockData)mutable.getExtendedData()).breedingReadyMillis());
 	}
 
 	@Test
@@ -495,7 +497,7 @@ public class TestCreatureLogic
 		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100);
 		MutableCreature mutable = MutableCreature.existing(mother);
-		mutable.setExtendedData(new CreatureExtendedData.LivestockData(false, offspringLocation));
+		mutable.setExtendedData(new CreatureExtendedData.LivestockData(false, offspringLocation, 0L));
 		
 		CreatureEntity[] offspring = new CreatureEntity[1];
 		TickProcessingContext.ICreatureSpawner creatureSpawner = (EntityType type, EntityLocation location, byte health) -> {
@@ -913,10 +915,10 @@ public class TestCreatureLogic
 		
 		// Start with them both in a love mode but not yet targeting each other.
 		MutableCreature mutable = MutableCreature.existing(father);
-		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null));
+		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null, 0L));
 		father = mutable.freeze();
 		mutable = MutableCreature.existing(mother);
-		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null));
+		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null, 0L));
 		mother = mutable.freeze();
 		Map<Integer, CreatureEntity> creatures = new HashMap<>();
 		creatures.put(father.id(), father);
@@ -977,6 +979,20 @@ public class TestCreatureLogic
 		);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals(father.id(), mutable.newTargetEntityId);
+	}
+
+	@Test
+	public void breedingTimeout()
+	{
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100);
+		MutableCreature mutable = MutableCreature.existing(cow);
+		long nextReadyMillis = 2000L;
+		mutable.setExtendedData(new CreatureExtendedData.LivestockData(false, null, nextReadyMillis));
+		Assert.assertFalse(CreatureLogic.applyItemToCreature(WHEAT, mutable, nextReadyMillis - 1L));
+		Assert.assertFalse(((CreatureExtendedData.LivestockData)mutable.getExtendedData()).inLoveMode());
+		Assert.assertTrue(CreatureLogic.applyItemToCreature(WHEAT, mutable, nextReadyMillis));
+		Assert.assertTrue(((CreatureExtendedData.LivestockData)mutable.getExtendedData()).inLoveMode());
 	}
 
 

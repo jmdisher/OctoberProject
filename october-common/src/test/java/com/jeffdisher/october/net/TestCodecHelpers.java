@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.DeserializationContext;
@@ -18,9 +19,11 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -456,5 +459,30 @@ public class TestCodecHelpers
 			, false
 		));
 		Assert.assertEquals(0, disk.ephemeralShared().chargeMillis());
+	}
+
+	@Test
+	public void cowExtended() throws Throwable
+	{
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		EntityType cowType = ENV.creatures.getTypeById("op.cow");
+		CreatureEntity cow = new CreatureEntity(-1
+			, cowType
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, (byte)0
+			, (byte)0
+			, (byte)50
+			, (byte)100
+			, new CreatureExtendedData.LivestockData(false, null, 50L)
+			, null
+		);
+		CodecHelpers.writeCreatureEntity(buffer, cow, 0L);
+		buffer.flip();
+		CreatureEntity mid = CodecHelpers.readCreatureEntity(-2, buffer, 100L);
+		
+		Assert.assertEquals(false, ((CreatureExtendedData.LivestockData)mid.extendedData()).inLoveMode());
+		Assert.assertEquals(null, ((CreatureExtendedData.LivestockData)mid.extendedData()).offspringLocation());
+		Assert.assertEquals(150L, ((CreatureExtendedData.LivestockData)mid.extendedData()).breedingReadyMillis());
 	}
 }

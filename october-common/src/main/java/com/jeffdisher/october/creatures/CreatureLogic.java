@@ -65,6 +65,10 @@ public class CreatureLogic
 	 * A creature will wait one second between attacks.
 	 */
 	public static final long MILLIS_ATTACK_COOLDOWN = 1000L;
+	/**
+	 * The timeout from exiting love mode until it can be entered again.
+	 */
+	public static final long MILLIS_BREEDING_COOLDOWN = 5L * 60L * 1000L;
 
 
 	/**
@@ -85,9 +89,10 @@ public class CreatureLogic
 	 * 
 	 * @param itemType The item type to apply (it will be consumed, either way).
 	 * @param creature The creature to change.
+	 * @param gameTimeMillis The current game time, in milliseconds.
 	 * @return True if the creature state changed or false if it had no effect.
 	 */
-	public static boolean applyItemToCreature(Item itemType, IMutableCreatureEntity creature)
+	public static boolean applyItemToCreature(Item itemType, IMutableCreatureEntity creature, long gameTimeMillis)
 	{
 		boolean didApply = false;
 		EntityType creatureType = creature.getType();
@@ -98,12 +103,13 @@ public class CreatureLogic
 			CreatureExtendedData.LivestockData safe = (CreatureExtendedData.LivestockData)creature.getExtendedData();
 			// Don't redundantly enter love mode.
 			// We can't enter love mode if already pregnant (although that would only remain the case for a single tick).
-			if (!safe.inLoveMode() && (null == safe.offspringLocation()))
+			if (!safe.inLoveMode() && (null == safe.offspringLocation()) && (safe.breedingReadyMillis() <= gameTimeMillis))
 			{
 				// If we applied this, put us into love mode and clear other plans.
 				CreatureExtendedData.LivestockData updated = new CreatureExtendedData.LivestockData(
 					true
 					, null
+					, 0L
 				);
 				creature.setExtendedData(updated);
 				creature.setMovementPlan(null);
@@ -155,30 +161,38 @@ public class CreatureLogic
 	 * 
 	 * @param creature The creature.
 	 * @param sireLocation The location of the sire of the new spawn (the "father").
+	 * @param gameTimeMillis The current game time, in milliseconds.
 	 * @return True if the entity became pregnant.
 	 */
-	public static boolean setCreaturePregnant(IMutableCreatureEntity creature, EntityLocation sireLocation)
+	public static boolean setCreaturePregnant(IMutableCreatureEntity creature, EntityLocation sireLocation, long gameTimeMillis)
 	{
 		boolean didBecomePregnant = false;
 		EntityType creatureType = creature.getType();
-		// We can only attempt set the pregnant state if this creature is in love mode.
-		if (null != creatureType.breedingItem())
+		// This only applies to livestock.
+		if (creatureType.isLivestock())
 		{
-			// Average the locations.
-			EntityLocation parentLocation = creature.getLocation();
-			EntityLocation spawnLocation = new EntityLocation((sireLocation.x() + parentLocation.x()) / 2.0f
-					, (sireLocation.y() + parentLocation.y()) / 2.0f
-					, (sireLocation.z() + parentLocation.z()) / 2.0f
-			);
-			// Clear the love mode, set the spawn location, and clear existing plans.
-			CreatureExtendedData.LivestockData updated = new CreatureExtendedData.LivestockData(
-				false
-				, spawnLocation
-			);
-			creature.setExtendedData(updated);
-			creature.setMovementPlan(null);
-			creature.setReadyForAction();
-			didBecomePregnant = true;
+			// We can only do this if already in love mode.
+			CreatureExtendedData.LivestockData extendedData = (CreatureExtendedData.LivestockData) creature.getExtendedData();
+			if (extendedData.inLoveMode())
+			{
+				// Average the locations.
+				EntityLocation parentLocation = creature.getLocation();
+				EntityLocation spawnLocation = new EntityLocation((sireLocation.x() + parentLocation.x()) / 2.0f
+						, (sireLocation.y() + parentLocation.y()) / 2.0f
+						, (sireLocation.z() + parentLocation.z()) / 2.0f
+				);
+				// Clear the love mode, set the spawn location, and clear existing plans.
+				long breedingReadyMillis = gameTimeMillis + MILLIS_BREEDING_COOLDOWN;
+				CreatureExtendedData.LivestockData updated = new CreatureExtendedData.LivestockData(
+					false
+					, spawnLocation
+					, breedingReadyMillis
+				);
+				creature.setExtendedData(updated);
+				creature.setMovementPlan(null);
+				creature.setReadyForAction();
+				didBecomePregnant = true;
+			}
 		}
 		return didBecomePregnant;
 	}
@@ -685,6 +699,7 @@ public class CreatureLogic
 			CreatureExtendedData.LivestockData updated = new CreatureExtendedData.LivestockData(
 				false
 				, null
+				, extendedData.breedingReadyMillis()
 			);
 			creature.setExtendedData(updated);
 			_clearTargetAndPlan(creature);
@@ -707,9 +722,12 @@ public class CreatureLogic
 				EntityActionImpregnateCreature sperm = new EntityActionImpregnateCreature(creature.newLocation);
 				context.newChangeSink.creature(creature.newTargetEntityId, sperm);
 				// We can also now clear our plans since we are done with them.
+				// However, we exited love mode so record when we should re-enter it.
+				long breedingReadyMillis = context.currentTickTimeMillis + MILLIS_BREEDING_COOLDOWN;
 				CreatureExtendedData.LivestockData updated = new CreatureExtendedData.LivestockData(
 					false
 					, null
+					, breedingReadyMillis
 				);
 				creature.setExtendedData(updated);
 				_clearTargetAndPlan(creature);
