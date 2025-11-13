@@ -46,7 +46,6 @@ public class MutableCreature implements IMutableCreatureEntity
 	public int newTargetEntityId;
 	public AbsoluteLocation newTargetPreviousLocation;
 	public long newLastAttackMillis;
-	public EntityLocation newOffspringLocation;
 	public long newLastDamageTakenMillis;
 
 	private MutableCreature(CreatureEntity creature)
@@ -67,7 +66,6 @@ public class MutableCreature implements IMutableCreatureEntity
 		this.newTargetEntityId = creature.ephemeral().targetEntityId();
 		this.newTargetPreviousLocation = creature.ephemeral().targetPreviousLocation();
 		this.newLastAttackMillis = creature.ephemeral().lastAttackMillis();
-		this.newOffspringLocation = creature.ephemeral().offspringLocation();
 		this.newLastDamageTakenMillis = creature.ephemeral().lastDamageTakenMillis();
 	}
 
@@ -241,22 +239,29 @@ public class MutableCreature implements IMutableCreatureEntity
 	@Override
 	public void setOffspringLocation(EntityLocation spawnLocation)
 	{
-		this.newOffspringLocation = spawnLocation;
+		// We assume that this is the right type if this is being called.
+		CreatureExtendedData.LivestockData old = (CreatureExtendedData.LivestockData)this.newExtendedData;
+		this.newExtendedData = new CreatureExtendedData.LivestockData(
+			old.inLoveMode()
+			, spawnLocation
+		);
 	}
 
 	@Override
 	public EntityLocation getOffspringLocation()
 	{
-		return this.newOffspringLocation;
+		CreatureExtendedData.LivestockData safe = (CreatureExtendedData.LivestockData)this.newExtendedData;
+		return safe.offspringLocation();
 	}
 
 	@Override
 	public void setLoveMode(boolean isInLoveMode)
 	{
 		// We assume that this is the right type if this is being called.
-		Assert.assertTrue(this.newExtendedData instanceof CreatureExtendedData.LivestockData);
+		CreatureExtendedData.LivestockData old = (CreatureExtendedData.LivestockData)this.newExtendedData;
 		this.newExtendedData = new CreatureExtendedData.LivestockData(
 			isInLoveMode
+			, old.offspringLocation()
 		);
 	}
 
@@ -289,7 +294,6 @@ public class MutableCreature implements IMutableCreatureEntity
 							, this.newTargetEntityId
 							, this.newTargetPreviousLocation
 							, this.newLastAttackMillis
-							, this.newOffspringLocation
 							, this.newLastDamageTakenMillis
 			);
 			CreatureEntity immutable = new CreatureEntity(_creature.id()
@@ -300,7 +304,9 @@ public class MutableCreature implements IMutableCreatureEntity
 					, this.newPitch
 					, this.newHealth
 					, this.newBreath
-					, this.newExtendedData
+					, ((null == this.newExtendedData) || !this.newExtendedData.equals(_creature.extendedData()))
+						? this.newExtendedData
+						: _creature.extendedData()
 					
 					, ephemeral.equals(_creature.ephemeral()) ? _creature.ephemeral() : ephemeral
 			);

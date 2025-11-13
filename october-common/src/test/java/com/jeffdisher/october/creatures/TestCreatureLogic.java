@@ -483,7 +483,7 @@ public class TestCreatureLogic
 		boolean didBecomePregnant = CreatureLogic.setCreaturePregnant(mutable, fatherLocation);
 		Assert.assertTrue(didBecomePregnant);
 		Assert.assertFalse(mutable.isInLoveMode());
-		Assert.assertEquals(new EntityLocation(0.4f, 0.0f, 0.0f), mutable.newOffspringLocation);
+		Assert.assertEquals(new EntityLocation(0.4f, 0.0f, 0.0f), mutable.getOffspringLocation());
 	}
 
 	@Test
@@ -494,7 +494,7 @@ public class TestCreatureLogic
 		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100);
 		MutableCreature mutable = MutableCreature.existing(mother);
-		mutable.newOffspringLocation = offspringLocation;
+		mutable.setOffspringLocation(offspringLocation);
 		
 		CreatureEntity[] offspring = new CreatureEntity[1];
 		TickProcessingContext.ICreatureSpawner creatureSpawner = (EntityType type, EntityLocation location, byte health) -> {
@@ -510,7 +510,7 @@ public class TestCreatureLogic
 				, mutable
 		);
 		Assert.assertTrue(didTakeAction);
-		Assert.assertNull(mutable.newOffspringLocation);
+		Assert.assertNull(mutable.getOffspringLocation());
 		Assert.assertEquals(offspringLocation, offspring[0].location());
 	}
 
@@ -1021,7 +1021,6 @@ public class TestCreatureLogic
 				, original.ephemeral().targetEntityId()
 				, original.ephemeral().targetPreviousLocation()
 				, original.ephemeral().lastAttackMillis()
-				, original.ephemeral().offspringLocation()
 				, original.ephemeral().lastDamageTakenMillis()
 			)
 		);

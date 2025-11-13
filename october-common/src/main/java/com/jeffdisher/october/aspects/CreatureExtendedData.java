@@ -3,6 +3,7 @@ package com.jeffdisher.october.aspects;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.utils.Assert;
 
@@ -67,7 +68,9 @@ public class CreatureExtendedData
 				
 				// All this data was added in storage version 10.
 				boolean inLoveMode = CodecHelpers.readBoolean(buffer);
+				EntityLocation offspringLocation = CodecHelpers.readNullableEntityLocation(buffer);
 				result = new LivestockData(inLoveMode
+					, offspringLocation
 				);
 			}
 			return result;
@@ -82,10 +85,12 @@ public class CreatureExtendedData
 			// Now, write everything else.
 			LivestockData safe = (LivestockData) extendedData;
 			CodecHelpers.writeBoolean(buffer, safe.inLoveMode);
+			CodecHelpers.writeNullableEntityLocation(buffer, safe.offspringLocation);
 		}
 		private Object _buildDefault()
 		{
 			return new LivestockData(false
+				, null
 			);
 		}
 	};
@@ -94,5 +99,7 @@ public class CreatureExtendedData
 	public static record LivestockData(
 		// True if this is a breedable creature which should now search for a partner.
 		boolean inLoveMode
+		// Non-null if this is a breedable creature who is ready to spawn offspring.
+		, EntityLocation offspringLocation
 	) {}
 }

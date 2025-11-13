@@ -44,7 +44,6 @@ public record CreatureEntity(int id
 			, NO_TARGET_ENTITY_ID
 			, null
 			, 0L
-			, null
 			, 0L
 		);
 	}
@@ -67,8 +66,6 @@ public record CreatureEntity(int id
 			, AbsoluteLocation targetPreviousLocation
 			// The last game millisecond when this creature last sent an attack.
 			, long lastAttackMillis
-			// Non-null if this is a breedable creature who is ready to spawn offspring.
-			, EntityLocation offspringLocation
 			// The millisecond time when this creature last took damage.
 			, long lastDamageTakenMillis
 	) {}
@@ -126,7 +123,6 @@ public record CreatureEntity(int id
 						, this.ephemeral.targetEntityId
 						, this.ephemeral.targetPreviousLocation
 						, this.ephemeral.lastAttackMillis
-						, this.ephemeral.offspringLocation
 						, this.ephemeral().lastDamageTakenMillis
 				)
 		);

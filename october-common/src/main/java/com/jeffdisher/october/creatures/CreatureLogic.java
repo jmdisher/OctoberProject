@@ -663,13 +663,13 @@ public class CreatureLogic
 		boolean isDone = false;
 		EntityType creatureType = creature.getType();
 		// See if we are pregnant or searching for our mate.
-		if (null != creature.newOffspringLocation)
+		if (null != creature.getOffspringLocation())
 		{
 			// Spawn the creature and clear our offspring location.
 			Environment env = Environment.getShared();
 			EntityType offspringType = env.creatures.getOffspringType(creatureType);
-			context.creatureSpawner.spawnCreature(offspringType, creature.newOffspringLocation, offspringType.maxHealth());
-			creature.newOffspringLocation = null;
+			context.creatureSpawner.spawnCreature(offspringType, creature.getOffspringLocation(), offspringType.maxHealth());
+			creature.setOffspringLocation(null);
 			_clearTargetAndPlan(creature);
 			isDone = true;
 		}
