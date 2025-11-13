@@ -16,6 +16,7 @@ import com.jeffdisher.october.actions.EntityActionImpregnateCreature;
 import com.jeffdisher.october.actions.EntityActionNudge;
 import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
@@ -378,7 +379,7 @@ public class TestCreatureLogic
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100);
 		MutableCreature mutable = MutableCreature.existing(cow);
 		CreatureLogic.applyItemToCreature(WHEAT, mutable);
-		Assert.assertTrue(mutable.isInLoveMode());
+		Assert.assertTrue(((CreatureExtendedData.LivestockData)mutable.getExtendedData()).inLoveMode());
 	}
 
 	@Test
@@ -392,11 +393,11 @@ public class TestCreatureLogic
 		// Start with them both in a love mode.
 		MutableCreature mutable = MutableCreature.existing(father);
 		mutable.newTargetEntityId = mother.id();
-		mutable.setLoveMode(true);
+		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null));
 		father = mutable.freeze();
 		mutable = MutableCreature.existing(mother);
 		mutable.newTargetEntityId = father.id();
-		mutable.setLoveMode(true);
+		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null));
 		mother = mutable.freeze();
 		Map<Integer, CreatureEntity> creatures = new HashMap<>();
 		creatures.put(father.id(), father);
@@ -466,8 +467,8 @@ public class TestCreatureLogic
 		creatures.put(mother.id(), mother);
 		
 		// The father should no longer be in love mode but the mother should be.
-		Assert.assertFalse(MutableCreature.existing(father).isInLoveMode());
-		Assert.assertTrue(MutableCreature.existing(mother).isInLoveMode());
+		Assert.assertFalse(((CreatureExtendedData.LivestockData)father.extendedData()).inLoveMode());
+		Assert.assertTrue(((CreatureExtendedData.LivestockData)mother.extendedData()).inLoveMode());
 	}
 
 	@Test
@@ -478,12 +479,12 @@ public class TestCreatureLogic
 		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100);
 		MutableCreature mutable = MutableCreature.existing(mother);
-		mutable.setLoveMode(true);
+		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null));
 		
 		boolean didBecomePregnant = CreatureLogic.setCreaturePregnant(mutable, fatherLocation);
 		Assert.assertTrue(didBecomePregnant);
-		Assert.assertFalse(mutable.isInLoveMode());
-		Assert.assertEquals(new EntityLocation(0.4f, 0.0f, 0.0f), mutable.getOffspringLocation());
+		Assert.assertFalse(((CreatureExtendedData.LivestockData)mutable.getExtendedData()).inLoveMode());
+		Assert.assertEquals(new EntityLocation(0.4f, 0.0f, 0.0f), ((CreatureExtendedData.LivestockData)mutable.getExtendedData()).offspringLocation());
 	}
 
 	@Test
@@ -494,7 +495,7 @@ public class TestCreatureLogic
 		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100);
 		MutableCreature mutable = MutableCreature.existing(mother);
-		mutable.setOffspringLocation(offspringLocation);
+		mutable.setExtendedData(new CreatureExtendedData.LivestockData(false, offspringLocation));
 		
 		CreatureEntity[] offspring = new CreatureEntity[1];
 		TickProcessingContext.ICreatureSpawner creatureSpawner = (EntityType type, EntityLocation location, byte health) -> {
@@ -510,7 +511,7 @@ public class TestCreatureLogic
 				, mutable
 		);
 		Assert.assertTrue(didTakeAction);
-		Assert.assertNull(mutable.getOffspringLocation());
+		Assert.assertNull(((CreatureExtendedData.LivestockData)mutable.getExtendedData()).offspringLocation());
 		Assert.assertEquals(offspringLocation, offspring[0].location());
 	}
 
@@ -912,10 +913,10 @@ public class TestCreatureLogic
 		
 		// Start with them both in a love mode but not yet targeting each other.
 		MutableCreature mutable = MutableCreature.existing(father);
-		mutable.setLoveMode(true);
+		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null));
 		father = mutable.freeze();
 		mutable = MutableCreature.existing(mother);
-		mutable.setLoveMode(true);
+		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null));
 		mother = mutable.freeze();
 		Map<Integer, CreatureEntity> creatures = new HashMap<>();
 		creatures.put(father.id(), father);

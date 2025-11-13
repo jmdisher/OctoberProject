@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.utils.Assert;
@@ -237,40 +236,15 @@ public class MutableCreature implements IMutableCreatureEntity
 	}
 
 	@Override
-	public void setOffspringLocation(EntityLocation spawnLocation)
+	public Object getExtendedData()
 	{
-		// We assume that this is the right type if this is being called.
-		CreatureExtendedData.LivestockData old = (CreatureExtendedData.LivestockData)this.newExtendedData;
-		this.newExtendedData = new CreatureExtendedData.LivestockData(
-			old.inLoveMode()
-			, spawnLocation
-		);
+		return this.newExtendedData;
 	}
 
 	@Override
-	public EntityLocation getOffspringLocation()
+	public void setExtendedData(Object extendedData)
 	{
-		CreatureExtendedData.LivestockData safe = (CreatureExtendedData.LivestockData)this.newExtendedData;
-		return safe.offspringLocation();
-	}
-
-	@Override
-	public void setLoveMode(boolean isInLoveMode)
-	{
-		// We assume that this is the right type if this is being called.
-		CreatureExtendedData.LivestockData old = (CreatureExtendedData.LivestockData)this.newExtendedData;
-		this.newExtendedData = new CreatureExtendedData.LivestockData(
-			isInLoveMode
-			, old.offspringLocation()
-		);
-	}
-
-	@Override
-	public boolean isInLoveMode()
-	{
-		// We assume that this is the right type if this is being called.
-		CreatureExtendedData.LivestockData safe = (CreatureExtendedData.LivestockData)this.newExtendedData;
-		return safe.inLoveMode();
+		this.newExtendedData = extendedData;
 	}
 
 	/**

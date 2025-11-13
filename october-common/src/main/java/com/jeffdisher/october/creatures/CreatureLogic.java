@@ -92,15 +92,24 @@ public class CreatureLogic
 		boolean didApply = false;
 		EntityType creatureType = creature.getType();
 		// The only item application case which currently exists is breeding items so make sure that is the case.
-		// Don't redundantly enter love mode.
-		// We can't enter love mode if already pregnant (although that would only remain the case for a single tick).
-		if (!creature.isInLoveMode() && (null == creature.getOffspringLocation()) && (creatureType.breedingItem() == itemType))
+		if (creatureType.breedingItem() == itemType)
 		{
-			// If we applied this, put us into love mode and clear other plans.
-			creature.setLoveMode(true);
-			creature.setMovementPlan(null);
-			creature.setReadyForAction();
-			didApply = true;
+			// If this has a breeding item, it must be livestock.
+			CreatureExtendedData.LivestockData safe = (CreatureExtendedData.LivestockData)creature.getExtendedData();
+			// Don't redundantly enter love mode.
+			// We can't enter love mode if already pregnant (although that would only remain the case for a single tick).
+			if (!safe.inLoveMode() && (null == safe.offspringLocation()))
+			{
+				// If we applied this, put us into love mode and clear other plans.
+				CreatureExtendedData.LivestockData updated = new CreatureExtendedData.LivestockData(
+					true
+					, null
+				);
+				creature.setExtendedData(updated);
+				creature.setMovementPlan(null);
+				creature.setReadyForAction();
+				didApply = true;
+			}
 		}
 		return didApply;
 	}
@@ -162,8 +171,11 @@ public class CreatureLogic
 					, (sireLocation.z() + parentLocation.z()) / 2.0f
 			);
 			// Clear the love mode, set the spawn location, and clear existing plans.
-			creature.setLoveMode(false);
-			creature.setOffspringLocation(spawnLocation);
+			CreatureExtendedData.LivestockData updated = new CreatureExtendedData.LivestockData(
+				false
+				, spawnLocation
+			);
+			creature.setExtendedData(updated);
 			creature.setMovementPlan(null);
 			creature.setReadyForAction();
 			didBecomePregnant = true;
@@ -354,7 +366,7 @@ public class CreatureLogic
 		if (type.isLivestock())
 		{
 			// This is livestock so choose our target based on whether we are looking for a partner or food.
-			if (mutable.isInLoveMode())
+			if (((CreatureExtendedData.LivestockData)mutable.getExtendedData()).inLoveMode())
 			{
 				// Find another of this type in breeding mode.
 				newTarget = _findBreedable(entityCollection, mutable);
@@ -662,18 +674,23 @@ public class CreatureLogic
 	{
 		boolean isDone = false;
 		EntityType creatureType = creature.getType();
+		CreatureExtendedData.LivestockData extendedData = (CreatureExtendedData.LivestockData)creature.getExtendedData();
 		// See if we are pregnant or searching for our mate.
-		if (null != creature.getOffspringLocation())
+		if (null != extendedData.offspringLocation())
 		{
 			// Spawn the creature and clear our offspring location.
 			Environment env = Environment.getShared();
 			EntityType offspringType = env.creatures.getOffspringType(creatureType);
-			context.creatureSpawner.spawnCreature(offspringType, creature.getOffspringLocation(), offspringType.maxHealth());
-			creature.setOffspringLocation(null);
+			context.creatureSpawner.spawnCreature(offspringType, extendedData.offspringLocation(), offspringType.maxHealth());
+			CreatureExtendedData.LivestockData updated = new CreatureExtendedData.LivestockData(
+				false
+				, null
+			);
+			creature.setExtendedData(updated);
 			_clearTargetAndPlan(creature);
 			isDone = true;
 		}
-		else if (creature.isInLoveMode() && (CreatureEntity.NO_TARGET_ENTITY_ID != creature.newTargetEntityId))
+		else if (extendedData.inLoveMode() && (CreatureEntity.NO_TARGET_ENTITY_ID != creature.newTargetEntityId))
 		{
 			// We are in love mode, and have found a target, so see if we are close enough to impregnate our target.
 			// We have a target so see if we are in love mode and if they are in range to breed.
@@ -690,7 +707,11 @@ public class CreatureLogic
 				EntityActionImpregnateCreature sperm = new EntityActionImpregnateCreature(creature.newLocation);
 				context.newChangeSink.creature(creature.newTargetEntityId, sperm);
 				// We can also now clear our plans since we are done with them.
-				creature.setLoveMode(false);
+				CreatureExtendedData.LivestockData updated = new CreatureExtendedData.LivestockData(
+					false
+					, null
+				);
+				creature.setExtendedData(updated);
 				_clearTargetAndPlan(creature);
 				isDone = true;
 			}
@@ -778,7 +799,8 @@ public class CreatureLogic
 		if (creatureType.isLivestock())
 		{
 			// This may be a player or a partner creature, depending on state.
-			if (mutable.isInLoveMode())
+			CreatureExtendedData.LivestockData extendedData = (CreatureExtendedData.LivestockData)mutable.getExtendedData();
+			if (extendedData.inLoveMode())
 			{
 				// We must be looking at a partner so make sure that they are here and still in breeding mode.
 				CreatureEntity partner = entityCollection.getCreatureById(targetId);

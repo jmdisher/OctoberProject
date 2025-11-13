@@ -24,6 +24,7 @@ import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.aspects.OrientationAspect;
@@ -63,7 +64,6 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
-import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
@@ -734,7 +734,7 @@ public class TestResourceLoader
 		Assert.assertEquals(-1, entity.id());
 		Assert.assertEquals((byte)0, entity.yaw());
 		Assert.assertEquals(loadingGameMillis, entity.ephemeral().despawnKeepAliveMillis());
-		Assert.assertFalse(MutableCreature.existing(entity).isInLoveMode());
+		Assert.assertFalse(((CreatureExtendedData.LivestockData)entity.extendedData()).inLoveMode());
 		
 		loader.shutdown();
 	}
