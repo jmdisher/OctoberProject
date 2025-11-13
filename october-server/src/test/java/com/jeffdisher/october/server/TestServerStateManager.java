@@ -1424,7 +1424,7 @@ public class TestServerStateManager
 		public boolean isNetworkWriteReady = true;
 		
 		@Override
-		public void resources_writeToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities)
+		public void resources_writeToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities, long gameTimeMillis)
 		{
 			Assert.assertFalse(this.cuboidsToWrite.removeAll(cuboids));
 			this.cuboidsToWrite.addAll(cuboids);
@@ -1432,7 +1432,7 @@ public class TestServerStateManager
 			this.entitiesToWrite.addAll(entities);
 		}
 		@Override
-		public void resources_tryWriteToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities)
+		public void resources_tryWriteToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities, long gameTimeMillis)
 		{
 			Assert.assertFalse(this.cuboidsToTryWrite.removeAll(cuboids));
 			this.cuboidsToTryWrite.addAll(cuboids);

@@ -25,14 +25,14 @@ public class CreatureExtendedData
 			return null;
 		}
 		@Override
-		public Object read(ByteBuffer buffer)
+		public Object read(ByteBuffer buffer, long gameTimeMillis)
 		{
 			byte header = buffer.get();
 			Assert.assertTrue((byte)0 == header);
 			return null;
 		}
 		@Override
-		public void write(ByteBuffer buffer, Object extendedData)
+		public void write(ByteBuffer buffer, Object extendedData, long gameTimeMillis)
 		{
 			Assert.assertTrue(null == extendedData);
 			byte header = 0;
@@ -51,7 +51,7 @@ public class CreatureExtendedData
 			return _buildDefault();
 		}
 		@Override
-		public Object read(ByteBuffer buffer)
+		public Object read(ByteBuffer buffer, long gameTimeMillis)
 		{
 			// If the header is 0, this is default, otherwise we will read the fields of LivestockData.
 			Object result;
@@ -73,7 +73,7 @@ public class CreatureExtendedData
 			return result;
 		}
 		@Override
-		public void write(ByteBuffer buffer, Object extendedData)
+		public void write(ByteBuffer buffer, Object extendedData, long gameTimeMillis)
 		{
 			// We never store the null value (it is mostly just a hold-over from storage version 9) so write a 1 byte.
 			byte header = 1;

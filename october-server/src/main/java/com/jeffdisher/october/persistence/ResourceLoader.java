@@ -314,15 +314,17 @@ public class ResourceLoader
 	 * 
 	 * @param cuboids The cuboids (and any suspended mutations) to write.
 	 * @param entities The entities (and any suspended mutations) to write.
+	 * @param gameTimeMillis The millisecond time of the last-completed tick (used for storing "time remaining" in some
+	 * counters, etc).
 	 */
-	public void writeBackToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities)
+	public void writeBackToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities, long gameTimeMillis)
 	{
 		// This one should only be called if there are some to write.
 		Assert.assertTrue(!cuboids.isEmpty() || !entities.isEmpty());
 		_queue.enqueue(() -> {
 			for (PackagedCuboid cuboid : cuboids)
 			{
-				_background_writeCuboidToDisk(cuboid);
+				_background_writeCuboidToDisk(cuboid, gameTimeMillis);
 			}
 			for (SuspendedEntity entity : entities)
 			{
@@ -331,7 +333,7 @@ public class ResourceLoader
 		});
 	}
 
-	public void tryWriteBackToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities)
+	public void tryWriteBackToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities, long gameTimeMillis)
 	{
 		// This one should only be called if there are some to write.
 		Assert.assertTrue(!cuboids.isEmpty() || !entities.isEmpty());
@@ -341,7 +343,7 @@ public class ResourceLoader
 			_queue.enqueue(() -> {
 				for (PackagedCuboid cuboid : cuboids)
 				{
-					_background_writeCuboidToDisk(cuboid);
+					_background_writeCuboidToDisk(cuboid, gameTimeMillis);
 				}
 				for (SuspendedEntity entity : entities)
 				{
@@ -1031,7 +1033,7 @@ public class ResourceLoader
 		return periodicMutations;
 	}
 
-	private void _background_writeCuboidToDisk(PackagedCuboid data)
+	private void _background_writeCuboidToDisk(PackagedCuboid data, long gameTimeMillis)
 	{
 		// Serialize the entire cuboid into memory and write it out.
 		// Data goes in the following order:
@@ -1057,7 +1059,7 @@ public class ResourceLoader
 		_backround_serializationBuffer.putInt(entities.size());
 		for (CreatureEntity entity : entities)
 		{
-			CodecHelpers.writeCreatureEntity(_backround_serializationBuffer, entity);
+			CodecHelpers.writeCreatureEntity(_backround_serializationBuffer, entity, gameTimeMillis);
 		}
 		
 		// 4) Write suspended mutations.

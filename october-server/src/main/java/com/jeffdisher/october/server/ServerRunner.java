@@ -439,14 +439,14 @@ public class ServerRunner
 	private final class _Callouts implements ServerStateManager.ICallouts
 	{
 		@Override
-		public void resources_writeToDisk(Collection<PackagedCuboid> cuboids,Collection<SuspendedEntity> entities)
+		public void resources_writeToDisk(Collection<PackagedCuboid> cuboids,Collection<SuspendedEntity> entities, long gameTimeMillis)
 		{
-			_loader.writeBackToDisk(cuboids, entities);
+			_loader.writeBackToDisk(cuboids, entities, gameTimeMillis);
 		}
 		@Override
-		public void resources_tryWriteToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities)
+		public void resources_tryWriteToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities, long gameTimeMillis)
 		{
-			_loader.tryWriteBackToDisk(cuboids, entities);
+			_loader.tryWriteBackToDisk(cuboids, entities, gameTimeMillis);
 		}
 		@Override
 		public void resources_getAndRequestBackgroundLoad(Collection<SuspendedCuboid<CuboidData>> out_loadedCuboids

@@ -378,7 +378,10 @@ public class CodecHelpers
 		byte yaw = buffer.get();
 		byte pitch = buffer.get();
 		byte health = buffer.get();
-		Object extendedData = type.extendedCodec().read(buffer);
+		
+		// Note that PartialEntity is client-only, where we use 0 as the current time.
+		long gameTimeMillis = 0L;
+		Object extendedData = type.extendedCodec().read(buffer, gameTimeMillis);
 		return new PartialEntity(id
 				, type
 				, location
@@ -406,7 +409,10 @@ public class CodecHelpers
 		buffer.put(yaw);
 		buffer.put(pitch);
 		buffer.put(health);
-		entity.type().extendedCodec().write(buffer, extendedData);
+		
+		// Note that we only send PartialEntity to the client, where we use 0 as the current time.
+		long gameTimeMillis = 0L;
+		entity.type().extendedCodec().write(buffer, extendedData, gameTimeMillis);
 	}
 
 	public static CreatureEntity readCreatureEntity(int idToAssign, ByteBuffer buffer, long gameTimeMillis)
@@ -422,7 +428,7 @@ public class CodecHelpers
 		byte pitch = buffer.get();
 		byte health = buffer.get();
 		byte breath = buffer.get();
-		Object extendedData = type.extendedCodec().read(buffer);
+		Object extendedData = type.extendedCodec().read(buffer, gameTimeMillis);
 		
 		return new CreatureEntity(id
 				, type
@@ -438,7 +444,7 @@ public class CodecHelpers
 		);
 	}
 
-	public static void writeCreatureEntity(ByteBuffer buffer, CreatureEntity entity)
+	public static void writeCreatureEntity(ByteBuffer buffer, CreatureEntity entity, long gameTimeMillis)
 	{
 		// Note that we don't serialize the IDs for creatures.
 		byte ordinal = entity.type().number();
@@ -458,7 +464,7 @@ public class CodecHelpers
 		buffer.put(pitch);
 		buffer.put(health);
 		buffer.put(breath);
-		entity.type().extendedCodec().write(buffer, extendedData);
+		entity.type().extendedCodec().write(buffer, extendedData, gameTimeMillis);
 	}
 
 	public static CraftOperation readCraftOperation(ByteBuffer buffer)

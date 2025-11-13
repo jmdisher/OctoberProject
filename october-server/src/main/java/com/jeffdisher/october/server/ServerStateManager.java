@@ -430,7 +430,10 @@ public class ServerStateManager
 			Map<CuboidAddress, List<PassiveEntity>> passivesToUnload = _findPassivesToUnload(_completedCuboids.values());
 			Collection<PackagedCuboid> cuboidResources = _packageCuboidsForUnloading(_completedCuboids.values(), creaturesToUnload, passivesToUnload);
 			Collection<SuspendedEntity> entityResources = _packageEntitiesForUnloading(_completedEntities.values());
-			_callouts.resources_writeToDisk(cuboidResources, entityResources);
+			
+			// Save this as of the last completed tick time.
+			long gameTimeMillis = _tickNumber * _millisPerTick;
+			_callouts.resources_writeToDisk(cuboidResources, entityResources, gameTimeMillis);
 		}
 	}
 
@@ -476,7 +479,10 @@ public class ServerStateManager
 					(Entity entity) -> (null != entity)
 			).toList();
 			Collection<SuspendedEntity> saveEntities = _packageEntitiesForUnloading(entitiesToPackage);
-			_callouts.resources_writeToDisk(saveCuboids, saveEntities);
+			
+			// Save this as of the last completed tick time.
+			long gameTimeMillis = _tickNumber * _millisPerTick;
+			_callouts.resources_writeToDisk(saveCuboids, saveEntities, gameTimeMillis);
 		}
 		
 		// Package up anything else which is loaded and pass them off to the resource loader for best-efforts eventual serialization (these may be ignored if the loader is busy).
@@ -1094,7 +1100,10 @@ public class ServerStateManager
 			Map<CuboidAddress, List<PassiveEntity>> remainingPassives = _findPassivesToUnload(stillLoadedCuboidsToPackage);
 			Collection<PackagedCuboid> saveCuboids = _packageCuboidsForUnloading(remainingCuboids.values(), remainingCreatures, remainingPassives);
 			Collection<SuspendedEntity> saveEntities = _packageEntitiesForUnloading(remainingEntities.values());
-			_callouts.resources_tryWriteToDisk(saveCuboids, saveEntities);
+			
+			// Save this as of the last completed tick time.
+			long gameTimeMillis = _tickNumber * _millisPerTick;
+			_callouts.resources_tryWriteToDisk(saveCuboids, saveEntities, gameTimeMillis);
 		}
 	}
 
@@ -1110,14 +1119,16 @@ public class ServerStateManager
 	public static interface ICallouts
 	{
 		// ResourceLoader.
-		void resources_writeToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities);
+		void resources_writeToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities, long gameTimeMillis);
 		/**
 		 * Similar to resources_writeToDisk but this call is allowed to silently fail, so long as it does so atomically.
 		 * 
 		 * @param cuboids Cuboids which are remaining loaded.
 		 * @param entities Entities which are remaining loaded.
+		 * @param gameTimeMillis The millisecond time of the last-completed tick (used for storing "time remaining" in some
+		 * counters, etc).
 		 */
-		void resources_tryWriteToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities);
+		void resources_tryWriteToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities, long gameTimeMillis);
 		void resources_getAndRequestBackgroundLoad(Collection<SuspendedCuboid<CuboidData>> out_loadedCuboids
 				, Collection<SuspendedEntity> out_loadedEntities
 				, Collection<CuboidAddress> requestedCuboids

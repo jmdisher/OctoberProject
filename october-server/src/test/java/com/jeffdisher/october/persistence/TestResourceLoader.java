@@ -177,7 +177,7 @@ public class TestResourceLoader
 		BlockAddress block = BlockAddress.fromInt(0, 0, 0);
 		// Modify a block and write this back.
 		loaded.setData15(AspectRegistry.BLOCK, block, STONE_ITEM.number());
-		loader.writeBackToDisk(List.of(new PackagedCuboid(loaded, List.of(), List.of(), Map.of(), List.of())), List.of());
+		loader.writeBackToDisk(List.of(new PackagedCuboid(loaded, List.of(), List.of(), Map.of(), List.of())), List.of(), 0L);
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
 		
@@ -217,7 +217,7 @@ public class TestResourceLoader
 		MutableEntity mutable = MutableEntity.existing(original);
 		mutable.newLocation = new EntityLocation(1.0f, 2.0f, 3.0f);
 		Entity modified = mutable.freeze();
-		loader.writeBackToDisk(List.of(), List.of(new SuspendedEntity(modified, List.of()), new SuspendedEntity(other, List.of())));
+		loader.writeBackToDisk(List.of(), List.of(new SuspendedEntity(modified, List.of()), new SuspendedEntity(other, List.of())), 0L);
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
 		
@@ -257,7 +257,7 @@ public class TestResourceLoader
 		CuboidData loaded = _waitForOne(loader);
 		// Create a mutation which targets this and save it back with the cuboid.
 		MutationBlockOverwriteInternal mutation = new MutationBlockOverwriteInternal(new AbsoluteLocation(32, 0, 0), STONE);
-		loader.writeBackToDisk(List.of(new PackagedCuboid(loaded, List.of(), List.of(new ScheduledMutation(mutation, 0L)), Map.of(), List.of())), List.of());
+		loader.writeBackToDisk(List.of(new PackagedCuboid(loaded, List.of(), List.of(new ScheduledMutation(mutation, 0L)), Map.of(), List.of())), List.of(), 0L);
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
 		
@@ -304,7 +304,7 @@ public class TestResourceLoader
 		mutable.newLocation = newLocation;
 		EntityActionStoreToInventory mutation = new EntityActionStoreToInventory(new Items(STONE.item(), 2), null);
 		
-		loader.writeBackToDisk(List.of(), List.of(new SuspendedEntity(mutable.freeze(), List.of(new ScheduledChange(mutation, 0L)))));
+		loader.writeBackToDisk(List.of(), List.of(new SuspendedEntity(mutable.freeze(), List.of(new ScheduledChange(mutation, 0L)))), 0L);
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
 		
@@ -342,7 +342,7 @@ public class TestResourceLoader
 		CuboidData loaded = _waitForOne(loader);
 		// Create a mutation which targets this and save it back with the cuboid.
 		MutationBlockOverwriteInternal mutation = new MutationBlockOverwriteInternal(new AbsoluteLocation(32, 0, 0), STONE);
-		loader.writeBackToDisk(List.of(new PackagedCuboid(loaded, List.of(), List.of(new ScheduledMutation(mutation, 0L)), Map.of(), List.of())), List.of());
+		loader.writeBackToDisk(List.of(new PackagedCuboid(loaded, List.of(), List.of(new ScheduledMutation(mutation, 0L)), Map.of(), List.of())), List.of(), 0L);
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
 		
@@ -358,7 +358,7 @@ public class TestResourceLoader
 		Assert.assertEquals(airAddress, suspended.cuboid().getCuboidAddress());
 		Assert.assertEquals(1, suspended.pendingMutations().size());
 		Assert.assertTrue(suspended.pendingMutations().get(0).mutation() instanceof MutationBlockOverwriteInternal);
-		loader.writeBackToDisk(List.of(new PackagedCuboid(suspended.cuboid(), List.of(), List.of(), Map.of(), List.of())), List.of());
+		loader.writeBackToDisk(List.of(new PackagedCuboid(suspended.cuboid(), List.of(), List.of(), Map.of(), List.of())), List.of(), 0L);
 		Assert.assertEquals(0, suspended.periodicMutationMillis().size());
 		loader.shutdown();
 		
@@ -481,7 +481,7 @@ public class TestResourceLoader
 						new ScheduledChange(persistentChange, 0L),
 						new ScheduledChange(ephemeralChange, 0L)
 				))
-		));
+		), 0L);
 		
 		// Load them back.
 		cuboids = new ArrayList<>();
@@ -530,7 +530,7 @@ public class TestResourceLoader
 		
 		// Save this back.
 		Collection<PackagedCuboid> toWrite = List.of(new PackagedCuboid(generated.cuboid(), generated.creatures(), generated.pendingMutations(), generated.periodicMutationMillis(), generated.passives()));
-		loader.writeBackToDisk(toWrite, List.of());
+		loader.writeBackToDisk(toWrite, List.of(), 0L);
 		
 		// Now, re-load this within the same loader and observe that the ID has updated.
 		results = new ArrayList<>();
@@ -1131,7 +1131,7 @@ public class TestResourceLoader
 			, lastAliveMillis
 		);
 		
-		loader.writeBackToDisk(List.of(new PackagedCuboid(cuboid, List.of(), List.of(), Map.of(), List.of(passive))), List.of());
+		loader.writeBackToDisk(List.of(new PackagedCuboid(cuboid, List.of(), List.of(), Map.of(), List.of(passive))), List.of(), 0L);
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
 		

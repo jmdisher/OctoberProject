@@ -64,10 +64,32 @@ public record EntityType(byte number
 	}
 
 
+	/**
+	 * The codec used by the type-specific extendedData since it is persisted and passed over the network.
+	 */
 	public static interface IExtendedCodec
 	{
+		/**
+		 * Used to create a default/empty instance of the extended data.
+		 * 
+		 * @return A reasonable default extended data instance.
+		 */
 		public Object buildDefault();
-		public Object read(ByteBuffer buffer);
-		public void write(ByteBuffer buffer, Object extendedData);
+		/**
+		 * Reads the extended data from the given buffer.
+		 * 
+		 * @param buffer The buffer (disk or network).
+		 * @param gameTimeMillis The most recent game time, in case the instance needs to track relative timeouts, etc.
+		 * @return The deserialized extended data instance.
+		 */
+		public Object read(ByteBuffer buffer, long gameTimeMillis);
+		/**
+		 * Writes the extended data to the given buffer.
+		 * 
+		 * @param buffer The buffer (disk or network).
+		 * @param extendedData The extended data instance to serialize.
+		 * @param gameTimeMillis The most recent game time, in case the instance needs to store relative timeouts, etc.
+		 */
+		public void write(ByteBuffer buffer, Object extendedData, long gameTimeMillis);
 	}
 }
