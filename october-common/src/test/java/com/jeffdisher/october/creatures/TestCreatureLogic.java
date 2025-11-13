@@ -897,6 +897,87 @@ public class TestCreatureLogic
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 1.37f), mutable.newVelocity);
 	}
 
+	@Test
+	public void findBreedableTarget()
+	{
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		EntityLocation fatherLocation = new EntityLocation(4.0f, 0.0f, 0.0f);
+		CreatureEntity father = CreatureEntity.create(assigner.next(), COW, fatherLocation, (byte)100);
+		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100);
+		EntityLocation orcLocation = new EntityLocation(2.0f, 0.0f, 0.0f);
+		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, (byte)100);
+		
+		// Start with them both in a love mode but not yet targeting each other.
+		MutableCreature mutable = MutableCreature.existing(father);
+		mutable.setLoveMode(true);
+		father = mutable.freeze();
+		mutable = MutableCreature.existing(mother);
+		mutable.setLoveMode(true);
+		mother = mutable.freeze();
+		Map<Integer, CreatureEntity> creatures = new HashMap<>();
+		creatures.put(father.id(), father);
+		creatures.put(mother.id(), mother);
+		creatures.put(orc.id(), orc);
+		
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(1000L)
+			.sinks(null, new TickProcessingContext.IChangeSink() {
+				@Override
+				public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+				{
+					throw new AssertionError();
+				}
+				@Override
+				public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+				{
+					throw new AssertionError();
+				}
+				@Override
+				public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+				{
+					throw new AssertionError();
+				}
+				@Override
+				public boolean passive(int targetPassiveId, IPassiveAction action)
+				{
+					throw new AssertionError();
+				}
+			})
+			.lookups((AbsoluteLocation location) -> {
+				return location.getCuboidAddress().equals(cuboidAddress)
+					? new BlockProxy(location.getBlockAddress(), input)
+					: null
+				;
+			}, (Integer entityId) -> {
+				return creatures.containsKey(entityId)
+					? MinimalEntity.fromCreature(creatures.get(entityId))
+					: null
+				;
+			}, null)
+			.finish()
+		;
+		
+		// We should see them target each other.
+		mutable = MutableCreature.existing(father);
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
+			, EntityCollection.fromMaps(Map.of(), creatures)
+			, mutable
+		);
+		Assert.assertFalse(didTakeAction);
+		Assert.assertEquals(mother.id(), mutable.newTargetEntityId);
+		
+		mutable = MutableCreature.existing(mother);
+		CreatureLogic.didTakeSpecialActions(context
+			, EntityCollection.fromMaps(Map.of(), creatures)
+			, mutable
+		);
+		Assert.assertFalse(didTakeAction);
+		Assert.assertEquals(father.id(), mutable.newTargetEntityId);
+	}
+
 
 	private static TickProcessingContext _createContext(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp, int random)
 	{

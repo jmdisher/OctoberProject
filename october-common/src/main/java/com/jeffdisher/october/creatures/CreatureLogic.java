@@ -600,16 +600,19 @@ public class CreatureLogic
 		int thisCreatureId = creature.getId();
 		entityCollection.walkCreaturesInViewDistance(creature, (CreatureEntity check) -> {
 			// Ignore ourselves and make sure that they are the same type and in love mode.
-			CreatureExtendedData.LivestockData safe = (CreatureExtendedData.LivestockData)check.extendedData();
-			if ((thisCreatureId != check.id()) && (thisType == check.type()) && safe.inLoveMode())
+			if ((thisCreatureId != check.id()) && (thisType == check.type()))
 			{
-				// See how far away they are so we choose the closest.
-				EntityLocation end = check.location();
-				float distance = SpatialHelpers.distanceFromMutableEyeToEntitySurface(creature, MinimalEntity.fromCreature(check));
-				if (distance < distanceToTarget[0])
+				CreatureExtendedData.LivestockData safe = (CreatureExtendedData.LivestockData)check.extendedData();
+				if (safe.inLoveMode())
 				{
-					target[0] = new _TargetEntity(check.id(), end);
-					distanceToTarget[0] = distance;
+					// See how far away they are so we choose the closest.
+					EntityLocation end = check.location();
+					float distance = SpatialHelpers.distanceFromMutableEyeToEntitySurface(creature, MinimalEntity.fromCreature(check));
+					if (distance < distanceToTarget[0])
+					{
+						target[0] = new _TargetEntity(check.id(), end);
+						distanceToTarget[0] = distance;
+					}
 				}
 			}
 		});
