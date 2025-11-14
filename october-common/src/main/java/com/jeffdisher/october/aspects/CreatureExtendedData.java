@@ -21,7 +21,7 @@ public class CreatureExtendedData
 	public static class NullCodec implements EntityType.IExtendedCodec
 	{
 		@Override
-		public Object buildDefault()
+		public Object buildDefault(long gameTimeMillis)
 		{
 			return null;
 		}
@@ -47,7 +47,7 @@ public class CreatureExtendedData
 	public static class LivestockCodec implements EntityType.IExtendedCodec
 	{
 		@Override
-		public Object buildDefault()
+		public Object buildDefault(long gameTimeMillis)
 		{
 			return _buildDefault();
 		}

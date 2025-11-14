@@ -438,7 +438,7 @@ public class TestStructureLoader
 		FlatWorldGenerator gen = new FlatWorldGenerator(ENV, true);
 		
 		AbsoluteLocation northFacingKeystone = new AbsoluteLocation(0, 5, -1);
-		SuspendedCuboid<CuboidData> northFacing = gen.generateCuboid(new CreatureIdAssigner(), northFacingKeystone.getCuboidAddress());
+		SuspendedCuboid<CuboidData> northFacing = gen.generateCuboid(new CreatureIdAssigner(), northFacingKeystone.getCuboidAddress(), 0L);
 		// There are 2 portals in this cuboid:  (5, 0, -1) and (0, 5, -1).
 		Assert.assertEquals(2, northFacing.periodicMutationMillis().size());
 		Assert.assertTrue(northFacing.periodicMutationMillis().containsKey(northFacingKeystone.getBlockAddress()));
@@ -447,7 +447,7 @@ public class TestStructureLoader
 		AbsoluteLocation northFacingTarget = (AbsoluteLocation) northFacing.cuboid().getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, northFacingKeystone.getBlockAddress()).nonStackable.properties().get(PropertyRegistry.LOCATION);
 		
 		AbsoluteLocation southFacingKeystone = new AbsoluteLocation(0, 1005, -1);
-		SuspendedCuboid<CuboidData> southFacing = gen.generateCuboid(new CreatureIdAssigner(), southFacingKeystone.getCuboidAddress());
+		SuspendedCuboid<CuboidData> southFacing = gen.generateCuboid(new CreatureIdAssigner(), southFacingKeystone.getCuboidAddress(), 0L);
 		Assert.assertEquals(southFacingKeystone.getBlockAddress(), southFacing.periodicMutationMillis().keySet().iterator().next());
 		AbsoluteLocation southFacingTarget = (AbsoluteLocation) southFacing.cuboid().getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, southFacingKeystone.getBlockAddress()).nonStackable.properties().get(PropertyRegistry.LOCATION);
 		

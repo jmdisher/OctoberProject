@@ -625,7 +625,7 @@ public class TestServerRunner
 		TestAdapter network = new TestAdapter();
 		IWorldGenerator worldGen = new IWorldGenerator() {
 			@Override
-			public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
+			public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address, long gameTimeMillis)
 			{
 				// If this is above 0, make it air, if below, make it stone.
 				Block fill = (address.z() >= 0)
@@ -815,7 +815,7 @@ public class TestServerRunner
 		// We will use a special cuboid generator which only generates the one cuboid with a well-defined population of creatures.
 		IWorldGenerator cuboidGenerator = new IWorldGenerator() {
 			@Override
-			public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
+			public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address, long gameTimeMillis)
 			{
 				SuspendedCuboid<CuboidData> data;
 				CuboidData raw = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
@@ -835,6 +835,7 @@ public class TestServerRunner
 							, COW
 							, new EntityLocation(base.x() + 30.0f, base.y() + 0.0f, base.z() + 1.0f)
 							, (byte)100
+							, gameTimeMillis
 					);
 					data = new SuspendedCuboid<>(raw, heightMap, List.of(cow), List.of(), Map.of(), List.of());
 				}
@@ -1283,7 +1284,7 @@ public class TestServerRunner
 			;
 		}
 		@Override
-		public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
+		public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address, long gameTimeMillis)
 		{
 			// We will only give meaningful shape to the cuboid at 0,0,0.
 			SuspendedCuboid<CuboidData> data;
@@ -1304,6 +1305,7 @@ public class TestServerRunner
 						, COW
 						, new EntityLocation(base.x() + 30.0f, base.y() + 0.0f, base.z() + 1.0f)
 						, (byte)100
+						, gameTimeMillis
 				);
 				data = new SuspendedCuboid<>(raw, heightMap, List.of(cow), List.of(), Map.of(), List.of());
 			}

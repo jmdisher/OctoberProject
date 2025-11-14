@@ -72,9 +72,10 @@ public record EntityType(byte number
 		/**
 		 * Used to create a default/empty instance of the extended data.
 		 * 
+		 * @param gameTimeMillis The most recent game time, in case the instance needs to track relative timeouts, etc.
 		 * @return A reasonable default extended data instance.
 		 */
-		public Object buildDefault();
+		public Object buildDefault(long gameTimeMillis);
 		/**
 		 * Reads the extended data from the given buffer.
 		 * 

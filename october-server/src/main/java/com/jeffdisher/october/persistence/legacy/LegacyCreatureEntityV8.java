@@ -59,7 +59,7 @@ public record LegacyCreatureEntityV8(int id
 			, pitch
 			, this.health
 			, this.breath
-			, this.type.extendedCodec().buildDefault()
+			, this.type.extendedCodec().buildDefault(currentGameMillis)
 			
 			, CreatureEntity.createEmptyEphemeral(currentGameMillis)
 		);

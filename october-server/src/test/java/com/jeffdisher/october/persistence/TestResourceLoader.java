@@ -383,7 +383,7 @@ public class TestResourceLoader
 		MutationBlockOverwriteInternal test = new MutationBlockOverwriteInternal(new AbsoluteLocation(1, 2, 3), STONE);
 		ResourceLoader loader = new ResourceLoader(worldDirectory, new IWorldGenerator() {
 			@Override
-			public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
+			public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address, long gameTimeMillis)
 			{
 				CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 				return new SuspendedCuboid<CuboidData>(cuboid

@@ -281,7 +281,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 	}
 
 	@Override
-	public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
+	public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address, long gameTimeMillis)
 	{
 		// For now, we will just place dirt at the peak block in each column, stone below that, and either air or water sources above.
 		PerColumnRandomSeedField seeds = PerColumnRandomSeedField.buildSeedField9x9(_seed, address.x(), address.y());
@@ -315,7 +315,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		CuboidHeightMap cuboidLocalMap = HeightMapHelpers.buildHeightMap(data);
 		
 		// Spawn the creatures within the cuboid.
-		List<CreatureEntity> entities = _spawnCreatures(creatureIdAssigner, subField, heightMap, data, cuboidBase);
+		List<CreatureEntity> entities = _spawnCreatures(creatureIdAssigner, subField, heightMap, data, cuboidBase, gameTimeMillis);
 		
 		// No passives.
 		List<PassiveEntity> passives = List.of();
@@ -1062,7 +1062,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		}
 	}
 
-	private List<CreatureEntity> _spawnCreatures(CreatureIdAssigner creatureIdAssigner, PerColumnRandomSeedField.View subField, ColumnHeightMap heightMap, CuboidData data, AbsoluteLocation cuboidBase)
+	private List<CreatureEntity> _spawnCreatures(CreatureIdAssigner creatureIdAssigner, PerColumnRandomSeedField.View subField, ColumnHeightMap heightMap, CuboidData data, AbsoluteLocation cuboidBase, long gameTimeMillis)
 	{
 		// We want to spawn the flora.  This is only ever done within a single cuboid column if it is the appropriate biome type and contains a "gully".
 		int columnSeed = subField.get(0, 0);
@@ -1089,6 +1089,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 						, faunaType
 						, cuboidBase.getRelative(relativeX, relativeY, relativeZ).toEntityLocation()
 						, faunaType.maxHealth()
+						, gameTimeMillis
 				));
 			}
 		}

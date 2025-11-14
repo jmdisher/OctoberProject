@@ -17,9 +17,10 @@ public interface IWorldGenerator
 	 * 
 	 * @param creatureIdAssigner The ID assigner for any new creatures spawned within the cuboid.
 	 * @param address The address of the cuboid to generate.
+	 * @param gameTimeMillis The most recent game time, in case the instance needs to track relative timeouts, etc.
 	 * @return The cuboid data and meta-data.
 	 */
-	SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address);
+	SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address, long gameTimeMillis);
 
 	/**
 	 * This just returns a "reasonable" spawn location in the world but where the target starting location is is handled

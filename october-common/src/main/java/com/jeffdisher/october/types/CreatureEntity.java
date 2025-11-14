@@ -77,12 +77,14 @@ public record CreatureEntity(int id
 	 * @param type The type of creature.
 	 * @param location The starting location.
 	 * @param health The starting health.
+	 * @param gameTimeMillis The most recent game time, in case the instance needs to track relative timeouts, etc.
 	 * @return A new creature with reasonable defaults for other fields.
 	 */
 	public static CreatureEntity create(int id
 		, EntityType type
 		, EntityLocation location
 		, byte health
+		, long gameTimeMillis
 	)
 	{
 		Assert.assertTrue(id < 0);
@@ -97,7 +99,7 @@ public record CreatureEntity(int id
 				, (byte)0
 				, health
 				, MiscConstants.MAX_BREATH
-				, type.extendedCodec().buildDefault()
+				, type.extendedCodec().buildDefault(gameTimeMillis)
 				
 				, createEmptyEphemeral(0L)
 		);

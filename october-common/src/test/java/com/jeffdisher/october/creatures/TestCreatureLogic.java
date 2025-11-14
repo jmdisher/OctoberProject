@@ -70,7 +70,7 @@ public class TestCreatureLogic
 	{
 		// Verify that all possible idle paths end on the ground.
 		EntityLocation entityLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
-		CreatureEntity entity = CreatureEntity.create(-1, ORC, entityLocation, (byte)100);
+		CreatureEntity entity = CreatureEntity.create(-1, ORC, entityLocation, (byte)100, 0L);
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		_setLayer(input, (byte)0, "op.stone");
@@ -110,7 +110,7 @@ public class TestCreatureLogic
 	{
 		// Verify that idle movement will avoid stopping in the water (these should all jump).
 		EntityLocation entityLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
-		CreatureEntity entity = CreatureEntity.create(-1, ORC, entityLocation, (byte)100);
+		CreatureEntity entity = CreatureEntity.create(-1, ORC, entityLocation, (byte)100, 0L);
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		_setLayer(input, (byte)0, "op.stone");
@@ -151,7 +151,7 @@ public class TestCreatureLogic
 	{
 		// Verify that idle movement will avoid stopping in the water (these should all jump).
 		EntityLocation entityLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
-		CreatureEntity entity = CreatureEntity.create(-1, ORC, entityLocation, (byte)100);
+		CreatureEntity entity = CreatureEntity.create(-1, ORC, entityLocation, (byte)100, 0L);
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		_setLayer(input, (byte)0, "op.stone");
@@ -190,7 +190,7 @@ public class TestCreatureLogic
 	{
 		// Verify that we will choose to do nothing if there are no idle movement targets.
 		EntityLocation entityLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
-		CreatureEntity entity = CreatureEntity.create(-1, ORC, entityLocation, (byte)100);
+		CreatureEntity entity = CreatureEntity.create(-1, ORC, entityLocation, (byte)100, 0L);
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		short stoneNumber = ENV.items.getItemById("op.stone").number();
@@ -216,7 +216,7 @@ public class TestCreatureLogic
 	{
 		// Show an orc acquiring a target and then updating its path when the target moves.
 		EntityLocation orcLocation = new EntityLocation(2.0f, 2.0f, 1.0f);
-		CreatureEntity orc = CreatureEntity.create(-1, ORC, orcLocation, (byte)100);
+		CreatureEntity orc = CreatureEntity.create(-1, ORC, orcLocation, (byte)100, 0L);
 		EntityLocation playerLocation = new EntityLocation(5.0f, 1.0f, 1.0f);
 		Entity[] player = new Entity[] { new Entity(1
 				, false
@@ -320,8 +320,8 @@ public class TestCreatureLogic
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		long startTick = 1000L;
 		long startMillis = startTick * ContextBuilder.DEFAULT_MILLIS_PER_TICK;
-		CreatureEntity orc = _updateKeepAlive(CreatureEntity.create(assigner.next(), ORC, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100), startMillis);
-		CreatureEntity cow = _updateKeepAlive(CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100), startMillis);
+		CreatureEntity orc = _updateKeepAlive(CreatureEntity.create(assigner.next(), ORC, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100, 0L), startMillis);
+		CreatureEntity cow = _updateKeepAlive(CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100, 0L), startMillis);
 		
 		// We will take a special action where nothing should happen.
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
@@ -376,7 +376,7 @@ public class TestCreatureLogic
 	public void enterLoveMode()
 	{
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
-		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100);
+		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100, 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
 		CreatureLogic.applyItemToCreature(WHEAT, mutable, 1000L);
 		Assert.assertTrue(((CreatureExtendedData.LivestockData)mutable.getExtendedData()).inLoveMode());
@@ -387,9 +387,9 @@ public class TestCreatureLogic
 	{
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		EntityLocation fatherLocation = new EntityLocation(0.8f, 0.0f, 0.0f);
-		CreatureEntity father = CreatureEntity.create(assigner.next(), COW, fatherLocation, (byte)100);
+		CreatureEntity father = CreatureEntity.create(assigner.next(), COW, fatherLocation, (byte)100, 0L);
 		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100);
+		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100, 0L);
 		// Start with them both in a love mode.
 		MutableCreature mutable = MutableCreature.existing(father);
 		mutable.newTargetEntityId = mother.id();
@@ -477,7 +477,7 @@ public class TestCreatureLogic
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		EntityLocation fatherLocation = new EntityLocation(0.8f, 0.0f, 0.0f);
 		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100);
+		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100, 0L);
 		MutableCreature mutable = MutableCreature.existing(mother);
 		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null, 0L));
 		
@@ -495,14 +495,14 @@ public class TestCreatureLogic
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		EntityLocation offspringLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
 		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100);
+		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100, 0L);
 		MutableCreature mutable = MutableCreature.existing(mother);
 		mutable.setExtendedData(new CreatureExtendedData.LivestockData(false, offspringLocation, 0L));
 		
 		CreatureEntity[] offspring = new CreatureEntity[1];
 		TickProcessingContext.ICreatureSpawner creatureSpawner = (EntityType type, EntityLocation location, byte health) -> {
 			Assert.assertNull(offspring[0]);
-			offspring[0] = CreatureEntity.create(assigner.next(), type, location, health);
+			offspring[0] = CreatureEntity.create(assigner.next(), type, location, health, 0L);
 		};
 		TickProcessingContext context = ContextBuilder.build()
 				.spawner(creatureSpawner)
@@ -529,7 +529,7 @@ public class TestCreatureLogic
 		mutable.newLocation = location;
 		Entity player = mutable.freeze();
 		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
-		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, (byte)100);
+		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, (byte)100, 0L);
 		
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
 			return blockLocation.getCuboidAddress().equals(cuboidAddress)
@@ -586,7 +586,7 @@ public class TestCreatureLogic
 		mutable.newLocation = location;
 		Entity player = mutable.freeze();
 		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
-		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, (byte)100);
+		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, (byte)100, 0L);
 		
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
 			return blockLocation.getCuboidAddress().equals(cuboidAddress)
@@ -717,7 +717,7 @@ public class TestCreatureLogic
 		mutablePlayer.setSelectedKey(1);
 		Entity player = mutablePlayer.freeze();
 		EntityLocation cowLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
-		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, cowLocation, (byte)100);
+		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, cowLocation, (byte)100, 0L);
 		MutableCreature mutableCow = MutableCreature.existing(cow);
 		
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
@@ -806,7 +806,7 @@ public class TestCreatureLogic
 		mutablePlayer.newLocation = location;
 		Entity player = mutablePlayer.freeze();
 		EntityLocation orcLocation = new EntityLocation(-16.99f, 7.93f, 0.0f);
-		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, (byte)100);
+		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, (byte)100, 0L);
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
 		
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
@@ -881,7 +881,7 @@ public class TestCreatureLogic
 		
 		EntityLocation startLocation = new EntityLocation(5.0f, 5.0f, 1.4f);
 		EntityLocation startVelocity = new EntityLocation(0.0f, 0.0f, -2.17f);
-		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, (byte)100);
+		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, (byte)100, 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
 		mutable.newVelocity = startVelocity;
 		mutable.newMovementPlan = List.of(waterLocation.getRelative(0, 0, 1), waterLocation.getRelative(-1, 0, 1));
@@ -907,11 +907,11 @@ public class TestCreatureLogic
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		EntityLocation fatherLocation = new EntityLocation(4.0f, 0.0f, 0.0f);
-		CreatureEntity father = CreatureEntity.create(assigner.next(), COW, fatherLocation, (byte)100);
+		CreatureEntity father = CreatureEntity.create(assigner.next(), COW, fatherLocation, (byte)100, 0L);
 		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100);
+		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100, 0L);
 		EntityLocation orcLocation = new EntityLocation(2.0f, 0.0f, 0.0f);
-		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, (byte)100);
+		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, (byte)100, 0L);
 		
 		// Start with them both in a love mode but not yet targeting each other.
 		MutableCreature mutable = MutableCreature.existing(father);
@@ -985,7 +985,7 @@ public class TestCreatureLogic
 	public void breedingTimeout()
 	{
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
-		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100);
+		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100, 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
 		long nextReadyMillis = 2000L;
 		mutable.setExtendedData(new CreatureExtendedData.LivestockData(false, null, nextReadyMillis));

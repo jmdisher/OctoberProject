@@ -984,7 +984,7 @@ public class TestMovementAccumulator
 		accumulator.removeCuboid(cuboid.getCuboidAddress());
 		
 		// Create, update, remove other entity (either a creature or other player).
-		PartialEntity partial = PartialEntity.fromCreature(CreatureEntity.create(-1, ENV.creatures.PLAYER, new EntityLocation(1.2f, -2.3f, 3.4f), (byte)20));
+		PartialEntity partial = PartialEntity.fromCreature(CreatureEntity.create(-1, ENV.creatures.PLAYER, new EntityLocation(1.2f, -2.3f, 3.4f), (byte)20, 0L));
 		accumulator.setOtherEntity(partial);
 		// (these are just set again).
 		accumulator.setOtherEntity(partial);

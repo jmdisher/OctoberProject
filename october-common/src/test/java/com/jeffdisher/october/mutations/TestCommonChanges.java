@@ -1356,6 +1356,7 @@ public class TestCommonChanges
 				, COW
 				, new EntityLocation(9.0f, 9.0f, 0.0f)
 				, (byte) 100
+				, 0L
 		);
 		CommonChangeSink changeSink = new CommonChangeSink(Set.of(attackerId), Set.of(targetId), Set.of());
 		TickProcessingContext context = ContextBuilder.build()
@@ -1414,6 +1415,7 @@ public class TestCommonChanges
 				, COW
 				, new EntityLocation(9.0f, 9.0f, 0.0f)
 				, (byte) 100
+				, 0L
 		);
 		CommonChangeSink changeSink = new CommonChangeSink(Set.of(entityId), Set.of(targetId), Set.of());
 		TickProcessingContext context = ContextBuilder.build()
@@ -2983,6 +2985,7 @@ public class TestCommonChanges
 				, COW
 				, new EntityLocation(9.0f, 9.0f, 0.0f)
 				, (byte) 100
+				, 0L
 		);
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);

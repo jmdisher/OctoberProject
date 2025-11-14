@@ -446,7 +446,7 @@ public class TickRunner
 			List<CreatureEntity> spawnedCreatures = new ArrayList<>();
 			TickProcessingContext.ICreatureSpawner spawnConsumer = (EntityType type, EntityLocation location, byte health) -> {
 				int id = _idAssigner.next();
-				CreatureEntity entity = CreatureEntity.create(id, type, location, health);
+				CreatureEntity entity = CreatureEntity.create(id, type, location, health, currentTickTimeMillis);
 				spawnedCreatures.add(entity);
 			};
 			// Same with passives.

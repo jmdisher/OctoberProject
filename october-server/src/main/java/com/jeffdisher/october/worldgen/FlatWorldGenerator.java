@@ -78,7 +78,7 @@ public class FlatWorldGenerator implements IWorldGenerator
 	}
 
 	@Override
-	public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
+	public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address, long gameTimeMillis)
 	{
 		// We will store the block types in the negative z blocks, but leave the non-negative blocks full or air.
 		CuboidData data;
@@ -118,10 +118,12 @@ public class FlatWorldGenerator implements IWorldGenerator
 							, _cow
 							, baseOfCuboid.toEntityLocation()
 							, (byte)100
+							, gameTimeMillis
 						), CreatureEntity.create(creatureIdAssigner.next()
 							, _cow
 							, baseOfCuboid.getRelative(5, 5, 0).toEntityLocation()
 							, (byte)100
+							, gameTimeMillis
 					))
 					: List.of()
 			;

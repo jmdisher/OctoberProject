@@ -23,6 +23,8 @@ public record PartialEntity(int id
 {
 	public static PartialEntity fromEntity(Entity entity)
 	{
+		// In this case, we don't have the current time since player entities don't have meaningful extended data.
+		long gameTimeMillis = 0L;
 		Environment env = Environment.getShared();
 		return new PartialEntity(entity.id()
 				, env.creatures.PLAYER
@@ -30,7 +32,7 @@ public record PartialEntity(int id
 				, entity.yaw()
 				, entity.pitch()
 				, entity.health()
-				, env.creatures.PLAYER.extendedCodec().buildDefault()
+				, env.creatures.PLAYER.extendedCodec().buildDefault(gameTimeMillis)
 		);
 	}
 

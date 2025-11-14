@@ -253,7 +253,7 @@ public class ResourceLoader
 						}
 						else if (null != _cuboidGenerator)
 						{
-							data = _cuboidGenerator.generateCuboid(this.creatureIdAssigner, address);
+							data = _cuboidGenerator.generateCuboid(this.creatureIdAssigner, address, currentGameMillis);
 						}
 					}
 					// If we found anything, return it.

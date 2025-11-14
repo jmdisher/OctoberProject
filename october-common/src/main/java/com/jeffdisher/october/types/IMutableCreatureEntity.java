@@ -41,6 +41,7 @@ public interface IMutableCreatureEntity extends IMutableMinimalEntity
 	 * used for cases such as livestock growing from a baby to adult but there is no internal check on usage.
 	 * 
 	 * @param newType The new type to assign to the receiver.
+	 * @param gameTimeMillis The most recent game time, in case the instance needs to track relative timeouts, etc.
 	 */
-	void changeEntityType(EntityType newType);
+	void changeEntityType(EntityType newType, long gameTimeMillis);
 }

@@ -47,7 +47,7 @@ public class TestMutableCreature
 				, (byte)0
 				, (byte)50
 				, MiscConstants.MAX_BREATH
-				, COW.extendedCodec().buildDefault()
+				, COW.extendedCodec().buildDefault(0L)
 				
 				, CreatureEntity.createEmptyEphemeral(0L)
 		);
@@ -66,12 +66,13 @@ public class TestMutableCreature
 			, cowBaby
 			, new EntityLocation(0.0f, 0.0f, 0.0f)
 			, cowBaby.maxHealth()
+			, 0L
 		);
 		Assert.assertEquals(cowBaby.maxHealth(), input.health());
 		Assert.assertNull(input.extendedData());
 		
 		MutableCreature mutable = MutableCreature.existing(input);
-		mutable.changeEntityType(COW);
+		mutable.changeEntityType(COW, 0L);
 		CreatureEntity output = mutable.freeze();
 		
 		Assert.assertEquals(COW, output.type());
@@ -86,6 +87,7 @@ public class TestMutableCreature
 				, COW
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, (byte)50
+				, 0L
 		);
 	}
 }

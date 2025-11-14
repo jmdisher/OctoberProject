@@ -270,10 +270,11 @@ public class TestEngineSpawner
 			, int randomValue
 	)
 	{
+		long gameTimeMillis = gameTick * ContextBuilder.DEFAULT_MILLIS_PER_TICK;
 		CreatureIdAssigner idAssigner = new CreatureIdAssigner();
 		TickProcessingContext.ICreatureSpawner spawner = (EntityType type, EntityLocation location, byte health) -> {
 			Assert.assertNull(outSpawnedCreature[0]);
-			outSpawnedCreature[0] = CreatureEntity.create(idAssigner.next(), type, location, health);
+			outSpawnedCreature[0] = CreatureEntity.create(idAssigner.next(), type, location, health, gameTimeMillis);
 		};
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(gameTick)
