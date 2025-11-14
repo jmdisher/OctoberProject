@@ -72,6 +72,7 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.PassiveEntity;
@@ -1581,7 +1582,9 @@ public class TestTickRunner
 		cuboid.setData15(AspectRegistry.BLOCK, spawn.getRelative(0, 0, -1).getBlockAddress(), DIRT_ITEM.number());
 		EntityLocation entityLocation = spawn.toEntityLocation();
 		int creatureId = -1;
-		CreatureEntity creature = CreatureEntity.create(creatureId, COW, entityLocation, (byte)15, 0L);
+		MutableCreature mut = MutableCreature.existing(CreatureEntity.create(creatureId, COW, entityLocation, 0L));
+		mut.newHealth = (byte)15;
+		CreatureEntity creature  = mut.freeze();
 		
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
@@ -1649,7 +1652,7 @@ public class TestTickRunner
 		AbsoluteLocation spawn = address.getBase().getRelative(0, 6, 7);
 		EntityLocation entityLocation = spawn.toEntityLocation();
 		int creatureId = -1;
-		CreatureEntity creature = CreatureEntity.create(creatureId, COW, entityLocation, (byte)15, 0L);
+		CreatureEntity creature = CreatureEntity.create(creatureId, COW, entityLocation, 0L);
 		
 		TickRunner runner = _createTestRunner();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(creature), List.of(), Map.of(), List.of())

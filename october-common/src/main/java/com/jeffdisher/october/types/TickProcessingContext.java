@@ -228,7 +228,7 @@ public class TickProcessingContext
 	 */
 	public static interface ICreatureSpawner
 	{
-		void spawnCreature(EntityType type, EntityLocation location, byte health);
+		void spawnCreature(EntityType type, EntityLocation location);
 	}
 
 	/**

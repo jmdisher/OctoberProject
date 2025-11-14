@@ -1355,7 +1355,6 @@ public class TestCommonChanges
 		CreatureEntity creature = CreatureEntity.create(targetId
 				, COW
 				, new EntityLocation(9.0f, 9.0f, 0.0f)
-				, (byte) 100
 				, 0L
 		);
 		CommonChangeSink changeSink = new CommonChangeSink(Set.of(attackerId), Set.of(targetId), Set.of());
@@ -1414,7 +1413,6 @@ public class TestCommonChanges
 		CreatureEntity creature = CreatureEntity.create(targetId
 				, COW
 				, new EntityLocation(9.0f, 9.0f, 0.0f)
-				, (byte) 100
 				, 0L
 		);
 		CommonChangeSink changeSink = new CommonChangeSink(Set.of(entityId), Set.of(targetId), Set.of());
@@ -2355,10 +2353,9 @@ public class TestCommonChanges
 		EntityType cow = ENV.creatures.getTypeById("op.cow");
 		EntityLocation destination = new EntityLocation(15.5f, -50.0f, 11.0f);
 		int[] count = new int[1];
-		TickProcessingContext.ICreatureSpawner spawner = (EntityType type, EntityLocation location, byte health) -> {
+		TickProcessingContext.ICreatureSpawner spawner = (EntityType type, EntityLocation location) -> {
 			Assert.assertEquals(cow, type);
 			Assert.assertEquals(destination, location);
-			Assert.assertEquals(health, cow.maxHealth());
 			count[0] += 1;
 		};
 		TickProcessingContext context = ContextBuilder.build()
@@ -2984,7 +2981,6 @@ public class TestCommonChanges
 		CreatureEntity creature = CreatureEntity.create(targetId
 				, COW
 				, new EntityLocation(9.0f, 9.0f, 0.0f)
-				, (byte) 100
 				, 0L
 		);
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);

@@ -959,8 +959,8 @@ public class TestServerStateManager
 		int passiveUnchangeId = 2;
 		EntityLocation creatureLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
 		EntityLocation passiveLocation = new EntityLocation(20.0f, 20.0f, 0.0f);
-		CreatureEntity creatureChange = CreatureEntity.create(creatureChangeId, COW, creatureLocation, (byte)50, 0L);
-		CreatureEntity creatureUnchange = CreatureEntity.create(creatureUnchangeId, COW, creatureLocation, (byte)50, 0L);
+		CreatureEntity creatureChange = CreatureEntity.create(creatureChangeId, COW, creatureLocation, 0L);
+		CreatureEntity creatureUnchange = CreatureEntity.create(creatureUnchangeId, COW, creatureLocation, 0L);
 		Item stoneItem = ENV.items.getItemById("op.stone");
 		Items stack = new Items(stoneItem, 3);
 		ItemSlot slot = ItemSlot.fromStack(stack);
@@ -1211,8 +1211,8 @@ public class TestServerStateManager
 		EntityLocation creatureFarLocation = new EntityLocation(5.0f, clientLocation.y() + 96.0f, clientLocation.z());
 		EntityLocation passiveNearLocation = new EntityLocation(5.0f, clientLocation.y() + 64.0f, clientLocation.z());
 		EntityLocation passiveFarLocation = new EntityLocation(5.0f, clientLocation.y() + 96.0f, clientLocation.z());
-		CreatureEntity creatureNear = CreatureEntity.create(creatureNearId, COW, creatureNearLocation, (byte)50, 0L);
-		CreatureEntity creatureFar = CreatureEntity.create(creatureFarId, COW, creatureFarLocation, (byte)50, 0L);
+		CreatureEntity creatureNear = CreatureEntity.create(creatureNearId, COW, creatureNearLocation, 0L);
+		CreatureEntity creatureFar = CreatureEntity.create(creatureFarId, COW, creatureFarLocation, 0L);
 		Item stoneItem = ENV.items.getItemById("op.stone");
 		Items stack = new Items(stoneItem, 3);
 		ItemSlot slot = ItemSlot.fromStack(stack);

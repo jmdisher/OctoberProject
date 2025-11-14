@@ -695,7 +695,7 @@ public class CreatureLogic
 			// Spawn the creature and clear our offspring location.
 			Environment env = Environment.getShared();
 			EntityType offspringType = env.creatures.getOffspringType(creatureType);
-			context.creatureSpawner.spawnCreature(offspringType, extendedData.offspringLocation(), offspringType.maxHealth());
+			context.creatureSpawner.spawnCreature(offspringType, extendedData.offspringLocation());
 			CreatureExtendedData.LivestockData updated = new CreatureExtendedData.LivestockData(
 				false
 				, null

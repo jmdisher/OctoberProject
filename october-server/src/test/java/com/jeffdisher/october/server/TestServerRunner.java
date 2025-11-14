@@ -834,7 +834,6 @@ public class TestServerRunner
 					CreatureEntity cow = CreatureEntity.create(creatureIdAssigner.next()
 							, COW
 							, new EntityLocation(base.x() + 30.0f, base.y() + 0.0f, base.z() + 1.0f)
-							, (byte)100
 							, gameTimeMillis
 					);
 					data = new SuspendedCuboid<>(raw, heightMap, List.of(cow), List.of(), Map.of(), List.of());
@@ -1304,7 +1303,6 @@ public class TestServerRunner
 				CreatureEntity cow = CreatureEntity.create(creatureIdAssigner.next()
 						, COW
 						, new EntityLocation(base.x() + 30.0f, base.y() + 0.0f, base.z() + 1.0f)
-						, (byte)100
 						, gameTimeMillis
 				);
 				data = new SuspendedCuboid<>(raw, heightMap, List.of(cow), List.of(), Map.of(), List.of());

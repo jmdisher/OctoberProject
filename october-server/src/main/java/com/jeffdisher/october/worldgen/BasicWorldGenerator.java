@@ -1088,7 +1088,6 @@ public class BasicWorldGenerator implements IWorldGenerator
 				entities.add(CreatureEntity.create(creatureIdAssigner.next()
 						, faunaType
 						, cuboidBase.getRelative(relativeX, relativeY, relativeZ).toEntityLocation()
-						, faunaType.maxHealth()
 						, gameTimeMillis
 				));
 			}

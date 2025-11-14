@@ -244,7 +244,7 @@ public class EngineSpawner
 			if (SpatialHelpers.canExistInLocation(reader, location, creatureVolume))
 			{
 				// We can spawn here.
-				context.creatureSpawner.spawnCreature(spawnType, location, spawnType.maxHealth());
+				context.creatureSpawner.spawnCreature(spawnType, location);
 			}
 			else
 			{

@@ -39,7 +39,7 @@ public class EntityActionOperatorSpawnCreature implements IEntityAction<IMutable
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
-		context.creatureSpawner.spawnCreature(_type, _location, _type.maxHealth());
+		context.creatureSpawner.spawnCreature(_type, _location);
 		return true;
 	}
 

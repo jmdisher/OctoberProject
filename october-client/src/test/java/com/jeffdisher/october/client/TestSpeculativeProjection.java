@@ -1956,7 +1956,7 @@ public class TestSpeculativeProjection
 		Entity localEntity = MutableEntity.createForTest(entityId).freeze();
 		projector.setThisEntity(localEntity);
 		int creatureId = -1;
-		CreatureEntity orc = CreatureEntity.create(creatureId, ORC, new EntityLocation(1.0f, 0.0f, 0.0f), (byte)50, 0L);
+		CreatureEntity orc = CreatureEntity.create(creatureId, ORC, new EntityLocation(1.0f, 0.0f, 0.0f), 0L);
 		long currentTimeMillis = 1L;
 		CuboidAddress airAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(airAddress, ENV.special.AIR);
@@ -2682,7 +2682,7 @@ public class TestSpeculativeProjection
 		projector.setThisEntity(localEntity);
 		int creatureId = -1;
 		EntityType babyCow = ENV.creatures.getTypeById("op.cow_baby");
-		CreatureEntity baby = CreatureEntity.create(creatureId, babyCow, new EntityLocation(1.0f, 0.0f, 0.0f), babyCow.maxHealth(), 0L);
+		CreatureEntity baby = CreatureEntity.create(creatureId, babyCow, new EntityLocation(1.0f, 0.0f, 0.0f), 0L);
 		long currentTimeMillis = 1L;
 		CuboidAddress airAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(airAddress, ENV.special.AIR);
@@ -2707,7 +2707,7 @@ public class TestSpeculativeProjection
 		
 		// Show that an update which changes the type for this ID is accepted.
 		EntityType cow = ENV.creatures.getTypeById("op.cow");
-		CreatureEntity adult = CreatureEntity.create(creatureId, cow, new EntityLocation(1.0f, 0.0f, 0.0f), cow.maxHealth(), 0L);
+		CreatureEntity adult = CreatureEntity.create(creatureId, cow, new EntityLocation(1.0f, 0.0f, 0.0f), 0L);
 		currentTimeMillis += 100L;
 		projector.applyChangesForServerTick(2L
 				, List.of()

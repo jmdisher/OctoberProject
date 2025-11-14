@@ -76,20 +76,17 @@ public record CreatureEntity(int id
 	 * @param id The creature ID is expected to be negative.
 	 * @param type The type of creature.
 	 * @param location The starting location.
-	 * @param health The starting health.
 	 * @param gameTimeMillis The most recent game time, in case the instance needs to track relative timeouts, etc.
 	 * @return A new creature with reasonable defaults for other fields.
 	 */
 	public static CreatureEntity create(int id
 		, EntityType type
 		, EntityLocation location
-		, byte health
 		, long gameTimeMillis
 	)
 	{
 		Assert.assertTrue(id < 0);
 		Assert.assertTrue(null != type);
-		Assert.assertTrue(health > 0);
 		
 		return new CreatureEntity(id
 				, type
@@ -97,7 +94,7 @@ public record CreatureEntity(int id
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, (byte)0
 				, (byte)0
-				, health
+				, type.maxHealth()
 				, MiscConstants.MAX_BREATH
 				, type.extendedCodec().buildDefault(gameTimeMillis)
 				

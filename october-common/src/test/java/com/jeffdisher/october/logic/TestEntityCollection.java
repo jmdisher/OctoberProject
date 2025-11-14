@@ -256,7 +256,7 @@ public class TestEntityCollection
 
 	private static CreatureEntity _buildCreature(int id, EntityLocation location)
 	{
-		return CreatureEntity.create(id, COW, location, (byte)10, 0L);
+		return CreatureEntity.create(id, COW, location, 0L);
 	}
 
 	private static MutableCreature _buildMutableCow(int id, EntityLocation location)

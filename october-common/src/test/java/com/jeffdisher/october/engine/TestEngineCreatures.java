@@ -94,7 +94,7 @@ public class TestEngineCreatures
 	@Test
 	public void singleChange()
 	{
-		CreatureEntity creature = CreatureEntity.create(-1, COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100, 0L);
+		CreatureEntity creature = CreatureEntity.create(-1, COW, new EntityLocation(0.0f, 0.0f, 0.0f), 0L);
 		_Events events = new _Events();
 		TickProcessingContext context = _createContextWithEvents(events);
 		int sourceId = 1;
@@ -107,13 +107,13 @@ public class TestEngineCreatures
 		);
 		
 		CreatureEntity updated = result.updatedEntity();
-		Assert.assertEquals((byte)90, updated.health());
+		Assert.assertEquals((byte)30, updated.health());
 	}
 
 	@Test
 	public void killEntity()
 	{
-		CreatureEntity creature = CreatureEntity.create(-1, COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)50, 0L);
+		CreatureEntity creature = CreatureEntity.create(-1, COW, new EntityLocation(0.0f, 0.0f, 0.0f), 0L);
 		IMutationBlock[] mutationHolder = new IMutationBlock[1];
 		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
 		_Events events = new _Events();
@@ -165,7 +165,7 @@ public class TestEngineCreatures
 	public void decideOnMovement()
 	{
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CreatureEntity creature = CreatureEntity.create(-1, COW, startLocation, (byte)100, 0L);
+		CreatureEntity creature = CreatureEntity.create(-1, COW, startLocation, 0L);
 		TickProcessingContext context = _createContext();
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
 			, EntityCollection.emptyCollection()
@@ -182,7 +182,7 @@ public class TestEngineCreatures
 	public void despawnOrcOnMovementDecision()
 	{
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CreatureEntity creature = CreatureEntity.create(-1, ORC, startLocation, (byte)50, 0L);
+		CreatureEntity creature = CreatureEntity.create(-1, ORC, startLocation, 0L);
 		TickProcessingContext context = _createContextWithOptions(Difficulty.PEACEFUL, null);
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
 			, EntityCollection.emptyCollection()
@@ -345,8 +345,8 @@ public class TestEngineCreatures
 	public void resetPlanOnDamage()
 	{
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		byte startHealth = 100;
-		CreatureEntity creature = CreatureEntity.create(-1, COW, startLocation, startHealth, 0L);
+		byte startHealth = COW.maxHealth();
+		CreatureEntity creature = CreatureEntity.create(-1, COW, startLocation, 0L);
 		_Events events = new _Events();
 		TickProcessingContext context = _createContextWithEvents(events);
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
@@ -382,7 +382,7 @@ public class TestEngineCreatures
 	{
 		// Create 3 entities, 2 holding wheat and one holding a tool, to show that we always path to the closest with wheat.
 		EntityLocation startLocation = new EntityLocation(0.19f, 0.0f, 0.0f);
-		CreatureEntity creature = CreatureEntity.create(-1, COW, startLocation, (byte)100, 0L);
+		CreatureEntity creature = CreatureEntity.create(-1, COW, startLocation, 0L);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		Entity farWheat = _createEntity(1, new EntityLocation(5.0f, 0.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
 		Entity closeWheat = _createEntity(2, new EntityLocation(3.0f, 0.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
@@ -427,7 +427,7 @@ public class TestEngineCreatures
 	{
 		// Create an orc and a player, showing that the orc follows the player when they move.
 		EntityLocation startLocation = new EntityLocation(1.0f, 1.0f, 0.0f);
-		CreatureEntity creature = CreatureEntity.create(-1, ORC, startLocation, (byte)100, 0L);
+		CreatureEntity creature = CreatureEntity.create(-1, ORC, startLocation, 0L);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		Entity player = _createEntity(1, new EntityLocation(5.0f, 1.0f, 0.0f), null, null);
 		TickProcessingContext context = _createContext();
@@ -474,11 +474,11 @@ public class TestEngineCreatures
 		// Create 1 player holding wheat and 2 cows:  a distant one in love mode and a closer not in love mode.  Show that a cow priorizes the love cow.
 		EntityLocation startLocation = new EntityLocation(0.19f, 0.0f, 0.0f);
 		Item wheat_item = ENV.items.getItemById("op.wheat_item");
-		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, COW, startLocation, (byte)100, 0L));
+		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, COW, startLocation, 0L));
 		CreatureLogic.applyItemToCreature(wheat_item, mutable, 1000L);
 		CreatureEntity fedCow = mutable.freeze();
-		CreatureEntity otherCow = CreatureEntity.create(-2, COW, new EntityLocation(2.0f, 0.0f, 0.0f),(byte)100, 0L);
-		mutable = MutableCreature.existing(CreatureEntity.create(-3, COW, new EntityLocation(5.0f, 0.0f, 0.0f), (byte)100, 0L));
+		CreatureEntity otherCow = CreatureEntity.create(-2, COW, new EntityLocation(2.0f, 0.0f, 0.0f), 0L);
+		mutable = MutableCreature.existing(CreatureEntity.create(-3, COW, new EntityLocation(5.0f, 0.0f, 0.0f), 0L));
 		CreatureLogic.applyItemToCreature(wheat_item, mutable, 1000L);
 		CreatureEntity targetCow = mutable.freeze();
 		Map<Integer, CreatureEntity> creaturesById = Map.of(fedCow.id(), fedCow
@@ -520,8 +520,8 @@ public class TestEngineCreatures
 		int cowId2 = idAssigner.next();
 		
 		// First step, we should see the cows both take notice of the player since it has wheat in its hand.
-		Map<Integer, CreatureEntity> creaturesById = new HashMap<>(Map.of(cowId1, CreatureEntity.create(cowId1, COW, location1, (byte)100, 0L)
-			, cowId2, CreatureEntity.create(cowId2, COW, location2, (byte)100, 0L)
+		Map<Integer, CreatureEntity> creaturesById = new HashMap<>(Map.of(cowId1, CreatureEntity.create(cowId1, COW, location1, 0L)
+			, cowId2, CreatureEntity.create(cowId2, COW, location2, 0L)
 		));
 		TickProcessingContext context = _createContext();
 		context = _updateContextWithPlayerAndCreatures(context, player, creaturesById);
@@ -639,7 +639,7 @@ public class TestEngineCreatures
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(8, 8, 1), AIR.item().number());
 		
 		EntityLocation startLocation = new EntityLocation(8.5f, 8.0f, 1.0f);
-		CreatureEntity creature = CreatureEntity.create(-1, ORC, startLocation, (byte)100, 0L);
+		CreatureEntity creature = CreatureEntity.create(-1, ORC, startLocation, 0L);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createSingleCuboidContext(cuboid);
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
@@ -717,8 +717,8 @@ public class TestEngineCreatures
 		
 		EntityLocation waterStart = new EntityLocation(2.0f, 2.0f, 1.0f);
 		EntityLocation airStart = new EntityLocation(2.0f, 2.0f, 17.0f);
-		CreatureEntity waterCreature = CreatureEntity.create(-1, ORC, waterStart, (byte)100, 0L);
-		CreatureEntity airCreature = CreatureEntity.create(-2, ORC, airStart, (byte)100, 0L);
+		CreatureEntity waterCreature = CreatureEntity.create(-1, ORC, waterStart, 0L);
+		CreatureEntity airCreature = CreatureEntity.create(-2, ORC, airStart, 0L);
 		float targetDistance = 4.0f;
 		Entity waterTarget = _createEntity(1, new EntityLocation(waterStart.x() + targetDistance, waterStart.y(), waterStart.z()), null, null);
 		Entity airTarget = _createEntity(2, new EntityLocation(airStart.x() + targetDistance, airStart.y(), airStart.z()), null, null);
@@ -773,7 +773,7 @@ public class TestEngineCreatures
 		_setCuboidLayer(cuboid, (byte)2, waterSourceNumber);
 		
 		EntityLocation startLocation = new EntityLocation(8.0f, 8.0f, 1.0f);
-		CreatureEntity creature = CreatureEntity.create(-1, ORC, startLocation, (byte)100, 0L);
+		CreatureEntity creature = CreatureEntity.create(-1, ORC, startLocation, 0L);
 		// We need to reduce their breath to trigger this response.
 		MutableCreature mutable = MutableCreature.existing(creature);
 		mutable.newBreath -= 1;
@@ -826,13 +826,13 @@ public class TestEngineCreatures
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 15), STONE.item().number());
 		
-		byte health = 100;
 		float fallingVelocity = TickUtils.DECELERATION_DAMAGE_THRESHOLD + (TickUtils.DECELERATION_DAMAGE_RANGE / 2.0f);
 		EntityLocation startLocation = new EntityLocation(16.8f, 16.8f, 16.1f);
 		EntityLocation startVelocity = new EntityLocation(0.0f, 0.0f, fallingVelocity);
-		CreatureEntity creature = CreatureEntity.create(-1, ORC, startLocation, health, 0L);
+		CreatureEntity creature = CreatureEntity.create(-1, ORC, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(creature);
 		mutable.newVelocity = startVelocity;
+		mutable.newHealth = (byte)100;
 		creature = mutable.freeze();
 		
 		_Events events = new _Events();
@@ -870,7 +870,7 @@ public class TestEngineCreatures
 		// We need to give it a target so it will move at full speed.
 		Entity target = _createEntity(1, new EntityLocation(14.0f, 16.0f, 1.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
 		EntityLocation startLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
-		CreatureEntity creature = CreatureEntity.create(-1, COW, startLocation, (byte)100, 0L);
+		CreatureEntity creature = CreatureEntity.create(-1, COW, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(creature);
 		mutable.newMovementPlan = List.of(new AbsoluteLocation(15, 16, 1)
 			, new AbsoluteLocation(14, 16, 1)
@@ -919,8 +919,8 @@ public class TestEngineCreatures
 		// Put 2 cows intersecting and show that one will use a nudge to push the other away based on ID and tick number.
 		EntityLocation location1 = new EntityLocation(1.0f, 1.0f, 0.0f);
 		EntityLocation location2 = new EntityLocation(1.2f, 0.9f, 0.1f);
-		CreatureEntity cow1 = CreatureEntity.create(-1, COW, location1, (byte)100, 0L);
-		CreatureEntity cow2 = CreatureEntity.create(-2, COW, location2, (byte)100, 0L);
+		CreatureEntity cow1 = CreatureEntity.create(-1, COW, location1, 0L);
+		CreatureEntity cow2 = CreatureEntity.create(-2, COW, location2, 0L);
 		
 		// First step, we should see the cows both take notice of the player since it has wheat in its hand.
 		Map<Integer, CreatureEntity> creaturesById = new HashMap<>(Map.of(cow1.id(), cow1
@@ -978,7 +978,7 @@ public class TestEngineCreatures
 	@Test
 	public void popOut()
 	{
-		CreatureEntity creature = CreatureEntity.create(-1, COW, new EntityLocation(0.0f, 0.0f, -0.2f), (byte)100, 0L);
+		CreatureEntity creature = CreatureEntity.create(-1, COW, new EntityLocation(0.0f, 0.0f, -0.2f), 0L);
 		_Events events = new _Events();
 		TickProcessingContext context = _createContextWithEvents(events);
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
@@ -996,7 +996,7 @@ public class TestEngineCreatures
 	{
 		// Show that a water stream will push a creature.
 		EntityLocation creatureLocation = new EntityLocation(0.8f, 0.8f, 0.0f);
-		CreatureEntity creature = CreatureEntity.create(-1, COW, creatureLocation, (byte)100, 0L);
+		CreatureEntity creature = CreatureEntity.create(-1, COW, creatureLocation, 0L);
 		
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0), WATER_SOURCE.item().number());
@@ -1086,9 +1086,9 @@ public class TestEngineCreatures
 			, CreatureIdAssigner idAssigner
 	)
 	{
-		TickProcessingContext.ICreatureSpawner spawner = (EntityType type, EntityLocation location, byte health) -> {
+		TickProcessingContext.ICreatureSpawner spawner = (EntityType type, EntityLocation location) -> {
 			Assert.assertNull(outSpawnedCreature[0]);
-			outSpawnedCreature[0] = CreatureEntity.create(idAssigner.next(), type, location, health, 0L);
+			outSpawnedCreature[0] = CreatureEntity.create(idAssigner.next(), type, location, 0L);
 		};
 		Map<Integer, MinimalEntity> minimal = creatures.stream().collect(Collectors.toMap((CreatureEntity creature) -> creature.id(), (CreatureEntity creature) -> MinimalEntity.fromCreature(creature)));
 		TickProcessingContext context = ContextBuilder.nextTick(existing, 1L)

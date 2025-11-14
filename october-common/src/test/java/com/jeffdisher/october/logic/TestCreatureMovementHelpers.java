@@ -213,7 +213,7 @@ public class TestCreatureMovementHelpers
 
 	private static CreatureEntity _createCow(EntityLocation location)
 	{
-		return CreatureEntity.create(-1, COW, location, (byte)10, 0L);
+		return CreatureEntity.create(-1, COW, location, 0L);
 	}
 
 	private static ViscosityReader _getFixedBlockReader(Block block)

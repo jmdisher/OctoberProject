@@ -117,12 +117,10 @@ public class FlatWorldGenerator implements IWorldGenerator
 					? List.of(CreatureEntity.create(creatureIdAssigner.next()
 							, _cow
 							, baseOfCuboid.toEntityLocation()
-							, (byte)100
 							, gameTimeMillis
 						), CreatureEntity.create(creatureIdAssigner.next()
 							, _cow
 							, baseOfCuboid.getRelative(5, 5, 0).toEntityLocation()
-							, (byte)100
 							, gameTimeMillis
 					))
 					: List.of()

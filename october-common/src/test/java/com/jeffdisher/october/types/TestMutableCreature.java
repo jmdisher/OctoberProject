@@ -65,7 +65,6 @@ public class TestMutableCreature
 		CreatureEntity input = CreatureEntity.create(-1
 			, cowBaby
 			, new EntityLocation(0.0f, 0.0f, 0.0f)
-			, cowBaby.maxHealth()
 			, 0L
 		);
 		Assert.assertEquals(cowBaby.maxHealth(), input.health());
@@ -86,7 +85,6 @@ public class TestMutableCreature
 		return CreatureEntity.create(-1
 				, COW
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
-				, (byte)50
 				, 0L
 		);
 	}
