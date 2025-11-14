@@ -35,7 +35,7 @@ public record EntityType(byte number
 	public boolean canDespawn()
 	{
 		// Anything which can't breed can despawn.
-		return (null == this.breedingItem);
+		return (null == this.breedingItem) && (null == this.adultType);
 	}
 
 	/**

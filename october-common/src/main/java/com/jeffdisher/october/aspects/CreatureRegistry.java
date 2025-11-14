@@ -106,6 +106,11 @@ public class CreatureRegistry
 					// If this can breed, we will treat it as livestock.
 					codec = new CreatureExtendedData.LivestockCodec();
 				}
+				else if (null != _adultType)
+				{
+					// If this has an adult type, we assume it is a baby.
+					codec = new CreatureExtendedData.BabyCodec();
+				}
 				else
 				{
 					// This has no specific codec.

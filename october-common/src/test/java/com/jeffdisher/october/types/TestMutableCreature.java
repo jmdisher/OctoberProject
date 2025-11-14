@@ -69,7 +69,7 @@ public class TestMutableCreature
 			, 0L
 		);
 		Assert.assertEquals(cowBaby.maxHealth(), input.health());
-		Assert.assertNull(input.extendedData());
+		Assert.assertTrue(input.extendedData() instanceof CreatureExtendedData.BabyData);
 		
 		MutableCreature mutable = MutableCreature.existing(input);
 		mutable.changeEntityType(COW, 0L);

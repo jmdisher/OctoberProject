@@ -262,7 +262,7 @@ public class CreatureLogic
 			{
 				// Something neither hostile nor livestock is probably a baby of what will change in to a livestock animal, later.
 				Assert.assertTrue(creatureType.isBaby());
-				isDone = false;
+				isDone = _didTakeBabyAction(context, mutable);
 			}
 		}
 		return isDone;
@@ -784,6 +784,24 @@ public class CreatureLogic
 		{
 			// Nothing to do.
 			isDone = false;
+		}
+		return isDone;
+	}
+
+	private static boolean _didTakeBabyAction(TickProcessingContext context, MutableCreature creature)
+	{
+		boolean isDone = false;
+		
+		// The only special action a baby can take is growing up, so see if that is ready.
+		CreatureExtendedData.BabyData extendedData = (CreatureExtendedData.BabyData)creature.getExtendedData();
+		if (context.currentTickTimeMillis >= extendedData.maturityMillis())
+		{
+			// We will change the type to the corresponding adult.
+			EntityType currentType = creature.getType();
+			EntityType adultType = currentType.adultType();
+			Assert.assertTrue(null != adultType);
+			creature.changeEntityType(adultType, context.currentTickTimeMillis);
+			isDone = true;
 		}
 		return isDone;
 	}

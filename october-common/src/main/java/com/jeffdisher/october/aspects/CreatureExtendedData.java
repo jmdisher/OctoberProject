@@ -105,6 +105,43 @@ public class CreatureExtendedData
 		}
 	};
 
+	/**
+	 * This codec stores information associated with baby livestock.
+	 */
+	public static class BabyCodec implements EntityType.IExtendedCodec
+	{
+		/**
+		 * The time it takes for a newly spawned baby animal to grow to an adult.
+		 */
+		public static final long MILLIS_TO_MATURITY = 20L * 60L * 1000L;
+		@Override
+		public Object buildDefault(long gameTimeMillis)
+		{
+			long maturityMillis = gameTimeMillis + MILLIS_TO_MATURITY;
+			return new BabyData(maturityMillis);
+		}
+		@Override
+		public Object read(ByteBuffer buffer, long gameTimeMillis)
+		{
+			// The baby codec was added in storage version 10 so there is no special-handling for old versions and this is never null.
+			int millisRemaining = buffer.getInt();
+			long maturityMillis = gameTimeMillis + (long)millisRemaining;
+			return new BabyData(maturityMillis);
+		}
+		@Override
+		public void write(ByteBuffer buffer, Object extendedData, long gameTimeMillis)
+		{
+			// The baby codec was added in storage version 10 so there is no special-handling for old versions and this is never null.
+			BabyData safe = (BabyData) extendedData;
+			long spill = safe.maturityMillis - gameTimeMillis;
+			int millisRemaining = (spill > 0L)
+				? (int)spill
+				: 0
+			;
+			buffer.putInt(millisRemaining);
+		}
+	};
+
 
 	public static record LivestockData(
 		// True if this is a breedable creature which should now search for a partner.
@@ -113,5 +150,10 @@ public class CreatureExtendedData
 		, EntityLocation offspringLocation
 		// The gameTimeMillis when breeding becomes available again (cooldown).
 		, long breedingReadyMillis
+	) {}
+
+	public static record BabyData(
+		// The only data we currently track is when to grow up.
+		long maturityMillis
 	) {}
 }

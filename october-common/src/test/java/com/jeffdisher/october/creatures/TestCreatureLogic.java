@@ -995,6 +995,30 @@ public class TestCreatureLogic
 		Assert.assertTrue(((CreatureExtendedData.LivestockData)mutable.getExtendedData()).inLoveMode());
 	}
 
+	@Test
+	public void calfGrowsUp()
+	{
+		// Show how a calf grows into an adult.
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		EntityType cowBaby = ENV.creatures.getTypeById("op.cow_baby");
+		EntityLocation cowLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
+		CreatureEntity cow = CreatureEntity.create(assigner.next(), cowBaby, cowLocation, (byte)100, 0L);
+		MutableCreature mutableCow = MutableCreature.existing(cow);
+		
+		TickProcessingContext context = ContextBuilder.build()
+				.tick(CreatureExtendedData.BabyCodec.MILLIS_TO_MATURITY / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
+				.finish()
+		;
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, EntityCollection.emptyCollection()
+				, mutableCow
+		);
+		Assert.assertTrue(didTakeAction);
+		CreatureEntity output = mutableCow.freeze();
+		Assert.assertEquals(COW, output.type());
+		Assert.assertTrue(output.extendedData() instanceof CreatureExtendedData.LivestockData);
+	}
+
 
 	private static TickProcessingContext _createContext(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp, int random)
 	{
