@@ -53,6 +53,7 @@ public class MutationEntitySetPartialEntity implements IPartialEntityUpdate
 			|| (previousCreatureVersion.yaw() != currentCreatureVersion.yaw())
 			|| (previousCreatureVersion.pitch() != currentCreatureVersion.pitch())
 			|| (previousCreatureVersion.health() != currentCreatureVersion.health())
+			|| (previousCreatureVersion.type() != currentCreatureVersion.type())
 		;
 	}
 
@@ -67,6 +68,7 @@ public class MutationEntitySetPartialEntity implements IPartialEntityUpdate
 	@Override
 	public void applyToEntity(MutablePartialEntity newEntity)
 	{
+		newEntity.newType = _entity.type();
 		newEntity.newLocation = _entity.location();
 		newEntity.newYaw = _entity.yaw();
 		newEntity.newPitch = _entity.pitch();

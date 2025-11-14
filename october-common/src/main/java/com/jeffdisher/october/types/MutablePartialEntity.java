@@ -22,6 +22,7 @@ public class MutablePartialEntity
 	public final PartialEntity original;
 
 	// The location is immutable but can be directly replaced.
+	public EntityType newType;
 	public EntityLocation newLocation;
 	public byte newYaw;
 	public byte newPitch;
@@ -31,6 +32,7 @@ public class MutablePartialEntity
 	private MutablePartialEntity(PartialEntity original)
 	{
 		this.original = original;
+		this.newType = original.type();
 		this.newLocation = original.location();
 		this.newYaw = original.yaw();
 		this.newPitch = original.pitch();
@@ -47,7 +49,7 @@ public class MutablePartialEntity
 	public PartialEntity freeze()
 	{
 		PartialEntity newCopy = new PartialEntity(this.original.id()
-				, this.original.type()
+				, this.newType
 				, this.newLocation
 				, this.newYaw
 				, this.newPitch

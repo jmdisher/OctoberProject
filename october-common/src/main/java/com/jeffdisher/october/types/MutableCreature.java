@@ -30,6 +30,7 @@ public class MutableCreature implements IMutableCreatureEntity
 	private final CreatureEntity _creature;
 
 	// The location is immutable but can be directly replaced.
+	public EntityType newType;
 	public EntityLocation newLocation;
 	public EntityLocation newVelocity;
 	public byte newYaw;
@@ -50,6 +51,7 @@ public class MutableCreature implements IMutableCreatureEntity
 	private MutableCreature(CreatureEntity creature)
 	{
 		_creature = creature;
+		this.newType = creature.type();
 		this.newLocation = creature.location();
 		this.newVelocity = creature.velocity();
 		this.newYaw = creature.yaw();
@@ -77,7 +79,7 @@ public class MutableCreature implements IMutableCreatureEntity
 	@Override
 	public EntityType getType()
 	{
-		return _creature.type();
+		return this.newType;
 	}
 
 	@Override
@@ -114,7 +116,7 @@ public class MutableCreature implements IMutableCreatureEntity
 	public void handleEntityDeath(TickProcessingContext context)
 	{
 		EntityLocation entityCentre = SpatialHelpers.getCentreFeetLocation(this);
-		for (Items toDrop : _creature.type().drops())
+		for (Items toDrop : this.newType.drops())
 		{
 			// Drop the drops as passives.
 			context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, entityCentre, new EntityLocation(0.0f, 0.0f, 0.0f), ItemSlot.fromStack(toDrop));
@@ -247,6 +249,15 @@ public class MutableCreature implements IMutableCreatureEntity
 		this.newExtendedData = extendedData;
 	}
 
+	@Override
+	public void changeEntityType(EntityType newType)
+	{
+		// We set the type but also set the health and extended data to the defaults for this type.
+		this.newType = newType;
+		this.newHealth = newType.maxHealth();
+		this.newExtendedData = newType.extendedCodec().buildDefault();
+	}
+
 	/**
 	 * Creates an immutable snapshot of the receiver.
 	 * Note that this will return the original instance if a new instance would have been identical.
@@ -271,7 +282,7 @@ public class MutableCreature implements IMutableCreatureEntity
 							, this.newLastDamageTakenMillis
 			);
 			CreatureEntity immutable = new CreatureEntity(_creature.id()
-					, _creature.type()
+					, this.newType
 					, this.newLocation
 					, this.newVelocity
 					, this.newYaw

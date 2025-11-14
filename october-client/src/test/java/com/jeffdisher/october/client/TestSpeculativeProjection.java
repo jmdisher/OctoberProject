@@ -2671,6 +2671,64 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, listener.passiveEntityStates.size());
 	}
 
+	@Test
+	public void calfGrowUp()
+	{
+		// We want to show that a loaded entity changing into a different type is acceptable.
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		Entity localEntity = MutableEntity.createForTest(entityId).freeze();
+		projector.setThisEntity(localEntity);
+		int creatureId = -1;
+		EntityType babyCow = ENV.creatures.getTypeById("op.cow_baby");
+		CreatureEntity baby = CreatureEntity.create(creatureId, babyCow, new EntityLocation(1.0f, 0.0f, 0.0f), babyCow.maxHealth());
+		long currentTimeMillis = 1L;
+		CuboidAddress airAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(airAddress, ENV.special.AIR);
+		projector.applyChangesForServerTick(1L
+				, List.of(PartialEntity.fromCreature(baby))
+				, List.of()
+				, List.of(airCuboid)
+				, null
+				, Collections.emptyMap()
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, 0L
+				, currentTimeMillis
+		);
+		PartialEntity partial = listener.otherEntityStates.get(creatureId);
+		Assert.assertEquals(babyCow, partial.type());
+		Assert.assertEquals(babyCow.maxHealth(), partial.health());
+		
+		// Show that an update which changes the type for this ID is accepted.
+		EntityType cow = ENV.creatures.getTypeById("op.cow");
+		CreatureEntity adult = CreatureEntity.create(creatureId, cow, new EntityLocation(1.0f, 0.0f, 0.0f), cow.maxHealth());
+		currentTimeMillis += 100L;
+		projector.applyChangesForServerTick(2L
+				, List.of()
+				, List.of()
+				, List.of()
+				, new MutationEntitySetEntity(localEntity)
+				, Map.of(creatureId, new MutationEntitySetPartialEntity(PartialEntity.fromCreature(adult)))
+				, Map.of()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, 0L
+				, currentTimeMillis
+		);
+		partial = listener.otherEntityStates.get(creatureId);
+		Assert.assertEquals(cow, partial.type());
+		Assert.assertEquals(cow.maxHealth(), partial.health());
+	}
+
 
 	private static EntityActionSimpleMove<IMutablePlayerEntity> _wrap(Entity entity, IEntitySubAction<IMutablePlayerEntity> change)
 	{

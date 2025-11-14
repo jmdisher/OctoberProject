@@ -5,6 +5,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 
@@ -55,6 +56,27 @@ public class TestMutableCreature
 		mutable.setHealth((byte)20);
 		CreatureEntity output = mutable.freeze();
 		Assert.assertNotEquals(middle, output);
+	}
+
+	@Test
+	public void growToAdult() throws Throwable
+	{
+		EntityType cowBaby = ENV.creatures.getTypeById("op.cow_baby");
+		CreatureEntity input = CreatureEntity.create(-1
+			, cowBaby
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, cowBaby.maxHealth()
+		);
+		Assert.assertEquals(cowBaby.maxHealth(), input.health());
+		Assert.assertNull(input.extendedData());
+		
+		MutableCreature mutable = MutableCreature.existing(input);
+		mutable.changeEntityType(COW);
+		CreatureEntity output = mutable.freeze();
+		
+		Assert.assertEquals(COW, output.type());
+		Assert.assertEquals(COW.maxHealth(), output.health());
+		Assert.assertTrue(output.extendedData() instanceof CreatureExtendedData.LivestockData);
 	}
 
 

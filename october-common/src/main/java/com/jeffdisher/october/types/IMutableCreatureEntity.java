@@ -36,4 +36,11 @@ public interface IMutableCreatureEntity extends IMutableMinimalEntity
 	 * @param extendedData The new instance.
 	 */
 	void setExtendedData(Object extendedData);
+	/**
+	 * Changes the receiver's type, resetting its health and extended data to defaults for this type.  This is typically
+	 * used for cases such as livestock growing from a baby to adult but there is no internal check on usage.
+	 * 
+	 * @param newType The new type to assign to the receiver.
+	 */
+	void changeEntityType(EntityType newType);
 }
