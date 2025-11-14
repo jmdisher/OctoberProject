@@ -22,6 +22,7 @@ import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.actions.passive.PassiveActionPickUp;
 import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
@@ -96,6 +97,7 @@ import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
+import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
@@ -118,6 +120,7 @@ public class TestCommonChanges
 	private static Block WATER_STRONG;
 	private static Block WATER_WEAK;
 	private static EntityType COW;
+	private static EntityType COW_BABY;
 	@BeforeClass
 	public static void setup()
 	{
@@ -134,6 +137,7 @@ public class TestCommonChanges
 		WATER_STRONG = ENV.blocks.fromItem(ENV.items.getItemById("op.water_strong"));
 		WATER_WEAK = ENV.blocks.fromItem(ENV.items.getItemById("op.water_weak"));
 		COW = ENV.creatures.getTypeById("op.cow");
+		COW_BABY = ENV.creatures.getTypeById("op.cow_baby");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -3325,6 +3329,87 @@ public class TestCommonChanges
 		Assert.assertTrue(didApply);
 		Assert.assertEquals(new EntityLocation(0.85f, 0.85f, 0.0f), newEntity.newLocation);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.newVelocity);
+	}
+
+	@Test
+	public void feedingCreatureCases() throws Throwable
+	{
+		// Show some uses of EntityChangeUseSelectedItemOnEntity and its static helper.
+		int entityId = 1;
+		int cowId = -1;
+		int calfId = -2;
+		Item wheatItem = ENV.items.getItemById("op.wheat_item");
+		MutableEntity entity = MutableEntity.createForTest(entityId);
+		entity.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
+		entity.newInventory.addAllItems(wheatItem, 1);
+		// We assume that this is key 1.
+		entity.newHotbar[0] = 1;
+		
+		CreatureEntity cow = CreatureEntity.create(cowId
+			, COW
+			, new EntityLocation(9.0f, 9.0f, 0.0f)
+			, 0L
+		);
+		CreatureEntity calf = CreatureEntity.create(calfId
+			, COW_BABY
+			, new EntityLocation(90.0f, 9.0f, 0.0f)
+			, 0L
+		);
+		
+		long gameTimeMilils = 0L;
+		Assert.assertTrue(EntityChangeUseSelectedItemOnEntity.canUseOnEntity(wheatItem, PartialEntity.fromCreature(cow), gameTimeMilils));
+		Assert.assertFalse(EntityChangeUseSelectedItemOnEntity.canUseOnEntity(wheatItem, PartialEntity.fromCreature(calf), gameTimeMilils));
+		MutableCreature mut = MutableCreature.existing(cow);
+		mut.newExtendedData = new CreatureExtendedData.LivestockData(true, null, 0L);
+		Assert.assertFalse(EntityChangeUseSelectedItemOnEntity.canUseOnEntity(wheatItem, PartialEntity.fromCreature(mut.freeze()), gameTimeMilils));
+		mut.newExtendedData = new CreatureExtendedData.LivestockData(false, null, 1000L);
+		Assert.assertFalse(EntityChangeUseSelectedItemOnEntity.canUseOnEntity(wheatItem, PartialEntity.fromCreature(mut.freeze()), gameTimeMilils));
+		gameTimeMilils = 1000L;
+		Assert.assertTrue(EntityChangeUseSelectedItemOnEntity.canUseOnEntity(wheatItem, PartialEntity.fromCreature(mut.freeze()), gameTimeMilils));
+		
+		mut.newExtendedData = new CreatureExtendedData.LivestockData(true, null, 0L);
+		CreatureEntity readyCow = mut.freeze();
+		CommonChangeSink changeSink = new CommonChangeSink(Set.of(entityId), Set.of(cowId), Set.of());
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(5L)
+			.lookups(null, (Integer id) -> {
+				MinimalEntity min;
+				if (cowId == id)
+				{
+					min = MinimalEntity.fromCreature(readyCow);
+				}
+				else
+				{
+					Assert.assertEquals(calfId, id.intValue());
+					min = MinimalEntity.fromCreature(calf);
+				}
+				return min;
+			}, null)
+			.sinks(null, changeSink)
+			.finish()
+		;
+		
+		// Show that we do NOT send when using the calf but DO with the COW, even though it is in love mode (since we can't tell).
+		Assert.assertFalse(new EntityChangeUseSelectedItemOnEntity(calfId).applyChange(context, entity));
+		Entity updatedEntity = entity.freeze();
+		Assert.assertEquals(2, updatedEntity.inventory().currentEncumbrance);
+		
+		Assert.assertTrue(new EntityChangeUseSelectedItemOnEntity(cowId).applyChange(context, entity));
+		updatedEntity = entity.freeze();
+		Assert.assertEquals(0, updatedEntity.inventory().currentEncumbrance);
+		
+		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureChanges = changeSink.takeExportedCreatureChanges();
+		Assert.assertEquals(1, creatureChanges.size());
+		List<IEntityAction<IMutableCreatureEntity>> list = creatureChanges.get(cowId);
+		Assert.assertEquals(1, list.size());
+		IEntityAction<IMutableCreatureEntity> change = list.get(0);
+		Assert.assertTrue(change instanceof EntityActionApplyItemToCreature);
+		
+		// Verify that the apply fails since this creature isn't ready.
+		// (the wheat is lost in this case).
+		MutableCreature mutable = MutableCreature.existing(readyCow);
+		Assert.assertFalse(change.applyChange(context, mutable));
+		mutable.freeze();
 	}
 
 

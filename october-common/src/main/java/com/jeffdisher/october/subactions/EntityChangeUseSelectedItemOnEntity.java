@@ -3,8 +3,8 @@ package com.jeffdisher.october.subactions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.actions.EntityActionApplyItemToCreature;
+import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.MiscConstants;
-import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.Entity;
@@ -15,6 +15,7 @@ import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MinimalEntity;
+import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -35,16 +36,24 @@ public class EntityChangeUseSelectedItemOnEntity implements IEntitySubAction<IMu
 	}
 
 	/**
-	 * A helper to determine if the given item can be used on a specific entity type with this entity mutation.
+	 * A helper to determine if the given item can be used on a specific entity instance with this entity mutation.
 	 * 
 	 * @param item The item.
-	 * @param entityType The target entity type.
+	 * @param entity The target entity.
+	 * @param gameTimeMillis The current game time, in milliseconds.
 	 * @return True if this mutation can be used to apply the item to the entity.
 	 */
-	public static boolean canUseOnEntity(Item item, EntityType entityType)
+	public static boolean canUseOnEntity(Item item, PartialEntity entity, long gameTimeMillis)
 	{
-		// We just call the helper in the other class since it already has the appropriate constants for this logic.
-		return CreatureLogic.canUseOnEntity(item, entityType);
+		boolean canUse = false;
+		// Currently, the only use for this mutation is to feed animals to put them into a love mode.
+		if (item == entity.type().breedingItem())
+		{
+			// This is the correct item but we need to see if the entity can be put into love mode.
+			CreatureExtendedData.LivestockData extended = (CreatureExtendedData.LivestockData) entity.extendedData();
+			canUse = !extended.inLoveMode() && (gameTimeMillis >= extended.breedingReadyMillis());
+		}
+		return canUse;
 	}
 
 
@@ -80,7 +89,7 @@ public class EntityChangeUseSelectedItemOnEntity implements IEntitySubAction<IMu
 		EntityType entityType = (null != target) ? target.type() : null;
 		
 		boolean didApply = false;
-		if (isReady && isInRange && CreatureLogic.canUseOnEntity(itemType, entityType))
+		if (isReady && isInRange && (itemType == entityType.breedingItem()))
 		{
 			// Remove the wheat item and apply it to the entity.
 			// Note that we don't bother with racy conditions where we might need to pass it back since that is a rare case and of minimal impact.

@@ -72,19 +72,6 @@ public class CreatureLogic
 
 
 	/**
-	 * A helper to determine if the given item can be used on a specific entity type with this entity mutation.
-	 * 
-	 * @param item The item.
-	 * @param entityType The target entity type.
-	 * @return True if this mutation can be used to apply the item to the entity.
-	 */
-	public static boolean canUseOnEntity(Item item, EntityType entityType)
-	{
-		// We only worry about use of item for breeding (at least for now).
-		return (item == entityType.breedingItem());
-	}
-
-	/**
 	 * Called within a mutation to apply an item to a creature.  This may change their state or not.
 	 * 
 	 * @param itemType The item type to apply (it will be consumed, either way).
