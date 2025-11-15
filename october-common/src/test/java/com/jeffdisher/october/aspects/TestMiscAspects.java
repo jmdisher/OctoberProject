@@ -11,6 +11,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockVolume;
 import com.jeffdisher.october.types.BodyPart;
+import com.jeffdisher.october.types.DropChance;
 import com.jeffdisher.october.types.Item;
 
 
@@ -43,20 +44,19 @@ public class TestMiscAspects
 	}
 
 	@Test
-	public void dropProbabilities() throws Throwable
+	public void blockDropProbabilities() throws Throwable
 	{
+		// This just makes sure that these were parsed correctly.
 		Block leaf = ENV.blocks.fromItem(ENV.items.getItemById("op.leaf"));
-		Block matureWheat = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_mature"));
+		Item sapling = ENV.items.getItemById("op.sapling");
+		Item stick = ENV.items.getItemById("op.stick");
+		Item apple = ENV.items.getItemById("op.apple");
 		
-		Item[] leafDrop0 = ENV.blocks.droppedBlocksOnBreak(leaf, 0);
-		Item[] leafDrop99 = ENV.blocks.droppedBlocksOnBreak(leaf, 99);
-		Item[] wheatDrop0 = ENV.blocks.droppedBlocksOnBreak(matureWheat, 0);
-		Item[] wheatDrop99 = ENV.blocks.droppedBlocksOnBreak(matureWheat, 99);
-		
-		Assert.assertEquals(3, leafDrop0.length);
-		Assert.assertEquals(0, leafDrop99.length);
-		Assert.assertEquals(4, wheatDrop0.length);
-		Assert.assertEquals(3, wheatDrop99.length);
+		DropChance[] leafChances = ENV.blocks.possibleDropsOnBreak(leaf);
+		Assert.assertEquals(3, leafChances.length);
+		Assert.assertEquals(new DropChance(sapling, 50), leafChances[0]);
+		Assert.assertEquals(new DropChance(stick, 20), leafChances[1]);
+		Assert.assertEquals(new DropChance(apple, 10), leafChances[2]);
 	}
 
 	@Test

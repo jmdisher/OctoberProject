@@ -6,7 +6,6 @@ import java.util.Set;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,6 +14,7 @@ import java.util.List;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.DropChance;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.utils.Assert;
 
@@ -37,10 +37,6 @@ public class BlockAspect
 	 * A viscosity of at least this level, but less than SOLID is considered to allow and entity to swim.
 	 */
 	public static final int SWIMMABLE_VISCOSITY = 50;
-	/**
-	 * The limit for random drop chance calculations.
-	 */
-	public static final int RANDOM_DROP_LIMIT = 100;
 
 	private static final String FLAG_CAN_BE_REPLACED = "can_be_replaced";
 	private static final String FLAG_IS_FLAMMABLE = "is_flammable";
@@ -129,7 +125,7 @@ public class BlockAspect
 	private final Map<Block, Integer> _blockDamage;
 	private final Map<Block, Set<Block>> _specialBlockSupport;
 	private final Map<Item, Block> _specialBlockPlacement;
-	private final Map<Block, _DropChance[]> _specialBlockBreak;
+	private final Map<Block, DropChance[]> _specialBlockBreak;
 	private final Map<Block, BlockMaterial> _blockMaterials;
 	private final Set<Block> _ladderType;
 	private final Set<Block> _isComposition;
@@ -148,7 +144,7 @@ public class BlockAspect
 			, Map<Block, Integer> blockDamage
 			, Map<Block, Set<Block>> specialBlockSupport
 			, Map<Item, Block> specialBlockPlacement
-			, Map<Block, _DropChance[]> specialBlockBreak
+			, Map<Block, DropChance[]> specialBlockBreak
 			, Map<Block, BlockMaterial> blockMaterials
 			, Set<Block> ladderType
 			, Set<Block> isComposition
@@ -360,34 +356,23 @@ public class BlockAspect
 	}
 
 	/**
-	 * Returns the array of items which should be dropped when the given block is broken, in the world.
+	 * Returns the array of possible drops when the given block is broken, in the world.
 	 * 
 	 * @param block The block to break.
-	 * @param random0to99 A random value between [0..99].
-	 * @return The array of items (never null).
+	 * @return The array of drop chances (never null).
 	 */
-	public Item[] droppedBlocksOnBreak(Block block, int random0to99)
+	public DropChance[] possibleDropsOnBreak(Block block)
 	{
 		Assert.assertTrue(null != block);
-		Assert.assertTrue(random0to99 < RANDOM_DROP_LIMIT);
 		
 		// See if this is a special-case.
-		_DropChance[] chances = _specialBlockBreak.get(block);
-		Item[] dropped;
+		DropChance[] chances = _specialBlockBreak.get(block);
 		if (null == chances)
 		{
 			// By default, all other blocks just drop as their item type.
-			dropped = new Item[] { block.item() };
+			chances = new DropChance[] { new DropChance(block.item(), 100) };
 		}
-		else
-		{
-			dropped = Arrays.stream(chances)
-					.filter((_DropChance one) -> (random0to99 < one.chance1to100))
-					.map((_DropChance one) -> one.item)
-					.toArray((int size) -> new Item[size])
-			;
-		}
-		return dropped;
+		return chances;
 	}
 
 	/**
@@ -515,8 +500,6 @@ public class BlockAspect
 	}
 
 
-	private static record _DropChance(Item item, int chance1to100) {}
-
 	private static class _Parser implements TabListReader.IParseCallbacks
 	{
 		private final ItemRegistry _items;
@@ -536,7 +519,7 @@ public class BlockAspect
 		public Map<Block, Integer> blockDamage = new HashMap<>();
 		public Map<Block, Set<Block>> specialBlockSupport = new HashMap<>();
 		public Map<Item, Block> specialBlockPlacement = new HashMap<>();
-		public Map<Block, _DropChance[]> specialBlockBreak = new HashMap<>();
+		public Map<Block, DropChance[]> specialBlockBreak = new HashMap<>();
 		public Map<Block, BlockMaterial> blockMaterials = new HashMap<>();
 		
 		private Item _currentItem;
@@ -667,7 +650,7 @@ public class BlockAspect
 					throw new TabListReader.TabListException("Drop parameters must be in pairs: " + _currentBlock);
 				}
 				int pairCount = parameters.length / 2;
-				_DropChance[] drops = new _DropChance[pairCount];
+				DropChance[] drops = new DropChance[pairCount];
 				for (int i = 0; i < pairCount; ++i)
 				{
 					int probability;
@@ -680,7 +663,7 @@ public class BlockAspect
 						throw new TabListReader.TabListException("Drop probability must be a number: " + _currentBlock);
 					}
 					Item item = _getItem(parameters[2 * i + 1]);
-					drops[i] = new _DropChance(item, probability);
+					drops[i] = new DropChance(item, probability);
 				}
 				this.specialBlockBreak.put(_currentBlock, drops);
 			}

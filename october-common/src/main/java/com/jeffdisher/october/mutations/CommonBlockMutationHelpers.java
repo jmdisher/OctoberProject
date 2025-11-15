@@ -3,7 +3,6 @@ package com.jeffdisher.october.mutations;
 import java.util.List;
 
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.OrientationAspect;
@@ -15,12 +14,13 @@ import com.jeffdisher.october.logic.FireHelpers;
 import com.jeffdisher.october.logic.GroundCoverHelpers;
 import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
+import com.jeffdisher.october.logic.MiscHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.DropChance;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
-import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
@@ -184,7 +184,7 @@ public class CommonBlockMutationHelpers
 	 * @param block The block type being broken.
 	 * @return The list of items dropped.
 	 */
-	public static Item[] getItemsDroppedWhenBreakingBlock(Environment env, TickProcessingContext context, Block block)
+	public static ItemSlot[] getItemsDroppedWhenBreakingBlock(Environment env, TickProcessingContext context, Block block)
 	{
 		return _getItemsDroppedWhenBreakingBlock(env, context, block);
 	}
@@ -262,10 +262,10 @@ public class CommonBlockMutationHelpers
 			{
 				// Schedule a mutation to send it back to them (will drop at their feet on failure).
 				// This is usually just 1 element so send 1 mutation per item.
-				Item[] droppedItems = _getItemsDroppedWhenBreakingBlock(env, context, block);
-				for (Item dropped : droppedItems)
+				ItemSlot[] droppedItems = _getItemsDroppedWhenBreakingBlock(env, context, block);
+				for (ItemSlot dropped : droppedItems)
 				{
-					EntityActionStoreToInventory store = new EntityActionStoreToInventory(new Items(dropped, 1), null);
+					EntityActionStoreToInventory store = new EntityActionStoreToInventory(dropped.stack, dropped.nonStackable);
 					context.newChangeSink.next(optionalEntityForStorage, store);
 				}
 			}
@@ -404,10 +404,11 @@ public class CommonBlockMutationHelpers
 		}
 	}
 
-	private static Item[] _getItemsDroppedWhenBreakingBlock(Environment env, TickProcessingContext context, Block block)
+	private static ItemSlot[] _getItemsDroppedWhenBreakingBlock(Environment env, TickProcessingContext context, Block block)
 	{
-		int random0to99 = context.randomInt.applyAsInt(BlockAspect.RANDOM_DROP_LIMIT);
-		return env.blocks.droppedBlocksOnBreak(block, random0to99);
+		DropChance[] chances = env.blocks.possibleDropsOnBreak(block);
+		ItemSlot[] slots = MiscHelpers.convertToDrops(env, context.randomInt.applyAsInt(MiscHelpers.RANDOM_DROP_LIMIT), chances);
+		return slots;
 	}
 
 	private static void _setBlockCheckingFire(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy, Block newType, OrientationAspect.Direction outputDirection)
@@ -491,9 +492,12 @@ public class CommonBlockMutationHelpers
 
 	private static void _populateInventoryWhenBreakingBlock(Environment env, TickProcessingContext context, MutableInventory out_inventory, Block block)
 	{
-		for (Item dropped : _getItemsDroppedWhenBreakingBlock(env, context, block))
+		for (ItemSlot dropped : _getItemsDroppedWhenBreakingBlock(env, context, block))
 		{
-			out_inventory.addItemsAllowingOverflow(dropped, 1);
+			// In this case, we assume that the dropped items are all stackable.
+			Items stack = dropped.stack;
+			Assert.assertTrue(null != stack);
+			out_inventory.addItemsAllowingOverflow(stack.type(), stack.count());
 		}
 	}
 
