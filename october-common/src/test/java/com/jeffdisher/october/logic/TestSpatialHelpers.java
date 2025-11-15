@@ -286,6 +286,17 @@ public class TestSpatialHelpers
 		Assert.assertEquals(new EntityLocation(0.5f, 0.5f, 0.71f), SpatialHelpers.getUnitFacingVector((byte)-32, (byte)32));
 	}
 
+	@Test
+	public void ballisticVector()
+	{
+		Assert.assertEquals(new EntityLocation(0.0f, 9.95f, 0.98f), SpatialHelpers.getBallisticVector(new EntityLocation(0.0f, 0.0f, 0.0f), new EntityLocation(0.0f, 2.0f, 0.0f), 10.0f));
+		Assert.assertEquals(new EntityLocation(0.0f, -9.95f, 0.98f), SpatialHelpers.getBallisticVector(new EntityLocation(0.0f, 0.0f, 0.0f), new EntityLocation(0.0f, -2.0f, 0.0f), 10.0f));
+		Assert.assertEquals(new EntityLocation(0.0f, 7.74f, 6.33f), SpatialHelpers.getBallisticVector(new EntityLocation(0.0f, 0.0f, 0.0f), new EntityLocation(0.0f, 10.0f, 0.0f), 10.0f));
+		Assert.assertEquals(null, SpatialHelpers.getBallisticVector(new EntityLocation(0.0f, 0.0f, 0.0f), new EntityLocation(0.0f, 10.0f, 5.0f), 10.0f));
+		Assert.assertEquals(new EntityLocation(0.0f, 10.0f, -0.1f), SpatialHelpers.getBallisticVector(new EntityLocation(0.0f, 0.0f, 0.0f), new EntityLocation(0.0f, 10.0f, -5.0f), 10.0f));
+		Assert.assertEquals(new EntityLocation(4.46f, 4.46f, 7.76f), SpatialHelpers.getBallisticVector(new EntityLocation(0.0f, 0.0f, 0.0f), new EntityLocation(3.0f, 3.0f, 3.0f), 10.0f));
+	}
+
 
 	private static class _EndpointHelper implements EntityMovementHelpers.IInteractiveHelper
 	{

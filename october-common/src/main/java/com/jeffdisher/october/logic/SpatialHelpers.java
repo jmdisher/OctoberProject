@@ -266,6 +266,51 @@ public class SpatialHelpers
 		return raw.makeScaledInstance(1.0f / magnitude);
 	}
 
+	/**
+	 * Finds the initial ballistic vector to great to fire a projectile from source to target, subject to no air drag
+	 * and a constant force of gravity, at the given initial vectorMagnitude.
+	 * 
+	 * @param source The starting-point of the projectile.
+	 * @param target The target of the projectile.
+	 * @param vectorMagnitude The initial vector magnitude to apply.
+	 * @return The initial vector of the given vectorMagnitude, or null if there is no possible trajectory.
+	 */
+	public static EntityLocation getBallisticVector(EntityLocation source, EntityLocation target, float vectorMagnitude)
+	{
+		// We will assume no air drag and apply gravity linearly.
+		float deltaX = target.x() - source.x();
+		float deltaY = target.y() - source.y();
+		float horizontalDistance = (float) Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+		float verticalDistance = target.z() - source.z();
+		float squareMagnitude = vectorMagnitude * vectorMagnitude;
+		
+		// Note that this calculation of the vertical angle is the formulation shown on Wikipedia for projectile motion.
+		// In this, gravity appears to be assumed to be a positive value.
+		float gravity = -EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND;
+		float positiveSquareRoot = (float) Math.sqrt(squareMagnitude * squareMagnitude - gravity * (gravity * horizontalDistance * horizontalDistance + 2.0f * verticalDistance * squareMagnitude));
+		// Note that there are 2 solutions to this (+/- in front of positiveSquareRoot) but we use negative since it provides the most direct vector.
+		float angleUp = (float) Math.atan((squareMagnitude - positiveSquareRoot) / (gravity * horizontalDistance));
+		
+		EntityLocation result;
+		if (Float.isNaN(angleUp))
+		{
+			// We will return null if this isn't a possible angle.
+			result = null;
+		}
+		else
+		{
+			// We need to break this 2D representation of the distance back into the 3D space.
+			float verticalVector = (float) Math.sin(angleUp) * vectorMagnitude;
+			float horizontalVector = (float) Math.cos(angleUp) * vectorMagnitude;
+			float hozitonalScale = horizontalVector / horizontalDistance;
+			float xVector = deltaX * hozitonalScale;
+			float yVector = deltaY * hozitonalScale;
+			
+			result = new EntityLocation(xVector, yVector, verticalVector);
+		}
+		return result;
+	}
+
 
 	private static boolean _isBlockAligned(float coord)
 	{
