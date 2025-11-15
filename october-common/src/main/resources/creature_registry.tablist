@@ -11,7 +11,7 @@
 #
 # Note that all entries listed here will be numbered in order, starting at 2 (as 1 is hard-coded as "PLAYER" and 0 is a
 # reserved error value.
-# "attack_damage" defaults to 0 (non-hostile) when omitted.
+# "attack_damage" defaults to 0 (non-hostile) when omitted but -1 is a special value meaning a ranged bow and arrow.
 # "breeding_item" presence means that the creature can be bread.
 
 op.cow	Cow
@@ -38,3 +38,11 @@ op.cow_baby	Calf
 	action_distance	1.0
 	drops	op.beef	1
 	adult_type	op.cow
+op.skeleton	Skeleton
+	volume	1.8	0.6
+	blocks_per_second	1.0
+	max_health	30
+	view_distance	8.0
+	action_distance	7.0
+	drops	op.arrow	2
+	attack_damage	-1

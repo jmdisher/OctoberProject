@@ -19,8 +19,10 @@ import com.jeffdisher.october.logic.CreatureMovementHelpers;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.NudgeHelpers;
 import com.jeffdisher.october.logic.PathFinder;
+import com.jeffdisher.october.logic.RayCastHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
+import com.jeffdisher.october.subactions.EntitySubActionReleaseWeapon;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BodyPart;
@@ -37,6 +39,7 @@ import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
+import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -241,9 +244,13 @@ public class CreatureLogic
 			{
 				isDone = _didTakeLivestockAction(context, mutable);
 			}
-			else if (creatureType.isHostile())
+			else if (creatureType.isHostileMelee())
 			{
-				isDone = _didTakeHostileAction(context, mutable);
+				isDone = _didTakeHostileMeleeAction(context, mutable);
+			}
+			else if (creatureType.isHostileRanged())
+			{
+				isDone = _didTakeHostileRangedAction(context, mutable);
 			}
 			else
 			{
@@ -724,7 +731,7 @@ public class CreatureLogic
 		return isDone;
 	}
 
-	private static boolean _didTakeHostileAction(TickProcessingContext context, MutableCreature creature)
+	private static boolean _didTakeHostileMeleeAction(TickProcessingContext context, MutableCreature creature)
 	{
 		boolean isDone;
 		// The only special action we will take is attacking but this path will also reset our tracking if the target moves.
@@ -760,6 +767,87 @@ public class CreatureLogic
 				creature.newLastAttackMillis = context.currentTickTimeMillis;
 				// We only count a successful attack as an "action".
 				isDone = true;
+			}
+			else
+			{
+				// Too far away.
+				isDone = false;
+			}
+		}
+		else
+		{
+			// Nothing to do.
+			isDone = false;
+		}
+		return isDone;
+	}
+
+	private static boolean _didTakeHostileRangedAction(TickProcessingContext context, MutableCreature creature)
+	{
+		boolean isDone;
+		// The only special action we will take is attacking but this path will also reset our tracking if the target moves.
+		// We don't have an objective measurement of time but the tick rate is considered constant within a server instance so we will estimate time passed.
+		long millisSinceLastAttack = context.currentTickTimeMillis - creature.newLastAttackMillis;
+		if ((CreatureEntity.NO_TARGET_ENTITY_ID != creature.newTargetEntityId) && (millisSinceLastAttack >= MILLIS_ATTACK_COOLDOWN))
+		{
+			// We are tracking a target so see if they have moved (since we would need to clear our existing targets and
+			// movement plans unless they are close enough for other actions).
+			MinimalEntity targetEntity = context.previousEntityLookUp.apply(creature.newTargetEntityId);
+			// If we got here, they must not have unloaded (we would have observed that in didUpdateTargetLocation.
+			Assert.assertTrue(null != targetEntity);
+			
+			// See if they are in attack range - we will aim for the centre of the entity, since that will give us a large target.
+			EntityType creatureType = creature.getType();
+			float distance = SpatialHelpers.distanceFromMutableEyeToEntitySurface(creature, targetEntity);
+			float attackDistance = creatureType.actionDistance();
+			if (distance <= attackDistance)
+			{
+				// We are in range so find the vector which will fire in an arc toward the centre of the target.
+				EntityLocation sourceEye = SpatialHelpers.getEyeLocation(creature);
+				EntityLocation targetCentre = SpatialHelpers.getCentreOfRegion(targetEntity.location(), creatureType.volume());
+				
+				// Make sure that we can see them.
+				Environment env = Environment.getShared();
+				RayCastHelpers.RayBlock solidCollision = RayCastHelpers.findFirstCollision(sourceEye, targetCentre, (AbsoluteLocation location) -> {
+					BlockProxy proxy = context.previousBlockLookUp.apply(location);
+					boolean shouldStop;
+					if (null != proxy)
+					{
+						boolean isActive = FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE);
+						shouldStop = env.blocks.isSolid(proxy.getBlock(), isActive);
+					}
+					else
+					{
+						shouldStop = true;
+					}
+					return shouldStop;
+				});
+				
+				if (null == solidCollision)
+				{
+					// Nothing in the way so see if there is a ballistic trajectory to satisfy this.
+					EntityLocation startVector = SpatialHelpers.getBallisticVector(sourceEye, targetCentre, EntitySubActionReleaseWeapon.PROJECTILE_POWER_MULTIPLIER);
+					if (null != startVector)
+					{
+						// Create the arrow.
+						context.passiveSpawner.spawnPassive(PassiveType.PROJECTILE_ARROW, sourceEye, startVector, null);
+						
+						// We only count a successful attack as an "action".
+						isDone = true;
+					}
+					else
+					{
+						// There is no way to hit there from here.
+						isDone = false;
+					}
+				}
+				else
+				{
+					// There is something in the way.
+					isDone = false;
+				}
+				// Since we at least tried to find a valid attack, put us on attack cooldown.
+				creature.newLastAttackMillis = context.currentTickTimeMillis;
 			}
 			else
 			{
@@ -846,7 +934,7 @@ public class CreatureLogic
 		else
 		{
 			// We currently must be one of these.
-			Assert.assertTrue(creatureType.isHostile());
+			Assert.assertTrue(creatureType.isHostileMelee() || creatureType.isHostileRanged());
 			
 			// Make sure that they still exist, are in range.
 			Entity player = entityCollection.getPlayerById(targetId);
@@ -879,7 +967,7 @@ public class CreatureLogic
 	{
 		boolean didDespawn = false;
 		EntityType creatureType = mutable.getType();
-		if (creatureType.isHostile() && (Difficulty.PEACEFUL == context.config.difficulty))
+		if ((creatureType.isHostileMelee() || creatureType.isHostileRanged()) && (Difficulty.PEACEFUL == context.config.difficulty))
 		{
 			// If we are peaceful, we want to despawn any creatures which are hostile.
 			mutable.newHealth = (byte)0;

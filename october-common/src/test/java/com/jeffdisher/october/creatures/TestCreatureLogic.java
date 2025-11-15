@@ -40,6 +40,8 @@ import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.PassiveEntity;
+import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.CreatureEntity.Ephemeral;
 import com.jeffdisher.october.utils.CuboidGenerator;
@@ -1017,6 +1019,106 @@ public class TestCreatureLogic
 		CreatureEntity output = mutableCow.freeze();
 		Assert.assertEquals(COW, output.type());
 		Assert.assertTrue(output.extendedData() instanceof CreatureExtendedData.LivestockData);
+	}
+
+	@Test
+	public void rangedAttack()
+	{
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		_setLayer(input, (byte)0, "op.stone");
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		EntityLocation playerLocation = new EntityLocation(4.5f, 0.0f, 1.0f);
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = playerLocation;
+		Entity player = mutable.freeze();
+		EntityType skeletonType = ENV.creatures.getTypeById("op.skeleton");
+		EntityLocation skeletonLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
+		CreatureEntity skeleton = CreatureEntity.create(assigner.next(), skeletonType, skeletonLocation, 0L);
+		
+		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
+			return blockLocation.getCuboidAddress().equals(cuboidAddress)
+				? new BlockProxy(blockLocation.getBlockAddress(), input)
+				: null
+			;
+		};
+		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> {
+			MinimalEntity min;
+			switch (id)
+			{
+			case -1:
+				min = MinimalEntity.fromCreature(skeleton);
+				break;
+			case 1:
+				min = MinimalEntity.fromEntity(player);
+				break;
+			default:
+				throw new AssertionError();
+			}
+			return min;
+		};
+		long millisPerTick = 100L;
+		PassiveEntity[] out = new PassiveEntity[1];
+		TickProcessingContext.IPassiveSpawner passiveSpawner = (PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+			Assert.assertNull(out[0]);
+			out[0] = new PassiveEntity(1
+				, type
+				, location
+				, velocity
+				, extendedData
+				, 1000L
+			);
+		};
+		TickProcessingContext context = ContextBuilder.build()
+			.millisPerTick(millisPerTick)
+			.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
+			.lookups(previousBlockLookUp, previousEntityLookUp, null)
+			.passive(passiveSpawner)
+			.finish()
+		;
+		
+		// Start with the skeleton targeting the player.
+		MutableCreature mutableSkeleton = MutableCreature.existing(skeleton);
+		mutableSkeleton.newTargetEntityId = player.id();
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
+			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(skeleton.id(), skeleton))
+			, mutableSkeleton
+		);
+		// They should attack since they are ranged.
+		Assert.assertTrue(didTakeAction);
+		Assert.assertEquals(player.id(), mutableSkeleton.newTargetEntityId);
+		Assert.assertNotNull(out[0]);
+		Assert.assertEquals(PassiveType.PROJECTILE_ARROW, out[0].type());
+		Assert.assertEquals(new EntityLocation(0.3f, 0.3f, 2.62f), out[0].location());
+		Assert.assertEquals(new EntityLocation(9.98f, 0.0f, 0.61f), out[0].velocity());
+		out[0] = null;
+		
+		// A second attack on the following tick should fail since we are on cooldown.
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context
+			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(skeleton.id(), skeleton))
+			, mutableSkeleton
+		);
+		Assert.assertFalse(didTakeAction);
+		Assert.assertEquals(player.id(), mutableSkeleton.newTargetEntityId);
+		Assert.assertNull(out[0]);
+		
+		// But will work if we advance tick number further.
+		context = ContextBuilder.build()
+			.tick(context.currentTick + CreatureLogic.MILLIS_ATTACK_COOLDOWN / context.millisPerTick)
+			.lookups(previousBlockLookUp, previousEntityLookUp, null)
+			.passive(passiveSpawner)
+			.finish()
+		;
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context
+			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(skeleton.id(), skeleton))
+			, mutableSkeleton
+		);
+		Assert.assertTrue(didTakeAction);
+		Assert.assertEquals(player.id(), mutableSkeleton.newTargetEntityId);
+		Assert.assertNotNull(out[0]);
+		Assert.assertEquals(PassiveType.PROJECTILE_ARROW, out[0].type());
+		Assert.assertEquals(new EntityLocation(0.3f, 0.3f, 2.62f), out[0].location());
+		Assert.assertEquals(new EntityLocation(9.98f, 0.0f, 0.61f), out[0].velocity());
 	}
 
 

@@ -106,7 +106,7 @@ public class SpatialHelpers
 	 * @param entity The entity.
 	 * @return The location where their eyes are.
 	 */
-	public static EntityLocation getEyeLocation(IMutablePlayerEntity entity)
+	public static EntityLocation getEyeLocation(IMutableMinimalEntity entity)
 	{
 		return _getEyeLocation(entity.getLocation(), entity.getType());
 	}

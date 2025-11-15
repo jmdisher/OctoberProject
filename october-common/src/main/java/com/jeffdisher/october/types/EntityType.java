@@ -48,11 +48,19 @@ public record EntityType(byte number
 	}
 
 	/**
-	 * @return True if this is a hostile creater (ie:  does damage to the player).
+	 * @return True if this is a hostile creature which does melee damage.
 	 */
-	public boolean isHostile()
+	public boolean isHostileMelee()
 	{
 		return (this.attackDamage > 0);
+	}
+
+	/**
+	 * @return True if this is a hostile creature which does ranged damage using a bow and arrow.
+	 */
+	public boolean isHostileRanged()
+	{
+		return (-1 == this.attackDamage);
 	}
 
 	/**
