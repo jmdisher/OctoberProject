@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
+import com.jeffdisher.october.logic.MiscHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.utils.Assert;
 
@@ -116,10 +118,13 @@ public class MutableCreature implements IMutableCreatureEntity
 	public void handleEntityDeath(TickProcessingContext context)
 	{
 		EntityLocation entityCentre = SpatialHelpers.getCentreFeetLocation(this);
-		for (Items toDrop : this.newType.drops())
+		Environment env = Environment.getShared();
+		DropChance[] chances = this.newType.drops();
+		ItemSlot[] dropped = MiscHelpers.convertToDrops(env, context.randomInt.applyAsInt(MiscHelpers.RANDOM_DROP_LIMIT), chances);
+		for (ItemSlot toDrop : dropped)
 		{
 			// Drop the drops as passives.
-			context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, entityCentre, new EntityLocation(0.0f, 0.0f, 0.0f), ItemSlot.fromStack(toDrop));
+			context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, entityCentre, new EntityLocation(0.0f, 0.0f, 0.0f), toDrop);
 		}
 		this.newHealth = 0;
 	}

@@ -11,10 +11,10 @@ import java.util.Map;
 import java.util.Set;
 
 import com.jeffdisher.october.config.TabListReader;
+import com.jeffdisher.october.types.DropChance;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -64,7 +64,7 @@ public class CreatureRegistry
 			private float _viewDistance = -1.0f;
 			private float _actionDistance = -1.0f;
 			private byte _attackDamage = 0;
-			private Items[] _drops = null;
+			private DropChance[] _drops = null;
 			private Item _breedingItem = null;
 			private EntityType _adultType = null;
 			
@@ -205,13 +205,21 @@ public class CreatureRegistry
 				}
 				else if (SUB_DROPS.equals(name))
 				{
-					if (2 != parameters.length)
+					// Note that duplicates are expected in this parameter list (empty also makes sense).
+					// This list is always in pairs (probability<TAB>item).
+					if (0 != (parameters.length % 2))
 					{
-						throw new TabListReader.TabListException(_id + ": Expected 2 parameters for " + SUB_DROPS);
+						throw new TabListReader.TabListException(_id + ": Drop parameters must be in pairs for " + SUB_DROPS);
 					}
-					Item item = _getItem(parameters[0]);
-					int count = _getInt(parameters[1]);
-					_drops = new Items[] { new Items(item, count) };
+					int pairCount = parameters.length / 2;
+					DropChance[] drops = new DropChance[pairCount];
+					for (int i = 0; i < pairCount; ++i)
+					{
+						Item item = _getItem(parameters[2 * i + 1]);
+						int probability = _getInt(parameters[2 * i]);
+						drops[i] = new DropChance(item, probability);
+					}
+					_drops = drops;
 				}
 				else if (SUB_OPT_ATTACK_DAMAGE.equals(name))
 				{
@@ -401,7 +409,7 @@ public class CreatureRegistry
 			, float viewDistance
 			, float actionDistance
 			, byte attackDamage
-			, Items[] drops
+			, DropChance[] drops
 			, Item breedingItem
 			, EntityType adultType
 			, EntityType.IExtendedCodec extendedCodec

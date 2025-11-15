@@ -5,7 +5,7 @@
 # <TAB>max_health<TAB>byte
 # <TAB>view_distance<TAB>float
 # <TAB>action_distance<TAB>float
-# <TAB>drops<TAB>item_id<tab>count_int
+# <TAB>drops<TAB>[probability item]*
 # [<TAB>attack_damage<TAB>byte]
 # [<TAB>breeding_item<TAB>item_id]
 #
@@ -20,7 +20,7 @@ op.cow	Cow
 	max_health	40
 	view_distance	7.0
 	action_distance	1.0
-	drops	op.beef	5
+	drops	100	op.beef	100	op.beef	100	op.beef	100	op.beef	100	op.beef
 	breeding_item	op.wheat_item
 op.orc	Orc
 	volume	0.7	0.4
@@ -28,7 +28,7 @@ op.orc	Orc
 	max_health	20
 	view_distance	8.0
 	action_distance	1.0
-	drops	op.iron_dust	1
+	drops	100	op.iron_dust
 	attack_damage	5
 op.cow_baby	Calf
 	volume	0.4	0.6
@@ -36,7 +36,7 @@ op.cow_baby	Calf
 	max_health	20
 	view_distance	5.0
 	action_distance	1.0
-	drops	op.beef	1
+	drops	100	op.beef
 	adult_type	op.cow
 op.skeleton	Skeleton
 	volume	1.8	0.6
@@ -44,5 +44,5 @@ op.skeleton	Skeleton
 	max_health	30
 	view_distance	8.0
 	action_distance	7.0
-	drops	op.arrow	2
+	drops	100	op.arrow	100	op.arrow
 	attack_damage	-1
