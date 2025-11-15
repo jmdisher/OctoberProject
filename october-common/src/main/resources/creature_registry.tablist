@@ -20,7 +20,7 @@ op.cow	Cow
 	max_health	40
 	view_distance	7.0
 	action_distance	1.0
-	drops	100	op.beef	100	op.beef	100	op.beef	100	op.beef	100	op.beef
+	drops	100	op.beef	100	op.beef	100	op.beef	100	op.beef	50	op.beef
 	breeding_item	op.wheat_item
 op.orc	Orc
 	volume	0.7	0.4
@@ -28,7 +28,7 @@ op.orc	Orc
 	max_health	20
 	view_distance	8.0
 	action_distance	1.0
-	drops	100	op.iron_dust
+	drops	20	op.iron_dust
 	attack_damage	5
 op.cow_baby	Calf
 	volume	0.4	0.6
@@ -44,5 +44,5 @@ op.skeleton	Skeleton
 	max_health	30
 	view_distance	8.0
 	action_distance	7.0
-	drops	100	op.arrow	100	op.arrow
+	drops	100	op.arrow	10	op.bow
 	attack_damage	-1

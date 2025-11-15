@@ -28,6 +28,7 @@ import com.jeffdisher.october.logic.NudgeHelpers;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.TickUtils;
+import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -46,6 +47,7 @@ import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
@@ -1024,6 +1026,60 @@ public class TestEngineCreatures
 		CreatureEntity updated = result.updatedEntity();
 		Assert.assertEquals(new EntityLocation(0.85f, 0.85f, 0.0f), updated.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), updated.velocity());
+	}
+
+	@Test
+	public void killSkeleton()
+	{
+		// Show that the skeleton can drop a non-stackable.
+		CreatureEntity creature = CreatureEntity.create(-1, ENV.creatures.getTypeById("op.skeleton"), new EntityLocation(0.0f, 0.0f, 0.0f), 0L);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		_Events events = new _Events();
+		PassiveEntity[] out = new PassiveEntity[2];
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
+			.fixedRandom(0)
+			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), airCuboid), null, null)
+			.eventSink(events)
+			.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+				Assert.assertNull(out[1]);
+				int id = (null == out[0]) ? 1 : 2;
+				PassiveEntity passive = new PassiveEntity(id
+					, type
+					, location
+					, velocity
+					, extendedData
+					, 1000L
+				);
+				out[id - 1] = passive;
+			})
+			.finish()
+		;
+		int sourceId = 1;
+		EntityActionTakeDamageFromEntity<IMutableCreatureEntity> action = new EntityActionTakeDamageFromEntity<>(BodyPart.FEET, 120, sourceId);
+		events.expected(new EventRecord(EventRecord.Type.ENTITY_KILLED, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
+		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+			, EntityCollection.emptyCollection()
+			, creature
+			, List.of(action)
+		);
+		
+		Assert.assertNull(result.updatedEntity());
+		
+		Assert.assertEquals(1, out[0].id());
+		Assert.assertEquals(new EntityLocation(0.3f, 0.3f, 0.0f), out[0].location());
+		NonStackableItem nonStack = ((ItemSlot)out[0].extendedData()).nonStackable;
+		Item bow = ENV.items.getItemById("op.bow");
+		Assert.assertEquals(bow, nonStack.type());
+		Assert.assertEquals(1, nonStack.properties().size());
+		Assert.assertEquals(ENV.durability.getDurability(bow), nonStack.properties().get(PropertyRegistry.DURABILITY));
+		
+		Assert.assertEquals(2, out[1].id());
+		Assert.assertEquals(new EntityLocation(0.3f, 0.3f, 0.0f), out[1].location());
+		Items stack = ((ItemSlot)out[1].extendedData()).stack;
+		Item arrow = ENV.items.getItemById("op.arrow");
+		Assert.assertEquals(arrow, stack.type());
+		Assert.assertEquals(1, stack.count());
 	}
 
 

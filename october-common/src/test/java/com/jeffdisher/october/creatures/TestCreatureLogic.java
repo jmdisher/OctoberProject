@@ -1009,6 +1009,7 @@ public class TestCreatureLogic
 		
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(CreatureExtendedData.BabyCodec.MILLIS_TO_MATURITY / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
+				.fixedRandom(0)
 				.finish()
 		;
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context

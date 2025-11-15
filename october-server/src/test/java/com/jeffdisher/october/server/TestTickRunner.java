@@ -1586,7 +1586,16 @@ public class TestTickRunner
 		mut.newHealth = (byte)15;
 		CreatureEntity creature  = mut.freeze();
 		
-		TickRunner runner = _createTestRunner();
+		// We need to fix the random value to get a predictable set of drops.
+		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {};
+		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
+				, MILLIS_PER_TICK
+				, new CreatureIdAssigner()
+				, new PassiveIdAssigner()
+				, (int bound) -> 0
+				, snapshotListener
+				, new WorldConfig()
+		);
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = entityLocation;
