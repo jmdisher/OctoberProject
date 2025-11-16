@@ -119,6 +119,25 @@ public class ContextBuilder
 		return this;
 	}
 
+	public ContextBuilder modRandom(int value)
+	{
+		this.randomInt = (int limit) -> {
+			return value % limit;
+		};
+		return this;
+	}
+
+	public ContextBuilder boundedRandom(int value)
+	{
+		this.randomInt = (int bound) -> {
+			return (bound > value)
+				? value
+				: (bound - 1)
+			;
+		};
+		return this;
+	}
+
 	public ContextBuilder eventSink(TickProcessingContext.IEventSink eventSink)
 	{
 		this.eventSink = eventSink;
@@ -128,17 +147,6 @@ public class ContextBuilder
 	public ContextBuilder keepAliveSink(Consumer<CuboidAddress> keepAliveSink)
 	{
 		this.keepAliveSink = keepAliveSink;
-		return this;
-	}
-
-	public ContextBuilder boundedRandom(int value)
-	{
-		this.randomInt = (int bound) -> {
-			return (bound > value)
-					? value
-					: (bound - 1)
-			;
-		};
 		return this;
 	}
 

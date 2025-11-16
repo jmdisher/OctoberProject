@@ -369,8 +369,8 @@ public class CreatureRegistry
 		_mapByIds = Collections.unmodifiableMap(mapByIds);
 		_babyTypeByAdultType = Collections.unmodifiableMap(babyTypeByAdultType);
 		this.HOSTILE_MOBS = _mapByIds.values().stream()
-				.filter((EntityType type) -> (type.attackDamage() > 0))
-				.toArray((int size) -> new EntityType[size])
+			.filter((EntityType type) -> (type.attackDamage() != 0))
+			.toArray((int size) -> new EntityType[size])
 		;
 	}
 

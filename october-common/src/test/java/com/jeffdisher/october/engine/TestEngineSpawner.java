@@ -40,12 +40,16 @@ public class TestEngineSpawner
 	private static Environment ENV;
 	private static Block AIR;
 	private static Block STONE;
+	private static EntityType ORC;
+	private static EntityType SKELETON;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
 		AIR = ENV.blocks.fromItem(ENV.items.getItemById("op.air"));
 		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		ORC = ENV.creatures.getTypeById("op.orc");
+		SKELETON = ENV.creatures.getTypeById("op.skeleton");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -56,7 +60,7 @@ public class TestEngineSpawner
 	@Test
 	public void singleCuboid()
 	{
-		// Create a cuboid of air with a single stone block located such that our random generator will find it and show that a single orc is spawned on the block.
+		// Create a cuboid of air with a single stone block located such that our random generator will find it and show that a single skeleton is spawned on the block.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 5, 1), STONE.item().number());
 		CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
@@ -71,6 +75,7 @@ public class TestEngineSpawner
 				, Map.of()
 		);
 		
+		Assert.assertEquals(SKELETON, out[0].type());
 		Assert.assertEquals(2.0f, out[0].location().z(), 0.01f);
 	}
 
@@ -149,6 +154,7 @@ public class TestEngineSpawner
 		// Note that this will fail half the time if it selects the stone cuboid (hash order is non-deterministic).
 		if (null != out[0])
 		{
+			Assert.assertEquals(SKELETON, out[0].type());
 			Assert.assertEquals(0.0f, out[0].location().z(), 0.01f);
 		}
 	}
@@ -237,6 +243,73 @@ public class TestEngineSpawner
 		
 		// We should fail to spawn since we only provided that one cuboid and it is too far above solid ground.
 		Assert.assertNull(out[0]);
+	}
+
+	@Test
+	public void singleCuboidAirGaps()
+	{
+		// Create a solid cuboid of stone with a few specific air gaps to test spawning of orcs and skeletons.
+		CuboidData targetCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
+		targetCuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(4, 4, 4), AIR.item().number());
+		targetCuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 5, 5), AIR.item().number());
+		CuboidHeightMap targetHeightMap = HeightMapHelpers.buildHeightMap(targetCuboid);
+		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = Map.of(targetCuboid.getCuboidAddress(), targetCuboid
+		);
+		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(Map.of(targetCuboid.getCuboidAddress(), targetHeightMap
+		));
+		
+		long gameTick = 1L;
+		long gameTimeMillis = gameTick * ContextBuilder.DEFAULT_MILLIS_PER_TICK;
+		CreatureIdAssigner idAssigner = new CreatureIdAssigner();
+		CreatureEntity[] out = new CreatureEntity[1];
+		TickProcessingContext.ICreatureSpawner spawner = (EntityType type, EntityLocation location) -> {
+			Assert.assertNull(out[0]);
+			out[0] = CreatureEntity.create(idAssigner.next(), type, location, gameTimeMillis);
+		};
+		ContextBuilder builder = ContextBuilder.build()
+			.tick(gameTick)
+			.lookups((AbsoluteLocation location) -> {
+				IReadOnlyCuboidData cuboid = completedCuboids.get(location.getCuboidAddress());
+				return (null != cuboid)
+					? new BlockProxy(location.getBlockAddress(), cuboid)
+					: null
+				;
+			}, null, null)
+			.spawner(spawner)
+		;
+		
+		// With a mod random of 4, we expect to see the orc spawn in 0,0.
+		TickProcessingContext context = builder.modRandom(4).finish();
+		EngineSpawner.trySpawnCreature(context
+			, EntityCollection.emptyCollection()
+			, completedCuboids
+			, completedHeightMaps
+			, Map.of()
+		);
+		Assert.assertEquals(ORC, out[0].type());
+		Assert.assertEquals(new EntityLocation(4.0f, 4.0f, 4.0f), out[0].location());
+		out[0] = null;
+		
+		// With a mod random of 5, we should see nothing spawn since the skeleton is too tall.
+		context = builder.modRandom(5).finish();
+		EngineSpawner.trySpawnCreature(context
+			, EntityCollection.emptyCollection()
+			, completedCuboids
+			, completedHeightMaps
+			, Map.of()
+		);
+		Assert.assertNull(out[0]);
+		
+		// If we increase the space, the spawn should now succeed.
+		targetCuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 5, 6), AIR.item().number());
+		EngineSpawner.trySpawnCreature(context
+			, EntityCollection.emptyCollection()
+			, completedCuboids
+			, completedHeightMaps
+			, Map.of()
+		);
+		Assert.assertEquals(SKELETON, out[0].type());
+		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 5.0f), out[0].location());
 	}
 
 
