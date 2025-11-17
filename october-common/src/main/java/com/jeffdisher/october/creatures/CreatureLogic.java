@@ -385,10 +385,16 @@ public class CreatureLogic
 				newTarget = _findFeedingTarget(entityCollection, mutable);
 			}
 		}
-		else
+		else if (type.isHostileMelee() || type.isHostileRanged())
 		{
 			// This is hostile so just search for a player.
 			newTarget = _findPlayerInRange(entityCollection, mutable);
+		}
+		else
+		{
+			// If this isn't livestock or hostile, it must be a baby and they never target anything.
+			Assert.assertTrue(type.isBaby());
+			newTarget = null;
 		}
 		
 		// Determine the path if we found a target.

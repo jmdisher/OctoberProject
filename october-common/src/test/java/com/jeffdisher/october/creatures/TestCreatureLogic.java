@@ -53,6 +53,7 @@ public class TestCreatureLogic
 	private static Item WHEAT;
 	private static EntityType COW;
 	private static EntityType ORC;
+	private static EntityType COW_BABY;
 	@BeforeClass
 	public static void setup()
 	{
@@ -60,6 +61,7 @@ public class TestCreatureLogic
 		WHEAT = ENV.items.getItemById("op.wheat_item");
 		COW = ENV.creatures.getTypeById("op.cow");
 		ORC = ENV.creatures.getTypeById("op.orc");
+		COW_BABY = ENV.creatures.getTypeById("op.cow_baby");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -1002,9 +1004,8 @@ public class TestCreatureLogic
 	{
 		// Show how a calf grows into an adult.
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
-		EntityType cowBaby = ENV.creatures.getTypeById("op.cow_baby");
 		EntityLocation cowLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
-		CreatureEntity cow = CreatureEntity.create(assigner.next(), cowBaby, cowLocation, 0L);
+		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW_BABY, cowLocation, 0L);
 		MutableCreature mutableCow = MutableCreature.existing(cow);
 		
 		TickProcessingContext context = ContextBuilder.build()
@@ -1120,6 +1121,63 @@ public class TestCreatureLogic
 		Assert.assertEquals(PassiveType.PROJECTILE_ARROW, out[0].type());
 		Assert.assertEquals(new EntityLocation(0.3f, 0.3f, 2.62f), out[0].location());
 		Assert.assertEquals(new EntityLocation(9.98f, 0.0f, 0.61f), out[0].velocity());
+	}
+
+	@Test
+	public void calfTarget()
+	{
+		// The calf should never target anything so make sure that is correct and is correctly treated.
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		_setLayer(input, (byte)0, "op.stone");
+		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
+			return blockLocation.getCuboidAddress().equals(cuboidAddress)
+				? new BlockProxy(blockLocation.getBlockAddress(), input)
+				: null
+			;
+		};
+		
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		EntityLocation calfLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
+		EntityLocation cowLocation = new EntityLocation(1.0f, 0.0f, 1.0f);
+		EntityLocation orcLocation = new EntityLocation(0.0f, 1.0f, 1.0f);
+		EntityLocation playerLocation = new EntityLocation(1.0f, 1.0f, 1.0f);
+		CreatureEntity calf = CreatureEntity.create(assigner.next(), COW_BABY, calfLocation, 0L);
+		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, cowLocation, 0L);
+		CreatureEntity orc= CreatureEntity.create(assigner.next(), ORC, orcLocation, 0L);
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = playerLocation;
+		Entity player = mutable.freeze();
+		EntityCollection collection = EntityCollection.fromMaps(Map.of(
+			1, player
+		), Map.of(
+			calf.id(), calf
+			, cow.id(), cow
+			, orc.id(), orc
+		));
+		
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(1000L)
+			.lookups(previousBlockLookUp, null, null)
+			.finish()
+		;
+		MutableCreature mutableCalf = MutableCreature.existing(calf);
+		// We should take no action and not set any kind of target.
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
+			, collection
+			, mutableCalf
+		);
+		Assert.assertFalse(didTakeAction);
+		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, mutableCalf.newTargetEntityId);
+		// Run this again to make sure we didn't change state which caused confusion.
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context
+			, collection
+			, mutableCalf
+		);
+		Assert.assertFalse(didTakeAction);
+		CreatureEntity output = mutableCalf.freeze();
+		Assert.assertEquals(COW_BABY, output.type());
+		Assert.assertTrue(output.extendedData() instanceof CreatureExtendedData.BabyData);
 	}
 
 
