@@ -102,8 +102,10 @@ public class TestProcesses
 		
 		// Wait until we see the entity arrive.
 		long startTick = client.waitForLocalEntity(System.currentTimeMillis());
+		Assert.assertEquals(MILLIS_PER_TICK, client.serverState.millisPerTick);
 		// (wait for an end of tick so that we know this is flushed).
 		client.waitForTick(startTick + 1L, System.currentTimeMillis());
+		Assert.assertTrue(client.serverState.latestTickNumber > startTick);
 		Assert.assertNotNull(listener.getLocalEntity());
 		
 		// Disconnect the client and shut down the server.
@@ -463,12 +465,14 @@ public class TestProcesses
 		ClientProcess client1 = new ClientProcess(listener1, InetAddress.getLocalHost(), PORT, "Client 1", 1);
 		client1.waitForLocalEntity(currentTimeMillis[0]);
 		int clientId1 = client1.waitForClientId();
+		Assert.assertEquals(MILLIS_PER_TICK, client1.serverState.millisPerTick);
 		
 		// Create the second client.
 		_ClientListener listener2 = new _ClientListener();
 		ClientProcess client2 = new ClientProcess(listener2, InetAddress.getLocalHost(), PORT, "Client 2", 1);
 		client2.waitForLocalEntity(currentTimeMillis[0]);
 		int clientId2 = client2.waitForClientId();
+		Assert.assertEquals(MILLIS_PER_TICK, client2.serverState.millisPerTick);
 		
 		// We now want to send 4 messages to test the cases:
 		// -from 1 to 2

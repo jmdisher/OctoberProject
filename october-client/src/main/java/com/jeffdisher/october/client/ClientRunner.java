@@ -65,9 +65,6 @@ public class ClientRunner
 	// This is set once when the client connects and is only read after that.
 	private int _serverMaximumViewDistance;
 
-	// We leave this time public as callers need it and it is only set on initial connection.
-	public long millisPerTick;
-
 	public ClientRunner(IClientAdapter network, IProjectionListener projectionListener, IListener clientListener)
 	{
 		_network = network;
@@ -283,7 +280,6 @@ public class ClientRunner
 				_accumulator = new MovementAccumulator(_projectionListener, millisPerTick, Environment.getShared().creatures.PLAYER.volume(), currentTimeMillis);
 				_lastCallMillis = currentTimeMillis;
 				_serverMaximumViewDistance = viewDistanceMaximum;
-				ClientRunner.this.millisPerTick = millisPerTick;
 				// Notify the listener that we were assigned an ID.
 				_clientListener.clientDidConnectAndLogin(assignedId, currentViewDistance);
 			});

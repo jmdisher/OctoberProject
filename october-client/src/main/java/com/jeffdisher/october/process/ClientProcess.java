@@ -62,6 +62,8 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class ClientProcess
 {
+	public final ServerState serverState;
+
 	private final IListener _listener;
 	private final _LockingList _pendingCallbacks;
 	private final ClientRunner _clientRunner;
@@ -94,6 +96,8 @@ public class ClientProcess
 	 */
 	public ClientProcess(IListener listener, InetAddress address, int port, String clientName, int cuboidViewDistance) throws IOException
 	{
+		this.serverState = new ServerState();
+		
 		_listener = listener;
 		_pendingCallbacks = new _LockingList();
 		_clientRunner = new ClientRunner(new _NetworkAdapter(), new _ProjectionListener(), new _RunnerListener());
@@ -374,6 +378,7 @@ public class ClientProcess
 		_lastTickFromServer = latestTickNumber;
 		_lastIncludedLocalCommit = lastIncludedLocalCommit;
 		this.notifyAll();
+		this.serverState.latestTickNumber = latestTickNumber;
 	}
 
 	private synchronized void _background_setClientId(int assignedId)
@@ -399,6 +404,11 @@ public class ClientProcess
 		this.notifyAll();
 	}
 
+	private void _background_setMillisPerTick(long millisPerTick)
+	{
+		this.serverState.millisPerTick = millisPerTick;
+	}
+
 	private void _runPendingCallbacks()
 	{
 		Runnable next = _pendingCallbacks.getNext();
@@ -420,6 +430,7 @@ public class ClientProcess
 		{
 			_messagesToClientRunner.adapterConnected(assignedId, millisPerTick, currentViewDistance, viewDistanceMaximum);
 			_background_setClientId(assignedId);
+			_background_setMillisPerTick(millisPerTick);
 		}
 		@Override
 		public synchronized void networkReady()
@@ -903,5 +914,16 @@ public class ClientProcess
 		{
 			super("Server Disconnected");
 		}
+	}
+
+	/**
+	 * A mutable container of some basic server information so that external consumers of this class can find out this
+	 * basic information without complex callback interfaces (which are required for more complex pieces of data).
+	 * Note that these fields are modified concurrently by internal threads so they volatile.
+	 */
+	public static class ServerState
+	{
+		public volatile long millisPerTick;
+		public volatile long latestTickNumber;
 	}
 }
