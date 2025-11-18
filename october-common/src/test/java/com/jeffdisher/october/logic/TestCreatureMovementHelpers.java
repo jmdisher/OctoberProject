@@ -13,12 +13,15 @@ import com.jeffdisher.october.subactions.EntityChangeJump;
 import com.jeffdisher.october.subactions.EntityChangeSwim;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
+import com.jeffdisher.october.types.MutableCreature;
+import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 
@@ -26,12 +29,14 @@ public class TestCreatureMovementHelpers
 {
 	private static Environment ENV;
 	private static EntityType COW;
+	private static Block STONE;
 	private static Block WATER_SOURCE;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
 		COW = ENV.creatures.getTypeById("op.cow");
+		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
 	}
 	@AfterClass
@@ -210,6 +215,112 @@ public class TestCreatureMovementHelpers
 		Assert.assertNotNull(change);
 	}
 
+	@Test
+	public void noVelocity()
+	{
+		// Shows that our motion is straight-forward when starting with no velocity.
+		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
+		EntityLocation creatureLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		MutableCreature mutable = MutableCreature.existing(_createCow(creatureLocation));
+		AbsoluteLocation directionHint = new AbsoluteLocation(1, 0, 0);
+		long timeLimitMillis = 50L;
+		float viscosityFraction = 0.0f;
+		boolean isIdleMovement = true;
+		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureMovementHelpers.prepareForMove(reader, mutable.newLocation, mutable.newVelocity, mutable.newType, directionHint, timeLimitMillis, viscosityFraction, isIdleMovement);
+		Assert.assertEquals("SimpleMove(WALKING), by 0.03, 0.00, Sub: null", change.toString());
+		
+		// Make sure that this actually applies correctly.
+		TickProcessingContext context = _buildLayeredContext(timeLimitMillis);
+		boolean didApply = change.applyChange(context, mutable);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(new EntityLocation(0.03f, 0.0f, 0.0f), mutable.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutable.newVelocity);
+	}
+
+	@Test
+	public void reverseDirection()
+	{
+		// Shows that we don't overrun our movement limits when changing direction.
+		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
+		EntityLocation creatureLocation = new EntityLocation(143.11f, -106.94f, 0.0f);
+		MutableCreature mutable = MutableCreature.existing(_createCow(creatureLocation));
+		mutable.newVelocity = new EntityLocation(0.54f, 0.2f, 0.0f);
+		AbsoluteLocation directionHint = new AbsoluteLocation(142, -107, 0);
+		long timeLimitMillis = 50L;
+		float viscosityFraction = 0.0f;
+		boolean isIdleMovement = true;
+		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureMovementHelpers.prepareForMove(reader, mutable.newLocation, mutable.newVelocity, mutable.newType, directionHint, timeLimitMillis, viscosityFraction, isIdleMovement);
+		Assert.assertEquals("SimpleMove(WALKING), by -0.03, 0.00, Sub: null", change.toString());
+		
+		// Make sure that this actually applies correctly.
+		TickProcessingContext context = _buildLayeredContext(timeLimitMillis);
+		boolean didApply = change.applyChange(context, mutable);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(new EntityLocation(143.11f, -106.93f, 0.0f), mutable.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutable.newVelocity);
+	}
+
+	@Test
+	public void sumDirection()
+	{
+		// Shows that our motion makes sense when we want to move in the direction of existing velocity.
+		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
+		EntityLocation creatureLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		MutableCreature mutable = MutableCreature.existing(_createCow(creatureLocation));
+		mutable.newVelocity = new EntityLocation(5.0f, 0.0f, 0.0f);
+		AbsoluteLocation directionHint = new AbsoluteLocation(1, 0, 0);
+		long timeLimitMillis = 50L;
+		float viscosityFraction = 0.0f;
+		boolean isIdleMovement = true;
+		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureMovementHelpers.prepareForMove(reader, mutable.newLocation, mutable.newVelocity, mutable.newType, directionHint, timeLimitMillis, viscosityFraction, isIdleMovement);
+		Assert.assertEquals("SimpleMove(WALKING), by 0.03, 0.00, Sub: null", change.toString());
+		
+		// Make sure that this actually applies correctly.
+		TickProcessingContext context = _buildLayeredContext(timeLimitMillis);
+		boolean didApply = change.applyChange(context, mutable);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(new EntityLocation(0.25f, 0.0f, 0.0f), mutable.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutable.newVelocity);
+	}
+
+	@Test
+	public void coastToLocation()
+	{
+		// Shows that our motion makes sense when we want to move in the direction of existing velocity.
+		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
+		EntityLocation creatureLocation = new EntityLocation(0.99f, 0.0f, 0.0f);
+		MutableCreature mutable = MutableCreature.existing(_createCow(creatureLocation));
+		mutable.newVelocity = new EntityLocation(10.0f, 0.0f, 0.0f);
+		AbsoluteLocation directionHint = new AbsoluteLocation(1, 0, 0);
+		long timeLimitMillis = 50L;
+		float viscosityFraction = 0.0f;
+		boolean isIdleMovement = true;
+		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureMovementHelpers.prepareForMove(reader, mutable.newLocation, mutable.newVelocity, mutable.newType, directionHint, timeLimitMillis, viscosityFraction, isIdleMovement);
+		Assert.assertNull(change);
+		
+		boolean isBlockSwimmable = false;
+		change = CreatureMovementHelpers.moveToNextLocation(reader
+			, mutable.newLocation
+			, mutable.newVelocity
+			, (byte)0
+			, (byte)0
+			, mutable.newType
+			, directionHint
+			, timeLimitMillis
+			, viscosityFraction
+			, isIdleMovement
+			, isBlockSwimmable
+		);
+		Assert.assertEquals("SimpleMove(WALKING), by -0.03, 0.00, Sub: null", change.toString());
+		
+		// Make sure that this actually applies correctly.
+		TickProcessingContext context = _buildLayeredContext(timeLimitMillis);
+		boolean didApply = change.applyChange(context, mutable);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(new EntityLocation(1.47f, 0.0f, 0.0f), mutable.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutable.newVelocity);
+	}
+
 
 	private static CreatureEntity _createCow(EntityLocation location)
 	{
@@ -222,5 +333,22 @@ public class TestCreatureMovementHelpers
 		return new ViscosityReader(ENV, (AbsoluteLocation location) -> {
 			return new BlockProxy(location.getBlockAddress(), cuboid);
 		});
+	}
+
+	private static TickProcessingContext _buildLayeredContext(long millisPerTick)
+	{
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		TickProcessingContext context = ContextBuilder.build()
+			.millisPerTick(millisPerTick)
+			.lookups((AbsoluteLocation location) -> {
+				return (location.getCuboidAddress().z() >= 0)
+					? new BlockProxy(location.getBlockAddress(), airCuboid)
+					: new BlockProxy(location.getBlockAddress(), stoneCuboid)
+				;
+			}, null, null)
+			.finish()
+		;
+		return context;
 	}
 }

@@ -320,16 +320,17 @@ public class CreatureMovementHelpers
 		float inverseViscosity = (1.0f - viscosityFraction);
 		float effectiveSpeed = inverseViscosity * currentCreatureSpeed;
 		
-		float absoluteMove = Math.abs(move);
 		float seconds = (float)timeLimitMillis / 1000.0f;
+		float effectivePassiveMovement = inverseViscosity * passiveVelocity * seconds;
+		float movementSum = move - effectivePassiveMovement;
+		float absoluteMove = Math.abs(movementSum);
 		float maxDistanceInTime = effectiveSpeed * seconds;
 		float distanceInTime = Math.min(absoluteMove, maxDistanceInTime);
 		float fractionToMove = distanceInTime / maxDistanceInTime;
 		
 		float rawDistanceInTime = currentCreatureSpeed * seconds;
 		float distanceToMove = rawDistanceInTime * fractionToMove;
-		float activeDistance = Math.signum(move) * distanceToMove;
-		float effectivePassiveMovement = inverseViscosity * passiveVelocity * seconds;
-		return activeDistance - effectivePassiveMovement;
+		float activeDistance = Math.signum(movementSum) * distanceToMove;
+		return activeDistance;
 	}
 }
