@@ -229,7 +229,7 @@ public class TestPassiveActions
 		
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(), Map.of(creature.id(), creature));
-		List<IEntityAction<IMutableCreatureEntity>> outChanges = new ArrayList<>();
+		_CreatureArrowCatcher catcher = new _CreatureArrowCatcher(creature.id());
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation l) -> {
 				return (l.getCuboidAddress().equals(cuboid.getCuboidAddress()))
@@ -237,39 +237,16 @@ public class TestPassiveActions
 						: null
 				;
 			}, null, null)
-			.sinks(null, new TickProcessingContext.IChangeSink() {
-				@Override
-				public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
-				{
-					throw new AssertionError("Not in test");
-				}
-				@Override
-				public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
-				{
-					throw new AssertionError("Not in test");
-				}
-				@Override
-				public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
-				{
-					Assert.assertEquals(creature.id(), targetCreatureId);
-					outChanges.add(change);
-					return true;
-				}
-				@Override
-				public boolean passive(int targetPassiveId, IPassiveAction action)
-				{
-					throw new AssertionError("Not in test");
-				}
-			})
+			.sinks(null, catcher)
 			.tick(1L)
 			.finish()
 		;
 		
 		PassiveEntity result = PassiveSynth_ProjectileArrow.applyChange(context, entityCollection, start);
 		Assert.assertNull(result);
-		Assert.assertEquals(2, outChanges.size());
-		Assert.assertTrue(outChanges.get(0) instanceof EntityActionTakeDamageFromEntity);
-		Assert.assertTrue(outChanges.get(1) instanceof EntityActionNudge);
+		Assert.assertEquals(2, catcher.changes.size());
+		Assert.assertTrue(catcher.changes.get(0) instanceof EntityActionTakeDamageFromEntity);
+		Assert.assertTrue(catcher.changes.get(1) instanceof EntityActionNudge);
 	}
 
 	@Test
@@ -314,6 +291,51 @@ public class TestPassiveActions
 		Assert.assertEquals("op.arrow", ((ItemSlot)out[0].extendedData()).stack.type().id());
 	}
 
+	@Test
+	public void passiveArrowHitCreatureNearWall()
+	{
+		// Show that an arrow will still hit a creature, even though it is close to a solid block.
+		int id = 1;
+		EntityLocation location = new EntityLocation(10.1f, 10.0f, 10.5f);
+		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, -10.0f);
+		long createMillis = 1000L;
+		PassiveEntity start = new PassiveEntity(id, PassiveType.PROJECTILE_ARROW, location, velocity, null, createMillis);
+		EntityLocation targetLocation = new EntityLocation(10.1f, 10.0f, 10.2f);
+		CreatureEntity creature = new CreatureEntity(-1
+			, ENV.creatures.getTypeById("op.cow")
+			, targetLocation
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, (byte)0
+			, (byte)0
+			, (byte)100
+			, (byte)100
+			, null
+			, null
+		);
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
+		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(), Map.of(creature.id(), creature));
+		_CreatureArrowCatcher catcher = new _CreatureArrowCatcher(creature.id());
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation l) -> {
+				return (l.getCuboidAddress().equals(cuboid.getCuboidAddress()))
+						? new BlockProxy(l.getBlockAddress(), cuboid)
+						: null
+				;
+			}, null, null)
+			.sinks(null, catcher)
+			.tick(1L)
+			.finish()
+		;
+		
+		PassiveEntity result = PassiveSynth_ProjectileArrow.applyChange(context, entityCollection, start);
+		Assert.assertNull(result);
+		Assert.assertEquals(2, catcher.changes.size());
+		Assert.assertTrue(catcher.changes.get(0) instanceof EntityActionTakeDamageFromEntity);
+		Assert.assertTrue(catcher.changes.get(1) instanceof EntityActionNudge);
+	}
+
 
 	private static TickProcessingContext _createSingleCuboidContext(CuboidData cuboid, long tickNumber)
 	{
@@ -328,5 +350,38 @@ public class TestPassiveActions
 			.finish()
 		;
 		return context;
+	}
+
+	private static class _CreatureArrowCatcher implements TickProcessingContext.IChangeSink
+	{
+		private final int _expectedTargetId;
+		public final List<IEntityAction<IMutableCreatureEntity>> changes;
+		public _CreatureArrowCatcher(int expectedTargetId)
+		{
+			_expectedTargetId = expectedTargetId;
+			this.changes = new ArrayList<>();
+		}
+		@Override
+		public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+		{
+			throw new AssertionError("Not in test");
+		}
+		@Override
+		public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+		{
+			throw new AssertionError("Not in test");
+		}
+		@Override
+		public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+		{
+			Assert.assertEquals(_expectedTargetId, targetCreatureId);
+			this.changes.add(change);
+			return true;
+		}
+		@Override
+		public boolean passive(int targetPassiveId, IPassiveAction action)
+		{
+			throw new AssertionError("Not in test");
+		}
 	}
 }

@@ -85,40 +85,50 @@ public class PassiveSynth_ProjectileArrow
 				return shouldStop;
 			});
 			
+			// If we hit a solid object, we might still have hit an entity before we got there so we will need to check entities, either way, but potentially resizing the end of the ray.
 			if (null != solidCollision)
 			{
-				// We hit a solid block so convert into an item without velocity.
-				EntityLocation stillVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
-				ItemSlot stack = ItemSlot.fromStack(new Items(env.items.getItemById("op.arrow"), 1));
-				context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, startLocation, stillVelocity, stack);
+				EntityLocation shortVelocity = startVelocity.makeScaledInstance(solidCollision.rayDistance() / startVelocity.getMagnitude());
+				endOfRay = new EntityLocation(startLocation.x() + shortVelocity.x()
+					, startLocation.y() + shortVelocity.y()
+					, startLocation.z() + shortVelocity.z()
+				);
+			}
+			
+			// See if we hit an entity and either damage it and despawn or just move normally.
+			int targetId = RayCastHelpers.findFirstCollisionInCollection(env, startLocation, endOfRay, entitiyCollection);
+			if (targetId > 0)
+			{
+				// Hit a player.
+				BodyPart target = BodyPart.values()[context.randomInt.applyAsInt(BodyPart.values().length)];
+				EntityActionTakeDamageFromEntity<IMutablePlayerEntity> damage = new EntityActionTakeDamageFromEntity<>(target, DAMAGE_ARROW, 0);
+				context.newChangeSink.next(targetId, damage);
+				EntityLocation knockbackPower = startVelocity.makeScaledInstance(KNOCKBACK_SCALE);
+				EntityActionNudge<IMutablePlayerEntity> knockback = new EntityActionNudge<>(knockbackPower);
+				context.newChangeSink.next(targetId, knockback);
+				
+				result = null;
+			}
+			else if (targetId < 0)
+			{
+				// Hit a creature.
+				BodyPart target = BodyPart.values()[context.randomInt.applyAsInt(BodyPart.values().length)];
+				EntityActionTakeDamageFromEntity<IMutableCreatureEntity> damage = new EntityActionTakeDamageFromEntity<>(target, DAMAGE_ARROW, 0);
+				context.newChangeSink.creature(targetId, damage);
+				EntityLocation knockbackPower = startVelocity.makeScaledInstance(KNOCKBACK_SCALE);
+				EntityActionNudge<IMutableCreatureEntity> knockback = new EntityActionNudge<>(knockbackPower);
+				context.newChangeSink.creature(targetId, knockback);
+				
 				result = null;
 			}
 			else
 			{
-				// See if we hit an entity and either damage it and despawn or just move normally.
-				int targetId = RayCastHelpers.findFirstCollisionInCollection(env, startLocation, endOfRay, entitiyCollection);
-				if (targetId > 0)
+				if (null != solidCollision)
 				{
-					// Hit a player.
-					BodyPart target = BodyPart.values()[context.randomInt.applyAsInt(BodyPart.values().length)];
-					EntityActionTakeDamageFromEntity<IMutablePlayerEntity> damage = new EntityActionTakeDamageFromEntity<>(target, DAMAGE_ARROW, 0);
-					context.newChangeSink.next(targetId, damage);
-					EntityLocation knockbackPower = startVelocity.makeScaledInstance(KNOCKBACK_SCALE);
-					EntityActionNudge<IMutablePlayerEntity> knockback = new EntityActionNudge<>(knockbackPower);
-					context.newChangeSink.next(targetId, knockback);
-					
-					result = null;
-				}
-				else if (targetId < 0)
-				{
-					// Hit a creature.
-					BodyPart target = BodyPart.values()[context.randomInt.applyAsInt(BodyPart.values().length)];
-					EntityActionTakeDamageFromEntity<IMutableCreatureEntity> damage = new EntityActionTakeDamageFromEntity<>(target, DAMAGE_ARROW, 0);
-					context.newChangeSink.creature(targetId, damage);
-					EntityLocation knockbackPower = startVelocity.makeScaledInstance(KNOCKBACK_SCALE);
-					EntityActionNudge<IMutableCreatureEntity> knockback = new EntityActionNudge<>(knockbackPower);
-					context.newChangeSink.creature(targetId, knockback);
-					
+					// We hit a solid block so convert into an item without velocity.
+					EntityLocation stillVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+					ItemSlot stack = ItemSlot.fromStack(new Items(env.items.getItemById("op.arrow"), 1));
+					context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, startLocation, stillVelocity, stack);
 					result = null;
 				}
 				else
