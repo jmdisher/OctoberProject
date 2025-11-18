@@ -621,10 +621,9 @@ public class CodecHelpers
 		// The IDs for entities are assigned late.
 		int id = idToAssign;
 		
-		// We only have the item slot, for now.
 		byte ordinal = buffer.get();
-		Assert.assertTrue((byte)1 == ordinal);
-		PassiveType type = PassiveType.ITEM_SLOT;
+		Assert.assertTrue((byte)0 != ordinal);
+		PassiveType type = PassiveType.TYPES_BY_ID[ordinal];
 		
 		EntityLocation location = _readEntityLocation(buffer);
 		EntityLocation velocity = _readEntityLocation(buffer);
@@ -660,10 +659,11 @@ public class CodecHelpers
 	{
 		// Note that these are only passed over the network.
 		int id = buffer.getInt();
+		
 		byte ordinal = buffer.get();
-		// We only have the item slot type, for now.
-		Assert.assertTrue((byte)1 == ordinal);
-		PassiveType type = PassiveType.ITEM_SLOT;
+		Assert.assertTrue((byte)0 != ordinal);
+		PassiveType type = PassiveType.TYPES_BY_ID[ordinal];
+		
 		EntityLocation location = _readEntityLocation(buffer);
 		EntityLocation velocity = _readEntityLocation(buffer);
 		

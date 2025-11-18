@@ -485,4 +485,117 @@ public class TestCodecHelpers
 		Assert.assertEquals(null, ((CreatureExtendedData.LivestockData)mid.extendedData()).offspringLocation());
 		Assert.assertEquals(150L, ((CreatureExtendedData.LivestockData)mid.extendedData()).breedingReadyMillis());
 	}
+
+	@Test
+	public void passiveArrow() throws Throwable
+	{
+		int id = 1;
+		EntityLocation location = new EntityLocation(-5.4f, 6.6f, 0.0f);
+		EntityLocation velocity = new EntityLocation(-0.4f, 2.6f, -5.1f);
+		long lastAliveMillis= 2000L;
+		PassiveEntity input = new PassiveEntity(id
+			, PassiveType.PROJECTILE_ARROW
+			, location
+			, velocity
+			, null
+			, lastAliveMillis
+		);
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		CodecHelpers.writePassiveEntity(buffer, input);
+		
+		buffer.flip();
+		long newAliveMillis = 5500L;
+		DeserializationContext context = new DeserializationContext(Environment.getShared()
+			, buffer
+			, newAliveMillis
+			, false
+		);
+		
+		int newId = 3;
+		PassiveEntity output = CodecHelpers.readPassiveEntity(newId, context);
+		Assert.assertFalse(buffer.hasRemaining());
+		
+		Assert.assertEquals(newId, output.id());
+		Assert.assertEquals(PassiveType.PROJECTILE_ARROW, output.type());
+		Assert.assertEquals(location, output.location());
+		Assert.assertNull(output.extendedData());
+		Assert.assertEquals(newAliveMillis, output.lastAliveMillis());
+		
+		// Make sure that this works for the partial variant, as well (used for the network case, only).
+		PartialPassive partial = new PartialPassive(input.id()
+			, input.type()
+			, input.location()
+			, input.velocity()
+			, input.extendedData()
+		);
+		buffer.clear();
+		CodecHelpers.writePartialPassive(buffer, partial);
+		
+		buffer.flip();
+		PartialPassive partialOut = CodecHelpers.readPartialPassive(buffer);
+		Assert.assertFalse(buffer.hasRemaining());
+		
+		Assert.assertEquals(input.id(), partialOut.id());
+		Assert.assertEquals(input.type(), partialOut.type());
+		Assert.assertEquals(input.location(), partialOut.location());
+		Assert.assertEquals(input.velocity(), partialOut.velocity());
+		Assert.assertNull(partialOut.extendedData());
+	}
+
+	@Test
+	public void passiveFallingBlock() throws Throwable
+	{
+		int id = 1;
+		EntityLocation location = new EntityLocation(-5.4f, 6.6f, 0.0f);
+		EntityLocation velocity = new EntityLocation(-0.4f, 2.6f, -5.1f);
+		Block sand = ENV.blocks.fromItem(ENV.items.getItemById("op.sand"));
+		long lastAliveMillis= 2000L;
+		PassiveEntity input = new PassiveEntity(id
+			, PassiveType.FALLING_BLOCK
+			, location
+			, velocity
+			, sand
+			, lastAliveMillis
+		);
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		CodecHelpers.writePassiveEntity(buffer, input);
+		
+		buffer.flip();
+		long newAliveMillis = 5500L;
+		DeserializationContext context = new DeserializationContext(Environment.getShared()
+			, buffer
+			, newAliveMillis
+			, false
+		);
+		
+		int newId = 3;
+		PassiveEntity output = CodecHelpers.readPassiveEntity(newId, context);
+		Assert.assertFalse(buffer.hasRemaining());
+		
+		Assert.assertEquals(newId, output.id());
+		Assert.assertEquals(PassiveType.FALLING_BLOCK, output.type());
+		Assert.assertEquals(location, output.location());
+		Assert.assertEquals(sand, output.extendedData());
+		Assert.assertEquals(newAliveMillis, output.lastAliveMillis());
+		
+		// Make sure that this works for the partial variant, as well (used for the network case, only).
+		PartialPassive partial = new PartialPassive(input.id()
+			, input.type()
+			, input.location()
+			, input.velocity()
+			, input.extendedData()
+		);
+		buffer.clear();
+		CodecHelpers.writePartialPassive(buffer, partial);
+		
+		buffer.flip();
+		PartialPassive partialOut = CodecHelpers.readPartialPassive(buffer);
+		Assert.assertFalse(buffer.hasRemaining());
+		
+		Assert.assertEquals(input.id(), partialOut.id());
+		Assert.assertEquals(input.type(), partialOut.type());
+		Assert.assertEquals(input.location(), partialOut.location());
+		Assert.assertEquals(input.velocity(), partialOut.velocity());
+		Assert.assertEquals(sand, partialOut.extendedData());
+	}
 }

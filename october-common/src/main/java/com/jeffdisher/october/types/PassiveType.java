@@ -77,6 +77,12 @@ public record PassiveType(byte number
 		}
 	);
 
+	public static PassiveType[] TYPES_BY_ID = new PassiveType[] { null
+		, ITEM_SLOT
+		, PROJECTILE_ARROW
+		, FALLING_BLOCK
+	};
+
 
 	/**
 	 * The interface which defines PassiveEntity.extendedData.
