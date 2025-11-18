@@ -308,6 +308,9 @@ public class TestPassiveActions
 		
 		PassiveEntity result = PassiveSynth_ProjectileArrow.applyChange(context, EntityCollection.emptyCollection(), start);
 		Assert.assertNull(result);
+		Assert.assertEquals(PassiveType.ITEM_SLOT, out[0].type());
+		Assert.assertEquals(location, out[0].location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), out[0].velocity());
 		Assert.assertEquals("op.arrow", ((ItemSlot)out[0].extendedData()).stack.type().id());
 	}
 

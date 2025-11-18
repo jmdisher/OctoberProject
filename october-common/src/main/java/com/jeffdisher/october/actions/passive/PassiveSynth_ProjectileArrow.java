@@ -87,9 +87,10 @@ public class PassiveSynth_ProjectileArrow
 			
 			if (null != solidCollision)
 			{
-				// We hit a solid block so convert into an item.
+				// We hit a solid block so convert into an item without velocity.
+				EntityLocation stillVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 				ItemSlot stack = ItemSlot.fromStack(new Items(env.items.getItemById("op.arrow"), 1));
-				context.passiveSpawner.spawnPassive(PassiveType.PROJECTILE_ARROW, startLocation, startVelocity, stack);
+				context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, startLocation, stillVelocity, stack);
 				result = null;
 			}
 			else
