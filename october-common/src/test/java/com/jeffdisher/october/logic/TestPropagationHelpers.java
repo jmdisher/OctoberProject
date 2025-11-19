@@ -325,14 +325,14 @@ public class TestPropagationHelpers
 		float middleMultiplier = PropagationHelpers.skyLightMultiplier(dusk, ticksPerDay, startTickOffset);
 		byte endValue = PropagationHelpers.currentSkyLightValue(nextDawn, ticksPerDay, startTickOffset);
 		float endMultiplier = PropagationHelpers.skyLightMultiplier(nextDawn, ticksPerDay, startTickOffset);
-		Assert.assertEquals((byte)7, startValue);
+		Assert.assertEquals((byte)8, startValue);
 		Assert.assertEquals(0.5f, startMultiplier, 0.01f);
 		Assert.assertEquals((byte)15, noonValue);
 		Assert.assertEquals(1.0f, noonMultiplier, 0.01f);
-		Assert.assertEquals((byte)7, middleValue);
+		Assert.assertEquals((byte)8, middleValue);
 		Assert.assertEquals(0.5f, middleMultiplier, 0.01f);
 		Assert.assertEquals((byte)7, endValue);
-		Assert.assertEquals(0.48f, endMultiplier, 0.01f);
+		Assert.assertEquals(0.46f, endMultiplier, 0.01f);
 		
 		// Verify that this inverts correctly when the day starts half-way through.
 		startTickOffset = 50L;
@@ -344,14 +344,14 @@ public class TestPropagationHelpers
 		middleMultiplier = PropagationHelpers.skyLightMultiplier(dusk, ticksPerDay, startTickOffset);
 		endValue = PropagationHelpers.currentSkyLightValue(nextDawn, ticksPerDay, startTickOffset);
 		endMultiplier = PropagationHelpers.skyLightMultiplier(nextDawn, ticksPerDay, startTickOffset);
-		Assert.assertEquals((byte)7, startValue);
+		Assert.assertEquals((byte)8, startValue);
 		Assert.assertEquals(0.5f, startMultiplier, 0.01f);
 		Assert.assertEquals((byte)0, noonValue);
 		Assert.assertEquals(0.0f, noonMultiplier, 0.01f);
-		Assert.assertEquals((byte)7, middleValue);
+		Assert.assertEquals((byte)8, middleValue);
 		Assert.assertEquals(0.5f, middleMultiplier, 0.01f);
-		Assert.assertEquals((byte)7, endValue);
-		Assert.assertEquals(0.52f, endMultiplier, 0.01f);
+		Assert.assertEquals((byte)8, endValue);
+		Assert.assertEquals(0.54f, endMultiplier, 0.01f);
 	}
 
 	@Test
@@ -364,13 +364,13 @@ public class TestPropagationHelpers
 		float multiplier = PropagationHelpers.skyLightMultiplier(0L, ticksPerDay, dayStartTick);
 		Assert.assertEquals(0.5f, multiplier, 0.01f);
 		multiplier = PropagationHelpers.skyLightMultiplier(10L, ticksPerDay, dayStartTick);
-		Assert.assertEquals(0.7f, multiplier, 0.01f);
+		Assert.assertEquals(0.9f, multiplier, 0.01f);
 		dayStartTick = PropagationHelpers.resumableStartTick(10L, ticksPerDay, dayStartTick);
 		Assert.assertEquals(10L, dayStartTick);
 		multiplier = PropagationHelpers.skyLightMultiplier(0L, ticksPerDay, dayStartTick);
-		Assert.assertEquals(0.7f, multiplier, 0.01f);
-		multiplier = PropagationHelpers.skyLightMultiplier(10L, ticksPerDay, dayStartTick);
 		Assert.assertEquals(0.9f, multiplier, 0.01f);
+		multiplier = PropagationHelpers.skyLightMultiplier(10L, ticksPerDay, dayStartTick);
+		Assert.assertEquals(1.0f, multiplier, 0.01f);
 		dayStartTick = PropagationHelpers.resumableStartTick(15L, ticksPerDay, dayStartTick);
 		Assert.assertEquals(25L, dayStartTick);
 		multiplier = PropagationHelpers.skyLightMultiplier(0L, ticksPerDay, dayStartTick);
@@ -380,7 +380,7 @@ public class TestPropagationHelpers
 		dayStartTick = PropagationHelpers.resumableStartTick(2050L, ticksPerDay, dayStartTick);
 		Assert.assertEquals(5L, dayStartTick);
 		multiplier = PropagationHelpers.skyLightMultiplier(0L, ticksPerDay, dayStartTick);
-		Assert.assertEquals(0.6f, multiplier, 0.01f);
+		Assert.assertEquals(0.7f, multiplier, 0.01f);
 	}
 
 	@Test
@@ -396,27 +396,27 @@ public class TestPropagationHelpers
 		Assert.assertEquals(0.5f, multiplier, 0.01f);
 		currentTick += 20L;
 		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
-		Assert.assertEquals(0.9f, multiplier, 0.01f);
+		Assert.assertEquals(1.0f, multiplier, 0.01f);
 		
 		// Restart server.
 		dayStartTick = PropagationHelpers.resumableStartTick(currentTick, ticksPerDay, dayStartTick);
 		Assert.assertEquals(20L, dayStartTick);
 		currentTick = 0L;
 		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
-		Assert.assertEquals(0.9f, multiplier, 0.01f);
+		Assert.assertEquals(1.0f, multiplier, 0.01f);
 		currentTick += 20L;
 		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
-		Assert.assertEquals(0.7f, multiplier, 0.01f);
+		Assert.assertEquals(0.9f, multiplier, 0.01f);
 		
 		// Restart server.
 		dayStartTick = PropagationHelpers.resumableStartTick(currentTick, ticksPerDay, dayStartTick);
 		Assert.assertEquals(40L, dayStartTick);
 		currentTick = 0L;
 		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
-		Assert.assertEquals(0.7f, multiplier, 0.01f);
+		Assert.assertEquals(0.9f, multiplier, 0.01f);
 		currentTick += 20L;
 		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
-		Assert.assertEquals(0.3f, multiplier, 0.01f);
+		Assert.assertEquals(0.1f, multiplier, 0.01f);
 		
 		// Reset day.
 		dayStartTick = PropagationHelpers.startDayThisTick(currentTick, ticksPerDay);
@@ -424,7 +424,7 @@ public class TestPropagationHelpers
 		Assert.assertEquals(0.5f, multiplier, 0.01f);
 		currentTick += 20L;
 		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
-		Assert.assertEquals(0.9f, multiplier, 0.01f);
+		Assert.assertEquals(1.0f, multiplier, 0.01f);
 		
 		// Reset day.
 		dayStartTick = PropagationHelpers.startDayThisTick(currentTick, ticksPerDay);
@@ -432,17 +432,17 @@ public class TestPropagationHelpers
 		Assert.assertEquals(0.5f, multiplier, 0.01f);
 		currentTick += 20L;
 		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
-		Assert.assertEquals(0.9f, multiplier, 0.01f);
+		Assert.assertEquals(1.0f, multiplier, 0.01f);
 		
 		// Restart server.
 		dayStartTick = PropagationHelpers.resumableStartTick(currentTick, ticksPerDay, dayStartTick);
 		Assert.assertEquals(20L, dayStartTick);
 		currentTick = 0L;
 		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
-		Assert.assertEquals(0.9f, multiplier, 0.01f);
+		Assert.assertEquals(1.0f, multiplier, 0.01f);
 		currentTick += 20L;
 		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
-		Assert.assertEquals(0.7f, multiplier, 0.01f);
+		Assert.assertEquals(0.9f, multiplier, 0.01f);
 	}
 
 	@Test
@@ -495,6 +495,21 @@ public class TestPropagationHelpers
 			byte light = proxy.getLight();
 			Assert.assertEquals(0, light);
 		}
+	}
+
+	@Test
+	public void skyLightDistribution()
+	{
+		// We want to show that it is mostly dark or bright with twilight transitioning quickly.
+		long ticksPerDay = 120L;
+		long startTickOffset = 30L;
+		int[] counts = new int[16];
+		for (long t = 0L; t < ticksPerDay; ++t)
+		{
+			byte value = PropagationHelpers.currentSkyLightValue(t, ticksPerDay, startTickOffset);
+			counts[value] += 1;
+		}
+		Assert.assertArrayEquals(new int[] { 31, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 33 }, counts);
 	}
 
 

@@ -235,7 +235,7 @@ public class PropagationHelpers
 	public static byte currentSkyLightValue(long gameTick, long ticksPerDay, long dayStartOffset)
 	{
 		float multiplier = _skyLightMultiplier(gameTick, ticksPerDay, dayStartOffset);
-		return (byte)((float)LightAspect.MAX_LIGHT * multiplier);
+		return (byte) Math.round((float)LightAspect.MAX_LIGHT * multiplier);
 	}
 
 	/**
@@ -547,9 +547,26 @@ public class PropagationHelpers
 		// We want the day to "start" at dawn so 1/4 into the day should be when the light is brightest.
 		long threeQuarterDay = 3L * ticksPerDay / 4L;
 		long step = (gameTick + dayStartOffset + threeQuarterDay) % ticksPerDay;
+		
 		// We actually need the light strength to cycle back and forth, not loop, so make this an abs function over half the day length.
 		long ticksPerHalfDay = ticksPerDay / 2;
-		return (float)Math.abs(step - ticksPerHalfDay) / (float)ticksPerHalfDay;
+		float linear = (float)Math.abs(step - ticksPerHalfDay) / (float)ticksPerHalfDay;
+		
+		// We then want to take this saw-tooth pattern and force longer bright and dark times, so dawn and dusk happen more quickly.
+		float skewed;
+		if (linear > 0.75f)
+		{
+			skewed = 1.0f;
+		}
+		else if (linear < 0.25f)
+		{
+			skewed = 0.0f;
+		}
+		else
+		{
+			skewed = (linear - 0.25f) * 2.0f;
+		}
+		return skewed;
 	}
 
 	private static void _sendUpdate(Consumer<IMutationBlock> updateMutations, Set<AbsoluteLocation> updateLocations, AbsoluteLocation target)
