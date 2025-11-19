@@ -464,7 +464,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
 		
-		AbsoluteLocation tooFar = new AbsoluteLocation(8, 2, 10);
+		AbsoluteLocation tooFar = new AbsoluteLocation(8, 3, 10);
 		AbsoluteLocation wrongType = new AbsoluteLocation(5, 0, 10);
 		AbsoluteLocation reasonable = new AbsoluteLocation(6, 0, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
@@ -668,7 +668,7 @@ public class TestCommonChanges
 		target.newInventory.addAllItems(STONE_ITEM, 2);
 		target.setSelectedKey(target.newInventory.getIdOfStackableType(STONE_ITEM));
 		MutableEntity miss = MutableEntity.createForTest(missId);
-		miss.newLocation = new EntityLocation(12.0f, 10.0f, 0.0f);
+		miss.newLocation = new EntityLocation(12.3f, 10.0f, 0.0f);
 		
 		Map<Integer, Entity> targetsById = Map.of(targetId, target.freeze(), missId, miss.freeze());
 		List<IEntityAction<IMutablePlayerEntity>> outChanges = new ArrayList<>();
@@ -2068,7 +2068,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
 		
-		AbsoluteLocation tooFar = new AbsoluteLocation(8, 2, 10);
+		AbsoluteLocation tooFar = new AbsoluteLocation(8, 3, 10);
 		AbsoluteLocation wrongType = new AbsoluteLocation(5, 0, 10);
 		AbsoluteLocation noDamage = new AbsoluteLocation(5, 1, 10);
 		AbsoluteLocation valid = new AbsoluteLocation(6, 0, 10);

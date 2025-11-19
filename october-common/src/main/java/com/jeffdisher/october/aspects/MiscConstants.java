@@ -11,12 +11,12 @@ public class MiscConstants
 	 * The distance limit for an entity interacting with a block.
 	 * This can include things like break/place/craft/inventory/etc.
 	 */
-	public static final float REACH_BLOCK = 2.8f;
+	public static final float REACH_BLOCK = 3.0f;
 	/**
 	 * The distance limit for an entity interacting with another entity.
 	 * This can include things like attach/feed/interact/etc.
 	 */
-	public static final float REACH_ENTITY = 1.5f;
+	public static final float REACH_ENTITY = 2.0f;
 
 	/**
 	 * The breath value an entity is given when it is in a breathable block.
@@ -43,7 +43,7 @@ public class MiscConstants
 	/**
 	 * This is the damage per second to the entity when standing on a burning block.
 	 */
-	public static byte FIRE_DAMAGE_PER_SECOND = 5;
+	public static final byte FIRE_DAMAGE_PER_SECOND = 5;
 
 	/**
 	 * A given creature or entity can only take damage at most once every half a second.
