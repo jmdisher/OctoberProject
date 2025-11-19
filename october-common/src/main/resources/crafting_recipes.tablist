@@ -268,3 +268,7 @@ op.diamond_sword	COMMON
 	input	op.stick	op.iron_ingot	op.iron_ingot	op.diamond
 	output	op.diamond_sword
 	millis	40000
+op.door	COMMON
+	input	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank
+	output	op.door
+	millis	8000

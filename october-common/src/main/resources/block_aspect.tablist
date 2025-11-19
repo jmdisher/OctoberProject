@@ -156,3 +156,5 @@ op.portal_surface	is_multiblock
 	requires_support	op.portal_keystone
 op.sand	has_gravity
 	block_material	SHOVEL
+op.door	is_multiblock
+	block_material	AXE

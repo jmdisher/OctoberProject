@@ -20,3 +20,6 @@ op.sensor_inventory
 op.cuboid_loader
 op.void_lamp
 op.portal_keystone
+op.door	is_flammable
+	block_material	AXE
+	viscosity	0

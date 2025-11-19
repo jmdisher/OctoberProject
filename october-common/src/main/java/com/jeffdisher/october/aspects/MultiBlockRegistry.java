@@ -24,6 +24,7 @@ public class MultiBlockRegistry
 		// For now, we just hard-code this but it should move into data, eventually.
 		Block doubleDoor = blocks.getAsPlaceableBlock(items.getItemById("op.double_door_base"));
 		Block portalSurface = blocks.getAsPlaceableBlock(items.getItemById("op.portal_surface"));
+		Block door = blocks.getAsPlaceableBlock(items.getItemById("op.door"));
 		
 		// We expect to find this in the block list.
 		Assert.assertTrue(null != doubleDoor);
@@ -45,11 +46,18 @@ public class MultiBlockRegistry
 				, new AbsoluteLocation( 0, 0, 2)
 				, new AbsoluteLocation( 1, 0, 2)
 		);
+		
+		// Door root is bottom block.
+		List<AbsoluteLocation> doorExtensions = List.of(new AbsoluteLocation(0, 0, 1)
+		);
+		
 		_structures = Map.of(doubleDoor, doubleDoorExtensions
 			, portalSurface, portalSurfaceExtensions
+			, door, doorExtensions
 		);
 		_dimensions = Map.of(doubleDoor, new BlockVolume(2, 1, 2)
 			, portalSurface, new BlockVolume(3, 1, 3)
+			, door, new BlockVolume(1, 1, 2)
 		);
 	}
 
