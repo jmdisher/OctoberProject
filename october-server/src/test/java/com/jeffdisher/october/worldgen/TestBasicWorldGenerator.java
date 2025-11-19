@@ -1,6 +1,8 @@
 package com.jeffdisher.october.worldgen;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -44,7 +46,7 @@ public class TestBasicWorldGenerator
 		int seed = 42;
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
 		Assert.assertEquals(1353309739, generator.test_getCuboidSeed((short)0, (short)0));
-		Assert.assertEquals(8, generator.test_getBiome((short)0, (short)0));
+		Assert.assertEquals(Biomes.BIOMES[8], generator.test_getBiome((short)0, (short)0));
 		Assert.assertEquals(BlockAddress.fromInt(5, 9, 0), generator.test_getCentre((short)0, (short)0));
 		Assert.assertEquals(7, generator.test_getRawPeak((short)0, (short)0));
 		Assert.assertEquals(7, generator.test_getAdjustedPeak((short)0, (short)0));
@@ -83,11 +85,11 @@ public class TestBasicWorldGenerator
 	{
 		int seed = 42;
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
-		int[] samples = new int[16];
+		Map<Biomes.Biome, Integer> samples = new HashMap<>();
 		for (int i = 0; i < 10000; ++i)
 		{
-			int biome = generator.test_getBiome((short)i, (short)-i);
-			samples[biome] += 1;
+			Biomes.Biome biome = generator.test_getBiome((short)i, (short)-i);
+			samples.put(biome, samples.getOrDefault(biome, 0) + 1);
 		}
 		// This was collected experimentally.
 		int[] expectedDistribution = new int[] {
@@ -108,7 +110,10 @@ public class TestBasicWorldGenerator
 				0,
 				0,
 		};
-		Assert.assertArrayEquals(expectedDistribution, samples);
+		for (int i = 0; i < expectedDistribution.length; ++i)
+		{
+			Assert.assertEquals(expectedDistribution[i], samples.getOrDefault(Biomes.BIOMES[i], 0).intValue());
+		}
 	}
 
 	@Test

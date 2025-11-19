@@ -56,8 +56,6 @@ public class BasicWorldGenerator implements IWorldGenerator
 {
 	public static final int MASK_HEIGHT  = 0x00000F00;
 	public static final int SHIFT_HEIGHT  = 8;
-	public static final int MASK_BIOME   = 0x0000F000;
-	public static final int SHIFT_BIOME   = 12;
 	public static final int MASK_YCENTRE = 0x001F0000;
 	public static final int SHIFT_YCENTRE = 16;
 	public static final int MASK_XCENTRE = 0x03E00000;
@@ -65,76 +63,6 @@ public class BasicWorldGenerator implements IWorldGenerator
 	public static final int WATER_Z_LEVEL = 0;
 	public static final int STONE_PEAK_Z_LEVEL = 16;
 	public static final int LAVA_Z_DEPTH = -200;
-
-	public static final char FOREST_CODE = 'R';
-	public static final char FIELD_CODE = 'F';
-	public static final char MEADOW_CODE = 'E';
-	public static final _Biome[] BIOMES = {
-			new _Biome("Deep Ocean 2"
-					, 'D'
-					, -200
-			),
-			new _Biome("Deep Ocean"
-					, 'D'
-					, -100
-			),
-			new _Biome("Ocean 2"
-					, 'O'
-					, -50
-			),
-			new _Biome("Ocean"
-					, 'O'
-					, -20
-			),
-			new _Biome("Coast 2"
-					, 'C'
-					, -10
-			),
-			new _Biome("Coast"
-					, 'C'
-					, -10
-			),
-			new _Biome("Field"
-					, FIELD_CODE
-					, 0
-			),
-			new _Biome("Meadow"
-					, MEADOW_CODE
-					, 0
-			),
-			new _Biome("Forest"
-					, FOREST_CODE
-					, 0
-			),
-			new _Biome("Swamp"
-					, 'S'
-					, 0
-			),
-			new _Biome("Foothills"
-					, 'h'
-					, 10
-			),
-			new _Biome("Foothills 2"
-					, 'h'
-					, 10
-			),
-			new _Biome("Hills"
-					, 'H'
-					, 20
-			),
-			new _Biome("Hills 2"
-					, 'H'
-					, 50
-			),
-			new _Biome("Mountain"
-					, 'M'
-					, 100
-			),
-			new _Biome("Mountain 2"
-					, 'M'
-					, 200
-			),
-	};
 
 	public static final String[] COAL_NODE = new String[] {""
 			+ "AA\n"
@@ -374,11 +302,11 @@ public class BasicWorldGenerator implements IWorldGenerator
 	 * @param cuboidY The cuboid Y address.
 	 * @return The biome of this cuboid.
 	 */
-	public int test_getBiome(short cuboidX, short cuboidY)
+	public Biomes.Biome test_getBiome(short cuboidX, short cuboidY)
 	{
 		PerColumnRandomSeedField seeds = PerColumnRandomSeedField.buildSeedField9x9(_seed, cuboidX, cuboidY);
 		PerColumnRandomSeedField.View subField = seeds.view();
-		return _buildBiomeFromSeeds5x5(subField);
+		return Biomes.chooseBiomeFromSeeds5x5(subField);
 	}
 
 	/**
@@ -393,8 +321,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 	{
 		PerColumnRandomSeedField seeds = PerColumnRandomSeedField.buildSeedField9x9(_seed, cuboidX, cuboidY);
 		PerColumnRandomSeedField.View subField = seeds.view();
-		int biome = _buildBiomeFromSeeds5x5(subField);
-		return BIOMES[biome].code;
+		Biomes.Biome biome = Biomes.chooseBiomeFromSeeds5x5(subField);
+		return biome.code();
 	}
 
 	/**
@@ -527,12 +455,6 @@ public class BasicWorldGenerator implements IWorldGenerator
 		return ColumnHeightMap.wrap(heightMapForCuboidColumn);
 	}
 
-	private static int _biomeVote(int i)
-	{
-		// We need to pick a value in [0..15]:
-		return (MASK_BIOME & i) >> SHIFT_BIOME;
-	}
-
 	private int _buildHeightTotal(PerColumnRandomSeedField.View field)
 	{
 		int total = 0;
@@ -611,37 +533,6 @@ public class BasicWorldGenerator implements IWorldGenerator
 		return Math.round((float)(total / totalWeight));//Math.round((float)Math.sqrt(total) / 9.0f);
 	}
 
-	private int _buildBiomeFromSeeds5x5(PerColumnRandomSeedField.View subField)
-	{
-		int biomeTotal = 0;
-		for (int y = -2; y <= 2; ++y)
-		{
-			for (int x = -2; x <= 2; ++x)
-			{
-				biomeTotal += _biomeVote(subField.get(x, y));
-			}
-		}
-		// We want to spread the biomes more aggressively since this averaging will push them too close together.
-		biomeTotal = (biomeTotal * 2) + 1;
-		// We also want to avoid division truncation making the numbers smaller.
-		int biome = biomeTotal / 25;
-		if ((biomeTotal % 25) > 12)
-		{
-			biome += 1;
-		}
-		// We can now strip off the edges and collapse this back into [0..15].
-		biome -= 8;
-		if (biome < 0)
-		{
-			biome = 0;
-		}
-		else if (biome > 15)
-		{
-			biome = 15;
-		}
-		return biome;
-	}
-
 	private void _buildCentreField3x3(PerColumnRandomSeedField.View subField, int[][] yCentres, int[][] xCentres)
 	{
 		for (int y = -1; y <= 1; ++y)
@@ -660,8 +551,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 	private int _peakWithinBiome(PerColumnRandomSeedField.View subField)
 	{
 		int rawHeight = _buildHeightTotal(subField);
-		int biome = _buildBiomeFromSeeds5x5(subField);
-		int offset = BIOMES[biome].heightOffset;
+		Biomes.Biome biome = Biomes.chooseBiomeFromSeeds5x5(subField);
+		int offset = biome.heightOffset();
 		return rawHeight + offset;
 	}
 
@@ -686,8 +577,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 				_applyOreNodes(data, columnSeed, sideBase.x(), sideBase.y(), DIAMOND_NODES, DIAMOND_MIN_Z, DIAMOND_MAX_Z, _diamondNode);
 				
 				// If this is a forest, also generate random trees.
-				int biome = _buildBiomeFromSeeds5x5(relField);
-				if (FOREST_CODE == BIOMES[biome].code)
+				Biomes.Biome biome = Biomes.chooseBiomeFromSeeds5x5(relField);
+				if (Biomes.FOREST_CODE == biome.code())
 				{
 					ColumnHeightMap heightMap = _generateHeightMapForCuboidColumn(relField);
 					Random random = new Random(columnSeed);
@@ -743,17 +634,17 @@ public class BasicWorldGenerator implements IWorldGenerator
 		}
 	}
 
-	private int _generateFlora(CuboidData data, AbsoluteLocation cuboidBase, int columnSeed, ColumnHeightMap heightMap, _Biome biome)
+	private int _generateFlora(CuboidData data, AbsoluteLocation cuboidBase, int columnSeed, ColumnHeightMap heightMap, Biomes.Biome biome)
 	{
 		int herdSize = 0;
-		if ((FIELD_CODE == biome.code) || (MEADOW_CODE == biome.code))
+		if ((Biomes.FIELD_CODE == biome.code()) || (Biomes.MEADOW_CODE == biome.code()))
 		{
 			// We always plant these on dirt but need to replace any grass.
 			short supportBlockToReplace = _blockGrass.item().number();
 			short supportBlockToAdd = _blockSoil.item().number();
 			// We only want to replace air (since this could be under water).
 			short blockToReplace = _env.special.AIR.item().number();
-			short blockToAdd = (FIELD_CODE == biome.code)
+			short blockToAdd = (Biomes.FIELD_CODE == biome.code())
 					? _blockWheatMature.item().number()
 					: _blockCarrotMature.item().number()
 			;
@@ -785,7 +676,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 			
 			// Now, inject a few random ones.
 			Random random = new Random(columnSeed);
-			int count = (FIELD_CODE == biome.code)
+			int count = (Biomes.FIELD_CODE == biome.code())
 					? FIELD_WHEAT_COUNT
 					: FIELD_CARROT_COUNT
 			;
@@ -1066,9 +957,9 @@ public class BasicWorldGenerator implements IWorldGenerator
 	{
 		// We want to spawn the flora.  This is only ever done within a single cuboid column if it is the appropriate biome type and contains a "gully".
 		int columnSeed = subField.get(0, 0);
-		_Biome biome = BIOMES[_buildBiomeFromSeeds5x5(subField)];
+		Biomes.Biome biome = Biomes.chooseBiomeFromSeeds5x5(subField);
 		int herdSizeToSpawn = _generateFlora(data, cuboidBase, columnSeed, heightMap, biome);
-		EntityType faunaType = (FIELD_CODE == biome.code)
+		EntityType faunaType = (Biomes.FIELD_CODE == biome.code())
 				? _cow
 				: null
 		;
@@ -1186,12 +1077,6 @@ public class BasicWorldGenerator implements IWorldGenerator
 		return Arrays.hashCode(buffer.array());
 	}
 
-
-	private static record _Biome(String name
-			, char code
-			, int heightOffset
-	)
-	{}
 
 	private static record _Cavern(byte x
 			, byte y
