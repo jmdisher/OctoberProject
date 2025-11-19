@@ -245,8 +245,8 @@ public class TestStructureLoader
 		Block voidStone = ENV.blocks.fromItem(ENV.items.getItemById("op.void_stone"));
 		Block voidLamp = ENV.blocks.fromItem(ENV.items.getItemById("op.void_lamp"));
 		Map<Character, Structure.AspectData> mapping = Map.of(
-			'V', new Structure.AspectData(voidStone, null, null, null)
-			, 'L', new Structure.AspectData(voidLamp, null, null, null)
+			'V', new Structure.AspectData(voidStone, null, null, null, null)
+			, 'L', new Structure.AspectData(voidLamp, null, null, null, null)
 		);
 		StructureLoader loader = new StructureLoader(mapping);
 		String[] zLayers = new String[] {""
@@ -376,12 +376,12 @@ public class TestStructureLoader
 			.finish()
 		;
 		Map<Character, Structure.AspectData> mapping = Map.of(
-			'C', new Structure.AspectData(chest, inv, null, null)
-			, 'I', new Structure.AspectData(pedestal, null, null, ItemSlot.fromNonStack(customSword))
-			, 'N', new Structure.AspectData(andGate, null, OrientationAspect.Direction.NORTH, null)
-			, 'E', new Structure.AspectData(andGate, null, OrientationAspect.Direction.EAST, null)
-			, 'W', new Structure.AspectData(andGate, null, OrientationAspect.Direction.WEST, null)
-			, 'S', new Structure.AspectData(andGate, null, OrientationAspect.Direction.SOUTH, null)
+			'C', new Structure.AspectData(chest, inv, null, null, null)
+			, 'I', new Structure.AspectData(pedestal, null, null, ItemSlot.fromNonStack(customSword), null)
+			, 'N', new Structure.AspectData(andGate, null, OrientationAspect.Direction.NORTH, null, null)
+			, 'E', new Structure.AspectData(andGate, null, OrientationAspect.Direction.EAST, null, null)
+			, 'W', new Structure.AspectData(andGate, null, OrientationAspect.Direction.WEST, null, null)
+			, 'S', new Structure.AspectData(andGate, null, OrientationAspect.Direction.SOUTH, null, null)
 		);
 		StructureLoader loader = new StructureLoader(mapping);
 		String[] zLayers = new String[] {""

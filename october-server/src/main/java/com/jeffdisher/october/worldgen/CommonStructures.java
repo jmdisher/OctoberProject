@@ -49,7 +49,7 @@ public class CommonStructures
 		Block saplingBlock = env.blocks.fromItem(env.items.getItemById("op.sapling"));
 		Block waterSourceBlock = env.blocks.fromItem(env.items.getItemById("op.water_source"));
 		Block voidStoneBlock = env.blocks.fromItem(env.items.getItemById("op.void_stone"));
-		Block gateBlock = env.blocks.fromItem(env.items.getItemById("op.gate"));
+		Block doorBlock = env.blocks.fromItem(env.items.getItemById("op.door"));
 		Block portalKeystoneBlock = env.blocks.fromItem(env.items.getItemById("op.portal_keystone"));
 		Block pedestalBlock = env.blocks.fromItem(env.items.getItemById("op.pedestal"));
 		
@@ -87,28 +87,29 @@ public class CommonStructures
 		));
 		
 		Map<Character, Structure.AspectData> mapping = new HashMap<>();
-		Assert.assertTrue(null == mapping.put('A', new Structure.AspectData(env.special.AIR, null, null, null)));
-		Assert.assertTrue(null == mapping.put('#', new Structure.AspectData(stoneBlock, null, null, null)));
-		Assert.assertTrue(null == mapping.put('B', new Structure.AspectData(stoneBrickBlock, null, null, null)));
-		Assert.assertTrue(null == mapping.put('D', new Structure.AspectData(dirtBlock, null, null, null)));
-		Assert.assertTrue(null == mapping.put('G', new Structure.AspectData(grassBlock, null, null, null)));
-		Assert.assertTrue(null == mapping.put('i', new Structure.AspectData(torchBlock, null, null, null)));
-		Assert.assertTrue(null == mapping.put('w', new Structure.AspectData(wheatBlock, null, null, null)));
-		Assert.assertTrue(null == mapping.put('c', new Structure.AspectData(carrotBlock, null, null, null)));
-		Assert.assertTrue(null == mapping.put('t', new Structure.AspectData(saplingBlock, null, null, null)));
-		Assert.assertTrue(null == mapping.put('O', new Structure.AspectData(tilledSoilBlock, null, null, null)));
-		Assert.assertTrue(null == mapping.put('T', new Structure.AspectData(waterSourceBlock, null, null, null)));
-		Assert.assertTrue(null == mapping.put('V', new Structure.AspectData(voidStoneBlock, null, null, null)));
-		Assert.assertTrue(null == mapping.put('H', new Structure.AspectData(gateBlock, null, null, null)));
-		Assert.assertTrue(null == mapping.put('N', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.NORTH, ItemSlot.fromNonStack(northOrb))));
-		Assert.assertTrue(null == mapping.put('S', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.SOUTH, ItemSlot.fromNonStack(southOrb))));
-		Assert.assertTrue(null == mapping.put('E', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.EAST, ItemSlot.fromNonStack(eastOrb))));
-		Assert.assertTrue(null == mapping.put('W', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.WEST, ItemSlot.fromNonStack(westOrb))));
-		Assert.assertTrue(null == mapping.put('R', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.NORTH, ItemSlot.fromNonStack(reverseOrb))));
-		Assert.assertTrue(null == mapping.put('1', new Structure.AspectData(pedestalBlock, null, null, ItemSlot.fromNonStack(specialPick))));
-		Assert.assertTrue(null == mapping.put('2', new Structure.AspectData(pedestalBlock, null, null, ItemSlot.fromNonStack(specialShovel))));
-		Assert.assertTrue(null == mapping.put('3', new Structure.AspectData(pedestalBlock, null, null, ItemSlot.fromNonStack(specialAxe))));
-		Assert.assertTrue(null == mapping.put('4', new Structure.AspectData(pedestalBlock, null, null, ItemSlot.fromNonStack(specialSword))));
+		Assert.assertTrue(null == mapping.put('A', new Structure.AspectData(env.special.AIR, null, null, null, null)));
+		Assert.assertTrue(null == mapping.put('#', new Structure.AspectData(stoneBlock, null, null, null, null)));
+		Assert.assertTrue(null == mapping.put('B', new Structure.AspectData(stoneBrickBlock, null, null, null, null)));
+		Assert.assertTrue(null == mapping.put('D', new Structure.AspectData(dirtBlock, null, null, null, null)));
+		Assert.assertTrue(null == mapping.put('G', new Structure.AspectData(grassBlock, null, null, null, null)));
+		Assert.assertTrue(null == mapping.put('i', new Structure.AspectData(torchBlock, null, null, null, null)));
+		Assert.assertTrue(null == mapping.put('w', new Structure.AspectData(wheatBlock, null, null, null, null)));
+		Assert.assertTrue(null == mapping.put('c', new Structure.AspectData(carrotBlock, null, null, null, null)));
+		Assert.assertTrue(null == mapping.put('t', new Structure.AspectData(saplingBlock, null, null, null, null)));
+		Assert.assertTrue(null == mapping.put('O', new Structure.AspectData(tilledSoilBlock, null, null, null, null)));
+		Assert.assertTrue(null == mapping.put('T', new Structure.AspectData(waterSourceBlock, null, null, null, null)));
+		Assert.assertTrue(null == mapping.put('V', new Structure.AspectData(voidStoneBlock, null, null, null, null)));
+		Assert.assertTrue(null == mapping.put('[', new Structure.AspectData(doorBlock, null, OrientationAspect.Direction.NORTH, null, null)));
+		Assert.assertTrue(null == mapping.put(']', new Structure.AspectData(doorBlock, null, null, null, new AbsoluteLocation(0, 0, -1))));
+		Assert.assertTrue(null == mapping.put('N', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.NORTH, ItemSlot.fromNonStack(northOrb), null)));
+		Assert.assertTrue(null == mapping.put('S', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.SOUTH, ItemSlot.fromNonStack(southOrb), null)));
+		Assert.assertTrue(null == mapping.put('E', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.EAST, ItemSlot.fromNonStack(eastOrb), null)));
+		Assert.assertTrue(null == mapping.put('W', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.WEST, ItemSlot.fromNonStack(westOrb), null)));
+		Assert.assertTrue(null == mapping.put('R', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.NORTH, ItemSlot.fromNonStack(reverseOrb), null)));
+		Assert.assertTrue(null == mapping.put('1', new Structure.AspectData(pedestalBlock, null, null, ItemSlot.fromNonStack(specialPick), null)));
+		Assert.assertTrue(null == mapping.put('2', new Structure.AspectData(pedestalBlock, null, null, ItemSlot.fromNonStack(specialShovel), null)));
+		Assert.assertTrue(null == mapping.put('3', new Structure.AspectData(pedestalBlock, null, null, ItemSlot.fromNonStack(specialAxe), null)));
+		Assert.assertTrue(null == mapping.put('4', new Structure.AspectData(pedestalBlock, null, null, ItemSlot.fromNonStack(specialSword), null)));
 		
 		StructureLoader loader = new StructureLoader(mapping);
 		this.nexusCastle = loader.loadFromStrings(new String[] {""
@@ -293,39 +294,39 @@ public class CommonStructures
 			+ " GGGGGGGGGGGGGGG \n"
 			, ""
 			+ "AAAAAAAAAAAAAAAAA\n"
-			+ "AABBBBBBHBBBBBBAA\n"
+			+ "AABBBBBB[BBBBBBAA\n"
 			+ "ABBAAAAAAAAAAABBA\n"
 			+ "ABAiAAVAAAVAAiABA\n"
 			+ "ABAA1AAAAAAA2AABA\n"
 			+ "ABAAAAAAAAAAAAABA\n"
 			+ "ABAVAAtwwwtAAVABA\n"
 			+ "ABAAAAcAAAcAAAABA\n"
-			+ "AHAAAAcAAAcAAAAHA\n"
+			+ "A[AAAAcAAAcAAAA[A\n"
 			+ "ABAAAAcAAAcAAAABA\n"
 			+ "ABAVAAtwwwtAAVABA\n"
 			+ "ABAAAAAAAAAAAAABA\n"
 			+ "ABAA3AAAAAAA4AABA\n"
 			+ "ABAiAAVAAAVAAiABA\n"
 			+ "ABBAAAAAAAAAAABBA\n"
-			+ "AABBBBBBHBBBBBBAA\n"
+			+ "AABBBBBB[BBBBBBAA\n"
 			+ "AAAAAAAAAAAAAAAAA\n"
 			, ""
 			+ "AAAAAAAAAAAAAAAAA\n"
-			+ "AABBBBBBBBBBBBBAA\n"
+			+ "AABBBBBB]BBBBBBAA\n"
 			+ "ABBAAAAAAAAAAABBA\n"
 			+ "ABAAAAVAAAVAAAABA\n"
 			+ "ABAAAAAAAAAAAAABA\n"
 			+ "ABAAAAAAAAAAAAABA\n"
 			+ "ABAVAAAAAAAAAVABA\n"
 			+ "ABAAAAAAAAAAAAABA\n"
-			+ "ABAAAAAAAAAAAAABA\n"
+			+ "A]AAAAAAAAAAAAA]A\n"
 			+ "ABAAAAAAAAAAAAABA\n"
 			+ "ABAVAAAAAAAAAVABA\n"
 			+ "ABAAAAAAAAAAAAABA\n"
 			+ "ABAAAAAAAAAAAAABA\n"
 			+ "ABAAAAVAAAVAAAABA\n"
 			+ "ABBAAAAAAAAAAABBA\n"
-			+ "AABBBBBBBBBBBBBAA\n"
+			+ "AABBBBBB]BBBBBBAA\n"
 			+ "AAAAAAAAAAAAAAAAA\n"
 			, ""
 			+ "AAAAAAAAAAAAAAAAA\n"
@@ -450,7 +451,7 @@ public class CommonStructures
 			+ "ABAAAAAAABA\n"
 			+ "ABAAAiAAABA\n"
 			+ "ABAAAAAAABA\n"
-			+ "ABBBBHBBBBA\n"
+			+ "ABBBB[BBBBA\n"
 			+ "AAAAAAAAAAA\n"
 			, ""
 			+ "AAAAAAAAAAA\n"
@@ -460,7 +461,7 @@ public class CommonStructures
 			+ "ABAAAAAAABA\n"
 			+ "ABAAAAAAABA\n"
 			+ "ABAAAAAAABA\n"
-			+ "ABBBBBBBBBA\n"
+			+ "ABBBB]BBBBA\n"
 			+ "AAAAAAAAAAA\n"
 			, ""
 			+ "AAAAAAAAAAA\n"

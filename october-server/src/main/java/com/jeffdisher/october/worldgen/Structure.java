@@ -295,8 +295,9 @@ public class Structure
 										{
 											Assert.assertTrue(OrientationAspect.doesAllowDownwardOutput(block));
 										}
-										else
+										else if (!env.blocks.isMultiBlock(block))
 										{
+											// Multi-blocks all use a directed orientation.
 											Assert.assertTrue(OrientationAspect.HAS_ORIENTATION.contains(block.item().id()));
 										}
 										OrientationAspect.Direction rotatedOrientation = rotation.rotateOrientation(aspectData.orientation);
@@ -318,6 +319,12 @@ public class Structure
 											specialItemSlot = ItemSlot.fromNonStack(finalItem);
 										}
 										cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, blockAddress, specialItemSlot);
+									}
+									if (null != aspectData.relativeMultiBlockRoot)
+									{
+										AbsoluteLocation rotatedRelativeRoot = rotation.rotateAboutZ(aspectData.relativeMultiBlockRoot);
+										AbsoluteLocation absoluteRoot = thisBlock.getRelative(rotatedRelativeRoot.x(), rotatedRelativeRoot.y(), rotatedRelativeRoot.z());
+										cuboid.setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, blockAddress, absoluteRoot);
 									}
 									
 									boolean needsGrowth = (plants.growthDivisor(block) > 0);
@@ -370,5 +377,10 @@ public class Structure
 		}
 	}
 
-	public static record AspectData(Block block, Inventory normalInventory, OrientationAspect.Direction orientation, ItemSlot specialItemSlot) {}
+	public static record AspectData(Block block
+		, Inventory normalInventory
+		, OrientationAspect.Direction orientation
+		, ItemSlot specialItemSlot
+		, AbsoluteLocation relativeMultiBlockRoot
+	) {}
 }

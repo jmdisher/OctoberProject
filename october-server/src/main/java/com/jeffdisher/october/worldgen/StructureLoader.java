@@ -73,7 +73,7 @@ public class StructureLoader
 	private static Structure.AspectData _wrapBlockWithNulls(ItemRegistry items, BlockAspect blocks, String id)
 	{
 		Block block = blocks.fromItem(items.getItemById(id));
-		return new Structure.AspectData(block, null, null, null);
+		return new Structure.AspectData(block, null, null, null, null);
 	}
 
 
