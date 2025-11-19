@@ -2398,7 +2398,7 @@ public class TestTickRunner
 		// -direct connection and wire connection both work
 		// -both door and wire honour the output direction of the emitters
 		Item itemEmitter = ENV.items.getItemById("op.emitter");
-		Item itemDoor = ENV.items.getItemById("op.door");
+		Item itemGate = ENV.items.getItemById("op.gate");
 		Item itemWire = ENV.items.getItemById("op.logic_wire");
 		CuboidData cuboid = _zeroAirCuboidWithBase();
 		
@@ -2406,13 +2406,13 @@ public class TestTickRunner
 		// -2 areas with a space for an emitter, pointing into door or wire and door (each in 2 directions - only one should change)
 		// -2 areas with space for a door, next to an emitter or next to a wire from the emitter (each in 2 directions)
 		AbsoluteLocation emitterSpace1 = cuboid.getCuboidAddress().getBase().getRelative(2, 2, 1);
-		_placeItemAsBlock(cuboid, emitterSpace1.getRelative(1, 0, 0), itemDoor, null, false);
-		_placeItemAsBlock(cuboid, emitterSpace1.getRelative(0, 1, 0), itemDoor, null, false);
+		_placeItemAsBlock(cuboid, emitterSpace1.getRelative(1, 0, 0), itemGate, null, false);
+		_placeItemAsBlock(cuboid, emitterSpace1.getRelative(0, 1, 0), itemGate, null, false);
 		AbsoluteLocation emitterSpace2 = cuboid.getCuboidAddress().getBase().getRelative(12, 2, 1);
 		_placeItemAsBlock(cuboid, emitterSpace2.getRelative(1, 0, 0), itemWire, null, false);
-		_placeItemAsBlock(cuboid, emitterSpace2.getRelative(2, 0, 0), itemDoor, null, false);
+		_placeItemAsBlock(cuboid, emitterSpace2.getRelative(2, 0, 0), itemGate, null, false);
 		_placeItemAsBlock(cuboid, emitterSpace2.getRelative(0, 1, 0), itemWire, null, false);
-		_placeItemAsBlock(cuboid, emitterSpace2.getRelative(0, 2, 0), itemDoor, null, false);
+		_placeItemAsBlock(cuboid, emitterSpace2.getRelative(0, 2, 0), itemGate, null, false);
 		
 		AbsoluteLocation existingEmitter1 = cuboid.getCuboidAddress().getBase().getRelative(2, 12, 1);
 		_placeItemAsBlock(cuboid, existingEmitter1, itemEmitter, OrientationAspect.Direction.EAST, true);
@@ -2422,8 +2422,8 @@ public class TestTickRunner
 		_placeItemAsBlock(cuboid, existingEmitter2, itemEmitter, OrientationAspect.Direction.EAST, true);
 		AbsoluteLocation wireSpace2_1 = existingEmitter2.getRelative(1, 0, 0);
 		AbsoluteLocation wireSpace2_2 = existingEmitter2.getRelative(0, 1, 0);
-		_placeItemAsBlock(cuboid, wireSpace2_1.getRelative(1, 0, 0), itemDoor, null, false);
-		_placeItemAsBlock(cuboid, wireSpace2_2.getRelative(0, 1, 0), itemDoor, null, false);
+		_placeItemAsBlock(cuboid, wireSpace2_1.getRelative(1, 0, 0), itemGate, null, false);
+		_placeItemAsBlock(cuboid, wireSpace2_2.getRelative(0, 1, 0), itemGate, null, false);
 		
 		// Since these are spaced out and we want this to happen in fewer ticks, we will use 4 entities.
 		MutableEntity mutable1 = MutableEntity.createForTest(1);
@@ -2438,7 +2438,7 @@ public class TestTickRunner
 		Entity entity2 = mutable2.freeze();
 		MutableEntity mutable3 = MutableEntity.createForTest(3);
 		mutable3.newLocation = existingEmitter1.getRelative(1, 1, 0).toEntityLocation();
-		mutable3.newInventory.addAllItems(itemDoor, 2);
+		mutable3.newInventory.addAllItems(itemGate, 2);
 		mutable3.setSelectedKey(1);
 		Entity entity3 = mutable3.freeze();
 		MutableEntity mutable4 = MutableEntity.createForTest(4);
@@ -2484,8 +2484,8 @@ public class TestTickRunner
 		// Verify that all the blocks were placed correctly.
 		_checkBlock(output, emitterSpace1, itemEmitter, OrientationAspect.Direction.EAST, true);
 		_checkBlock(output, emitterSpace2, itemEmitter, OrientationAspect.Direction.EAST, true);
-		_checkBlock(output, doorSpace1_1, itemDoor, null, false);
-		_checkBlock(output, doorSpace1_2, itemDoor, null, false);
+		_checkBlock(output, doorSpace1_1, itemGate, null, false);
+		_checkBlock(output, doorSpace1_2, itemGate, null, false);
 		_checkBlock(output, wireSpace2_1, itemWire, null, false);
 		_checkBlock(output, wireSpace2_2, itemWire, null, false);
 		
@@ -2516,7 +2516,7 @@ public class TestTickRunner
 		// (4) place down switch->wire->diode->wire->door and verify that the door opens after the switch is activated and closes when deactivated
 		Item itemEmitter = ENV.items.getItemById("op.emitter");
 		Item itemDiode = ENV.items.getItemById("op.diode");
-		Item itemDoor = ENV.items.getItemById("op.door");
+		Item itemGate = ENV.items.getItemById("op.gate");
 		Item itemSwitch = ENV.items.getItemById("op.switch");
 		Item itemWire = ENV.items.getItemById("op.logic_wire");
 		CuboidData cuboid = _zeroAirCuboidWithBase();
@@ -2556,7 +2556,7 @@ public class TestTickRunner
 		_placeItemAsBlock(cuboid, switchIndirect.getRelative(1, 0, 0), itemWire, null, false);
 		_placeItemAsBlock(cuboid, switchIndirect.getRelative(2, 0, 0), itemDiode, OrientationAspect.Direction.EAST, false);
 		_placeItemAsBlock(cuboid, switchIndirect.getRelative(3, 0, 0), itemWire, null, false);
-		_placeItemAsBlock(cuboid, switchIndirect.getRelative(4, 0, 0), itemDoor, null, false);
+		_placeItemAsBlock(cuboid, switchIndirect.getRelative(4, 0, 0), itemGate, null, false);
 		
 		// Since these are spaced out and we want this to happen in fewer ticks, we will use 7 entities.
 		MutableEntity mutable1 = MutableEntity.createForTest(1);
@@ -2581,12 +2581,12 @@ public class TestTickRunner
 		Entity entity4 = mutable4.freeze();
 		MutableEntity mutable5 = MutableEntity.createForTest(5);
 		mutable5.newLocation = diodeActiveDirect.getRelative(1, 1, 0).toEntityLocation();
-		mutable5.newInventory.addAllItems(itemDoor, 2);
+		mutable5.newInventory.addAllItems(itemGate, 2);
 		mutable5.setSelectedKey(1);
 		Entity entity5 = mutable5.freeze();
 		MutableEntity mutable6 = MutableEntity.createForTest(6);
 		mutable6.newLocation = diodeActiveIndirect.getRelative(1, 1, 0).toEntityLocation();
-		mutable6.newInventory.addAllItems(itemDoor, 2);
+		mutable6.newInventory.addAllItems(itemGate, 2);
 		mutable6.setSelectedKey(1);
 		Entity entity6 = mutable6.freeze();
 		MutableEntity mutable7 = MutableEntity.createForTest(7);
@@ -2660,11 +2660,11 @@ public class TestTickRunner
 		_checkBlock(phase1, diodeDirect, itemDiode, OrientationAspect.Direction.EAST, false);
 		_checkBlock(phase1, diodeIndirect, itemDiode, OrientationAspect.Direction.EAST, false);
 		// Check (3) fail cases.
-		_checkBlock(phase1, diodeActiveDirect.getRelative(0, 1, 0), itemDoor, null, false);
-		_checkBlock(phase1, diodeActiveIndirect.getRelative(0, 2, 0), itemDoor, null, false);
+		_checkBlock(phase1, diodeActiveDirect.getRelative(0, 1, 0), itemGate, null, false);
+		_checkBlock(phase1, diodeActiveIndirect.getRelative(0, 2, 0), itemGate, null, false);
 		// Check (4) "on".
 		_checkBlock(phase1, switchIndirect.getRelative(2, 0, 0), itemDiode, OrientationAspect.Direction.EAST, true);
-		_checkBlock(phase1, switchIndirect.getRelative(4, 0, 0), itemDoor, null, true);
+		_checkBlock(phase1, switchIndirect.getRelative(4, 0, 0), itemGate, null, true);
 		
 		// We can now run phase2.
 		// These 2 should pass.
@@ -2717,11 +2717,11 @@ public class TestTickRunner
 		_checkBlock(phase2, diodeDirect, itemDiode, OrientationAspect.Direction.EAST, true);
 		_checkBlock(phase2, diodeIndirect, itemDiode, OrientationAspect.Direction.EAST, true);
 		// Check (3) pass cases.
-		_checkBlock(phase2, diodeActiveDirect.getRelative(1, 0, 0), itemDoor, null, true);
-		_checkBlock(phase2, diodeActiveIndirect.getRelative(2, 0, 0), itemDoor, null, true);
+		_checkBlock(phase2, diodeActiveDirect.getRelative(1, 0, 0), itemGate, null, true);
+		_checkBlock(phase2, diodeActiveIndirect.getRelative(2, 0, 0), itemGate, null, true);
 		// Check (4) "off".
 		_checkBlock(phase2, switchIndirect.getRelative(2, 0, 0), itemDiode, OrientationAspect.Direction.EAST, false);
-		_checkBlock(phase2, switchIndirect.getRelative(4, 0, 0), itemDoor, null, false);
+		_checkBlock(phase2, switchIndirect.getRelative(4, 0, 0), itemGate, null, false);
 		
 		runner.shutdown();
 	}
@@ -2733,24 +2733,24 @@ public class TestTickRunner
 		Item itemAnd = ENV.items.getItemById("op.and_gate");
 		Item itemOr = ENV.items.getItemById("op.or_gate");
 		Item itemNot = ENV.items.getItemById("op.not_gate");
-		Item itemDoor = ENV.items.getItemById("op.door");
+		Item itemGate = ENV.items.getItemById("op.gate");
 		Item itemSwitch = ENV.items.getItemById("op.switch");
 		CuboidData cuboid = _zeroAirCuboidWithBase();
 		
 		// We will create an area for each gate, then place the gates and flip the switches to observe the logic changes.
 		// AND
 		AbsoluteLocation andGate = cuboid.getCuboidAddress().getBase().getRelative(2, 2, 1);
-		_placeItemAsBlock(cuboid, andGate.getRelative(1, 0, 0), itemDoor, null, false);
+		_placeItemAsBlock(cuboid, andGate.getRelative(1, 0, 0), itemGate, null, false);
 		_placeItemAsBlock(cuboid, andGate.getRelative(0, 1, 0), itemSwitch, null, false);
 		_placeItemAsBlock(cuboid, andGate.getRelative(0, -1, 0), itemSwitch, null, false);
 		// OR
 		AbsoluteLocation orGate = cuboid.getCuboidAddress().getBase().getRelative(2, 12, 1);
-		_placeItemAsBlock(cuboid, orGate.getRelative(1, 0, 0), itemDoor, null, false);
+		_placeItemAsBlock(cuboid, orGate.getRelative(1, 0, 0), itemGate, null, false);
 		_placeItemAsBlock(cuboid, orGate.getRelative(0, 1, 0), itemSwitch, null, false);
 		_placeItemAsBlock(cuboid, orGate.getRelative(0, -1, 0), itemSwitch, null, false);
 		// NOT
 		AbsoluteLocation notGate = cuboid.getCuboidAddress().getBase().getRelative(2, 22, 1);
-		_placeItemAsBlock(cuboid, notGate.getRelative(1, 0, 0), itemDoor, null, false);
+		_placeItemAsBlock(cuboid, notGate.getRelative(1, 0, 0), itemGate, null, false);
 		_placeItemAsBlock(cuboid, notGate.getRelative(-1, 0, 0), itemSwitch, null, false);
 		
 		// Since these are spaced out and we want this to happen in fewer ticks, we will use 3 entities.
@@ -2809,11 +2809,11 @@ public class TestTickRunner
 		
 		// Check the gate and door states.
 		_checkBlock(phase1, andGate, itemAnd, OrientationAspect.Direction.EAST, false);
-		_checkBlock(phase1, andGate.getRelative(1, 0, 0), itemDoor, null, false);
+		_checkBlock(phase1, andGate.getRelative(1, 0, 0), itemGate, null, false);
 		_checkBlock(phase1, orGate, itemOr, OrientationAspect.Direction.EAST, false);
-		_checkBlock(phase1, orGate.getRelative(1, 0, 0), itemDoor, null, false);
+		_checkBlock(phase1, orGate.getRelative(1, 0, 0), itemGate, null, false);
 		_checkBlock(phase1, notGate, itemNot, OrientationAspect.Direction.EAST, true);
-		_checkBlock(phase1, notGate.getRelative(1, 0, 0), itemDoor, null, true);
+		_checkBlock(phase1, notGate.getRelative(1, 0, 0), itemGate, null, true);
 		
 		// Run phase2 - we flip the switches and should see OR and NOT change.
 		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new EntityChangeSetBlockLogicState(andGate.getRelative(0, -1, 0), true)), 2L);
@@ -2849,11 +2849,11 @@ public class TestTickRunner
 		
 		// Check that the OR gate and door changed, same with NOT, but not the AND.
 		_checkBlock(phase2, andGate, itemAnd, OrientationAspect.Direction.EAST, false);
-		_checkBlock(phase2, andGate.getRelative(1, 0, 0), itemDoor, null, false);
+		_checkBlock(phase2, andGate.getRelative(1, 0, 0), itemGate, null, false);
 		_checkBlock(phase2, orGate, itemOr, OrientationAspect.Direction.EAST, true);
-		_checkBlock(phase2, orGate.getRelative(1, 0, 0), itemDoor, null, true);
+		_checkBlock(phase2, orGate.getRelative(1, 0, 0), itemGate, null, true);
 		_checkBlock(phase2, notGate, itemNot, OrientationAspect.Direction.EAST, false);
-		_checkBlock(phase2, notGate.getRelative(1, 0, 0), itemDoor, null, false);
+		_checkBlock(phase2, notGate.getRelative(1, 0, 0), itemGate, null, false);
 		
 		// Run phase3 - we flip the switches and should see AND change.
 		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new EntityChangeSetBlockLogicState(andGate.getRelative(0, 1, 0), true)), 3L);
@@ -2888,11 +2888,11 @@ public class TestTickRunner
 		
 		// We should now see the final AND change.
 		_checkBlock(phase3, andGate, itemAnd, OrientationAspect.Direction.EAST, true);
-		_checkBlock(phase3, andGate.getRelative(1, 0, 0), itemDoor, null, true);
+		_checkBlock(phase3, andGate.getRelative(1, 0, 0), itemGate, null, true);
 		_checkBlock(phase3, orGate, itemOr, OrientationAspect.Direction.EAST, true);
-		_checkBlock(phase3, orGate.getRelative(1, 0, 0), itemDoor, null, true);
+		_checkBlock(phase3, orGate.getRelative(1, 0, 0), itemGate, null, true);
 		_checkBlock(phase3, notGate, itemNot, OrientationAspect.Direction.EAST, false);
-		_checkBlock(phase3, notGate.getRelative(1, 0, 0), itemDoor, null, false);
+		_checkBlock(phase3, notGate.getRelative(1, 0, 0), itemGate, null, false);
 		
 		runner.shutdown();
 	}
@@ -2903,7 +2903,7 @@ public class TestTickRunner
 		// We will create a scenario with a chest and a door so we can place the sensor between and observe what happens when removing and adding items in the chest.
 		Item itemSensor = ENV.items.getItemById("op.sensor_inventory");
 		Item itemChest = ENV.items.getItemById("op.chest");
-		Item itemDoor = ENV.items.getItemById("op.door");
+		Item itemGate = ENV.items.getItemById("op.gate");
 		CuboidData cuboid = _zeroAirCuboidWithBase();
 		
 		Inventory chestInventory = Inventory.start(ENV.stations.getNormalInventorySize(ENV.blocks.fromItem(itemChest)))
@@ -2913,7 +2913,7 @@ public class TestTickRunner
 		AbsoluteLocation sensorSpace = cuboid.getCuboidAddress().getBase().getRelative(2, 2, 1);
 		AbsoluteLocation doorSpace = sensorSpace.getRelative(1, 0, 0);
 		AbsoluteLocation chestSpace = sensorSpace.getRelative(-1, 0, 0);
-		_placeItemAsBlock(cuboid, doorSpace, itemDoor, null, false);
+		_placeItemAsBlock(cuboid, doorSpace, itemGate, null, false);
 		_placeItemAsBlock(cuboid, chestSpace, itemChest, null, false);
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, chestSpace.getBlockAddress(), chestInventory);
 		
@@ -2959,7 +2959,7 @@ public class TestTickRunner
 		
 		// Check the sensor and door states.
 		_checkBlock(phase1, sensorSpace, itemSensor, OrientationAspect.Direction.EAST, true);
-		_checkBlock(phase1, doorSpace, itemDoor, null, true);
+		_checkBlock(phase1, doorSpace, itemGate, null, true);
 		
 		// Run phase2 - empty chest inventory.
 		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new MutationEntityRequestItemPickUp(chestSpace, 1, 1, Inventory.INVENTORY_ASPECT_INVENTORY)), 2L);
@@ -2993,7 +2993,7 @@ public class TestTickRunner
 		
 		// Check the sensor and door states.
 		_checkBlock(phase2, sensorSpace, itemSensor, OrientationAspect.Direction.EAST, false);
-		_checkBlock(phase2, doorSpace, itemDoor, null, false);
+		_checkBlock(phase2, doorSpace, itemGate, null, false);
 		
 		// Run phase3 - fill chest inventory.
 		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new MutationEntityPushItems(chestSpace, 1, 1, Inventory.INVENTORY_ASPECT_INVENTORY)), 3L);
@@ -3027,7 +3027,7 @@ public class TestTickRunner
 		
 		// Check the sensor and door states.
 		_checkBlock(phase3, sensorSpace, itemSensor, OrientationAspect.Direction.EAST, true);
-		_checkBlock(phase3, doorSpace, itemDoor, null, true);
+		_checkBlock(phase3, doorSpace, itemGate, null, true);
 		
 		runner.shutdown();
 	}

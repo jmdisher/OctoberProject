@@ -176,9 +176,9 @@ public class TestPropagationHelpers
 		Block lamp = ENV.blocks.fromItem(ENV.items.getItemById("op.lamp"));
 		Assert.assertTrue(ENV.logic.isAware(lamp));
 		Assert.assertNotNull(ENV.logic.logicUpdateHandler(lamp));
-		Block door = ENV.blocks.fromItem(ENV.items.getItemById("op.door"));
-		Assert.assertTrue(ENV.logic.isManual(door));
-		Assert.assertTrue(ENV.logic.isAware(door));
+		Block gate = ENV.blocks.fromItem(ENV.items.getItemById("op.gate"));
+		Assert.assertTrue(ENV.logic.isManual(gate));
+		Assert.assertTrue(ENV.logic.isAware(gate));
 		Block logicWire = ENV.blocks.fromItem(ENV.items.getItemById("op.logic_wire"));
 		Assert.assertTrue(ENV.logic.isAware(logicWire));
 		Assert.assertTrue(ENV.logic.isConduit(logicWire));

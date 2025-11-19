@@ -1454,13 +1454,13 @@ public class TestCommonChanges
 	public void doorUsage() throws Throwable
 	{
 		// Give the entity a door, have them place it, open it, close it, open it, break it, and verify it is a normal door in the inventory.
-		Item itemDoor = ENV.items.getItemById("op.door");
-		Block door = ENV.blocks.getAsPlaceableBlock(itemDoor);
+		Item itemGate= ENV.items.getItemById("op.gate");
+		Block gate = ENV.blocks.getAsPlaceableBlock(itemGate);
 		
 		int entityId = 1;
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
-		newEntity.newInventory.addAllItems(itemDoor, 1);
+		newEntity.newInventory.addAllItems(itemGate, 1);
 		newEntity.setSelectedKey(1);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
@@ -1480,7 +1480,7 @@ public class TestCommonChanges
 		Assert.assertTrue(open.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
-		Assert.assertEquals(door, proxy.getBlock());
+		Assert.assertEquals(gate, proxy.getBlock());
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, proxy.getFlags());
 		proxy.writeBack(cuboid);
 		holder.mutation = null;
@@ -1490,7 +1490,7 @@ public class TestCommonChanges
 		Assert.assertTrue(close.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
-		Assert.assertEquals(door, proxy.getBlock());
+		Assert.assertEquals(gate, proxy.getBlock());
 		Assert.assertNotEquals(FlagsAspect.FLAG_ACTIVE, proxy.getFlags());
 		proxy.writeBack(cuboid);
 		holder.mutation = null;
@@ -1499,7 +1499,7 @@ public class TestCommonChanges
 		Assert.assertTrue(open.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
-		Assert.assertEquals(door, proxy.getBlock());
+		Assert.assertEquals(gate, proxy.getBlock());
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, proxy.getFlags());
 		proxy.writeBack(cuboid);
 		holder.mutation = null;
@@ -1520,7 +1520,7 @@ public class TestCommonChanges
 		// Check our inventory.
 		Inventory inventory = newEntity.freeze().inventory();
 		Assert.assertEquals(1, inventory.sortedKeys().size());
-		Assert.assertEquals(1, inventory.getCount(itemDoor));
+		Assert.assertEquals(1, inventory.getCount(itemGate));
 	}
 
 	@Test
@@ -1607,7 +1607,7 @@ public class TestCommonChanges
 		// Place a door and switch in the world, have the entity activate the switch, then break it, observing the expected door state change.
 		Item itemSwitch = ENV.items.getItemById("op.switch");
 		Block switc = ENV.blocks.getAsPlaceableBlock(itemSwitch);
-		Block door = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.door"));
+		Block gate = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.gate"));
 		Block logicWire = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.logic_wire"));
 		
 		int entityId = 1;
@@ -1617,7 +1617,7 @@ public class TestCommonChanges
 		AbsoluteLocation doorLocation = new AbsoluteLocation(0, 1, 10);
 		AbsoluteLocation wireLocation = doorLocation.getRelative(1, 0, 0);
 		AbsoluteLocation switchLocation = wireLocation.getRelative(1, 0, 0);
-		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress(), door.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress(), gate.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, wireLocation.getBlockAddress(), logicWire.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress(), switc.item().number());
 		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
@@ -1626,23 +1626,23 @@ public class TestCommonChanges
 		EntityChangeSetBlockLogicState open = new EntityChangeSetBlockLogicState(switchLocation, true);
 		Assert.assertTrue(open.applyChange(holder.context, newEntity));
 		_runMutationWithLogicUpdate(holder, cuboid, switchLocation, doorLocation, switc, FlagsAspect.FLAG_ACTIVE);
-		_runMutationInContext(cuboid, holder, door, (byte)0x0);
-		_runMutationInContext(cuboid, holder, door, FlagsAspect.FLAG_ACTIVE);
+		_runMutationInContext(cuboid, holder, gate, (byte)0x0);
+		_runMutationInContext(cuboid, holder, gate, FlagsAspect.FLAG_ACTIVE);
 		Assert.assertNull(holder.mutation);
 		
 		// Deactivate the switch - requires running the 3 follow-up mutations.
 		EntityChangeSetBlockLogicState close = new EntityChangeSetBlockLogicState(switchLocation, false);
 		Assert.assertTrue(close.applyChange(holder.context, newEntity));
 		_runMutationWithLogicUpdate(holder, cuboid, switchLocation, doorLocation, switc, (byte)0x0);
-		_runMutationInContext(cuboid, holder, door, FlagsAspect.FLAG_ACTIVE);
-		_runMutationInContext(cuboid, holder, door, (byte)0x0);
+		_runMutationInContext(cuboid, holder, gate, FlagsAspect.FLAG_ACTIVE);
+		_runMutationInContext(cuboid, holder, gate, (byte)0x0);
 		Assert.assertNull(holder.mutation);
 		
 		// Open it again.
 		Assert.assertTrue(open.applyChange(holder.context, newEntity));
 		_runMutationWithLogicUpdate(holder, cuboid, switchLocation, doorLocation, switc, FlagsAspect.FLAG_ACTIVE);
-		_runMutationInContext(cuboid, holder, door, (byte)0x0);
-		_runMutationInContext(cuboid, holder, door, FlagsAspect.FLAG_ACTIVE);
+		_runMutationInContext(cuboid, holder, gate, (byte)0x0);
+		_runMutationInContext(cuboid, holder, gate, FlagsAspect.FLAG_ACTIVE);
 		Assert.assertNull(holder.mutation);
 		
 		// Break it and watch the door close.
@@ -1650,8 +1650,8 @@ public class TestCommonChanges
 		Assert.assertTrue(breaker.applyChange(holder.context, newEntity));
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, switchLocation, 0, entityId));
 		_runMutationWithLogicUpdate(holder, cuboid, switchLocation, doorLocation, ENV.special.AIR, (byte)0x0);
-		_runMutationInContext(cuboid, holder, door, FlagsAspect.FLAG_ACTIVE);
-		_runMutationInContext(cuboid, holder, door, (byte)0x0);
+		_runMutationInContext(cuboid, holder, gate, FlagsAspect.FLAG_ACTIVE);
+		_runMutationInContext(cuboid, holder, gate, (byte)0x0);
 		Assert.assertNull(holder.mutation);
 		Assert.assertTrue(holder.change.applyChange(holder.context, newEntity));
 		holder.change = null;

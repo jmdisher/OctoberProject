@@ -42,7 +42,7 @@ op.iron_boots	4
 op.chest	4
 op.beef	2
 op.steak	2
-op.door	8
+op.gate	6
 DEPRECATED.op.door_open	0
 op.hopper	8
 DEPRECATED.op.hopper_north	0

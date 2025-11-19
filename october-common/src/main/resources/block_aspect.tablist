@@ -86,7 +86,7 @@ op.wheat_mature
 	viscosity	10
 op.chest	is_flammable
 	block_material	AXE
-op.door	is_flammable
+op.gate	is_flammable
 	block_material	AXE
 op.hopper
 	block_material	AXE

@@ -49,7 +49,7 @@ public class CommonStructures
 		Block saplingBlock = env.blocks.fromItem(env.items.getItemById("op.sapling"));
 		Block waterSourceBlock = env.blocks.fromItem(env.items.getItemById("op.water_source"));
 		Block voidStoneBlock = env.blocks.fromItem(env.items.getItemById("op.void_stone"));
-		Block doorBlock = env.blocks.fromItem(env.items.getItemById("op.door"));
+		Block gateBlock = env.blocks.fromItem(env.items.getItemById("op.gate"));
 		Block portalKeystoneBlock = env.blocks.fromItem(env.items.getItemById("op.portal_keystone"));
 		Block pedestalBlock = env.blocks.fromItem(env.items.getItemById("op.pedestal"));
 		
@@ -99,7 +99,7 @@ public class CommonStructures
 		Assert.assertTrue(null == mapping.put('O', new Structure.AspectData(tilledSoilBlock, null, null, null)));
 		Assert.assertTrue(null == mapping.put('T', new Structure.AspectData(waterSourceBlock, null, null, null)));
 		Assert.assertTrue(null == mapping.put('V', new Structure.AspectData(voidStoneBlock, null, null, null)));
-		Assert.assertTrue(null == mapping.put('H', new Structure.AspectData(doorBlock, null, null, null)));
+		Assert.assertTrue(null == mapping.put('H', new Structure.AspectData(gateBlock, null, null, null)));
 		Assert.assertTrue(null == mapping.put('N', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.NORTH, ItemSlot.fromNonStack(northOrb))));
 		Assert.assertTrue(null == mapping.put('S', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.SOUTH, ItemSlot.fromNonStack(southOrb))));
 		Assert.assertTrue(null == mapping.put('E', new Structure.AspectData(portalKeystoneBlock, null, OrientationAspect.Direction.EAST, ItemSlot.fromNonStack(eastOrb))));

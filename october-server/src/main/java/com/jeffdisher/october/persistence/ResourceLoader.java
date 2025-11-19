@@ -831,7 +831,7 @@ public class ResourceLoader
 		short switchOnNumber = env.items.getItemById("DEPRECATED.op.switch_on").number();
 		short lampOffNumber = env.items.getItemById("op.lamp").number();
 		short lampOnNumber = env.items.getItemById("DEPRECATED.op.lamp_on").number();
-		short doorNumber = env.items.getItemById("op.door").number();
+		short gateNumber = env.items.getItemById("op.gate").number();
 		short doorOpenNumber = env.items.getItemById("DEPRECATED.op.door_open").number();
 		short doubleDoorNumber = env.items.getItemById("op.double_door_base").number();
 		short doubleDoorOpenNumber = env.items.getItemById("DEPRECATED.op.double_door_open_base").number();
@@ -924,7 +924,7 @@ public class ResourceLoader
 		}
 		for (BlockAddress block : doors)
 		{
-			cuboid.setData15(AspectRegistry.BLOCK, block, doorNumber);
+			cuboid.setData15(AspectRegistry.BLOCK, block, gateNumber);
 		}
 		for (BlockAddress block : doubleDoors)
 		{

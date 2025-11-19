@@ -40,7 +40,7 @@ op.iron_boots	Iron Boots
 op.chest	Chest
 op.beef	Raw Beef
 op.steak	Cooked Steak
-op.door	Door
+op.gate	Gate
 DEPRECATED.op.door_open	Door (Open)
 op.hopper	Hopper
 DEPRECATED.op.hopper_north	Hopper (North)

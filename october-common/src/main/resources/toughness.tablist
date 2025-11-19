@@ -28,7 +28,7 @@ op.leaf	40
 op.wheat_seedling	20
 op.wheat_young	20
 op.wheat_mature	20
-op.door	100
+op.gate	100
 op.switch	40
 op.lamp	40
 op.logic_wire	10

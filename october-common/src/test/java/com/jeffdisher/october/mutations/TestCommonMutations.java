@@ -1039,10 +1039,10 @@ public class TestCommonMutations
 		// We will show that we can change the logic state of something like a door but not a lamp (since it isn't manual).
 		AbsoluteLocation doorLocation = new AbsoluteLocation(5, 5, 5);
 		AbsoluteLocation lampLocation = new AbsoluteLocation(6, 6, 6);
-		Item door = ENV.items.getItemById("op.door");
+		Item gate = ENV.items.getItemById("op.gate");
 		Item lamp = ENV.items.getItemById("op.lamp");
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
-		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress(), door.number());
+		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress(), gate.number());
 		cuboid.setData15(AspectRegistry.BLOCK, lampLocation.getBlockAddress(), lamp.number());
 		
 		// Test with the door.
@@ -1050,7 +1050,7 @@ public class TestCommonMutations
 		MutationBlockSetLogicState mutation = new MutationBlockSetLogicState(doorLocation, true);
 		Assert.assertTrue(mutation.applyMutation(null, proxy));
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(door.number(), cuboid.getData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress()));
+		Assert.assertEquals(gate.number(), cuboid.getData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress()));
 		Assert.assertTrue(FlagsAspect.isSet(cuboid.getData7(AspectRegistry.FLAGS, doorLocation.getBlockAddress()), FlagsAspect.FLAG_ACTIVE));
 		
 		// Show that it fails if the value is already high.

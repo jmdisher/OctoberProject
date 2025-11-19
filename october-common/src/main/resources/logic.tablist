@@ -7,7 +7,7 @@
 # this active flag in response to manual logic set actions, block update events, or logic update events.
 # Note that the ID references are against item_registry.tablist but must appear in block_aspect.tablist to have meaning.
 
-op.door	door
+op.gate	door
 op.switch	switch
 op.lamp	lamp
 op.double_door_base	door

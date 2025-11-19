@@ -31,6 +31,6 @@ op.sapling	500
 # op.wheat_mature
 op.stick	500
 op.chest	8000
-op.door	6000
+op.gate	6000
 op.bed	3000
 op.ladder	1000

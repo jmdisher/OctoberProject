@@ -854,7 +854,7 @@ public class TestResourceLoader
 		// We also want to show how doors work in this change (since they were also changed due to the "active" flag).
 		short dirtNumber = ENV.items.getItemById("op.dirt").number();
 		short doorOpenNumber = ENV.items.getItemById("DEPRECATED.op.door_open").number();
-		short doorClosedNumber = ENV.items.getItemById("op.door").number();
+		short doorClosedNumber = ENV.items.getItemById("op.gate").number();
 		short multiDoorOpenNumber = ENV.items.getItemById("DEPRECATED.op.double_door_open_base").number();
 		short multiDoorClosedNumber = ENV.items.getItemById("op.double_door_base").number();
 		AbsoluteLocation doorLocation = switchOnLocation.getRelative(0, 2, 0);
