@@ -413,7 +413,25 @@ public class TestBasicWorldGenerator
 		CuboidAddress address = CuboidAddress.fromInt(1, 9, -1);
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(creatureIdAssigner, address, 0L);
 		CuboidData cuboid = suspended.cuboid();
-		_checkBlockTypes(cuboid, 32053, 208, 266, 221, 0, 16, 2, 0, 0, 0, 0, 0, 2);
+		Assert.assertArrayEquals(new int[] {
+			32053,
+			208,
+			266,
+			221,
+			7,
+			0,
+			11,
+			2,
+		}, _countSpecificBlocks(cuboid, new short[] {
+			ENV.items.getItemById("op.stone").number(),
+			ENV.items.getItemById("op.coal_ore").number(),
+			ENV.items.getItemById("op.copper_ore").number(),
+			ENV.items.getItemById("op.iron_ore").number(),
+			ENV.items.getItemById("op.grass").number(),
+			ENV.items.getItemById("op.dirt").number(),
+			ENV.items.getItemById("op.sand").number(),
+			ENV.items.getItemById("op.water_source").number(),
+		}));
 	}
 
 	@Test
@@ -429,6 +447,20 @@ public class TestBasicWorldGenerator
 		
 		short keystoneNumber = ENV.items.getItemById("op.portal_keystone").number();
 		Assert.assertEquals(keystoneNumber, cuboid.getData15(AspectRegistry.BLOCK, portalKeystone.getBlockAddress()));
+	}
+
+	@Test
+	public void sandBeach() throws Throwable
+	{
+		// Verify that a sand block generates in a known location.
+		int seed = 933657015;
+		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		AbsoluteLocation sand = new AbsoluteLocation(37, 93, -1);
+		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, sand.getCuboidAddress(), 0L);
+		CuboidData cuboid = suspended.cuboid();
+		
+		short sandNumber = ENV.items.getItemById("op.sand").number();
+		Assert.assertEquals(sandNumber, cuboid.getData15(AspectRegistry.BLOCK, sand.getBlockAddress()));
 	}
 
 
@@ -560,6 +592,34 @@ public class TestBasicWorldGenerator
 		Assert.assertEquals(wheat, wheatCount);
 		Assert.assertEquals(carrot, carrotCount);
 		Assert.assertEquals(waterSource, waterSourceCount);
+	}
+
+	private static int[] _countSpecificBlocks(CuboidData data, short[] blocks)
+	{
+		Map<Short, Integer> index = new HashMap<>();
+		for (int i = 0; i < blocks.length; ++i)
+		{
+			short value = blocks[i];
+			Object old = index.put(value, i);
+			Assert.assertNull(old);
+		}
+		int[] counts = new int[blocks.length];
+		for (byte z = 0; z < Encoding.CUBOID_EDGE_SIZE; ++z)
+		{
+			for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
+			{
+				for (byte x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
+				{
+					short value = data.getData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z));
+					Integer i = index.get(value);
+					if (null != i)
+					{
+						counts[i.intValue()] += 1;
+					}
+				}
+			}
+		}
+		return counts;
 	}
 
 	private static String _coreSample(CuboidData cuboid, int x, int y)

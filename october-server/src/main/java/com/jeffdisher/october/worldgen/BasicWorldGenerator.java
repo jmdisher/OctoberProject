@@ -142,6 +142,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 	private final Block _blockGrass;
 	private final Block _blockDirt;
 	private final Block _blockSoil;
+	private final Block _blockSand;
 	private final Block _blockWheatMature;
 	private final Block _blockCarrotMature;
 	private final Block _blockWaterSource;
@@ -170,6 +171,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		_blockGrass = env.blocks.fromItem(env.items.getItemById("op.grass"));
 		_blockDirt = env.blocks.fromItem(env.items.getItemById("op.dirt"));
 		_blockSoil = env.blocks.fromItem(env.items.getItemById("op.tilled_soil"));
+		_blockSand = env.blocks.fromItem(env.items.getItemById("op.sand"));
 		_blockWheatMature = env.blocks.fromItem(env.items.getItemById("op.wheat_mature"));
 		_blockCarrotMature = env.blocks.fromItem(env.items.getItemById("op.carrot_mature"));
 		_blockWaterSource = env.blocks.fromItem(env.items.getItemById("op.water_source"));
@@ -724,8 +726,22 @@ public class BasicWorldGenerator implements IWorldGenerator
 						}
 						else if (thisZ < (WATER_Z_LEVEL - 1))
 						{
-							// Dirt is under water.
-							blockToWrite = _blockDirt;
+							// Sand is under water.
+							blockToWrite = _blockSand;
+						}
+						else if (thisZ == (WATER_Z_LEVEL - 1))
+						{
+							// This _is_ the level where the water surface blocks generate so make it sand if there is water nearby.
+							if (_isAdjacentHeightLess(thisZ, heightMaps, x, y))
+							{
+								// An adjacent block is below thisZ so we assume it is water, meaning this should be sand.
+								blockToWrite = _blockSand;
+							}
+							else
+							{
+								// No nearby water so assume that this is grass.
+								blockToWrite = _blockGrass;
+							}
 						}
 						else
 						{
@@ -883,6 +899,49 @@ public class BasicWorldGenerator implements IWorldGenerator
 		buffer.putInt(x ^ y ^ z);
 		buffer.putInt(x + y + z);
 		return Arrays.hashCode(buffer.array());
+	}
+
+	private static boolean _isAdjacentHeightLess(int compareZ, LazyColumnHeightMapGrid heightMaps, int localX, int localY)
+	{
+		// We want to check all 8 blocks around this and see if they are less than compareZ.
+		boolean isLess = false;
+		for (int y = -1; !isLess && (y <= 1); ++y)
+		{
+			for (int x = -1; !isLess && (x <= 1); ++x)
+			{
+				if ((0 != y) || (0 != x))
+				{
+					int oneX = localX + x;
+					int oneY = localY + y;
+					int cuboidX = 0;
+					int cuboidY = 0;
+					if (oneX >= Encoding.CUBOID_EDGE_SIZE)
+					{
+						cuboidX = 1;
+						oneX -= Encoding.CUBOID_EDGE_SIZE;
+					}
+					else if (oneX < 0)
+					{
+						cuboidX = -1;
+						oneX += Encoding.CUBOID_EDGE_SIZE;
+					}
+					if (oneY >= Encoding.CUBOID_EDGE_SIZE)
+					{
+						cuboidY = 1;
+						oneY -= Encoding.CUBOID_EDGE_SIZE;
+					}
+					else if (oneY < 0)
+					{
+						cuboidY = -1;
+						oneY += Encoding.CUBOID_EDGE_SIZE;
+					}
+					ColumnHeightMap map = heightMaps.fetchHeightMapForCuboidColumn(cuboidX, cuboidY);
+					int height = map.getHeight(oneX, oneY);
+					isLess = (height < compareZ);
+				}
+			}
+		}
+		return isLess;
 	}
 
 
