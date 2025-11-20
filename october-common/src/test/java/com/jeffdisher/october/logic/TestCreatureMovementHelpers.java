@@ -119,7 +119,7 @@ public class TestCreatureMovementHelpers
 		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
 		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, true, false);
 		Assert.assertNotNull(change);
-		Assert.assertTrue(change.test_getSubAction() instanceof EntityChangeJump);
+		Assert.assertTrue(change.getSubAction() instanceof EntityChangeJump);
 	}
 
 	@Test
@@ -132,7 +132,7 @@ public class TestCreatureMovementHelpers
 		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
 		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, true, false);
 		Assert.assertNotNull(change);
-		Assert.assertNull(change.test_getSubAction());
+		Assert.assertNull(change.getSubAction());
 	}
 
 	@Test
@@ -166,7 +166,7 @@ public class TestCreatureMovementHelpers
 		ViscosityReader reader = _getFixedBlockReader(WATER_SOURCE);
 		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.5f, true, true);
 		Assert.assertNotNull(change);
-		Assert.assertTrue(change.test_getSubAction() instanceof EntityChangeSwim);
+		Assert.assertTrue(change.getSubAction() instanceof EntityChangeSwim);
 	}
 
 	@Test

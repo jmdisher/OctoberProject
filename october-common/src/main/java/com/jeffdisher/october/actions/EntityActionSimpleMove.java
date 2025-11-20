@@ -215,12 +215,12 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 	}
 
 	/**
-	 * Provided purely so that tests can verify the internal sub-action is what they expect, since this is otherwise
-	 * opaque and now contains the details of actions which were previously in smaller instances.
+	 * Some tests but also things like MovementAccumulator need to know if there is a special sub-action inside this
+	 * instance so this allows them to view it.
 	 * 
 	 * @return The sub-action.
 	 */
-	public IEntitySubAction<T> test_getSubAction()
+	public IEntitySubAction<T> getSubAction()
 	{
 		return _subAction;
 	}
