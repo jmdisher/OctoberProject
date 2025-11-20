@@ -11,7 +11,6 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
@@ -47,37 +46,6 @@ public class TestBasicWorldGenerator
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
 		Assert.assertEquals(1353309739, generator.test_getCuboidSeed((short)0, (short)0));
 		Assert.assertEquals(Biomes.BIOMES[8], generator.test_getBiome((short)0, (short)0));
-		Assert.assertEquals(BlockAddress.fromInt(5, 9, 0), generator.test_getCentre((short)0, (short)0));
-		Assert.assertEquals(7, generator.test_getRawPeak((short)0, (short)0));
-		Assert.assertEquals(7, generator.test_getAdjustedPeak((short)0, (short)0));
-		ColumnHeightMap heightMap = generator.test_getHeightMap((short)0, (short)0);
-		Assert.assertEquals(8, heightMap.getHeight(0, 0));
-	}
-
-	@Test
-	public void renderRegion() throws Throwable
-	{
-		int seed = 42;
-		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
-		ColumnHeightMap[][] region = new ColumnHeightMap[3][3];
-		for (short y = -1; y <= 1; ++y)
-		{
-			for (short x = -1; x <= 1; ++x)
-			{
-				region[y + 1][x + 1] = generator.test_getHeightMap(x, y);
-			}
-		}
-		for (int y = 63; y >= -32; --y)
-		{
-			for (int x = -32; x < 64; ++x)
-			{
-				AbsoluteLocation loc = new AbsoluteLocation(x, y, 0);
-				CuboidAddress cuboid = loc.getCuboidAddress();
-				BlockAddress block = loc.getBlockAddress();
-				System.out.print(Integer.toHexString(region[cuboid.y() + 1][cuboid.x() + 1].getHeight(block.x(), block.y())));
-			}
-			System.out.println();
-		}
 	}
 
 	@Test
