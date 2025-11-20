@@ -429,10 +429,30 @@ public class MovementAccumulator
 		if (null != output)
 		{
 			// This was a success so return either the changed entity or default to the original.
-			toReturn = (null != output.thisEntity())
-				? output.thisEntity()
-				: _thisEntity
-			;
+			Entity possible = output.thisEntity();
+			if (null != possible)
+			{
+				// Note that we will further ignore this change if it didn't cause a change to location or velocity, unless it also has a sub-action (since they can change other things).
+				if ((null != toRun.getSubAction())
+					|| !_thisEntity.location().equals(possible.location())
+					|| !_thisEntity.velocity().equals(possible.velocity())
+					|| (_thisEntity.yaw() != possible.yaw())
+					|| (_thisEntity.pitch() != possible.pitch())
+				)
+				{
+					toReturn = possible;
+				}
+				else
+				{
+					// Nothing meaningful changed so return the original instance.
+					toReturn = _thisEntity;
+				}
+			}
+			else
+			{
+				// Nothing changed so return the original instance.
+				toReturn = _thisEntity;
+			}
 		}
 		else
 		{
