@@ -7,7 +7,6 @@ import java.util.function.Function;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.actions.EntityActionImpregnateCreature;
-import com.jeffdisher.october.actions.EntityActionNudge;
 import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.CreatureExtendedData;
@@ -762,12 +761,13 @@ public class CreatureLogic
 				BodyPart target = BodyPart.values()[index];
 				EntityActionTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityActionTakeDamageFromEntity<>(target, creatureType.attackDamage(), creature.getId());
 				context.newChangeSink.next(creature.newTargetEntityId, takeDamage);
-				EntityLocation knockbackForce = NudgeHelpers.meleeAttackKnockback(creature.newLocation, creature.getType().volume(), targetEntity.location(), targetEntity.type().volume());
-				if (null != knockbackForce)
-				{
-					EntityActionNudge<IMutablePlayerEntity> knockback = new EntityActionNudge<>(knockbackForce);
-					context.newChangeSink.next(creature.newTargetEntityId, knockback);
-				}
+				NudgeHelpers.nudgeFromMelee(context
+					, creature.newTargetEntityId
+					, creature.newLocation
+					, creature.getType().volume()
+					, targetEntity.location()
+					, targetEntity.type().volume()
+				);
 				
 				// Since we sent the attack, put us on attack cooldown.
 				creature.newLastAttackMillis = context.currentTickTimeMillis;

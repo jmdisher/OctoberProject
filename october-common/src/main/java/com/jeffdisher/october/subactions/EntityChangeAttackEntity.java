@@ -2,7 +2,6 @@ package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.actions.EntityActionNudge;
 import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.aspects.Environment;
@@ -13,7 +12,6 @@ import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.CommonEntityMutationHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.BodyPart;
-import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutableInventory;
@@ -92,27 +90,23 @@ public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayer
 			int index = context.randomInt.applyAsInt(BodyPart.values().length);
 			BodyPart target = BodyPart.values()[index];
 			int sourceEntityId = newEntity.getId();
-			EntityLocation knockbackForce = NudgeHelpers.meleeAttackKnockback(newEntity.getLocation(), newEntity.getType().volume(), targetEntity.location(), targetEntity.type().volume());
 			if (_targetEntityId > 0)
 			{
 				EntityActionTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityActionTakeDamageFromEntity<>(target, damageToApply, sourceEntityId);
 				context.newChangeSink.next(_targetEntityId, takeDamage);
-				if (null != knockbackForce)
-				{
-					EntityActionNudge<IMutablePlayerEntity> knockback = new EntityActionNudge<>(knockbackForce);
-					context.newChangeSink.next(_targetEntityId, knockback);
-				}
 			}
 			else
 			{
 				EntityActionTakeDamageFromEntity<IMutableCreatureEntity> takeDamage = new EntityActionTakeDamageFromEntity<>(target, damageToApply, sourceEntityId);
 				context.newChangeSink.creature(_targetEntityId, takeDamage);
-				if (null != knockbackForce)
-				{
-					EntityActionNudge<IMutableCreatureEntity> knockback = new EntityActionNudge<>(knockbackForce);
-					context.newChangeSink.creature(_targetEntityId, knockback);
-				}
 			}
+			NudgeHelpers.nudgeFromMelee(context
+				, _targetEntityId
+				, newEntity.getLocation()
+				, newEntity.getType().volume()
+				, targetEntity.location()
+				, targetEntity.type().volume()
+			);
 			
 			CommonEntityMutationHelpers.decrementToolDurability(env, context, newEntity, mutableInventory, selectedKey, nonStack);
 			

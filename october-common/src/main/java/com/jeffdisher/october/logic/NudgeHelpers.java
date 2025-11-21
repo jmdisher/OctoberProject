@@ -10,6 +10,7 @@ import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -20,24 +21,32 @@ public class NudgeHelpers
 	/**
 	 * By default, we run 50 ms per tick, so this will try to nudge every second.
 	 */
-	public static int PLAYER_NUDGE_TICK_FREQUENCY = 20;
+	public static final int PLAYER_NUDGE_TICK_FREQUENCY = 20;
 
 	/**
 	 * By default, we run 50 ms per tick, so this will try to nudge every 5 seconds.
 	 */
-	public static int CREATURE_NUDGE_TICK_FREQUENCY = 100;
+	public static final int CREATURE_NUDGE_TICK_FREQUENCY = 100;
 
 	/**
 	 * Knockback from a melee attack will not be applied it if the distance between the attacker and target centres is
 	 * this value or lower (made to avoid bizarre scaling with small vectors).
 	 */
-	public static float MELEE_KNOCKBACK_MINIMUM_DISTANCE = 0.1f;
+	public static final float MELEE_KNOCKBACK_MINIMUM_DISTANCE = 0.1f;
 
 	/**
 	 * Melee knockback is applied based on the vector between the attacker and the target, scaled to a unit vector, then
 	 * multiplied by this magnitude (so the vector of the force will always be this number).
 	 */
-	public static float MELEE_KNOCKBACK_MAGNITUDE = 5.0f;
+	public static final float MELEE_KNOCKBACK_MAGNITUDE = 5.0f;
+	/**
+	 * The knockback applied by an arrow is based on its velocity, scaled by this factor.
+	 */
+	public static final float ARROW_KNOCKBACK_MAGNITUDE = 0.5f;
+	/**
+	 * The knockback applied by collision with another entity is based on how much they overlap, scaled by this factor.
+	 */
+	public static final float COLLISION_KNOCKBACK_MAGNITUDE = 5.0f;
 
 	/**
 	 * Checks if this player entity is colliding with any other entity, if it is time to check, and sends nudges to them
@@ -88,16 +97,19 @@ public class NudgeHelpers
 	}
 
 	/**
-	 * Determines the melee knockback force to apply based on the source and target, as well as their volumes.  This
-	 * might return null if their arrangement doesn't imply a knockback should be applied.
+	 * Determines the melee knockback force to apply based on the source and target, as well as their volumes.  If there
+	 * should be a nudge knockback, it is sent to the target for the next tick.
 	 * 
+	 * @param context The current tick context.
+	 * @param targetId The ID of the player/creature being targeted by the nudge.
 	 * @param source The source of the melee attack.
 	 * @param sourceVolume The volume of the source.
 	 * @param target The target of the melee attack.
 	 * @param targetVolume The volume of the target.
-	 * @return The knockback vector to apply or null if there should be no knockback.
 	 */
-	public static EntityLocation meleeAttackKnockback(EntityLocation source
+	public static void nudgeFromMelee(TickProcessingContext context
+		, int targetId
+		, EntityLocation source
 		, EntityVolume sourceVolume
 		, EntityLocation target
 		, EntityVolume targetVolume
@@ -110,16 +122,48 @@ public class NudgeHelpers
 			, targetCentre.z() - sourceCentre.z()
 		);
 		float magnitude = delta.getMagnitude();
-		EntityLocation knockbackVector;
 		if (magnitude > MELEE_KNOCKBACK_MINIMUM_DISTANCE)
 		{
-			knockbackVector = delta.makeScaledInstance(MELEE_KNOCKBACK_MAGNITUDE / magnitude);
+			EntityLocation knockbackVector = delta.makeScaledInstance(MELEE_KNOCKBACK_MAGNITUDE / magnitude);
+			if (targetId > 0)
+			{
+				EntityActionNudge<IMutablePlayerEntity> knockback = new EntityActionNudge<>(knockbackVector);
+				context.newChangeSink.next(targetId, knockback);
+			}
+			else
+			{
+				Assert.assertTrue(targetId < 0);
+				EntityActionNudge<IMutableCreatureEntity> knockback = new EntityActionNudge<>(knockbackVector);
+				context.newChangeSink.creature(targetId, knockback);
+			}
+		}
+	}
+
+	/**
+	 * Determines the arrow knockback force to apply based on the arrow velocity.  The nudge knockback is sent to the
+	 * target for the next tick.
+	 * 
+	 * @param context The current tick context.
+	 * @param targetId The ID of the player/creature being targeted by the nudge.
+	 * @param arrowVelocity The velocity of the arrow at the time of impact.
+	 */
+	public static void nudgeFromArrow(TickProcessingContext context
+		, int targetId
+		, EntityLocation arrowVelocity
+	)
+	{
+		EntityLocation knockbackPower = arrowVelocity.makeScaledInstance(ARROW_KNOCKBACK_MAGNITUDE);
+		if (targetId > 0)
+		{
+			EntityActionNudge<IMutablePlayerEntity> knockback = new EntityActionNudge<>(knockbackPower);
+			context.newChangeSink.next(targetId, knockback);
 		}
 		else
 		{
-			knockbackVector = null;
+			Assert.assertTrue(targetId < 0);
+			EntityActionNudge<IMutableCreatureEntity> knockback = new EntityActionNudge<>(knockbackPower);
+			context.newChangeSink.creature(targetId, knockback);
 		}
-		return knockbackVector;
 	}
 
 
@@ -151,15 +195,19 @@ public class NudgeHelpers
 		);
 	}
 
-	private static <T extends IMutableMinimalEntity> EntityActionNudge<T> _createNudge(EntityLocation start, EntityLocation end, float radius)
+	private static <T extends IMutableMinimalEntity> EntityActionNudge<T> _createNudge(EntityLocation start, EntityLocation end, float sourceRadius)
 	{
-		// These are reversed since we are subtracting them from the r
+		// These are reversed since we are subtracting them from the sourceRadius.
 		float dx = end.x() - start.x();
 		float dy = end.y() - start.y();
 		float dz = end.z() - start.z();
-		float vx = Math.signum(dx) * (radius - Math.abs(dx));
-		float vy = Math.signum(dy) * (radius - Math.abs(dy));
-		float vz = Math.signum(dz) * (radius - Math.abs(dz));
+		// The sourceRadius is the effective radius of the source located at "start" so we want to push harder, the closer we are, but to a minimum of 0.0f (since we may be far away in some axes).
+		float magX = Math.max(sourceRadius - Math.abs(dx), 0.0f);
+		float magY = Math.max(sourceRadius - Math.abs(dy), 0.0f);
+		float magZ = Math.max(sourceRadius - Math.abs(dz), 0.0f);
+		float vx = Math.signum(dx) * magX * COLLISION_KNOCKBACK_MAGNITUDE;
+		float vy = Math.signum(dy) * magY * COLLISION_KNOCKBACK_MAGNITUDE;
+		float vz = Math.signum(dz) * magZ * COLLISION_KNOCKBACK_MAGNITUDE;
 		EntityLocation force = new EntityLocation(vx, vy, vz);
 		return new EntityActionNudge<>(force);
 	}

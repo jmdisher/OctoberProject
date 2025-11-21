@@ -974,7 +974,7 @@ public class TestEngineCreatures
 		@SuppressWarnings("unchecked")
 		EntityActionNudge<IMutableCreatureEntity> nudge = (EntityActionNudge<IMutableCreatureEntity>) out[0];
 		Assert.assertTrue(nudge.applyChange(context, mutable));
-		Assert.assertEquals(new EntityLocation(-0.4f, 0.5f, -0.5f), mutable.newVelocity);
+		Assert.assertEquals(new EntityLocation(-2.0f, 2.5f, -2.5f), mutable.newVelocity);
 	}
 
 	@Test
