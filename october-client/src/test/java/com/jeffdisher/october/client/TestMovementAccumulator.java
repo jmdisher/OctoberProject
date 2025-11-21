@@ -1095,9 +1095,9 @@ public class TestMovementAccumulator
 	}
 
 	@Test
-	public void walkWhileStuck() throws Throwable
+	public void popOutWhileStuck() throws Throwable
 	{
-		// Show that we don't walk if we are stuck in a block.
+		// Show that we automatically pop out of a block if stuck.
 		long millisPerTick = 100L;
 		long currentTimeMillis = 1000L;
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
@@ -1127,6 +1127,48 @@ public class TestMovementAccumulator
 		// Since we are stuck, we also won't generate a move, since it won't change anything (unless there is a sub-action).
 		currentTimeMillis += 90L;
 		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		Assert.assertNotNull(out);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		Assert.assertEquals(new EntityLocation(2.0f, 2.4f, 0.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(2.0f, 2.56f, 0.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
+	}
+
+	@Test
+	public void walkWhileStuck() throws Throwable
+	{
+		// Show that we don't walk if we are stuck in a block.
+		long millisPerTick = 100L;
+		long currentTimeMillis = 1000L;
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Create the baseline data we need (sunk down far enough not to pop out).
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = new EntityLocation(2.0f, 2.0f, -0.5f);
+		Entity entity = mutable.freeze();
+		accumulator.setThisEntity(entity);
+		listener.thisEntityDidLoad(entity);
+		accumulator.clearAccumulation();
+		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
+		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
+		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
+		
+		// Show that we don't move in even partial movement.
+		currentTimeMillis += 50L;
+		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(2.0f, 2.0f, -0.5f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
+		
+		// Since we are stuck, we also won't generate a move, since it won't change anything (unless there is a sub-action).
+		currentTimeMillis += 90L;
+		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
 		Assert.assertNull(out);
 		
 		// Show that adding a sub-action _will_ force the generation of the move.
@@ -1140,10 +1182,10 @@ public class TestMovementAccumulator
 		Assert.assertEquals("SimpleMove(WALKING), by -0.00, 0.40, Sub: Jump", out.toString());
 		
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
-		Assert.assertEquals(new EntityLocation(2.0f, 2.0f, -0.2f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(2.0f, 2.0f, -0.5f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
-		Assert.assertEquals(new EntityLocation(2.0f, 2.0f, -0.2f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(2.0f, 2.0f, -0.5f), listener.thisEntity.location());
 		// Motion too little to detect collision.
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 	}

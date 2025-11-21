@@ -9,12 +9,15 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
+import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntitySubAction;
@@ -36,6 +39,7 @@ import com.jeffdisher.october.utils.Assert;
  * movement logic to be tested in isolation.
  * The caller is still responsible for making calls in the correct order, applying any packed actions, and populating
  * its view based on what happens in a sibling SpeculativeProjection.
+ * NOTE:  This is also the component which injects EntitySubActionPopOutOfBlock if it detects that the player is stuck.
  */
 public class MovementAccumulator
 {
@@ -501,8 +505,25 @@ public class MovementAccumulator
 			Entity newEntity = _generateLocalEntity(toRun, millisToApply, currentTimeMillis);
 			if (newEntity == _thisEntity)
 			{
-				// This changes nothing so drop it.
-				toRun = null;
+				// This changes nothing, so that either means that there is nothing changing, or that we are stuck in a block (we need to check for collision in either case since both can be true).
+				EntityLocation targetLocation = EntityMovementHelpers.popOutLocation(_proxyLookup, _thisEntity.location(), _playerVolume, EntitySubActionPopOutOfBlock.POP_OUT_MAX_DISTANCE);
+				if (null != targetLocation)
+				{
+					_subAction = new EntitySubActionPopOutOfBlock<IMutablePlayerEntity>(targetLocation);
+					toRun = _moveFromAccumulation();
+					newEntity = _generateLocalEntity(toRun, millisToApply, currentTimeMillis);
+					if ((null == newEntity) || (newEntity == _thisEntity))
+					{
+						// This didn't work either.
+						_subAction = null;
+						toRun = null;
+					}
+				}
+				else
+				{
+					// We can't pop out so just give up.
+					toRun = null;
+				}
 			}
 		}
 		return toRun;
