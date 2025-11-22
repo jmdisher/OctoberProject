@@ -15,12 +15,9 @@ import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
-import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.MutableInventory;
-import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -127,19 +124,13 @@ public class MutationBlockUpdate implements IMutationBlock
 			}
 			else if (env.blocks.hasGravity(thisBlock))
 			{
-				// See if this needs to break and turn into a falling block.
+				// If it looks like this should fall, schedule the mutation to apply that.
 				if (null != belowBlock)
 				{
 					boolean belowActive = FlagsAspect.isSet(belowBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
 					if (!env.blocks.isSupportedAgainstGravity(thisBlock, belowBlock.getBlock(), belowActive))
 					{
-						// We need to break this block and drop it as a passive falling block.
-						// Note that we will assume that gravity blocks can't have inventories.
-						Assert.assertTrue(null == newBlock.getInventory());
-						CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _blockLocation, newBlock, eventualBlock);
-						
-						// Create the falling block.
-						context.passiveSpawner.spawnPassive(PassiveType.FALLING_BLOCK, _blockLocation.toEntityLocation(), new EntityLocation(0.0f, 0.0f, 0.0f), thisBlock);
+						context.mutationSink.next(new MutationBlockApplyGravity(_blockLocation));
 						didApply = true;
 					}
 				}

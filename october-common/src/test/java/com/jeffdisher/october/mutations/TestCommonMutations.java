@@ -1825,10 +1825,10 @@ public class TestCommonMutations
 	@Test
 	public void gravityBlock()
 	{
-		// Show that placing an unsupported gravity block schedules a block update and that an update on an unsupported block causes it to fall.
+		// Show that placing an unsupported gravity block schedules an apply gravity mutation and that running this mutation spawns the passive.
 		AbsoluteLocation target = new AbsoluteLocation(15, 15, 15);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
-		MutationBlockUpdate[] out_mutation = new MutationBlockUpdate[1];
+		MutationBlockApplyGravity[] out_mutation = new MutationBlockApplyGravity[1];
 		PassiveEntity[] out_passive = new PassiveEntity[1];
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
@@ -1837,7 +1837,7 @@ public class TestCommonMutations
 				public boolean next(IMutationBlock mutation)
 				{
 					Assert.assertNull(out_mutation[0]);
-					out_mutation[0] = (MutationBlockUpdate) mutation;
+					out_mutation[0] = (MutationBlockApplyGravity) mutation;
 					return true;
 				}
 				@Override
@@ -1873,7 +1873,7 @@ public class TestCommonMutations
 		Assert.assertNull(out_passive[0]);
 		Assert.assertNotNull(out_mutation[0]);
 		
-		MutationBlockUpdate update = out_mutation[0];
+		MutationBlockApplyGravity update = out_mutation[0];
 		out_mutation[0] = null;
 		Assert.assertEquals(target, update.getAbsoluteLocation());
 		proxy = new MutableBlockProxy(target, cuboid);

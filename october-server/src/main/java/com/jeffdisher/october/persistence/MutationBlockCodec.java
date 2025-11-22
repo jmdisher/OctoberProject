@@ -5,6 +5,7 @@ import java.util.function.Function;
 
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.MutationBlockApplyGravity;
 import com.jeffdisher.october.mutations.MutationBlockBurnDown;
 import com.jeffdisher.october.mutations.MutationBlockCraft;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
@@ -70,6 +71,7 @@ public class MutationBlockCodec
 		_CODEC_TABLE[MutationBlockOverwriteByEntity.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockOverwriteByEntity.deserialize(context);
 		_CODEC_TABLE[MutationBlockSwapSpecialSlot.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockSwapSpecialSlot.deserialize(context);
 		_CODEC_TABLE[MutationBlockReplaceDropExisting.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockReplaceDropExisting.deserialize(context);
+		_CODEC_TABLE[MutationBlockApplyGravity.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockApplyGravity.deserialize(context);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)

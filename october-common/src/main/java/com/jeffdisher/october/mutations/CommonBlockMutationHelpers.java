@@ -119,13 +119,13 @@ public class CommonBlockMutationHelpers
 				// Gravity blocks are placed once and then fall after an update, so see if that matters here.
 				if (env.blocks.hasGravity(blockType))
 				{
-					// If we think this should fall, schedule a block update (if something else changes, they will get an update, either way).
+					// If we think that this should fall, schedule the apply gravity mutation.
 					if (null != belowBlock)
 					{
 						boolean belowActive = FlagsAspect.isSet(belowBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
 						if (!env.blocks.isSupportedAgainstGravity(blockType, belowBlock.getBlock(), belowActive))
 						{
-							context.mutationSink.next(new MutationBlockUpdate(location));
+							context.mutationSink.next(new MutationBlockApplyGravity(location));
 						}
 					}
 				}

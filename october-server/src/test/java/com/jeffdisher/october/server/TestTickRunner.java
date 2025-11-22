@@ -3253,6 +3253,91 @@ public class TestTickRunner
 		runner.shutdown();
 	}
 
+	@Test
+	public void dropSandStack()
+	{
+		// Show what happens when we break the block at the bottom of a stack of sand.
+		Item sandItem = ENV.items.getItemById("op.sand");
+		Block sandBlock = ENV.blocks.fromItem(sandItem);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, sandBlock);
+		
+		WorldConfig config = new WorldConfig();
+		config.difficulty = Difficulty.PEACEFUL;
+		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {};
+		TickRunner runner = new TickRunner(1
+			, 50L
+			, null
+			, new PassiveIdAssigner()
+			, (int bound) -> 0
+			, snapshotListener
+			, config
+		);
+		
+		// Note that we will inject the "break" mutation here.
+		AbsoluteLocation target = new AbsoluteLocation (25, 25, 27);
+		short toughness = ENV.damage.getToughness(sandBlock);
+		int fakeEntityId = 1;
+		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, toughness, fakeEntityId);
+		ScheduledMutation scheduled = new ScheduledMutation(mutation, 0L);
+		SuspendedCuboid<IReadOnlyCuboidData> suspended = new SuspendedCuboid<>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(scheduled), Map.of(), List.of());
+		runner.setupChangesForTick(List.of(suspended)
+			, null
+			, null
+			, null
+		);
+		runner.start();
+		TickRunner.Snapshot startState = runner.waitForPreviousTick();
+		Assert.assertEquals(0, startState.passives().size());
+		
+		// Run a tick to see everything loaded and the first change applied.
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0, snapshot.passives().size());
+		IReadOnlyCuboidData completed = snapshot.cuboids().get(address).completed();
+		Assert.assertEquals(0, completed.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		
+		// Another trick will run the block update.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0, snapshot.passives().size());
+		completed = snapshot.cuboids().get(address).completed();
+		Assert.assertEquals(0, completed.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		
+		// A third tick will run the apply gravity mutation.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.passives().size());
+		PassiveEntity passive1 = snapshot.passives().get(1).completed();
+		Assert.assertEquals(PassiveType.FALLING_BLOCK, passive1.type());
+		Assert.assertEquals(new EntityLocation(25.0f, 25.0f, 28.0f), passive1.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), passive1.velocity());
+		completed = snapshot.cuboids().get(address).completed();
+		Assert.assertEquals(0, completed.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(0, completed.getData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress()));
+		
+		// Run ticks until the cascade of falling sand is completed.
+		while (snapshot.passives().size() > 0)
+		{
+			runner.startNextTick();
+			snapshot = runner.waitForPreviousTick();
+		}
+		
+		// Run another tick so that the final block placement completes.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		
+		// Verify that all the blocks are settled and the one at the top is missing.
+		completed = snapshot.cuboids().get(address).completed();
+		Assert.assertEquals(sandItem.number(), completed.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(sandItem.number(), completed.getData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(sandItem.number(), completed.getData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 2).getBlockAddress()));
+		Assert.assertEquals(sandItem.number(), completed.getData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 3).getBlockAddress()));
+		Assert.assertEquals(0, completed.getData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 4).getBlockAddress()));
+		
+		runner.shutdown();
+	}
+
 
 	private TickRunner.Snapshot _runTickLockStep(TickRunner runner, Entity entity, IMutationBlock mutation)
 	{
