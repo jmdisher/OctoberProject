@@ -419,6 +419,42 @@ public class TestEnginePassives
 		Assert.assertEquals(new EntityLocation(-0.25f, 0.0f, -0.49f), result.velocity());
 	}
 
+	@Test
+	public void dropBlockUnderPlacedBlock()
+	{
+		// Show that we don't intersect with a block which isn't touching the bottom of a falling block.
+		int passiveId = 1;
+		EntityLocation passiveLocation = new EntityLocation(3.0f, 3.0f, 4.9f);
+		long lastAliveMillis = PassiveType.ITEM_SLOT_DESPAWN_MILLIS + 1L;
+		PassiveEntity passive = new PassiveEntity(passiveId
+			, PassiveType.FALLING_BLOCK
+			, passiveLocation
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, STONE
+			, lastAliveMillis
+		);
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(3, 3, 4), ENV.special.AIR.item().number());
+		long tickNumber = 1L;
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(tickNumber)
+			.lookups((AbsoluteLocation location) -> {
+				return cuboid.getCuboidAddress().equals(location.getCuboidAddress())
+					? new BlockProxy(location.getBlockAddress(), cuboid)
+					: null
+				;
+			} , null, null)
+			.finish()
+		;
+		EntityCollection entityCollection = EntityCollection.emptyCollection();
+		
+		// Show that we continue falling since 4 is air, even though we intersect with 5 which is stone.
+		PassiveEntity result = EnginePassives.processOneCreature(context, entityCollection, passive, List.of());
+		Assert.assertNotNull(result);
+		Assert.assertEquals(new EntityLocation(3.0f, 3.0f, 4.8f), result.location());
+	}
+
 
 	private static TickProcessingContext _createContextWithTopCuboid(CuboidData airCuboid)
 	{

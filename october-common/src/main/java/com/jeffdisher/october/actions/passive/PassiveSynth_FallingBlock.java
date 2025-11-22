@@ -1,5 +1,9 @@
 package com.jeffdisher.october.actions.passive;
 
+import java.util.function.Function;
+
+import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.MutationBlockReplaceDropExisting;
@@ -11,6 +15,7 @@ import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
+import com.jeffdisher.october.utils.CuboidGenerator;
 
 
 /**
@@ -36,8 +41,19 @@ public class PassiveSynth_FallingBlock
 		EntityVolume volume = type.volume();
 		
 		// Now apply normal movement.
+		// NOTE:  We don't want to collide with anything "above" the block's current location (once it fell through a block, we will assume that it has left that block).
+		int startZ = startLocation.getBlockLocation().z();
+		Function<AbsoluteLocation, BlockProxy> filterLookup = (AbsoluteLocation checkLocation) ->
+		{
+			// NOTE:  We may want to change this lookup to return an interface or something more restrictive, in the
+			// future, as creating this empty cuboid is not cheap (not too expensive, though).
+			return (checkLocation.z() > startZ)
+				? new BlockProxy(checkLocation.getBlockAddress(), CuboidGenerator.createFilledCuboid(checkLocation.getCuboidAddress(), Environment.getShared().special.AIR))
+				: context.previousBlockLookUp.apply(checkLocation)
+			;
+		};
 		float seconds = (float)context.millisPerTick / EntityMovementHelpers.FLOAT_MILLIS_PER_SECOND;
-		EntityMovementHelpers.HighLevelMovementResult movement = EntityMovementHelpers.commonMovementIdiom(context.previousBlockLookUp
+		EntityMovementHelpers.HighLevelMovementResult movement = EntityMovementHelpers.commonMovementIdiom(filterLookup
 			, startLocation
 			, startVelocity
 			, volume
