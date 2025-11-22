@@ -1889,6 +1889,45 @@ public class TestCommonMutations
 		Assert.assertEquals(target.toEntityLocation(), out_passive[0].location());
 	}
 
+	@Test
+	public void internalPlaceGravityBlock()
+	{
+		// Show that the internally-used mutation to place blocks also honours gravity blocks.
+		AbsoluteLocation target = new AbsoluteLocation(15, 15, 15);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
+		MutationBlockApplyGravity[] out_mutation = new MutationBlockApplyGravity[1];
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
+			.sinks(new TickProcessingContext.IMutationSink() {
+				@Override
+				public boolean next(IMutationBlock mutation)
+				{
+					Assert.assertNull(out_mutation[0]);
+					out_mutation[0] = (MutationBlockApplyGravity) mutation;
+					return true;
+				}
+				@Override
+				public boolean future(IMutationBlock mutation, long millisToDelay)
+				{
+					throw new AssertionError("Not in test");
+				}
+			}, null)
+			.finish()
+		;
+		
+		Block sand = ENV.blocks.fromItem(ENV.items.getItemById("op.sand"));
+		MutationBlockReplaceDropExisting write = new MutationBlockReplaceDropExisting(target, sand);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		Assert.assertTrue(write.applyMutation(context, proxy));
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		
+		// Show that we placed the block but also asked for gravity to be applied in the next tick.
+		Assert.assertEquals(sand.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertNotNull(out_mutation[0]);
+		Assert.assertEquals(target, out_mutation[0].getAbsoluteLocation());
+	}
+
 
 	private static Set<AbsoluteLocation> _getEastFacingPortalVoidStones(AbsoluteLocation keystoneLocation)
 	{

@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -71,6 +72,21 @@ public class MutationBlockReplaceDropExisting implements IMutationBlock
 			
 			// Overwrite the block with the new type.
 			newBlock.setBlockAndClear(_newType);
+			
+			// Handle the case where this is a gravity block.
+			if (env.blocks.hasGravity(_newType))
+			{
+				// If we think that this should fall, schedule the apply gravity mutation.
+				BlockProxy belowBlock = context.previousBlockLookUp.apply(_location.getRelative(0, 0, -1));
+				if (null != belowBlock)
+				{
+					boolean belowActive = FlagsAspect.isSet(belowBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
+					if (!env.blocks.isSupportedAgainstGravity(_newType, belowBlock.getBlock(), belowActive))
+					{
+						context.mutationSink.next(new MutationBlockApplyGravity(_location));
+					}
+				}
+			}
 		}
 		
 		// Drop anything which needs to be put somewhere.
