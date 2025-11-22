@@ -3412,6 +3412,50 @@ public class TestCommonChanges
 		mutable.freeze();
 	}
 
+	@Test
+	public void storeSingleSlot() throws Throwable
+	{
+		// Show that when we store an item with EntityActionStoreToInventory, it won't duplicate which hotbar slot points to it.
+		int entityId = 1;
+		MutableEntity newEntity = MutableEntity.createForTest(entityId);
+		
+		TickProcessingContext context = _createSimpleContext();
+		
+		// Store a single item and show that it appears in the hotbar.
+		EntityActionStoreToInventory store = new EntityActionStoreToInventory(new Items(STONE_ITEM, 1), null);
+		Assert.assertTrue(store.applyChange(context, newEntity));
+		Assert.assertEquals(1, newEntity.newInventory.getCount(STONE_ITEM));
+		boolean didFind = false;
+		for (int i = 0; i < newEntity.newHotbar.length; ++i)
+		{
+			int key = newEntity.newHotbar[i];
+			if (0 != key)
+			{
+				Assert.assertEquals(i, newEntity.newHotbarIndex);
+				didFind = true;
+			}
+		}
+		Assert.assertTrue(didFind);
+		Assert.assertEquals(0, newEntity.newHotbarIndex);
+		
+		// Change the slot and show that the same action doesn't duplicate the reference.
+		newEntity.newHotbarIndex = 1;
+		Assert.assertTrue(store.applyChange(context, newEntity));
+		Assert.assertEquals(2, newEntity.newInventory.getCount(STONE_ITEM));
+		didFind = false;
+		for (int i = 0; i < newEntity.newHotbar.length; ++i)
+		{
+			int key = newEntity.newHotbar[i];
+			if (0 != key)
+			{
+				Assert.assertEquals(i, newEntity.newHotbarIndex);
+				didFind = true;
+			}
+		}
+		Assert.assertTrue(didFind);
+		Assert.assertEquals(1, newEntity.newHotbarIndex);
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{
