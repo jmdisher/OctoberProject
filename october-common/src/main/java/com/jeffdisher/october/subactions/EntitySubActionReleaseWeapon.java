@@ -104,6 +104,6 @@ public class EntitySubActionReleaseWeapon implements IEntitySubAction<IMutablePl
 	@Override
 	public String toString()
 	{
-		return "Charge current weapon";
+		return "Release current weapon";
 	}
 }

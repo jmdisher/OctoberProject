@@ -48,6 +48,7 @@ public class MutationEntitySetEntity implements IEntityUpdate
 		newEntity.newYaw = _entity.yaw();
 		newEntity.newPitch = _entity.pitch();
 		newEntity.newLocalCraftOperation = _entity.ephemeralShared().localCraftOperation();
+		newEntity.chargeMillis = _entity.ephemeralShared().chargeMillis();
 		newEntity.newHealth = _entity.health();
 		newEntity.newFood = _entity.food();
 		newEntity.newBreath = _entity.breath();

@@ -29,6 +29,7 @@ import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.OrientationHelpers;
+import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
@@ -47,6 +48,7 @@ import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.subactions.EntityChangePlaceMultiBlock;
 import com.jeffdisher.october.subactions.EntityChangeSendItem;
 import com.jeffdisher.october.subactions.EntitySubActionDropItemsAsPassive;
+import com.jeffdisher.october.subactions.EntitySubActionReleaseWeapon;
 import com.jeffdisher.october.subactions.MutationEntityPushItems;
 import com.jeffdisher.october.subactions.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -67,6 +69,7 @@ import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveType;
@@ -2727,6 +2730,73 @@ public class TestSpeculativeProjection
 		partial = listener.otherEntityStates.get(creatureId);
 		Assert.assertEquals(cow, partial.type());
 		Assert.assertEquals(cow.maxHealth(), partial.health());
+	}
+
+	@Test
+	public void chargeState()
+	{
+		// Show that the charge state is correctly replicated from the server.
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		Item bowItem = ENV.items.getItemById("op.bow");
+		Item arrowItem = ENV.items.getItemById("op.arrow");
+		NonStackableItem bow = PropertyHelpers.newItemWithDefaults(ENV, bowItem);
+		mutable.newInventory.addNonStackableAllowingOverflow(bow);
+		mutable.newInventory.addAllItems(arrowItem, 10);
+		mutable.setSelectedKey(1);
+		Entity localEntity = mutable.freeze();
+		projector.setThisEntity(localEntity);
+		long currentTimeMillis = 1L;
+		CuboidAddress airAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(airAddress, ENV.special.AIR);
+		int remaining = projector.applyChangesForServerTick(1L
+			, List.of()
+			, List.of()
+			, List.of(airCuboid)
+			, null
+			, Collections.emptyMap()
+			, Collections.emptyMap()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, List.of()
+			, 0L
+			, currentTimeMillis
+		);
+		Assert.assertEquals(0, remaining);
+		
+		// We will send another update from the server, as though the "charge weapon" had already happened.
+		mutable = MutableEntity.existing(localEntity);
+		mutable.chargeMillis += MILLIS_PER_TICK;
+		localEntity = mutable.freeze();
+		currentTimeMillis += MILLIS_PER_TICK;
+		remaining = projector.applyChangesForServerTick(2L
+			, List.of()
+			, List.of()
+			, List.of()
+			, new MutationEntitySetEntity(localEntity)
+			, Map.of()
+			, Map.of()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, List.of()
+			, 0L
+			, currentTimeMillis
+		);
+		Assert.assertEquals(0, remaining);
+		Assert.assertEquals(MILLIS_PER_TICK, listener.thisEntityState.ephemeralShared().chargeMillis());
+		
+		// Now, apply the release and make sure that it passes.
+		currentTimeMillis += MILLIS_PER_TICK;
+		EntitySubActionReleaseWeapon release = new EntitySubActionReleaseWeapon();
+		long commit1 = _wrapAndApply(projector, localEntity, currentTimeMillis, release);
+		Assert.assertEquals(1L, commit1);
+		Assert.assertEquals(0, listener.thisEntityState.ephemeralShared().chargeMillis());
 	}
 
 
