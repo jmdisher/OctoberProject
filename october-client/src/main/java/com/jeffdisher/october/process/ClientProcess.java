@@ -126,11 +126,13 @@ public class ClientProcess
 	 * 
 	 * @param change The change to apply.
 	 * @param currentTimeMillis The current time, in milliseconds.
+	 * @return True if the action was enqueued, false if there is already one waiting.
 	 */
-	public void sendAction(IEntitySubAction<IMutablePlayerEntity> change, long currentTimeMillis)
+	public boolean sendAction(IEntitySubAction<IMutablePlayerEntity> change, long currentTimeMillis)
 	{
-		_clientRunner.commonApplyEntityAction(change, currentTimeMillis);
+		boolean didApply = _clientRunner.commonApplyEntityAction(change, currentTimeMillis);
 		_runPendingCallbacks();
+		return didApply;
 	}
 
 	/**

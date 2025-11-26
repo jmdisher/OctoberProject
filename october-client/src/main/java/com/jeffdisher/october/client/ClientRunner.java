@@ -88,13 +88,15 @@ public class ClientRunner
 	 * 
 	 * @param change The change to run.
 	 * @param currentTimeMillis The current time, in milliseconds.
+	 * @return True if the action was enqueued, false if there is already one waiting.
 	 */
-	public void commonApplyEntityAction(IEntitySubAction<IMutablePlayerEntity> change, long currentTimeMillis)
+	public boolean commonApplyEntityAction(IEntitySubAction<IMutablePlayerEntity> change, long currentTimeMillis)
 	{
 		// Note that this might fail.
-		_accumulator.enqueueSubAction(change, currentTimeMillis);
+		boolean didApply = _accumulator.enqueueSubAction(change, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
 		_lastCallMillis = currentTimeMillis;
+		return didApply;
 	}
 
 	/**
