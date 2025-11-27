@@ -3285,7 +3285,7 @@ public class TestCommonChanges
 		Assert.assertEquals(0, mutable.getCurrentChargeMillis());
 		Assert.assertEquals(PassiveType.PROJECTILE_ARROW, out[0].type());
 		Assert.assertEquals(new EntityLocation(0.2f, 0.2f, 1.53f), out[0].location());
-		Assert.assertEquals(new EntityLocation(0.0f, 10.0f, 0.0f), out[0].velocity());
+		Assert.assertEquals(new EntityLocation(0.0f, 25.0f, 0.0f), out[0].velocity());
 		Assert.assertNull(out[0].extendedData());
 		Assert.assertEquals(1, mutable.newInventory.getCount(arrow));
 		
@@ -3296,7 +3296,7 @@ public class TestCommonChanges
 		Assert.assertEquals(0, mutable.getCurrentChargeMillis());
 		Assert.assertEquals(PassiveType.PROJECTILE_ARROW, out[0].type());
 		Assert.assertEquals(new EntityLocation(0.2f, 0.2f, 1.53f), out[0].location());
-		Assert.assertEquals(new EntityLocation(0.0f, 5.0f, 0.0f), out[0].velocity());
+		Assert.assertEquals(new EntityLocation(0.0f, 12.5f, 0.0f), out[0].velocity());
 		Assert.assertNull(out[0].extendedData());
 		Assert.assertEquals(0, mutable.newInventory.getCount(arrow));
 		Assert.assertEquals(0, mutable.newHotbar[1]);

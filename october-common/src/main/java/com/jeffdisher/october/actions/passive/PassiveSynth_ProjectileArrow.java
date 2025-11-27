@@ -30,7 +30,10 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class PassiveSynth_ProjectileArrow
 {
-	public static final int DAMAGE_ARROW = 30;
+	/**
+	 * Flat damage, pre-armour, dealt to a creature hit by one.
+	 */
+	public static final int DAMAGE_ARROW = 8;
 
 	private PassiveSynth_ProjectileArrow()
 	{

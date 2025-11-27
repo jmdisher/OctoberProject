@@ -24,7 +24,10 @@ public class EntitySubActionReleaseWeapon implements IEntitySubAction<IMutablePl
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.TRIGGER_CHARGED_WEAPON;
 
-	public static final float PROJECTILE_POWER_MULTIPLIER = 10.0f;
+	/**
+	 * Maximum velocity of an arrow, in metres per second.
+	 */
+	public static final float PROJECTILE_POWER_MULTIPLIER = 25.0f;
 
 	public static EntitySubActionReleaseWeapon deserializeFromBuffer(ByteBuffer buffer)
 	{

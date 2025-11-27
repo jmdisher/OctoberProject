@@ -1073,7 +1073,7 @@ public class TestCreatureLogic
 		};
 		TickProcessingContext context = ContextBuilder.build()
 			.millisPerTick(millisPerTick)
-			.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
+			.tick(CreatureLogic.MILLIS_RANGED_ATTACK_COOLDOWN / millisPerTick)
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
 			.passive(passiveSpawner)
 			.finish()
@@ -1092,7 +1092,7 @@ public class TestCreatureLogic
 		Assert.assertNotNull(out[0]);
 		Assert.assertEquals(PassiveType.PROJECTILE_ARROW, out[0].type());
 		Assert.assertEquals(new EntityLocation(0.3f, 0.3f, 2.62f), out[0].location());
-		Assert.assertEquals(new EntityLocation(9.98f, 0.0f, 0.61f), out[0].velocity());
+		Assert.assertEquals(new EntityLocation(24.81f, 0.0f, -3.08f), out[0].velocity());
 		out[0] = null;
 		
 		// A second attack on the following tick should fail since we are on cooldown.
@@ -1106,7 +1106,7 @@ public class TestCreatureLogic
 		
 		// But will work if we advance tick number further.
 		context = ContextBuilder.build()
-			.tick(context.currentTick + CreatureLogic.MILLIS_ATTACK_COOLDOWN / context.millisPerTick)
+			.tick(context.currentTick + CreatureLogic.MILLIS_RANGED_ATTACK_COOLDOWN / context.millisPerTick)
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
 			.passive(passiveSpawner)
 			.finish()
@@ -1120,7 +1120,7 @@ public class TestCreatureLogic
 		Assert.assertNotNull(out[0]);
 		Assert.assertEquals(PassiveType.PROJECTILE_ARROW, out[0].type());
 		Assert.assertEquals(new EntityLocation(0.3f, 0.3f, 2.62f), out[0].location());
-		Assert.assertEquals(new EntityLocation(9.98f, 0.0f, 0.61f), out[0].velocity());
+		Assert.assertEquals(new EntityLocation(24.81f, 0.0f, -3.08f), out[0].velocity());
 	}
 
 	@Test

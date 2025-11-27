@@ -68,6 +68,10 @@ public class CreatureLogic
 	 */
 	public static final long MILLIS_ATTACK_COOLDOWN = 1000L;
 	/**
+	 * A creature will wait 5 seconds between ranged attacks.
+	 */
+	public static final long MILLIS_RANGED_ATTACK_COOLDOWN = 5000L;
+	/**
 	 * The timeout from exiting love mode until it can be entered again.
 	 */
 	public static final long MILLIS_BREEDING_COOLDOWN = 5L * 60L * 1000L;
@@ -794,7 +798,7 @@ public class CreatureLogic
 		// The only special action we will take is attacking but this path will also reset our tracking if the target moves.
 		// We don't have an objective measurement of time but the tick rate is considered constant within a server instance so we will estimate time passed.
 		long millisSinceLastAttack = context.currentTickTimeMillis - creature.newLastAttackMillis;
-		if ((CreatureEntity.NO_TARGET_ENTITY_ID != creature.newTargetEntityId) && (millisSinceLastAttack >= MILLIS_ATTACK_COOLDOWN))
+		if ((CreatureEntity.NO_TARGET_ENTITY_ID != creature.newTargetEntityId) && (millisSinceLastAttack >= MILLIS_RANGED_ATTACK_COOLDOWN))
 		{
 			// We are tracking a target so see if they have moved (since we would need to clear our existing targets and
 			// movement plans unless they are close enough for other actions).
