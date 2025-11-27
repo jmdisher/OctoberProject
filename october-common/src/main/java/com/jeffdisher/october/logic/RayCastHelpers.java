@@ -365,8 +365,11 @@ public class RayCastHelpers
 		float close = Math.max(closeX, Math.max(closeY, closeZ));
 		float far = Math.min(farX, Math.min(farY, farZ));
 		
+		// We assume that we collided if:
+		// -the "close" is less than "far" (since these will be inverted if we failed to collide on any axis)
+		// -the "close" is a positive number (since otherwise we started "inside" the volume)
 		// NOTE:  "close" is not the physical distance, but a proportional one, so actually calculate the distance.
-		return ((close <= far) && (close >= 0.0f) && (far <= 1.0f))
+		return ((close <= far) && (close >= 0.0f))
 				? SpatialHelpers.distanceFromLocationToVolume(new EntityLocation(start.x(), start.y(), start.z()), base, volume)
 				: Float.MAX_VALUE
 		;

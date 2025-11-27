@@ -200,6 +200,72 @@ public class TestRayCastHelpers
 		Assert.assertEquals(0, id);
 	}
 
+	@Test
+	public void rayDirectionInIntersection() throws Throwable
+	{
+		// We show that the intersection logic is directional, such that the intersection will only be considered when "entering" the player.
+		// Create some players in a collection and intersect 
+		Map<Integer, Entity> players = Map.of(1, _buildPlayer(1, new EntityLocation(0.0f, 0.0f, 0.0f))
+		);
+		EntityCollection collection = EntityCollection.fromMaps(players, Map.of());
+		
+		// Leave the player to negative (does NOT count as intersection since it isn't "entering").
+		int id = RayCastHelpers.findFirstCollisionInCollection(ENV, new EntityLocation(0.1f, 0.1f, 0.1f), new EntityLocation(-1.0f, -1.0f, -1.0f), collection);
+		Assert.assertEquals(0, id);
+		
+		// Leave the player to positive (does NOT count as intersection since it isn't "entering").
+		id = RayCastHelpers.findFirstCollisionInCollection(ENV, new EntityLocation(0.1f, 0.1f, 0.1f), new EntityLocation(2.0f, 2.0f, 2.0f), collection);
+		Assert.assertEquals(0, id);
+		
+		// Entering the player from negative.
+		id = RayCastHelpers.findFirstCollisionInCollection(ENV, new EntityLocation(-1.0f, -1.0f, -1.0f), new EntityLocation(0.1f, 0.1f, 0.1f), collection);
+		Assert.assertEquals(1, id);
+		
+		// Entering the player from positive.
+		id = RayCastHelpers.findFirstCollisionInCollection(ENV, new EntityLocation(2.0f, 2.0f, 2.0f), new EntityLocation(0.1f, 0.1f, 0.1f), collection);
+		Assert.assertEquals(1, id);
+		
+		// Staying inside the player to negative (does NOT count as intersection since it isn't "entering").
+		id = RayCastHelpers.findFirstCollisionInCollection(ENV, new EntityLocation(0.2f, 0.2f, 0.2f), new EntityLocation(0.1f, 0.1f, 0.1f), collection);
+		Assert.assertEquals(0, id);
+		
+		// Staying inside the player to positive (does NOT count as intersection since it isn't "entering").
+		id = RayCastHelpers.findFirstCollisionInCollection(ENV, new EntityLocation(0.1f, 0.1f, 0.1f), new EntityLocation(0.2f, 0.2f, 0.2f), collection);
+		Assert.assertEquals(0, id);
+		
+		// Entering on one axis from negative while inside, from the others.
+		id = RayCastHelpers.findFirstCollisionInCollection(ENV, new EntityLocation(-1.0f, 0.1f, 0.2f), new EntityLocation(0.1f, 0.1f, 0.1f), collection);
+		Assert.assertEquals(1, id);
+		
+		// Entering on one axis from positive while inside, from the others.
+		id = RayCastHelpers.findFirstCollisionInCollection(ENV, new EntityLocation(2.0f, 0.1f, 0.2f), new EntityLocation(0.1f, 0.1f, 0.1f), collection);
+		Assert.assertEquals(1, id);
+		
+		// Pass right through from negative.
+		id = RayCastHelpers.findFirstCollisionInCollection(ENV, new EntityLocation(-1.0f, -1.0f, -1.0f), new EntityLocation(2.0f, 2.0f, 2.0f), collection);
+		Assert.assertEquals(1, id);
+		
+		// Pass right through from positive.
+		id = RayCastHelpers.findFirstCollisionInCollection(ENV, new EntityLocation(2.0f, 2.0f, 2.0f), new EntityLocation(-1.0f, -1.0f, -1.0f), collection);
+		Assert.assertEquals(1, id);
+		
+		// Pass over from negative.
+		id = RayCastHelpers.findFirstCollisionInCollection(ENV, new EntityLocation(-1.0f, -1.0f, 2.0f), new EntityLocation(2.0f, 2.0f, 2.0f), collection);
+		Assert.assertEquals(0, id);
+		
+		// Pass over from positive.
+		id = RayCastHelpers.findFirstCollisionInCollection(ENV, new EntityLocation(2.0f, 2.0f, 2.0f), new EntityLocation(-1.0f, -1.0f, 2.0f), collection);
+		Assert.assertEquals(0, id);
+		
+		// Fall short from negative.
+		id = RayCastHelpers.findFirstCollisionInCollection(ENV, new EntityLocation(-1.0f, -1.0f, -1.0f), new EntityLocation(-0.1f, -0.1f, -0.1f), collection);
+		Assert.assertEquals(0, id);
+		
+		// Fall short from positive.
+		id = RayCastHelpers.findFirstCollisionInCollection(ENV, new EntityLocation(2.0f, 2.0f, 2.0f), new EntityLocation(0.5f, 0.5f, 1.75f), collection);
+		Assert.assertEquals(0, id);
+	}
+
 
 	private static void _checkPathOneBlockStep(List<AbsoluteLocation> path)
 	{
