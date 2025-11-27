@@ -62,9 +62,10 @@ public class PassiveSynth_ProjectileArrow
 			// First, we want to see if we will collide with anything.
 			// -does damage to player or creature
 			// -changes into ITEM_SLOT if it collides with a solid block
-			EntityLocation endOfRay = new EntityLocation(startLocation.x() + startVelocity.x()
-				, startLocation.y() + startVelocity.y()
-				, startLocation.z() + startVelocity.z()
+			float seconds = (float)context.millisPerTick / EntityMovementHelpers.FLOAT_MILLIS_PER_SECOND;
+			EntityLocation endOfRay = new EntityLocation(startLocation.x() + (seconds * startVelocity.x())
+				, startLocation.y() + (seconds * startVelocity.y())
+				, startLocation.z() + (seconds * startVelocity.z())
 			);
 			RayCastHelpers.RayBlock solidCollision = RayCastHelpers.findFirstCollision(startLocation, endOfRay, (AbsoluteLocation location) -> {
 				BlockProxy proxy = context.previousBlockLookUp.apply(location);
@@ -126,7 +127,6 @@ public class PassiveSynth_ProjectileArrow
 				else
 				{
 					// Hit nothing so just move.
-					float seconds = (float)context.millisPerTick / EntityMovementHelpers.FLOAT_MILLIS_PER_SECOND;
 					EntityMovementHelpers.HighLevelMovementResult movement = EntityMovementHelpers.commonMovementIdiom(context.previousBlockLookUp
 						, startLocation
 						, startVelocity

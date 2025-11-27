@@ -212,7 +212,7 @@ public class TestPassiveActions
 		// Show that an arrow will despawn and deal damage to an entity it hits.
 		int id = 1;
 		EntityLocation location = new EntityLocation(10.0f, 10.0f, 10.5f);
-		EntityLocation velocity = new EntityLocation(2.0f, 0.0f, 0.0f);
+		EntityLocation velocity = new EntityLocation(15.0f, 0.0f, 0.0f);
 		long createMillis = 1000L;
 		PassiveEntity start = new PassiveEntity(id, PassiveType.PROJECTILE_ARROW, location, velocity, null, createMillis);
 		CreatureEntity creature = new CreatureEntity(-1

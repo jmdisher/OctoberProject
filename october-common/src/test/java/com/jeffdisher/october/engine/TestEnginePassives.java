@@ -455,19 +455,69 @@ public class TestEnginePassives
 		Assert.assertEquals(new EntityLocation(3.0f, 3.0f, 4.8f), result.location());
 	}
 
+	@Test
+	public void arrowFlightAndCollision()
+	{
+		// Show an arrow fly through the air and collide with the ground.
+		int passiveId = 1;
+		EntityLocation startLocation = new EntityLocation(10.35f, -6.89f, 1.57f);
+		EntityLocation startVelocity = new EntityLocation(8.1f, -5.7f, 1.2f);
+		PassiveEntity passive = new PassiveEntity(passiveId
+			, PassiveType.PROJECTILE_ARROW
+			, startLocation
+			, startVelocity
+			, null
+			, 0L
+		);
+		
+		PassiveEntity[] out = new PassiveEntity[1];
+		TickProcessingContext context = _createContextWithPassiveSpawner((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+			Assert.assertNull(out[0]);
+			out[0] = new PassiveEntity(2
+				, type
+				, location
+				, velocity
+				, extendedData
+				, 0L
+			);
+		});
+		EntityCollection entityCollection = EntityCollection.emptyCollection();
+		
+		int ticks = 0;
+		while (null != passive)
+		{
+			passive = EnginePassives.processOneCreature(context, entityCollection, passive, List.of());
+			ticks += 1;
+		}
+		// These checks are experimentally verified.
+		Assert.assertEquals(7, ticks);
+		Assert.assertEquals(PassiveType.ITEM_SLOT, out[0].type());
+		Assert.assertEquals(new EntityLocation(15.21f, -10.31f, 0.23f), out[0].location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), out[0].velocity());
+	}
+
 
 	private static TickProcessingContext _createContextWithTopCuboid(CuboidData airCuboid)
 	{
-		return _createContextLowLevel(null, airCuboid);
+		return _createContextLowLevel(null, null, airCuboid);
 	}
 
 	private static TickProcessingContext _createContextWithSink(TickProcessingContext.IChangeSink changeSink)
 	{
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		return _createContextLowLevel(changeSink, airCuboid);
+		return _createContextLowLevel(changeSink, null, airCuboid);
 	}
 
-	private static TickProcessingContext _createContextLowLevel(TickProcessingContext.IChangeSink changeSink, CuboidData airCuboid)
+	private static TickProcessingContext _createContextWithPassiveSpawner(TickProcessingContext.IPassiveSpawner spawner)
+	{
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		return _createContextLowLevel(null, spawner, airCuboid);
+	}
+
+	private static TickProcessingContext _createContextLowLevel(TickProcessingContext.IChangeSink changeSink
+		, TickProcessingContext.IPassiveSpawner spawner
+		, CuboidData airCuboid
+	)
 	{
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		long millisPerTick = 100L;
@@ -481,6 +531,7 @@ public class TestEnginePassives
 					: new BlockProxy(location.getBlockAddress(), airCuboid)
 				;
 			} , null, null)
+			.passive(spawner)
 			// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 			.fixedRandom(1)
 			.finish()
