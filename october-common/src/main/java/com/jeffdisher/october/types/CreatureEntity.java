@@ -98,32 +98,7 @@ public record CreatureEntity(int id
 				, MiscConstants.MAX_BREATH
 				, type.extendedCodec().buildDefault(gameTimeMillis)
 				
-				, createEmptyEphemeral(0L)
-		);
-	}
-
-	public CreatureEntity updateKeepAlive(long gameMillis)
-	{
-		return new CreatureEntity(this.id
-				, this.type
-				, this.location
-				, this.velocity
-				, this.yaw
-				, this.pitch
-				, this.health
-				, this.breath
-				, this.extendedData
-				
-				, new Ephemeral(
-						this.ephemeral.movementPlan
-						, this.ephemeral.lastActionMillis
-						, this.ephemeral.shouldTakeImmediateAction
-						, gameMillis
-						, this.ephemeral.targetEntityId
-						, this.ephemeral.targetPreviousLocation
-						, this.ephemeral.lastAttackMillis
-						, this.ephemeral().lastDamageTakenMillis
-				)
+				, createEmptyEphemeral(gameTimeMillis)
 		);
 	}
 }
