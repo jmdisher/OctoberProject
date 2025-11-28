@@ -33,7 +33,6 @@ import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
-import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -265,7 +264,7 @@ public class SpeculativeProjection
 		}
 		
 		// Merge the follow-up ticks.
-		IEntityUpdate modifiedEntity = null;
+		EntityUpdatePerField modifiedEntity = null;
 		Map<AbsoluteLocation, MutationBlockSetBlock> modifiedBlocks = Map.of();
 		Map<CuboidAddress, OctreeInflatedByte> modifiedLights = new HashMap<>();
 		for (int i = 0; i < _followUpTicks.size(); ++i)
@@ -499,7 +498,7 @@ public class SpeculativeProjection
 		Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = Map.of();
 		Set<CuboidAddress> accumulatedLightingChangeCuboids = new HashSet<>();
 		boolean didFirstPass = true;
-		IEntityUpdate inlineUpdate = null;
+		EntityUpdatePerField inlineUpdate = null;
 		for (int i = 0; (i <= MAX_FOLLOW_UP_TICKS) && didFirstPass && (!entityChangesToRun.isEmpty() || !blockMutationstoRun.isEmpty() || !potentialLightChangesByCuboid.isEmpty()); ++i)
 		{
 			// Create the context and mutation sinks for this invocation.
@@ -516,11 +515,11 @@ public class SpeculativeProjection
 			// Run these changes and mutations, collecting the resultant output from them.
 			Entity[] entityResult = _runChangesOnEntity(context, _localEntityId, _projectedState.projectedLocalEntity, entityChangesToRun);
 			// This returns non-null on success but the container may be empty if the entity didn't change.
-			IEntityUpdate update = null;
+			EntityUpdatePerField update = null;
 			if ((null != entityResult) && (null != entityResult[0]))
 			{
+				update = EntityUpdatePerField.update(_projectedState.projectedLocalEntity, entityResult[0]);
 				_projectedState.projectedLocalEntity = entityResult[0];
-				update = new MutationEntitySetEntity(_projectedState.projectedLocalEntity);
 			}
 			// On the first invocation, we MUST pass and we will capture the inline update for immediate reporting.
 			if (0 == i)
@@ -793,7 +792,7 @@ public class SpeculativeProjection
 		return container;
 	}
 
-	private void _applyChangesToProjection(IEntityUpdate modifiedEntity, Map<AbsoluteLocation, MutationBlockSetBlock> modifiedBlocks)
+	private void _applyChangesToProjection(EntityUpdatePerField modifiedEntity, Map<AbsoluteLocation, MutationBlockSetBlock> modifiedBlocks)
 	{
 		if (null != modifiedEntity)
 		{
@@ -835,15 +834,17 @@ public class SpeculativeProjection
 	) {}
 
 	// entityUpdate can be null if there were no entity changes.
-	private static record _LocalCallConsequences(IEntityUpdate entityUpdate
+	private static record _LocalCallConsequences(EntityUpdatePerField entityUpdate
 			, Map<AbsoluteLocation, MutationBlockSetBlock> blockUpdates
 			, Map<CuboidAddress, OctreeInflatedByte> lightingChanges
 	) {
 		public static _LocalCallConsequences merge(_LocalCallConsequences bottom, _LocalCallConsequences top)
 		{
-			IEntityUpdate entityUpdate = (null != top.entityUpdate)
-					? top.entityUpdate
-					: bottom.entityUpdate
+			EntityUpdatePerField entityUpdate = (null != top.entityUpdate)
+				? (null != bottom.entityUpdate)
+					? EntityUpdatePerField.merge(bottom.entityUpdate, top.entityUpdate)
+					: top.entityUpdate
+				: bottom.entityUpdate
 			;
 			Map<AbsoluteLocation, MutationBlockSetBlock> blockUpdates = new HashMap<>();
 			blockUpdates.putAll(bottom.blockUpdates);
@@ -856,7 +857,7 @@ public class SpeculativeProjection
 	}
 
 	private static record _LocalActionWrapper(long commitNumber
-			, IEntityUpdate inlineEntityUpdate
+			, EntityUpdatePerField inlineEntityUpdate
 			, List<_LocalCallConsequences> consequences
 	) {}
 }

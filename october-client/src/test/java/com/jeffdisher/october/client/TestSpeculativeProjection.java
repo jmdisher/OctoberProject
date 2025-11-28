@@ -2799,6 +2799,84 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, listener.thisEntityState.ephemeralShared().chargeMillis());
 	}
 
+	@Test
+	public void interleaveServerFieldChanges()
+	{
+		// We want to show that changes from the server which don't conflict with local changes are still observed in the output.
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		mutable.newLocation = new EntityLocation(1.0f, 1.0f, 0.0f);
+		mutable.newHealth = (byte)50;
+		mutable.newYaw = (byte)0;
+		mutable.newPitch = (byte)0;
+		Entity localEntity = mutable.freeze();
+		projector.setThisEntity(localEntity);
+		long currentTimeMillis = 1L;
+		CuboidAddress airAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(airAddress, ENV.special.AIR);
+		int remaining = projector.applyChangesForServerTick(1L
+			, List.of()
+			, List.of()
+			, List.of(airCuboid)
+			, null
+			, Collections.emptyMap()
+			, Collections.emptyMap()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, List.of()
+			, 0L
+			, currentTimeMillis
+		);
+		Assert.assertEquals(0, remaining);
+		
+		// We will just look around in a local change and then show that a health and location change from the server is still observed.
+		byte yaw = 30;
+		byte pitch = -10;
+		EntityActionSimpleMove<IMutablePlayerEntity> lookAround = new EntityActionSimpleMove<>(0.0f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.STANDING
+			, yaw
+			, pitch
+			, null
+		);
+		long commit = projector.applyLocalChange(lookAround, currentTimeMillis);
+		Assert.assertEquals(1L, commit);
+		Assert.assertEquals((byte)50, listener.thisEntityState.health());
+		Assert.assertEquals(yaw, listener.thisEntityState.yaw());
+		Assert.assertEquals(new EntityLocation(1.0f, 1.0f, 0.0f), listener.thisEntityState.location());
+		
+		// Show the changes from the server mix correctly.
+		mutable = MutableEntity.existing(localEntity);
+		mutable.newLocation = new EntityLocation(2.0f, 2.0f, 0.0f);
+		mutable.newHealth = (byte)80;
+		localEntity = mutable.freeze();
+		currentTimeMillis += MILLIS_PER_TICK;
+		remaining = projector.applyChangesForServerTick(2L
+			, List.of()
+			, List.of()
+			, List.of()
+			, new MutationEntitySetEntity(localEntity)
+			, Map.of()
+			, Map.of()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, List.of()
+			, 0L
+			, currentTimeMillis
+		);
+		Assert.assertEquals(1, remaining);
+		Assert.assertEquals((byte)80, listener.thisEntityState.health());
+		Assert.assertEquals(yaw, listener.thisEntityState.yaw());
+		// TODO:  Change this to (2.0f, 2.0f, 0.0f) once we filter location/velocity updates per-field (currently causes client-side glitchy movement).
+		Assert.assertEquals(new EntityLocation(1.0f, 1.0f, 0.0f), listener.thisEntityState.location());
+	}
+
 
 	private static EntityActionSimpleMove<IMutablePlayerEntity> _wrap(Entity entity, IEntitySubAction<IMutablePlayerEntity> change)
 	{

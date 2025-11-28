@@ -175,8 +175,16 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 			);
 			
 			// Save back final state.
-			newEntity.setLocation(result.location());
-			newEntity.setVelocityVector(result.velocity());
+			EntityLocation resultLocation = result.location();
+			EntityLocation resultVelocity = result.velocity();
+			if (!startLocation.equals(resultLocation))
+			{
+				newEntity.setLocation(resultLocation);
+			}
+			if (!startVelocity.equals(resultVelocity))
+			{
+				newEntity.setVelocityVector(resultVelocity);
+			}
 			newEntity.setOrientation(_yaw, _pitch);
 			
 			newEntity.applyEnergyCost(_intensity.energyCostPerTick);
