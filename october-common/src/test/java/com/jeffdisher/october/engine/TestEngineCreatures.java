@@ -1035,23 +1035,22 @@ public class TestEngineCreatures
 		CreatureEntity creature = CreatureEntity.create(-1, ENV.creatures.getTypeById("op.skeleton"), new EntityLocation(0.0f, 0.0f, 0.0f), 0L);
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		_Events events = new _Events();
-		PassiveEntity[] out = new PassiveEntity[2];
+		PassiveEntity[] out = new PassiveEntity[1];
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
 			.fixedRandom(0)
 			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), airCuboid), null, null)
 			.eventSink(events)
 			.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
-				Assert.assertNull(out[1]);
-				int id = (null == out[0]) ? 1 : 2;
-				PassiveEntity passive = new PassiveEntity(id
+				Assert.assertNull(out[0]);
+				PassiveEntity passive = new PassiveEntity(1
 					, type
 					, location
 					, velocity
 					, extendedData
 					, 1000L
 				);
-				out[id - 1] = passive;
+				out[0] = passive;
 			})
 			.finish()
 		;
@@ -1073,13 +1072,6 @@ public class TestEngineCreatures
 		Assert.assertEquals(bow, nonStack.type());
 		Assert.assertEquals(1, nonStack.properties().size());
 		Assert.assertEquals(ENV.durability.getDurability(bow), nonStack.properties().get(PropertyRegistry.DURABILITY));
-		
-		Assert.assertEquals(2, out[1].id());
-		Assert.assertEquals(new EntityLocation(0.3f, 0.3f, 0.0f), out[1].location());
-		Items stack = ((ItemSlot)out[1].extendedData()).stack;
-		Item arrow = ENV.items.getItemById("op.arrow");
-		Assert.assertEquals(arrow, stack.type());
-		Assert.assertEquals(1, stack.count());
 	}
 
 

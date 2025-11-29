@@ -34,6 +34,11 @@ public class PassiveSynth_ProjectileArrow
 	 * Flat damage, pre-armour, dealt to a creature hit by one.
 	 */
 	public static final int DAMAGE_ARROW = 8;
+	/**
+	 * The denominator of how frequently an arrow should drop and arrow item when it hits a surface.
+	 * We currently set this to 1/4 of the time.
+	 */
+	public static final int DROP_FRACTION = 4;
 
 	private PassiveSynth_ProjectileArrow()
 	{
@@ -140,9 +145,13 @@ public class PassiveSynth_ProjectileArrow
 				if (movement.didCollide())
 				{
 					// We hit a solid block so convert into an item without velocity.
-					EntityLocation stillVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
-					ItemSlot stack = ItemSlot.fromStack(new Items(env.items.getItemById("op.arrow"), 1));
-					context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, finalLocation, stillVelocity, stack);
+					// We only do this 1/4 of the time.
+					if (0 == context.randomInt.applyAsInt(DROP_FRACTION))
+					{
+						EntityLocation stillVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+						ItemSlot stack = ItemSlot.fromStack(new Items(env.items.getItemById("op.arrow"), 1));
+						context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, finalLocation, stillVelocity, stack);
+					}
 					result = null;
 				}
 				else

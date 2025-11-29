@@ -279,6 +279,7 @@ public class TestPassiveActions
 					, createMillis
 				);
 			})
+			.fixedRandom(0)
 			.tick(1L)
 			.finish()
 		;
@@ -366,6 +367,7 @@ public class TestPassiveActions
 					, createMillis
 				);
 			})
+			.fixedRandom(0)
 			.finish()
 		;
 		

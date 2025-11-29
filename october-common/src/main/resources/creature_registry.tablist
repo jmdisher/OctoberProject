@@ -44,5 +44,5 @@ op.skeleton	Skeleton
 	max_health	30
 	view_distance	8.0
 	action_distance	7.0
-	drops	100	op.arrow	10	op.bow
+	drops	10	op.bow
 	attack_damage	-1

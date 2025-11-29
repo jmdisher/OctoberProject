@@ -499,23 +499,26 @@ public class TestEnginePassives
 
 	private static TickProcessingContext _createContextWithTopCuboid(CuboidData airCuboid)
 	{
-		return _createContextLowLevel(null, null, airCuboid);
+		// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
+		return _createContextLowLevel(null, null, 1, airCuboid);
 	}
 
 	private static TickProcessingContext _createContextWithSink(TickProcessingContext.IChangeSink changeSink)
 	{
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		return _createContextLowLevel(changeSink, null, airCuboid);
+		// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
+		return _createContextLowLevel(changeSink, null, 1, airCuboid);
 	}
 
 	private static TickProcessingContext _createContextWithPassiveSpawner(TickProcessingContext.IPassiveSpawner spawner)
 	{
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		return _createContextLowLevel(null, spawner, airCuboid);
+		return _createContextLowLevel(null, spawner, 0, airCuboid);
 	}
 
 	private static TickProcessingContext _createContextLowLevel(TickProcessingContext.IChangeSink changeSink
 		, TickProcessingContext.IPassiveSpawner spawner
+		, int fixedRandom
 		, CuboidData airCuboid
 	)
 	{
@@ -532,8 +535,7 @@ public class TestEnginePassives
 				;
 			} , null, null)
 			.passive(spawner)
-			// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
-			.fixedRandom(1)
+			.fixedRandom(fixedRandom)
 			.finish()
 		;
 		return context;
