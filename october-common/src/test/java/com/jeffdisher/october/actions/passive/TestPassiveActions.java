@@ -377,6 +377,79 @@ public class TestPassiveActions
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), out[0].velocity());
 	}
 
+	@Test
+	public void passiveArrowHitWater()
+	{
+		// Show that the arrow does something which makes sense when it hits water.
+		int id = 1;
+		EntityLocation startLocation = new EntityLocation(-16.43f, -201.19f, -0.6f);
+		EntityLocation startVelocity = new EntityLocation(0.01f, 0.01f, -0.49f);
+		long createMillis = 1000L;
+		PassiveEntity start = new PassiveEntity(id, PassiveType.PROJECTILE_ARROW, startLocation, startVelocity, null, createMillis);
+		
+		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(startLocation.getBlockLocation().getCuboidAddress(), waterSource);
+		TickProcessingContext context = ContextBuilder.build()
+			.millisPerTick(50L)
+			.lookups((AbsoluteLocation location) -> {
+				return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
+					? new BlockProxy(location.getBlockAddress(), cuboid)
+					: null
+				;
+			}, null, null)
+			.finish()
+		;
+		
+		PassiveEntity result = PassiveSynth_ProjectileArrow.applyChange(context, EntityCollection.emptyCollection(), start);
+		Assert.assertEquals(new EntityLocation(-16.43f, -201.19f, -0.62f), result.location());
+		Assert.assertEquals(new EntityLocation(0.01f, 0.01f, -0.49f), result.velocity());
+	}
+
+	@Test
+	public void arrowStraightUp()
+	{
+		// Show that the arrow does something which makes sense when it hits water.
+		int id = 1;
+		EntityLocation startLocation = new EntityLocation(5.0f, 5.0f, 1.0f);
+		EntityLocation startVelocity = new EntityLocation(0.0f, 0.0f, 10.2f);
+		long createMillis = 1000L;
+		PassiveEntity arrow = new PassiveEntity(id, PassiveType.PROJECTILE_ARROW, startLocation, startVelocity, null, createMillis);
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(startLocation.getBlockLocation().getCuboidAddress(), ENV.special.AIR);
+		PassiveEntity[] out = new PassiveEntity[1];
+		TickProcessingContext context = ContextBuilder.build()
+			.millisPerTick(50L)
+			.lookups((AbsoluteLocation location) -> {
+				return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
+					? new BlockProxy(location.getBlockAddress(), cuboid)
+					: null
+				;
+			}, null, null)
+			.passive((PassiveType type, EntityLocation l, EntityLocation v, Object extendedData) -> {
+				Assert.assertNull(out[0]);
+				out[0] = new PassiveEntity(2
+					, type
+					, l
+					, v
+					, extendedData
+					, createMillis
+				);
+			})
+			.fixedRandom(0)
+			.finish()
+		;
+		
+		int steps = 0;
+		while (null != arrow)
+		{
+			arrow = PassiveSynth_ProjectileArrow.applyChange(context, EntityCollection.emptyCollection(), arrow);
+			steps += 1;
+		}
+		Assert.assertEquals(43, steps);
+		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 0.0f), out[0].location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), out[0].velocity());
+	}
+
 
 	private static TickProcessingContext _createSingleCuboidContext(CuboidData cuboid, long tickNumber)
 	{

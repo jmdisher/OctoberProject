@@ -158,8 +158,8 @@ public class PassiveSynth_ProjectileArrow
 				{
 					EntityLocation finalVelocity = movement.velocity();
 					
-					// We already checked whether or not it hit something so this MUST have moved and gravity will change velocity.
-					Assert.assertTrue(!finalLocation.equals(entity.location()) && !finalVelocity.equals(entity.velocity()));
+					// Either location OR velocity must change (location may not change at zenith and velocity won't change when terminal).
+					Assert.assertTrue(!finalLocation.equals(entity.location()) || !finalVelocity.equals(entity.velocity()));
 					result = new PassiveEntity(entity.id()
 						, type
 						, finalLocation
