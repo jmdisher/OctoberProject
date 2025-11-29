@@ -66,9 +66,13 @@ public class PassiveSynth_ProjectileArrow
 			// -does damage to player or creature
 			// -changes into ITEM_SLOT if it collides with a solid block
 			float seconds = (float)context.millisPerTick / EntityMovementHelpers.FLOAT_MILLIS_PER_SECOND;
-			EntityLocation endOfRay = new EntityLocation(startLocation.x() + (seconds * startVelocity.x())
-				, startLocation.y() + (seconds * startVelocity.y())
-				, startLocation.z() + (seconds * startVelocity.z())
+			EntityLocation vector = new EntityLocation(seconds * startVelocity.x()
+				, seconds * startVelocity.y()
+				, seconds * startVelocity.z()
+			);
+			EntityLocation endOfRay = new EntityLocation(startLocation.x() + vector.x()
+				, startLocation.y() + vector.y()
+				, startLocation.z() + vector.z()
 			);
 			RayCastHelpers.RayBlock solidCollision = RayCastHelpers.findFirstCollision(startLocation, endOfRay, (AbsoluteLocation location) -> {
 				BlockProxy proxy = context.previousBlockLookUp.apply(location);
@@ -119,27 +123,30 @@ public class PassiveSynth_ProjectileArrow
 			}
 			else
 			{
-				if (null != solidCollision)
+				// We didn't hit a creature so use the more general movement helper to find out where we ended up or if
+				// we hit a solid object (this accounts for the volume so it might be slightly different than the
+				// initial ray-cast).
+				EntityMovementHelpers.HighLevelMovementResult movement = EntityMovementHelpers.commonMovementIdiom(context.previousBlockLookUp
+					, startLocation
+					, startVelocity
+					, volume
+					, 0.0f
+					, 0.0f
+					, 0.0f
+					, seconds
+				);
+				EntityLocation finalLocation = movement.location();
+				
+				if (movement.didCollide())
 				{
 					// We hit a solid block so convert into an item without velocity.
 					EntityLocation stillVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 					ItemSlot stack = ItemSlot.fromStack(new Items(env.items.getItemById("op.arrow"), 1));
-					context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, startLocation, stillVelocity, stack);
+					context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, finalLocation, stillVelocity, stack);
 					result = null;
 				}
 				else
 				{
-					// Hit nothing so just move.
-					EntityMovementHelpers.HighLevelMovementResult movement = EntityMovementHelpers.commonMovementIdiom(context.previousBlockLookUp
-						, startLocation
-						, startVelocity
-						, volume
-						, 0.0f
-						, 0.0f
-						, 0.0f
-						, seconds
-					);
-					EntityLocation finalLocation = movement.location();
 					EntityLocation finalVelocity = movement.velocity();
 					
 					// We already checked whether or not it hit something so this MUST have moved and gravity will change velocity.

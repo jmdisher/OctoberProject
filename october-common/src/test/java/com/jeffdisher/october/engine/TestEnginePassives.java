@@ -492,7 +492,7 @@ public class TestEnginePassives
 		// These checks are experimentally verified.
 		Assert.assertEquals(7, ticks);
 		Assert.assertEquals(PassiveType.ITEM_SLOT, out[0].type());
-		Assert.assertEquals(new EntityLocation(15.21f, -10.31f, 0.23f), out[0].location());
+		Assert.assertEquals(new EntityLocation(16.02f, -10.88f, 0.0f), out[0].location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), out[0].velocity());
 	}
 

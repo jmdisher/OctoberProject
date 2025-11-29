@@ -286,7 +286,7 @@ public class TestPassiveActions
 		PassiveEntity result = PassiveSynth_ProjectileArrow.applyChange(context, EntityCollection.emptyCollection(), start);
 		Assert.assertNull(result);
 		Assert.assertEquals(PassiveType.ITEM_SLOT, out[0].type());
-		Assert.assertEquals(location, out[0].location());
+		Assert.assertEquals(new EntityLocation(10.94f, 10.0f, 10.4f), out[0].location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), out[0].velocity());
 		Assert.assertEquals("op.arrow", ((ItemSlot)out[0].extendedData()).stack.type().id());
 	}
@@ -334,6 +334,45 @@ public class TestPassiveActions
 		Assert.assertEquals(2, catcher.changes.size());
 		Assert.assertTrue(catcher.changes.get(0) instanceof EntityActionTakeDamageFromEntity);
 		Assert.assertTrue(catcher.changes.get(1) instanceof EntityActionNudge);
+	}
+
+	@Test
+	public void passiveArrowNearGround()
+	{
+		// Make sure that ground collision works correctly.
+		int id = 1;
+		EntityLocation startLocation = new EntityLocation(23.78f, -18.23f, 0.27f);
+		EntityLocation startVelocity = new EntityLocation(-23.25f, -9.12f, -5.09f);
+		long createMillis = 1000L;
+		PassiveEntity start = new PassiveEntity(id, PassiveType.PROJECTILE_ARROW, startLocation, startVelocity, null, createMillis);
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(startLocation.getBlockLocation().getCuboidAddress(), ENV.special.AIR);
+		PassiveEntity[] out = new PassiveEntity[1];
+		TickProcessingContext context = ContextBuilder.build()
+			.millisPerTick(50L)
+			.lookups((AbsoluteLocation location) -> {
+				return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
+					? new BlockProxy(location.getBlockAddress(), cuboid)
+					: null
+				;
+			}, null, null)
+			.passive((PassiveType type, EntityLocation l, EntityLocation v, Object extendedData) -> {
+				Assert.assertNull(out[0]);
+				out[0] = new PassiveEntity(2
+					, type
+					, l
+					, v
+					, extendedData
+					, createMillis
+				);
+			})
+			.finish()
+		;
+		
+		PassiveEntity result = PassiveSynth_ProjectileArrow.applyChange(context, EntityCollection.emptyCollection(), start);
+		Assert.assertNull(result);
+		Assert.assertEquals(new EntityLocation(22.62f, -18.69f, 0.0f), out[0].location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), out[0].velocity());
 	}
 
 

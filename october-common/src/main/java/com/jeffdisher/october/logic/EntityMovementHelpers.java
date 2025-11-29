@@ -669,7 +669,11 @@ public class EntityMovementHelpers
 	/**
 	 * Used to return the final result of commonMovementIdiom().
 	 */
-	public static record HighLevelMovementResult(EntityLocation location, EntityLocation velocity, boolean isOnGround) {}
+	public static record HighLevelMovementResult(EntityLocation location
+		, EntityLocation velocity
+		, boolean isOnGround
+		, boolean didCollide
+	) {}
 
 
 	private static class _IInteractiveHelper implements IInteractiveHelper
@@ -707,7 +711,8 @@ public class EntityMovementHelpers
 				finY = 0.0f;
 			}
 			EntityLocation velocity = new EntityLocation(finX, finY, finZ);
-			this.result = new HighLevelMovementResult(finalLocation, velocity, isOnGround);
+			boolean didCollide = cancelX || cancelY || cancelZ;
+			this.result = new HighLevelMovementResult(finalLocation, velocity, isOnGround, didCollide);
 		}
 		@Override
 		public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
