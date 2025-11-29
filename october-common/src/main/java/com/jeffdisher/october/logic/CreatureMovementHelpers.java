@@ -186,7 +186,7 @@ public class CreatureMovementHelpers
 		{
 			// We need to go up so see if we should jump, swim, or hope our momentum will get us there.
 			IEntitySubAction<IMutableCreatureEntity> subAction;
-			if (SpatialHelpers.isBlockAligned(creatureLocation.z()))
+			if (EntityChangeJump.canJumpWithReader(supplier, creatureLocation, creatureType.volume(), creatureVelocity))
 			{
 				// Jump.
 				subAction = new EntityChangeJump<>();

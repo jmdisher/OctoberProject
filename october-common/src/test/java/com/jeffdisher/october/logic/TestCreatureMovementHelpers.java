@@ -113,10 +113,10 @@ public class TestCreatureMovementHelpers
 	@Test
 	public void jump()
 	{
-		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
+		EntityLocation location = new EntityLocation(1.0f, 1.0f, 0.0f);
 		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 2);
-		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
+		ViscosityReader reader = _getSplitBlockReader(ENV.special.AIR, STONE);
 		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, true, false);
 		Assert.assertNotNull(change);
 		Assert.assertTrue(change.getSubAction() instanceof EntityChangeJump);
@@ -321,6 +321,39 @@ public class TestCreatureMovementHelpers
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutable.newVelocity);
 	}
 
+	@Test
+	public void noJumpWhileRising()
+	{
+		// We want to show a fix to the bug where we would attempt to jump while rising in water, just because we were block-aligned.
+		EntityLocation location = new EntityLocation(-60.41f, -215.41f, -1.0f);
+		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 1.08f);
+		MutableCreature mutable = MutableCreature.existing(_createCow(location));
+		mutable.newVelocity = velocity;
+		CreatureEntity creature = mutable.freeze();
+		AbsoluteLocation target = new AbsoluteLocation(-60, -215, 0);
+		ViscosityReader reader = _getFixedBlockReader(WATER_SOURCE);
+		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, true, false);
+		Assert.assertNotNull(change);
+		Assert.assertNull(change.getSubAction());
+		
+		CuboidAddress cuboidAddress = location.getBlockLocation().getCuboidAddress();
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, WATER_SOURCE);
+		TickProcessingContext context = ContextBuilder.build()
+			.millisPerTick(50L)
+			.lookups((AbsoluteLocation l) -> {
+				return (l.getCuboidAddress().equals(cuboidAddress))
+					? new BlockProxy(l.getBlockAddress(), cuboid)
+					: null
+				;
+			}, null, null)
+			.finish()
+		;
+		boolean didApply = change.applyChange(context, mutable);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(new EntityLocation(-60.41f, -215.41f, -0.98f), mutable.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.3f), mutable.newVelocity);
+	}
+
 
 	private static CreatureEntity _createCow(EntityLocation location)
 	{
@@ -332,6 +365,18 @@ public class TestCreatureMovementHelpers
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), block);
 		return new ViscosityReader(ENV, (AbsoluteLocation location) -> {
 			return new BlockProxy(location.getBlockAddress(), cuboid);
+		});
+	}
+
+	private static ViscosityReader _getSplitBlockReader(Block positive, Block negative)
+	{
+		CuboidData high = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), positive);
+		CuboidData low = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), negative);
+		return new ViscosityReader(ENV, (AbsoluteLocation location) -> {
+			return (location.z() >= 0)
+				? new BlockProxy(location.getBlockAddress(), high)
+				: new BlockProxy(location.getBlockAddress(), low)
+			;
 		});
 	}
 

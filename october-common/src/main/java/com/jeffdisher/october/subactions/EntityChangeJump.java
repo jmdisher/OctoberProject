@@ -39,7 +39,21 @@ public class EntityChangeJump<T extends IMutableMinimalEntity> implements IEntit
 			, EntityLocation vector
 	)
 	{
-		return _canJump(previousBlockLookUp
+		ViscosityReader reader = new ViscosityReader(Environment.getShared(), previousBlockLookUp);
+		return _canJump(reader
+				, location
+				, volume
+				, vector
+		);
+	}
+
+	public static boolean canJumpWithReader(ViscosityReader reader
+			, EntityLocation location
+			, EntityVolume volume
+			, EntityLocation vector
+	)
+	{
+		return _canJump(reader
 				, location
 				, volume
 				, vector
@@ -59,7 +73,8 @@ public class EntityChangeJump<T extends IMutableMinimalEntity> implements IEntit
 		// If the entity is standing on the ground with no z-vector, we will make them jump.
 		EntityLocation location = newEntity.getLocation();
 		EntityLocation vector = newEntity.getVelocityVector();
-		if (_canJump(context.previousBlockLookUp
+		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
+		if (_canJump(reader
 				, location
 				, newEntity.getType().volume()
 				, vector
@@ -103,13 +118,12 @@ public class EntityChangeJump<T extends IMutableMinimalEntity> implements IEntit
 	}
 
 
-	private static boolean _canJump(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+	private static boolean _canJump(ViscosityReader reader
 			, EntityLocation location
 			, EntityVolume volume
 			, EntityLocation vector
 	)
 	{
-		ViscosityReader reader = new ViscosityReader(Environment.getShared(), previousBlockLookUp);
 		boolean isOnGround = SpatialHelpers.isStandingOnGround(reader, location, volume);
 		// We will consider it valid to jump so long as you aren't already rising (since you can jump before the fall damage has been calculated).
 		boolean isStatic = (vector.z() <= 0.0f);
