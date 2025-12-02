@@ -297,7 +297,7 @@ public class TestPassiveActions
 	{
 		// Show that an arrow will still hit a creature, even though it is close to a solid block.
 		int id = 1;
-		EntityLocation location = new EntityLocation(10.1f, 10.0f, 10.5f);
+		EntityLocation location = new EntityLocation(10.1f, 10.0f, 11.5f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, -10.0f);
 		long createMillis = 1000L;
 		PassiveEntity start = new PassiveEntity(id, PassiveType.PROJECTILE_ARROW, location, velocity, null, createMillis);
@@ -327,6 +327,7 @@ public class TestPassiveActions
 			}, null, null)
 			.sinks(null, catcher)
 			.tick(1L)
+			.fixedRandom(0)
 			.finish()
 		;
 		

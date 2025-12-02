@@ -1,6 +1,7 @@
 package com.jeffdisher.october.engine;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -14,6 +15,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.EntityCollection;
+import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockReplaceDropExisting;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
@@ -22,6 +24,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
@@ -30,6 +33,7 @@ import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -494,6 +498,59 @@ public class TestEnginePassives
 		Assert.assertEquals(PassiveType.ITEM_SLOT, out[0].type());
 		Assert.assertEquals(new EntityLocation(16.02f, -10.88f, 0.0f), out[0].location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), out[0].velocity());
+	}
+
+	@Test
+	public void arrowAvoidShooter()
+	{
+		// Show that the arrow does not collide with its shooter, in all 4 cardinal directions.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		Entity entity = mutable.freeze();
+		EntityLocation eyeLocation = SpatialHelpers.getEyeLocation(mutable);
+		PassiveEntity north = new PassiveEntity(1
+			, PassiveType.PROJECTILE_ARROW
+			, eyeLocation
+			, new EntityLocation(0.0f, 25.0f, 0.0f)
+			, null
+			, 0L
+		);
+		PassiveEntity south = new PassiveEntity(2
+			, PassiveType.PROJECTILE_ARROW
+			, eyeLocation
+			, new EntityLocation(0.0f, -25.0f, 0.0f)
+			, null
+			, 0L
+		);
+		PassiveEntity east = new PassiveEntity(3
+			, PassiveType.PROJECTILE_ARROW
+			, eyeLocation
+			, new EntityLocation(25.0f, 0.0f, 0.0f)
+			, null
+			, 0L
+		);
+		PassiveEntity west = new PassiveEntity(4
+			, PassiveType.PROJECTILE_ARROW
+			, eyeLocation
+			, new EntityLocation(-25.0f, 0.0f, 0.0f)
+			, null
+			, 0L
+		);
+		
+		TickProcessingContext context = _createContextWithSink(null);
+		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(entity.id(), entity), Map.of());
+		north = EnginePassives.processOneCreature(context, entityCollection, north, List.of());
+		south = EnginePassives.processOneCreature(context, entityCollection, south, List.of());
+		east = EnginePassives.processOneCreature(context, entityCollection, east, List.of());
+		west = EnginePassives.processOneCreature(context, entityCollection, west, List.of());
+		
+		Assert.assertEquals(new EntityLocation(0.2f, 2.7f, 1.43f), north.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 25.0f, -0.98f), north.velocity());
+		Assert.assertEquals(new EntityLocation(0.2f, -2.3f, 1.43f), south.location());
+		Assert.assertEquals(new EntityLocation(0.0f, -25.0f, -0.98f), south.velocity());
+		Assert.assertEquals(new EntityLocation(2.7f, 0.2f, 1.43f), east.location());
+		Assert.assertEquals(new EntityLocation(25.0f, 0.0f, -0.98f), east.velocity());
+		Assert.assertEquals(new EntityLocation(-2.3f, 0.2f, 1.43f), west.location());
+		Assert.assertEquals(new EntityLocation(-25.0f, 0.0f, -0.98f), west.velocity());
 	}
 
 

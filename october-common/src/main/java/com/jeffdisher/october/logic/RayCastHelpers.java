@@ -313,13 +313,13 @@ public class RayCastHelpers
 		float top = base.z() + volume.height();
 		
 		// We will calculate the t-values relative to the end of the vector so any match will be when all axes have t values in [0..1].
-		float closeX = Float.MIN_VALUE;
+		float closeX = -Float.MAX_VALUE;
 		float farX;
 		if (isFixedX)
 		{
 			farX = ((west <= compX) && (compX <= east))
-					? Float.MAX_VALUE
-					: Float.MIN_VALUE
+				? Float.MAX_VALUE
+				: -Float.MAX_VALUE
 			;
 		}
 		else
@@ -329,13 +329,13 @@ public class RayCastHelpers
 			closeX = Math.min(txLow, txHigh);
 			farX = Math.max(txLow, txHigh);
 		}
-		float closeY = Float.MIN_VALUE;
+		float closeY = -Float.MAX_VALUE;
 		float farY;
 		if (isFixedY)
 		{
 			farY = ((south <= compY) && (compY <= north))
-					? Float.MAX_VALUE
-					: Float.MIN_VALUE
+				? Float.MAX_VALUE
+				: -Float.MAX_VALUE
 			;
 		}
 		else
@@ -345,13 +345,13 @@ public class RayCastHelpers
 			closeY = Math.min(tyLow, tyHigh);
 			farY = Math.max(tyLow, tyHigh);
 		}
-		float closeZ = Float.MIN_VALUE;
+		float closeZ = -Float.MAX_VALUE;
 		float farZ;
 		if (isFixedZ)
 		{
 			farZ = ((bottom <= compZ) && (compZ <= top))
-					? Float.MAX_VALUE
-					: Float.MIN_VALUE
+				? Float.MAX_VALUE
+				: -Float.MAX_VALUE
 			;
 		}
 		else
