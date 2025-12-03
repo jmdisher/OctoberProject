@@ -289,7 +289,7 @@ public class SpeculativeProjection
 			{
 				if (null != wrapper.inlineEntityUpdate)
 				{
-					modifiedEntity = wrapper.inlineEntityUpdate;
+					modifiedEntity = _mergeUpdates(modifiedEntity, wrapper.inlineEntityUpdate);
 				}
 				for (_LocalCallConsequences consequence : wrapper.consequences)
 				{
@@ -828,6 +828,23 @@ public class SpeculativeProjection
 		}
 	}
 
+	private static EntityUpdatePerField _mergeUpdates(EntityUpdatePerField bottom, EntityUpdatePerField top)
+	{
+		EntityUpdatePerField merged;
+		if (null == top)
+		{
+			merged = bottom;
+		}
+		else if (null == bottom)
+		{
+			merged = top;
+		}
+		else
+		{
+			merged = EntityUpdatePerField.merge(bottom, top);
+		}
+		return merged;
+	}
 
 	private static record _ApplicationResult(Map<AbsoluteLocation, MutationBlockSetBlock> modifiedBlocks
 			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
@@ -840,12 +857,7 @@ public class SpeculativeProjection
 	) {
 		public static _LocalCallConsequences merge(_LocalCallConsequences bottom, _LocalCallConsequences top)
 		{
-			EntityUpdatePerField entityUpdate = (null != top.entityUpdate)
-				? (null != bottom.entityUpdate)
-					? EntityUpdatePerField.merge(bottom.entityUpdate, top.entityUpdate)
-					: top.entityUpdate
-				: bottom.entityUpdate
-			;
+			EntityUpdatePerField entityUpdate = _mergeUpdates(bottom.entityUpdate, top.entityUpdate);
 			Map<AbsoluteLocation, MutationBlockSetBlock> blockUpdates = new HashMap<>();
 			blockUpdates.putAll(bottom.blockUpdates);
 			blockUpdates.putAll(top.blockUpdates);

@@ -24,9 +24,14 @@ public class EntityUpdatePerField
 			? newEntity.isCreativeMode()
 			: null
 		;
-		// TODO:  Determine why omitting the location and velocity causes client-side movement glitches.
-		EntityLocation location = newEntity.location();
-		EntityLocation velocity = newEntity.velocity();
+		EntityLocation location = (oldEntity.location() != newEntity.location())
+			? newEntity.location()
+			: null
+		;
+		EntityLocation velocity = (oldEntity.velocity() != newEntity.velocity())
+			? newEntity.velocity()
+			: null
+		;
 		Inventory inventory = (oldEntity.inventory() != newEntity.inventory())
 			? newEntity.inventory()
 			: null

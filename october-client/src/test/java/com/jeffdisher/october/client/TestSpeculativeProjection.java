@@ -2873,8 +2873,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, remaining);
 		Assert.assertEquals((byte)80, listener.thisEntityState.health());
 		Assert.assertEquals(yaw, listener.thisEntityState.yaw());
-		// TODO:  Change this to (2.0f, 2.0f, 0.0f) once we filter location/velocity updates per-field (currently causes client-side glitchy movement).
-		Assert.assertEquals(new EntityLocation(1.0f, 1.0f, 0.0f), listener.thisEntityState.location());
+		Assert.assertEquals(new EntityLocation(2.0f, 2.0f, 0.0f), listener.thisEntityState.location());
 	}
 
 
