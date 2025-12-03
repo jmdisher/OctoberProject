@@ -617,13 +617,19 @@ public class MovementAccumulator
 
 	/**
 	 * The direction of a horizontal move, relative to the orientation.
+	 * We assume that the client is digital, meaning it can only move in 8 directions (4 single-key moves and 8
+	 * double-key moves).
 	 */
 	public static enum Relative
 	{
 		FORWARD(MULTIPLIER_FORWARD, 0.0f),
-		RIGHT(MULTIPLIER_STRAFE, (float)(3.0 / 2.0 * Math.PI)),
-		LEFT(MULTIPLIER_STRAFE, (float)(1.0 / 2.0 * Math.PI)),
-		BACKWARD(MULTIPLIER_BACKWARD, (float)Math.PI),
+		FORWARD_LEFT(MULTIPLIER_STRAFE, (float)(1.0 / 4.0 * Math.PI)),
+		LEFT(MULTIPLIER_STRAFE, (float)(2.0 / 4.0 * Math.PI)),
+		BACKWARD_LEFT(MULTIPLIER_BACKWARD, (float)(3.0 / 4.0 * Math.PI)),
+		BACKWARD(MULTIPLIER_BACKWARD, (float)(4.0 / 4.0 * Math.PI)),
+		BACKWARD_RIGHT(MULTIPLIER_BACKWARD, (float)(5.0 / 4.0 * Math.PI)),
+		RIGHT(MULTIPLIER_STRAFE, (float)(6.0 / 4.0 * Math.PI)),
+		FORWARD_RIGHT(MULTIPLIER_STRAFE, (float)(7.0 / 4.0 * Math.PI)),
 		;
 		public final float speedMultiplier;
 		public final float yawRadians;

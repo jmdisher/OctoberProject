@@ -1190,6 +1190,68 @@ public class TestMovementAccumulator
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 	}
 
+	@Test
+	public void walkPartialAngles() throws Throwable
+	{
+		// Show what happens when we walk forward-right or backward-left.
+		long millisPerTick = 100L;
+		long currentTimeMillis = 1000L;
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Usual boiler-plate.
+		Entity entity = MutableEntity.createForTest(1).freeze();
+		accumulator.setThisEntity(entity);
+		listener.thisEntityDidLoad(entity);
+		accumulator.clearAccumulation();
+		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
+		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
+		
+		// Walk forward-right, then forward until the action is generated.
+		currentTimeMillis += 50L;
+		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD_RIGHT, false);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(0.11f, 0.11f, 0.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
+		currentTimeMillis += 60L;
+		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		Assert.assertNotNull(out);
+		Assert.assertNull(out.getSubAction());
+		Assert.assertEquals("SimpleMove(WALKING), by 0.11, 0.31, Sub: null", out.toString());
+		
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		Assert.assertEquals(new EntityLocation(0.11f, 0.31f, 0.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(0.11f, 0.35f, 0.0f), listener.thisEntity.location());
+		// Motion too little to detect collision.
+		Assert.assertEquals(new EntityLocation(0.0f, 4.0f, -0.1f), listener.thisEntity.velocity());
+		
+		// Now, backward and back-left.
+		currentTimeMillis += 50L;
+		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.BACKWARD, false);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(0.11f, 0.23f, 0.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
+		currentTimeMillis += 60L;
+		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.BACKWARD_LEFT, false);
+		Assert.assertNotNull(out);
+		Assert.assertNull(out.getSubAction());
+		Assert.assertEquals("SimpleMove(WALKING), by -0.07, -0.15, Sub: null", out.toString());
+		
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		Assert.assertEquals(new EntityLocation(0.04f, 0.16f, 0.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(0.01f, 0.13f, 0.0f), listener.thisEntity.location());
+		// Motion too little to detect collision.
+		Assert.assertEquals(new EntityLocation(-1.7f, -1.7f, -0.2f), listener.thisEntity.velocity());
+	}
+
 
 	private Entity _runFallingTest(long millisPerMove, int iterationCount, CuboidData cuboid, Entity entity)
 	{
