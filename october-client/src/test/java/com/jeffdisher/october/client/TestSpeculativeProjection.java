@@ -1045,10 +1045,10 @@ public class TestSpeculativeProjection
 				, currentTimeMillis
 		);
 		
-		// We should now see 1 speculative commit with the entity moved all the way (since the final state is captured, not each step).
+		// We should now see 1 speculative commit with the entity only part of the way, since one step was reverted.
 		Assert.assertEquals(1, speculativeCount);
 		Assert.assertEquals(initialLocation, listener.authoritativeEntityState.location());
-		Assert.assertEquals(lastStep, listener.thisEntityState.location());
+		Assert.assertEquals(new EntityLocation(0.2f, 0.0f, 0.0f), listener.thisEntityState.location());
 		Assert.assertEquals(OrientationHelpers.YAW_EAST, listener.thisEntityState.yaw());
 		Assert.assertTrue(listener.events.isEmpty());
 		
@@ -2874,6 +2874,77 @@ public class TestSpeculativeProjection
 		Assert.assertEquals((byte)80, listener.thisEntityState.health());
 		Assert.assertEquals(yaw, listener.thisEntityState.yaw());
 		Assert.assertEquals(new EntityLocation(2.0f, 2.0f, 0.0f), listener.thisEntityState.location());
+	}
+
+	@Test
+	public void accelerateOnServer()
+	{
+		// Show that acceleration coming from the server (knockback, for example) is accounted for on the client-side movement.
+		// Note that, while player location is owned client-side (to allow tight timing in movement under heavy network latency),
+		// acceleration can be changed by the server (as this is where things like knockback, nuge, etc are applied).
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		mutable.newLocation = new EntityLocation(1.0f, 1.0f, 0.0f);
+		Entity localEntity = mutable.freeze();
+		projector.setThisEntity(localEntity);
+		long currentTimeMillis = 1L;
+		CuboidAddress airAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(airAddress, ENV.special.AIR);
+		int remaining = projector.applyChangesForServerTick(1L
+			, List.of()
+			, List.of()
+			, List.of(airCuboid)
+			, null
+			, Collections.emptyMap()
+			, Collections.emptyMap()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, List.of()
+			, 0L
+			, currentTimeMillis
+		);
+		Assert.assertEquals(0, remaining);
+		
+		// We will move forward and see the client-side location/velocity.
+		EntityActionSimpleMove<IMutablePlayerEntity> lookAround = new EntityActionSimpleMove<>(0.0f
+			, 0.4f
+			, EntityActionSimpleMove.Intensity.WALKING
+			, (byte)0
+			, (byte)0
+			, null
+		);
+		long commit = projector.applyLocalChange(lookAround, currentTimeMillis);
+		Assert.assertEquals(1L, commit);
+		Assert.assertEquals(new EntityLocation(1.0f, 1.4f, 0.0f), listener.thisEntityState.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntityState.velocity());
+		
+		// Apply a velocity change from the server and see what this changes.
+		mutable = MutableEntity.existing(localEntity);
+		mutable.newVelocity= new EntityLocation(2.0f, 0.0f, 0.0f);
+		localEntity = mutable.freeze();
+		currentTimeMillis += MILLIS_PER_TICK;
+		remaining = projector.applyChangesForServerTick(2L
+			, List.of()
+			, List.of()
+			, List.of()
+			, new MutationEntitySetEntity(localEntity)
+			, Map.of()
+			, Map.of()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, List.of()
+			, 0L
+			, currentTimeMillis
+		);
+		Assert.assertEquals(1, remaining);
+		Assert.assertEquals(new EntityLocation(1.18f, 1.36f, 0.0f), listener.thisEntityState.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntityState.velocity());
 	}
 
 
