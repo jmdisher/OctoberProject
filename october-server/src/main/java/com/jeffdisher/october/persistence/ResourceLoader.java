@@ -84,6 +84,7 @@ public class ResourceLoader
 	 * Version 7 was used in v1.7 and earlier, and is supported.
 	 * Version 8 was used in v1.8 and earlier, and is supported.
 	 * Version 9 was used in v1.9 and earlier, and is supported.
+	 * Version 10 was used in v1.10 and earlier, and is supported.
 	 */
 	public static final int VERSION_CUBOID_V1 = 1;
 	public static final int VERSION_CUBOID_V2 = 2;
@@ -94,7 +95,8 @@ public class ResourceLoader
 	public static final int VERSION_CUBOID_V7 = 7;
 	public static final int VERSION_CUBOID_V8 = 8;
 	public static final int VERSION_CUBOID_V9 = 9;
-	public static final int VERSION_CUBOID = 10;
+	public static final int VERSION_CUBOID_V10 = 10;
+	public static final int VERSION_CUBOID = 11;
 	/**
 	 * Version 0 was used in v1.0-pre6 and earlier, no longer supported (pre-releases have no migration support).
 	 * Version 1 was used in v1.0.1 and earlier, and is supported.
@@ -106,6 +108,7 @@ public class ResourceLoader
 	 * Version 7 was used in v1.7 and earlier, and is supported.
 	 * Version 8 was used in v1.8 and earlier, and is supported.
 	 * Version 9 was used in v1.9 and earlier, and is supported.
+	 * Version 10 was used in v1.10 and earlier, and is supported.
 	 */
 	public static final int VERSION_ENTITY_V1 = 1;
 	public static final int VERSION_ENTITY_V2 = 2;
@@ -116,7 +119,8 @@ public class ResourceLoader
 	public static final int VERSION_ENTITY_V7 = 7;
 	public static final int VERSION_ENTITY_V8 = 8;
 	public static final int VERSION_ENTITY_V9 = 9;
-	public static final int VERSION_ENTITY = 10;
+	public static final int VERSION_ENTITY_V10 = 10;
+	public static final int VERSION_ENTITY = 11;
 	public static final int SERIALIZATION_BUFFER_SIZE_BYTES = 1024 * 1024;
 
 	// Defaults for entity creation.
@@ -479,7 +483,10 @@ public class ResourceLoader
 			);
 			
 			Supplier<SuspendedCuboid<CuboidData>> dataReader;
-			if ((VERSION_CUBOID == version) || (VERSION_CUBOID_V9 == version))
+			if ((VERSION_CUBOID == version)
+				|| (VERSION_CUBOID_V9 == version)
+				|| (VERSION_CUBOID_V10 == version)
+			)
 			{
 				// Version 10 didn't change anything, just added to it, so we can read with the same logic.
 				dataReader = () -> {
@@ -1153,6 +1160,7 @@ public class ResourceLoader
 			
 			Supplier<SuspendedEntity> dataReader;
 			if ((VERSION_ENTITY == version)
+				|| (VERSION_ENTITY_V10 == version)
 			)
 			{
 				// Do nothing special - just stops old versions from being broken.
