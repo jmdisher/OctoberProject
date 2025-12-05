@@ -326,7 +326,7 @@ public class TestEngineCreatures
 			creature = result.updatedEntity();
 			Assert.assertNotNull(creature);
 		}
-		Assert.assertEquals(new EntityLocation(0.0f, 0.15f, 1.0f), creature.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.08f, 1.0f), creature.location());
 		
 		// There should now be just 1 step in the movement plan and the next invocation will cause us to convert it into steps, 19 in total.
 		for (int i = 0; i < 19; ++i)
@@ -699,7 +699,7 @@ public class TestEngineCreatures
 		}
 		
 		// By this point we should be on the ground, in the right block, with no plan.
-		Assert.assertEquals(7.3f, updated.location().x(), 0.01f);
+		Assert.assertEquals(7.5f, updated.location().x(), 0.01f);
 		Assert.assertEquals(9.01f, updated.location().y(), 0.01f);
 		Assert.assertEquals(2.0f, updated.location().z(), 0.01f);
 		Assert.assertEquals(0.0f, updated.velocity().x(), 0.01f);

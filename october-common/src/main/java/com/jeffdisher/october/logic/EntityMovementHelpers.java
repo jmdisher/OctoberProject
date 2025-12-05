@@ -562,27 +562,17 @@ public class EntityMovementHelpers
 		float squareMax = maxVelocityPerSecond * maxVelocityPerSecond;
 		float squareX = sumVX * sumVX;
 		float squareY = sumVY * sumVY;
-		if ((squareX + squareY) > squareMax)
+		// Note that we only apply these checks if we were given a maximum velocity.
+		if ((maxVelocityPerSecond > 0.0f) && ((squareX + squareY) > squareMax))
 		{
-			// We need to clamp these, somehow.
-			float squarePassive = passiveX * passiveX + passiveY * passiveY;
-			if ((squareX + squareY) < squarePassive)
-			{
-				// Deceleration is still considered valid.
-			}
-			else if (squarePassive > squareMax)
-			{
-				// If we were already at maximum speed, leave it unchanged.
-				sumVX = passiveX;
-				sumVY = passiveY;
-			}
-			else
-			{
-				// Otherwise, saturate proportionally.
-				float fractionX = squareX / (squareX + squareY);
-				sumVX = Math.signum(sumVX) * (float) Math.sqrt(fractionX * squareMax);
-				sumVY = Math.signum(sumVY) * (float) Math.sqrt((1.0f - fractionX) * squareMax);
-			}
+			// To keep things simple, we will just combine these and then scale the final vector the max of the magnitudes of the original and max.
+			// (this does mean that the user can actively direct the movement above maximum velocity but that isn't a big problem - also rare - and keeps this simple)
+			float squarePassiveVelocity = passiveX * passiveX + passiveY * passiveY;
+			float maxToImpose = Math.max(squareMax, squarePassiveVelocity);
+			
+			float fractionX = squareX / (squareX + squareY);
+			sumVX = Math.signum(sumVX) * (float) Math.sqrt(fractionX * maxToImpose);
+			sumVY = Math.signum(sumVY) * (float) Math.sqrt((1.0f - fractionX) * maxToImpose);
 		}
 		float sumVZ = passiveZ + activeVZ;
 		

@@ -390,38 +390,38 @@ public class TestMovementAccumulator
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
-		Assert.assertEquals(new EntityLocation(15.0f, 15.04f, 15.06f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 2.0f, 2.79f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(15.0f, 15.02f, 15.06f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 1.0f, 2.79f), listener.thisEntity.velocity());
 		
 		currentTimeMillis += 90L;
 		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(out.getSubAction() instanceof EntityChangeSwim);
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
-		Assert.assertEquals(new EntityLocation(15.0f, 15.2f, 15.24f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 2.0f, 2.4f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(15.0f, 15.1f, 15.24f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 1.0f, 2.4f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
-		Assert.assertEquals(new EntityLocation(15.0f, 15.22f, 15.25f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 2.0f, 1.15f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(15.0f, 15.11f, 15.25f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 1.0f, 1.15f), listener.thisEntity.velocity());
 		
 		// We now want to coast for a bit and see how they move.
 		currentTimeMillis += 50L;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
-		Assert.assertEquals(new EntityLocation(15.0f, 15.28f, 15.29f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 1.33f, 0.91f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(15.0f, 15.14f, 15.29f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.67f, 0.91f), listener.thisEntity.velocity());
 		
 		currentTimeMillis += 50L;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		Assert.assertNull(out.getSubAction());
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
-		Assert.assertEquals(new EntityLocation(15.0f, 15.32f, 15.31f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 1.2f, 0.71f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(15.0f, 15.16f, 15.31f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.6f, 0.71f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
-		Assert.assertEquals(new EntityLocation(15.0f, 15.33f, 15.31f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.6f, 0.31f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(15.0f, 15.16f, 15.31f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.3f, 0.31f), listener.thisEntity.velocity());
 	}
 
 	@Test

@@ -317,7 +317,7 @@ public class TestCreatureMovementHelpers
 		TickProcessingContext context = _buildLayeredContext(timeLimitMillis);
 		boolean didApply = change.applyChange(context, mutable);
 		Assert.assertTrue(didApply);
-		Assert.assertEquals(new EntityLocation(1.47f, 0.0f, 0.0f), mutable.newLocation);
+		Assert.assertEquals(new EntityLocation(1.49f, 0.0f, 0.0f), mutable.newLocation);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutable.newVelocity);
 	}
 

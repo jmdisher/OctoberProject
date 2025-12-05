@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
+import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -161,15 +163,27 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 			EntityVolume volume = newEntity.getType().volume();
 			
 			// Allow the environment to influence our starting velocity.
-			EntityLocation envVector = EntityMovementHelpers.getEnvironmentalVector(Environment.getShared(), context.previousBlockLookUp, startLocation, volume);
+			Environment env = Environment.getShared();
+			EntityLocation envVector = EntityMovementHelpers.getEnvironmentalVector(env, context.previousBlockLookUp, startLocation, volume);
 			EntityLocation preVelocity = EntityMovementHelpers.saturateVectorAddition(startVelocity, envVector);
+			
+			// We want to reduce active movement to 50% if not on solid ground.
+			float activeX = _activeX;
+			float activeY = _activeY;
+			ViscosityReader reader = new ViscosityReader(env, context.previousBlockLookUp);
+			if (!SpatialHelpers.isStandingOnGround(reader, startLocation, volume))
+			{
+				activeX /= 2.0f;
+				activeY /= 2.0f;
+				intensityVelocityPerSecond /= 2.0f;
+			}
 			
 			EntityMovementHelpers.HighLevelMovementResult result = EntityMovementHelpers.commonMovementIdiom(context.previousBlockLookUp
 				, startLocation
 				, preVelocity
 				, volume
-				, _activeX
-				, _activeY
+				, activeX
+				, activeY
 				, intensityVelocityPerSecond
 				, seconds
 			);

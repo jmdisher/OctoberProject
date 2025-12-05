@@ -2905,16 +2905,21 @@ public class TestCommonChanges
 		Assert.assertEquals(new EntityLocation(4.0f, 0.0f, 2.94f), newEntity.newVelocity);
 		
 		Assert.assertTrue(new EntityActionSimpleMove<>(-0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(11.6f, 10.0f, 12.37f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 1.96f), newEntity.newVelocity);
+		Assert.assertEquals(new EntityLocation(11.8f, 10.0f, 12.37f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(2.0f, 0.0f, 1.96f), newEntity.newVelocity);
 		
-		Assert.assertTrue(new EntityActionSimpleMove<>(0.0f, 0.0f, EntityActionSimpleMove.Intensity.STANDING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(11.6f, 10.0f, 12.47f), newEntity.newLocation);
+		// Our active speed impact is cut in half when in the air so run the last step again.
+		Assert.assertTrue(new EntityActionSimpleMove<>(-0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
+		Assert.assertEquals(new EntityLocation(11.8f, 10.0f, 12.47f), newEntity.newLocation);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.98f), newEntity.newVelocity);
 		
 		Assert.assertTrue(new EntityActionSimpleMove<>(0.0f, 0.0f, EntityActionSimpleMove.Intensity.STANDING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(11.6f, 10.0f, 12.47f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(11.8f, 10.0f, 12.47f), newEntity.newLocation);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.newVelocity);
+		
+		Assert.assertTrue(new EntityActionSimpleMove<>(0.0f, 0.0f, EntityActionSimpleMove.Intensity.STANDING, (byte)0, (byte)0, null).applyChange(context, newEntity));
+		Assert.assertEquals(new EntityLocation(11.8f, 10.0f, 12.37f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.98f), newEntity.newVelocity);
 	}
 
 	@Test
@@ -2973,8 +2978,8 @@ public class TestCommonChanges
 		newEntity.newVelocity = new EntityLocation(-1.66f, -1.66f, 0.98f);
 		
 		Assert.assertTrue(new EntityActionSimpleMove<>(-0.14f, -0.14f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(19.86f, 19.86f, 20.02f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(-2.83f, -2.83f, 0.49f), newEntity.newVelocity);
+		Assert.assertEquals(new EntityLocation(19.92f, 19.92f, 20.02f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(-1.66f, -1.66f, 0.49f), newEntity.newVelocity);
 	}
 
 	@Test
