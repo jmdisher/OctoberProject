@@ -2,8 +2,8 @@ package com.jeffdisher.october.server;
 
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
-import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
 import com.jeffdisher.october.net.EntityUpdatePerField;
+import com.jeffdisher.october.net.PartialEntityUpdate;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -123,7 +123,7 @@ public interface IServerAdapter
 	 * @param entityId The ID of the entity impacted by the change.
 	 * @param update The update to send.
 	 */
-	void sendPartialEntityUpdate(int clientId, int entityId, MutationEntitySetPartialEntity update);
+	void sendPartialEntityUpdate(int clientId, int entityId, PartialEntityUpdate update);
 	/**
 	 * Sends block state update to the given client.
 	 * 

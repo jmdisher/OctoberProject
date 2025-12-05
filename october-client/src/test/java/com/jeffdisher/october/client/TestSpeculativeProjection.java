@@ -36,10 +36,10 @@ import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
-import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.mutations.ShockwaveMutation;
 import com.jeffdisher.october.net.EntityUpdatePerField;
+import com.jeffdisher.october.net.PartialEntityUpdate;
 import com.jeffdisher.october.subactions.EntityChangeAcceptItems;
 import com.jeffdisher.october.subactions.EntityChangeAttackEntity;
 import com.jeffdisher.october.subactions.EntityChangeCraft;
@@ -2000,7 +2000,7 @@ public class TestSpeculativeProjection
 				, List.of()
 				, List.of()
 				, EntityUpdatePerField.update(previous, localEntity)
-				, Map.of(orc.id(), new MutationEntitySetPartialEntity(PartialEntity.fromCreature(orc)))
+				, Map.of(orc.id(), new PartialEntityUpdate(PartialEntity.fromCreature(orc)))
 				, Map.of()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -2725,7 +2725,7 @@ public class TestSpeculativeProjection
 				, List.of()
 				, List.of()
 				, EntityUpdatePerField.update(localEntity, localEntity)
-				, Map.of(creatureId, new MutationEntitySetPartialEntity(PartialEntity.fromCreature(adult)))
+				, Map.of(creatureId, new PartialEntityUpdate(PartialEntity.fromCreature(adult)))
 				, Map.of()
 				, Collections.emptyList()
 				, Collections.emptyList()

@@ -1,8 +1,7 @@
-package com.jeffdisher.october.mutations;
+package com.jeffdisher.october.net;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.MutablePartialEntity;
@@ -12,12 +11,12 @@ import com.jeffdisher.october.types.PartialEntity;
 /**
  * Updates the partial entity by setting its whole state.
  */
-public class MutationEntitySetPartialEntity
+public class PartialEntityUpdate
 {
-	public static MutationEntitySetPartialEntity deserializeFromNetworkBuffer(ByteBuffer buffer)
+	public static PartialEntityUpdate deserializeFromNetworkBuffer(ByteBuffer buffer)
 	{
 		PartialEntity entity = CodecHelpers.readPartialEntity(buffer);
-		return new MutationEntitySetPartialEntity(entity);
+		return new PartialEntityUpdate(entity);
 	}
 
 	/**
@@ -58,7 +57,7 @@ public class MutationEntitySetPartialEntity
 
 	private final PartialEntity _entity;
 
-	public MutationEntitySetPartialEntity(PartialEntity entity)
+	public PartialEntityUpdate(PartialEntity entity)
 	{
 		_entity = entity;
 	}

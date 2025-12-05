@@ -22,8 +22,8 @@ import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
-import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
 import com.jeffdisher.october.net.EntityUpdatePerField;
+import com.jeffdisher.october.net.PartialEntityUpdate;
 import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.net.Packet_ClientUpdateOptions;
@@ -741,10 +741,10 @@ public class ServerStateManager
 							EntityUpdatePerField update = EntityUpdatePerField.update(previousEntityVersion, entity);
 							_callouts.network_sendEntityUpdate(clientId, entityId, update);
 						}
-						else if (MutationEntitySetPartialEntity.canDescribeChange(previousEntityVersion, entity))
+						else if (PartialEntityUpdate.canDescribeChange(previousEntityVersion, entity))
 						{
 							// The client will have a partial so just send that.
-							MutationEntitySetPartialEntity update = new MutationEntitySetPartialEntity(PartialEntity.fromEntity(entity));
+							PartialEntityUpdate update = new PartialEntityUpdate(PartialEntity.fromEntity(entity));
 							_callouts.network_sendPartialEntityUpdate(clientId, entityId, update);
 						}
 					}
@@ -791,10 +791,10 @@ public class ServerStateManager
 				{
 					// They are in range and we know about them so send the update if they changed.
 					CreatureEntity previousCreatureVersion = _previousCreatureVersions.get(entityId);
-					if ((null != previousCreatureVersion) && MutationEntitySetPartialEntity.canDescribeCreatureChange(previousCreatureVersion, entity))
+					if ((null != previousCreatureVersion) && PartialEntityUpdate.canDescribeCreatureChange(previousCreatureVersion, entity))
 					{
 						// Creatures are always partial.
-						MutationEntitySetPartialEntity update = new MutationEntitySetPartialEntity(PartialEntity.fromCreature(entity));
+						PartialEntityUpdate update = new PartialEntityUpdate(PartialEntity.fromCreature(entity));
 						_callouts.network_sendPartialEntityUpdate(clientId, entityId, update);
 					}
 				}
@@ -1141,7 +1141,7 @@ public class ServerStateManager
 		void network_sendEntityUpdate(int clientId, int entityId, EntityUpdatePerField update);
 		
 		void network_sendPartialEntity(int clientId, PartialEntity entity);
-		void network_sendPartialEntityUpdate(int clientId, int entityId, MutationEntitySetPartialEntity update);
+		void network_sendPartialEntityUpdate(int clientId, int entityId, PartialEntityUpdate update);
 		void network_removeEntity(int clientId, int entityId);
 		
 		void network_sendPartialPassive(int clientId, PartialPassive partial);

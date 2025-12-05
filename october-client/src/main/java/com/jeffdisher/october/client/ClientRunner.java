@@ -16,8 +16,8 @@ import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
-import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
 import com.jeffdisher.october.net.EntityUpdatePerField;
+import com.jeffdisher.october.net.PartialEntityUpdate;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -262,7 +262,7 @@ public class ClientRunner
 		private List<IReadOnlyCuboidData> _addedCuboids = new ArrayList<>();
 		
 		private EntityUpdatePerField _entityUpdate = null;
-		private Map<Integer, MutationEntitySetPartialEntity> _partialEntityUpdates = new HashMap<>();
+		private Map<Integer, PartialEntityUpdate> _partialEntityUpdates = new HashMap<>();
 		private Map<Integer, PassiveUpdate> _passiveEntityUpdates = new HashMap<>();
 		private List<MutationBlockSetBlock> _cuboidUpdates = new ArrayList<>();
 		
@@ -345,7 +345,7 @@ public class ClientRunner
 			_entityUpdate = update;
 		}
 		@Override
-		public void receivedPartialEntityUpdate(int entityId, MutationEntitySetPartialEntity update)
+		public void receivedPartialEntityUpdate(int entityId, PartialEntityUpdate update)
 		{
 			// We expect to only receive at most 1 update for each entity, per tick.
 			Object old = _partialEntityUpdates.put(entityId, update);
@@ -382,7 +382,7 @@ public class ClientRunner
 			_addedCuboids.clear();
 			EntityUpdatePerField entityChange = _entityUpdate;
 			_entityUpdate = null;
-			Map<Integer, MutationEntitySetPartialEntity> partialEntityChanges = new HashMap<>(_partialEntityUpdates);
+			Map<Integer, PartialEntityUpdate> partialEntityChanges = new HashMap<>(_partialEntityUpdates);
 			_partialEntityUpdates.clear();
 			Map<Integer, PassiveUpdate> partialPassiveUpdates = new HashMap<>(_passiveEntityUpdates);
 			_passiveEntityUpdates.clear();
