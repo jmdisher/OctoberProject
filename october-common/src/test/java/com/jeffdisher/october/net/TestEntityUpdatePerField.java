@@ -1,5 +1,7 @@
 package com.jeffdisher.october.net;
 
+import java.nio.ByteBuffer;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -46,8 +48,14 @@ public class TestEntityUpdatePerField
 		Entity second = mutable.freeze();
 		EntityUpdatePerField update = EntityUpdatePerField.update(first, second);
 		
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		update.serializeToNetworkBuffer(buffer);
+		Assert.assertEquals(4, buffer.position());
+		buffer.flip();
+		EntityUpdatePerField read = EntityUpdatePerField.deserializeFromNetworkBuffer(buffer);
+		
 		MutableEntity baseline = MutableEntity.createForTest(1);
-		update.applyToEntity(baseline);
+		read.applyToEntity(baseline);
 		Entity output = baseline.freeze();
 		
 		Assert.assertEquals(second.location(), output.location());
@@ -65,8 +73,14 @@ public class TestEntityUpdatePerField
 		Entity second = mutable.freeze();
 		EntityUpdatePerField update = EntityUpdatePerField.update(first, second);
 		
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		update.serializeToNetworkBuffer(buffer);
+		Assert.assertEquals(31, buffer.position());
+		buffer.flip();
+		EntityUpdatePerField read = EntityUpdatePerField.deserializeFromNetworkBuffer(buffer);
+		
 		MutableEntity baseline = MutableEntity.createForTest(1);
-		update.applyToEntity(baseline);
+		read.applyToEntity(baseline);
 		Entity output = baseline.freeze();
 		
 		Assert.assertEquals(second.location(), output.location());
@@ -82,8 +96,14 @@ public class TestEntityUpdatePerField
 		Entity second = mutable.freeze();
 		EntityUpdatePerField update = EntityUpdatePerField.update(first, second);
 		
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		update.serializeToNetworkBuffer(buffer);
+		Assert.assertEquals(14, buffer.position());
+		buffer.flip();
+		EntityUpdatePerField read = EntityUpdatePerField.deserializeFromNetworkBuffer(buffer);
+		
 		MutableEntity baseline = MutableEntity.createForTest(1);
-		update.applyToEntity(baseline);
+		read.applyToEntity(baseline);
 		Entity output = baseline.freeze();
 		
 		Assert.assertEquals(second.location(), output.location());
@@ -111,8 +131,14 @@ public class TestEntityUpdatePerField
 		Entity second = mutable.freeze();
 		EntityUpdatePerField update = EntityUpdatePerField.update(first, second);
 		
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		update.serializeToNetworkBuffer(buffer);
+		Assert.assertEquals(127, buffer.position());
+		buffer.flip();
+		EntityUpdatePerField read = EntityUpdatePerField.deserializeFromNetworkBuffer(buffer);
+		
 		MutableEntity baseline = MutableEntity.createForTest(1);
-		update.applyToEntity(baseline);
+		read.applyToEntity(baseline);
 		Entity output = baseline.freeze();
 		
 		Assert.assertEquals(second.isCreativeMode(), output.isCreativeMode());

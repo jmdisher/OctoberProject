@@ -1,5 +1,10 @@
 package com.jeffdisher.october.net;
 
+import java.nio.ByteBuffer;
+
+import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.DeserializationContext;
+import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -9,11 +14,9 @@ import com.jeffdisher.october.types.NonStackableItem;
 
 
 /**
- * Similar to MutationEntitySetEntity but specifically made for the client-side logic in order to layer changes to one
- * part of an entity on top of another.
+ * Used by the network and some client-side logic to describe updates to a full Entity instance on a per-field basis.
  * This means that it doesn't capture high-level changes (like "health increased by 5") but does at least capture
  * per-field replacements instead of full-entity replacements.
- * In the future, this may be adapted as an IEntityUpdate implementation in order to optimize network updates.
  */
 public class EntityUpdatePerField
 {
@@ -117,6 +120,142 @@ public class EntityUpdatePerField
 		);
 	}
 
+	public static EntityUpdatePerField deserializeFromNetworkBuffer(ByteBuffer buffer)
+	{
+		// This is always coming in from the network so it has no version-specific considerations.
+		DeserializationContext context = new DeserializationContext(Environment.getShared()
+			, buffer
+			, 0L
+			, false
+		);
+		
+		// We store a 16-bit vector for the fields present as a header.
+		short bits = buffer.getShort();
+		
+		// Yaw and pitch are always here.
+		byte yaw = buffer.get();
+		byte pitch = buffer.get();
+		
+		// There are 13 fields so cue up the bits before reading.
+		bits <<= 3;
+		Boolean isCreativeMode = null;
+		if (0x0 != (0x8000 & bits))
+		{
+			isCreativeMode = CodecHelpers.readBoolean(buffer);
+		}
+		
+		bits <<= 1;
+		EntityLocation location = null;
+		if (0x0 != (0x8000 & bits))
+		{
+			location = CodecHelpers.readEntityLocation(buffer);
+		}
+		
+		bits <<= 1;
+		EntityLocation velocity = null;
+		if (0x0 != (0x8000 & bits))
+		{
+			velocity = CodecHelpers.readEntityLocation(buffer);
+		}
+		
+		bits <<= 1;
+		Inventory inventory = null;
+		if (0x0 != (0x8000 & bits))
+		{
+			inventory = CodecHelpers.readInventory(context);
+		}
+		
+		bits <<= 1;
+		int[] hotbar = null;
+		if (0x0 != (0x8000 & bits))
+		{
+			hotbar = new int[Entity.HOTBAR_SIZE];
+			for (int i = 0; i < hotbar.length; ++i)
+			{
+				hotbar[i] = buffer.getInt();
+			}
+		}
+		
+		bits <<= 1;
+		Integer hotbarIndex = null;
+		if (0x0 != (0x8000 & bits))
+		{
+			hotbarIndex = buffer.getInt();
+		}
+		
+		bits <<= 1;
+		NonStackableItem[] armour = null;
+		if (0x0 != (0x8000 & bits))
+		{
+			armour = new NonStackableItem[BodyPart.values().length];
+			for (int i = 0; i < armour.length; ++i)
+			{
+				armour[i] = CodecHelpers.readNonStackableItem(context);
+			}
+		}
+		
+		bits <<= 1;
+		Byte health = null;
+		if (0x0 != (0x8000 & bits))
+		{
+			health = buffer.get();
+		}
+		
+		bits <<= 1;
+		Byte food = null;
+		if (0x0 != (0x8000 & bits))
+		{
+			food = buffer.get();
+		}
+		
+		bits <<= 1;
+		Byte breath = null;
+		if (0x0 != (0x8000 & bits))
+		{
+			breath = buffer.get();
+		}
+		
+		bits <<= 1;
+		EntityLocation spawnLocation = null;
+		if (0x0 != (0x8000 & bits))
+		{
+			spawnLocation = CodecHelpers.readEntityLocation(buffer);
+		}
+		
+		bits <<= 1;
+		CraftOperation localCraftOperation = null;
+		if (0x0 != (0x8000 & bits))
+		{
+			localCraftOperation = CodecHelpers.readCraftOperation(buffer);
+		}
+		
+		bits <<= 1;
+		Integer chargeMillis = null;
+		if (0x0 != (0x8000 & bits))
+		{
+			chargeMillis = buffer.getInt();
+		}
+		
+		return new EntityUpdatePerField(yaw
+			, pitch
+			
+			, isCreativeMode
+			, location
+			, velocity
+			, inventory
+			, hotbar
+			, hotbarIndex
+			, armour
+			, health
+			, food
+			, breath
+			, spawnLocation
+			
+			, localCraftOperation
+			, chargeMillis
+		);
+	}
+
 
 	// These are the fields which are always considered changed since it isn't worth micro-managing them.
 	private final byte _yaw;
@@ -176,6 +315,11 @@ public class EntityUpdatePerField
 		_chargeMillis = chargeMillis;
 	}
 
+	/**
+	 * Applies the receiver to the given newEntity.
+	 * 
+	 * @param newEntity The entity which should be updated by the receiver.
+	 */
 	public void applyToEntity(MutableEntity newEntity)
 	{
 		newEntity.newYaw = _yaw;
@@ -233,6 +377,172 @@ public class EntityUpdatePerField
 		if (null != _chargeMillis)
 		{
 			newEntity.chargeMillis = _chargeMillis;
+		}
+	}
+
+	/**
+	 * Called to serialize the update into the given buffer for network transmission.
+	 * 
+	 * @param buffer The network buffer where the update should be written.
+	 */
+	public void serializeToNetworkBuffer(ByteBuffer buffer)
+	{
+		// We store a 16-bit vector for the fields present as a header.
+		short bits = 0;
+		if (null != _isCreativeMode)
+		{
+			bits |= 0x1;
+		}
+		bits <<= 1;
+		if (null != _location)
+		{
+			bits |= 0x1;
+		}
+		bits <<= 1;
+		if (null != _velocity)
+		{
+			bits |= 0x1;
+		}
+		bits <<= 1;
+		if (null != _inventory)
+		{
+			bits |= 0x1;
+		}
+		bits <<= 1;
+		if (null != _hotbar)
+		{
+			bits |= 0x1;
+		}
+		bits <<= 1;
+		if (null != _hotbarIndex)
+		{
+			bits |= 0x1;
+		}
+		bits <<= 1;
+		if (null != _armour)
+		{
+			bits |= 0x1;
+		}
+		bits <<= 1;
+		if (null != _health)
+		{
+			bits |= 0x1;
+		}
+		bits <<= 1;
+		if (null != _food)
+		{
+			bits |= 0x1;
+		}
+		bits <<= 1;
+		if (null != _breath)
+		{
+			bits |= 0x1;
+		}
+		bits <<= 1;
+		if (null != _spawnLocation)
+		{
+			bits |= 0x1;
+		}
+		bits <<= 1;
+		
+		if (null != _localCraftOperation)
+		{
+			bits |= 0x1;
+		}
+		bits <<= 1;
+		if (null != _chargeMillis)
+		{
+			bits |= 0x1;
+		}
+		buffer.putShort(bits);
+		
+		// Yaw and pitch are always here.
+		buffer.put(_yaw);
+		buffer.put(_pitch);
+		
+		// There are 13 fields so cue up the bits before reading.
+		bits <<= 3;
+		if (0x0 != (0x8000 & bits))
+		{
+			CodecHelpers.writeBoolean(buffer, _isCreativeMode);
+		}
+		
+		bits <<= 1;
+		if (0x0 != (0x8000 & bits))
+		{
+			CodecHelpers.writeEntityLocation(buffer, _location);
+		}
+		
+		bits <<= 1;
+		if (0x0 != (0x8000 & bits))
+		{
+			CodecHelpers.writeEntityLocation(buffer, _velocity);
+		}
+		
+		bits <<= 1;
+		if (0x0 != (0x8000 & bits))
+		{
+			CodecHelpers.writeInventory(buffer, _inventory);
+		}
+		
+		bits <<= 1;
+		if (0x0 != (0x8000 & bits))
+		{
+			for (int i = 0; i < _hotbar.length; ++i)
+			{
+				buffer.putInt(_hotbar[i]);
+			}
+		}
+		
+		bits <<= 1;
+		if (0x0 != (0x8000 & bits))
+		{
+			buffer.putInt(_hotbarIndex);
+		}
+		
+		bits <<= 1;
+		if (0x0 != (0x8000 & bits))
+		{
+			for (int i = 0; i < _armour.length; ++i)
+			{
+				CodecHelpers.writeNonStackableItem(buffer, _armour[i]);
+			}
+		}
+		
+		bits <<= 1;
+		if (0x0 != (0x8000 & bits))
+		{
+			buffer.put(_health);
+		}
+		
+		bits <<= 1;
+		if (0x0 != (0x8000 & bits))
+		{
+			buffer.put(_food);
+		}
+		
+		bits <<= 1;
+		if (0x0 != (0x8000 & bits))
+		{
+			buffer.put(_breath);
+		}
+		
+		bits <<= 1;
+		if (0x0 != (0x8000 & bits))
+		{
+			CodecHelpers.writeEntityLocation(buffer, _spawnLocation);
+		}
+		
+		bits <<= 1;
+		if (0x0 != (0x8000 & bits))
+		{
+			CodecHelpers.writeCraftOperation(buffer, _localCraftOperation);
+		}
+		
+		bits <<= 1;
+		if (0x0 != (0x8000 & bits))
+		{
+			buffer.putInt(_chargeMillis);
 		}
 	}
 }
