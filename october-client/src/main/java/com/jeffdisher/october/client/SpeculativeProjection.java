@@ -33,7 +33,6 @@ import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.net.EntityUpdatePerField;
-import com.jeffdisher.october.net.MutationEntitySetEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -172,7 +171,7 @@ public class SpeculativeProjection
 			, List<PartialPassive> addedPassives
 			, List<IReadOnlyCuboidData> addedCuboids
 			
-			, MutationEntitySetEntity thisEntityUpdate
+			, EntityUpdatePerField thisEntityUpdate
 			, Map<Integer, IPartialEntityUpdate> partialEntityUpdates
 			, Map<Integer, PassiveUpdate> partialPassiveUpdates
 			, List<MutationBlockSetBlock> cuboidUpdates

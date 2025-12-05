@@ -25,7 +25,7 @@ import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
-import com.jeffdisher.october.net.MutationEntitySetEntity;
+import com.jeffdisher.october.net.EntityUpdatePerField;
 import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.persistence.PackagedCuboid;
@@ -1475,7 +1475,7 @@ public class TestServerStateManager
 			Assert.assertTrue(this.fullEntitiesSent.add(clientId));
 		}
 		@Override
-		public void network_sendEntityUpdate(int clientId, int entityId, MutationEntitySetEntity update)
+		public void network_sendEntityUpdate(int clientId, int entityId, EntityUpdatePerField update)
 		{
 			throw new AssertionError("networkSendEntityUpdate");
 		}

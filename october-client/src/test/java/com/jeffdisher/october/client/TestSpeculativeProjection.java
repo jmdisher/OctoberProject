@@ -39,7 +39,7 @@ import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.mutations.ShockwaveMutation;
-import com.jeffdisher.october.net.MutationEntitySetEntity;
+import com.jeffdisher.october.net.EntityUpdatePerField;
 import com.jeffdisher.october.subactions.EntityChangeAcceptItems;
 import com.jeffdisher.october.subactions.EntityChangeAttackEntity;
 import com.jeffdisher.october.subactions.EntityChangeCraft;
@@ -1575,7 +1575,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, new MutationEntitySetEntity(authoritativeMutable.freeze())
+				, EntityUpdatePerField.update(listener.authoritativeEntityState, authoritativeMutable.freeze())
 				, Collections.emptyMap()
 				, Collections.emptyMap()
 				, Collections.emptyList()
@@ -1987,6 +1987,7 @@ public class TestSpeculativeProjection
 		Assert.assertTrue(listener.events.isEmpty());
 		
 		// Synthesize the events coming from the server along with some basic data updates and verify we see both events.
+		Entity previous = localEntity;
 		MutableEntity mutable = MutableEntity.existing(localEntity);
 		mutable.newHealth -= 10;
 		localEntity = mutable.freeze();
@@ -1998,7 +1999,7 @@ public class TestSpeculativeProjection
 				, List.of()
 				, List.of()
 				, List.of()
-				, new MutationEntitySetEntity(localEntity)
+				, EntityUpdatePerField.update(previous, localEntity)
 				, Map.of(orc.id(), new MutationEntitySetPartialEntity(PartialEntity.fromCreature(orc)))
 				, Map.of()
 				, Collections.emptyList()
@@ -2132,6 +2133,13 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, listener.lastData.getData15(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
 		Assert.assertEquals(0, listener.thisEntityState.inventory().getCount(dirt));
 		
+		// We need to track a representation of the server-side Entity due to how the updates to the client are encoded.
+		// (we won't do this exhaustively, just where we find problems)
+		EntityUpdatePerField storeToInventory = FakeUpdateFactories.entityUpdate(Map.of(address, serverCuboid), listener.thisEntityState, new EntityActionStoreToInventory(new Items(dirt, 1), null));
+		MutableEntity serverMutable = MutableEntity.existing(listener.thisEntityState);
+		storeToInventory.applyToEntity(serverMutable);
+		Entity serverEntity = serverMutable.freeze();
+		
 		currentTimeMillis += 100L;
 		gameTick += 1L;
 		// Now we pick up the block.
@@ -2139,7 +2147,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, FakeUpdateFactories.entityUpdate(Map.of(address, serverCuboid), listener.thisEntityState, new EntityActionStoreToInventory(new Items(dirt, 1), null))
+				, storeToInventory
 				, Map.of()
 				, Map.of()
 				, List.of()
@@ -2162,7 +2170,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, FakeUpdateFactories.entityUpdate(Map.of(address, serverCuboid), listener.thisEntityState, _wrap(listener.thisEntityState, new MutationPlaceSelectedBlock(dirtLocation, dirtLocation)))
+				, FakeUpdateFactories.entityUpdate(Map.of(address, serverCuboid), serverEntity, _wrap(serverEntity, new MutationPlaceSelectedBlock(dirtLocation, dirtLocation)))
 				, Map.of()
 				, Map.of()
 				, List.of()
@@ -2716,7 +2724,7 @@ public class TestSpeculativeProjection
 				, List.of()
 				, List.of()
 				, List.of()
-				, new MutationEntitySetEntity(localEntity)
+				, EntityUpdatePerField.update(localEntity, localEntity)
 				, Map.of(creatureId, new MutationEntitySetPartialEntity(PartialEntity.fromCreature(adult)))
 				, Map.of()
 				, Collections.emptyList()
@@ -2769,6 +2777,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, remaining);
 		
 		// We will send another update from the server, as though the "charge weapon" had already happened.
+		Entity previous = localEntity;
 		mutable = MutableEntity.existing(localEntity);
 		mutable.chargeMillis += MILLIS_PER_TICK;
 		localEntity = mutable.freeze();
@@ -2777,7 +2786,7 @@ public class TestSpeculativeProjection
 			, List.of()
 			, List.of()
 			, List.of()
-			, new MutationEntitySetEntity(localEntity)
+			, EntityUpdatePerField.update(previous, localEntity)
 			, Map.of()
 			, Map.of()
 			, Collections.emptyList()
@@ -2850,6 +2859,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(new EntityLocation(1.0f, 1.0f, 0.0f), listener.thisEntityState.location());
 		
 		// Show the changes from the server mix correctly.
+		Entity previous = localEntity;
 		mutable = MutableEntity.existing(localEntity);
 		mutable.newLocation = new EntityLocation(2.0f, 2.0f, 0.0f);
 		mutable.newHealth = (byte)80;
@@ -2859,7 +2869,7 @@ public class TestSpeculativeProjection
 			, List.of()
 			, List.of()
 			, List.of()
-			, new MutationEntitySetEntity(localEntity)
+			, EntityUpdatePerField.update(previous, localEntity)
 			, Map.of()
 			, Map.of()
 			, Collections.emptyList()
@@ -2923,6 +2933,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntityState.velocity());
 		
 		// Apply a velocity change from the server and see what this changes.
+		Entity previous = localEntity;
 		mutable = MutableEntity.existing(localEntity);
 		mutable.newVelocity= new EntityLocation(2.0f, 0.0f, 0.0f);
 		localEntity = mutable.freeze();
@@ -2931,7 +2942,7 @@ public class TestSpeculativeProjection
 			, List.of()
 			, List.of()
 			, List.of()
-			, new MutationEntitySetEntity(localEntity)
+			, EntityUpdatePerField.update(previous, localEntity)
 			, Map.of()
 			, Map.of()
 			, Collections.emptyList()

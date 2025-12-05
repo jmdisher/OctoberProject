@@ -11,7 +11,7 @@ import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.TickUtils;
-import com.jeffdisher.october.net.MutationEntitySetEntity;
+import com.jeffdisher.october.net.EntityUpdatePerField;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -54,7 +54,7 @@ public class FakeUpdateFactories
 		return MutationBlockSetBlock.extractFromProxy(ByteBuffer.allocate(1024), mutable);
 	}
 
-	public static MutationEntitySetEntity entityUpdate(Map<CuboidAddress, IReadOnlyCuboidData> loadedCuboids, Entity entity, IEntityAction<IMutablePlayerEntity> mutation)
+	public static EntityUpdatePerField entityUpdate(Map<CuboidAddress, IReadOnlyCuboidData> loadedCuboids, Entity entity, IEntityAction<IMutablePlayerEntity> mutation)
 	{
 		TickProcessingContext context = _createFakeContext(loadedCuboids);
 		
@@ -65,7 +65,7 @@ public class FakeUpdateFactories
 		{
 			TickUtils.applyEnvironmentalDamage(context, newEntity);
 		}
-		return new MutationEntitySetEntity(newEntity.freeze());
+		return EntityUpdatePerField.update(entity, newEntity.freeze());
 	}
 
 

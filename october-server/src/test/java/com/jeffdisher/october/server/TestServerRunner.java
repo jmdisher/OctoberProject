@@ -28,7 +28,7 @@ import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
-import com.jeffdisher.october.net.MutationEntitySetEntity;
+import com.jeffdisher.october.net.EntityUpdatePerField;
 import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.net.Packet_SendChatMessage;
@@ -185,7 +185,7 @@ public class TestServerRunner
 		network.receiveFromClient(clientId, _wrapSubAction(break1), 1L);
 		// EntityChangeIncrementalBlockBreak consumes energy and then breaks the block so we should see 2 changes.
 		Object mutation = network.waitForUpdate(clientId, 0);
-		Assert.assertTrue(mutation instanceof MutationEntitySetEntity);
+		Assert.assertTrue(mutation instanceof EntityUpdatePerField);
 		mutation = network.waitForUpdate(clientId, 1);
 		Assert.assertTrue(mutation instanceof MutationBlockSetBlock);
 		
@@ -193,7 +193,7 @@ public class TestServerRunner
 		network.receiveFromClient(clientId, _wrapSubAction(break1), 2L);
 		// EntityChangeIncrementalBlockBreak consumes energy and then breaks the block so we should see 2 changes.
 		mutation = network.waitForUpdate(clientId, 2);
-		Assert.assertTrue(mutation instanceof MutationEntitySetEntity);
+		Assert.assertTrue(mutation instanceof EntityUpdatePerField);
 		mutation = network.waitForUpdate(clientId, 3);
 		Assert.assertTrue(mutation instanceof MutationBlockSetBlock);
 		
@@ -249,7 +249,7 @@ public class TestServerRunner
 		Object change0 = network.waitForUpdate(clientId, 0);
 		Assert.assertTrue(change0 instanceof MutationBlockSetBlock);
 		Object change1 = network.waitForUpdate(clientId, 1);
-		Assert.assertTrue(change1 instanceof MutationEntitySetEntity);
+		Assert.assertTrue(change1 instanceof EntityUpdatePerField);
 		
 		runner.shutdown();
 	}
@@ -285,13 +285,13 @@ public class TestServerRunner
 		
 		// Watch the entity fall as a result of implicit changes.
 		Object change0 = network.waitForUpdate(clientId, 1);
-		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
+		Assert.assertTrue(change0 instanceof EntityUpdatePerField);
 		MutableEntity mutable = MutableEntity.existing(entity);
-		((MutationEntitySetEntity)change0).applyToEntity(mutable);
+		((EntityUpdatePerField)change0).applyToEntity(mutable);
 		Assert.assertEquals(mutable.newLocation.z(), start.z(), 0.001f);
 		Object change1 = network.waitForUpdate(clientId, 2);
-		Assert.assertTrue(change1 instanceof MutationEntitySetEntity);
-		((MutationEntitySetEntity)change1).applyToEntity(mutable);
+		Assert.assertTrue(change1 instanceof EntityUpdatePerField);
+		((EntityUpdatePerField)change1).applyToEntity(mutable);
 		Assert.assertEquals(mutable.newLocation.z(), start.z(), 0.001f);
 		
 		runner.shutdown();
@@ -419,7 +419,7 @@ public class TestServerRunner
 		// Change something - just change the selected hotbar slot.
 		network.receiveFromClient(clientId1, _wrapSubAction(new EntityChangeChangeHotbarSlot(1)), 1L);
 		Object change0 = network.waitForUpdate(clientId1, 0);
-		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
+		Assert.assertTrue(change0 instanceof EntityUpdatePerField);
 		
 		// Disconnect.
 		server.clientDisconnected(clientId1);
@@ -675,9 +675,9 @@ public class TestServerRunner
 		EntityActionSimpleMove<IMutablePlayerEntity> move = new EntityActionSimpleMove<>(0.0f, 0.2f, EntityActionSimpleMove.Intensity.WALKING, OrientationHelpers.YAW_NORTH, OrientationHelpers.PITCH_FLAT, null);
 		network.receiveFromClient(clientId1, move, 1L);
 		Object change0 = network.waitForUpdate(clientId1, 0);
-		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
+		Assert.assertTrue(change0 instanceof EntityUpdatePerField);
 		MutableEntity mutable = MutableEntity.existing(entity1);
-		((MutationEntitySetEntity) change0).applyToEntity(mutable);
+		((EntityUpdatePerField) change0).applyToEntity(mutable);
 		entity1 = mutable.freeze();
 		Assert.assertEquals(MutableEntity.TESTING_LOCATION, entity1.spawnLocation());
 		Assert.assertNotEquals(MutableEntity.TESTING_LOCATION, entity1.location());
@@ -690,9 +690,9 @@ public class TestServerRunner
 		network.waitForServer(4L);
 		Assert.assertNotEquals(0, network.config.dayStartTick);
 		Object change1 = network.waitForUpdate(clientId1, 1);
-		Assert.assertTrue(change1 instanceof MutationEntitySetEntity);
+		Assert.assertTrue(change1 instanceof EntityUpdatePerField);
 		mutable = MutableEntity.existing(entity1);
-		((MutationEntitySetEntity) change1).applyToEntity(mutable);
+		((EntityUpdatePerField) change1).applyToEntity(mutable);
 		entity1 = mutable.freeze();
 		Assert.assertEquals(spawn, entity1.spawnLocation());
 		
@@ -1021,7 +1021,7 @@ public class TestServerRunner
 			this.notifyAll();
 		}
 		@Override
-		public synchronized void sendEntityUpdate(int clientId, int entityId, MutationEntitySetEntity update)
+		public synchronized void sendEntityUpdate(int clientId, int entityId, EntityUpdatePerField update)
 		{
 			List<Object> updates = this.clientUpdates.get(clientId);
 			updates.add(update);

@@ -19,16 +19,16 @@ public class Packet_EntityUpdateFromServer extends PacketFromServer
 		opcodeTable[TYPE.ordinal()] = (ByteBuffer buffer) -> {
 			int entityId = buffer.getInt();
 			Assert.assertTrue(entityId > 0);
-			MutationEntitySetEntity update = MutationEntitySetEntity.deserializeFromNetworkBuffer(buffer);
+			EntityUpdatePerField update = EntityUpdatePerField.deserializeFromNetworkBuffer(buffer);
 			return new Packet_EntityUpdateFromServer(entityId, update);
 		};
 	}
 
 
 	public final int entityId;
-	public final MutationEntitySetEntity update;
+	public final EntityUpdatePerField update;
 
-	public Packet_EntityUpdateFromServer(int id, MutationEntitySetEntity update)
+	public Packet_EntityUpdateFromServer(int id, EntityUpdatePerField update)
 	{
 		super(TYPE);
 		this.entityId = id;

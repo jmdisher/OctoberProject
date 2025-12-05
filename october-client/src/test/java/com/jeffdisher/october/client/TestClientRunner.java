@@ -24,7 +24,7 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalRepair;
-import com.jeffdisher.october.net.MutationEntitySetEntity;
+import com.jeffdisher.october.net.EntityUpdatePerField;
 import com.jeffdisher.october.subactions.EntityChangeCraft;
 import com.jeffdisher.october.subactions.EntityChangeCraftInBlock;
 import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;
@@ -730,7 +730,7 @@ public class TestClientRunner
 			// Grab this entity and apply server change.
 			Entity temp = projection.thisEntity;
 			tick += 1L;
-			network.client.receivedEntityUpdate(clientId, new MutationEntitySetEntity(serverEntity));
+			network.client.receivedEntityUpdate(clientId, EntityUpdatePerField.update(temp, serverEntity));
 			network.client.receivedEndOfTick(tick, serverCommit);
 			runner.runPendingCalls(currentTimeMillis);
 			serverEntity = temp;

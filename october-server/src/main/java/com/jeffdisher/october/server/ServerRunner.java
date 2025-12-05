@@ -11,7 +11,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
-import com.jeffdisher.october.net.MutationEntitySetEntity;
+import com.jeffdisher.october.net.EntityUpdatePerField;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.persistence.PackagedCuboid;
@@ -514,7 +514,7 @@ public class ServerRunner
 			_network.removeCuboid(clientId, address);
 		}
 		@Override
-		public void network_sendEntityUpdate(int clientId, int entityId, MutationEntitySetEntity update)
+		public void network_sendEntityUpdate(int clientId, int entityId, EntityUpdatePerField update)
 		{
 			_network.sendEntityUpdate(clientId, entityId, update);
 		}
