@@ -1,10 +1,9 @@
-package com.jeffdisher.october.mutations;
+package com.jeffdisher.october.net;
 
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.MutableEntity;
 
@@ -12,10 +11,8 @@ import com.jeffdisher.october.types.MutableEntity;
 /**
  * Updates the entity by setting its whole state.
  */
-public class MutationEntitySetEntity implements IEntityUpdate
+public class MutationEntitySetEntity
 {
-	public static final EntityUpdateType TYPE = EntityUpdateType.WHOLE_ENTITY;
-
 	public static MutationEntitySetEntity deserializeFromNetworkBuffer(ByteBuffer buffer)
 	{
 		// This is always coming in from the network so it has no version-specific considerations.
@@ -36,7 +33,11 @@ public class MutationEntitySetEntity implements IEntityUpdate
 		_entity = entity;
 	}
 
-	@Override
+	/**
+	 * Applies the receiver to the given newEntity.
+	 * 
+	 * @param newEntity The entity which should be updated by the receiver.
+	 */
 	public void applyToEntity(MutableEntity newEntity)
 	{
 		newEntity.newInventory.clearInventory(_entity.inventory());
@@ -56,13 +57,11 @@ public class MutationEntitySetEntity implements IEntityUpdate
 		newEntity.newSpawn = _entity.spawnLocation();
 	}
 
-	@Override
-	public EntityUpdateType getType()
-	{
-		return TYPE;
-	}
-
-	@Override
+	/**
+	 * Called to serialize the update into the given buffer for network transmission.
+	 * 
+	 * @param buffer The network buffer where the update should be written.
+	 */
 	public void serializeToNetworkBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeEntityNetwork(buffer, _entity);

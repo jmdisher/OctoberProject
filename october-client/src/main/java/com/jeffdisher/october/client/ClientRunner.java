@@ -15,9 +15,9 @@ import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.net.MutationEntitySetEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -261,7 +261,7 @@ public class ClientRunner
 		private List<PartialPassive> _addedPassives = new ArrayList<>();
 		private List<IReadOnlyCuboidData> _addedCuboids = new ArrayList<>();
 		
-		private IEntityUpdate _entityUpdate = null;
+		private MutationEntitySetEntity _entityUpdate = null;
 		private Map<Integer, IPartialEntityUpdate> _partialEntityUpdates = new HashMap<>();
 		private Map<Integer, PassiveUpdate> _passiveEntityUpdates = new HashMap<>();
 		private List<MutationBlockSetBlock> _cuboidUpdates = new ArrayList<>();
@@ -338,7 +338,7 @@ public class ClientRunner
 			_removedCuboids.add(address);
 		}
 		@Override
-		public void receivedEntityUpdate(int entityId, IEntityUpdate update)
+		public void receivedEntityUpdate(int entityId, MutationEntitySetEntity update)
 		{
 			// Currently (and probably forever), the only full entity on the client is the user, themselves.
 			Assert.assertTrue(null == _entityUpdate);
@@ -380,7 +380,7 @@ public class ClientRunner
 			_addedPassives.clear();
 			List<IReadOnlyCuboidData> addedCuboids = new ArrayList<>(_addedCuboids);
 			_addedCuboids.clear();
-			IEntityUpdate entityChange = _entityUpdate;
+			MutationEntitySetEntity entityChange = _entityUpdate;
 			_entityUpdate = null;
 			Map<Integer, IPartialEntityUpdate> partialEntityChanges = new HashMap<>(_partialEntityUpdates);
 			_partialEntityUpdates.clear();

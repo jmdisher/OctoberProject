@@ -2,9 +2,9 @@ package com.jeffdisher.october.client;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.net.MutationEntitySetEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -134,7 +134,7 @@ public interface IClientAdapter
 		 * @param entityId The entity to which the change should be applied.
 		 * @param update The entity update.
 		 */
-		void receivedEntityUpdate(int entityId, IEntityUpdate update);
+		void receivedEntityUpdate(int entityId, MutationEntitySetEntity update);
 		/**
 		 * Called when an incremental partial entity update is received from the server.  Note that these are to update
 		 * the state of existing PartialEntity objects on the client.

@@ -24,7 +24,7 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalRepair;
-import com.jeffdisher.october.mutations.MutationEntitySetEntity;
+import com.jeffdisher.october.net.MutationEntitySetEntity;
 import com.jeffdisher.october.subactions.EntityChangeCraft;
 import com.jeffdisher.october.subactions.EntityChangeCraftInBlock;
 import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;

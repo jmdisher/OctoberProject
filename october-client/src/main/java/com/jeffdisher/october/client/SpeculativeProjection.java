@@ -29,10 +29,10 @@ import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
-import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.net.MutationEntitySetEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -171,7 +171,7 @@ public class SpeculativeProjection
 			, List<PartialPassive> addedPassives
 			, List<IReadOnlyCuboidData> addedCuboids
 			
-			, IEntityUpdate thisEntityUpdate
+			, MutationEntitySetEntity thisEntityUpdate
 			, Map<Integer, IPartialEntityUpdate> partialEntityUpdates
 			, Map<Integer, PassiveUpdate> partialPassiveUpdates
 			, List<MutationBlockSetBlock> cuboidUpdates

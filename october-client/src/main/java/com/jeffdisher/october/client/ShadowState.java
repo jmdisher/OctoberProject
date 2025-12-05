@@ -11,9 +11,9 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.HeightMapHelpers;
-import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.net.MutationEntitySetEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -75,7 +75,7 @@ public class ShadowState
 			, List<PartialPassive> addedPassives
 			, List<IReadOnlyCuboidData> addedCuboids
 			
-			, IEntityUpdate thisEntityUpdate
+			, MutationEntitySetEntity thisEntityUpdate
 			, Map<Integer, IPartialEntityUpdate> partialEntityUpdates
 			, Map<Integer, PassiveUpdate> partialPassiveUpdates
 			, List<MutationBlockSetBlock> cuboidUpdates
@@ -168,7 +168,7 @@ public class ShadowState
 		return map;
 	}
 
-	private _UpdateTuple _applyUpdatesToShadowState(IEntityUpdate thisEntityUpdate
+	private _UpdateTuple _applyUpdatesToShadowState(MutationEntitySetEntity thisEntityUpdate
 			, Map<Integer, IPartialEntityUpdate> partialEntityUpdates
 			, Map<Integer, PassiveUpdate> partialPassiveUpdates
 			, Map<AbsoluteLocation, MutationBlockSetBlock> updatesToApply
@@ -193,7 +193,7 @@ public class ShadowState
 		return shadowUpdates;
 	}
 
-	private Entity _applyLocalEntityUpdatesToShadowState(IEntityUpdate thisEntityUpdate)
+	private Entity _applyLocalEntityUpdatesToShadowState(MutationEntitySetEntity thisEntityUpdate)
 	{
 		// We won't use the CrowdProcessor here since it applies IMutationEntity but the IEntityUpdate instances are simpler.
 		Entity updatedShadowEntity = null;

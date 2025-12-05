@@ -21,11 +21,10 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
-import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
+import com.jeffdisher.october.net.MutationEntitySetEntity;
 import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.net.Packet_ClientUpdateOptions;
@@ -741,7 +740,7 @@ public class ServerStateManager
 						if (clientId == entityId)
 						{
 							// The client has the full entity so send it.
-							IEntityUpdate update = new MutationEntitySetEntity(entity);
+							MutationEntitySetEntity update = new MutationEntitySetEntity(entity);
 							_callouts.network_sendEntityUpdate(clientId, entityId, update);
 						}
 						else if (MutationEntitySetPartialEntity.canDescribeChange(previousEntityVersion, entity))
@@ -1141,7 +1140,7 @@ public class ServerStateManager
 		boolean network_isNetworkWriteReady(int clientId);
 		
 		void network_sendFullEntity(int clientId, Entity entity);
-		void network_sendEntityUpdate(int clientId, int entityId, IEntityUpdate update);
+		void network_sendEntityUpdate(int clientId, int entityId, MutationEntitySetEntity update);
 		
 		void network_sendPartialEntity(int clientId, PartialEntity entity);
 		void network_sendPartialEntityUpdate(int clientId, int entityId, IPartialEntityUpdate update);

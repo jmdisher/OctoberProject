@@ -8,10 +8,10 @@ import java.util.Set;
 import java.util.function.LongSupplier;
 
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.net.CuboidCodec;
+import com.jeffdisher.october.net.MutationEntitySetEntity;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
 import com.jeffdisher.october.net.PacketFromClient;
@@ -389,7 +389,7 @@ public class ServerProcess
 			_bufferPacket(clientId, packet);
 		}
 		@Override
-		public void sendEntityUpdate(int clientId, int entityId, IEntityUpdate update)
+		public void sendEntityUpdate(int clientId, int entityId, MutationEntitySetEntity update)
 		{
 			Packet_EntityUpdateFromServer packet = new Packet_EntityUpdateFromServer(entityId, update);
 			_bufferPacket(clientId, packet);
