@@ -9,8 +9,8 @@ import java.util.function.LongSupplier;
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
 import com.jeffdisher.october.net.EntityUpdatePerField;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.PacketFromClient;
@@ -519,7 +519,7 @@ public class ServerRunner
 			_network.sendEntityUpdate(clientId, entityId, update);
 		}
 		@Override
-		public void network_sendPartialEntityUpdate(int clientId, int entityId, IPartialEntityUpdate update)
+		public void network_sendPartialEntityUpdate(int clientId, int entityId, MutationEntitySetPartialEntity update)
 		{
 			_network.sendPartialEntityUpdate(clientId, entityId, update);
 		}

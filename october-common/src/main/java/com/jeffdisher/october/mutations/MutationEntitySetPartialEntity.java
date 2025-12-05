@@ -12,10 +12,8 @@ import com.jeffdisher.october.types.PartialEntity;
 /**
  * Updates the partial entity by setting its whole state.
  */
-public class MutationEntitySetPartialEntity implements IPartialEntityUpdate
+public class MutationEntitySetPartialEntity
 {
-	public static final PartialEntityUpdateType TYPE = PartialEntityUpdateType.WHOLE_PARTIAL_ENTITY;
-
 	public static MutationEntitySetPartialEntity deserializeFromNetworkBuffer(ByteBuffer buffer)
 	{
 		PartialEntity entity = CodecHelpers.readPartialEntity(buffer);
@@ -65,7 +63,11 @@ public class MutationEntitySetPartialEntity implements IPartialEntityUpdate
 		_entity = entity;
 	}
 
-	@Override
+	/**
+	 * Applies the receiver to the given newEntity.
+	 * 
+	 * @param newEntity The partial entity which should be updated by the receiver.
+	 */
 	public void applyToEntity(MutablePartialEntity newEntity)
 	{
 		newEntity.newType = _entity.type();
@@ -75,13 +77,11 @@ public class MutationEntitySetPartialEntity implements IPartialEntityUpdate
 		newEntity.newHealth = _entity.health();
 	}
 
-	@Override
-	public PartialEntityUpdateType getType()
-	{
-		return TYPE;
-	}
-
-	@Override
+	/**
+	 * Called to serialize the update into the given buffer for network transmission.
+	 * 
+	 * @param buffer The network buffer where the update should be written.
+	 */
 	public void serializeToNetworkBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writePartialEntity(buffer, _entity);

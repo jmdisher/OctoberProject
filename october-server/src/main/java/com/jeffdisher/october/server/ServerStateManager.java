@@ -21,7 +21,6 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
 import com.jeffdisher.october.net.EntityUpdatePerField;
@@ -745,7 +744,7 @@ public class ServerStateManager
 						else if (MutationEntitySetPartialEntity.canDescribeChange(previousEntityVersion, entity))
 						{
 							// The client will have a partial so just send that.
-							IPartialEntityUpdate update = new MutationEntitySetPartialEntity(PartialEntity.fromEntity(entity));
+							MutationEntitySetPartialEntity update = new MutationEntitySetPartialEntity(PartialEntity.fromEntity(entity));
 							_callouts.network_sendPartialEntityUpdate(clientId, entityId, update);
 						}
 					}
@@ -795,7 +794,7 @@ public class ServerStateManager
 					if ((null != previousCreatureVersion) && MutationEntitySetPartialEntity.canDescribeCreatureChange(previousCreatureVersion, entity))
 					{
 						// Creatures are always partial.
-						IPartialEntityUpdate update = new MutationEntitySetPartialEntity(PartialEntity.fromCreature(entity));
+						MutationEntitySetPartialEntity update = new MutationEntitySetPartialEntity(PartialEntity.fromCreature(entity));
 						_callouts.network_sendPartialEntityUpdate(clientId, entityId, update);
 					}
 				}
@@ -1142,7 +1141,7 @@ public class ServerStateManager
 		void network_sendEntityUpdate(int clientId, int entityId, EntityUpdatePerField update);
 		
 		void network_sendPartialEntity(int clientId, PartialEntity entity);
-		void network_sendPartialEntityUpdate(int clientId, int entityId, IPartialEntityUpdate update);
+		void network_sendPartialEntityUpdate(int clientId, int entityId, MutationEntitySetPartialEntity update);
 		void network_removeEntity(int clientId, int entityId);
 		
 		void network_sendPartialPassive(int clientId, PartialPassive partial);

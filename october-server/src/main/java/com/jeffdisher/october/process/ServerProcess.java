@@ -8,8 +8,8 @@ import java.util.Set;
 import java.util.function.LongSupplier;
 
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
 import com.jeffdisher.october.net.CuboidCodec;
 import com.jeffdisher.october.net.EntityUpdatePerField;
 import com.jeffdisher.october.net.NetworkLayer;
@@ -395,7 +395,7 @@ public class ServerProcess
 			_bufferPacket(clientId, packet);
 		}
 		@Override
-		public void sendPartialEntityUpdate(int clientId, int entityId, IPartialEntityUpdate update)
+		public void sendPartialEntityUpdate(int clientId, int entityId, MutationEntitySetPartialEntity update)
 		{
 			Packet_PartialEntityUpdateFromServer packet = new Packet_PartialEntityUpdateFromServer(entityId, update);
 			_bufferPacket(clientId, packet);

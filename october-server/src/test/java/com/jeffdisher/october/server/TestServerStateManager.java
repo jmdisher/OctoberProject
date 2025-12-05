@@ -23,8 +23,8 @@ import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
-import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
 import com.jeffdisher.october.net.EntityUpdatePerField;
 import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
@@ -1491,7 +1491,7 @@ public class TestServerStateManager
 			Assert.assertNull(old);
 		}
 		@Override
-		public void network_sendPartialEntityUpdate(int clientId, int entityId, IPartialEntityUpdate update)
+		public void network_sendPartialEntityUpdate(int clientId, int entityId, MutationEntitySetPartialEntity update)
 		{
 			PartialEntity original = this.partialEntitiesPerClient.get(clientId).get(entityId);
 			MutablePartialEntity mutable = MutablePartialEntity.existing(original);

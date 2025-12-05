@@ -11,8 +11,8 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.HeightMapHelpers;
-import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
 import com.jeffdisher.october.net.EntityUpdatePerField;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -76,7 +76,7 @@ public class ShadowState
 			, List<IReadOnlyCuboidData> addedCuboids
 			
 			, EntityUpdatePerField thisEntityUpdate
-			, Map<Integer, IPartialEntityUpdate> partialEntityUpdates
+			, Map<Integer, MutationEntitySetPartialEntity> partialEntityUpdates
 			, Map<Integer, PassiveUpdate> partialPassiveUpdates
 			, List<MutationBlockSetBlock> cuboidUpdates
 			
@@ -169,7 +169,7 @@ public class ShadowState
 	}
 
 	private _UpdateTuple _applyUpdatesToShadowState(EntityUpdatePerField thisEntityUpdate
-			, Map<Integer, IPartialEntityUpdate> partialEntityUpdates
+			, Map<Integer, MutationEntitySetPartialEntity> partialEntityUpdates
 			, Map<Integer, PassiveUpdate> partialPassiveUpdates
 			, Map<AbsoluteLocation, MutationBlockSetBlock> updatesToApply
 	)
@@ -213,13 +213,13 @@ public class ShadowState
 		return updatedShadowEntity;
 	}
 
-	private Map<Integer, PartialEntity> _applyPartialEntityUpdatesToShadowState(Map<Integer, IPartialEntityUpdate> partialEntityUpdates)
+	private Map<Integer, PartialEntity> _applyPartialEntityUpdatesToShadowState(Map<Integer, MutationEntitySetPartialEntity> partialEntityUpdates)
 	{
 		Map<Integer, PartialEntity> entitiesChangedInTick = new HashMap<>();
-		for (Map.Entry<Integer, IPartialEntityUpdate> elt : partialEntityUpdates.entrySet())
+		for (Map.Entry<Integer, MutationEntitySetPartialEntity> elt : partialEntityUpdates.entrySet())
 		{
 			int entityId = elt.getKey();
-			IPartialEntityUpdate update = elt.getValue();
+			MutationEntitySetPartialEntity update = elt.getValue();
 			
 			PartialEntity partialEntityToChange = _shadowCrowd.get(entityId);
 			// These must already exist if they are being updated.

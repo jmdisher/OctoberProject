@@ -26,8 +26,8 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
-import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
 import com.jeffdisher.october.net.EntityUpdatePerField;
 import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
@@ -1028,7 +1028,7 @@ public class TestServerRunner
 			this.notifyAll();
 		}
 		@Override
-		public synchronized void sendPartialEntityUpdate(int clientId, int entityId, IPartialEntityUpdate update)
+		public synchronized void sendPartialEntityUpdate(int clientId, int entityId, MutationEntitySetPartialEntity update)
 		{
 			List<Object> updates = this.clientUpdates.get(clientId);
 			updates.add(update);
