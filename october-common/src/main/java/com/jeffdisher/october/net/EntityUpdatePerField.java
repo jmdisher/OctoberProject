@@ -1,4 +1,4 @@
-package com.jeffdisher.october.client;
+package com.jeffdisher.october.net;
 
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.Entity;
