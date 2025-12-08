@@ -32,6 +32,8 @@ public class CompositeHelpers
 	public static final String VOID_LAMP_ID = "op.void_lamp";
 	public static final String PORTAL_KEYSTONE_ID = "op.portal_keystone";
 	public static final String PORTAL_SURFACE_ID = "op.portal_surface";
+	public static final String ENCHANTING_TABLE_ID = "op.enchanting_table";
+	public static final String PEDESTAL_ID = "op.pedestal";
 
 	/**
 	 * Checks if the given block is a cornerstone type.
@@ -42,7 +44,7 @@ public class CompositeHelpers
 	public static boolean isCornerstone(Block block)
 	{
 		String blockId = block.item().id();
-		return VOID_LAMP_ID.equals(blockId) || PORTAL_KEYSTONE_ID.equals(blockId);
+		return VOID_LAMP_ID.equals(blockId) || PORTAL_KEYSTONE_ID.equals(blockId) || ENCHANTING_TABLE_ID.equals(blockId);
 	}
 
 	/**
@@ -142,6 +144,18 @@ public class CompositeHelpers
 					isValid = _matchBlockTypes(context, orientation, location, airSet, portalSurfaceBlock);
 				}
 			}
+		}
+		else if (ENCHANTING_TABLE_ID.equals(blockId))
+		{
+			Block pedestalBlock = env.blocks.fromItem(env.items.getItemById(PEDESTAL_ID));
+			Set<AbsoluteLocation> pedestalSet = Set.of(
+				new AbsoluteLocation(-2, 0, 0)
+				, new AbsoluteLocation(2, 0, 0)
+				, new AbsoluteLocation(0, -2, 0)
+				, new AbsoluteLocation(0, 2, 0)
+			);
+			OrientationAspect.Direction orientation = proxy.getOrientation();
+			isValid = _matchBlockTypes(context, orientation, location, pedestalSet, pedestalBlock);
 		}
 		else
 		{

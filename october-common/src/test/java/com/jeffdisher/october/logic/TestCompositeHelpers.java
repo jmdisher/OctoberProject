@@ -29,6 +29,8 @@ public class TestCompositeHelpers
 	private static Block VOID_LAMP;
 	private static Block PORTAL_KEYSTONE;
 	private static Block PORTAL_SURFACE;
+	private static Block ENCHATING_TABLE;
+	private static Block PEDESTAL;
 	@BeforeClass
 	public static void setup()
 	{
@@ -37,6 +39,8 @@ public class TestCompositeHelpers
 		VOID_LAMP = ENV.blocks.fromItem(ENV.items.getItemById("op.void_lamp"));
 		PORTAL_KEYSTONE = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_keystone"));
 		PORTAL_SURFACE = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_surface"));
+		ENCHATING_TABLE = ENV.blocks.fromItem(ENV.items.getItemById("op.enchanting_table"));
+		PEDESTAL = ENV.blocks.fromItem(ENV.items.getItemById("op.pedestal"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -142,6 +146,42 @@ public class TestCompositeHelpers
 		Assert.assertFalse(onProxy.didChange());
 		onProxy.writeBack(cuboid);
 		byte flags = cuboid.getData7(AspectRegistry.FLAGS, centre.getBlockAddress());
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, flags);
+		Assert.assertEquals(CompositeHelpers.COMPOSITE_CHECK_FREQUENCY, onProxy.periodicDelayMillis);
+	}
+
+	@Test
+	public void enchantingTable()
+	{
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
+		cuboid.setData15(AspectRegistry.BLOCK, centre.getBlockAddress(), ENCHATING_TABLE.item().number());
+		
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation location) -> {
+				return new BlockProxy(location.getBlockAddress(), cuboid);
+			}, null, null)
+			.finish()
+		;
+		MutableBlockProxy onProxy = new MutableBlockProxy(centre, cuboid);
+		CompositeHelpers.processCornerstoneUpdate(ENV, context, centre, onProxy);
+		Assert.assertFalse(onProxy.didChange());
+		onProxy.writeBack(cuboid);
+		byte flags = cuboid.getData7(AspectRegistry.FLAGS, centre.getBlockAddress());
+		Assert.assertEquals((byte)0x0, flags);
+		Assert.assertEquals(CompositeHelpers.COMPOSITE_CHECK_FREQUENCY, onProxy.periodicDelayMillis);
+		
+		// Show that it becomes active after the pedestals are added.
+		cuboid.setData15(AspectRegistry.BLOCK, centre.getRelative(-2, 0, 0).getBlockAddress(), PEDESTAL.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, centre.getRelative(2, 0, 0).getBlockAddress(), PEDESTAL.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, centre.getRelative(0, -2, 0).getBlockAddress(), PEDESTAL.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, centre.getRelative(0, 2, 0).getBlockAddress(), PEDESTAL.item().number());
+		
+		onProxy = new MutableBlockProxy(centre, cuboid);
+		CompositeHelpers.processCornerstoneUpdate(ENV, context, centre, onProxy);
+		Assert.assertTrue(onProxy.didChange());
+		onProxy.writeBack(cuboid);
+		flags = cuboid.getData7(AspectRegistry.FLAGS, centre.getBlockAddress());
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, flags);
 		Assert.assertEquals(CompositeHelpers.COMPOSITE_CHECK_FREQUENCY, onProxy.periodicDelayMillis);
 	}

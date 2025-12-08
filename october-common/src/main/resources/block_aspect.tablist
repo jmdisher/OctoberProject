@@ -158,3 +158,5 @@ op.sand	has_gravity
 	block_material	SHOVEL
 op.door	is_multiblock
 	block_material	AXE
+op.enchanting_table	is_composition
+	block_material	PICKAXE

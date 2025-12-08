@@ -272,3 +272,7 @@ op.door	COMMON
 	input	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank
 	output	op.door
 	millis	8000
+op.enchanting_table	COMMON
+	input	op.basalt	op.stone_brick	op.stone_brick	op.stone_brick	op.stone_brick
+	output	op.enchanting_table
+	millis	16000
