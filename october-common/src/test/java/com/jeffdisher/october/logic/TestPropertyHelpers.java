@@ -106,4 +106,14 @@ public class TestPropertyHelpers
 		Assert.assertEquals(0, PropertyHelpers.getDurability(item));
 		Assert.assertEquals(location, PropertyHelpers.getLocation(item));
 	}
+
+	@Test
+	public void getEnchantmentLevel()
+	{
+		NonStackableItem item = new NonStackableItem(IRON_SWORD, Map.of(PropertyRegistry.DURABILITY, ENV.durability.getDurability(IRON_SWORD)
+			, PropertyRegistry.ENCHANT_WEAPON_MELEE, (byte)5
+		));
+		byte value = PropertyHelpers.getBytePropertyValue(item.properties(), PropertyRegistry.ENCHANT_WEAPON_MELEE);
+		Assert.assertEquals((byte)5, value);
+	}
 }

@@ -136,6 +136,12 @@ public class PropertyHelpers
 		return _getValue(item.properties(), PropertyRegistry.LOCATION, null);
 	}
 
+	public static byte getBytePropertyValue(Map<PropertyType<?>, Object> properties, PropertyType<Byte> type)
+	{
+		return _getValue(properties, type, (byte)0);
+	}
+
+
 	private static <T> T _getValue(Map<PropertyType<?>, Object> properties, PropertyType<T> type, T missingValue)
 	{
 		T value = missingValue;
