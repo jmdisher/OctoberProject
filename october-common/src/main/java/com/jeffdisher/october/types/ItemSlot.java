@@ -33,6 +33,34 @@ public class ItemSlot
 	}
 
 	@Override
+	public int hashCode()
+	{
+		return (null != this.stack)
+			? this.stack.hashCode()
+			: this.nonStackable.hashCode()
+		;
+	}
+
+	@Override
+	public boolean equals(Object obj)
+	{
+		boolean equals = false;
+		if ((null != obj) && (this.getClass() == obj.getClass()))
+		{
+			ItemSlot other = (ItemSlot)obj;
+			if ((null != this.stack) && (null != other.stack))
+			{
+				equals = this.stack.equals(other.stack);
+			}
+			else if ((null != this.nonStackable) && (null != other.nonStackable))
+			{
+				equals = this.nonStackable.equals(other.nonStackable);
+			}
+		}
+		return equals;
+	}
+
+	@Override
 	public String toString()
 	{
 		boolean isStackable = (null != this.stack);

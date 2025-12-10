@@ -13,6 +13,8 @@ import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.properties.PropertyType;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.Enchantment;
+import com.jeffdisher.october.types.Infusion;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.NonStackableItem;
 
@@ -56,7 +58,7 @@ public class TestEnchantmentRegistry
 	public void validEnchantment() throws Throwable
 	{
 		NonStackableItem pickaxe = PropertyHelpers.newItemWithDefaults(ENV, IRON_PICKAXE);
-		EnchantmentRegistry.Enchantment enchantment = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, pickaxe, List.of(ITEM_STONE, ITEM_STONE, IRON_INGOT, IRON_INGOT));
+		Enchantment enchantment = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, pickaxe, List.of(ITEM_STONE, ITEM_STONE, IRON_INGOT, IRON_INGOT));
 		Assert.assertNotNull(enchantment);
 	}
 
@@ -64,7 +66,7 @@ public class TestEnchantmentRegistry
 	public void enchantmentWrongTarget() throws Throwable
 	{
 		NonStackableItem axe = PropertyHelpers.newItemWithDefaults(ENV, ENV.items.getItemById("op.copper_axe"));
-		EnchantmentRegistry.Enchantment enchantment = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, axe, List.of(ITEM_STONE, ITEM_STONE, IRON_INGOT, IRON_INGOT));
+		Enchantment enchantment = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, axe, List.of(ITEM_STONE, ITEM_STONE, IRON_INGOT, IRON_INGOT));
 		Assert.assertNull(enchantment);
 	}
 
@@ -72,7 +74,7 @@ public class TestEnchantmentRegistry
 	public void enchantmentMissingItem() throws Throwable
 	{
 		NonStackableItem pickaxe = PropertyHelpers.newItemWithDefaults(ENV, IRON_PICKAXE);
-		EnchantmentRegistry.Enchantment enchantment = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, pickaxe, List.of(ITEM_STONE, ITEM_STONE, IRON_INGOT));
+		Enchantment enchantment = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, pickaxe, List.of(ITEM_STONE, ITEM_STONE, IRON_INGOT));
 		Assert.assertNull(enchantment);
 	}
 
@@ -83,21 +85,21 @@ public class TestEnchantmentRegistry
 		Map<PropertyType<?>, Object> properties = new HashMap<>(pickaxe.properties());
 		properties.put(PropertyRegistry.ENCHANT_DURABILITY, (byte)127);
 		pickaxe = new NonStackableItem(IRON_PICKAXE, properties);
-		EnchantmentRegistry.Enchantment enchantment = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, pickaxe, List.of(ITEM_STONE, ITEM_STONE, IRON_INGOT, IRON_INGOT));
+		Enchantment enchantment = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, pickaxe, List.of(ITEM_STONE, ITEM_STONE, IRON_INGOT, IRON_INGOT));
 		Assert.assertNull(enchantment);
 	}
 
 	@Test
 	public void validInfusion() throws Throwable
 	{
-		EnchantmentRegistry.Infusion infusion = ENV.enchantments.getInfusion(ENCHANTING_TABLE, List.of(ITEM_STONE_BRICK, ITEM_STONE, ITEM_STONE, IRON_INGOT, IRON_INGOT));
+		Infusion infusion = ENV.enchantments.getInfusion(ENCHANTING_TABLE, List.of(ITEM_STONE_BRICK, ITEM_STONE, ITEM_STONE, IRON_INGOT, IRON_INGOT));
 		Assert.assertNotNull(infusion);
 	}
 
 	@Test
 	public void infusionMissingItem() throws Throwable
 	{
-		EnchantmentRegistry.Infusion infusion = ENV.enchantments.getInfusion(ENCHANTING_TABLE, List.of(ITEM_STONE_BRICK, ITEM_STONE, ITEM_STONE, IRON_INGOT));
+		Infusion infusion = ENV.enchantments.getInfusion(ENCHANTING_TABLE, List.of(ITEM_STONE_BRICK, ITEM_STONE, ITEM_STONE, IRON_INGOT));
 		Assert.assertNull(infusion);
 	}
 }

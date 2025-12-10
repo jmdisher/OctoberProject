@@ -1,6 +1,7 @@
 package com.jeffdisher.october.net;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.AfterClass;
@@ -9,7 +10,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.CreatureExtendedData;
-import com.jeffdisher.october.aspects.EnchantmentRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.DeserializationContext;
@@ -22,10 +22,13 @@ import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.EnchantingOperation;
+import com.jeffdisher.october.types.Enchantment;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.FuelState;
+import com.jeffdisher.october.types.Infusion;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
@@ -603,10 +606,10 @@ public class TestCodecHelpers
 	@Test
 	public void enchantmentRegistry() throws Throwable
 	{
-		// Show the basic serialization behaviour of records in EnchantmentRegistry.
-		EnchantmentRegistry.Enchantment enchantment = ENV.enchantments.enchantmentForNumber(1);
+		// Show the basic serialization behaviour of records used by EnchantmentRegistry.
+		Enchantment enchantment = ENV.enchantments.enchantmentForNumber(1);
 		Assert.assertNotNull(enchantment);
-		EnchantmentRegistry.Infusion infusion = ENV.enchantments.infusionForNumber(1);
+		Infusion infusion = ENV.enchantments.infusionForNumber(1);
 		Assert.assertNotNull(infusion);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
@@ -616,12 +619,40 @@ public class TestCodecHelpers
 		CodecHelpers.writeInfusion(buffer, null);
 		
 		buffer.flip();
-		EnchantmentRegistry.Enchantment eOut = CodecHelpers.readEnchantment(buffer);
+		Enchantment eOut = CodecHelpers.readEnchantment(buffer);
 		Assert.assertTrue(enchantment == eOut);
 		Assert.assertNull(CodecHelpers.readEnchantment(buffer));
-		EnchantmentRegistry.Infusion iOut = CodecHelpers.readInfusion(buffer);
+		Infusion iOut = CodecHelpers.readInfusion(buffer);
 		Assert.assertTrue(infusion == iOut);
 		Assert.assertNull(CodecHelpers.readInfusion(buffer));
 		Assert.assertEquals(0, buffer.remaining());
+		
+		// We can also test the EnchantingOperation here since it is similar.
+		buffer.clear();
+		EnchantingOperation eOp = new EnchantingOperation(567L
+			, enchantment
+			, null
+			, null
+			, List.of(ItemSlot.fromStack(new Items(STONE_ITEM, 1)))
+		);
+		EnchantingOperation iOp = new EnchantingOperation(123L
+			, null
+			, infusion
+			, null
+			, List.of()
+		);
+		CodecHelpers.writeEnchantingOperation(buffer, eOp);
+		CodecHelpers.writeEnchantingOperation(buffer, iOp);
+		
+		buffer.flip();
+		DeserializationContext context = new DeserializationContext(Environment.getShared()
+			, buffer
+			, 0L
+			, false
+		);
+		EnchantingOperation eoOut = CodecHelpers.readEnchantingOperation(context);
+		EnchantingOperation ioOut = CodecHelpers.readEnchantingOperation(context);
+		Assert.assertEquals(eOp, eoOut);
+		Assert.assertEquals(iOp, ioOut);
 	}
 }

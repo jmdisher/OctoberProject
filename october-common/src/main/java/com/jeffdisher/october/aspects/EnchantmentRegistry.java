@@ -8,8 +8,9 @@ import java.util.stream.Collectors;
 
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.properties.PropertyRegistry;
-import com.jeffdisher.october.properties.PropertyType;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.Enchantment;
+import com.jeffdisher.october.types.Infusion;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.utils.Assert;
@@ -93,8 +94,8 @@ public class EnchantmentRegistry
 			_infusions[i + 1] = infusions.get(i);
 		}
 		
-		_enchantmentsByBlock = _packMap(enchantments, (Enchantment input) -> input.table);
-		_infusionsByBlock = _packMap(infusions, (Infusion input) -> input.table);
+		_enchantmentsByBlock = _packMap(enchantments, (Enchantment input) -> input.table());
+		_infusionsByBlock = _packMap(infusions, (Infusion input) -> input.table());
 	}
 
 	public List<Enchantment> allEnchantments(Block table)
@@ -127,7 +128,7 @@ public class EnchantmentRegistry
 			Map<Item, Integer> counts = _mutableCountMap(toConsume);
 			// Filter these by anything which can apply to these arguments.
 			List<Enchantment> matched = possible.stream().filter((Enchantment e) -> {
-				return (targetType == e.targetItem) && _mapsMatch(e.consumedItems, counts);
+				return (targetType == e.targetItem()) && _mapsMatch(e.consumedItems(), counts);
 			}).toList();
 			
 			if (!matched.isEmpty())
@@ -138,7 +139,7 @@ public class EnchantmentRegistry
 				
 				// Make sure that we aren't at the limit of this enchantment.
 				// For now, this is just max byte but we will probably constrain this in the future.
-				byte value = PropertyHelpers.getBytePropertyValue(target.properties(), candidate.enchantmentToApply);
+				byte value = PropertyHelpers.getBytePropertyValue(target.properties(), candidate.enchantmentToApply());
 				if (value < Byte.MAX_VALUE)
 				{
 					// We are allowed to apply this.
@@ -158,7 +159,7 @@ public class EnchantmentRegistry
 			Map<Item, Integer> counts = _mutableCountMap(toConsume);
 			// Filter these by anything which can apply to these arguments.
 			List<Infusion> matched = possible.stream().filter((Infusion e) -> {
-				return _mapsMatch(e.consumedItems, counts);
+				return _mapsMatch(e.consumedItems(), counts);
 			}).toList();
 			
 			if (!matched.isEmpty())
@@ -229,20 +230,4 @@ public class EnchantmentRegistry
 		}
 		return (0 == count);
 	}
-
-
-	public static record Enchantment(int number
-		, Block table
-		, long millisToApply
-		, Item targetItem
-		, Map<Item, Integer> consumedItems
-		, PropertyType<Byte> enchantmentToApply
-	) {}
-
-	public static record Infusion(int number
-		, Block table
-		, long millisToApply
-		, Map<Item, Integer> consumedItems
-		, Item outputItem
-	) {}
 }

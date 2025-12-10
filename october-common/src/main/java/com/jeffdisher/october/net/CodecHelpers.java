@@ -2,12 +2,12 @@ package com.jeffdisher.october.net;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.jeffdisher.october.aspects.EnchantmentRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.DeserializationContext;
@@ -20,6 +20,8 @@ import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.EnchantingOperation;
+import com.jeffdisher.october.types.Enchantment;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Entity.Ephemeral_Shared;
 import com.jeffdisher.october.types.EntityLocation;
@@ -28,6 +30,7 @@ import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.Infusion;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
@@ -692,54 +695,70 @@ public class CodecHelpers
 		entity.type().extendedCodec().write(buffer, entity.extendedData());
 	}
 
-	public static EnchantmentRegistry.Enchantment readEnchantment(ByteBuffer buffer)
+	public static Enchantment readEnchantment(ByteBuffer buffer)
 	{
-		// Each enchantment is resolved by int number.
-		int number = buffer.getInt();
-		Assert.assertTrue(number >= 0);
+		return _readEnchantment(buffer);
+	}
+
+	public static void writeEnchantment(ByteBuffer buffer, Enchantment enchantment)
+	{
+		_writeEnchantment(buffer, enchantment);
+	}
+
+	public static Infusion readInfusion(ByteBuffer buffer)
+	{
+		return _readInfusion(buffer);
+	}
+
+	public static void writeInfusion(ByteBuffer buffer, Infusion infusion)
+	{
+		_writeInfusion(buffer, infusion);
+	}
+
+	public static EnchantingOperation readEnchantingOperation(DeserializationContext context)
+	{
+		ByteBuffer buffer = context.buffer();
+		long completedMillis = buffer.getLong();
+		Enchantment enchantment = _readEnchantment(buffer);
+		Infusion infusion = _readInfusion(buffer);
+		ItemSlot targetItem = _readSlot(context);
 		
-		EnchantmentRegistry.Enchantment result = null;
-		if (number > 0)
+		int arraySize = buffer.getInt();
+		List<ItemSlot> consumedItems = new ArrayList<>();
+		for (int i = 0; i < arraySize; ++i)
 		{
-			Environment env = Environment.getShared();
-			result = env.enchantments.enchantmentForNumber(number);
+			ItemSlot slot = _readSlot(context);
+			Assert.assertTrue(null != slot);
+			consumedItems.add(slot);
 		}
-		return result;
-	}
-
-	public static void writeEnchantment(ByteBuffer buffer, EnchantmentRegistry.Enchantment enchantment)
-	{
-		// Note that 0 is used as "null" (in EnchantmentRegistry).
-		int number = (null == enchantment)
-			? 0
-			: enchantment.number()
-		;
-		buffer.putInt(number);
-	}
-
-	public static EnchantmentRegistry.Infusion readInfusion(ByteBuffer buffer)
-	{
-		// Each infusion is resolved by int number.
-		int number = buffer.getInt();
-		Assert.assertTrue(number >= 0);
 		
-		EnchantmentRegistry.Infusion result = null;
-		if (number > 0)
-		{
-			Environment env = Environment.getShared();
-			result = env.enchantments.infusionForNumber(number);
-		}
-		return result;
+		// Note that an operation must have explicitly 1 of either the Enchantment or the Infusion.
+		Assert.assertTrue((null != enchantment) != (null != infusion));
+		
+		return new EnchantingOperation(completedMillis
+			, enchantment
+			, infusion
+			, targetItem
+			, Collections.unmodifiableList(consumedItems)
+		);
 	}
 
-	public static void writeInfusion(ByteBuffer buffer, EnchantmentRegistry.Infusion infusion)
+	public static void writeEnchantingOperation(ByteBuffer buffer, EnchantingOperation instance)
 	{
-		// Note that 0 is used as "null" (in EnchantmentRegistry).
-		int number = (null == infusion)
-			? 0
-			: infusion.number()
-		;
-		buffer.putInt(number);
+		// Note that an operation must have explicitly 1 of either the Enchantment or the Infusion.
+		Assert.assertTrue((null != instance.enchantment()) != (null != instance.infusion()));
+		
+		buffer.putLong(instance.chargedMillis());
+		_writeEnchantment(buffer, instance.enchantment());
+		_writeInfusion(buffer, instance.infusion());
+		_writeSlot(buffer, instance.targetItem());
+		
+		List<ItemSlot> consumedItems = instance.consumedItems();
+		buffer.putInt(consumedItems.size());
+		for (ItemSlot slot : consumedItems)
+		{
+			_writeSlot(buffer, slot);
+		}
 	}
 
 
@@ -1099,5 +1118,55 @@ public class CodecHelpers
 	{
 		_writeCraftOperation(buffer, ephemeralShared.localCraftOperation());
 		buffer.putInt(ephemeralShared.chargeMillis());
+	}
+
+	private static Enchantment _readEnchantment(ByteBuffer buffer)
+	{
+		// Each enchantment is resolved by int number.
+		int number = buffer.getInt();
+		Assert.assertTrue(number >= 0);
+		
+		Enchantment result = null;
+		if (number > 0)
+		{
+			Environment env = Environment.getShared();
+			result = env.enchantments.enchantmentForNumber(number);
+		}
+		return result;
+	}
+
+	private static void _writeEnchantment(ByteBuffer buffer, Enchantment enchantment)
+	{
+		// Note that 0 is used as "null" (in EnchantmentRegistry).
+		int number = (null == enchantment)
+			? 0
+			: enchantment.number()
+		;
+		buffer.putInt(number);
+	}
+
+	private static Infusion _readInfusion(ByteBuffer buffer)
+	{
+		// Each infusion is resolved by int number.
+		int number = buffer.getInt();
+		Assert.assertTrue(number >= 0);
+		
+		Infusion result = null;
+		if (number > 0)
+		{
+			Environment env = Environment.getShared();
+			result = env.enchantments.infusionForNumber(number);
+		}
+		return result;
+	}
+
+	private static void _writeInfusion(ByteBuffer buffer, Infusion infusion)
+	{
+		// Note that 0 is used as "null" (in EnchantmentRegistry).
+		int number = (null == infusion)
+			? 0
+			: infusion.number()
+		;
+		buffer.putInt(number);
 	}
 }
