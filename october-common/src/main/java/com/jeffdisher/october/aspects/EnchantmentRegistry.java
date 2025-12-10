@@ -1,9 +1,10 @@
 package com.jeffdisher.october.aspects;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.properties.PropertyRegistry;
@@ -21,6 +22,8 @@ import com.jeffdisher.october.utils.Assert;
  * 1) A NonStackableItem to which an enchantment property is applied (called "enchantment")
  * 2) An item (stackable or not) which is deleted and replaced with another (called "infusion")
  * Note that how the enchanting block interprets this data is up to it.
+ * Serialization note:  The "number" field of Enchantment and Infusion objects is considered stable and can be used for
+ * serializing references to these (be aware that they are in their own namespaces and 0 is considered "null").
  */
 public class EnchantmentRegistry
 {
@@ -47,7 +50,8 @@ public class EnchantmentRegistry
 		Item portalStone = items.getItemById(ID_PORTAL_STONE);
 		Assert.assertTrue(null != portalStone);
 		
-		Enchantment enchantDurability = new Enchantment(enchantingTable
+		Enchantment enchantDurability = new Enchantment(1
+			, enchantingTable
 			, 10_000L
 			, ironPick
 			, Map.of(stone, 2
@@ -55,7 +59,8 @@ public class EnchantmentRegistry
 			)
 			, PropertyRegistry.ENCHANT_DURABILITY
 		);
-		Infusion infusePortalStone = new Infusion(enchantingTable
+		Infusion infusePortalStone = new Infusion(1
+			, enchantingTable
 			, 2000L
 			, Map.of(stoneBrick, 1
 				, stone, 2
@@ -63,35 +68,59 @@ public class EnchantmentRegistry
 			)
 			, portalStone
 		);
-		return new EnchantmentRegistry(Map.of(enchantingTable, List.of(enchantDurability))
-			, Map.of(enchantingTable, List.of(infusePortalStone))
+		return new EnchantmentRegistry(List.of(enchantDurability)
+			, List.of(infusePortalStone)
 		);
 	}
 
 
-	private final Map<Block, List<Enchantment>> _enchantments;
-	private final Map<Block, List<Infusion>> _infusions;
+	private final Enchantment[] _enchantments;
+	private final Infusion[] _infusions;
+	private final Map<Block, List<Enchantment>> _enchantmentsByBlock;
+	private final Map<Block, List<Infusion>> _infusionsByBlock;
 
-	private EnchantmentRegistry(Map<Block, List<Enchantment>> enchantments, Map<Block, List<Infusion>> infusions)
+	private EnchantmentRegistry(List<Enchantment> enchantments, List<Infusion> infusions)
 	{
-		_enchantments = Collections.unmodifiableMap(enchantments);
-		_infusions = Collections.unmodifiableMap(infusions);
+		// We need to leave the 0 index empty since we reserve that value as "null".
+		_enchantments = new Enchantment[enchantments.size() + 1];
+		for (int i = 0; i < enchantments.size(); ++i)
+		{
+			_enchantments[i + 1] = enchantments.get(i);
+		}
+		_infusions = new Infusion[infusions.size() + 1];
+		for (int i = 0; i < infusions.size(); ++i)
+		{
+			_infusions[i + 1] = infusions.get(i);
+		}
+		
+		_enchantmentsByBlock = _packMap(enchantments, (Enchantment input) -> input.table);
+		_infusionsByBlock = _packMap(infusions, (Infusion input) -> input.table);
 	}
 
 	public List<Enchantment> allEnchantments(Block table)
 	{
-		return _enchantments.get(table);
+		return _enchantmentsByBlock.get(table);
 	}
 
 	public List<Infusion> allInfusions(Block table)
 	{
-		return _infusions.get(table);
+		return _infusionsByBlock.get(table);
+	}
+
+	public Enchantment enchantmentForNumber(int number)
+	{
+		return _enchantments[number];
+	}
+
+	public Infusion infusionForNumber(int number)
+	{
+		return _infusions[number];
 	}
 
 	public Enchantment getEnchantment(Block table, NonStackableItem target, List<Item> toConsume)
 	{
 		Enchantment match = null;
-		List<Enchantment> possible = _enchantments.get(table);
+		List<Enchantment> possible = _enchantmentsByBlock.get(table);
 		if (null != possible)
 		{
 			Item targetType = target.type();
@@ -123,7 +152,7 @@ public class EnchantmentRegistry
 	public Infusion getInfusion(Block table, List<Item> toConsume)
 	{
 		Infusion match = null;
-		List<Infusion> possible = _infusions.get(table);
+		List<Infusion> possible = _infusionsByBlock.get(table);
 		if (null != possible)
 		{
 			Map<Item, Integer> counts = _mutableCountMap(toConsume);
@@ -142,6 +171,18 @@ public class EnchantmentRegistry
 		return match;
 	}
 
+
+	private static <T> Map<Block, List<T>> _packMap(List<T> input
+		, Function<T, Block> keyMap
+	)
+	{
+		return input.stream()
+			.collect(Collectors.toMap(keyMap, (T elt) -> {
+				Block k = keyMap.apply(elt);
+				return input.stream().filter((T inner) -> (k == keyMap.apply(inner))).toList();
+			}))
+		;
+	}
 
 	private static Map<Item, Integer> _mutableCountMap(List<Item> raw)
 	{
@@ -190,14 +231,16 @@ public class EnchantmentRegistry
 	}
 
 
-	public static record Enchantment(Block table
+	public static record Enchantment(int number
+		, Block table
 		, long millisToApply
 		, Item targetItem
 		, Map<Item, Integer> consumedItems
 		, PropertyType<Byte> enchantmentToApply
 	) {}
 
-	public static record Infusion(Block table
+	public static record Infusion(int number
+		, Block table
 		, long millisToApply
 		, Map<Item, Integer> consumedItems
 		, Item outputItem

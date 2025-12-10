@@ -9,6 +9,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.CreatureExtendedData;
+import com.jeffdisher.october.aspects.EnchantmentRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.DeserializationContext;
@@ -597,5 +598,30 @@ public class TestCodecHelpers
 		Assert.assertEquals(input.location(), partialOut.location());
 		Assert.assertEquals(input.velocity(), partialOut.velocity());
 		Assert.assertEquals(sand, partialOut.extendedData());
+	}
+
+	@Test
+	public void enchantmentRegistry() throws Throwable
+	{
+		// Show the basic serialization behaviour of records in EnchantmentRegistry.
+		EnchantmentRegistry.Enchantment enchantment = ENV.enchantments.enchantmentForNumber(1);
+		Assert.assertNotNull(enchantment);
+		EnchantmentRegistry.Infusion infusion = ENV.enchantments.infusionForNumber(1);
+		Assert.assertNotNull(infusion);
+		
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		CodecHelpers.writeEnchantment(buffer, enchantment);
+		CodecHelpers.writeEnchantment(buffer, null);
+		CodecHelpers.writeInfusion(buffer, infusion);
+		CodecHelpers.writeInfusion(buffer, null);
+		
+		buffer.flip();
+		EnchantmentRegistry.Enchantment eOut = CodecHelpers.readEnchantment(buffer);
+		Assert.assertTrue(enchantment == eOut);
+		Assert.assertNull(CodecHelpers.readEnchantment(buffer));
+		EnchantmentRegistry.Infusion iOut = CodecHelpers.readInfusion(buffer);
+		Assert.assertTrue(infusion == iOut);
+		Assert.assertNull(CodecHelpers.readInfusion(buffer));
+		Assert.assertEquals(0, buffer.remaining());
 	}
 }

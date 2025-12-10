@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.jeffdisher.october.aspects.EnchantmentRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.DeserializationContext;
@@ -689,6 +690,56 @@ public class CodecHelpers
 		_writeEntityLocation(buffer, entity.location());
 		_writeEntityLocation(buffer, entity.velocity());
 		entity.type().extendedCodec().write(buffer, entity.extendedData());
+	}
+
+	public static EnchantmentRegistry.Enchantment readEnchantment(ByteBuffer buffer)
+	{
+		// Each enchantment is resolved by int number.
+		int number = buffer.getInt();
+		Assert.assertTrue(number >= 0);
+		
+		EnchantmentRegistry.Enchantment result = null;
+		if (number > 0)
+		{
+			Environment env = Environment.getShared();
+			result = env.enchantments.enchantmentForNumber(number);
+		}
+		return result;
+	}
+
+	public static void writeEnchantment(ByteBuffer buffer, EnchantmentRegistry.Enchantment enchantment)
+	{
+		// Note that 0 is used as "null" (in EnchantmentRegistry).
+		int number = (null == enchantment)
+			? 0
+			: enchantment.number()
+		;
+		buffer.putInt(number);
+	}
+
+	public static EnchantmentRegistry.Infusion readInfusion(ByteBuffer buffer)
+	{
+		// Each infusion is resolved by int number.
+		int number = buffer.getInt();
+		Assert.assertTrue(number >= 0);
+		
+		EnchantmentRegistry.Infusion result = null;
+		if (number > 0)
+		{
+			Environment env = Environment.getShared();
+			result = env.enchantments.infusionForNumber(number);
+		}
+		return result;
+	}
+
+	public static void writeInfusion(ByteBuffer buffer, EnchantmentRegistry.Infusion infusion)
+	{
+		// Note that 0 is used as "null" (in EnchantmentRegistry).
+		int number = (null == infusion)
+			? 0
+			: infusion.number()
+		;
+		buffer.putInt(number);
 	}
 
 
