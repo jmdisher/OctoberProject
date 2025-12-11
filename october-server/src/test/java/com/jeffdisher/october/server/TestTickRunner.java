@@ -35,6 +35,7 @@ import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.EntityChangeFutureBlock;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.MutationBlockChargeEnchantment;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
@@ -43,6 +44,7 @@ import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.mutations.MutationBlockSetLogicState;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
+import com.jeffdisher.october.mutations.MutationBlockSwapSpecialSlot;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.mutations.SaturatingDamage;
 import com.jeffdisher.october.mutations.ShockwaveMutation;
@@ -63,6 +65,8 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Difficulty;
+import com.jeffdisher.october.types.EnchantingOperation;
+import com.jeffdisher.october.types.Enchantment;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -3334,6 +3338,147 @@ public class TestTickRunner
 		Assert.assertEquals(sandItem.number(), completed.getData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 2).getBlockAddress()));
 		Assert.assertEquals(sandItem.number(), completed.getData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 3).getBlockAddress()));
 		Assert.assertEquals(0, completed.getData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 4).getBlockAddress()));
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void enchantToolFirstSteps()
+	{
+		// Set up an environment where a tool is being enchanted and show the last few steps.
+		AbsoluteLocation tableLocation = new AbsoluteLocation(5, 5, 5);
+		Item pickAxe = ENV.items.getItemById("op.iron_pickaxe");
+		Item ironIngot = ENV.items.getItemById("op.iron_ingot");
+		Item enchantingTable = ENV.items.getItemById("op.enchanting_table");
+		Item pedestal = ENV.items.getItemById("op.pedestal");
+		
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, tableLocation.getBlockAddress(), enchantingTable.number());
+		cuboid.setData15(AspectRegistry.BLOCK, tableLocation.getRelative(0, -2, 0).getBlockAddress(), pedestal.number());
+		cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getRelative(0, -2, 0).getBlockAddress(), ItemSlot.fromStack(new Items(STONE_ITEM, 1)));
+		cuboid.setData15(AspectRegistry.BLOCK, tableLocation.getRelative(0, 2, 0).getBlockAddress(), pedestal.number());
+		cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getRelative(0, 2, 0).getBlockAddress(), ItemSlot.fromStack(new Items(STONE_ITEM, 1)));
+		cuboid.setData15(AspectRegistry.BLOCK, tableLocation.getRelative(-2, 0, 0).getBlockAddress(), pedestal.number());
+		cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getRelative(-2, 0, 0).getBlockAddress(), ItemSlot.fromStack(new Items(ironIngot, 1)));
+		cuboid.setData15(AspectRegistry.BLOCK, tableLocation.getRelative(2, 0, 0).getBlockAddress(), pedestal.number());
+		cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getRelative(2, 0, 0).getBlockAddress(), ItemSlot.fromStack(new Items(ironIngot, 1)));
+		
+		long millisPerTick = 50L;
+		WorldConfig config = new WorldConfig();
+		config.difficulty = Difficulty.PEACEFUL;
+		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {};
+		TickRunner runner = new TickRunner(1
+			, millisPerTick
+			, null
+			, new PassiveIdAssigner()
+			, (int bound) -> 0
+			, snapshotListener
+			, config
+		);
+		
+		// Place this input in the pedestal and observe that the enchanting process starts.
+		NonStackableItem input = PropertyHelpers.newItemWithDefaults(ENV, pickAxe);
+		MutationBlockSwapSpecialSlot swapSpecial = new MutationBlockSwapSpecialSlot(tableLocation, ItemSlot.fromNonStack(input), 0);
+		ScheduledMutation scheduled = new ScheduledMutation(swapSpecial, 0L);
+		SuspendedCuboid<IReadOnlyCuboidData> suspended = new SuspendedCuboid<>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(scheduled), Map.of(), List.of());
+		runner.setupChangesForTick(List.of(suspended)
+			, null
+			, null
+			, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		
+		// Run a tick and see this applied.
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		IReadOnlyCuboidData completed = snapshot.cuboids().get(address).completed();
+		Assert.assertEquals(ItemSlot.fromNonStack(input), completed.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getBlockAddress()));
+		EnchantingOperation operation = completed.getDataSpecial(AspectRegistry.ENCHANTING, tableLocation.getBlockAddress());
+		Assert.assertEquals(ENV.enchantments.enchantmentForNumber(1), operation.enchantment());
+		Assert.assertEquals(millisPerTick, operation.chargedMillis());
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void enchantToolFinalSteps()
+	{
+		// Set up an environment where a tool is being enchanted and show the last few steps.
+		AbsoluteLocation tableLocation = new AbsoluteLocation(5, 5, 5);
+		Item pickAxe = ENV.items.getItemById("op.iron_pickaxe");
+		Item ironIngot = ENV.items.getItemById("op.iron_ingot");
+		Item enchantingTable = ENV.items.getItemById("op.enchanting_table");
+		Item pedestal = ENV.items.getItemById("op.pedestal");
+		Enchantment enchantment = ENV.enchantments.enchantmentForNumber(1);
+		long previousCharge = enchantment.millisToApply() - 1L;
+		
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, tableLocation.getBlockAddress(), enchantingTable.number());
+		cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getBlockAddress(), ItemSlot.fromNonStack(PropertyHelpers.newItemWithDefaults(ENV, pickAxe)));
+		cuboid.setDataSpecial(AspectRegistry.ENCHANTING, tableLocation.getBlockAddress(), new EnchantingOperation(previousCharge
+			, enchantment
+			, null
+			, List.of()
+		));
+		cuboid.setData15(AspectRegistry.BLOCK, tableLocation.getRelative(0, -2, 0).getBlockAddress(), pedestal.number());
+		cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getRelative(0, -2, 0).getBlockAddress(), ItemSlot.fromStack(new Items(STONE_ITEM, 1)));
+		cuboid.setData15(AspectRegistry.BLOCK, tableLocation.getRelative(0, 2, 0).getBlockAddress(), pedestal.number());
+		cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getRelative(0, 2, 0).getBlockAddress(), ItemSlot.fromStack(new Items(STONE_ITEM, 1)));
+		cuboid.setData15(AspectRegistry.BLOCK, tableLocation.getRelative(-2, 0, 0).getBlockAddress(), pedestal.number());
+		cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getRelative(-2, 0, 0).getBlockAddress(), ItemSlot.fromStack(new Items(ironIngot, 1)));
+		cuboid.setData15(AspectRegistry.BLOCK, tableLocation.getRelative(2, 0, 0).getBlockAddress(), pedestal.number());
+		cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getRelative(2, 0, 0).getBlockAddress(), ItemSlot.fromStack(new Items(ironIngot, 1)));
+		
+		WorldConfig config = new WorldConfig();
+		config.difficulty = Difficulty.PEACEFUL;
+		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {};
+		TickRunner runner = new TickRunner(1
+			, 50L
+			, null
+			, new PassiveIdAssigner()
+			, (int bound) -> 0
+			, snapshotListener
+			, config
+		);
+		
+		// We will start the world off with this one cuboid and the final charge mutation ready to run.
+		MutationBlockChargeEnchantment finalCharge = new MutationBlockChargeEnchantment(tableLocation, previousCharge);
+		ScheduledMutation scheduled = new ScheduledMutation(finalCharge, 0L);
+		SuspendedCuboid<IReadOnlyCuboidData> suspended = new SuspendedCuboid<>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(scheduled), Map.of(), List.of());
+		runner.setupChangesForTick(List.of(suspended)
+			, null
+			, null
+			, null
+		);
+		runner.start();
+		TickRunner.Snapshot startState = runner.waitForPreviousTick();
+		Assert.assertEquals(0, startState.passives().size());
+		
+		// Run until we see the passive show up, then verify the final states of the other blocks.
+		for (int i = 0; i < 2; ++i)
+		{
+			runner.startNextTick();
+			TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+			Assert.assertEquals(0, snapshot.passives().size());
+		}
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.passives().size());
+		
+		NonStackableItem result = ((ItemSlot)snapshot.passives().values().iterator().next().completed().extendedData()).nonStackable;
+		Assert.assertEquals(pickAxe, result.type());
+		Assert.assertEquals((byte)1, result.properties().get(PropertyRegistry.ENCHANT_DURABILITY));
+		
+		IReadOnlyCuboidData completed = snapshot.cuboids().get(address).completed();
+		Assert.assertNull(completed.getDataSpecial(AspectRegistry.ENCHANTING, tableLocation.getBlockAddress()));
+		Assert.assertNull(completed.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getBlockAddress()));
+		Assert.assertNull(completed.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getRelative(0, -2, 0).getBlockAddress()));
+		Assert.assertNull(completed.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getRelative(0, 2, 0).getBlockAddress()));
+		Assert.assertNull(completed.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getRelative(-2, 0, 0).getBlockAddress()));
+		Assert.assertNull(completed.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getRelative(2, 0, 0).getBlockAddress()));
 		
 		runner.shutdown();
 	}

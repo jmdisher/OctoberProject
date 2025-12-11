@@ -7,8 +7,11 @@ import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockApplyGravity;
 import com.jeffdisher.october.mutations.MutationBlockBurnDown;
+import com.jeffdisher.october.mutations.MutationBlockChargeEnchantment;
+import com.jeffdisher.october.mutations.MutationBlockCleanEnchantment;
 import com.jeffdisher.october.mutations.MutationBlockCraft;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
+import com.jeffdisher.october.mutations.MutationBlockFetchSpecialForEnchantment;
 import com.jeffdisher.october.mutations.MutationBlockForceGrow;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
 import com.jeffdisher.october.mutations.MutationBlockGrowGroundCover;
@@ -24,6 +27,7 @@ import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity_V5;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
 import com.jeffdisher.october.mutations.MutationBlockPushToBlock;
+import com.jeffdisher.october.mutations.MutationBlockReceiveSpecialForEnchantment;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.mutations.MutationBlockReplaceDropExisting;
 import com.jeffdisher.october.mutations.MutationBlockSetLogicState;
@@ -72,6 +76,10 @@ public class MutationBlockCodec
 		_CODEC_TABLE[MutationBlockSwapSpecialSlot.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockSwapSpecialSlot.deserialize(context);
 		_CODEC_TABLE[MutationBlockReplaceDropExisting.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockReplaceDropExisting.deserialize(context);
 		_CODEC_TABLE[MutationBlockApplyGravity.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockApplyGravity.deserialize(context);
+		_CODEC_TABLE[MutationBlockChargeEnchantment.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockChargeEnchantment.deserialize(context);
+		_CODEC_TABLE[MutationBlockFetchSpecialForEnchantment.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockFetchSpecialForEnchantment.deserialize(context);
+		_CODEC_TABLE[MutationBlockReceiveSpecialForEnchantment.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockReceiveSpecialForEnchantment.deserialize(context);
+		_CODEC_TABLE[MutationBlockCleanEnchantment.TYPE.ordinal()] = (DeserializationContext context) -> MutationBlockCleanEnchantment.deserialize(context);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)

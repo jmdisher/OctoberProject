@@ -6,6 +6,7 @@ import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IMutableBlockProxy;
+import com.jeffdisher.october.logic.EnchantingBlockSupport;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -80,6 +81,12 @@ public class MutationBlockSwapSpecialSlot implements IMutationBlock
 					EntityActionStoreToInventory storeAction = new EntityActionStoreToInventory(existing.stack, existing.nonStackable);
 					context.newChangeSink.next(_returnEntityId, storeAction);
 				}
+			}
+			
+			// See if we need to kick-off an enchantment operation.
+			if (env.enchantments.canEnchant(block))
+			{
+				EnchantingBlockSupport.tryStartEnchantingOperation(env, context, _blockLocation, newBlock);
 			}
 			
 			didApply = true;

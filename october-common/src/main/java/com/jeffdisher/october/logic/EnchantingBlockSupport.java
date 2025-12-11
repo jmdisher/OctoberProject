@@ -10,6 +10,9 @@ import com.jeffdisher.october.aspects.EnchantmentRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
+import com.jeffdisher.october.mutations.MutationBlockChargeEnchantment;
+import com.jeffdisher.october.mutations.MutationBlockCleanEnchantment;
+import com.jeffdisher.october.mutations.MutationBlockFetchSpecialForEnchantment;
 import com.jeffdisher.october.properties.PropertyType;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -88,7 +91,8 @@ public class EnchantingBlockSupport
 			if (null != operation)
 			{
 				proxy.setEnchantingOperation(operation);
-				// TODO:  Schedule the charging mutation once it exists.
+				MutationBlockChargeEnchantment charge = new MutationBlockChargeEnchantment(blockLocation, operation.chargedMillis());
+				context.mutationSink.next(charge);
 			}
 		}
 	}
@@ -132,7 +136,29 @@ public class EnchantingBlockSupport
 				
 				// If there is still some charge remaining, schedule the next.  Otherwise, request the input from the other
 				// pedestals, and the follow-up mutation to clean up any failures.
-				// TODO:  Schedule these mutations once they exists.
+				if (newChargeMillis < millisRequired)
+				{
+					// Keep charging.
+					MutationBlockChargeEnchantment charge = new MutationBlockChargeEnchantment(blockLocation, operation.chargedMillis());
+					context.mutationSink.next(charge);
+				}
+				else
+				{
+					// Charging done so request the items from pedestals.
+					MutationBlockFetchSpecialForEnchantment north = new MutationBlockFetchSpecialForEnchantment(blockLocation.getRelative(0, 2, 0), blockLocation);
+					context.mutationSink.next(north);
+					MutationBlockFetchSpecialForEnchantment south = new MutationBlockFetchSpecialForEnchantment(blockLocation.getRelative(0, -2, 0), blockLocation);
+					context.mutationSink.next(south);
+					MutationBlockFetchSpecialForEnchantment east = new MutationBlockFetchSpecialForEnchantment(blockLocation.getRelative(2, 0, 0), blockLocation);
+					context.mutationSink.next(east);
+					MutationBlockFetchSpecialForEnchantment west = new MutationBlockFetchSpecialForEnchantment(blockLocation.getRelative(-2, 0, 0), blockLocation);
+					context.mutationSink.next(west);
+					
+					// We also take this opportunity to schedule the clean-up.
+					// Note that this needs to arrive 3 ticks from now since tick 1 will be the fetch and tick 2 will be the receive so tick 3 will be where this should already be done.
+					MutationBlockCleanEnchantment clean = new MutationBlockCleanEnchantment(blockLocation);
+					context.mutationSink.future(clean, 3L * context.millisPerTick);
+				}
 			}
 		}
 	}

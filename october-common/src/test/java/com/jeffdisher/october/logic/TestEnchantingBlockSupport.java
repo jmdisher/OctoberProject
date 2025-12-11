@@ -13,6 +13,10 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.MutationBlockChargeEnchantment;
+import com.jeffdisher.october.mutations.MutationBlockCleanEnchantment;
+import com.jeffdisher.october.mutations.MutationBlockFetchSpecialForEnchantment;
 import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -85,7 +89,23 @@ public class TestEnchantingBlockSupport
 		_swapSpecialSlot(cuboid, TABLE_LOCATION.getRelative(-2, 0, 0), ItemSlot.fromStack(new Items(STONE, 1)));
 		_swapSpecialSlot(cuboid, TABLE_LOCATION.getRelative(0, 2, 0), ItemSlot.fromStack(new Items(IRON_INGOT, 1)));
 		_swapSpecialSlot(cuboid, TABLE_LOCATION.getRelative(0, -2, 0), ItemSlot.fromStack(new Items(IRON_INGOT, 1)));
-		TickProcessingContext context = _createContext(cuboid);
+		
+		MutationBlockChargeEnchantment[] out = new MutationBlockChargeEnchantment[1];
+		TickProcessingContext.IMutationSink mutationSink = new TickProcessingContext.IMutationSink() {
+			@Override
+			public boolean next(IMutationBlock mutation)
+			{
+				Assert.assertNull(out[0]);
+				out[0] = (MutationBlockChargeEnchantment) mutation;
+				return true;
+			}
+			@Override
+			public boolean future(IMutationBlock mutation, long millisToDelay)
+			{
+				throw new AssertionError("Not in test");
+			}
+		};
+		TickProcessingContext context = _createContextWithSink(cuboid, mutationSink);
 		MutableBlockProxy proxy = new MutableBlockProxy(TABLE_LOCATION, cuboid);
 		EnchantingBlockSupport.tryStartEnchantingOperation(ENV, context, TABLE_LOCATION, proxy);
 		EnchantingOperation operation = proxy.getEnchantingOperation();
@@ -93,6 +113,7 @@ public class TestEnchantingBlockSupport
 		Assert.assertEquals(MILLIS_PER_TICK, operation.chargedMillis());
 		Assert.assertEquals(0, operation.consumedItems().size());
 		Assert.assertEquals(PropertyRegistry.ENCHANT_DURABILITY, operation.enchantment().enchantmentToApply());
+		Assert.assertNotNull(out[0]);
 	}
 
 	@Test
@@ -109,7 +130,22 @@ public class TestEnchantingBlockSupport
 		Enchantment enchant = ENV.enchantments.enchantmentForNumber(1);
 		cuboid.setDataSpecial(AspectRegistry.ENCHANTING, TABLE_LOCATION.getBlockAddress(), new EnchantingOperation(100L, enchant, null, List.of()));
 		
-		TickProcessingContext context = _createContext(cuboid);
+		MutationBlockChargeEnchantment[] out = new MutationBlockChargeEnchantment[1];
+		TickProcessingContext.IMutationSink mutationSink = new TickProcessingContext.IMutationSink() {
+			@Override
+			public boolean next(IMutationBlock mutation)
+			{
+				Assert.assertNull(out[0]);
+				out[0] = (MutationBlockChargeEnchantment) mutation;
+				return true;
+			}
+			@Override
+			public boolean future(IMutationBlock mutation, long millisToDelay)
+			{
+				throw new AssertionError("Not in test");
+			}
+		};
+		TickProcessingContext context = _createContextWithSink(cuboid, mutationSink);
 		MutableBlockProxy proxy = new MutableBlockProxy(TABLE_LOCATION, cuboid);
 		EnchantingBlockSupport.tryStartEnchantingOperation(ENV, context, TABLE_LOCATION, proxy);
 		EnchantingOperation operation = proxy.getEnchantingOperation();
@@ -117,6 +153,7 @@ public class TestEnchantingBlockSupport
 		Assert.assertEquals(MILLIS_PER_TICK, operation.chargedMillis());
 		Assert.assertEquals(0, operation.consumedItems().size());
 		Assert.assertEquals(PORTAL_STONE, operation.infusion().outputItem());
+		Assert.assertNotNull(out[0]);
 	}
 
 	@Test
@@ -134,12 +171,28 @@ public class TestEnchantingBlockSupport
 		long previousChargeMillis = 100L;
 		cuboid.setDataSpecial(AspectRegistry.ENCHANTING, TABLE_LOCATION.getBlockAddress(), new EnchantingOperation(previousChargeMillis, enchant, null, List.of()));
 		
-		TickProcessingContext context = _createContext(cuboid);
+		MutationBlockChargeEnchantment[] out = new MutationBlockChargeEnchantment[1];
+		TickProcessingContext.IMutationSink mutationSink = new TickProcessingContext.IMutationSink() {
+			@Override
+			public boolean next(IMutationBlock mutation)
+			{
+				Assert.assertNull(out[0]);
+				out[0] = (MutationBlockChargeEnchantment) mutation;
+				return true;
+			}
+			@Override
+			public boolean future(IMutationBlock mutation, long millisToDelay)
+			{
+				throw new AssertionError("Not in test");
+			}
+		};
+		TickProcessingContext context = _createContextWithSink(cuboid, mutationSink);
 		MutableBlockProxy proxy = new MutableBlockProxy(TABLE_LOCATION, cuboid);
 		EnchantingBlockSupport.chargeEnchantingOperation(ENV, context, TABLE_LOCATION, proxy, previousChargeMillis);
 		EnchantingOperation operation = proxy.getEnchantingOperation();
 		
 		Assert.assertEquals(previousChargeMillis + MILLIS_PER_TICK, operation.chargedMillis());
+		Assert.assertNotNull(out[0]);
 	}
 
 	@Test
@@ -157,12 +210,35 @@ public class TestEnchantingBlockSupport
 		long previousChargeMillis = enchant.millisToApply() - 1L;
 		cuboid.setDataSpecial(AspectRegistry.ENCHANTING, TABLE_LOCATION.getBlockAddress(), new EnchantingOperation(previousChargeMillis, enchant, null, List.of()));
 		
-		TickProcessingContext context = _createContext(cuboid);
+		List<MutationBlockFetchSpecialForEnchantment> out = new ArrayList<>();
+		MutationBlockCleanEnchantment[] cleanOut = new MutationBlockCleanEnchantment[1];
+		TickProcessingContext.IMutationSink mutationSink = new TickProcessingContext.IMutationSink() {
+			@Override
+			public boolean next(IMutationBlock mutation)
+			{
+				out.add((MutationBlockFetchSpecialForEnchantment)mutation);
+				return true;
+			}
+			@Override
+			public boolean future(IMutationBlock mutation, long millisToDelay)
+			{
+				Assert.assertNull(cleanOut[0]);
+				cleanOut[0] = (MutationBlockCleanEnchantment) mutation;
+				return true;
+			}
+		};
+		TickProcessingContext context = _createContextWithSink(cuboid, mutationSink);
 		MutableBlockProxy proxy = new MutableBlockProxy(TABLE_LOCATION, cuboid);
 		EnchantingBlockSupport.chargeEnchantingOperation(ENV, context, TABLE_LOCATION, proxy, previousChargeMillis);
 		EnchantingOperation operation = proxy.getEnchantingOperation();
 		
 		Assert.assertEquals(enchant.millisToApply(), operation.chargedMillis());
+		Assert.assertEquals(4, out.size());
+		Assert.assertTrue(out.get(0) instanceof MutationBlockFetchSpecialForEnchantment);
+		Assert.assertTrue(out.get(1) instanceof MutationBlockFetchSpecialForEnchantment);
+		Assert.assertTrue(out.get(2) instanceof MutationBlockFetchSpecialForEnchantment);
+		Assert.assertTrue(out.get(3) instanceof MutationBlockFetchSpecialForEnchantment);
+		Assert.assertNotNull(cleanOut[0]);
 	}
 
 	@Test
@@ -358,6 +434,13 @@ public class TestEnchantingBlockSupport
 	private static TickProcessingContext _createContext(CuboidData cuboid)
 	{
 		return _createContextWithSinks(cuboid, null, null);
+	}
+
+	private static TickProcessingContext _createContextWithSink(CuboidData cuboid
+		, TickProcessingContext.IMutationSink mutationSink
+	)
+	{
+		return _createContextWithSinks(cuboid, mutationSink, null);
 	}
 
 	private static TickProcessingContext _createContextWithSinks(CuboidData cuboid
