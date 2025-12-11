@@ -1,6 +1,6 @@
 package com.jeffdisher.october.types;
 
-import java.util.Map;
+import java.util.List;
 
 import com.jeffdisher.october.properties.PropertyType;
 
@@ -12,7 +12,7 @@ public record Enchantment(int number
 	, Block table
 	, long millisToApply
 	, Item targetItem
-	, Map<Item, Integer> consumedItems
+	, List<Item> consumedItems
 	, PropertyType<Byte> enchantmentToApply
 )
 {

@@ -58,7 +58,7 @@ public class TestEnchantmentRegistry
 	public void validEnchantment() throws Throwable
 	{
 		NonStackableItem pickaxe = PropertyHelpers.newItemWithDefaults(ENV, IRON_PICKAXE);
-		Enchantment enchantment = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, pickaxe, List.of(ITEM_STONE, ITEM_STONE, IRON_INGOT, IRON_INGOT));
+		Enchantment enchantment = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, pickaxe, List.of(ITEM_STONE, IRON_INGOT, ITEM_STONE, IRON_INGOT));
 		Assert.assertNotNull(enchantment);
 	}
 
@@ -92,14 +92,14 @@ public class TestEnchantmentRegistry
 	@Test
 	public void validInfusion() throws Throwable
 	{
-		Infusion infusion = ENV.enchantments.getInfusion(ENCHANTING_TABLE, List.of(ITEM_STONE_BRICK, ITEM_STONE, ITEM_STONE, IRON_INGOT, IRON_INGOT));
+		Infusion infusion = ENV.enchantments.getInfusion(ENCHANTING_TABLE, ITEM_STONE_BRICK, List.of(ITEM_STONE, IRON_INGOT, ITEM_STONE, IRON_INGOT));
 		Assert.assertNotNull(infusion);
 	}
 
 	@Test
 	public void infusionMissingItem() throws Throwable
 	{
-		Infusion infusion = ENV.enchantments.getInfusion(ENCHANTING_TABLE, List.of(ITEM_STONE_BRICK, ITEM_STONE, ITEM_STONE, IRON_INGOT));
+		Infusion infusion = ENV.enchantments.getInfusion(ENCHANTING_TABLE, ITEM_STONE_BRICK, List.of(ITEM_STONE, ITEM_STONE, IRON_INGOT));
 		Assert.assertNull(infusion);
 	}
 }

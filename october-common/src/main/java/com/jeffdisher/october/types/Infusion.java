@@ -1,6 +1,6 @@
 package com.jeffdisher.october.types;
 
-import java.util.Map;
+import java.util.List;
 
 
 /**
@@ -9,7 +9,8 @@ import java.util.Map;
 public record Infusion(int number
 	, Block table
 	, long millisToApply
-	, Map<Item, Integer> consumedItems
+	, Item centralItem
+	, List<Item> consumedItems
 	, Item outputItem
 )
 {

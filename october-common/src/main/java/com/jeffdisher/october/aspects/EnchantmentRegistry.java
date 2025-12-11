@@ -1,6 +1,7 @@
 package com.jeffdisher.october.aspects;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -55,18 +56,14 @@ public class EnchantmentRegistry
 			, enchantingTable
 			, 10_000L
 			, ironPick
-			, Map.of(stone, 2
-				, ironIngot, 2
-			)
+			, _sortedItemList(List.of(stone, stone, ironIngot, ironIngot))
 			, PropertyRegistry.ENCHANT_DURABILITY
 		);
 		Infusion infusePortalStone = new Infusion(1
 			, enchantingTable
 			, 2000L
-			, Map.of(stoneBrick, 1
-				, stone, 2
-				, ironIngot, 2
-			)
+			, stoneBrick
+			, _sortedItemList(List.of(stone, stone, ironIngot, ironIngot))
 			, portalStone
 		);
 		return new EnchantmentRegistry(List.of(enchantDurability)
@@ -125,10 +122,10 @@ public class EnchantmentRegistry
 		if (null != possible)
 		{
 			Item targetType = target.type();
-			Map<Item, Integer> counts = _mutableCountMap(toConsume);
 			// Filter these by anything which can apply to these arguments.
+			List<Item> sorted = _sortedItemList(toConsume);
 			List<Enchantment> matched = possible.stream().filter((Enchantment e) -> {
-				return (targetType == e.targetItem()) && _mapsMatch(e.consumedItems(), counts);
+				return (targetType == e.targetItem()) && sorted.equals(e.consumedItems());
 			}).toList();
 			
 			if (!matched.isEmpty())
@@ -150,16 +147,16 @@ public class EnchantmentRegistry
 		return match;
 	}
 
-	public Infusion getInfusion(Block table, List<Item> toConsume)
+	public Infusion getInfusion(Block table, Item centralItem, List<Item> toConsume)
 	{
 		Infusion match = null;
 		List<Infusion> possible = _infusionsByBlock.get(table);
 		if (null != possible)
 		{
-			Map<Item, Integer> counts = _mutableCountMap(toConsume);
 			// Filter these by anything which can apply to these arguments.
+			List<Item> sorted = _sortedItemList(toConsume);
 			List<Infusion> matched = possible.stream().filter((Infusion e) -> {
-				return _mapsMatch(e.consumedItems(), counts);
+				return (centralItem == e.centralItem()) && sorted.equals(e.consumedItems());
 			}).toList();
 			
 			if (!matched.isEmpty())
@@ -185,49 +182,10 @@ public class EnchantmentRegistry
 		;
 	}
 
-	private static Map<Item, Integer> _mutableCountMap(List<Item> raw)
+	private static List<Item> _sortedItemList(List<Item> toConsume)
 	{
-		Map<Item, Integer> map = new HashMap<>();
-		for (Item i : raw)
-		{
-			int count = map.getOrDefault(i, 0);
-			count += 1;
-			map.put(i, count);
-		}
-		return map;
-	}
-
-	private static boolean _mapsMatch(Map<Item, Integer> one, Map<Item, Integer> two)
-	{
-		int count = one.size();
-		if (count == two.size())
-		{
-			for (Map.Entry<Item, Integer> elt : one.entrySet())
-			{
-				Integer other = two.get(elt.getKey());
-				if (null != other)
-				{
-					if (elt.getValue().intValue() == other.intValue())
-					{
-						count -= 1;
-					}
-					else
-					{
-						count = -1;
-						break;
-					}
-				}
-				else
-				{
-					count = -1;
-					break;
-				}
-			}
-		}
-		else
-		{
-			count = -1;
-		}
-		return (0 == count);
+		List<Item> sorted = new ArrayList<>(toConsume);
+		Collections.sort(sorted, (Item one, Item two) -> one.number() - two.number());
+		return Collections.unmodifiableList(sorted);
 	}
 }

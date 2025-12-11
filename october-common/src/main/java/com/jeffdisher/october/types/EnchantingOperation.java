@@ -9,7 +9,6 @@ import java.util.List;
  * -"completing" - This is when the enchantment is fully charged and is waiting for required items to be draw in from
  *  the pedestals in order to succeed or fail at that time.
  * Note that there must be precisely one of enchantment OR infusion.
- * "targetItem" is only used for cases where the enchantment is non-null but never in the infusion cases.
  */
 public record EnchantingOperation(long chargedMillis
 	, Enchantment enchantment
