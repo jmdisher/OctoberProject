@@ -285,6 +285,7 @@ public class TestIntegratedNetwork
 				, OctreeInflatedByte.empty()
 				, OctreeObject.create()
 				, OctreeObject.create()
+				, OctreeObject.create()
 		});
 		
 		// We should be able to send this as 1 start packet and 2 fragment packets.

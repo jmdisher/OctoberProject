@@ -4,6 +4,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.jeffdisher.october.data.CraftingAspectCodec;
+import com.jeffdisher.october.data.EnchantingAspectCodec;
 import com.jeffdisher.october.data.FuelledAspectCodec;
 import com.jeffdisher.october.data.IObjectCodec;
 import com.jeffdisher.october.data.IOctree;
@@ -15,6 +16,7 @@ import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CraftOperation;
+import com.jeffdisher.october.types.EnchantingOperation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.ItemSlot;
@@ -167,6 +169,18 @@ public class AspectRegistry
 			}
 			, new ItemSlotCodec()
 	);
+	/**
+	 * EnchantmentOperation objects, usually null.
+	 */
+	public static final Aspect<EnchantingOperation, OctreeObject<EnchantingOperation>> ENCHANTING = registerAspect(EnchantingOperation.class
+			, OctreeObject.getDecoratedClass()
+			, () -> OctreeObject.create()
+			, (OctreeObject<EnchantingOperation> original) -> {
+				// These are immutable so create the shallow clone.
+				return original.cloneMapShallow();
+			}
+			, new EnchantingAspectCodec()
+	);
 
 	private static int _nextIndex = 0;
 	public static final Aspect<?,?>[] ALL_ASPECTS;
@@ -183,6 +197,7 @@ public class AspectRegistry
 		Assert.assertTrue(8 == ORIENTATION.index());
 		Assert.assertTrue(9 == MULTI_BLOCK_ROOT.index());
 		Assert.assertTrue(10 == SPECIAL_ITEM_SLOT.index());
+		Assert.assertTrue(11 == ENCHANTING.index());
 		
 		// Create the finished array, in-order.
 		ALL_ASPECTS = new Aspect<?,?>[] {
@@ -201,6 +216,9 @@ public class AspectRegistry
 			
 			// Added in storage version 8.
 			SPECIAL_ITEM_SLOT,
+			
+			// Added in storage version 11.
+			ENCHANTING,
 		};
 	}
 

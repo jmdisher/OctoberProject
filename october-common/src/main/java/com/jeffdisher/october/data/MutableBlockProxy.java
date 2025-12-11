@@ -14,6 +14,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CraftOperation;
+import com.jeffdisher.october.types.EnchantingOperation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -85,6 +86,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		_setData7(AspectRegistry.ORIENTATION, OrientationAspect.directionToByte(OrientationAspect.Direction.NORTH));
 		_setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, null);
 		_setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, null);
+		_setDataSpecial(AspectRegistry.ENCHANTING, null);
 	}
 
 	@Override
@@ -249,6 +251,18 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	public void setSpecialSlot(ItemSlot slot)
 	{
 		_setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, slot);
+	}
+
+	@Override
+	public EnchantingOperation getEnchantingOperation()
+	{
+		return _getDataSpecial(AspectRegistry.ENCHANTING);
+	}
+
+	@Override
+	public void setEnchantingOperation(EnchantingOperation operation)
+	{
+		_setDataSpecial(AspectRegistry.ENCHANTING, operation);
 	}
 
 	@Override

@@ -484,13 +484,44 @@ public class ResourceLoader
 			
 			Supplier<SuspendedCuboid<CuboidData>> dataReader;
 			if ((VERSION_CUBOID == version)
-				|| (VERSION_CUBOID_V9 == version)
+			)
+			{
+				// Version 11 added a new aspect so we need to read the cuboid differently.
+				dataReader = () -> {
+					CuboidData cuboid = _background_readCuboid(address, context);
+					
+					// Load any creatures associated with the cuboid.
+					List<CreatureEntity> creatures = _background_readCreatures(context);
+					
+					// Now, load any suspended mutations.
+					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
+					// ... and any periodic mutations.
+					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
+					
+					// Passives are stored much like creatures.
+					List<PassiveEntity> passives = _background_readPassives(context);
+					
+					// This should be fully read.
+					Assert.assertTrue(!buffer.hasRemaining());
+					
+					// The height map is ephemeral so it is built here.  Note that building this might be somewhat expensive.
+					CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
+					return new SuspendedCuboid<>(cuboid
+							, heightMap
+							, creatures
+							, pendingMutations
+							, periodicMutations
+							, passives
+					);
+				};
+			}
+			else if ((VERSION_CUBOID_V9 == version)
 				|| (VERSION_CUBOID_V10 == version)
 			)
 			{
 				// Version 10 didn't change anything, just added to it, so we can read with the same logic.
 				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboid(address, context);
+					CuboidData cuboid = _background_readCuboidPre11(address, context);
 					
 					// Load any creatures associated with the cuboid.
 					List<CreatureEntity> creatures = _background_readCreatures(context);
@@ -520,7 +551,7 @@ public class ResourceLoader
 			else if (VERSION_CUBOID_V8 == version)
 			{
 				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboid(address, context);
+					CuboidData cuboid = _background_readCuboidPre11(address, context);
 					
 					// Load any creatures associated with the cuboid.
 					List<CreatureEntity> creatures = _background_readCreaturesV8(context);
@@ -790,6 +821,16 @@ public class ResourceLoader
 	{
 		CuboidData cuboid = CuboidData.createEmpty(address);
 		cuboid.deserializeSomeAspectsFully(context, AspectRegistry.ALL_ASPECTS.length);
+		return cuboid;
+	}
+
+	private CuboidData _background_readCuboidPre11(CuboidAddress address, DeserializationContext context)
+	{
+		// Prior to version 11, only aspects up to and including SPECIAL_ITEM_SLOT were included.
+		int aspectCount = 11;
+		
+		CuboidData cuboid = CuboidData.createEmpty(address);
+		cuboid.deserializeSomeAspectsFully(context, aspectCount);
 		return cuboid;
 	}
 

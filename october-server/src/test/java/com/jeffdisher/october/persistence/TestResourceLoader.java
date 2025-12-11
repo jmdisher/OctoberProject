@@ -349,8 +349,8 @@ public class TestResourceLoader
 		// Make sure that we see this written back.
 		File cuboidFile = new File(worldDirectory, "cuboid_" + airAddress.x() + "_" + airAddress.y() + "_" + airAddress.z() + ".cuboid");
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 71 bytes.
-		Assert.assertEquals(71L, cuboidFile.length());
+		// Experimentally, we know that this is 75 bytes.
+		Assert.assertEquals(75L, cuboidFile.length());
 		
 		// Now, create a new loader, load, and resave this.
 		loader = new ResourceLoader(worldDirectory, null, null);
@@ -364,8 +364,8 @@ public class TestResourceLoader
 		
 		// Verify that the file has been truncated.
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 48 bytes.
-		Assert.assertEquals(48L, cuboidFile.length());
+		// Experimentally, we know that this is 52 bytes.
+		Assert.assertEquals(52L, cuboidFile.length());
 		
 		// Load it again and verify that the mutation is missing and we parsed without issue.
 		loader = new ResourceLoader(worldDirectory, null, null);
@@ -1241,6 +1241,48 @@ public class TestResourceLoader
 		Assert.assertEquals(0, entity.ephemeralLocal().energyDeficit());
 		
 		loader.shutdown();
+	}
+
+	@Test
+	public void readCuboidV10() throws Throwable
+	{
+		// Verify that we can read V8 cuboid (with creatures and on-ground inventories) and an entity.
+		File worldDirectory = DIRECTORY.newFolder();
+		
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		
+		String cuboidFile = "cuboid_" + address.x() + "_" + address.y() + "_" + address.z() + ".cuboid";
+		
+		/* ----- This code was used to generate the serialized buffer in the v10 shape (kept here for reference)
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		ResourceLoader loader = new ResourceLoader(worldDirectory, null, new WorldConfig());
+		loader.writeBackToDisk(List.of(new PackagedCuboid(cuboid, List.of(), List.of(), Map.of(), List.of())), List.of(), 0L);
+		loader.shutdown();
+		
+		System.out.println(Arrays.toString(Files.readAllBytes(new File(worldDirectory, cuboidFile).toPath())));
+		*/
+		
+		byte[] capturedCuboidData = new byte[] { 0, 0, 0, 10, -128, 0, 0, 0, 0, 0, -128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+		
+		// Write the pre-serialized data.
+		_storePerSerialized(worldDirectory, cuboidFile, capturedCuboidData);
+		
+		// Now, read this and make sure it contains what we serialized.
+		ResourceLoader loader = new ResourceLoader(worldDirectory, null, new WorldConfig());
+		List<SuspendedCuboid<CuboidData>> cuboidResults = new ArrayList<>();
+		List<SuspendedEntity> entityResults = new ArrayList<>();
+		loader.getResultsAndRequestBackgroundLoad(cuboidResults, entityResults, List.of(address), List.of(), 0L);
+		for (int i = 0; (i < 10) && cuboidResults.isEmpty(); ++i)
+		{
+			Thread.sleep(10L);
+			loader.getResultsAndRequestBackgroundLoad(cuboidResults, entityResults, List.of(), List.of(), 0L);
+		}
+		Assert.assertEquals(1, cuboidResults.size());
+		SuspendedCuboid<CuboidData> cuboidData = cuboidResults.get(0);
+		Assert.assertEquals(0, entityResults.size());
+		
+		CuboidData cuboid = cuboidData.cuboid();
+		Assert.assertNotNull(cuboid);
 	}
 
 

@@ -11,6 +11,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CraftOperation;
+import com.jeffdisher.october.types.EnchantingOperation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -130,6 +131,12 @@ public class BlockProxy implements IBlockProxy
 	public ItemSlot getSpecialSlot()
 	{
 		return _getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT);
+	}
+
+	@Override
+	public EnchantingOperation getEnchantingOperation()
+	{
+		return _getDataSpecial(AspectRegistry.ENCHANTING);
 	}
 
 	/**

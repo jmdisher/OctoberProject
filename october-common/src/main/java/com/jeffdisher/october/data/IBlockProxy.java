@@ -4,6 +4,7 @@ import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CraftOperation;
+import com.jeffdisher.october.types.EnchantingOperation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.ItemSlot;
@@ -64,4 +65,8 @@ public interface IBlockProxy
 	 * @return The special ItemSlot for this block, null if there isn't one (doesn't check if it can have one).
 	 */
 	ItemSlot getSpecialSlot();
+	/**
+	 * @return The current enchanting operation for this block (usually null).
+	 */
+	EnchantingOperation getEnchantingOperation();
 }
