@@ -14,6 +14,7 @@ public class SpecialSlotAspect
 {
 	public static final String ID_PEDESTAL = "op.pedestal";
 	public static final String ID_PORTAL_KEYSTONE = "op.portal_keystone";
+	public static final String ID_ENCHANTING_TABLE = "op.enchanting_table";
 
 	public static SpecialSlotAspect load(ItemRegistry items, BlockAspect blocks)
 	{
@@ -22,9 +23,11 @@ public class SpecialSlotAspect
 		Assert.assertTrue(null != pedestal);
 		Block keystone = blocks.fromItem(items.getItemById(ID_PORTAL_KEYSTONE));
 		Assert.assertTrue(null != keystone);
+		Block enchantingTable = blocks.fromItem(items.getItemById(ID_ENCHANTING_TABLE));
+		Assert.assertTrue(null != enchantingTable);
 		
-		Set<Block> hasSpecial = Set.of(pedestal, keystone);
-		Set<Block> canSwapOut = Set.of(pedestal);
+		Set<Block> hasSpecial = Set.of(pedestal, keystone, enchantingTable);
+		Set<Block> canSwapOut = Set.of(pedestal, enchantingTable);
 		return new SpecialSlotAspect(hasSpecial, canSwapOut);
 	}
 
