@@ -189,6 +189,11 @@ public class EnchantmentRegistry
 		return match;
 	}
 
+	public boolean canEnchant(Block block)
+	{
+		return _enchantmentsByBlock.containsKey(block) || _infusionsByBlock.containsKey(block);
+	}
+
 
 	private static <T> Map<Block, List<T>> _packMap(List<T> input
 		, Function<T, Block> keyMap

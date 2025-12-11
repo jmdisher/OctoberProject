@@ -719,42 +719,62 @@ public class CodecHelpers
 	{
 		ByteBuffer buffer = context.buffer();
 		long completedMillis = buffer.getLong();
-		Enchantment enchantment = _readEnchantment(buffer);
-		Infusion infusion = _readInfusion(buffer);
 		
-		int arraySize = buffer.getInt();
-		List<ItemSlot> consumedItems = new ArrayList<>();
-		for (int i = 0; i < arraySize; ++i)
+		// This can be null, when being sent as a block update to clear the client, so we will use "0L" for charge millis for this case as it is never 0L.
+		EnchantingOperation operation;
+		if (completedMillis > 0L)
 		{
-			ItemSlot slot = _readSlot(context);
-			Assert.assertTrue(null != slot);
-			consumedItems.add(slot);
+			Enchantment enchantment = _readEnchantment(buffer);
+			Infusion infusion = _readInfusion(buffer);
+			
+			int arraySize = buffer.getInt();
+			List<ItemSlot> consumedItems = new ArrayList<>();
+			for (int i = 0; i < arraySize; ++i)
+			{
+				ItemSlot slot = _readSlot(context);
+				Assert.assertTrue(null != slot);
+				consumedItems.add(slot);
+			}
+			
+			// Note that an operation must have explicitly 1 of either the Enchantment or the Infusion.
+			Assert.assertTrue((null != enchantment) != (null != infusion));
+			
+			operation = new EnchantingOperation(completedMillis
+				, enchantment
+				, infusion
+				, Collections.unmodifiableList(consumedItems)
+			);
 		}
-		
-		// Note that an operation must have explicitly 1 of either the Enchantment or the Infusion.
-		Assert.assertTrue((null != enchantment) != (null != infusion));
-		
-		return new EnchantingOperation(completedMillis
-			, enchantment
-			, infusion
-			, Collections.unmodifiableList(consumedItems)
-		);
+		else
+		{
+			operation = null;
+		}
+		return operation;
 	}
 
 	public static void writeEnchantingOperation(ByteBuffer buffer, EnchantingOperation instance)
 	{
-		// Note that an operation must have explicitly 1 of either the Enchantment or the Infusion.
-		Assert.assertTrue((null != instance.enchantment()) != (null != instance.infusion()));
-		
-		buffer.putLong(instance.chargedMillis());
-		_writeEnchantment(buffer, instance.enchantment());
-		_writeInfusion(buffer, instance.infusion());
-		
-		List<ItemSlot> consumedItems = instance.consumedItems();
-		buffer.putInt(consumedItems.size());
-		for (ItemSlot slot : consumedItems)
+		// This can be null, when being sent as a block update to clear the client, so we will use "0L" for charge millis for this case as it is never 0L.
+		if (null != instance)
 		{
-			_writeSlot(buffer, slot);
+			// Note that an operation must have explicitly 1 of either the Enchantment or the Infusion.
+			Assert.assertTrue((null != instance.enchantment()) != (null != instance.infusion()));
+			
+			buffer.putLong(instance.chargedMillis());
+			_writeEnchantment(buffer, instance.enchantment());
+			_writeInfusion(buffer, instance.infusion());
+			
+			List<ItemSlot> consumedItems = instance.consumedItems();
+			buffer.putInt(consumedItems.size());
+			for (ItemSlot slot : consumedItems)
+			{
+				_writeSlot(buffer, slot);
+			}
+		}
+		else
+		{
+			// We overload the chargedMillis as 0 to describe a null.
+			buffer.putLong(0L);
 		}
 	}
 

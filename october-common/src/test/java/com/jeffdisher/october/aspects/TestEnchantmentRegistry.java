@@ -110,4 +110,11 @@ public class TestEnchantmentRegistry
 	{
 		Assert.assertEquals(List.of(ITEM_STONE, ITEM_STONE, IRON_INGOT, IRON_INGOT), EnchantmentRegistry.getCanonicallySortedList(List.of(ITEM_STONE, IRON_INGOT, IRON_INGOT, ITEM_STONE)));
 	}
+
+	@Test
+	public void canEnchant() throws Throwable
+	{
+		Assert.assertTrue(ENV.enchantments.canEnchant(ENCHANTING_TABLE));
+		Assert.assertFalse(ENV.enchantments.canEnchant(STONE_BRICK));
+	}
 }

@@ -639,8 +639,10 @@ public class TestCodecHelpers
 			, infusion
 			, List.of()
 		);
+		EnchantingOperation nullOp = null;
 		CodecHelpers.writeEnchantingOperation(buffer, eOp);
 		CodecHelpers.writeEnchantingOperation(buffer, iOp);
+		CodecHelpers.writeEnchantingOperation(buffer, nullOp);
 		
 		buffer.flip();
 		DeserializationContext context = new DeserializationContext(Environment.getShared()
@@ -650,7 +652,9 @@ public class TestCodecHelpers
 		);
 		EnchantingOperation eoOut = CodecHelpers.readEnchantingOperation(context);
 		EnchantingOperation ioOut = CodecHelpers.readEnchantingOperation(context);
+		EnchantingOperation nullOOut = CodecHelpers.readEnchantingOperation(context);
 		Assert.assertEquals(eOp, eoOut);
 		Assert.assertEquals(iOp, ioOut);
+		Assert.assertNull(nullOOut);
 	}
 }
