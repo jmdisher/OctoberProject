@@ -632,13 +632,11 @@ public class TestCodecHelpers
 		EnchantingOperation eOp = new EnchantingOperation(567L
 			, enchantment
 			, null
-			, null
 			, List.of(ItemSlot.fromStack(new Items(STONE_ITEM, 1)))
 		);
 		EnchantingOperation iOp = new EnchantingOperation(123L
 			, null
 			, infusion
-			, null
 			, List.of()
 		);
 		CodecHelpers.writeEnchantingOperation(buffer, eOp);

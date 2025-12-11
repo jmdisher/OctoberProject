@@ -13,8 +13,46 @@ import java.util.List;
 public record EnchantingOperation(long chargedMillis
 	, Enchantment enchantment
 	, Infusion infusion
-	, ItemSlot targetItem
 	, List<ItemSlot> consumedItems
 )
 {
+	/**
+	 * A helper to dig into the appropriate sub-element.
+	 * 
+	 * @return The required central type of whatever the underlying operation is.
+	 */
+	public Item getRequiredCentralType()
+	{
+		return (null != this.enchantment)
+			? this.enchantment.targetItem()
+			: this.infusion.centralItem()
+		;
+	}
+
+	/**
+	 * A helper to dig into the appropriate sub-element.
+	 * 
+	 * @return The required millis of charge which must be applied to whatever the underlying operation is.
+	 */
+	public long getRequiredChargeMillis()
+	{
+		return (null != this.enchantment)
+			? this.enchantment.millisToApply()
+			: this.infusion.millisToApply()
+		;
+	}
+
+	/**
+	 * A helper to dig into the appropriate sub-element.
+	 * 
+	 * @return The required items the underlying operation must consume, once charged, in order to complete and be
+	 * applied to the central item.
+	 */
+	public List<Item> getRequiredItems()
+	{
+		return (null != this.enchantment)
+			? this.enchantment.consumedItems()
+			: this.infusion.consumedItems()
+		;
+	}
 }

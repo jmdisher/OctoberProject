@@ -721,7 +721,6 @@ public class CodecHelpers
 		long completedMillis = buffer.getLong();
 		Enchantment enchantment = _readEnchantment(buffer);
 		Infusion infusion = _readInfusion(buffer);
-		ItemSlot targetItem = _readSlot(context);
 		
 		int arraySize = buffer.getInt();
 		List<ItemSlot> consumedItems = new ArrayList<>();
@@ -738,7 +737,6 @@ public class CodecHelpers
 		return new EnchantingOperation(completedMillis
 			, enchantment
 			, infusion
-			, targetItem
 			, Collections.unmodifiableList(consumedItems)
 		);
 	}
@@ -751,7 +749,6 @@ public class CodecHelpers
 		buffer.putLong(instance.chargedMillis());
 		_writeEnchantment(buffer, instance.enchantment());
 		_writeInfusion(buffer, instance.infusion());
-		_writeSlot(buffer, instance.targetItem());
 		
 		List<ItemSlot> consumedItems = instance.consumedItems();
 		buffer.putInt(consumedItems.size());

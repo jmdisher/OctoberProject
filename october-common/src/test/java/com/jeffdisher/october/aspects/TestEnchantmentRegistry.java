@@ -60,6 +60,7 @@ public class TestEnchantmentRegistry
 		NonStackableItem pickaxe = PropertyHelpers.newItemWithDefaults(ENV, IRON_PICKAXE);
 		Enchantment enchantment = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, pickaxe, List.of(ITEM_STONE, IRON_INGOT, ITEM_STONE, IRON_INGOT));
 		Assert.assertNotNull(enchantment);
+		Assert.assertTrue(EnchantmentRegistry.canApplyToTarget(pickaxe, ENV.enchantments.enchantmentForNumber(1)));
 	}
 
 	@Test
@@ -87,6 +88,7 @@ public class TestEnchantmentRegistry
 		pickaxe = new NonStackableItem(IRON_PICKAXE, properties);
 		Enchantment enchantment = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, pickaxe, List.of(ITEM_STONE, ITEM_STONE, IRON_INGOT, IRON_INGOT));
 		Assert.assertNull(enchantment);
+		Assert.assertFalse(EnchantmentRegistry.canApplyToTarget(pickaxe, ENV.enchantments.enchantmentForNumber(1)));
 	}
 
 	@Test
@@ -101,5 +103,11 @@ public class TestEnchantmentRegistry
 	{
 		Infusion infusion = ENV.enchantments.getInfusion(ENCHANTING_TABLE, ITEM_STONE_BRICK, List.of(ITEM_STONE, ITEM_STONE, IRON_INGOT));
 		Assert.assertNull(infusion);
+	}
+
+	@Test
+	public void canonicalSort() throws Throwable
+	{
+		Assert.assertEquals(List.of(ITEM_STONE, ITEM_STONE, IRON_INGOT, IRON_INGOT), EnchantmentRegistry.getCanonicallySortedList(List.of(ITEM_STONE, IRON_INGOT, IRON_INGOT, ITEM_STONE)));
 	}
 }

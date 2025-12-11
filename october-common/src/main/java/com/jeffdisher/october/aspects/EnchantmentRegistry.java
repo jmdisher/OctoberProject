@@ -71,6 +71,30 @@ public class EnchantmentRegistry
 		);
 	}
 
+	/**
+	 * Checks if the given enchantment can successfully be applied to the given target.
+	 * 
+	 * @param target The item to enchant.
+	 * @param enchantment The enchantment to apply.
+	 * @return True if the enchantment can be applied to the target.
+	 */
+	public static boolean canApplyToTarget(NonStackableItem target, Enchantment enchantment)
+	{
+		return _canApplyToTarget(target, enchantment);
+	}
+
+	/**
+	 * Since we want to assume that lists of item requirements can be easily compared with the List .equals(), this
+	 * helper will sort a list of Item types into the canonical order for that comparison.
+	 * 
+	 * @param toConsume The list to sort.
+	 * @return The canonically sorted list.
+	 */
+	public static List<Item> getCanonicallySortedList(List<Item> toConsume)
+	{
+		return _sortedItemList(toConsume);
+	}
+
 
 	private final Enchantment[] _enchantments;
 	private final Infusion[] _infusions;
@@ -134,12 +158,8 @@ public class EnchantmentRegistry
 				Assert.assertTrue(1 == matched.size());
 				Enchantment candidate = matched.get(0);
 				
-				// Make sure that we aren't at the limit of this enchantment.
-				// For now, this is just max byte but we will probably constrain this in the future.
-				byte value = PropertyHelpers.getBytePropertyValue(target.properties(), candidate.enchantmentToApply());
-				if (value < Byte.MAX_VALUE)
+				if (_canApplyToTarget(target, candidate))
 				{
-					// We are allowed to apply this.
 					match = candidate;
 				}
 			}
@@ -187,5 +207,13 @@ public class EnchantmentRegistry
 		List<Item> sorted = new ArrayList<>(toConsume);
 		Collections.sort(sorted, (Item one, Item two) -> one.number() - two.number());
 		return Collections.unmodifiableList(sorted);
+	}
+
+	private static boolean _canApplyToTarget(NonStackableItem target, Enchantment enchantment)
+	{
+		// Make sure that we aren't at the limit of this enchantment.
+		// For now, this is just max byte but we will probably constrain this in the future.
+		byte value = PropertyHelpers.getBytePropertyValue(target.properties(), enchantment.enchantmentToApply());
+		return (value < Byte.MAX_VALUE);
 	}
 }
