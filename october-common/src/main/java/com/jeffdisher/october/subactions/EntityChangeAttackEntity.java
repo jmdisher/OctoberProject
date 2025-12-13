@@ -86,8 +86,11 @@ public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayer
 			}
 			Assert.assertTrue(damageToApply <= Byte.MAX_VALUE);
 			
-			// Choose the target body part at random.
-			int index = context.randomInt.applyAsInt(BodyPart.values().length);
+			// Choose the target body part at random (client doesn't have random so just pick something - the server will re-roll this when it runs it).
+			int index = (null != context.randomInt)
+				? context.randomInt.applyAsInt(BodyPart.values().length)
+				: 0
+			;
 			BodyPart target = BodyPart.values()[index];
 			int sourceEntityId = newEntity.getId();
 			if (_targetEntityId > 0)

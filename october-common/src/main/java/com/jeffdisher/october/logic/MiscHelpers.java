@@ -29,7 +29,7 @@ public class MiscHelpers
 	 * Returns the array of items which should be dropped when random0to99 is applied to the given array of chances.
 	 * 
 	 * @param block The block to break.
-	 * @param random0to99 A random value between [0..99].
+	 * @param random0to99 A random value between [0..99] (pass 99 to only handle 100% cases).
 	 * @param chances The list of possible drops.
 	 * @return The array of items (never null).
 	 */

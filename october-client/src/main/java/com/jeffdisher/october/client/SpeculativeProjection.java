@@ -762,8 +762,8 @@ public class SpeculativeProjection
 				, (PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
 					// We might try to spawn passives here but they should just be ignored in one-off (since this isn't authoritative).
 				}
-				// We need a random number generator for a few cases (like attack) but the server will send us the authoritative result.
-				, (int bound) -> 0
+				// We can't provide random numbers on the client so set this to null and the consumer will handle this as a degenerate case.
+				, null
 				, eventSink
 				, (CuboidAddress address) -> {}
 				// By default, we run in hostile mode.

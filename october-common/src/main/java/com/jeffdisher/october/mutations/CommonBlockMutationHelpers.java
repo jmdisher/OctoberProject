@@ -407,7 +407,13 @@ public class CommonBlockMutationHelpers
 	private static ItemSlot[] _getItemsDroppedWhenBreakingBlock(Environment env, TickProcessingContext context, Block block)
 	{
 		DropChance[] chances = env.blocks.possibleDropsOnBreak(block);
-		ItemSlot[] slots = MiscHelpers.convertToDrops(env, context.randomInt.applyAsInt(MiscHelpers.RANDOM_DROP_LIMIT), chances);
+		
+		// Note that the client needs to only assume 100% drop change will work.
+		int random0to99 = (null != context.randomInt)
+			? context.randomInt.applyAsInt(MiscHelpers.RANDOM_DROP_LIMIT)
+			: 99
+		;
+		ItemSlot[] slots = MiscHelpers.convertToDrops(env, random0to99, chances);
 		return slots;
 	}
 

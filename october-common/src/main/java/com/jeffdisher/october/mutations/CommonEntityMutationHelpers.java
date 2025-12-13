@@ -80,7 +80,9 @@ public class CommonEntityMutationHelpers
 		, NonStackableItem tool
 	)
 	{
-		if ((null != tool) && !mutableEntity.isCreativeMode())
+		// There is no random on the client so just leave the tool durability unchanged (this avoids a gratuitous client
+		// data update when we rely on the server, anyway).
+		if ((null != tool) && !mutableEntity.isCreativeMode() && (null != context.randomInt))
 		{
 			int totalDurability = env.durability.getDurability(tool.type());
 			if (totalDurability > 0)
