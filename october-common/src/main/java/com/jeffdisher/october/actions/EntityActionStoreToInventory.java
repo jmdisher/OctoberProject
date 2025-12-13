@@ -84,8 +84,22 @@ public class EntityActionStoreToInventory implements IEntityAction<IMutablePlaye
 		// Just as a "nice to have" behaviour, we will select this item if we have nothing selected and we didn't have any of this item.
 		if ((0 != itemKeyToSelect) && (Entity.NO_SELECTION == newEntity.getSelectedKey()))
 		{
-			newEntity.clearHotBarWithKey(itemKeyToSelect);
-			newEntity.setSelectedKey(itemKeyToSelect);
+			// We also only want to select this if it isn't already on the hotbar.
+			int existingIndex = -1;
+			int[] toWalk = newEntity.copyHotbar();
+			for (int i = 0; i < toWalk.length; ++i)
+			{
+				if (itemKeyToSelect == toWalk[i])
+				{
+					existingIndex = 1;
+					break;
+				}
+			}
+			if (-1 == existingIndex)
+			{
+				newEntity.clearHotBarWithKey(itemKeyToSelect);
+				newEntity.setSelectedKey(itemKeyToSelect);
+			}
 		}
 		
 		// If there are items left over, drop them on the ground as passives.

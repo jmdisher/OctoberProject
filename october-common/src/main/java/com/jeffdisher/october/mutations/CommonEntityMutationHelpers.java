@@ -115,7 +115,6 @@ public class CommonEntityMutationHelpers
 	{
 		for (int key : newEntity.copyHotbar())
 		{
-			newEntity.accessMutableInventory().getSlotForKey(key);
 			if ((Entity.NO_SELECTION != key) && (null == newEntity.accessMutableInventory().getSlotForKey(key)))
 			{
 				// This needs to be cleared.

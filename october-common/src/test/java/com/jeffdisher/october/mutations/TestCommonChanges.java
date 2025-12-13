@@ -3430,34 +3430,28 @@ public class TestCommonChanges
 		EntityActionStoreToInventory store = new EntityActionStoreToInventory(new Items(STONE_ITEM, 1), null);
 		Assert.assertTrue(store.applyChange(context, newEntity));
 		Assert.assertEquals(1, newEntity.newInventory.getCount(STONE_ITEM));
-		boolean didFind = false;
-		for (int i = 0; i < newEntity.newHotbar.length; ++i)
+		
+		// We should see this only in the 0-index slot.
+		Assert.assertEquals(1, newEntity.newHotbar[newEntity.newHotbarIndex]);
+		for (int i = 1; i < newEntity.newHotbar.length; ++i)
 		{
 			int key = newEntity.newHotbar[i];
-			if (0 != key)
-			{
-				Assert.assertEquals(i, newEntity.newHotbarIndex);
-				didFind = true;
-			}
+			Assert.assertEquals(0, key);
 		}
-		Assert.assertTrue(didFind);
 		Assert.assertEquals(0, newEntity.newHotbarIndex);
 		
 		// Change the slot and show that the same action doesn't duplicate the reference.
 		newEntity.newHotbarIndex = 1;
 		Assert.assertTrue(store.applyChange(context, newEntity));
 		Assert.assertEquals(2, newEntity.newInventory.getCount(STONE_ITEM));
-		didFind = false;
-		for (int i = 0; i < newEntity.newHotbar.length; ++i)
+		
+		// We should still see this only in the 0-index slot.
+		Assert.assertEquals(1, newEntity.newHotbar[0]);
+		for (int i = 1; i < newEntity.newHotbar.length; ++i)
 		{
 			int key = newEntity.newHotbar[i];
-			if (0 != key)
-			{
-				Assert.assertEquals(i, newEntity.newHotbarIndex);
-				didFind = true;
-			}
+			Assert.assertEquals(0, key);
 		}
-		Assert.assertTrue(didFind);
 		Assert.assertEquals(1, newEntity.newHotbarIndex);
 	}
 
