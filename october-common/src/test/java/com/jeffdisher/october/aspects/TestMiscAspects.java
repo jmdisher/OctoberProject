@@ -146,9 +146,7 @@ public class TestMiscAspects
 		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 		
 		Assert.assertTrue(ENV.specialSlot.hasSpecialSlot(pedestal));
-		Assert.assertTrue(ENV.specialSlot.canRemoveOrDrop(pedestal));
 		Assert.assertFalse(ENV.specialSlot.hasSpecialSlot(stone));
-		Assert.assertFalse(ENV.specialSlot.canRemoveOrDrop(stone));
 	}
 
 	@Test

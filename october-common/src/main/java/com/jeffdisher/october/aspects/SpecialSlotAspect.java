@@ -27,18 +27,15 @@ public class SpecialSlotAspect
 		Assert.assertTrue(null != enchantingTable);
 		
 		Set<Block> hasSpecial = Set.of(pedestal, keystone, enchantingTable);
-		Set<Block> canSwapOut = Set.of(pedestal, keystone, enchantingTable);
-		return new SpecialSlotAspect(hasSpecial, canSwapOut);
+		return new SpecialSlotAspect(hasSpecial);
 	}
 
 
 	private final Set<Block> _hasSpecial;
-	private final Set<Block> _canSwapOut;
 
-	private SpecialSlotAspect(Set<Block> hasSpecial, Set<Block> canSwapOut)
+	private SpecialSlotAspect(Set<Block> hasSpecial)
 	{
 		_hasSpecial = Collections.unmodifiableSet(hasSpecial);
-		_canSwapOut = Collections.unmodifiableSet(canSwapOut);
 	}
 
 	/**
@@ -50,18 +47,5 @@ public class SpecialSlotAspect
 	public boolean hasSpecialSlot(Block block)
 	{
 		return _hasSpecial.contains(block);
-	}
-
-	/**
-	 * Checks if the block type both has a special slot and should allow the contents to be removed or dropped when
-	 * broken.  If not, the contents cannot be removed and are destroyed if the block is destroyed.
-	 * 
-	 * @param block The block type.
-	 * @return True if the special slot contents can be removed or drop when the block is broken (otherwise, destroyed
-	 * when the block is broken).
-	 */
-	public boolean canRemoveOrDrop(Block block)
-	{
-		return _canSwapOut.contains(block);
 	}
 }

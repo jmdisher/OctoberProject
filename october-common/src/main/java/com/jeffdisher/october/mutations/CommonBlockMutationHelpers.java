@@ -345,8 +345,6 @@ public class CommonBlockMutationHelpers
 
 	private static void _fillInventoryFromBlockWithoutLimit(MutableInventory inventoryToFill, IBlockProxy block)
 	{
-		Environment env = Environment.getShared();
-		
 		Inventory oldInventory = block.getInventory();
 		if (null != oldInventory)
 		{
@@ -359,19 +357,16 @@ public class CommonBlockMutationHelpers
 			_combineInventory(inventoryToFill, oldFuel.fuelInventory());
 		}
 		
-		if (env.specialSlot.canRemoveOrDrop(block.getBlock()))
+		ItemSlot oldSlot = block.getSpecialSlot();
+		if (null != oldSlot)
 		{
-			ItemSlot oldSlot = block.getSpecialSlot();
-			if (null != oldSlot)
+			if (null != oldSlot.stack)
 			{
-				if (null != oldSlot.stack)
-				{
-					inventoryToFill.addAllItems(oldSlot.stack.type(), oldSlot.stack.count());
-				}
-				else
-				{
-					inventoryToFill.addNonStackableBestEfforts(oldSlot.nonStackable);
-				}
+				inventoryToFill.addAllItems(oldSlot.stack.type(), oldSlot.stack.count());
+			}
+			else
+			{
+				inventoryToFill.addNonStackableBestEfforts(oldSlot.nonStackable);
 			}
 		}
 	}

@@ -71,12 +71,8 @@ public class MutationBlockSwapSpecialSlot implements IMutationBlock
 			else
 			{
 				// See if we will send something back.
-				boolean canRemoveOrDrop = env.specialSlot.canRemoveOrDrop(block);
-				if (canRemoveOrDrop || (null == existing))
-				{
-					newBlock.setSpecialSlot(_slot);
-				}
-				if ((null != existing) && (_returnEntityId > 0) && canRemoveOrDrop)
+				newBlock.setSpecialSlot(_slot);
+				if ((null != existing) && (_returnEntityId > 0))
 				{
 					EntityActionStoreToInventory storeAction = new EntityActionStoreToInventory(existing.stack, existing.nonStackable);
 					context.newChangeSink.next(_returnEntityId, storeAction);
