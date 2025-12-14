@@ -3455,6 +3455,31 @@ public class TestCommonChanges
 		Assert.assertEquals(1, newEntity.newHotbarIndex);
 	}
 
+	@Test
+	public void updatePortalOrb() throws Throwable
+	{
+		// Show that we can update the target location of a portal orb with EntityChangeUseSelectedItemOnBlock.
+		Item portalOrb = ENV.items.getItemById("op.portal_orb");
+		int entityId = 1;
+		MutableEntity newEntity = MutableEntity.createForTest(entityId);
+		newEntity.newInventory.addNonStackableAllowingOverflow(PropertyHelpers.newItemWithDefaults(ENV, portalOrb));
+		newEntity.setSelectedKey(1);
+		
+		// Set the location.
+		TickProcessingContext context = _createSimpleContext();
+		AbsoluteLocation firstTarget = new AbsoluteLocation(1, 1, 1);
+		EntityChangeUseSelectedItemOnBlock setFirst = new EntityChangeUseSelectedItemOnBlock(firstTarget);
+		Assert.assertTrue(setFirst.applyChange(context, newEntity));
+		Assert.assertEquals(firstTarget, PropertyHelpers.getLocation(newEntity.newInventory.getNonStackableForKey(1)));
+		
+		// Update the location.
+		context = ContextBuilder.nextTick(context, 5L).finish();
+		AbsoluteLocation secondTarget = new AbsoluteLocation(1, 2, 1);
+		EntityChangeUseSelectedItemOnBlock setSecond = new EntityChangeUseSelectedItemOnBlock(secondTarget);
+		Assert.assertTrue(setSecond.applyChange(context, newEntity));
+		Assert.assertEquals(secondTarget, PropertyHelpers.getLocation(newEntity.newInventory.getNonStackableForKey(1)));
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

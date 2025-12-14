@@ -1,6 +1,9 @@
 package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
@@ -11,6 +14,8 @@ import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.mutations.MutationBlockForceGrow;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.properties.PropertyRegistry;
+import com.jeffdisher.october.properties.PropertyType;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Entity;
@@ -37,6 +42,7 @@ public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMut
 	public static final String DIRT = "op.dirt";
 	public static final String GRASS = "op.grass";
 	public static final String TILLED_SOIL = "op.tilled_soil";
+	public static final String PORTAL_ORB = "op.portal_orb";
 	public static final long COOLDOWN_MILLIS = 250L;
 
 	public static EntityChangeUseSelectedItemOnBlock deserializeFromBuffer(ByteBuffer buffer)
@@ -59,6 +65,7 @@ public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMut
 		Item stoneHoe = env.items.getItemById(STONE_HOE);
 		Item dirtItem = env.items.getItemById(DIRT);
 		Item grassItem = env.items.getItemById(GRASS);
+		Item portalOrbItem = env.items.getItemById(PORTAL_ORB);
 		
 		boolean canUse;
 		if ((item == fertilizer) && (env.plants.growthDivisor(block) > 0))
@@ -70,6 +77,10 @@ public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMut
 			canUse = true;
 		}
 		else if ((stoneHoe == item) && ((dirtItem == block.item()) || (grassItem == block.item())))
+		{
+			canUse = true;
+		}
+		else if (portalOrbItem == item)
 		{
 			canUse = true;
 		}
@@ -156,6 +167,7 @@ public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMut
 		Item stoneHoe = env.items.getItemById(STONE_HOE);
 		Item dirtItem = env.items.getItemById(DIRT);
 		Item grassItem = env.items.getItemById(GRASS);
+		Item portalOrbItem = env.items.getItemById(PORTAL_ORB);
 		boolean isFertilizer = (type == fertilizer);
 		BlockProxy proxy = context.previousBlockLookUp.apply(_target);
 		Block block = (null != proxy) ? proxy.getBlock() : null;
@@ -203,6 +215,20 @@ public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMut
 			}
 			Item tilledSoil = env.items.getItemById(TILLED_SOIL);
 			context.mutationSink.next(new MutationBlockReplace(_target, block, env.blocks.fromItem(tilledSoil)));
+			didApply = true;
+		}
+		else if (portalOrbItem == type)
+		{
+			// Set the location in the orb to the touched block.
+			AbsoluteLocation oldTarget = PropertyHelpers.getLocation(nonStack);
+			if (!_target.equals(oldTarget))
+			{
+				// We should replace this and update the orb.
+				Map<PropertyType<?>, Object> props = new HashMap<>(nonStack.properties());
+				props.put(PropertyRegistry.LOCATION, _target);
+				NonStackableItem newItem = new NonStackableItem(type, Collections.unmodifiableMap(props));
+				mutableInventory.replaceNonStackable(selectedKey, newItem);
+			}
 			didApply = true;
 		}
 		return didApply;
