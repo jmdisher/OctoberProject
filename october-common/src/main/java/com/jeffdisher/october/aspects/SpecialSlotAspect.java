@@ -27,7 +27,7 @@ public class SpecialSlotAspect
 		Assert.assertTrue(null != enchantingTable);
 		
 		Set<Block> hasSpecial = Set.of(pedestal, keystone, enchantingTable);
-		Set<Block> canSwapOut = Set.of(pedestal, enchantingTable);
+		Set<Block> canSwapOut = Set.of(pedestal, keystone, enchantingTable);
 		return new SpecialSlotAspect(hasSpecial, canSwapOut);
 	}
 

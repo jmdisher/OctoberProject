@@ -18,8 +18,7 @@ import com.jeffdisher.october.utils.Assert;
 
 
 /**
- * Applies a mutation to a given location in response to a call into schedulePeriodicMutation() (in
- * TickProcessingContext).
+ * Applies a mutation to a given location in response to an earlier call to IMutableBlockProxy.requestFutureMutation(long).
  * An example use-case of this is plant growth, as this is scheduled periodically.
  */
 public class MutationBlockPeriodic implements IMutationBlock
@@ -77,10 +76,12 @@ public class MutationBlockPeriodic implements IMutationBlock
 		{
 			HopperHelpers.tryProcessHopper(context, _location, newBlock);
 			newBlock.requestFutureMutation(MILLIS_BETWEEN_HOPPER_CALLS);
+			didApply = true;
 		}
 		else if (env.blocks.isCompositionCornerstone(block))
 		{
 			// See if we need to change the state of the composite.
+			// Note that this implicitly calls requestFutureMutation (called via multiple paths).
 			CompositeHelpers.processCornerstoneUpdate(env, context, _location, newBlock);
 			
 			// If this is the portal cornerstone, see if it needs to update the portal.
@@ -88,6 +89,7 @@ public class MutationBlockPeriodic implements IMutationBlock
 			{
 				PortalHelpers.handlePortalSurface(env, context, _location, newBlock);
 			}
+			didApply = true;
 		}
 		return didApply;
 	}

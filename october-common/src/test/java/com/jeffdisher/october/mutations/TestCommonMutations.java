@@ -1406,7 +1406,7 @@ public class TestCommonMutations
 		MutationBlockPeriodic periodic = new MutationBlockPeriodic(target);
 		proxy = new MutableBlockProxy(target, cuboid);
 		didApply = periodic.applyMutation(context, proxy);
-		Assert.assertFalse(didApply);
+		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
 		
@@ -1926,6 +1926,130 @@ public class TestCommonMutations
 		Assert.assertEquals(sand.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertNotNull(out_mutation[0]);
 		Assert.assertEquals(target, out_mutation[0].getAbsoluteLocation());
+	}
+
+	@Test
+	public void removePortalOrb() throws Throwable
+	{
+		// Show the sequence of updates which happen when we remove the portal orb from a keystone (after the entity sub-action since that is the boring part).
+		Item itemKeystone = ENV.items.getItemById("op.portal_keystone");
+		Item itemSurface = ENV.items.getItemById("op.portal_surface");
+		Item portalStone = ENV.items.getItemById("op.void_stone");
+		Item itemOrb = ENV.items.getItemById("op.portal_orb");
+		AbsoluteLocation keystoneLocation = new AbsoluteLocation(5, 6, 7);
+		AbsoluteLocation surfaceLocation = keystoneLocation.getRelative(0, 0, 1);
+		AbsoluteLocation portalTargetLocation = new AbsoluteLocation(10, 6, 9);
+		NonStackableItem orb = new NonStackableItem(itemOrb, Map.of(PropertyRegistry.LOCATION, portalTargetLocation));
+		
+		// TODO:  Once this is in data, somewhere, fetch it from there instead of hard-coding.
+		Set<AbsoluteLocation> stoneSet = Set.of(
+			new AbsoluteLocation(-1, 0, 0)
+			, new AbsoluteLocation(-2, 0, 0)
+			, new AbsoluteLocation(-2, 0, 1)
+			, new AbsoluteLocation(-2, 0, 2)
+			, new AbsoluteLocation(-2, 0, 3)
+			, new AbsoluteLocation(-2, 0, 4)
+			, new AbsoluteLocation(-1, 0, 4)
+			, new AbsoluteLocation( 0, 0, 4)
+			, new AbsoluteLocation( 1, 0, 4)
+			, new AbsoluteLocation( 2, 0, 4)
+			, new AbsoluteLocation( 2, 0, 3)
+			, new AbsoluteLocation( 2, 0, 2)
+			, new AbsoluteLocation( 2, 0, 1)
+			, new AbsoluteLocation( 2, 0, 0)
+			, new AbsoluteLocation( 1, 0, 0)
+		);
+		
+		// First, construct the portal frame and insert the orb.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, keystoneLocation.getBlockAddress(), itemKeystone.number());
+		cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, keystoneLocation.getBlockAddress(), ItemSlot.fromNonStack(orb));
+		for (AbsoluteLocation stone : stoneSet)
+		{
+			cuboid.setData15(AspectRegistry.BLOCK, keystoneLocation.getRelative(stone.x(), stone.y(), stone.z()).getBlockAddress(), portalStone.number());
+		}
+		
+		List<IMutationBlock> nextOut = new ArrayList<>();
+		List<IMutationBlock> futureOut = new ArrayList<>();
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(200L)
+			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
+			.sinks(new TickProcessingContext.IMutationSink() {
+				@Override
+				public boolean next(IMutationBlock mutation)
+				{
+					nextOut.add(mutation);
+					return true;
+				}
+				@Override
+				public boolean future(IMutationBlock mutation, long millisToDelay)
+				{
+					// We expect these to all have the same delay in this test.
+					Assert.assertEquals(ContextBuilder.DEFAULT_MILLIS_PER_TICK, millisToDelay);
+					futureOut.add(mutation);
+					return true;
+				}
+			}, null)
+			.finish()
+		;
+		
+		// Keystone blocks use the MutationBlockPeriodic since they are composite keystones (and all composites use this
+		// helper) so synthesize one of those here to show portal activation.
+		MutationBlockPeriodic periodic = new MutationBlockPeriodic(keystoneLocation);
+		MutableBlockProxy proxy = new MutableBlockProxy(keystoneLocation, cuboid);
+		Assert.assertTrue(periodic.applyMutation(context, proxy));
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		
+		// This sets the state to "active".
+		Assert.assertTrue(FlagsAspect.isSet(cuboid.getData7(AspectRegistry.FLAGS, keystoneLocation.getBlockAddress()), FlagsAspect.FLAG_ACTIVE));
+		
+		// We expect to see all the changes for the activation so run them.
+		Assert.assertEquals(9, nextOut.size());
+		Assert.assertEquals(9, futureOut.size());
+		List<IMutationBlock> nextList = new ArrayList<>(nextOut);
+		nextOut.clear();
+		List<IMutationBlock> futureList = new ArrayList<>(futureOut);
+		futureOut.clear();
+		for (IMutationBlock mutation : nextList)
+		{
+			MutableBlockProxy inner = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+			Assert.assertTrue(mutation.applyMutation(context, inner));
+			Assert.assertTrue(inner.didChange());
+			inner.writeBack(cuboid);
+		}
+		for (IMutationBlock mutation : futureList)
+		{
+			MutableBlockProxy inner = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+			Assert.assertTrue(mutation.applyMutation(context, inner));
+			Assert.assertFalse(inner.didChange());
+		}
+		Assert.assertEquals(0, nextOut.size());
+		Assert.assertEquals(0, futureOut.size());
+		Assert.assertEquals(itemSurface.number(), cuboid.getData15(AspectRegistry.BLOCK, surfaceLocation.getBlockAddress()));
+		
+		// Remove the portal orb and run another periodic to see the portal deactivate.
+		MutationBlockSwapSpecialSlot swap = new MutationBlockSwapSpecialSlot(keystoneLocation, null, 0);
+		Assert.assertTrue(swap.applyMutation(context, proxy));
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		Assert.assertTrue(periodic.applyMutation(context, proxy));
+		Assert.assertFalse(proxy.didChange());
+		proxy.writeBack(cuboid);
+		
+		// Run the follow-ups and observe the portal is deactivated.
+		Assert.assertEquals(9, nextOut.size());
+		Assert.assertEquals(0, futureOut.size());
+		nextList = new ArrayList<>(nextOut);
+		nextOut.clear();
+		for (IMutationBlock mutation : nextList)
+		{
+			MutableBlockProxy inner = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+			Assert.assertTrue(mutation.applyMutation(context, inner));
+			Assert.assertTrue(inner.didChange());
+			inner.writeBack(cuboid);
+		}
+		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, surfaceLocation.getBlockAddress()));
 	}
 
 
