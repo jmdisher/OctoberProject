@@ -35,6 +35,9 @@ public class EnchantmentRegistry
 	public static final String ID_STONE_BRICK = "op.stone_brick";
 	public static final String ID_IRON_INGOT = "op.iron_ingot";
 	public static final String ID_PORTAL_STONE = "op.void_stone";
+	public static final String ID_COPPER_INGOT = "op.copper_ingot";
+	public static final String ID_PORTAL_ORB = "op.portal_orb";
+	public static final String ID_DIAMOND = "op.diamond";
 
 	public static EnchantmentRegistry load(ItemRegistry items, BlockAspect blocks)
 	{
@@ -51,6 +54,12 @@ public class EnchantmentRegistry
 		Assert.assertTrue(null != ironIngot);
 		Item portalStone = items.getItemById(ID_PORTAL_STONE);
 		Assert.assertTrue(null != portalStone);
+		Item copperIngot = items.getItemById(ID_COPPER_INGOT);
+		Assert.assertTrue(null != copperIngot);
+		Item portalOrb = items.getItemById(ID_PORTAL_ORB);
+		Assert.assertTrue(null != portalOrb);
+		Item diamond = items.getItemById(ID_DIAMOND);
+		Assert.assertTrue(null != diamond);
 		
 		Enchantment enchantDurability = new Enchantment(1
 			, enchantingTable
@@ -66,8 +75,15 @@ public class EnchantmentRegistry
 			, _sortedItemList(List.of(stone, stone, ironIngot, ironIngot))
 			, portalStone
 		);
+		Infusion infusePortalOrb = new Infusion(2
+			, enchantingTable
+			, 20_000L
+			, diamond
+			, _sortedItemList(List.of(copperIngot, copperIngot, ironIngot, ironIngot))
+			, portalOrb
+		);
 		return new EnchantmentRegistry(List.of(enchantDurability)
-			, List.of(infusePortalStone)
+			, List.of(infusePortalStone, infusePortalOrb)
 		);
 	}
 
@@ -200,9 +216,15 @@ public class EnchantmentRegistry
 	)
 	{
 		return input.stream()
-			.collect(Collectors.toMap(keyMap, (T elt) -> {
+			.collect(Collectors.toMap(keyMap
+			, (T elt) -> {
 				Block k = keyMap.apply(elt);
 				return input.stream().filter((T inner) -> (k == keyMap.apply(inner))).toList();
+			}
+			, (List<T> one, List<T> two) -> {
+				// Each sublist will be the same, we just see them for each key instance.
+				Assert.assertTrue(one.equals(two));
+				return one;
 			}))
 		;
 	}

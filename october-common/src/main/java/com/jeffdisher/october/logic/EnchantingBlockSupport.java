@@ -60,40 +60,7 @@ public class EnchantingBlockSupport
 		// If there is NOT an enchantment, see if there is a valid one which could start and then start it.
 		if ((null == operation) && (null != target))
 		{
-			Block table = proxy.getBlock();
-			NonStackableItem targetNonStackable = target.nonStackable;
-			Enchantment enchantment = (null != targetNonStackable)
-				? env.enchantments.getEnchantment(table, targetNonStackable, pedestals)
-				: null
-			;
-			if (null != enchantment)
-			{
-				operation = new EnchantingOperation(context.millisPerTick
-					, enchantment
-					, null
-					, List.of()
-				);
-			}
-			else
-			{
-				Infusion infusion = env.enchantments.getInfusion(table, target.getType(), pedestals);
-				if (null != infusion)
-				{
-					operation = new EnchantingOperation(context.millisPerTick
-						, null
-						, infusion
-						, List.of()
-					);
-				}
-			}
-			
-			// If we created a new operation, store it and request charging.
-			if (null != operation)
-			{
-				proxy.setEnchantingOperation(operation);
-				MutationBlockChargeEnchantment charge = new MutationBlockChargeEnchantment(blockLocation, operation.chargedMillis());
-				context.mutationSink.next(charge);
-			}
+			_tryStartNewOperation(env, context, blockLocation, proxy, target, pedestals);
 		}
 	}
 
@@ -235,15 +202,40 @@ public class EnchantingBlockSupport
 					}
 					else
 					{
-						// Apply the infusion and clear it.
 						Item result = operation.infusion().outputItem();
+						
+						// Note that the result we are infusing may have changed to be non-stackable.
+						ItemSlot slot;
+						if (env.durability.isStackable(result))
+						{
+							slot = ItemSlot.fromStack(new Items(result, 1));
+						}
+						else
+						{
+							slot = ItemSlot.fromNonStack(PropertyHelpers.newItemWithDefaults(env, result));
+						}
 						context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT
 							, blockLocation.getRelative(0, 0, 1).toEntityLocation()
 							, new EntityLocation(0.0f, 0.0f, 0.0f)
-							, ItemSlot.fromStack(new Items(result, 1))
+							, slot
 						);
-						proxy.setEnchantingOperation(null);
-						proxy.setSpecialSlot(null);
+						
+						// Infusions can act on stackable central items so this might not be empty.
+						if (target.getCount() > 1)
+						{
+							ItemSlot updatedSlot = ItemSlot.fromStack(new Items(target.getType(), target.getCount() - 1));
+							proxy.setSpecialSlot(updatedSlot);
+							proxy.setEnchantingOperation(null);
+							
+							// See if this could still be a valid infusion (this will update enchanting operation if one starts).
+							List<Item> pedestals = _getPedestalItemTypes(context, blockLocation);
+							_tryStartNewOperation(env, context, blockLocation, proxy, target, pedestals);
+						}
+						else
+						{
+							proxy.setSpecialSlot(null);
+							proxy.setEnchantingOperation(null);
+						}
 					}
 				}
 				else
@@ -362,5 +354,50 @@ public class EnchantingBlockSupport
 		
 		props.put(toApply, value);
 		return new NonStackableItem(nonStackable.type(), Collections.unmodifiableMap(props));
+	}
+
+	private static void _tryStartNewOperation(Environment env
+		, TickProcessingContext context
+		, AbsoluteLocation blockLocation
+		, IMutableBlockProxy proxy
+		, ItemSlot target
+		, List<Item> pedestals
+	)
+	{
+		Block table = proxy.getBlock();
+		NonStackableItem targetNonStackable = target.nonStackable;
+		Enchantment enchantment = (null != targetNonStackable)
+			? env.enchantments.getEnchantment(table, targetNonStackable, pedestals)
+			: null
+		;
+		EnchantingOperation newOperation = null;
+		if (null != enchantment)
+		{
+			newOperation = new EnchantingOperation(context.millisPerTick
+				, enchantment
+				, null
+				, List.of()
+			);
+		}
+		else
+		{
+			Infusion infusion = env.enchantments.getInfusion(table, target.getType(), pedestals);
+			if (null != infusion)
+			{
+				newOperation = new EnchantingOperation(context.millisPerTick
+					, null
+					, infusion
+					, List.of()
+				);
+			}
+		}
+		
+		// If we created a new operation, store it and request charging.
+		if (null != newOperation)
+		{
+			proxy.setEnchantingOperation(newOperation);
+			MutationBlockChargeEnchantment charge = new MutationBlockChargeEnchantment(blockLocation, newOperation.chargedMillis());
+			context.mutationSink.next(charge);
+		}
 	}
 }

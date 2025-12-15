@@ -34,6 +34,7 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.EnchantingOperation;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
@@ -42,6 +43,7 @@ import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.IPassiveAction;
+import com.jeffdisher.october.types.Infusion;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
@@ -2050,6 +2052,131 @@ public class TestCommonMutations
 			inner.writeBack(cuboid);
 		}
 		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, surfaceLocation.getBlockAddress()));
+	}
+
+	@Test
+	public void finishInfusion() throws Throwable
+	{
+		// Pre-load an enchanting station with an infusion to show it finish.
+		Block enchantmentTable = ENV.blocks.fromItem(ENV.items.getItemById("op.enchanting_table"));
+		Block pedestal = ENV.blocks.fromItem(ENV.items.getItemById("op.pedestal"));
+		Item itemDiamond = ENV.items.getItemById("op.diamond");
+		Item itemIronIngot = ENV.items.getItemById("op.iron_ingot");
+		Item itemCopperIngot = ENV.items.getItemById("op.copper_ingot");
+		Item itemOrb = ENV.items.getItemById("op.portal_orb");
+		AbsoluteLocation tableLocation = new AbsoluteLocation(5, 6, 7);
+		
+		// TODO:  Once this is in data, somewhere, fetch it from there instead of hard-coding.
+		Set<AbsoluteLocation> pedestalSet = Set.of(
+			new AbsoluteLocation(-2, 0, 0)
+			, new AbsoluteLocation(2, 0, 0)
+			, new AbsoluteLocation(0, -2, 0)
+			, new AbsoluteLocation(0, 2, 0)
+		);
+		
+		// First, construct the portal frame and insert the orb.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, tableLocation.getBlockAddress(), enchantmentTable.item().number());
+		cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getBlockAddress(), ItemSlot.fromStack(new Items(itemDiamond, 2)));
+		for (AbsoluteLocation one : pedestalSet)
+		{
+			boolean isIron = (one.x() + one.y()) > 0;
+			Item type = isIron ? itemIronIngot : itemCopperIngot;
+			ItemSlot slot = ItemSlot.fromStack(new Items(type, 2));
+			cuboid.setData15(AspectRegistry.BLOCK, tableLocation.getRelative(one.x(), one.y(), one.z()).getBlockAddress(), pedestal.item().number());
+			cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getRelative(one.x(), one.y(), one.z()).getBlockAddress(), slot);
+		}
+		Infusion infusion = ENV.enchantments.getInfusion(enchantmentTable, itemDiamond, List.of(itemIronIngot, itemIronIngot, itemCopperIngot, itemCopperIngot));
+		long startingChargeLevel = infusion.millisToApply() - 1L;
+		cuboid.setDataSpecial(AspectRegistry.ENCHANTING, tableLocation.getBlockAddress(), new EnchantingOperation(startingChargeLevel
+			, null
+			, infusion
+			, List.of()
+		));
+		
+		List<IMutationBlock> nextOut = new ArrayList<>();
+		List<IMutationBlock> futureOut = new ArrayList<>();
+		PassiveEntity[] out = new PassiveEntity[1];
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(200L)
+			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
+			.sinks(new TickProcessingContext.IMutationSink() {
+				@Override
+				public boolean next(IMutationBlock mutation)
+				{
+					nextOut.add(mutation);
+					return true;
+				}
+				@Override
+				public boolean future(IMutationBlock mutation, long millisToDelay)
+				{
+					// We expect these to all have the same delay in this test.
+					Assert.assertEquals(3L * ContextBuilder.DEFAULT_MILLIS_PER_TICK, millisToDelay);
+					futureOut.add(mutation);
+					return true;
+				}
+			}, null)
+			.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+				Assert.assertNull(out[0]);
+				out[0] = new PassiveEntity(1, type, location, velocity, extendedData, 1000L);
+			})
+			.finish()
+		;
+		
+		// Finish charging and infusion and observe the mutations passed around to complete this and the final spawning of the result as a passive.
+		MutationBlockChargeEnchantment charge = new MutationBlockChargeEnchantment(tableLocation, startingChargeLevel);
+		MutableBlockProxy proxy = new MutableBlockProxy(tableLocation, cuboid);
+		Assert.assertTrue(charge.applyMutation(context, proxy));
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		
+		// We expect to see the fetch requests go out, along with the clean request.
+		Assert.assertEquals(4, nextOut.size());
+		Assert.assertEquals(1, futureOut.size());
+		
+		// Run the fetch requests and see the delivery mutations.
+		List<IMutationBlock> nextList = new ArrayList<>(nextOut);
+		nextOut.clear();
+		for (IMutationBlock mutation : nextList)
+		{
+			MutableBlockProxy inner = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+			Assert.assertTrue(mutation.applyMutation(context, inner));
+			Assert.assertTrue(inner.didChange());
+			inner.writeBack(cuboid);
+		}
+		Assert.assertEquals(4, nextOut.size());
+		Assert.assertEquals(1, futureOut.size());
+		
+		// Run these final deliveries and observe the passive spawn and verify final states.
+		nextList = new ArrayList<>(nextOut);
+		nextOut.clear();
+		for (IMutationBlock mutation : nextList)
+		{
+			MutableBlockProxy inner = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+			Assert.assertTrue(mutation.applyMutation(context, inner));
+			Assert.assertTrue(inner.didChange());
+			inner.writeBack(cuboid);
+		}
+		IMutationBlock cleanUp = futureOut.get(0);
+		proxy = new MutableBlockProxy(cleanUp.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(cleanUp.applyMutation(context, proxy));
+		Assert.assertFalse(proxy.didChange());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(1, futureOut.size());
+		
+		// We should see the passive on top of the table, the table and pedestals all having a single item, and the spill charging the table, again.
+		NonStackableItem nonStackOrb = PropertyHelpers.newItemWithDefaults(ENV, itemOrb);
+		Assert.assertEquals(nonStackOrb, ((ItemSlot) out[0].extendedData()).nonStackable);
+		Assert.assertEquals(new Items(itemDiamond, 1), cuboid.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getBlockAddress()).stack);
+		for (AbsoluteLocation one : pedestalSet)
+		{
+			boolean isIron = (one.x() + one.y()) > 0;
+			Item type = isIron ? itemIronIngot : itemCopperIngot;
+			Assert.assertEquals(new Items(type, 1), cuboid.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getRelative(one.x(), one.y(), one.z()).getBlockAddress()).stack);
+		}
+		EnchantingOperation continuedOperation = cuboid.getDataSpecial(AspectRegistry.ENCHANTING, tableLocation.getBlockAddress());
+		Assert.assertEquals(itemOrb, continuedOperation.infusion().outputItem());
+		Assert.assertEquals(context.millisPerTick, continuedOperation.chargedMillis());
 	}
 
 
