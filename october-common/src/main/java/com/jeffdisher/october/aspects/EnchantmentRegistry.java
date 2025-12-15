@@ -34,7 +34,7 @@ public class EnchantmentRegistry
 	public static final String ID_STONE = "op.stone";
 	public static final String ID_STONE_BRICK = "op.stone_brick";
 	public static final String ID_IRON_INGOT = "op.iron_ingot";
-	public static final String ID_PORTAL_STONE = "op.void_stone";
+	public static final String ID_PORTAL_STONE = "op.portal_stone";
 	public static final String ID_COPPER_INGOT = "op.copper_ingot";
 	public static final String ID_PORTAL_ORB = "op.portal_orb";
 	public static final String ID_DIAMOND = "op.diamond";

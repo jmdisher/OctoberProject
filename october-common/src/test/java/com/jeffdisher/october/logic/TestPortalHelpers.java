@@ -43,7 +43,7 @@ public class TestPortalHelpers
 	{
 		ENV = Environment.createSharedInstance();
 		ORB_ITEM = ENV.items.getItemById("op.portal_orb");
-		VOID_STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.void_stone"));
+		VOID_STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_stone"));
 		KEYSTONE = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_keystone"));
 		PORTAL_SURFACE = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_surface"));
 	}

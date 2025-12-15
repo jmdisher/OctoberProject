@@ -130,7 +130,7 @@ public class TestMiscAspects
 	@Test
 	public void voidComposite() throws Throwable
 	{
-		Block voidStone = ENV.blocks.fromItem(ENV.items.getItemById("op.void_stone"));
+		Block voidStone = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_stone"));
 		Block voidLamp = ENV.blocks.fromItem(ENV.items.getItemById("op.void_lamp"));
 		
 		Assert.assertFalse(ENV.blocks.isCompositionCornerstone(voidStone));

@@ -242,7 +242,7 @@ public class TestStructureLoader
 	@Test
 	public void customMapping()
 	{
-		Block voidStone = ENV.blocks.fromItem(ENV.items.getItemById("op.void_stone"));
+		Block voidStone = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_stone"));
 		Block voidLamp = ENV.blocks.fromItem(ENV.items.getItemById("op.void_lamp"));
 		Map<Character, Structure.AspectData> mapping = Map.of(
 			'V', new Structure.AspectData(voidStone, null, null, null, null)

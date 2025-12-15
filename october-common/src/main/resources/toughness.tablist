@@ -43,7 +43,7 @@ op.grass	300
 op.tilled_soil	200
 op.ladder	200
 op.cuboid_loader	1000
-op.void_stone	4000
+op.portal_stone	4000
 op.void_lamp	8000
 op.pedestal	2000
 op.portal_keystone	0

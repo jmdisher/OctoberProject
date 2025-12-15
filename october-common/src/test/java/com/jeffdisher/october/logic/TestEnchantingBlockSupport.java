@@ -55,7 +55,7 @@ public class TestEnchantingBlockSupport
 		STONE = ENV.items.getItemById("op.stone");
 		STONE_BRICK = ENV.items.getItemById("op.stone_brick");
 		IRON_INGOT = ENV.items.getItemById("op.iron_ingot");
-		PORTAL_STONE = ENV.items.getItemById("op.void_stone");
+		PORTAL_STONE = ENV.items.getItemById("op.portal_stone");
 		ENCHATING_TABLE = ENV.blocks.fromItem(ENV.items.getItemById("op.enchanting_table"));
 		PEDESTAL = ENV.blocks.fromItem(ENV.items.getItemById("op.pedestal"));
 	}

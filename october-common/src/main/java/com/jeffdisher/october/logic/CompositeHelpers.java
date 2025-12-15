@@ -28,7 +28,7 @@ public class CompositeHelpers
 	 * for something which is otherwise quite low-cost, even if hack-ish with this 5-second delay.
 	 */
 	public static final long COMPOSITE_CHECK_FREQUENCY = 5_000L;
-	public static final String VOID_STONE_ID = "op.void_stone";
+	public static final String VOID_STONE_ID = "op.portal_stone";
 	public static final String VOID_LAMP_ID = "op.void_lamp";
 	public static final String PORTAL_KEYSTONE_ID = "op.portal_keystone";
 	public static final String PORTAL_SURFACE_ID = "op.portal_surface";

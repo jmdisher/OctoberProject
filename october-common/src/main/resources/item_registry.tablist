@@ -87,7 +87,7 @@ op.not_gate	NOT Gate
 op.sensor_inventory	Inventory Sensor
 op.ladder	Ladder
 op.cuboid_loader	Cuboid Loader
-op.void_stone	Void Stone
+op.portal_stone	Portal Stone
 op.void_lamp	Void Lamp
 op.pedestal	Pedestal
 op.portal_keystone	Portal Keystone

@@ -35,7 +35,7 @@ public class TestCompositeHelpers
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
-		VOID_STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.void_stone"));
+		VOID_STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_stone"));
 		VOID_LAMP = ENV.blocks.fromItem(ENV.items.getItemById("op.void_lamp"));
 		PORTAL_KEYSTONE = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_keystone"));
 		PORTAL_SURFACE = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_surface"));

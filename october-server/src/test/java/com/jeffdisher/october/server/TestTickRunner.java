@@ -134,7 +134,7 @@ public class TestTickRunner
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
 		CUBOID_LOADER = ENV.blocks.fromItem(ENV.items.getItemById("op.cuboid_loader"));
-		VOID_STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.void_stone"));
+		VOID_STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_stone"));
 		COW = ENV.creatures.getTypeById("op.cow");
 	}
 	@AfterClass

@@ -48,7 +48,7 @@ public class CommonStructures
 		Block carrotBlock = env.blocks.fromItem(env.items.getItemById("op.carrot_seedling"));
 		Block saplingBlock = env.blocks.fromItem(env.items.getItemById("op.sapling"));
 		Block waterSourceBlock = env.blocks.fromItem(env.items.getItemById("op.water_source"));
-		Block voidStoneBlock = env.blocks.fromItem(env.items.getItemById("op.void_stone"));
+		Block voidStoneBlock = env.blocks.fromItem(env.items.getItemById("op.portal_stone"));
 		Block doorBlock = env.blocks.fromItem(env.items.getItemById("op.door"));
 		Block portalKeystoneBlock = env.blocks.fromItem(env.items.getItemById("op.portal_keystone"));
 		Block pedestalBlock = env.blocks.fromItem(env.items.getItemById("op.pedestal"));

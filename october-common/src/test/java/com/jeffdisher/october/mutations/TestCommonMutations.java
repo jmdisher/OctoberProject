@@ -1371,7 +1371,7 @@ public class TestCommonMutations
 		AbsoluteLocation target = new AbsoluteLocation(5, 5, 1);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
 		Block portalBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_keystone"));
-		Block voidBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.void_stone"));
+		Block voidBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_stone"));
 		Set<AbsoluteLocation> outline = _getEastFacingPortalVoidStones(target);
 		for (AbsoluteLocation location : outline)
 		{
@@ -1554,7 +1554,7 @@ public class TestCommonMutations
 		AbsoluteLocation keystoneLocation = new AbsoluteLocation(5, 5, 1);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(keystoneLocation.getCuboidAddress(), ENV.special.AIR);
 		Block portalBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_keystone"));
-		Block voidBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.void_stone"));
+		Block voidBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_stone"));
 		Block surfaceBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_surface"));
 		NonStackableItem portalOrb = new NonStackableItem(ENV.items.getItemById("op.portal_orb"), Map.of(PropertyRegistry.LOCATION, new AbsoluteLocation(10, 10, 10)));
 		Set<AbsoluteLocation> outline = _getEastFacingPortalVoidStones(keystoneLocation);
@@ -1936,7 +1936,7 @@ public class TestCommonMutations
 		// Show the sequence of updates which happen when we remove the portal orb from a keystone (after the entity sub-action since that is the boring part).
 		Item itemKeystone = ENV.items.getItemById("op.portal_keystone");
 		Item itemSurface = ENV.items.getItemById("op.portal_surface");
-		Item portalStone = ENV.items.getItemById("op.void_stone");
+		Item portalStone = ENV.items.getItemById("op.portal_stone");
 		Item itemOrb = ENV.items.getItemById("op.portal_orb");
 		AbsoluteLocation keystoneLocation = new AbsoluteLocation(5, 6, 7);
 		AbsoluteLocation surfaceLocation = keystoneLocation.getRelative(0, 0, 1);
