@@ -276,3 +276,7 @@ op.enchanting_table	COMMON
 	input	op.basalt	op.stone_brick	op.stone_brick	op.stone_brick	op.stone_brick
 	output	op.enchanting_table
 	millis	16000
+op.portal_keystone	COMMON
+	input	op.portal_stone	op.portal_stone
+	output	op.portal_keystone
+	millis	8000
