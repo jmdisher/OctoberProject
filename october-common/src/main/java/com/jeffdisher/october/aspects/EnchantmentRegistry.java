@@ -141,12 +141,20 @@ public class EnchantmentRegistry
 	 * Checks if the given enchantment can successfully be applied to the given target.
 	 * 
 	 * @param target The item to enchant.
-	 * @param enchantment The enchantment to apply.
+	 * @param enchantment The enchantment property to apply.
 	 * @return True if the enchantment can be applied to the target.
 	 */
-	public static boolean canApplyToTarget(NonStackableItem target, Enchantment enchantment)
+	public static boolean canApplyToTarget(NonStackableItem target, PropertyType<Byte> enchantment)
 	{
-		return _canApplyToTarget(target, enchantment);
+		// Check that this enchantment can apply to this type and that it can be incremented.
+		Environment env = Environment.getShared();
+		Item type = target.type();
+		
+		boolean isValidForType = ((PropertyRegistry.ENCHANT_DURABILITY == enchantment) && (env.durability.getDurability(type) > 0))
+			|| ((PropertyRegistry.ENCHANT_WEAPON_MELEE == enchantment) && (env.tools.toolWeaponDamage(type) > 1))
+			|| ((PropertyRegistry.ENCHANT_TOOL_EFFICIENCY == enchantment) && (env.tools.toolSpeedModifier(type) > 1))
+		;
+		return isValidForType && _canIncrementEnchantment(target, enchantment);
 	}
 
 	/**
@@ -213,7 +221,7 @@ public class EnchantmentRegistry
 				Assert.assertTrue(1 == matched.size());
 				Enchantment candidate = matched.get(0);
 				
-				if (_canApplyToTarget(target, candidate))
+				if (_canIncrementEnchantment(target, candidate.enchantmentToApply()))
 				{
 					match = candidate;
 				}
@@ -295,11 +303,11 @@ public class EnchantmentRegistry
 		return Collections.unmodifiableList(sorted);
 	}
 
-	private static boolean _canApplyToTarget(NonStackableItem target, Enchantment enchantment)
+	private static boolean _canIncrementEnchantment(NonStackableItem target, PropertyType<Byte> enchantment)
 	{
 		// Make sure that we aren't at the limit of this enchantment.
 		// For now, this is just max byte but we will probably constrain this in the future.
-		byte value = PropertyHelpers.getBytePropertyValue(target.properties(), enchantment.enchantmentToApply());
+		byte value = PropertyHelpers.getBytePropertyValue(target.properties(), enchantment);
 		return (value < Byte.MAX_VALUE);
 	}
 }

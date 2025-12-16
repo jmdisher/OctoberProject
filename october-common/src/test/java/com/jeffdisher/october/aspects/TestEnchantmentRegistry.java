@@ -68,7 +68,7 @@ public class TestEnchantmentRegistry
 		NonStackableItem pickaxe = PropertyHelpers.newItemWithDefaults(ENV, IRON_PICKAXE);
 		Enchantment enchantment = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, pickaxe, List.of(ITEM_STONE, IRON_INGOT, ITEM_STONE, IRON_INGOT));
 		Assert.assertNotNull(enchantment);
-		Assert.assertTrue(EnchantmentRegistry.canApplyToTarget(pickaxe, enchantment));
+		Assert.assertTrue(EnchantmentRegistry.canApplyToTarget(pickaxe, enchantment.enchantmentToApply()));
 	}
 
 	@Test
@@ -97,7 +97,7 @@ public class TestEnchantmentRegistry
 		pickaxe = new NonStackableItem(IRON_PICKAXE, properties);
 		Enchantment enchantment = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, pickaxe, List.of(ITEM_STONE, ITEM_STONE, IRON_INGOT, IRON_INGOT));
 		Assert.assertNull(enchantment);
-		Assert.assertFalse(EnchantmentRegistry.canApplyToTarget(pickaxe, ENV.enchantments.getBlindEnchantment(ENCHANTING_TABLE, IRON_PICKAXE, PropertyRegistry.ENCHANT_DURABILITY)));
+		Assert.assertFalse(EnchantmentRegistry.canApplyToTarget(pickaxe, PropertyRegistry.ENCHANT_DURABILITY));
 	}
 
 	@Test
@@ -146,5 +146,25 @@ public class TestEnchantmentRegistry
 		Assert.assertEquals(15_000L, damageSword.millisToApply());
 		Assert.assertEquals(20_000L, efficiencyChisel.millisToApply());
 		Assert.assertNull(efficiencySword);
+	}
+
+	@Test
+	public void checkApplicationToTarget() throws Throwable
+	{
+		NonStackableItem pickaxe = PropertyHelpers.newItemWithDefaults(ENV, IRON_PICKAXE);
+		Map<PropertyType<?>, Object> properties = new HashMap<>(pickaxe.properties());
+		properties.put(PropertyRegistry.ENCHANT_DURABILITY, (byte)127);
+		NonStackableItem fullPickaxe = new NonStackableItem(IRON_PICKAXE, properties);
+		NonStackableItem sword = PropertyHelpers.newItemWithDefaults(ENV, IRON_SWORD);
+		
+		Assert.assertTrue(EnchantmentRegistry.canApplyToTarget(pickaxe, PropertyRegistry.ENCHANT_DURABILITY));
+		Assert.assertFalse(EnchantmentRegistry.canApplyToTarget(fullPickaxe, PropertyRegistry.ENCHANT_DURABILITY));
+		Assert.assertTrue(EnchantmentRegistry.canApplyToTarget(sword, PropertyRegistry.ENCHANT_DURABILITY));
+		Assert.assertTrue(EnchantmentRegistry.canApplyToTarget(pickaxe, PropertyRegistry.ENCHANT_TOOL_EFFICIENCY));
+		Assert.assertTrue(EnchantmentRegistry.canApplyToTarget(fullPickaxe, PropertyRegistry.ENCHANT_TOOL_EFFICIENCY));
+		Assert.assertFalse(EnchantmentRegistry.canApplyToTarget(sword, PropertyRegistry.ENCHANT_TOOL_EFFICIENCY));
+		Assert.assertTrue(EnchantmentRegistry.canApplyToTarget(pickaxe, PropertyRegistry.ENCHANT_WEAPON_MELEE));
+		Assert.assertTrue(EnchantmentRegistry.canApplyToTarget(fullPickaxe, PropertyRegistry.ENCHANT_WEAPON_MELEE));
+		Assert.assertTrue(EnchantmentRegistry.canApplyToTarget(sword, PropertyRegistry.ENCHANT_WEAPON_MELEE));
 	}
 }

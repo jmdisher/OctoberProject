@@ -183,10 +183,11 @@ public class EnchantingBlockSupport
 					// See if we have the correct item in the table and either take it to complete the operation or discard the operation.
 					if (null != operation.enchantment())
 					{
-						if (EnchantmentRegistry.canApplyToTarget(target.nonStackable, operation.enchantment()))
+						PropertyType<Byte> toApply = operation.enchantment().enchantmentToApply();
+						if (EnchantmentRegistry.canApplyToTarget(target.nonStackable, toApply))
 						{
 							// Apply the enchantment and clear it.
-							NonStackableItem enchanted = _applyEnchantment(target.nonStackable, operation.enchantment());
+							NonStackableItem enchanted = _applyEnchantment(target.nonStackable, toApply);
 							context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT
 								, blockLocation.getRelative(0, 0, 1).toEntityLocation()
 								, new EntityLocation(0.0f, 0.0f, 0.0f)
@@ -342,9 +343,8 @@ public class EnchantingBlockSupport
 		}
 	}
 
-	private static NonStackableItem _applyEnchantment(NonStackableItem nonStackable, Enchantment enchantment)
+	private static NonStackableItem _applyEnchantment(NonStackableItem nonStackable, PropertyType<Byte> toApply)
 	{
-		PropertyType<Byte> toApply = enchantment.enchantmentToApply();
 		Map<PropertyType<?>, Object> props = new HashMap<>(nonStackable.properties());
 		byte value = PropertyHelpers.getBytePropertyValue(props, toApply);
 		
