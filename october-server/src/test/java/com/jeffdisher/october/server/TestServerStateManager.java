@@ -88,7 +88,7 @@ public class TestServerStateManager
 		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
 		manager.setOwningThread();
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
-		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot);
+		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		manager.shutdown();
 		
 		// This should request nothing be set up for the next tick.
@@ -108,8 +108,9 @@ public class TestServerStateManager
 		String clientName = "client";
 		manager.clientConnected(clientId, clientName, 1);
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		AbsoluteLocation worldSpawn = new AbsoluteLocation(1000, 1000, 1000);
 		
-		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot);
+		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		Assert.assertEquals(1, callouts.requestedEntityIds.size());
 		Assert.assertTrue(changes.newCuboids().isEmpty());
 		Assert.assertTrue(changes.cuboidsToUnload().isEmpty());
@@ -118,14 +119,15 @@ public class TestServerStateManager
 		callouts.requestedEntityIds.clear();
 		
 		// Load this entity.
-		callouts.loadedEntities.add(new SuspendedEntity(MutableEntity.createForTest(clientId).freeze(), List.of()));
-		changes = manager.setupNextTickAfterCompletion(snapshot);
+		Entity entityToLoad = MutableEntity.createForTest(clientId).freeze();
+		callouts.loadedEntities.add(new SuspendedEntity(entityToLoad, List.of()));
+		changes = manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		Assert.assertTrue(changes.newCuboids().isEmpty());
 		Assert.assertTrue(changes.cuboidsToUnload().isEmpty());
 		Assert.assertEquals(1, changes.newEntities().size());
 		Assert.assertTrue(changes.entitiesToUnload().isEmpty());
 		Assert.assertTrue(callouts.requestedEntityIds.isEmpty());
-		Assert.assertTrue(callouts.requestedCuboidAddresses.isEmpty());
+		Assert.assertEquals(27, callouts.requestedCuboidAddresses.size());
 		Assert.assertTrue(callouts.lastFinishedCommitPerClient.isEmpty());
 		snapshot = _modifySnapshot(snapshot
 				, _convertToCuboidMap(changes.newCuboids())
@@ -137,13 +139,13 @@ public class TestServerStateManager
 		);
 		
 		// Verify that we see the surrounding cuboid load requests on the next tick.
-		changes = manager.setupNextTickAfterCompletion(snapshot);
+		changes = manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		Assert.assertTrue(changes.newCuboids().isEmpty());
 		Assert.assertTrue(changes.cuboidsToUnload().isEmpty());
 		Assert.assertTrue(changes.newEntities().isEmpty());
 		Assert.assertTrue(changes.entitiesToUnload().isEmpty());
 		Assert.assertTrue(callouts.requestedEntityIds.isEmpty());
-		Assert.assertEquals(27, callouts.requestedCuboidAddresses.size());
+		Assert.assertEquals(54, callouts.requestedCuboidAddresses.size());
 		Assert.assertEquals(0L, callouts.lastFinishedCommitPerClient.get(clientId).longValue());
 		Assert.assertTrue(callouts.cuboidsToTryWrite.isEmpty());
 		Assert.assertEquals(1, callouts.entitiesToTryWrite.size());
@@ -151,13 +153,13 @@ public class TestServerStateManager
 		
 		// Disconnect the client and see the entity unload.
 		manager.clientDisconnected(clientId);
-		changes = manager.setupNextTickAfterCompletion(snapshot);
+		changes = manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		Assert.assertTrue(changes.newCuboids().isEmpty());
 		Assert.assertTrue(changes.cuboidsToUnload().isEmpty());
 		Assert.assertTrue(changes.newEntities().isEmpty());
 		Assert.assertEquals(1, changes.entitiesToUnload().size());
 		Assert.assertTrue(callouts.requestedEntityIds.isEmpty());
-		Assert.assertEquals(27, callouts.requestedCuboidAddresses.size());
+		Assert.assertEquals(54, callouts.requestedCuboidAddresses.size());
 		Assert.assertEquals(0L, callouts.lastFinishedCommitPerClient.get(clientId).longValue());
 		Assert.assertEquals(1, callouts.entitiesToWrite.size());
 		callouts.entitiesToWrite.clear();
@@ -170,8 +172,8 @@ public class TestServerStateManager
 				, Set.of()
 		);
 		
-		// Load one of the requested cuboids and verify it appears as loaded.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(callouts.requestedCuboidAddresses.iterator().next(), ENV.special.AIR);
+		// Load the cuboid where the entity is located and verify it appears as loaded.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(entityToLoad.location().getBlockLocation().getCuboidAddress(), ENV.special.AIR);
 		callouts.loadedCuboids.add(new SuspendedCuboid<CuboidData>(cuboid
 				, HeightMapHelpers.buildHeightMap(cuboid)
 				, List.of()
@@ -179,12 +181,12 @@ public class TestServerStateManager
 				, Map.of()
 				, List.of()
 		));
-		changes = manager.setupNextTickAfterCompletion(snapshot);
+		changes = manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		Assert.assertEquals(1, changes.newCuboids().size());
 		Assert.assertTrue(changes.cuboidsToUnload().isEmpty());
 		Assert.assertTrue(changes.newEntities().isEmpty());
 		Assert.assertTrue(changes.entitiesToUnload().isEmpty());
-		Assert.assertEquals(27, callouts.requestedCuboidAddresses.size());
+		Assert.assertEquals(54, callouts.requestedCuboidAddresses.size());
 		Assert.assertEquals(0L, callouts.lastFinishedCommitPerClient.get(clientId).longValue());
 		Assert.assertTrue(callouts.entitiesToWrite.isEmpty());
 		Assert.assertTrue(callouts.cuboidsToWrite.isEmpty());
@@ -200,7 +202,7 @@ public class TestServerStateManager
 		// Stall until the keep-alive timeout.
 		for (int i = 0; i < (manager.test_getCuboidKeepAliveTicks() - 1); ++i)
 		{
-			changes = manager.setupNextTickAfterCompletion(snapshot);
+			changes = manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 			Assert.assertTrue(changes.newCuboids().isEmpty());
 			Assert.assertEquals(0, changes.cuboidsToUnload().size());
 			// (in this test, we aren't interested in periodic write-back).
@@ -208,12 +210,12 @@ public class TestServerStateManager
 		}
 		
 		// In another call, it should appear as unloaded.
-		changes = manager.setupNextTickAfterCompletion(snapshot);
+		changes = manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		Assert.assertTrue(changes.newCuboids().isEmpty());
 		Assert.assertEquals(1, changes.cuboidsToUnload().size());
 		Assert.assertTrue(changes.newEntities().isEmpty());
 		Assert.assertTrue(changes.entitiesToUnload().isEmpty());
-		Assert.assertEquals(27, callouts.requestedCuboidAddresses.size());
+		Assert.assertEquals(54, callouts.requestedCuboidAddresses.size());
 		Assert.assertEquals(0L, callouts.lastFinishedCommitPerClient.get(clientId).longValue());
 		Assert.assertTrue(callouts.entitiesToWrite.isEmpty());
 		Assert.assertEquals(1, callouts.cuboidsToWrite.size());
@@ -234,7 +236,7 @@ public class TestServerStateManager
 		manager.clientConnected(clientId, clientName, 1);
 		boolean[] connectedRef = new boolean[] {true};
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		
 		// We need to setup the callouts to not fully satisfy this.
 		MutationEntitySelectItem subAction = new MutationEntitySelectItem(1);
@@ -254,7 +256,7 @@ public class TestServerStateManager
 		manager.clientReadReady(clientId);
 		manager.clientDisconnected(clientId);
 		connectedRef[0] = false;
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 	}
 
 	@Test
@@ -272,22 +274,22 @@ public class TestServerStateManager
 		manager.clientConnected(clientId2, clientName2, 1);
 		
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		
 		callouts.loadedEntities.add(new SuspendedEntity(MutableEntity.createForTest(clientId1).freeze(), List.of()));
 		callouts.loadedEntities.add(new SuspendedEntity(MutableEntity.createForTest(clientId2).freeze(), List.of()));
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(1, callouts.joinedClients.get(clientId1).size());
 		Assert.assertEquals(1, callouts.joinedClients.get(clientId2).size());
 		Assert.assertEquals(clientName2, callouts.joinedClients.get(clientId1).get(clientId2));
 		Assert.assertEquals(clientName1, callouts.joinedClients.get(clientId2).get(clientId1));
 		
 		manager.clientDisconnected(clientId1);
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(0, callouts.joinedClients.get(clientId2).size());
 		
 		manager.clientDisconnected(clientId2);
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 	}
 
 	@Test
@@ -302,13 +304,13 @@ public class TestServerStateManager
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
 		
 		// We need to run a tick so that the client load request is made.
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(1, callouts.requestedEntityIds.size());
 		
 		// Allow the client load to be acknowledged.
 		Entity entity = MutableEntity.createForTest(clientId).freeze();
 		callouts.loadedEntities.add(new SuspendedEntity(entity, List.of()));
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		
 		CuboidAddress near = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData nearCuboid = CuboidGenerator.createFilledCuboid(near, ENV.special.AIR);
@@ -331,7 +333,7 @@ public class TestServerStateManager
 		
 		// Note that we will try to unload far and write-back everything else due to the tick number.
 		manager.test_setAlreadyAlive(snapshot.cuboids().keySet());
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		
 		// Note that we will need to wait for the keep-alive timeout to drop this.
 		Assert.assertEquals(0, callouts.cuboidsToWrite.size());
@@ -344,7 +346,7 @@ public class TestServerStateManager
 		callouts.entitiesToTryWrite.clear();
 		for (int i = 0; i < (manager.test_getCuboidKeepAliveTicks() - 2); ++i)
 		{
-			manager.setupNextTickAfterCompletion(snapshot);
+			manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 			Assert.assertTrue(callouts.cuboidsToWrite.isEmpty());
 			Assert.assertTrue(callouts.entitiesToWrite.isEmpty());
 			callouts.cuboidsToWrite.clear();
@@ -352,7 +354,7 @@ public class TestServerStateManager
 			callouts.cuboidsToTryWrite.clear();
 			callouts.entitiesToTryWrite.clear();
 		}
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(1, callouts.cuboidsToWrite.size());
 		Assert.assertTrue(callouts.entitiesToWrite.isEmpty());
 		Assert.assertEquals(1, callouts.cuboidsToTryWrite.size());
@@ -378,7 +380,7 @@ public class TestServerStateManager
 		
 		// The next tick shouldn't do anything.
 		snapshot = _advanceSnapshot(snapshot, 1L);
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertTrue(callouts.cuboidsToWrite.isEmpty());
 		Assert.assertTrue(callouts.entitiesToWrite.isEmpty());
 		Assert.assertTrue(callouts.cuboidsToTryWrite.isEmpty());
@@ -386,7 +388,7 @@ public class TestServerStateManager
 		
 		// If we cue up to the next flush tick, we should see the existing data written.
 		snapshot = _advanceSnapshot(snapshot, ServerStateManager.FORCE_FLUSH_TICK_FREQUENCY - 1L);
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertTrue(callouts.cuboidsToWrite.isEmpty());
 		Assert.assertTrue(callouts.entitiesToWrite.isEmpty());
 		Assert.assertEquals(1, callouts.cuboidsToTryWrite.size());
@@ -410,7 +412,7 @@ public class TestServerStateManager
 		manager.clientConnected(clientId2, clientName2, 1);
 		
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
-		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot);
+		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(0, changes.newCuboids().size());
 		Assert.assertEquals(0, changes.cuboidsToUnload().size());
 		Assert.assertEquals(0, changes.newEntities().size());
@@ -422,7 +424,7 @@ public class TestServerStateManager
 		far.setLocation(new EntityLocation(100.0f, 100.0f, 0.0f));
 		callouts.loadedEntities.add(new SuspendedEntity(near.freeze(), List.of()));
 		callouts.loadedEntities.add(new SuspendedEntity(far.freeze(), List.of()));
-		changes = manager.setupNextTickAfterCompletion(snapshot);
+		changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(0, changes.newCuboids().size());
 		Assert.assertEquals(0, changes.cuboidsToUnload().size());
 		Assert.assertEquals(2, changes.newEntities().size());
@@ -464,7 +466,7 @@ public class TestServerStateManager
 				)
 				, Set.of()
 		);
-		changes = manager.setupNextTickAfterCompletion(snapshot);
+		changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(2, changes.newCuboids().size());
 		Assert.assertEquals(0, changes.cuboidsToUnload().size());
 		Assert.assertEquals(0, changes.newEntities().size());
@@ -487,7 +489,7 @@ public class TestServerStateManager
 				))
 				, Set.of()
 		);
-		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
+		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L), new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(0, changes.newCuboids().size());
 		Assert.assertEquals(0, changes.cuboidsToUnload().size());
 		Assert.assertEquals(0, changes.newEntities().size());
@@ -507,7 +509,7 @@ public class TestServerStateManager
 				, snapshot.completedHeightMaps()
 				, Set.of()
 		);
-		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
+		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L), new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(0, changes.newCuboids().size());
 		Assert.assertEquals(0, changes.cuboidsToUnload().size());
 		Assert.assertEquals(0, changes.newEntities().size());
@@ -517,7 +519,7 @@ public class TestServerStateManager
 		
 		manager.clientDisconnected(clientId1);
 		manager.clientDisconnected(clientId2);
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 	}
 
 	@Test
@@ -530,9 +532,10 @@ public class TestServerStateManager
 		int clientId = 1;
 		manager.clientConnected(clientId, "client", 1);
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		AbsoluteLocation worldSpawn = new AbsoluteLocation(1000, 1000, 1000);
 		
 		// We need to run a tick so that the client load request is made.
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		Assert.assertEquals(1, callouts.requestedEntityIds.size());
 		
 		// Allow the client load to be acknowledged.
@@ -542,12 +545,12 @@ public class TestServerStateManager
 		mutable.newLocation = entityLocation;
 		Entity entity = mutable.freeze();
 		callouts.loadedEntities.add(new SuspendedEntity(entity, List.of()));
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		
 		// We shouldn't see the cuboid load request until the next tick.
-		Assert.assertEquals(0, callouts.requestedCuboidAddresses.size());
-		manager.setupNextTickAfterCompletion(snapshot);
 		Assert.assertEquals(27, callouts.requestedCuboidAddresses.size());
+		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
+		Assert.assertEquals(54, callouts.requestedCuboidAddresses.size());
 		
 		// Load these cuboids and show that the loaded cuboids are sent over the network.
 		CuboidAddress two = entityCuboid.getRelative(-1, -1, -1);
@@ -572,7 +575,7 @@ public class TestServerStateManager
 				, Set.of()
 		);
 		manager.test_setAlreadyAlive(snapshot.cuboids().keySet());
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		Assert.assertEquals(2, callouts.cuboidsSentToClient.get(clientId).size());
 		
 		// Move over slightly and show that this requests an unload over the network.
@@ -586,7 +589,7 @@ public class TestServerStateManager
 				, snapshot.completedHeightMaps()
 				, Set.of()
 		), 1L);
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		Assert.assertEquals(1, callouts.cuboidsSentToClient.get(clientId).size());
 		
 		manager.shutdown();
@@ -602,9 +605,10 @@ public class TestServerStateManager
 		int clientId = 1;
 		manager.clientConnected(clientId, "client", 1);
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		AbsoluteLocation worldSpawn = new AbsoluteLocation(1000, 1000, 1000);
 		
 		// We need to run a tick so that the client load request is made.
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		Assert.assertEquals(1, callouts.requestedEntityIds.size());
 		
 		// If we change the view distance here, it will be ignored since they aren't yet loaded.
@@ -617,13 +621,13 @@ public class TestServerStateManager
 		mutable.newLocation = entityLocation;
 		Entity entity = mutable.freeze();
 		callouts.loadedEntities.add(new SuspendedEntity(entity, List.of()));
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		
 		// We shouldn't see the cuboid load request until the next tick.
-		Assert.assertEquals(0, callouts.requestedCuboidAddresses.size());
-		manager.setupNextTickAfterCompletion(snapshot);
-		// (see that this is still the default 3x3x3)
 		Assert.assertEquals(27, callouts.requestedCuboidAddresses.size());
+		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
+		// (see that this is still the default 3x3x3)
+		Assert.assertEquals(54, callouts.requestedCuboidAddresses.size());
 		
 		// Load a bunch of cuboids at different distances so we can see how the loaded set changes with view distance.
 		CuboidAddress plus1 = entityCuboid.getRelative(-1, -1, -1);
@@ -658,16 +662,16 @@ public class TestServerStateManager
 		// Saturate the network to block the next cuboid.
 		callouts.isNetworkWriteReady = false;
 		manager.test_setAlreadyAlive(snapshot.cuboids().keySet());
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		Assert.assertNull(callouts.cuboidsSentToClient.get(clientId));
-		Assert.assertEquals(27, callouts.requestedCuboidAddresses.size());
+		Assert.assertEquals(54, callouts.requestedCuboidAddresses.size());
 		callouts.cuboidsToWrite.clear();
 		callouts.entitiesToWrite.clear();
 		callouts.cuboidsToTryWrite.clear();
 		callouts.entitiesToTryWrite.clear();
 		// Resume the network to continue.
 		callouts.isNetworkWriteReady = true;
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		Assert.assertEquals(2, callouts.cuboidsSentToClient.get(clientId).size());
 		
 		// Change the distance and see the cuboid collection grow.
@@ -676,7 +680,7 @@ public class TestServerStateManager
 		callouts.requestedCuboidAddresses.clear();
 		snapshot = _advanceSnapshot(snapshot, 1L);
 		manager.setClientViewDistance(clientId, 2);
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		Assert.assertEquals(3, callouts.cuboidsSentToClient.get(clientId).size());
 		// (see that this is now 5x5x5 minus what was previously requested or pre-loaded)
 		Assert.assertEquals(125 - 27 - 1, callouts.requestedCuboidAddresses.size());
@@ -684,7 +688,7 @@ public class TestServerStateManager
 		callouts.cuboidsToWrite.clear();
 		snapshot = _advanceSnapshot(snapshot, 1L);
 		manager.setClientViewDistance(clientId, 0);
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		Assert.assertEquals(1, callouts.cuboidsSentToClient.get(clientId).size());
 		
 		callouts.cuboidsToWrite.clear();
@@ -702,9 +706,10 @@ public class TestServerStateManager
 		int requestedRaduis = 2;
 		manager.clientConnected(clientId, "client", requestedRaduis);
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		AbsoluteLocation worldSpawn = new AbsoluteLocation(1000, 1000, 1000);
 		
 		// We need to run a tick so that the client load request is made.
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		Assert.assertEquals(1, callouts.requestedEntityIds.size());
 		
 		// Allow the client load to be acknowledged.
@@ -713,13 +718,13 @@ public class TestServerStateManager
 		mutable.newLocation = entityLocation;
 		Entity entity = mutable.freeze();
 		callouts.loadedEntities.add(new SuspendedEntity(entity, List.of()));
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		
 		// We shouldn't see the cuboid load request until the next tick.
-		Assert.assertEquals(0, callouts.requestedCuboidAddresses.size());
-		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(27, callouts.requestedCuboidAddresses.size());
+		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		// (we should now see that the 5x5x5 is requested since we asked for a radius of 2)
-		Assert.assertEquals(125, callouts.requestedCuboidAddresses.size());
+		Assert.assertEquals(27 + 125, callouts.requestedCuboidAddresses.size());
 		manager.shutdown();
 	}
 
@@ -739,11 +744,12 @@ public class TestServerStateManager
 			, Map.of()
 			, Set.of(internalAddress)
 		);
+		AbsoluteLocation worldSpawn = new AbsoluteLocation(1000, 1000, 1000);
 		
 		// Show that the cuboid is requested.
-		manager.setupNextTickAfterCompletion(snapshot);
-		Assert.assertEquals(1, callouts.requestedCuboidAddresses.size());
-		Assert.assertEquals(internalAddress, callouts.requestedCuboidAddresses.iterator().next());
+		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
+		Assert.assertEquals(27 + 1, callouts.requestedCuboidAddresses.size());
+		Assert.assertTrue(callouts.requestedCuboidAddresses.contains(internalAddress));
 		callouts.requestedCuboidAddresses.clear();
 		
 		// Load this cuboid and wait for it to timeout and be unloaded.
@@ -764,7 +770,7 @@ public class TestServerStateManager
 			, Map.of()
 			, Set.of()
 		);
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		
 		// Now, just show them loaded.
 		snapshot = _modifySnapshot(snapshot
@@ -779,7 +785,7 @@ public class TestServerStateManager
 			)
 			, Set.of()
 		);
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		Assert.assertEquals(0, callouts.requestedCuboidAddresses.size());
 		Assert.assertEquals(0, callouts.cuboidsToWrite.size());
 		Assert.assertEquals(0, callouts.cuboidsToTryWrite.size());
@@ -787,13 +793,13 @@ public class TestServerStateManager
 		// Nothing should happen while waiting for timeout.
 		for (int i = 0; i < (manager.test_getCuboidKeepAliveTicks() - 2); ++i)
 		{
-			manager.setupNextTickAfterCompletion(snapshot);
+			manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 			Assert.assertEquals(0, callouts.cuboidsToWrite.size());
 			Assert.assertEquals(0, callouts.cuboidsToTryWrite.size());
 		}
 		
 		// Now, we should see the unload since it has timed out.
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		Assert.assertEquals(1, callouts.cuboidsToWrite.size());
 		Assert.assertEquals(0, callouts.cuboidsToTryWrite.size());
 		callouts.cuboidsToWrite.clear();
@@ -806,7 +812,7 @@ public class TestServerStateManager
 			, Map.of()
 			, Set.of()
 		);
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		Assert.assertEquals(0, callouts.cuboidsToWrite.size());
 		Assert.assertEquals(0, callouts.cuboidsToTryWrite.size());
 		
@@ -825,14 +831,14 @@ public class TestServerStateManager
 		manager.clientConnected(clientId1, clientName1, 1);
 		
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
-		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot);
+		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(0, changes.newCuboids().size());
 		Assert.assertEquals(0, changes.newEntities().size());
 		
 		MutableEntity near = MutableEntity.createForTest(clientId1);
 		near.setLocation(new EntityLocation(5.0f, 5.0f, 0.0f));
 		callouts.loadedEntities.add(new SuspendedEntity(near.freeze(), List.of()));
-		changes = manager.setupNextTickAfterCompletion(snapshot);
+		changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(0, changes.newCuboids().size());
 		Assert.assertEquals(1, changes.newEntities().size());
 		
@@ -863,7 +869,7 @@ public class TestServerStateManager
 			)
 			, Set.of()
 		);
-		changes = manager.setupNextTickAfterCompletion(snapshot);
+		changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(1, changes.newCuboids().size());
 		
 		snapshot = _modifySnapshot(snapshot
@@ -880,7 +886,7 @@ public class TestServerStateManager
 			))
 			, Set.of()
 		);
-		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
+		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L), new AbsoluteLocation(0, 0, 0));
 		// We expect to see the callout to send the new passive.
 		PartialPassive output = callouts.partialPassivesPerClient.get(clientId1).get(passiveId);
 		Assert.assertEquals(passiveLocation, output.location());
@@ -904,7 +910,7 @@ public class TestServerStateManager
 			, snapshot.completedHeightMaps()
 			, Set.of()
 		);
-		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
+		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L), new AbsoluteLocation(0, 0, 0));
 		// We expect to see the callout to send the passive's new location.
 		output = callouts.partialPassivesPerClient.get(clientId1).get(passiveId);
 		Assert.assertEquals(newLocation, output.location());
@@ -922,13 +928,13 @@ public class TestServerStateManager
 			, snapshot.completedHeightMaps()
 			, Set.of()
 		);
-		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
+		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L), new AbsoluteLocation(0, 0, 0));
 		// We expect to see the callout remove the passive.
 		output = callouts.partialPassivesPerClient.get(clientId1).get(passiveId);
 		Assert.assertNull(output);
 		
 		manager.clientDisconnected(clientId1);
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 	}
 
 	@Test
@@ -944,11 +950,11 @@ public class TestServerStateManager
 		
 		// Load the initial player entity so we will send the updates somewhere.
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
-		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot);
+		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		MutableEntity near = MutableEntity.createForTest(clientId1);
 		near.setLocation(new EntityLocation(5.0f, 5.0f, 0.0f));
 		callouts.loadedEntities.add(new SuspendedEntity(near.freeze(), List.of()));
-		changes = manager.setupNextTickAfterCompletion(snapshot);
+		changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(0, changes.newCuboids().size());
 		Assert.assertEquals(1, changes.newEntities().size());
 		
@@ -988,7 +994,7 @@ public class TestServerStateManager
 			)
 			, Set.of()
 		);
-		changes = manager.setupNextTickAfterCompletion(snapshot);
+		changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(1, changes.newCuboids().size());
 		// (note that this is the first time we will see the full entity, too)
 		Assert.assertTrue(callouts.fullEntitiesSent.contains(clientId1));
@@ -1012,7 +1018,7 @@ public class TestServerStateManager
 			))
 			, Set.of()
 		);
-		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
+		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L), new AbsoluteLocation(0, 0, 0));
 		
 		// We should see the callouts to send the new cuboid, creature, and passive.
 		// -cuboid
@@ -1051,7 +1057,7 @@ public class TestServerStateManager
 			, snapshot.completedHeightMaps()
 			, Set.of()
 		);
-		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
+		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L), new AbsoluteLocation(0, 0, 0));
 		
 		// We expect to see the visible changes passing through the callouts.
 		// Note:  The callouts verify that the change actually makes a real change.
@@ -1061,7 +1067,7 @@ public class TestServerStateManager
 		Assert.assertEquals(newPassiveLocation, outputPassive.location());
 		
 		manager.clientDisconnected(clientId1);
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 	}
 
 	@Test
@@ -1078,12 +1084,12 @@ public class TestServerStateManager
 		
 		// Load the initial player entity so we will send the updates somewhere.
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
-		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot);
+		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		MutableEntity near = MutableEntity.createForTest(clientId1);
 		EntityLocation clientLocation = new EntityLocation(5.0f, 5.0f, 0.0f);
 		near.setLocation(clientLocation);
 		callouts.loadedEntities.add(new SuspendedEntity(near.freeze(), List.of()));
-		changes = manager.setupNextTickAfterCompletion(snapshot);
+		changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(0, changes.newCuboids().size());
 		Assert.assertEquals(1, changes.newEntities().size());
 		
@@ -1117,7 +1123,7 @@ public class TestServerStateManager
 			)
 			, Set.of()
 		);
-		changes = manager.setupNextTickAfterCompletion(snapshot);
+		changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(2, changes.newCuboids().size());
 		// (note that this is the first time we will see the full entity, too)
 		Assert.assertTrue(callouts.fullEntitiesSent.contains(clientId1));
@@ -1147,7 +1153,7 @@ public class TestServerStateManager
 			))
 			, Set.of()
 		);
-		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
+		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L), new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(1, changes.newCuboids().size());
 		Assert.assertTrue(callouts.cuboidsSentToClient.get(clientId1).contains(nearCuboid.getCuboidAddress()));
 		Assert.assertTrue(callouts.cuboidsSentToClient.get(clientId1).contains(farCuboid.getCuboidAddress()));
@@ -1169,14 +1175,14 @@ public class TestServerStateManager
 			))
 			, Set.of()
 		);
-		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
+		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L), new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(0, changes.newCuboids().size());
 		Assert.assertTrue(callouts.cuboidsSentToClient.get(clientId1).contains(nearCuboid.getCuboidAddress()));
 		Assert.assertTrue(callouts.cuboidsSentToClient.get(clientId1).contains(farCuboid.getCuboidAddress()));
 		Assert.assertTrue(callouts.cuboidsSentToClient.get(clientId1).contains(farCuboid2.getCuboidAddress()));
 		
 		manager.clientDisconnected(clientId1);
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 	}
 
 	@Test
@@ -1193,12 +1199,12 @@ public class TestServerStateManager
 		
 		// Load the initial player entity so we will send the updates somewhere.
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
-		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot);
+		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		MutableEntity near = MutableEntity.createForTest(clientId1);
 		EntityLocation clientLocation = new EntityLocation(5.0f, 5.0f, 0.0f);
 		near.setLocation(clientLocation);
 		callouts.loadedEntities.add(new SuspendedEntity(near.freeze(), List.of()));
-		changes = manager.setupNextTickAfterCompletion(snapshot);
+		changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(0, changes.newCuboids().size());
 		Assert.assertEquals(1, changes.newEntities().size());
 		
@@ -1248,7 +1254,7 @@ public class TestServerStateManager
 			)
 			, Set.of()
 		);
-		changes = manager.setupNextTickAfterCompletion(snapshot);
+		changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(2, changes.newCuboids().size());
 		// (note that this is the first time we will see the full entity, too)
 		Assert.assertTrue(callouts.fullEntitiesSent.contains(clientId1));
@@ -1274,7 +1280,7 @@ public class TestServerStateManager
 			))
 			, Set.of()
 		);
-		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
+		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L), new AbsoluteLocation(0, 0, 0));
 		
 		// We expect to see the callouts for both cuboids but only the near creature and passive.
 		// -cuboids
@@ -1288,7 +1294,7 @@ public class TestServerStateManager
 		Assert.assertEquals(passiveNearLocation, callouts.partialPassivesPerClient.get(clientId1).get(passiveNear.id()).location());
 		
 		manager.clientDisconnected(clientId1);
-		manager.setupNextTickAfterCompletion(snapshot);
+		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 	}
 
 

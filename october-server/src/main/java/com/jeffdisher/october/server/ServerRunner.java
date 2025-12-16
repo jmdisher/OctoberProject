@@ -349,7 +349,7 @@ public class ServerRunner
 		{
 			// We schedule this only after receiving a callback that the tick is complete so this should return with the snapshot, immediately, and let the next tick start.
 			TickRunner.Snapshot snapshot = _tickRunner.waitForPreviousTick();
-			ServerStateManager.TickChanges nextTickChanges = _stateManager.setupNextTickAfterCompletion(snapshot);
+			ServerStateManager.TickChanges nextTickChanges = _stateManager.setupNextTickAfterCompletion(snapshot, _sharedConfig.worldSpawn);
 			
 			_tickRunner.setupChangesForTick(nextTickChanges.newCuboids()
 					, nextTickChanges.cuboidsToUnload()

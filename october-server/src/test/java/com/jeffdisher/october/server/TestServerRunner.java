@@ -467,6 +467,10 @@ public class TestServerRunner
 		Entity entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		
+		// We will change the world spawn now the entity has been created so that the creatures will despawn on disconnect.
+		// (this is a shared config instance, by design)
+		config.worldSpawn = new AbsoluteLocation(1000, 1000, 1000);
+		
 		// We expect to see a cow.
 		PartialEntity cow = network.waitForPeerEntity(clientId1, -1);
 		Assert.assertEquals(COW, cow.type());

@@ -174,7 +174,7 @@ public class ServerStateManager
 		}
 	}
 
-	public TickChanges setupNextTickAfterCompletion(TickRunner.Snapshot snapshot)
+	public TickChanges setupNextTickAfterCompletion(TickRunner.Snapshot snapshot, AbsoluteLocation worldSpawn)
 	{
 		Assert.assertTrue(Thread.currentThread() == _ownerThread);
 		
@@ -243,6 +243,20 @@ public class ServerStateManager
 		// (we will use this for load/unload decisions)
 		Set<CuboidAddress> referencedCuboids = _findReferencedCuboids(_connectedClients.values());
 		referencedCuboids.addAll(snapshot.internallyMarkedAlive());
+		
+		// We want to implicitly load the area around the world spawn.
+		CuboidAddress spawnCuboid = worldSpawn.getCuboidAddress();
+		for (int z = -1; z <= 1; ++z)
+		{
+			for (int y = -1; y <= 1; ++y)
+			{
+				for (int x = -1; x <= 1; ++x)
+				{
+					CuboidAddress thisCuboid = spawnCuboid.getRelative(x, y, z);
+					referencedCuboids.add(thisCuboid);
+				}
+			}
+		}
 		
 		// Update our keep-alive timers for cuboids.
 		// (we assume that we are always tracking the keep-alive for all completed cuboids)
