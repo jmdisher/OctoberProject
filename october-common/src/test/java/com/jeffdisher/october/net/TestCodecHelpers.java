@@ -607,7 +607,8 @@ public class TestCodecHelpers
 	public void enchantmentRegistry() throws Throwable
 	{
 		// Show the basic serialization behaviour of records used by EnchantmentRegistry.
-		Enchantment enchantment = ENV.enchantments.enchantmentForNumber(1);
+		Block enchantingTable = ENV.blocks.fromItem(ENV.items.getItemById("op.enchanting_table"));
+		Enchantment enchantment = ENV.enchantments.getBlindEnchantment(enchantingTable, IRON_SWORD_ITEM, PropertyRegistry.ENCHANT_DURABILITY);
 		Assert.assertNotNull(enchantment);
 		Infusion infusion = ENV.enchantments.infusionForNumber(1);
 		Assert.assertNotNull(infusion);

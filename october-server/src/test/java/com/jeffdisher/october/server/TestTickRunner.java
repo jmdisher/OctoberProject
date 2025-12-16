@@ -3349,12 +3349,12 @@ public class TestTickRunner
 		AbsoluteLocation tableLocation = new AbsoluteLocation(5, 5, 5);
 		Item pickAxe = ENV.items.getItemById("op.iron_pickaxe");
 		Item ironIngot = ENV.items.getItemById("op.iron_ingot");
-		Item enchantingTable = ENV.items.getItemById("op.enchanting_table");
+		Block enchantingTable = ENV.blocks.fromItem(ENV.items.getItemById("op.enchanting_table"));
 		Item pedestal = ENV.items.getItemById("op.pedestal");
 		
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
-		cuboid.setData15(AspectRegistry.BLOCK, tableLocation.getBlockAddress(), enchantingTable.number());
+		cuboid.setData15(AspectRegistry.BLOCK, tableLocation.getBlockAddress(), enchantingTable.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, tableLocation.getRelative(0, -2, 0).getBlockAddress(), pedestal.number());
 		cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getRelative(0, -2, 0).getBlockAddress(), ItemSlot.fromStack(new Items(STONE_ITEM, 1)));
 		cuboid.setData15(AspectRegistry.BLOCK, tableLocation.getRelative(0, 2, 0).getBlockAddress(), pedestal.number());
@@ -3396,7 +3396,7 @@ public class TestTickRunner
 		IReadOnlyCuboidData completed = snapshot.cuboids().get(address).completed();
 		Assert.assertEquals(ItemSlot.fromNonStack(input), completed.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getBlockAddress()));
 		EnchantingOperation operation = completed.getDataSpecial(AspectRegistry.ENCHANTING, tableLocation.getBlockAddress());
-		Assert.assertEquals(ENV.enchantments.enchantmentForNumber(1), operation.enchantment());
+		Assert.assertEquals(ENV.enchantments.getBlindEnchantment(enchantingTable, pickAxe, PropertyRegistry.ENCHANT_DURABILITY), operation.enchantment());
 		Assert.assertEquals(millisPerTick, operation.chargedMillis());
 		
 		runner.shutdown();
@@ -3409,14 +3409,14 @@ public class TestTickRunner
 		AbsoluteLocation tableLocation = new AbsoluteLocation(5, 5, 5);
 		Item pickAxe = ENV.items.getItemById("op.iron_pickaxe");
 		Item ironIngot = ENV.items.getItemById("op.iron_ingot");
-		Item enchantingTable = ENV.items.getItemById("op.enchanting_table");
+		Block enchantingTable = ENV.blocks.fromItem(ENV.items.getItemById("op.enchanting_table"));
 		Item pedestal = ENV.items.getItemById("op.pedestal");
-		Enchantment enchantment = ENV.enchantments.enchantmentForNumber(1);
+		Enchantment enchantment = ENV.enchantments.getBlindEnchantment(enchantingTable, pickAxe, PropertyRegistry.ENCHANT_DURABILITY);
 		long previousCharge = enchantment.millisToApply() - 1L;
 		
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
-		cuboid.setData15(AspectRegistry.BLOCK, tableLocation.getBlockAddress(), enchantingTable.number());
+		cuboid.setData15(AspectRegistry.BLOCK, tableLocation.getBlockAddress(), enchantingTable.item().number());
 		cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getBlockAddress(), ItemSlot.fromNonStack(PropertyHelpers.newItemWithDefaults(ENV, pickAxe)));
 		cuboid.setDataSpecial(AspectRegistry.ENCHANTING, tableLocation.getBlockAddress(), new EnchantingOperation(previousCharge
 			, enchantment

@@ -68,7 +68,7 @@ public class TestEnchantmentRegistry
 		NonStackableItem pickaxe = PropertyHelpers.newItemWithDefaults(ENV, IRON_PICKAXE);
 		Enchantment enchantment = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, pickaxe, List.of(ITEM_STONE, IRON_INGOT, ITEM_STONE, IRON_INGOT));
 		Assert.assertNotNull(enchantment);
-		Assert.assertTrue(EnchantmentRegistry.canApplyToTarget(pickaxe, ENV.enchantments.enchantmentForNumber(1)));
+		Assert.assertTrue(EnchantmentRegistry.canApplyToTarget(pickaxe, enchantment));
 	}
 
 	@Test
@@ -97,7 +97,7 @@ public class TestEnchantmentRegistry
 		pickaxe = new NonStackableItem(IRON_PICKAXE, properties);
 		Enchantment enchantment = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, pickaxe, List.of(ITEM_STONE, ITEM_STONE, IRON_INGOT, IRON_INGOT));
 		Assert.assertNull(enchantment);
-		Assert.assertFalse(EnchantmentRegistry.canApplyToTarget(pickaxe, ENV.enchantments.enchantmentForNumber(1)));
+		Assert.assertFalse(EnchantmentRegistry.canApplyToTarget(pickaxe, ENV.enchantments.getBlindEnchantment(ENCHANTING_TABLE, IRON_PICKAXE, PropertyRegistry.ENCHANT_DURABILITY)));
 	}
 
 	@Test

@@ -127,7 +127,7 @@ public class TestEnchantingBlockSupport
 		_swapSpecialSlot(cuboid, TABLE_LOCATION.getRelative(0, 2, 0), ItemSlot.fromStack(new Items(IRON_INGOT, 1)));
 		_swapSpecialSlot(cuboid, TABLE_LOCATION.getRelative(0, -2, 0), ItemSlot.fromStack(new Items(IRON_INGOT, 1)));
 		
-		Enchantment enchant = ENV.enchantments.enchantmentForNumber(1);
+		Enchantment enchant = ENV.enchantments.getBlindEnchantment(ENCHATING_TABLE, IRON_PICKAXE, PropertyRegistry.ENCHANT_DURABILITY);
 		cuboid.setDataSpecial(AspectRegistry.ENCHANTING, TABLE_LOCATION.getBlockAddress(), new EnchantingOperation(100L, enchant, null, List.of()));
 		
 		MutationBlockChargeEnchantment[] out = new MutationBlockChargeEnchantment[1];
@@ -167,7 +167,7 @@ public class TestEnchantingBlockSupport
 		_swapSpecialSlot(cuboid, TABLE_LOCATION.getRelative(0, 2, 0), ItemSlot.fromStack(new Items(IRON_INGOT, 1)));
 		_swapSpecialSlot(cuboid, TABLE_LOCATION.getRelative(0, -2, 0), ItemSlot.fromStack(new Items(IRON_INGOT, 1)));
 		
-		Enchantment enchant = ENV.enchantments.enchantmentForNumber(1);
+		Enchantment enchant = ENV.enchantments.getBlindEnchantment(ENCHATING_TABLE, IRON_PICKAXE, PropertyRegistry.ENCHANT_DURABILITY);
 		long previousChargeMillis = 100L;
 		cuboid.setDataSpecial(AspectRegistry.ENCHANTING, TABLE_LOCATION.getBlockAddress(), new EnchantingOperation(previousChargeMillis, enchant, null, List.of()));
 		
@@ -206,7 +206,7 @@ public class TestEnchantingBlockSupport
 		_swapSpecialSlot(cuboid, TABLE_LOCATION.getRelative(0, 2, 0), ItemSlot.fromStack(new Items(IRON_INGOT, 1)));
 		_swapSpecialSlot(cuboid, TABLE_LOCATION.getRelative(0, -2, 0), ItemSlot.fromStack(new Items(IRON_INGOT, 1)));
 		
-		Enchantment enchant = ENV.enchantments.enchantmentForNumber(1);
+		Enchantment enchant = ENV.enchantments.getBlindEnchantment(ENCHATING_TABLE, IRON_PICKAXE, PropertyRegistry.ENCHANT_DURABILITY);
 		long previousChargeMillis = enchant.millisToApply() - 1L;
 		cuboid.setDataSpecial(AspectRegistry.ENCHANTING, TABLE_LOCATION.getBlockAddress(), new EnchantingOperation(previousChargeMillis, enchant, null, List.of()));
 		
@@ -252,7 +252,7 @@ public class TestEnchantingBlockSupport
 		_swapSpecialSlot(cuboid, TABLE_LOCATION.getRelative(0, 2, 0), ItemSlot.fromStack(new Items(IRON_INGOT, 1)));
 		_swapSpecialSlot(cuboid, TABLE_LOCATION.getRelative(0, -2, 0), ItemSlot.fromStack(new Items(IRON_INGOT, 1)));
 		
-		Enchantment enchant = ENV.enchantments.enchantmentForNumber(1);
+		Enchantment enchant = ENV.enchantments.getBlindEnchantment(ENCHATING_TABLE, IRON_PICKAXE, PropertyRegistry.ENCHANT_DURABILITY);
 		long previousChargeMillis = 100L;
 		cuboid.setDataSpecial(AspectRegistry.ENCHANTING, TABLE_LOCATION.getBlockAddress(), new EnchantingOperation(previousChargeMillis, enchant, null, List.of()));
 		
@@ -288,7 +288,7 @@ public class TestEnchantingBlockSupport
 		_swapSpecialSlot(cuboid, TABLE_LOCATION.getRelative(0, 2, 0), ItemSlot.fromStack(new Items(IRON_INGOT, 1)));
 		_swapSpecialSlot(cuboid, TABLE_LOCATION.getRelative(0, -2, 0), ItemSlot.fromStack(new Items(IRON_INGOT, 1)));
 		
-		Enchantment enchant = ENV.enchantments.enchantmentForNumber(1);
+		Enchantment enchant = ENV.enchantments.getBlindEnchantment(ENCHATING_TABLE, IRON_PICKAXE, PropertyRegistry.ENCHANT_DURABILITY);
 		cuboid.setDataSpecial(AspectRegistry.ENCHANTING, TABLE_LOCATION.getBlockAddress(), new EnchantingOperation(enchant.millisToApply(), enchant, null, List.of()));
 		
 		PassiveEntity[] out = new PassiveEntity[1];
@@ -323,7 +323,7 @@ public class TestEnchantingBlockSupport
 		_swapSpecialSlot(cuboid, TABLE_LOCATION.getRelative(0, 2, 0), ItemSlot.fromStack(new Items(IRON_INGOT, 1)));
 		_swapSpecialSlot(cuboid, TABLE_LOCATION.getRelative(0, -2, 0), ItemSlot.fromStack(new Items(IRON_INGOT, 1)));
 		
-		Enchantment enchant = ENV.enchantments.enchantmentForNumber(1);
+		Enchantment enchant = ENV.enchantments.getBlindEnchantment(ENCHATING_TABLE, IRON_PICKAXE, PropertyRegistry.ENCHANT_DURABILITY);
 		cuboid.setDataSpecial(AspectRegistry.ENCHANTING, TABLE_LOCATION.getBlockAddress(), new EnchantingOperation(enchant.millisToApply(), enchant, null, List.of()));
 		
 		TickProcessingContext context = _createContext(cuboid);
@@ -342,7 +342,7 @@ public class TestEnchantingBlockSupport
 		CuboidData cuboid = _testCuboid();
 		_swapSpecialSlot(cuboid, TABLE_LOCATION, ItemSlot.fromStack(new Items(STONE_BRICK, 1)));
 		
-		Enchantment enchant = ENV.enchantments.enchantmentForNumber(1);
+		Enchantment enchant = ENV.enchantments.getBlindEnchantment(ENCHATING_TABLE, IRON_PICKAXE, PropertyRegistry.ENCHANT_DURABILITY);
 		cuboid.setDataSpecial(AspectRegistry.ENCHANTING, TABLE_LOCATION.getBlockAddress(), new EnchantingOperation(enchant.millisToApply(), enchant, null, List.of(ItemSlot.fromStack(new Items(STONE, 1)), ItemSlot.fromStack(new Items(STONE, 1)), ItemSlot.fromStack(new Items(IRON_INGOT, 1)))));
 		
 		PassiveEntity[] out = new PassiveEntity[1];
@@ -373,7 +373,7 @@ public class TestEnchantingBlockSupport
 		CuboidData cuboid = _testCuboid();
 		_swapSpecialSlot(cuboid, TABLE_LOCATION, ItemSlot.fromNonStack(PropertyHelpers.newItemWithDefaults(ENV, IRON_PICKAXE)));
 		
-		Enchantment enchant = ENV.enchantments.enchantmentForNumber(1);
+		Enchantment enchant = ENV.enchantments.getBlindEnchantment(ENCHATING_TABLE, IRON_PICKAXE, PropertyRegistry.ENCHANT_DURABILITY);
 		cuboid.setDataSpecial(AspectRegistry.ENCHANTING, TABLE_LOCATION.getBlockAddress(), new EnchantingOperation(enchant.millisToApply(), enchant, null, List.of(ItemSlot.fromStack(new Items(STONE, 1)), ItemSlot.fromStack(new Items(STONE, 1)), ItemSlot.fromStack(new Items(IRON_INGOT, 1)))));
 		
 		PassiveEntity[] out = new PassiveEntity[1];
@@ -405,7 +405,7 @@ public class TestEnchantingBlockSupport
 		// Show that we spawn any items "stuck" in this invalid operation as passives in the post-pass.
 		CuboidData cuboid = _testCuboid();
 		
-		Enchantment enchant = ENV.enchantments.enchantmentForNumber(1);
+		Enchantment enchant = ENV.enchantments.getBlindEnchantment(ENCHATING_TABLE, IRON_PICKAXE, PropertyRegistry.ENCHANT_DURABILITY);
 		cuboid.setDataSpecial(AspectRegistry.ENCHANTING, TABLE_LOCATION.getBlockAddress(), new EnchantingOperation(enchant.millisToApply(), enchant, null, List.of(ItemSlot.fromStack(new Items(STONE, 1)), ItemSlot.fromStack(new Items(STONE, 1)), ItemSlot.fromStack(new Items(IRON_INGOT, 1)))));
 		
 		List<PassiveEntity> out = new ArrayList<>();

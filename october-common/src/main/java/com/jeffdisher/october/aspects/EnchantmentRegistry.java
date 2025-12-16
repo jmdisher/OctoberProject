@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.properties.PropertyRegistry;
+import com.jeffdisher.october.properties.PropertyType;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Enchantment;
 import com.jeffdisher.october.types.Infusion;
@@ -81,9 +82,7 @@ public class EnchantmentRegistry
 				// This has a kind of durability so we can use it.
 				// These can't be stackable.
 				Assert.assertTrue(!durability.isStackable(target));
-				int number = enchantments.size() + 1;
-				Enchantment enchantDurability = new Enchantment(number
-					, enchantingTable
+				Enchantment enchantDurability = new Enchantment(enchantingTable
 					, durabilityChargeMillis
 					, target
 					, durabilityConsumedItems
@@ -96,9 +95,7 @@ public class EnchantmentRegistry
 				// This has damage so we assume it is a melee weapon.
 				// These can't be stackable.
 				Assert.assertTrue(!durability.isStackable(target));
-				int number = enchantments.size() + 1;
-				Enchantment enchantDamage = new Enchantment(number
-					, enchantingTable
+				Enchantment enchantDamage = new Enchantment(enchantingTable
 					, melleeDamageChargeMillis
 					, target
 					, meleeDamageConsumedItems
@@ -111,9 +108,7 @@ public class EnchantmentRegistry
 				// This has a speed modifier so we assume it is a tool.
 				// These can't be stackable.
 				Assert.assertTrue(!durability.isStackable(target));
-				int number = enchantments.size() + 1;
-				Enchantment enchantEfficiency = new Enchantment(number
-					, enchantingTable
+				Enchantment enchantEfficiency = new Enchantment(enchantingTable
 					, toolEfficiencyChargeMillis
 					, target
 					, toolEfficiencyConsumedItems
@@ -167,7 +162,6 @@ public class EnchantmentRegistry
 	}
 
 
-	private final Enchantment[] _enchantments;
 	private final Infusion[] _infusions;
 	private final Map<Block, List<Enchantment>> _enchantmentsByBlock;
 	private final Map<Block, List<Infusion>> _infusionsByBlock;
@@ -175,11 +169,6 @@ public class EnchantmentRegistry
 	private EnchantmentRegistry(List<Enchantment> enchantments, List<Infusion> infusions)
 	{
 		// We need to leave the 0 index empty since we reserve that value as "null".
-		_enchantments = new Enchantment[enchantments.size() + 1];
-		for (int i = 0; i < enchantments.size(); ++i)
-		{
-			_enchantments[i + 1] = enchantments.get(i);
-		}
 		_infusions = new Infusion[infusions.size() + 1];
 		for (int i = 0; i < infusions.size(); ++i)
 		{
@@ -198,11 +187,6 @@ public class EnchantmentRegistry
 	public List<Infusion> allInfusions(Block table)
 	{
 		return _infusionsByBlock.get(table);
-	}
-
-	public Enchantment enchantmentForNumber(int number)
-	{
-		return _enchantments[number];
 	}
 
 	public Infusion infusionForNumber(int number)
@@ -263,6 +247,26 @@ public class EnchantmentRegistry
 	public boolean canEnchant(Block block)
 	{
 		return _enchantmentsByBlock.containsKey(block) || _infusionsByBlock.containsKey(block);
+	}
+
+	public Enchantment getBlindEnchantment(Block table, Item targetItem, PropertyType<Byte> property)
+	{
+		Enchantment result = null;
+		List<Enchantment> possible = _enchantmentsByBlock.get(table);
+		if (null != possible)
+		{
+			List<Enchantment> matched = possible.stream().filter((Enchantment e) -> {
+				return (targetItem == e.targetItem()) && (property == e.enchantmentToApply());
+			}).toList();
+			
+			if (!matched.isEmpty())
+			{
+				// There should be only one (or there are duplicates in the infusion config).
+				Assert.assertTrue(1 == matched.size());
+				result = matched.get(0);
+			}
+		}
+		return result;
 	}
 
 

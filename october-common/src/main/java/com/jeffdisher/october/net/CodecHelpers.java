@@ -171,19 +171,12 @@ public class CodecHelpers
 
 	public static Block readBlock(ByteBuffer buffer)
 	{
-		Block block = null;
-		Item item = _readItem(buffer);
-		if (null != item)
-		{
-			block = Environment.getShared().blocks.fromItem(item);
-		}
-		return block;
+		return _readBlock(buffer);
 	}
 
 	public static void writeBlock(ByteBuffer buffer, Block block)
 	{
-		Item item = (null != block) ? block.item() : null;
-		_writeItem(buffer, item);
+		_writeBlock(buffer, block);
 	}
 
 	public static Items readItems(ByteBuffer buffer)
@@ -1139,27 +1132,39 @@ public class CodecHelpers
 
 	private static Enchantment _readEnchantment(ByteBuffer buffer)
 	{
-		// Each enchantment is resolved by int number.
-		int number = buffer.getInt();
-		Assert.assertTrue(number >= 0);
-		
+		// Enchantments are stored as the block (enchantment table type), target item type, and property.  The block is also used for the null check - if it is null, we know to skip the item and property.
 		Enchantment result = null;
-		if (number > 0)
+		Block table = _readBlock(buffer);
+		if (null != table)
 		{
+			Item targetItem = _readItem(buffer);
+			// The item MUST exist if the enchantment isn't null.
+			Assert.assertTrue(null != targetItem);
+			
+			// We get the property but cast it to the type type since all enchantments are that.
+			int propertyIndex = buffer.getInt();
+			@SuppressWarnings("unchecked")
+			PropertyType<Byte> property = (PropertyType<Byte>) PropertyRegistry.ALL_PROPERTIES[propertyIndex];
+			
 			Environment env = Environment.getShared();
-			result = env.enchantments.enchantmentForNumber(number);
+			result = env.enchantments.getBlindEnchantment(table, targetItem, property);
 		}
 		return result;
 	}
 
 	private static void _writeEnchantment(ByteBuffer buffer, Enchantment enchantment)
 	{
-		// Note that 0 is used as "null" (in EnchantmentRegistry).
-		int number = (null == enchantment)
-			? 0
-			: enchantment.number()
+		// Enchantments are stored as the block (enchantment table type), target item type, and property.  The block is also used for the null check - if it is null, we know to skip the item and property.
+		Block table = (null != enchantment)
+			? enchantment.table()
+			: null
 		;
-		buffer.putInt(number);
+		_writeBlock(buffer, table);
+		if (null != table)
+		{
+			_writeItem(buffer, enchantment.targetItem());
+			buffer.putInt(enchantment.enchantmentToApply().index());
+		}
 	}
 
 	private static Infusion _readInfusion(ByteBuffer buffer)
@@ -1185,5 +1190,22 @@ public class CodecHelpers
 			: infusion.number()
 		;
 		buffer.putInt(number);
+	}
+
+	private static Block _readBlock(ByteBuffer buffer)
+	{
+		Block block = null;
+		Item item = _readItem(buffer);
+		if (null != item)
+		{
+			block = Environment.getShared().blocks.fromItem(item);
+		}
+		return block;
+	}
+
+	private static void _writeBlock(ByteBuffer buffer, Block block)
+	{
+		Item item = (null != block) ? block.item() : null;
+		_writeItem(buffer, item);
 	}
 }
