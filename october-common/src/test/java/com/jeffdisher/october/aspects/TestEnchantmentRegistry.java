@@ -28,6 +28,10 @@ public class TestEnchantmentRegistry
 	private static Item ITEM_STONE_BRICK;
 	private static Block STONE_BRICK;
 	private static Item IRON_INGOT;
+	private static Item WOODEN_CHISEL;
+	private static Item IRON_SWORD;
+	private static Item DIAMOND;
+	private static Item COPPER_INGOT;
 	@BeforeClass
 	public static void setup()
 	{
@@ -38,6 +42,10 @@ public class TestEnchantmentRegistry
 		ITEM_STONE_BRICK = ENV.items.getItemById("op.stone_brick");
 		STONE_BRICK = ENV.blocks.fromItem(ITEM_STONE_BRICK);
 		IRON_INGOT = ENV.items.getItemById("op.iron_ingot");
+		WOODEN_CHISEL = ENV.items.getItemById("op.wooden_chisel");
+		IRON_SWORD = ENV.items.getItemById("op.iron_sword");
+		DIAMOND = ENV.items.getItemById("op.diamond");
+		COPPER_INGOT = ENV.items.getItemById("op.copper_ingot");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -66,8 +74,9 @@ public class TestEnchantmentRegistry
 	@Test
 	public void enchantmentWrongTarget() throws Throwable
 	{
-		NonStackableItem axe = PropertyHelpers.newItemWithDefaults(ENV, ENV.items.getItemById("op.copper_axe"));
-		Enchantment enchantment = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, axe, List.of(ITEM_STONE, ITEM_STONE, IRON_INGOT, IRON_INGOT));
+		// Orbs have properties but not enchantments.
+		NonStackableItem orb = PropertyHelpers.newItemWithDefaults(ENV, ENV.items.getItemById("op.portal_orb"));
+		Enchantment enchantment = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, orb, List.of(ITEM_STONE, ITEM_STONE, IRON_INGOT, IRON_INGOT));
 		Assert.assertNull(enchantment);
 	}
 
@@ -116,5 +125,26 @@ public class TestEnchantmentRegistry
 	{
 		Assert.assertTrue(ENV.enchantments.canEnchant(ENCHANTING_TABLE));
 		Assert.assertFalse(ENV.enchantments.canEnchant(STONE_BRICK));
+	}
+
+	@Test
+	public void variousValidEnchantments() throws Throwable
+	{
+		// We use the chisel here, not the pickaxe, since the pickaxe technically does enough damage to have the melee damage enchantment.
+		NonStackableItem chisel = PropertyHelpers.newItemWithDefaults(ENV, WOODEN_CHISEL);
+		NonStackableItem sword = PropertyHelpers.newItemWithDefaults(ENV, IRON_SWORD);
+		Enchantment durabilityChisel = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, chisel, List.of(ITEM_STONE, IRON_INGOT, ITEM_STONE, IRON_INGOT));
+		Enchantment durabilitySword = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, sword, List.of(ITEM_STONE, IRON_INGOT, ITEM_STONE, IRON_INGOT));
+		Enchantment damageChisel = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, chisel, List.of(DIAMOND, COPPER_INGOT, IRON_INGOT, IRON_INGOT));
+		Enchantment damageSword = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, sword, List.of(DIAMOND, COPPER_INGOT, IRON_INGOT, IRON_INGOT));
+		Enchantment efficiencyChisel = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, chisel, List.of(COPPER_INGOT, COPPER_INGOT, IRON_INGOT, IRON_INGOT));
+		Enchantment efficiencySword = ENV.enchantments.getEnchantment(ENCHANTING_TABLE, sword, List.of(COPPER_INGOT, COPPER_INGOT, IRON_INGOT, IRON_INGOT));
+		
+		Assert.assertEquals(10_000L, durabilityChisel.millisToApply());
+		Assert.assertEquals(10_000L, durabilitySword.millisToApply());
+		Assert.assertNull(damageChisel);
+		Assert.assertEquals(15_000L, damageSword.millisToApply());
+		Assert.assertEquals(20_000L, efficiencyChisel.millisToApply());
+		Assert.assertNull(efficiencySword);
 	}
 }

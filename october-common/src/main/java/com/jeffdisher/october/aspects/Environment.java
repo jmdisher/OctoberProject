@@ -114,7 +114,8 @@ public class Environment
 		this.multiBlocks = new MultiBlockRegistry(this.items, this.blocks);
 		this.groundCover = new GroundCoverRegistry(this.items, this.blocks);
 		this.specialSlot = SpecialSlotAspect.load(this.items, this.blocks);
-		this.enchantments = EnchantmentRegistry.load(this.items, this.blocks);
+		this.enchantments = EnchantmentRegistry.load(this.items, this.blocks, this.durability, this.tools
+		);
 		this.special = new SpecialConstants(this.items, this.blocks);
 	}
 }

@@ -39,7 +39,11 @@ public class EnchantmentRegistry
 	public static final String ID_PORTAL_ORB = "op.portal_orb";
 	public static final String ID_DIAMOND = "op.diamond";
 
-	public static EnchantmentRegistry load(ItemRegistry items, BlockAspect blocks)
+	public static EnchantmentRegistry load(ItemRegistry items
+		, BlockAspect blocks
+		, DurabilityAspect durability
+		, ToolRegistry tools
+	)
 	{
 		// TODO:  Convert this logic and constant into some declarative data file.
 		Block enchantingTable = blocks.fromItem(items.getItemById(ID_ENCHANTING_TABLE));
@@ -61,13 +65,64 @@ public class EnchantmentRegistry
 		Item diamond = items.getItemById(ID_DIAMOND);
 		Assert.assertTrue(null != diamond);
 		
-		Enchantment enchantDurability = new Enchantment(1
-			, enchantingTable
-			, 10_000L
-			, ironPick
-			, _sortedItemList(List.of(stone, stone, ironIngot, ironIngot))
-			, PropertyRegistry.ENCHANT_DURABILITY
-		);
+		// For each enchantment type, we will infer which tools can receive it based on DurabilityAspect and ToolRegistry.
+		List<Item> durabilityConsumedItems = _sortedItemList(List.of(stone, stone, ironIngot, ironIngot));
+		long durabilityChargeMillis = 10_000L;
+		List<Item> meleeDamageConsumedItems = _sortedItemList(List.of(diamond, copperIngot, ironIngot, ironIngot));
+		long melleeDamageChargeMillis = 15_000L;
+		List<Item> toolEfficiencyConsumedItems = _sortedItemList(List.of(copperIngot, copperIngot, ironIngot, ironIngot));
+		long toolEfficiencyChargeMillis = 20_000L;
+		
+		List<Enchantment> enchantments = new ArrayList<>();
+		for (Item target : items.ITEMS_BY_TYPE)
+		{
+			if (durability.getDurability(target) > 0)
+			{
+				// This has a kind of durability so we can use it.
+				// These can't be stackable.
+				Assert.assertTrue(!durability.isStackable(target));
+				int number = enchantments.size() + 1;
+				Enchantment enchantDurability = new Enchantment(number
+					, enchantingTable
+					, durabilityChargeMillis
+					, target
+					, durabilityConsumedItems
+					, PropertyRegistry.ENCHANT_DURABILITY
+				);
+				enchantments.add(enchantDurability);
+			}
+			if (tools.toolWeaponDamage(target) > 1)
+			{
+				// This has damage so we assume it is a melee weapon.
+				// These can't be stackable.
+				Assert.assertTrue(!durability.isStackable(target));
+				int number = enchantments.size() + 1;
+				Enchantment enchantDamage = new Enchantment(number
+					, enchantingTable
+					, melleeDamageChargeMillis
+					, target
+					, meleeDamageConsumedItems
+					, PropertyRegistry.ENCHANT_WEAPON_MELEE
+				);
+				enchantments.add(enchantDamage);
+			}
+			if (tools.toolSpeedModifier(target) > 1)
+			{
+				// This has a speed modifier so we assume it is a tool.
+				// These can't be stackable.
+				Assert.assertTrue(!durability.isStackable(target));
+				int number = enchantments.size() + 1;
+				Enchantment enchantEfficiency = new Enchantment(number
+					, enchantingTable
+					, toolEfficiencyChargeMillis
+					, target
+					, toolEfficiencyConsumedItems
+					, PropertyRegistry.ENCHANT_TOOL_EFFICIENCY
+				);
+				enchantments.add(enchantEfficiency);
+			}
+		}
+		
 		Infusion infusePortalStone = new Infusion(1
 			, enchantingTable
 			, 2000L
@@ -82,7 +137,7 @@ public class EnchantmentRegistry
 			, _sortedItemList(List.of(copperIngot, copperIngot, ironIngot, ironIngot))
 			, portalOrb
 		);
-		return new EnchantmentRegistry(List.of(enchantDurability)
+		return new EnchantmentRegistry(enchantments
 			, List.of(infusePortalStone, infusePortalOrb)
 		);
 	}
