@@ -34,57 +34,24 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class EnchantmentRegistry
 {
-	public static final String ID_ENCHANTING_TABLE = "op.enchanting_table";
-	public static final String ID_IRON_PICKAXE = "op.iron_pickaxe";
-	public static final String ID_STONE = "op.stone";
-	public static final String ID_STONE_BRICK = "op.stone_brick";
-	public static final String ID_IRON_INGOT = "op.iron_ingot";
-	public static final String ID_PORTAL_STONE = "op.portal_stone";
-	public static final String ID_COPPER_INGOT = "op.copper_ingot";
-	public static final String ID_PORTAL_ORB = "op.portal_orb";
-	public static final String ID_DIAMOND = "op.diamond";
-
 	public static EnchantmentRegistry load(ItemRegistry items
 		, BlockAspect blocks
 		, DurabilityAspect durability
 		, ToolRegistry tools
 		, InputStream enchantingStream
+		, InputStream infusionsStream
 	) throws IOException, TabListReader.TabListException
 	{
-		// TODO:  Convert this logic and constant into some declarative data file.
-		Block enchantingTable = blocks.fromItem(items.getItemById(ID_ENCHANTING_TABLE));
-		Assert.assertTrue(null != enchantingTable);
-		Item stone = items.getItemById(ID_STONE);
-		Assert.assertTrue(null != stone);
-		Item stoneBrick = items.getItemById(ID_STONE_BRICK);
-		Assert.assertTrue(null != stoneBrick);
-		Item ironIngot = items.getItemById(ID_IRON_INGOT);
-		Assert.assertTrue(null != ironIngot);
-		Item portalStone = items.getItemById(ID_PORTAL_STONE);
-		Assert.assertTrue(null != portalStone);
-		Item copperIngot = items.getItemById(ID_COPPER_INGOT);
-		Assert.assertTrue(null != copperIngot);
-		Item portalOrb = items.getItemById(ID_PORTAL_ORB);
-		Assert.assertTrue(null != portalOrb);
-		Item diamond = items.getItemById(ID_DIAMOND);
-		Assert.assertTrue(null != diamond);
-		
 		// For each enchantment type, we will infer which tools can receive it based on DurabilityAspect and ToolRegistry.
 		_EnchantingDefinitions definitions = new _EnchantingDefinitions(items, blocks);
 		TabListReader.readEntireFile(definitions, enchantingStream);
 		// We currently expect only the one table, just for ease of testing.
 		Assert.assertTrue(1 == definitions.durability.tables.size());
-		Assert.assertTrue(enchantingTable == definitions.durability.tables.get(0));
-		List<Item> durabilityConsumedItems = _sortedItemList(definitions.durability.consumedItems);
-		long durabilityChargeMillis = definitions.durability.chargeMillis;
+		Block enchantingTable = definitions.durability.tables.get(0);
 		Assert.assertTrue(1 == definitions.weapons.tables.size());
 		Assert.assertTrue(enchantingTable == definitions.weapons.tables.get(0));
-		List<Item> meleeDamageConsumedItems = _sortedItemList(definitions.weapons.consumedItems);
-		long melleeDamageChargeMillis = definitions.weapons.chargeMillis;
 		Assert.assertTrue(1 == definitions.tools.tables.size());
 		Assert.assertTrue(enchantingTable == definitions.tools.tables.get(0));
-		List<Item> toolEfficiencyConsumedItems = _sortedItemList(definitions.tools.consumedItems);
-		long toolEfficiencyChargeMillis = definitions.tools.chargeMillis;
 		
 		List<Enchantment> enchantments = new ArrayList<>();
 		for (Item target : items.ITEMS_BY_TYPE)
@@ -95,9 +62,9 @@ public class EnchantmentRegistry
 				// These can't be stackable.
 				Assert.assertTrue(!durability.isStackable(target));
 				Enchantment enchantDurability = new Enchantment(enchantingTable
-					, durabilityChargeMillis
+					, definitions.durability.chargeMillis
 					, target
-					, durabilityConsumedItems
+					, definitions.durability.consumedItems
 					, PropertyRegistry.ENCHANT_DURABILITY
 				);
 				enchantments.add(enchantDurability);
@@ -108,9 +75,9 @@ public class EnchantmentRegistry
 				// These can't be stackable.
 				Assert.assertTrue(!durability.isStackable(target));
 				Enchantment enchantDamage = new Enchantment(enchantingTable
-					, melleeDamageChargeMillis
+					, definitions.weapons.chargeMillis
 					, target
-					, meleeDamageConsumedItems
+					, definitions.weapons.consumedItems
 					, PropertyRegistry.ENCHANT_WEAPON_MELEE
 				);
 				enchantments.add(enchantDamage);
@@ -121,31 +88,20 @@ public class EnchantmentRegistry
 				// These can't be stackable.
 				Assert.assertTrue(!durability.isStackable(target));
 				Enchantment enchantEfficiency = new Enchantment(enchantingTable
-					, toolEfficiencyChargeMillis
+					, definitions.tools.chargeMillis
 					, target
-					, toolEfficiencyConsumedItems
+					, definitions.tools.consumedItems
 					, PropertyRegistry.ENCHANT_TOOL_EFFICIENCY
 				);
 				enchantments.add(enchantEfficiency);
 			}
 		}
 		
-		Infusion infusePortalStone = new Infusion(1
-			, enchantingTable
-			, 2000L
-			, stoneBrick
-			, _sortedItemList(List.of(stone, stone, ironIngot, ironIngot))
-			, portalStone
-		);
-		Infusion infusePortalOrb = new Infusion(2
-			, enchantingTable
-			, 20_000L
-			, diamond
-			, _sortedItemList(List.of(copperIngot, copperIngot, ironIngot, ironIngot))
-			, portalOrb
-		);
+		_InfusionDefinitions infusionDefinitions = new _InfusionDefinitions(items, blocks);
+		TabListReader.readEntireFile(infusionDefinitions, infusionsStream);
+		
 		return new EnchantmentRegistry(enchantments
-			, List.of(infusePortalStone, infusePortalOrb)
+			, Collections.unmodifiableList(infusionDefinitions.infusions)
 		);
 	}
 
@@ -398,13 +354,136 @@ public class EnchantmentRegistry
 			}
 			else if (name.equals(KEY_CONSUMED_ITEMS))
 			{
-				_currentEntry.consumedItems = Arrays.stream(parameters).map((String id) -> {
+				_currentEntry.consumedItems = _sortedItemList(Arrays.stream(parameters).map((String id) -> {
 					return _items.getItemById(id);
-				}).toList();
+				}).toList());
 			}
 			else
 			{
 				throw new TabListReader.TabListException("Unknown key type: \"" + name + "\" under \"" + _currentName + "\"");
+			}
+		}
+	}
+
+	/**
+	 * A basic reader for the enchanting.tablist.
+	 */
+	private static class _InfusionDefinitions implements TabListReader.IParseCallbacks
+	{
+		public static final String KEY_CHARGE_MILLIS = "charge_millis";
+		public static final String KEY_CENTRAL_ITEM = "central_item";
+		public static final String KEY_CONSUMED_ITEMS = "consumed_items";
+		public static final String KEY_OUTPUT_ITEM = "output_item";
+		
+		private final ItemRegistry _items;
+		private final  BlockAspect _blocks;
+		
+		public final List<Infusion> infusions;
+		
+		private int _currentNumber;
+		private Block _currentTable;
+		private long _currentMillisToApply;
+		private Item _currentCentralItem;
+		private List<Item> _currentConsumedItems;
+		private Item _currentOutputItem;
+		
+		public _InfusionDefinitions(ItemRegistry items
+			, BlockAspect blocks)
+		{
+			_items = items;
+			_blocks = blocks;
+			this.infusions = new ArrayList<>();
+		}
+		@Override
+		public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
+		{
+			_currentNumber = Integer.parseInt(name);
+			if (_currentNumber <= 0)
+			{
+				throw new TabListReader.TabListException("Infusion number must be positive: " + _currentNumber);
+			}
+			List<Block> tables = Arrays.stream(parameters).map((String id) -> {
+				return _blocks.fromItem(_items.getItemById(id));
+			}).toList();
+			// We currently only allow a single table.
+			Assert.assertTrue(1 == tables.size());
+			_currentTable = tables.get(0);
+		}
+		@Override
+		public void endRecord() throws TabListReader.TabListException
+		{
+			if (this.infusions.stream().anyMatch((Infusion i) -> i.number() == _currentNumber))
+			{
+				throw new TabListReader.TabListException("Duplicate infusion number: " + _currentNumber);
+			}
+			if (null == _currentCentralItem)
+			{
+				throw new TabListReader.TabListException("Infusion central item missing: " + _currentNumber);
+			}
+			if (null == _currentConsumedItems)
+			{
+				throw new TabListReader.TabListException("Infusion consumed items missing: " + _currentNumber);
+			}
+			if (null == _currentOutputItem)
+			{
+				throw new TabListReader.TabListException("Infusion output item missing: " + _currentNumber);
+			}
+			Infusion infusion = new Infusion(_currentNumber
+				, _currentTable
+				, _currentMillisToApply
+				, _currentCentralItem
+				, Collections.unmodifiableList(_currentConsumedItems)
+				, _currentOutputItem
+			);
+			this.infusions.add(infusion);
+			
+			_currentNumber = 0;
+			_currentTable = null;
+			_currentMillisToApply = 0L;
+			_currentCentralItem = null;
+			_currentConsumedItems = null;
+			_currentOutputItem = null;
+		}
+		@Override
+		public void processSubRecord(String name, String[] parameters) throws TabListReader.TabListException
+		{
+			if (name.equals(KEY_CHARGE_MILLIS))
+			{
+				if (1 != parameters.length)
+				{
+					throw new TabListReader.TabListException("Charge expecting one parameter under \"" + _currentNumber + "\"");
+				}
+				_currentMillisToApply = Integer.parseInt(parameters[0]);
+			}
+			else if (name.equals(KEY_CENTRAL_ITEM))
+			{
+				if (1 != parameters.length)
+				{
+					throw new TabListReader.TabListException("Central item expecting one parameter under \"" + _currentNumber + "\"");
+				}
+				_currentCentralItem = _items.getItemById(parameters[0]);
+			}
+			else if (name.equals(KEY_CONSUMED_ITEMS))
+			{
+				if (0 == parameters.length)
+				{
+					throw new TabListReader.TabListException("Consumed items cannot be empty \"" + _currentNumber + "\"");
+				}
+				_currentConsumedItems = _sortedItemList(Arrays.stream(parameters).map((String id) -> {
+					return _items.getItemById(id);
+				}).toList());
+			}
+			else if (name.equals(KEY_OUTPUT_ITEM))
+			{
+				if (1 != parameters.length)
+				{
+					throw new TabListReader.TabListException("Output item expecting one parameter under \"" + _currentNumber + "\"");
+				}
+				_currentOutputItem = _items.getItemById(parameters[0]);
+			}
+			else
+			{
+				throw new TabListReader.TabListException("Unknown key type: \"" + name + "\" under \"" + _currentNumber + "\"");
 			}
 		}
 	}

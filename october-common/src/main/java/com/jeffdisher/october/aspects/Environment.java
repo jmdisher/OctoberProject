@@ -116,6 +116,7 @@ public class Environment
 		this.specialSlot = SpecialSlotAspect.load(this.items, this.blocks);
 		this.enchantments = EnchantmentRegistry.load(this.items, this.blocks, this.durability, this.tools
 			, loader.getResourceAsStream("enchanting.tablist")
+			, loader.getResourceAsStream("infusions.tablist")
 		);
 		this.special = new SpecialConstants(this.items, this.blocks);
 	}

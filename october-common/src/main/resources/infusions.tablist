@@ -1,0 +1,18 @@
+# Entries here have the form:
+# number<TAB>TABLE_ID
+# <TAB>charge_millis<TAB>int
+# <TAB>central_item<TAB>item_id
+# <TAB>consumed_items<TAB>item_id_list
+# <TAB>output_item<TAB>item_id
+# Note that the "number" field must be unique and >0 (0 is reserved for storing null).
+
+1	op.enchanting_table
+	charge_millis	2000
+	central_item	op.stone_brick
+	consumed_items	op.stone	op.stone	op.iron_ingot	op.iron_ingot
+	output_item	op.portal_stone
+2	op.enchanting_table
+	charge_millis	20000
+	central_item	op.diamond
+	consumed_items	op.copper_ingot	op.copper_ingot	op.iron_ingot	op.iron_ingot
+	output_item	op.portal_orb
