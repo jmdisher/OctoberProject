@@ -115,6 +115,7 @@ public class Environment
 		this.groundCover = new GroundCoverRegistry(this.items, this.blocks);
 		this.specialSlot = SpecialSlotAspect.load(this.items, this.blocks);
 		this.enchantments = EnchantmentRegistry.load(this.items, this.blocks, this.durability, this.tools
+			, loader.getResourceAsStream("enchanting.tablist")
 		);
 		this.special = new SpecialConstants(this.items, this.blocks);
 	}

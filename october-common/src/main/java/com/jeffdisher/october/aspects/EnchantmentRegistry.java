@@ -1,12 +1,16 @@
 package com.jeffdisher.october.aspects;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.properties.PropertyType;
@@ -44,13 +48,12 @@ public class EnchantmentRegistry
 		, BlockAspect blocks
 		, DurabilityAspect durability
 		, ToolRegistry tools
-	)
+		, InputStream enchantingStream
+	) throws IOException, TabListReader.TabListException
 	{
 		// TODO:  Convert this logic and constant into some declarative data file.
 		Block enchantingTable = blocks.fromItem(items.getItemById(ID_ENCHANTING_TABLE));
 		Assert.assertTrue(null != enchantingTable);
-		Item ironPick = items.getItemById(ID_IRON_PICKAXE);
-		Assert.assertTrue(null != ironPick);
 		Item stone = items.getItemById(ID_STONE);
 		Assert.assertTrue(null != stone);
 		Item stoneBrick = items.getItemById(ID_STONE_BRICK);
@@ -67,12 +70,21 @@ public class EnchantmentRegistry
 		Assert.assertTrue(null != diamond);
 		
 		// For each enchantment type, we will infer which tools can receive it based on DurabilityAspect and ToolRegistry.
-		List<Item> durabilityConsumedItems = _sortedItemList(List.of(stone, stone, ironIngot, ironIngot));
-		long durabilityChargeMillis = 10_000L;
-		List<Item> meleeDamageConsumedItems = _sortedItemList(List.of(diamond, copperIngot, ironIngot, ironIngot));
-		long melleeDamageChargeMillis = 15_000L;
-		List<Item> toolEfficiencyConsumedItems = _sortedItemList(List.of(copperIngot, copperIngot, ironIngot, ironIngot));
-		long toolEfficiencyChargeMillis = 20_000L;
+		_EnchantingDefinitions definitions = new _EnchantingDefinitions(items, blocks);
+		TabListReader.readEntireFile(definitions, enchantingStream);
+		// We currently expect only the one table, just for ease of testing.
+		Assert.assertTrue(1 == definitions.durability.tables.size());
+		Assert.assertTrue(enchantingTable == definitions.durability.tables.get(0));
+		List<Item> durabilityConsumedItems = _sortedItemList(definitions.durability.consumedItems);
+		long durabilityChargeMillis = definitions.durability.chargeMillis;
+		Assert.assertTrue(1 == definitions.weapons.tables.size());
+		Assert.assertTrue(enchantingTable == definitions.weapons.tables.get(0));
+		List<Item> meleeDamageConsumedItems = _sortedItemList(definitions.weapons.consumedItems);
+		long melleeDamageChargeMillis = definitions.weapons.chargeMillis;
+		Assert.assertTrue(1 == definitions.tools.tables.size());
+		Assert.assertTrue(enchantingTable == definitions.tools.tables.get(0));
+		List<Item> toolEfficiencyConsumedItems = _sortedItemList(definitions.tools.consumedItems);
+		long toolEfficiencyChargeMillis = definitions.tools.chargeMillis;
 		
 		List<Enchantment> enchantments = new ArrayList<>();
 		for (Item target : items.ITEMS_BY_TYPE)
@@ -309,5 +321,102 @@ public class EnchantmentRegistry
 		// For now, this is just max byte but we will probably constrain this in the future.
 		byte value = PropertyHelpers.getBytePropertyValue(target.properties(), enchantment);
 		return (value < Byte.MAX_VALUE);
+	}
+
+
+	/**
+	 * A basic reader for the enchanting.tablist.
+	 */
+	private static class _EnchantingDefinitions implements TabListReader.IParseCallbacks
+	{
+		public static final String TYPE_DURABILITY = "DURABILITY";
+		public static final String TYPE_WEAPON_MELEE = "WEAPON_MELEE";
+		public static final String TYPE_TOOL_EFFICIENCY = "TOOL_EFFICIENCY";
+		public static final String KEY_CHARGE_MILLIS = "charge_millis";
+		public static final String KEY_CONSUMED_ITEMS = "consumed_items";
+		
+		private final ItemRegistry _items;
+		private final  BlockAspect _blocks;
+		
+		public _EnchantingEntry durability;
+		public _EnchantingEntry weapons;
+		public _EnchantingEntry tools;
+		
+		private String _currentName;
+		private _EnchantingEntry _currentEntry;
+		
+		public _EnchantingDefinitions(ItemRegistry items
+			, BlockAspect blocks)
+		{
+			_items = items;
+			_blocks = blocks;
+		}
+		@Override
+		public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
+		{
+			List<Block> tables = Arrays.stream(parameters).map((String id) -> {
+				return _blocks.fromItem(_items.getItemById(id));
+			}).toList();
+			_currentName = name;
+			_currentEntry = new _EnchantingEntry(tables);
+			if (_currentName.equals(TYPE_DURABILITY))
+			{
+				Assert.assertTrue(null == this.durability);
+				this.durability = _currentEntry;
+			}
+			else if (_currentName.equals(TYPE_WEAPON_MELEE))
+			{
+				Assert.assertTrue(null == this.weapons);
+				this.weapons = _currentEntry;
+			}
+			else if (_currentName.equals(TYPE_TOOL_EFFICIENCY))
+			{
+				Assert.assertTrue(null == this.tools);
+				this.tools = _currentEntry;
+			}
+			else
+			{
+				throw new TabListReader.TabListException("Unknown enchanting type: \"" + name + "\"");
+			}
+		}
+		@Override
+		public void endRecord() throws TabListReader.TabListException
+		{
+			_currentName = null;
+			_currentEntry = null;
+		}
+		@Override
+		public void processSubRecord(String name, String[] parameters) throws TabListReader.TabListException
+		{
+			if (name.equals(KEY_CHARGE_MILLIS))
+			{
+				if (1 != parameters.length)
+				{
+					throw new TabListReader.TabListException("Charge expecting one parameter under \"" + _currentName + "\"");
+				}
+				_currentEntry.chargeMillis = Integer.parseInt(parameters[0]);
+			}
+			else if (name.equals(KEY_CONSUMED_ITEMS))
+			{
+				_currentEntry.consumedItems = Arrays.stream(parameters).map((String id) -> {
+					return _items.getItemById(id);
+				}).toList();
+			}
+			else
+			{
+				throw new TabListReader.TabListException("Unknown key type: \"" + name + "\" under \"" + _currentName + "\"");
+			}
+		}
+	}
+
+	private static class _EnchantingEntry
+	{
+		public final List<Block> tables;
+		public long chargeMillis;
+		public List<Item> consumedItems;
+		public _EnchantingEntry(List<Block> tables)
+		{
+			this.tables = tables;
+		}
 	}
 }

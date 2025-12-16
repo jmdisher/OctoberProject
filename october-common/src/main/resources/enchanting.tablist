@@ -1,0 +1,17 @@
+# Entries here have the form:
+# ENCHANTMENT_NAME<TAB>TABLE_ID
+# <TAB>charge_millis<TAB>int
+# <TAB>consumed_items<TAB>item_id_list
+# Note that ENCHANTMENT_NAME is defined/interpreted by EnchantmentRegistry.java.
+# The tools to which each enchantment can be applied are decided by the EnchantmentRegistry based on inferring what
+# mechanics apply.
+
+DURABILITY	op.enchanting_table
+	charge_millis	10000
+	consumed_items	op.stone	op.stone	op.iron_ingot	op.iron_ingot
+WEAPON_MELEE	op.enchanting_table
+	charge_millis	15000
+	consumed_items	op.diamond	op.copper_ingot	op.iron_ingot	op.iron_ingot
+TOOL_EFFICIENCY	op.enchanting_table
+	charge_millis	20000
+	consumed_items	op.copper_ingot	op.copper_ingot	op.iron_ingot	op.iron_ingot
