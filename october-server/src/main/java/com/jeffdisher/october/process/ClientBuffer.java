@@ -147,12 +147,6 @@ public class ClientBuffer
 		return _lastPeeked;
 	}
 
-	public boolean isNetworkWriteReady()
-	{
-		// If the write buffer is here, we are ready for write.
-		return (null != _writeableBuffer);
-	}
-
 	public OutpacketBuffer openOutpacketBuffer()
 	{
 		// If we are in a writeable state, this will unset it, but will otherwise not change internal state.

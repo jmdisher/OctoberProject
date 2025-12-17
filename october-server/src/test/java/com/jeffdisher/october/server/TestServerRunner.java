@@ -1,5 +1,6 @@
 package com.jeffdisher.october.server;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -27,6 +28,7 @@ import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.net.EntityUpdatePerField;
+import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.net.PacketFromServer;
 import com.jeffdisher.october.net.Packet_BlockStateUpdate;
@@ -982,12 +984,6 @@ public class TestServerRunner
 			return queue.peek();
 		}
 		@Override
-		public boolean isNetworkWriteReady(int clientId)
-		{
-			// For now, this test always says it is ready.
-			return true;
-		}
-		@Override
 		public synchronized void sendPacket(int clientId, PacketFromServer packet)
 		{
 			_lockedSendPacket(clientId, packet);
@@ -995,11 +991,21 @@ public class TestServerRunner
 		@Override
 		public OutpacketBuffer openOutputBuffer(int clientId)
 		{
-			return new OutpacketBuffer(null, 0);
+			return new OutpacketBuffer(ByteBuffer.allocate(256), 0);
 		}
 		@Override
 		public synchronized void closeOutputBuffer(int clientId, OutpacketBuffer buffer)
 		{
+			ByteBuffer serialized = buffer.flipAndRemoveBuffer();
+			if (null != serialized)
+			{
+				PacketFromServer packet = (PacketFromServer)PacketCodec.parseAndSeekFlippedBuffer(serialized);
+				while (null != packet)
+				{
+					_lockedSendPacket(clientId, packet);
+					packet = (PacketFromServer)PacketCodec.parseAndSeekFlippedBuffer(serialized);
+				}
+			}
 			for (PacketFromServer packet : buffer.removeOverflow())
 			{
 				_lockedSendPacket(clientId, packet);

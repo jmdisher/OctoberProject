@@ -81,10 +81,6 @@ public class ServerStateManager
 	 */
 	public static final int FORCE_FLUSH_TICK_FREQUENCY = 1000;
 	/**
-	 * The number of cuboids which will be attempted to be sent when the network is idle.
-	 */
-	public static final int CUBOIDS_SENT_PER_TICK = 10;
-	/**
 	 * Cuboids within this distance of an entity will be considered "high priority" and aggressively sent.
 	 */
 	public static final int PRIORITY_CUBOID_VIEW_DISTANCE = 1;
@@ -583,10 +579,6 @@ public class ServerStateManager
 			, List<EventRecord> postedEvents
 	)
 	{
-		// We want to send information to this client if they can see it, potentially sending whole data or just
-		// incremental updates, based on whether or not they already have this data.
-		boolean shouldSendNewCuboids = _callouts.network_isNetworkWriteReady(clientId);
-		
 		OutpacketBuffer buffer = _callouts.network_openOutputBuffer(clientId);
 		if (null != newCuboidLocation)
 		{
@@ -601,7 +593,7 @@ public class ServerStateManager
 		_sendEntityUpdates(clientId, buffer, state);
 		
 		// We send cuboids based on how far away they are (also capture an update on what cuboids are visible).
-		_sendCuboidUpdates(buffer, state, shouldSendNewCuboids);
+		_sendCuboidUpdates(buffer, state);
 		
 		// Finally, send them the end of tick.
 		// (note that the commit level won't be in the snapshot if they just joined).
@@ -915,7 +907,6 @@ public class ServerStateManager
 
 	private void _sendCuboidUpdates(OutpacketBuffer buffer
 			, ClientState state
-			, boolean shouldSendNewCuboids
 	)
 	{
 		// Send block updates in anything known to us.
@@ -933,14 +924,12 @@ public class ServerStateManager
 			}
 		}
 		
-		// Send cuboids if the network is idle.
-		if (shouldSendNewCuboids && (!state.priorityMissingCuboids.isEmpty() || !state.outerMissingCuboids.isEmpty()))
+		// Send new cuboids so long as we aren't overflowing the buffer yet.
+		if ((buffer.getImmediateBufferRemaining() > 0) && !state.priorityMissingCuboids.isEmpty())
 		{
-			int cuboidsSent = 0;
-			
 			// Send any high-priority cuboids we have.
 			Iterator<CuboidAddress> iter = state.priorityMissingCuboids.iterator();
-			while (iter.hasNext())
+			while ((buffer.getImmediateBufferRemaining() > 0) && iter.hasNext())
 			{
 				CuboidAddress address = iter.next();
 				// We haven't seen this yet so just send it.
@@ -951,34 +940,31 @@ public class ServerStateManager
 					_serializeCuboidAsPackets(buffer, cuboidData);
 					state.knownCuboids.add(address);
 					iter.remove();
-					cuboidsSent += 1;
 				}
 				else
 				{
 					// Not yet loaded.
 				}
 			}
-			
+		}
+		if ((buffer.getImmediateBufferRemaining() > 0) && !state.outerMissingCuboids.isEmpty())
+		{
 			// Attempt any more we can fit.
-			if ((cuboidsSent < CUBOIDS_SENT_PER_TICK) && !state.outerMissingCuboids.isEmpty())
+			// NOTE:  Building this set might be a little expensive but allows us to figure out what we can send with an intersection.
+			HashSet<CuboidAddress> set = new HashSet<>(state.outerMissingCuboids);
+			set.retainAll(_completedCuboids.keySet());
+			Iterator<CuboidAddress> iter = set.iterator();
+			while ((buffer.getImmediateBufferRemaining() > 0) && iter.hasNext())
 			{
-				// NOTE:  Building this set might be a little expensive but allows us to figure out what we can send with an intersection.
-				HashSet<CuboidAddress> set = new HashSet<>(state.outerMissingCuboids);
-				set.retainAll(_completedCuboids.keySet());
-				iter = set.iterator();
-				while ((cuboidsSent < CUBOIDS_SENT_PER_TICK) && iter.hasNext())
-				{
-					CuboidAddress address = iter.next();
-					// We haven't seen this yet so just send it.
-					IReadOnlyCuboidData cuboidData = _completedCuboids.get(address);
-					// We created this set with an intersection so this must be here.
-					Assert.assertTrue(null != cuboidData);
-					
-					_serializeCuboidAsPackets(buffer, cuboidData);
-					state.knownCuboids.add(address);
-					state.outerMissingCuboids.remove(address);
-					cuboidsSent += 1;
-				}
+				CuboidAddress address = iter.next();
+				// We haven't seen this yet so just send it.
+				IReadOnlyCuboidData cuboidData = _completedCuboids.get(address);
+				// We created this set with an intersection so this must be here.
+				Assert.assertTrue(null != cuboidData);
+				
+				_serializeCuboidAsPackets(buffer, cuboidData);
+				state.knownCuboids.add(address);
+				state.outerMissingCuboids.remove(address);
 			}
 		}
 	}
@@ -1210,7 +1196,6 @@ public class ServerStateManager
 		
 		// IServerAdapter.
 		PacketFromClient network_peekOrRemoveNextPacketFromClient(int clientId, PacketFromClient toRemove);
-		boolean network_isNetworkWriteReady(int clientId);
 		
 		void network_sendPacket(int clientId, PacketFromServer packet);
 		OutpacketBuffer network_openOutputBuffer(int clientId);

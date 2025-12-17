@@ -21,13 +21,6 @@ public interface IServerAdapter
 	 */
 	void readyAndStartListening(IListener listener);
 	/**
-	 * Used to check if the outgoing buffer is empty and the network is ready to write.
-	 * 
-	 * @param clientId The client.
-	 * @return True if the network can send data to this client immediately.
-	 */
-	boolean isNetworkWriteReady(int clientId);
-	/**
 	 * Called after receiving clientReadReady in order to fetch the actual packets from the network layer.  If toRemove
 	 * is not null, the next packet will be removed and discarded (after being checked that it instance-matches).
 	 * Returns the next packet but doesn't discard it (meaning successive calls with null toRemove will return the

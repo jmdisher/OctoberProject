@@ -1,5 +1,6 @@
 package com.jeffdisher.october.server;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,6 +24,7 @@ import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
+import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.net.PacketFromServer;
 import com.jeffdisher.october.net.Packet_BlockStateUpdate;
@@ -1484,11 +1486,6 @@ public class TestServerStateManager
 		{
 			return peekHandler.apply(toRemove);
 		}
-		@Override
-		public boolean network_isNetworkWriteReady(int clientId)
-		{
-			return this.isNetworkWriteReady;
-		}
 		
 		@Override
 		public void network_sendPacket(int clientId, PacketFromServer packet)
@@ -1498,11 +1495,25 @@ public class TestServerStateManager
 		@Override
 		public OutpacketBuffer network_openOutputBuffer(int clientId)
 		{
-			return new OutpacketBuffer(null, 0);
+			ByteBuffer buffer = this.isNetworkWriteReady
+				? ByteBuffer.allocate(256)
+				: null
+			;
+			return new OutpacketBuffer(buffer, 0);
 		}
 		@Override
 		public void network_closeOutputBuffer(int clientId, OutpacketBuffer buffer)
 		{
+			ByteBuffer serialized = buffer.flipAndRemoveBuffer();
+			if (null != serialized)
+			{
+				PacketFromServer packet = (PacketFromServer)PacketCodec.parseAndSeekFlippedBuffer(serialized);
+				while (null != packet)
+				{
+					_sendPacket(clientId, packet);
+					packet = (PacketFromServer)PacketCodec.parseAndSeekFlippedBuffer(serialized);
+				}
+			}
 			for (PacketFromServer packet : buffer.removeOverflow())
 			{
 				_sendPacket(clientId, packet);

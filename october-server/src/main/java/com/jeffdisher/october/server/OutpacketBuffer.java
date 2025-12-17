@@ -47,8 +47,10 @@ public class OutpacketBuffer
 				PacketCodec.serializeToBuffer(_inlineBuffer, packet);
 				didWrite = true;
 			}
-			catch (BufferOverflowException e)
+			catch (BufferOverflowException | IllegalArgumentException e)
 			{
+				// We get BufferOverflowException when we write over the end of the buffer and IllegalArgumentException
+				// when we set the position beyond the bounds.
 				// We can't fit this last one so reset the position and spill to overflow.
 				_inlineBuffer.position(position);
 			}
@@ -79,5 +81,13 @@ public class OutpacketBuffer
 		List<PacketFromServer> overflow = _overflow;
 		_overflow = null;
 		return overflow;
+	}
+
+	public int getImmediateBufferRemaining()
+	{
+		return ((null != _inlineBuffer) && _overflow.isEmpty())
+			? _inlineBuffer.remaining()
+			: 0
+		;
 	}
 }

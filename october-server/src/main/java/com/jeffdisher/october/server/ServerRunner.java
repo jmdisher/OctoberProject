@@ -451,11 +451,6 @@ public class ServerRunner
 			);
 		}
 		@Override
-		public boolean network_isNetworkWriteReady(int clientId)
-		{
-			return _network.isNetworkWriteReady(clientId);
-		}
-		@Override
 		public PacketFromClient network_peekOrRemoveNextPacketFromClient(int clientId, PacketFromClient toRemove)
 		{
 			return _network.peekOrRemoveNextPacketFromClient(clientId, toRemove);

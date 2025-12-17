@@ -238,15 +238,6 @@ public class ServerProcess
 		}
 	}
 
-	private synchronized boolean _isNetworkWriteReady(int clientId)
-	{
-		ClientBuffer buffer = _clientsById.get(clientId);
-		return (null != buffer)
-				? buffer.isNetworkWriteReady()
-				: false
-		;
-	}
-
 	private synchronized void _sendDisconnectRequest(int clientId)
 	{
 		ClientBuffer buffer = _clientsById.get(clientId);
@@ -346,11 +337,6 @@ public class ServerProcess
 		{
 			// We can store this and use it to plumb calls into the server.
 			_serverReady(listener);
-		}
-		@Override
-		public boolean isNetworkWriteReady(int clientId)
-		{
-			return _isNetworkWriteReady(clientId);
 		}
 		@Override
 		public PacketFromClient peekOrRemoveNextPacketFromClient(int clientId, PacketFromClient toRemove)

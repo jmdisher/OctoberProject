@@ -22,15 +22,39 @@ public class TestOutpacketBuffer
 		OutpacketBuffer buffer = new OutpacketBuffer(inlineBuffer, 0);
 		int size = 100;
 		buffer.writePacket(new _OutPacket(size));
+		Assert.assertEquals(inlineBuffer.capacity() - (size + PacketCodec.HEADER_BYTES), buffer.getImmediateBufferRemaining());
 		buffer.writePacket(new _OutPacket(size));
+		Assert.assertEquals(inlineBuffer.capacity() - 2 * (size + PacketCodec.HEADER_BYTES), buffer.getImmediateBufferRemaining());
 		buffer.writePacket(new _OutPacket(size));
+		Assert.assertEquals(0, buffer.getImmediateBufferRemaining());
 		buffer.writePacket(new _OutPacket(size));
+		Assert.assertEquals(0, buffer.getImmediateBufferRemaining());
 		
 		ByteBuffer toWrite = buffer.flipAndRemoveBuffer();
 		Assert.assertEquals(0, toWrite.position());
 		Assert.assertEquals(2 * (PacketCodec.HEADER_BYTES + size), toWrite.remaining());
 		List<PacketFromServer> packets = buffer.removeOverflow();
 		Assert.assertEquals(2, packets.size());
+	}
+
+	@Test
+	public void bufferRemainingLimits() throws IOException
+	{
+		// We see the buffer space remaining so long as there is a buffer and it hasn't overflowed.
+		ByteBuffer inlineBuffer = ByteBuffer.allocate(256);
+		OutpacketBuffer buffer = new OutpacketBuffer(inlineBuffer, 0);
+		Assert.assertEquals(inlineBuffer.capacity(), buffer.getImmediateBufferRemaining());
+		
+		int size = 100;
+		buffer.writePacket(new _OutPacket(size));
+		Assert.assertEquals(inlineBuffer.capacity() - (size + PacketCodec.HEADER_BYTES), buffer.getImmediateBufferRemaining());
+		buffer.writePacket(new _OutPacket(size));
+		Assert.assertEquals(inlineBuffer.capacity() - 2 * (size + PacketCodec.HEADER_BYTES), buffer.getImmediateBufferRemaining());
+		buffer.writePacket(new _OutPacket(size));
+		Assert.assertEquals(0, buffer.getImmediateBufferRemaining());
+		
+		OutpacketBuffer noSpaceBuffer = new OutpacketBuffer(null, 0);
+		Assert.assertEquals(0, noSpaceBuffer.getImmediateBufferRemaining());
 	}
 
 
