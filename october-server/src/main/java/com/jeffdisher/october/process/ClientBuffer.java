@@ -1,5 +1,6 @@
 package com.jeffdisher.october.process;
 
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
@@ -57,8 +58,25 @@ public class ClientBuffer
 		}
 		else
 		{
-			// We have something in the queue so serialize it and return this, immediate.
+			// There is something in the outgoing queue so serialize as much as we can and the buffer, immediately.
+			// (we require that we can serialize at least one).
 			PacketCodec.serializeToBuffer(writeableBuffer, _outgoing.poll());
+			while (!_outgoing.isEmpty())
+			{
+				int position = writeableBuffer.position();
+				PacketFromServer peeked = _outgoing.peek();
+				try
+				{
+					PacketCodec.serializeToBuffer(writeableBuffer, peeked);
+					_outgoing.poll();
+				}
+				catch (BufferOverflowException e)
+				{
+					// We can't fit this last one so reset the position and exit.
+					writeableBuffer.position(position);
+					break;
+				}
+			}
 			writeableBuffer.flip();
 			writeNow = writeableBuffer;
 		}

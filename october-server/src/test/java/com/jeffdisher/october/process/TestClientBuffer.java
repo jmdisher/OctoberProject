@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.net.NetworkLayer;
+import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.net.PacketFromServer;
 import com.jeffdisher.october.net.PacketType;
@@ -37,7 +38,7 @@ public class TestClientBuffer
 		ByteBuffer writeBuffer = ByteBuffer.allocate(256);
 		ByteBuffer send = buffer.writeImmediateForWriteableClient(writeBuffer);
 		Assert.assertNull(send);
-		send = buffer.shouldImmediatelySendBuffer(new _OutPacket());
+		send = buffer.shouldImmediatelySendBuffer(new _OutPacket(1));
 		Assert.assertNotNull(send);
 	}
 
@@ -57,6 +58,35 @@ public class TestClientBuffer
 		newPacket = buffer.peekOrRemoveNextPacket(newPacket, () -> List.of(new _InPacket()));
 		// -verify we see a valid packet
 		Assert.assertNotNull(newPacket);
+	}
+
+	@Test
+	public void becomeWriteableWithBigBacklog() throws IOException
+	{
+		// Buffer a bunch of packets which will quickly overflow the buffer and make sure that they are copied out as expected.
+		ClientBuffer buffer = new ClientBuffer(new _Token(), 1);
+		int size = 100;
+		ByteBuffer send = buffer.shouldImmediatelySendBuffer(new _OutPacket(size));
+		Assert.assertNull(send);
+		send = buffer.shouldImmediatelySendBuffer(new _OutPacket(size));
+		Assert.assertNull(send);
+		send = buffer.shouldImmediatelySendBuffer(new _OutPacket(size));
+		Assert.assertNull(send);
+		send = buffer.shouldImmediatelySendBuffer(new _OutPacket(size));
+		Assert.assertNull(send);
+		
+		// Now, we expect this to be written in 2 buffer iterations.
+		ByteBuffer writeBuffer = ByteBuffer.allocate(256);
+		send = buffer.writeImmediateForWriteableClient(writeBuffer);
+		Assert.assertEquals(0, send.position());
+		Assert.assertEquals(2 * (PacketCodec.HEADER_BYTES + size), send.remaining());
+		writeBuffer.clear();
+		send = buffer.writeImmediateForWriteableClient(writeBuffer);
+		Assert.assertEquals(0, send.position());
+		Assert.assertEquals(2 * (PacketCodec.HEADER_BYTES + size), send.remaining());
+		writeBuffer.clear();
+		send = buffer.writeImmediateForWriteableClient(writeBuffer);
+		Assert.assertNull(send);
 	}
 
 
@@ -90,14 +120,17 @@ public class TestClientBuffer
 
 	private static class _OutPacket extends PacketFromServer
 	{
-		public _OutPacket()
+		private final int _size;
+		public _OutPacket(int size)
 		{
 			super(PacketType.ERROR);
+			_size = size;
 		}
 		@Override
 		public void serializeToBuffer(ByteBuffer buffer)
 		{
-			// Just do nothing - the ClientBuffer will serialize, inline, when it wants to immediately send a buffer back.
+			byte[] buff = new byte[_size];
+			buffer.put(buff);
 		}
 	}
 }
