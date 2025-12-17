@@ -20,20 +20,23 @@ public class TestNetworkLayer
 		// Start the server.
 		int port = 3000;
 		NetworkLayer.PeerToken[] tokenHolder = new NetworkLayer.PeerToken[1];
+		ByteBuffer[] bufferHolder = new ByteBuffer[1];
 		CountDownLatch connectLatch = new CountDownLatch(1);
 		CountDownLatch disconnectLatch = new CountDownLatch(1);
 		Packet[] holder = new Packet[1];
 		CountDownLatch receiveLatch = new CountDownLatch(1);
 		
 		@SuppressWarnings("unchecked")
-		NetworkLayer<PacketFromClient, PacketFromServer>[] internal = new NetworkLayer[1];
-		NetworkLayer<PacketFromClient, PacketFromServer> server = NetworkLayer.startListening(new NetworkLayer.IListener()
+		NetworkLayer<PacketFromClient>[] internal = new NetworkLayer[1];
+		NetworkLayer<PacketFromClient> server = NetworkLayer.startListening(new NetworkLayer.IListener()
 		{
 			@Override
-			public void peerConnected(NetworkLayer.PeerToken token)
+			public void peerConnected(NetworkLayer.PeerToken token, ByteBuffer byteBuffer)
 			{
 				Assert.assertNull(tokenHolder[0]);
+				Assert.assertNull(bufferHolder[0]);
 				tokenHolder[0] = token;
+				bufferHolder[0] = byteBuffer;
 				connectLatch.countDown();
 			}
 			@Override
@@ -42,7 +45,7 @@ public class TestNetworkLayer
 				disconnectLatch.countDown();
 			}
 			@Override
-			public void peerReadyForWrite(NetworkLayer.PeerToken token)
+			public void peerReadyForWrite(NetworkLayer.PeerToken token, ByteBuffer byteBuffer)
 			{
 				// We ignore this in this test.
 			}
@@ -68,7 +71,9 @@ public class TestNetworkLayer
 		buffer.flip();
 		client.write(buffer);
 		
-		server.sendMessage(tokenHolder[0], new Packet_ServerSendClientId(2, 100L, 1, 1));
+		PacketCodec.serializeToBuffer(bufferHolder[0], new Packet_ServerSendClientId(2, 100L, 1, 1));
+		bufferHolder[0].flip();
+		server.sendBuffer(tokenHolder[0], bufferHolder[0]);
 		
 		// Verify that we received both.
 		receiveLatch.await();
@@ -93,6 +98,7 @@ public class TestNetworkLayer
 	{
 		int port = 3000;
 		NetworkLayer.PeerToken[] tokenHolder = new NetworkLayer.PeerToken[1];
+		ByteBuffer[] bufferHolder = new ByteBuffer[1];
 		// We want to fake up a server.
 		InetSocketAddress address = new InetSocketAddress(port);
 		ServerSocketChannel socket = ServerSocketChannel.open();
@@ -102,14 +108,16 @@ public class TestNetworkLayer
 		CountDownLatch receiveLatch = new CountDownLatch(1);
 		
 		@SuppressWarnings("unchecked")
-		NetworkLayer<PacketFromServer, PacketFromClient>[] internal = new NetworkLayer[1];
-		NetworkLayer<PacketFromServer, PacketFromClient> client = NetworkLayer.connectToServer(new NetworkLayer.IListener()
+		NetworkLayer<PacketFromServer>[] internal = new NetworkLayer[1];
+		NetworkLayer<PacketFromServer> client = NetworkLayer.connectToServer(new NetworkLayer.IListener()
 		{
 			@Override
-			public void peerConnected(NetworkLayer.PeerToken token)
+			public void peerConnected(NetworkLayer.PeerToken token, ByteBuffer byteBuffer)
 			{
 				Assert.assertNull(tokenHolder[0]);
+				Assert.assertNull(bufferHolder[0]);
 				tokenHolder[0] = token;
+				bufferHolder[0] = byteBuffer;
 			}
 			@Override
 			public void peerDisconnected(NetworkLayer.PeerToken token)
@@ -117,7 +125,7 @@ public class TestNetworkLayer
 				throw new AssertionError("Not in client mode");
 			}
 			@Override
-			public void peerReadyForWrite(NetworkLayer.PeerToken token)
+			public void peerReadyForWrite(NetworkLayer.PeerToken token, ByteBuffer byteBuffer)
 			{
 				// We ignore this in this test.
 			}
@@ -140,7 +148,9 @@ public class TestNetworkLayer
 		buffer.flip();
 		server.write(buffer);
 		
-		client.sendMessage(tokenHolder[0], new Packet_ClientSendDescription(0, "test", 1));
+		PacketCodec.serializeToBuffer(bufferHolder[0], new Packet_ClientSendDescription(0, "test", 1));
+		bufferHolder[0].flip();
+		client.sendBuffer(tokenHolder[0], bufferHolder[0]);
 		
 		// Verify that we received both.
 		receiveLatch.await();

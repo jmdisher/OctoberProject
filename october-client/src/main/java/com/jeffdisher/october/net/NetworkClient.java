@@ -2,6 +2,7 @@ package com.jeffdisher.october.net;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import com.jeffdisher.october.utils.Assert;
@@ -14,8 +15,9 @@ import com.jeffdisher.october.utils.Assert;
 public class NetworkClient
 {
 	private final IListener _listener;
-	private final NetworkLayer<PacketFromServer, PacketFromClient> _network;
+	private final NetworkLayer<PacketFromServer> _network;
 	private _State _token;
+	private ByteBuffer _writeableBuffer;
 
 	/**
 	 * Creates a new client, returning once the connection has been established, but before the handshake is complete.
@@ -33,11 +35,13 @@ public class NetworkClient
 		_network = NetworkLayer.connectToServer(new NetworkLayer.IListener()
 		{
 			@Override
-			public void peerConnected(NetworkLayer.PeerToken token)
+			public void peerConnected(NetworkLayer.PeerToken token, ByteBuffer byteBuffer)
 			{
 				// Since this is client mode, this is called before the connectToServer returns.
 				Assert.assertTrue(null == _token);
 				_token = new _State(token);
+				Assert.assertTrue(null == _writeableBuffer);
+				_writeableBuffer = byteBuffer;
 			}
 			@Override
 			public void peerDisconnected(NetworkLayer.PeerToken token)
@@ -45,20 +49,19 @@ public class NetworkClient
 				_listener.serverDisconnected();
 			}
 			@Override
-			public void peerReadyForWrite(NetworkLayer.PeerToken token)
+			public void peerReadyForWrite(NetworkLayer.PeerToken token, ByteBuffer byteBuffer)
 			{
+				Assert.assertTrue(null == _writeableBuffer);
 				if (_token.didFinishHandshake())
 				{
-					Assert.assertTrue(!_token.networkIsReady);
-					_token.networkIsReady = true;
+					_writeableBuffer = byteBuffer;
 					// Just pass this back since we are done with it.
 					_listener.networkReady();
 				}
 				else
 				{
 					// We already started the handshake so record the network is ready while we wait for it to finish.
-					Assert.assertTrue(!_token.networkIsReady);
-					_token.networkIsReady = true;
+					_writeableBuffer = byteBuffer;
 				}
 			}
 			@Override
@@ -84,7 +87,7 @@ public class NetworkClient
 						_listener.handshakeCompleted(assignedId, safe.millisPerTick, safe.currentViewDistance, safe.viewDistanceMaximum);
 						
 						// See if the network is ready yet (since there was likely a race here).
-						if (_token.networkIsReady)
+						if (null != _writeableBuffer)
 						{
 							_listener.networkReady();
 						}
@@ -95,9 +98,14 @@ public class NetworkClient
 		
 		// We expect that the token will be set before connectToServer returns.
 		Assert.assertTrue(null != _token);
+		Assert.assertTrue(null != _writeableBuffer);
 		
 		// The connection starts writable so kick-off the handshake.
-		_network.sendMessage(_token.token, new Packet_ClientSendDescription(Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION, clientName, cuboidViewDistance));
+		PacketCodec.serializeToBuffer(_writeableBuffer, new Packet_ClientSendDescription(Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION, clientName, cuboidViewDistance));
+		_writeableBuffer.flip();
+		ByteBuffer buffer = _writeableBuffer;
+		_writeableBuffer = null;
+		_network.sendBuffer(_token.token, buffer);
 	}
 
 	/**
@@ -117,10 +125,15 @@ public class NetworkClient
 	{
 		// We need to wait for handshake before trying to use the client.
 		Assert.assertTrue(_token.didFinishHandshake());
-		Assert.assertTrue(_token.networkIsReady);
-		// NOTE:  We need to clear the ready flag BEFORE sending the message since the NEXT ready callback could come in between the lines of code.
-		_token.networkIsReady = false;
-		_network.sendMessage(_token.token, packet);
+		Assert.assertTrue(null != _writeableBuffer);
+		
+		PacketCodec.serializeToBuffer(_writeableBuffer, packet);
+		_writeableBuffer.flip();
+		
+		// NOTE:  We need to clear the write buffer BEFORE sending the message since the NEXT ready callback could come in between the lines of code.
+		ByteBuffer buffer = _writeableBuffer;
+		_writeableBuffer = null;
+		_network.sendBuffer(_token.token, buffer);
 	}
 
 	/**
@@ -171,7 +184,6 @@ public class NetworkClient
 	private static class _State
 	{
 		public final NetworkLayer.PeerToken token;
-		public boolean networkIsReady;
 		
 		private boolean _didFinishHandshake;
 		private int _clientId;

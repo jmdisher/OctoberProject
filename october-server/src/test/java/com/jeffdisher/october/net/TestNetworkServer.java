@@ -50,7 +50,7 @@ public class TestNetworkServer
 				leftCount[0] += 1;
 			}
 			@Override
-			public void networkWriteReady(NetworkLayer.PeerToken token)
+			public void networkWriteReady(NetworkLayer.PeerToken token, ByteBuffer bufferToWrite)
 			{
 				// We aren't acting on this in our test.
 			}
@@ -92,7 +92,7 @@ public class TestNetworkServer
 		{
 			private List<String> _messagesFor1 = new ArrayList<>();
 			NetworkLayer.PeerToken _firstPeer = null;
-			private boolean _isReady1 = false;
+			private ByteBuffer _bufferToWrite = null;
 			@Override
 			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
 			{
@@ -101,8 +101,6 @@ public class TestNetworkServer
 				{
 					_firstPeer = token;
 				}
-				// Starts ready.
-				_isReady1 = true;
 				return new NetworkServer.ConnectingClientDescription<>(name.hashCode(), token);
 			}
 			@Override
@@ -110,9 +108,9 @@ public class TestNetworkServer
 			{
 			}
 			@Override
-			public void networkWriteReady(NetworkLayer.PeerToken token)
+			public void networkWriteReady(NetworkLayer.PeerToken token, ByteBuffer bufferToWrite)
 			{
-				_isReady1 = true;
+				_bufferToWrite = bufferToWrite;
 				_handle();
 			}
 			@Override
@@ -136,11 +134,14 @@ public class TestNetworkServer
 			}
 			private void _handle()
 			{
-				if (_isReady1 && !_messagesFor1.isEmpty())
+				if ((null != _bufferToWrite) && !_messagesFor1.isEmpty())
 				{
 					String message = _messagesFor1.remove(0);
-					_isReady1 = false;
-					holder[0].sendMessage(_firstPeer, new Packet_ReceiveChatMessage(2, message));
+					PacketCodec.serializeToBuffer(_bufferToWrite, new Packet_ReceiveChatMessage(2, message));
+					_bufferToWrite.flip();
+					ByteBuffer toSend = _bufferToWrite;
+					_bufferToWrite = null;
+					holder[0].sendBuffer(_firstPeer, toSend);
 				}
 			}
 		}, TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
@@ -360,7 +361,7 @@ public class TestNetworkServer
 				closeLatch.countDown();
 			}
 			@Override
-			public void networkWriteReady(NetworkLayer.PeerToken token)
+			public void networkWriteReady(NetworkLayer.PeerToken token, ByteBuffer bufferToWrite)
 			{
 				// We aren't acting on this in our test.
 			}
@@ -510,7 +511,7 @@ public class TestNetworkServer
 		{
 		}
 		@Override
-		public void networkWriteReady(NetworkLayer.PeerToken data)
+		public void networkWriteReady(NetworkLayer.PeerToken data, ByteBuffer bufferToWrite)
 		{
 		}
 		@Override

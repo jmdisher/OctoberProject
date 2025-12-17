@@ -1,6 +1,7 @@
 package com.jeffdisher.october.net;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -22,7 +23,7 @@ public class NetworkServer<L>
 	public static final long DEFAULT_NEW_CONNECTION_TIMEOUT_MILLIS = 10_000L;
 
 	private final IListener<L> _listener;
-	private final NetworkLayer<PacketFromClient, PacketFromServer> _network;
+	private final NetworkLayer<PacketFromClient> _network;
 
 	// This collection is owned by the network background thread.
 	// We add to it whenever a new connection arrive.  That is also the only point where we walk the list (to avoid extra work in the critical path for this rare case).
@@ -51,10 +52,10 @@ public class NetworkServer<L>
 		_network = NetworkLayer.startListening(new NetworkLayer.IListener()
 		{
 			@Override
-			public void peerConnected(NetworkLayer.PeerToken token)
+			public void peerConnected(NetworkLayer.PeerToken token, ByteBuffer byteBuffer)
 			{
 				// Create the empty state.
-				token.setData(new _ClientState<L>());
+				token.setData(new _ClientState<L>(byteBuffer));
 				
 				// Do we need to clean up any connections?
 				long currentTimeMillis = currentTimeMillisProvider.getAsLong();
@@ -76,7 +77,7 @@ public class NetworkServer<L>
 				}
 			}
 			@Override
-			public void peerReadyForWrite(NetworkLayer.PeerToken token)
+			public void peerReadyForWrite(NetworkLayer.PeerToken token, ByteBuffer bufferToWrite)
 			{
 				_ClientState<L> state = _downcastData(token);
 				if (state.shouldDisconnectOnWriteReady)
@@ -88,7 +89,7 @@ public class NetworkServer<L>
 				{
 					// Given that we start in a writable state, and we send the last message in the handshake, we should only get here if the handshake is complete.
 					Assert.assertTrue(null != state.data);
-					_listener.networkWriteReady(state.data);
+					_listener.networkWriteReady(state.data, bufferToWrite);
 				}
 			}
 			@Override
@@ -130,7 +131,7 @@ public class NetworkServer<L>
 							System.err.println("Client failed handshake with type: " + packet.type.name());
 							_network.disconnectPeer(token);
 					}
-					
+					state.bufferForImmediateWrite = null;
 				}
 				else
 				{
@@ -153,7 +154,10 @@ public class NetworkServer<L>
 						// Send out description and consider the handshake completed.
 						// (we will assume the initial view distance will be the min of what they requested and the maximum.
 						int currentViewDistance = Math.min(safe.cuboidViewDistance, viewDistanceMaximum);
-						_network.sendMessage(token, new Packet_ServerSendClientId(description.clientId, serverMillisPerTick, currentViewDistance, viewDistanceMaximum));
+						PacketCodec.serializeToBuffer(state.bufferForImmediateWrite, new Packet_ServerSendClientId(description.clientId, serverMillisPerTick, currentViewDistance, viewDistanceMaximum));
+						state.bufferForImmediateWrite.flip();
+						_network.sendBuffer(token, state.bufferForImmediateWrite);
+						state.bufferForImmediateWrite = null;
 					}
 					else
 					{
@@ -176,11 +180,14 @@ public class NetworkServer<L>
 				{
 					// We need to immediately request the status and then enter a state where we should wait for disconnect.
 					NetworkServer.ServerStatus status = _listener.pollServerStatus();
-					_network.sendMessage(token, new Packet_ServerReturnServerStatus(Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION
-							, status.serverName
-							, status.clientCount
-							, safe.millis
+					PacketCodec.serializeToBuffer(state.bufferForImmediateWrite, new Packet_ServerReturnServerStatus(Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION
+						, status.serverName
+						, status.clientCount
+						, safe.millis
 					));
+					state.bufferForImmediateWrite.flip();
+					_network.sendBuffer(token, state.bufferForImmediateWrite);
+					state.bufferForImmediateWrite = null;
 					state.shouldDisconnectOnWriteReady = true;
 				}
 				else
@@ -247,11 +254,11 @@ public class NetworkServer<L>
 	 * Sends a message to the client with the given ID.
 	 * 
 	 * @param token The token of a specific attached client.
-	 * @param packet The message to send.
+	 * @param buffer The buffer previously sent back to be populated.
 	 */
-	public void sendMessage(NetworkLayer.PeerToken token, PacketFromServer packet)
+	public void sendBuffer(NetworkLayer.PeerToken token, ByteBuffer buffer)
 	{
-		_network.sendMessage(token, packet);
+		_network.sendBuffer(token, buffer);
 	}
 
 	/**
@@ -300,10 +307,11 @@ public class NetworkServer<L>
 		void userLeft(T data);
 		/**
 		 * Called when the network is free to send more messages to this client.
+		 * @param bufferToWrite The buffer that the receiver should write outgoing messages into and then send back.
 		 * 
 		 * @param token The token to use when interacting with the network.
 		 */
-		void networkWriteReady(T data);
+		void networkWriteReady(T data, ByteBuffer bufferToWrite);
 		/**
 		 * Called when the network is waiting for messages to be read from this client.
 		 * 
@@ -333,6 +341,13 @@ public class NetworkServer<L>
 		// We set this to true if this client is in a state where we just sent a message and want to immediately
 		// disconnect once it has gone to the network.
 		public boolean shouldDisconnectOnWriteReady;
+		// We store the initially writeable buffer here so we can respond to handshake or status polls.
+		public ByteBuffer bufferForImmediateWrite;
+		
+		public _ClientState(ByteBuffer bufferForImmediateWrite)
+		{
+			this.bufferForImmediateWrite = bufferForImmediateWrite;
+		}
 	}
 
 	private static record _AwaitingHandshake(long limitTimeMillis

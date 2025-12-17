@@ -1,11 +1,13 @@
 package com.jeffdisher.october.process;
 
+import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.function.Supplier;
 
 import com.jeffdisher.october.net.NetworkLayer;
+import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.net.PacketFromServer;
 import com.jeffdisher.october.utils.Assert;
@@ -24,7 +26,8 @@ public class ClientBuffer
 	public final int clientId;
 	
 	private final Queue<PacketFromServer> _outgoing;
-	private boolean _isNetworkWriteable;
+	// This buffer is present only when the socket is actively writeable (owned by NetworkLayer).
+	private ByteBuffer _writeableBuffer;
 	private final Queue<PacketFromClient> _incoming;
 	private PacketFromClient _lastPeeked;
 	private boolean _isNetworkReadable;
@@ -35,43 +38,48 @@ public class ClientBuffer
 		this.clientId = clientId;
 		
 		_outgoing = new LinkedList<>();
-		_isNetworkWriteable = false;
+		_writeableBuffer = null;
 		_incoming = new LinkedList<>();
 		_isNetworkReadable = false;
 	}
 
-	public PacketFromServer removeOutgoingPacketForWriteableClient()
+	public ByteBuffer writeImmediateForWriteableClient(ByteBuffer writeableBuffer)
 	{
-		PacketFromServer immediateWrite;
+		// We can't already be in a writeable state.
+		Assert.assertTrue(null == _writeableBuffer);
+		
+		ByteBuffer writeNow;
 		if (_outgoing.isEmpty())
 		{
-			// We have nothing to send but the client is writeable so set the flag.
-			Assert.assertTrue(!_isNetworkWriteable);
-			_isNetworkWriteable = true;
-			immediateWrite = null;
+			// We have nothing to send so just stay in this state.
+			_writeableBuffer = writeableBuffer;
+			writeNow = null;
 		}
 		else
 		{
-			// We have something buffered so we can directly handle this change of state without updating the flag.
-			Assert.assertTrue(!_isNetworkWriteable);
-			immediateWrite = _outgoing.poll();
+			// We have something in the queue so serialize it and return this, immediate.
+			PacketCodec.serializeToBuffer(writeableBuffer, _outgoing.poll());
+			writeableBuffer.flip();
+			writeNow = writeableBuffer;
 		}
-		return immediateWrite;
+		return writeNow;
 	}
 
-	public boolean shouldImmediatelySendPacket(PacketFromServer packet)
+	public ByteBuffer shouldImmediatelySendBuffer(PacketFromServer packet)
 	{
-		boolean shouldSend;
-		if (_isNetworkWriteable)
+		ByteBuffer shouldSend;
+		if (null != _writeableBuffer)
 		{
-			// The network is ready for this so send now and clear the flag.
-			shouldSend = true;
-			_isNetworkWriteable = false;
+			// The network is ready for this so serialize it and return the buffer.
+			PacketCodec.serializeToBuffer(_writeableBuffer, packet);
+			_writeableBuffer.flip();
+			shouldSend = _writeableBuffer;
+			_writeableBuffer = null;
 		}
 		else
 		{
 			// The network isn't ready so buffer this instead of sending.
-			shouldSend = false;
+			shouldSend = null;
 			_outgoing.add(packet);
 		}
 		return shouldSend;
@@ -122,7 +130,8 @@ public class ClientBuffer
 
 	public boolean isNetworkWriteReady()
 	{
-		return _isNetworkWriteable;
+		// If the write buffer is here, we are ready for write.
+		return (null != _writeableBuffer);
 	}
 
 

@@ -2,6 +2,7 @@ package com.jeffdisher.october.net;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import com.jeffdisher.october.utils.Assert;
@@ -91,17 +92,20 @@ public class PollingClient
 	private class _OnePoll
 	{
 		private NetworkLayer.PeerToken _token;
-		private final NetworkLayer<PacketFromServer, PacketFromClient> _network;
+		private ByteBuffer _writeableBuffer;
+		private final NetworkLayer<PacketFromServer> _network;
 		private _OnePoll(InetSocketAddress serverToPoll) throws IOException
 		{
 			_network = NetworkLayer.connectToServer(new NetworkLayer.IListener()
 			{
 				@Override
-				public void peerConnected(NetworkLayer.PeerToken token)
+				public void peerConnected(NetworkLayer.PeerToken token, ByteBuffer byteBuffer)
 				{
 					// Since this is client mode, this is called before the connectToServer returns.
 					Assert.assertTrue(null == _token);
+					Assert.assertTrue(null == _writeableBuffer);
 					_token = token;
+					_writeableBuffer = byteBuffer;
 				}
 				@Override
 				public void peerDisconnected(NetworkLayer.PeerToken token)
@@ -111,7 +115,7 @@ public class PollingClient
 					});
 				}
 				@Override
-				public void peerReadyForWrite(NetworkLayer.PeerToken token)
+				public void peerReadyForWrite(NetworkLayer.PeerToken token, ByteBuffer byteBuffer)
 				{
 					// We only start with the one write.
 				}
@@ -132,10 +136,13 @@ public class PollingClient
 			
 			// We expect that the token will be set before connectToServer returns.
 			Assert.assertTrue(null != _token);
+			Assert.assertTrue(null != _writeableBuffer);
 			
 			// The connection starts writable so kick-off the handshake.
 			long startMillis = System.currentTimeMillis();
-			_network.sendMessage(_token, new Packet_ClientPollServerStatus(Packet_ClientPollServerStatus.NETWORK_POLL_VERSION, startMillis));
+			PacketCodec.serializeToBuffer(_writeableBuffer, new Packet_ClientPollServerStatus(Packet_ClientPollServerStatus.NETWORK_POLL_VERSION, startMillis));
+			_writeableBuffer.flip();
+			_network.sendBuffer(_token, _writeableBuffer);
 		}
 	}
 

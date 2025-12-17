@@ -1,6 +1,7 @@
 package com.jeffdisher.october.process;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -142,9 +143,9 @@ public class ServerProcess
 			Packet_ServerSendConfigUpdate configPacket = new Packet_ServerSendConfigUpdate(_sharedConfigInstance.ticksPerDay
 					, _sharedConfigInstance.dayStartTick
 			);
-			boolean mustNotBeReady = buffer.shouldImmediatelySendPacket(configPacket);
+			ByteBuffer mustNotBeReady = buffer.shouldImmediatelySendBuffer(configPacket);
 			// We are interjecting before the state machine starts changing so we assume that this isn't ready to send.
-			Assert.assertTrue(!mustNotBeReady);
+			Assert.assertTrue(null == mustNotBeReady);
 		}
 		return result;
 	}
@@ -159,12 +160,12 @@ public class ServerProcess
 		_clientsById.remove(buffer.clientId);
 	}
 
-	private synchronized void _sendNextPacket(ClientBuffer buffer)
+	private synchronized void _sendNextPacket(ClientBuffer buffer, ByteBuffer bufferToWrite)
 	{
-		PacketFromServer next = buffer.removeOutgoingPacketForWriteableClient();
-		if (null != next)
+		ByteBuffer toWrite = buffer.writeImmediateForWriteableClient(bufferToWrite);
+		if (null != toWrite)
 		{
-			_network.sendMessage(buffer.token, next);
+			_network.sendBuffer(buffer.token, toWrite);
 		}
 	}
 
@@ -179,9 +180,11 @@ public class ServerProcess
 		}
 		else
 		{
-			if (buffer.shouldImmediatelySendPacket(packet))
+			// This will take us out of the writeable state if it returns non-null.
+			ByteBuffer toWrite = buffer.shouldImmediatelySendBuffer(packet);
+			if (null != toWrite)
 			{
-				_network.sendMessage(buffer.token, packet);
+				_network.sendBuffer(buffer.token, toWrite);
 			}
 		}
 	}
@@ -271,9 +274,9 @@ public class ServerProcess
 			_destroyClient(buffer);
 		}
 		@Override
-		public void networkWriteReady(ClientBuffer buffer)
+		public void networkWriteReady(ClientBuffer buffer, ByteBuffer bufferToWrite)
 		{
-			_sendNextPacket(buffer);
+			_sendNextPacket(buffer, bufferToWrite);
 		}
 		@Override
 		public void networkReadReady(ClientBuffer buffer)

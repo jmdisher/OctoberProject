@@ -34,10 +34,11 @@ public class TestClientBuffer
 	{
 		// Buffer something and show that we try to send it when the buffer becomes writeable.
 		ClientBuffer buffer = new ClientBuffer(new _Token(), 1);
-		PacketFromServer out = buffer.removeOutgoingPacketForWriteableClient();
-		Assert.assertNull(out);
-		boolean shouldSend = buffer.shouldImmediatelySendPacket(new _OutPacket());
-		Assert.assertTrue(shouldSend);
+		ByteBuffer writeBuffer = ByteBuffer.allocate(256);
+		ByteBuffer send = buffer.writeImmediateForWriteableClient(writeBuffer);
+		Assert.assertNull(send);
+		send = buffer.shouldImmediatelySendBuffer(new _OutPacket());
+		Assert.assertNotNull(send);
 	}
 
 	@Test
@@ -96,7 +97,7 @@ public class TestClientBuffer
 		@Override
 		public void serializeToBuffer(ByteBuffer buffer)
 		{
-			Assert.fail("Note part of the test");
+			// Just do nothing - the ClientBuffer will serialize, inline, when it wants to immediately send a buffer back.
 		}
 	}
 }

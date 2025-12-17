@@ -3,6 +3,7 @@ package com.jeffdisher.october.integration;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +31,7 @@ import com.jeffdisher.october.net.NetworkClient;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
 import com.jeffdisher.october.net.Packet;
+import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.net.PacketFromServer;
 import com.jeffdisher.october.net.Packet_SendChatMessage;
@@ -81,7 +83,7 @@ public class TestIntegratedNetwork
 				leftCount[0] += 1;
 			}
 			@Override
-			public void networkWriteReady(NetworkLayer.PeerToken token)
+			public void networkWriteReady(NetworkLayer.PeerToken token, ByteBuffer bufferToWrite)
 			{
 				// We aren't acting on this in our test.
 			}
@@ -121,7 +123,7 @@ public class TestIntegratedNetwork
 		{
 			private List<String> _messagesFor1 = new ArrayList<>();
 			NetworkLayer.PeerToken _firstPeer = null;
-			private boolean _isReady1 = false;
+			private ByteBuffer _bufferToWrite = null;
 			@Override
 			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
 			{
@@ -130,8 +132,6 @@ public class TestIntegratedNetwork
 				{
 					_firstPeer = token;
 				}
-				// Starts ready.
-				_isReady1 = true;
 				return new NetworkServer.ConnectingClientDescription<>(name.hashCode(), token);
 			}
 			@Override
@@ -139,9 +139,9 @@ public class TestIntegratedNetwork
 			{
 			}
 			@Override
-			public void networkWriteReady(NetworkLayer.PeerToken token)
+			public void networkWriteReady(NetworkLayer.PeerToken token, ByteBuffer bufferToWrite)
 			{
-				_isReady1 = true;
+				_bufferToWrite = bufferToWrite;
 				_handle();
 			}
 			@Override
@@ -165,11 +165,14 @@ public class TestIntegratedNetwork
 			}
 			private void _handle()
 			{
-				if (_isReady1 && !_messagesFor1.isEmpty())
+				if ((null != _bufferToWrite) && !_messagesFor1.isEmpty())
 				{
 					String message = _messagesFor1.remove(0);
-					_isReady1 = false;
-					holder[0].sendMessage(_firstPeer, new Packet_ReceiveChatMessage("Client 2".hashCode(), message));
+					PacketCodec.serializeToBuffer(_bufferToWrite, new Packet_ReceiveChatMessage("Client 2".hashCode(), message));
+					_bufferToWrite.flip();
+					ByteBuffer toSend = _bufferToWrite;
+					_bufferToWrite = null;
+					holder[0].sendBuffer(_firstPeer, toSend);
 				}
 			}
 		}, TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
@@ -314,11 +317,13 @@ public class TestIntegratedNetwork
 			{
 			}
 			@Override
-			public void networkWriteReady(NetworkLayer.PeerToken token)
+			public void networkWriteReady(NetworkLayer.PeerToken token, ByteBuffer bufferToWrite)
 			{
 				if (_nextIndex < outgoing.length)
 				{
-					holder[0].sendMessage(token, outgoing[_nextIndex]);
+					PacketCodec.serializeToBuffer(bufferToWrite, outgoing[_nextIndex]);
+					bufferToWrite.flip();
+					holder[0].sendBuffer(token, bufferToWrite);
 					_nextIndex += 1;
 				}
 			}
@@ -474,7 +479,7 @@ public class TestIntegratedNetwork
 				throw new AssertionError("Not called");
 			}
 			@Override
-			public void networkWriteReady(NetworkLayer.PeerToken token)
+			public void networkWriteReady(NetworkLayer.PeerToken token, ByteBuffer bufferToWrite)
 			{
 				throw new AssertionError("Not called");
 			}

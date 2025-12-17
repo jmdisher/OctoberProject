@@ -27,10 +27,13 @@ import com.jeffdisher.october.utils.Assert;
  * acceptor socket.
  * It internally runs on a background thread and all callbacks issued through the IListener interface are issued on that
  * thread so they are expected to return quickly.
+ * Note that it internally decodes the incoming packets and sends them back as high-level data but outgoing packets are
+ * serialized by the caller, into the buffer.  This asymmetry may not be permanent but is currently being used in order
+ * to avoid so many small back-and-forth calls on the server when sending a stream of potentially hundreds of packets to
+ * each client in a tick while also allowing the caller to know exactly how aggressively it can serialize.
  * @param <IN> The incoming packet type.
- * @param <OUT> The outgoing packet type.
  */
-public class NetworkLayer<IN extends Packet, OUT extends Packet>
+public class NetworkLayer<IN extends Packet>
 {
 	// The buffer must be large enough to hold precisely 1 packet.
 	public static final int BUFFER_SIZE_BYTES = PacketCodec.MAX_PACKET_BYTES;
@@ -45,7 +48,7 @@ public class NetworkLayer<IN extends Packet, OUT extends Packet>
 	 * @return The network layer abstraction.
 	 * @throws IOException An error occurred while configuring the network.
 	 */
-	public static NetworkLayer<PacketFromClient, PacketFromServer> startListening(IListener listener, int port) throws IOException
+	public static NetworkLayer<PacketFromClient> startListening(IListener listener, int port) throws IOException
 	{
 		InetSocketAddress address = new InetSocketAddress(port);
 		ServerSocketChannel socket = ServerSocketChannel.open();
@@ -63,7 +66,7 @@ public class NetworkLayer<IN extends Packet, OUT extends Packet>
 	 * @return The network layer abstraction.
 	 * @throws IOException An error occurred while configuring the network.
 	 */
-	public static NetworkLayer<PacketFromServer, PacketFromClient> connectToServer(IListener listener, InetAddress host, int port) throws IOException
+	public static NetworkLayer<PacketFromServer> connectToServer(IListener listener, InetAddress host, int port) throws IOException
 	{
 		SocketChannel client = SocketChannel.open(new InetSocketAddress(host, port));
 		return new NetworkLayer<>(PacketFromServer.class, listener, null, client, "Client Network Layer");
@@ -79,7 +82,7 @@ public class NetworkLayer<IN extends Packet, OUT extends Packet>
 
 	// Data related to the hand-off between internal and background threads.
 	private boolean _keepRunning;
-	private IdentityHashMap<PeerToken, OUT> _shared_outgoingPackets;
+	private IdentityHashMap<PeerToken, ByteBuffer> _shared_outgoingBuffers;
 	private final IdentityHashMap<PeerToken, List<IN>> _shared_incomingPackets;
 	private Set<PeerToken> _shared_resumeReads;
 	private Queue<PeerToken> _shared_disconnectRequests;
@@ -108,7 +111,7 @@ public class NetworkLayer<IN extends Packet, OUT extends Packet>
 		
 		// Initialize shared data.
 		_keepRunning = true;
-		_shared_outgoingPackets = null;
+		_shared_outgoingBuffers = null;
 		_shared_incomingPackets = new IdentityHashMap<>();
 		_shared_resumeReads = null;
 		_shared_disconnectRequests = null;
@@ -136,7 +139,7 @@ public class NetworkLayer<IN extends Packet, OUT extends Packet>
 			_acceptorKey = null;
 			
 			// Notify the listener that this is connected, so they see the token.
-			listener.peerConnected(state);
+			listener.peerConnected(state, state.releaseOutgoing());
 		}
 		
 		// Start the internal thread since we are now initialized.
@@ -194,20 +197,20 @@ public class NetworkLayer<IN extends Packet, OUT extends Packet>
 	 * peer at a given time.
 	 * 
 	 * @param peer The target of the message.
-	 * @param packet The message to serialize and send.
+	 * @param buffer The buffer previously sent back to be populated.
 	 */
-	public void sendMessage(PeerToken peer, OUT packet)
+	public void sendBuffer(PeerToken peer, ByteBuffer buffer)
 	{
 		try
 		{
 			_lock.lock();
 			// This should only be enqueued if we there was nothing there and we notified them.
-			if (null == _shared_outgoingPackets)
+			if (null == _shared_outgoingBuffers)
 			{
-				_shared_outgoingPackets = new IdentityHashMap<>();
+				_shared_outgoingBuffers = new IdentityHashMap<>();
 			}
-			Assert.assertTrue(!_shared_outgoingPackets.containsKey(peer));
-			_shared_outgoingPackets.put(peer, packet);
+			Assert.assertTrue(!_shared_outgoingBuffers.containsKey(peer));
+			_shared_outgoingBuffers.put(peer, buffer);
 			_selector.wakeup();
 		}
 		finally
@@ -287,7 +290,7 @@ public class NetworkLayer<IN extends Packet, OUT extends Packet>
 				peersAwaitingRead = _backgroundProcessSelectedKeys();
 			}
 			// Check the handoff map.
-			IdentityHashMap<PeerToken, OUT> packetsToSerialize;
+			IdentityHashMap<PeerToken, ByteBuffer> buffersToWrite;
 			Queue<PeerToken> peersToDisconnect;
 			Set<PeerToken> readsToResume;
 			// We want to notify the listener outside of the lock so we build this list.
@@ -295,8 +298,8 @@ public class NetworkLayer<IN extends Packet, OUT extends Packet>
 			try
 			{
 				_lock.lock();
-				packetsToSerialize = _shared_outgoingPackets;
-				_shared_outgoingPackets = null;
+				buffersToWrite = _shared_outgoingBuffers;
+				_shared_outgoingBuffers = null;
 				peersToDisconnect = _shared_disconnectRequests;
 				_shared_disconnectRequests = null;
 				readsToResume = _shared_resumeReads;
@@ -349,18 +352,18 @@ public class NetworkLayer<IN extends Packet, OUT extends Packet>
 				}
 			}
 			// Now, send any outgoing packets.
-			if (null != packetsToSerialize)
+			if (null != buffersToWrite)
 			{
-				for (Map.Entry<PeerToken, OUT> elt : packetsToSerialize.entrySet())
+				for (Map.Entry<PeerToken, ByteBuffer> elt : buffersToWrite.entrySet())
 				{
 					_PeerState client = _connectedPeers.get(elt.getKey());
 					// The peer may have disconnected.
 					if (null != client)
 					{
 						// This should already be empty.
-						Assert.assertTrue(0 == client.outgoing.position());
-						OUT packet = elt.getValue();
-						_backgroundSerializePacket(client, packet);
+						Assert.assertTrue(null == client.outgoing);
+						client.outgoing = elt.getValue();
+						client.key.interestOps(client.key.interestOps() | SelectionKey.OP_WRITE);
 					}
 				}
 			}
@@ -463,7 +466,7 @@ public class NetworkLayer<IN extends Packet, OUT extends Packet>
 		_PeerState newClient = new _PeerState(newNode, newKey);
 		newKey.attach(newClient);
 		_connectedPeers.put(newClient, newClient);
-		_listener.peerConnected(newClient);
+		_listener.peerConnected(newClient, newClient.releaseOutgoing());
 	}
 
 	private List<IN> _backgroundProcessReadableKey(SelectionKey key, _PeerState state)
@@ -544,22 +547,13 @@ public class NetworkLayer<IN extends Packet, OUT extends Packet>
 			else
 			{
 				// Clear the buffer and remote the writable state from the key.
-				state.outgoing.clear();
 				state.key.interestOps(state.key.interestOps() & ~SelectionKey.OP_WRITE);
 				
 				// We can also notify the listener that they are ready to write something to the buffer.
-				_listener.peerReadyForWrite(state);
+				_listener.peerReadyForWrite(state, state.releaseOutgoing());
 			}
 		}
 		return didWrite;
-	}
-
-	private void _backgroundSerializePacket(_PeerState client, OUT packet)
-	{
-		PacketCodec.serializeToBuffer(client.outgoing, packet);
-		client.key.interestOps(client.key.interestOps() | SelectionKey.OP_WRITE);
-		// Flip the buffer so we can write it.
-		client.outgoing.flip();
 	}
 
 	private void _backgroundDisconnectClient(_PeerState state)
@@ -592,8 +586,9 @@ public class NetworkLayer<IN extends Packet, OUT extends Packet>
 		 * Called when a peer has connected.
 		 * 
 		 * @param token The peer's opaque token.
+		 * @param byteBuffer The buffer which can be used for serializing outgoing data.
 		 */
-		void peerConnected(PeerToken token);
+		void peerConnected(PeerToken token, ByteBuffer byteBuffer);
 		/**
 		 * Called when a peer has disconnected.
 		 * 
@@ -604,8 +599,9 @@ public class NetworkLayer<IN extends Packet, OUT extends Packet>
 		 * Called when the connection to a peer is ready to receive new messages to send.
 		 * 
 		 * @param token The peer's opaque token.
+		 * @param byteBuffer The buffer which can be used for serializing outgoing data.
 		 */
-		void peerReadyForWrite(PeerToken token);
+		void peerReadyForWrite(PeerToken token, ByteBuffer byteBuffer);
 		/**
 		 * Called when the connection to a peer has messages to read.
 		 * 
@@ -624,12 +620,19 @@ public class NetworkLayer<IN extends Packet, OUT extends Packet>
 		void setData(Object userData);
 	}
 
+	/**
+	 * WARNING:  "outgoing" is actually passed back and forth to the external consumer:  It serializes whatever it wants
+	 * into the buffer and passes it over here so that we enter the "writeable" state and can then dump it to the
+	 * network, passing it back to the consumer when done.  In this sense, its presence here is the same as needing to
+	 * be writeable in the selector (with the exception of initial startup where it is instantiated here, for symmetry,
+	 * but quickly sent elsewhere).
+	 */
 	private static class _PeerState implements PeerToken
 	{
 		public final SocketChannel channel;
 		public final SelectionKey key;
 		public final ByteBuffer incoming;
-		public final ByteBuffer outgoing;
+		public ByteBuffer outgoing;
 		private Object _userData;
 		
 		public _PeerState(SocketChannel channel, SelectionKey key)
@@ -638,6 +641,13 @@ public class NetworkLayer<IN extends Packet, OUT extends Packet>
 			this.key = key;
 			this.incoming = ByteBuffer.allocate(BUFFER_SIZE_BYTES);
 			this.outgoing = ByteBuffer.allocate(BUFFER_SIZE_BYTES);
+		}
+		public ByteBuffer releaseOutgoing()
+		{
+			this.outgoing.clear();
+			ByteBuffer buffer = this.outgoing;
+			this.outgoing = null;
+			return buffer;
 		}
 		@Override
 		public Object getData()
