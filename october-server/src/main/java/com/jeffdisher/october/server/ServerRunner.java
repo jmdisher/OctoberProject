@@ -466,6 +466,16 @@ public class ServerRunner
 			_network.sendPacket(clientId, packet);
 		}
 		@Override
+		public OutpacketBuffer network_openOutputBuffer(int clientId)
+		{
+			return _network.openOutputBuffer(clientId);
+		}
+		@Override
+		public void network_closeOutputBuffer(int clientId, OutpacketBuffer buffer)
+		{
+			_network.closeOutputBuffer(clientId, buffer);
+		}
+		@Override
 		public boolean runner_enqueueEntityChange(int entityId, EntityActionSimpleMove<IMutablePlayerEntity> change, long commitLevel)
 		{
 			return _tickRunner.enqueueEntityChange(entityId, change, commitLevel);

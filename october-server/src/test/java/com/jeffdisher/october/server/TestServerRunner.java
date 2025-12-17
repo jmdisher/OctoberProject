@@ -990,125 +990,19 @@ public class TestServerRunner
 		@Override
 		public synchronized void sendPacket(int clientId, PacketFromServer packet)
 		{
-			if (packet instanceof Packet_Entity)
+			_lockedSendPacket(clientId, packet);
+		}
+		@Override
+		public OutpacketBuffer openOutputBuffer(int clientId)
+		{
+			return new OutpacketBuffer(null, 0);
+		}
+		@Override
+		public synchronized void closeOutputBuffer(int clientId, OutpacketBuffer buffer)
+		{
+			for (PacketFromServer packet : buffer.removeOverflow())
 			{
-				Packet_Entity safe = (Packet_Entity) packet;
-				Assert.assertFalse(this.clientFullEntities.containsKey(clientId));
-				this.clientFullEntities.put(clientId, safe.entity);
-				this.notifyAll();
-			}
-			else if (packet instanceof Packet_PartialEntity)
-			{
-				Packet_PartialEntity safe = (Packet_PartialEntity) packet;
-				int entityId = safe.entity.id();
-				Map<Integer, PartialEntity> clientMap = this.clientPartialEntities.get(clientId);
-				Assert.assertFalse(clientMap.containsKey(entityId));
-				clientMap.put(entityId, safe.entity);
-				this.notifyAll();
-			}
-			else if (packet instanceof Packet_RemoveEntity)
-			{
-				Packet_RemoveEntity safe = (Packet_RemoveEntity) packet;
-				// This should only ever apply to partials.
-				Map<Integer, PartialEntity> clientMap = this.clientPartialEntities.get(clientId);
-				Assert.assertTrue(clientMap.containsKey(safe.entityId));
-				clientMap.remove(safe.entityId);
-				this.notifyAll();
-			}
-			else if (packet instanceof Packet_SendPartialPassive)
-			{
-				throw new AssertionError("sendPartialPassive");
-			}
-			else if (packet instanceof Packet_SendPartialPassiveUpdate)
-			{
-				throw new AssertionError("sendPartialPassiveUpdate");
-			}
-			else if (packet instanceof Packet_RemovePassive)
-			{
-				throw new AssertionError("removePassive");
-			}
-			else if (packet instanceof Packet_CuboidStart)
-			{
-				int count = this.clientCuboidAddedCount.get(clientId);
-				this.clientCuboidAddedCount.put(clientId, count + 1);
-				this.notifyAll();
-			}
-			else if (packet instanceof Packet_CuboidFragment)
-			{
-				// We ignore these since we only count the start.
-			}
-			else if (packet instanceof Packet_RemoveCuboid)
-			{
-				int count = this.clientCuboidRemovedCount.get(clientId);
-				this.clientCuboidRemovedCount.put(clientId, count + 1);
-				this.notifyAll();
-			}
-			else if (packet instanceof Packet_EntityUpdateFromServer)
-			{
-				Packet_EntityUpdateFromServer safe = (Packet_EntityUpdateFromServer) packet;
-				List<Object> updates = this.clientUpdates.get(clientId);
-				updates.add(safe.update);
-				this.notifyAll();
-			}
-			else if (packet instanceof Packet_PartialEntityUpdateFromServer)
-			{
-				Packet_PartialEntityUpdateFromServer safe = (Packet_PartialEntityUpdateFromServer) packet;
-				List<Object> updates = this.clientUpdates.get(clientId);
-				updates.add(safe.update);
-				this.notifyAll();
-			}
-			else if (packet instanceof Packet_BlockStateUpdate)
-			{
-				Packet_BlockStateUpdate safe = (Packet_BlockStateUpdate) packet;
-				List<Object> updates = this.clientUpdates.get(clientId);
-				updates.add(safe.stateUpdate);
-				this.notifyAll();
-			}
-			else if (packet instanceof Packet_EndOfTick)
-			{
-				// Ignore these, in the common case.
-			}
-			else if (packet instanceof Packet_ServerSendConfigUpdate)
-			{
-				Packet_ServerSendConfigUpdate safe = (Packet_ServerSendConfigUpdate) packet;
-				// For now, we will assume that there is only one client for tests using this callback
-				WorldConfig config = new WorldConfig();
-				config.ticksPerDay = safe.ticksPerDay;
-				config.dayStartTick = safe.dayStartTick;
-				Assert.assertNull(this.config);
-				this.config = config;
-				this.notifyAll();
-			}
-			else if (packet instanceof Packet_ClientJoined)
-			{
-				Packet_ClientJoined safe = (Packet_ClientJoined) packet;
-				Map<Integer, String> thisClient = this.clientConnectedNames.get(clientId);
-				Assert.assertFalse(thisClient.containsKey(safe.clientId));
-				thisClient.put(safe.clientId, safe.clientName);
-				this.notifyAll();
-			}
-			else if (packet instanceof Packet_ClientLeft)
-			{
-				Packet_ClientLeft safe = (Packet_ClientLeft) packet;
-				Map<Integer, String> thisClient = this.clientConnectedNames.get(clientId);
-				Assert.assertTrue(thisClient.containsKey(safe.clientId));
-				thisClient.remove(safe.clientId);
-				this.notifyAll();
-			}
-			else if (packet instanceof Packet_ReceiveChatMessage)
-			{
-				Packet_ReceiveChatMessage safe = (Packet_ReceiveChatMessage) packet;
-				List<String> messages = this.chatMessages.get(clientId);
-				messages.add(safe.sourceId + ": " + safe.message);
-				this.notifyAll();
-			}
-			else if (packet instanceof Packet_EventBlock)
-			{
-				throw new AssertionError("Unimplemented");
-			}
-			else if (packet instanceof Packet_EventEntity)
-			{
-				throw new AssertionError("Unimplemented");
+				_lockedSendPacket(clientId, packet);
 			}
 		}
 		@Override
@@ -1291,6 +1185,133 @@ public class TestServerRunner
 			while (this.clientConnectedNames.get(clientId).containsKey(otherClient))
 			{
 				this.wait();
+			}
+		}
+		private void _lockedSendPacket(int clientId, PacketFromServer packet)
+		{
+			if (packet instanceof Packet_Entity)
+			{
+				Packet_Entity safe = (Packet_Entity) packet;
+				Assert.assertFalse(this.clientFullEntities.containsKey(clientId));
+				this.clientFullEntities.put(clientId, safe.entity);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_PartialEntity)
+			{
+				Packet_PartialEntity safe = (Packet_PartialEntity) packet;
+				int entityId = safe.entity.id();
+				Map<Integer, PartialEntity> clientMap = this.clientPartialEntities.get(clientId);
+				Assert.assertFalse(clientMap.containsKey(entityId));
+				clientMap.put(entityId, safe.entity);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_RemoveEntity)
+			{
+				Packet_RemoveEntity safe = (Packet_RemoveEntity) packet;
+				// This should only ever apply to partials.
+				Map<Integer, PartialEntity> clientMap = this.clientPartialEntities.get(clientId);
+				Assert.assertTrue(clientMap.containsKey(safe.entityId));
+				clientMap.remove(safe.entityId);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_SendPartialPassive)
+			{
+				throw new AssertionError("sendPartialPassive");
+			}
+			else if (packet instanceof Packet_SendPartialPassiveUpdate)
+			{
+				throw new AssertionError("sendPartialPassiveUpdate");
+			}
+			else if (packet instanceof Packet_RemovePassive)
+			{
+				throw new AssertionError("removePassive");
+			}
+			else if (packet instanceof Packet_CuboidStart)
+			{
+				int count = this.clientCuboidAddedCount.get(clientId);
+				this.clientCuboidAddedCount.put(clientId, count + 1);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_CuboidFragment)
+			{
+				// We ignore these since we only count the start.
+			}
+			else if (packet instanceof Packet_RemoveCuboid)
+			{
+				int count = this.clientCuboidRemovedCount.get(clientId);
+				this.clientCuboidRemovedCount.put(clientId, count + 1);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_EntityUpdateFromServer)
+			{
+				Packet_EntityUpdateFromServer safe = (Packet_EntityUpdateFromServer) packet;
+				List<Object> updates = this.clientUpdates.get(clientId);
+				updates.add(safe.update);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_PartialEntityUpdateFromServer)
+			{
+				Packet_PartialEntityUpdateFromServer safe = (Packet_PartialEntityUpdateFromServer) packet;
+				List<Object> updates = this.clientUpdates.get(clientId);
+				updates.add(safe.update);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_BlockStateUpdate)
+			{
+				Packet_BlockStateUpdate safe = (Packet_BlockStateUpdate) packet;
+				List<Object> updates = this.clientUpdates.get(clientId);
+				updates.add(safe.stateUpdate);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_EndOfTick)
+			{
+				// Ignore these, in the common case.
+			}
+			else if (packet instanceof Packet_ServerSendConfigUpdate)
+			{
+				Packet_ServerSendConfigUpdate safe = (Packet_ServerSendConfigUpdate) packet;
+				// For now, we will assume that there is only one client for tests using this callback
+				WorldConfig config = new WorldConfig();
+				config.ticksPerDay = safe.ticksPerDay;
+				config.dayStartTick = safe.dayStartTick;
+				Assert.assertNull(this.config);
+				this.config = config;
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_ClientJoined)
+			{
+				Packet_ClientJoined safe = (Packet_ClientJoined) packet;
+				Map<Integer, String> thisClient = this.clientConnectedNames.get(clientId);
+				Assert.assertFalse(thisClient.containsKey(safe.clientId));
+				thisClient.put(safe.clientId, safe.clientName);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_ClientLeft)
+			{
+				Packet_ClientLeft safe = (Packet_ClientLeft) packet;
+				Map<Integer, String> thisClient = this.clientConnectedNames.get(clientId);
+				Assert.assertTrue(thisClient.containsKey(safe.clientId));
+				thisClient.remove(safe.clientId);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_ReceiveChatMessage)
+			{
+				Packet_ReceiveChatMessage safe = (Packet_ReceiveChatMessage) packet;
+				List<String> messages = this.chatMessages.get(clientId);
+				messages.add(safe.sourceId + ": " + safe.message);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_EventBlock)
+			{
+				throw new AssertionError("Unimplemented");
+			}
+			else if (packet instanceof Packet_EventEntity)
+			{
+				throw new AssertionError("Unimplemented");
+			}
+			else
+			{
+				throw new AssertionError("Unknown packet type");
 			}
 		}
 	}

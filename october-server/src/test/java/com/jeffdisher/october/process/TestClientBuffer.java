@@ -12,6 +12,7 @@ import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.net.PacketFromServer;
 import com.jeffdisher.october.net.PacketType;
+import com.jeffdisher.october.server.OutpacketBuffer;
 
 
 /**
@@ -87,6 +88,35 @@ public class TestClientBuffer
 		writeBuffer.clear();
 		send = buffer.writeImmediateForWriteableClient(writeBuffer);
 		Assert.assertNull(send);
+	}
+
+	@Test
+	public void useOutpacketBuffer() throws IOException
+	{
+		// Buffer a bunch of packets which will quickly overflow the buffer and make sure that they are copied out as expected.
+		ClientBuffer buffer = new ClientBuffer(new _Token(), 1);
+		ByteBuffer writeBuffer = ByteBuffer.allocate(256);
+		ByteBuffer toSend = buffer.writeImmediateForWriteableClient(writeBuffer);
+		Assert.assertNull(toSend);
+		OutpacketBuffer outpackets = buffer.openOutpacketBuffer();
+		
+		int size = 100;
+		outpackets.writePacket(new _OutPacket(size));
+		outpackets.writePacket(new _OutPacket(size));
+		outpackets.writePacket(new _OutPacket(size));
+		outpackets.writePacket(new _OutPacket(size));
+		
+		toSend = buffer.shouldImmediatelySendAfterClosingOutpacket(outpackets);
+		Assert.assertEquals(0, toSend.position());
+		Assert.assertEquals(2 * (PacketCodec.HEADER_BYTES + size), toSend.remaining());
+		
+		writeBuffer.clear();
+		toSend = buffer.writeImmediateForWriteableClient(writeBuffer);
+		Assert.assertEquals(0, toSend.position());
+		Assert.assertEquals(2 * (PacketCodec.HEADER_BYTES + size), toSend.remaining());
+		
+		toSend = buffer.writeImmediateForWriteableClient(writeBuffer);
+		Assert.assertNull(toSend);
 	}
 
 

@@ -11,6 +11,7 @@ import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.net.PacketFromServer;
+import com.jeffdisher.october.server.OutpacketBuffer;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -150,6 +151,24 @@ public class ClientBuffer
 	{
 		// If the write buffer is here, we are ready for write.
 		return (null != _writeableBuffer);
+	}
+
+	public OutpacketBuffer openOutpacketBuffer()
+	{
+		// If we are in a writeable state, this will unset it, but will otherwise not change internal state.
+		OutpacketBuffer buffer = new OutpacketBuffer(_writeableBuffer, _outgoing.size());
+		_writeableBuffer = null;
+		return buffer;
+	}
+
+	public ByteBuffer shouldImmediatelySendAfterClosingOutpacket(OutpacketBuffer closing)
+	{
+		// Make sure no packets snuck around this while it was open.
+		Assert.assertTrue(closing.clientListSize == _outgoing.size());
+		_outgoing.addAll(closing.removeOverflow());
+		
+		// If there was a buffer, we want to immediately return and write it.
+		return closing.flipAndRemoveBuffer();
 	}
 
 

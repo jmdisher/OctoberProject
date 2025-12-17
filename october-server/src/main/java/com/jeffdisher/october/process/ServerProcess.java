@@ -16,6 +16,7 @@ import com.jeffdisher.october.net.Packet_ServerSendConfigUpdate;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.server.IServerAdapter;
 import com.jeffdisher.october.server.MonitoringAgent;
+import com.jeffdisher.october.server.OutpacketBuffer;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
@@ -189,6 +190,54 @@ public class ServerProcess
 		}
 	}
 
+	private synchronized OutpacketBuffer _openOutputBuffer(int clientId)
+	{
+		OutpacketBuffer result;
+		ClientBuffer buffer = _clientsById.get(clientId);
+		if (null == buffer)
+		{
+			// This is due to a race:  Disconnects come from the network while packets come from the logic.
+			Assert.assertTrue(_partialDisconnectIds.contains(clientId));
+			// We will return a buffer, to keep the caller simple (since this is a rare case) and ignore its close.
+			System.out.println("Warning: Creating OutpacketBuffer for disconnected client " + clientId);
+			// (this -1 for the size will allow us to detect and drop this, later - in case the client reconnects).
+			result = new OutpacketBuffer(null, -1);
+		}
+		else
+		{
+			// This will take us out of the writeable state.
+			result = buffer.openOutpacketBuffer();
+		}
+		return result;
+	}
+
+	private synchronized void _closeOutputBuffer(int clientId, OutpacketBuffer closing)
+	{
+		if (-1 == closing.clientListSize)
+		{
+			// This was opened for a disconnected client so ignore it.
+		}
+		else
+		{
+			ClientBuffer buffer = _clientsById.get(clientId);
+			if (null == buffer)
+			{
+				// This is due to a race:  Disconnects come from the network while packets come from the logic.
+				Assert.assertTrue(_partialDisconnectIds.contains(clientId));
+				// We will return a buffer, to keep the caller simple (since this is a rare case) and ignore its close.
+				System.out.println("Warning: Dropping OutpacketBuffer for disconnected client " + clientId);
+			}
+			else
+			{
+				ByteBuffer toWrite = buffer.shouldImmediatelySendAfterClosingOutpacket(closing);
+				if (null != toWrite)
+				{
+					_network.sendBuffer(buffer.token, toWrite);
+				}
+			}
+		}
+	}
+
 	private synchronized boolean _isNetworkWriteReady(int clientId)
 	{
 		ClientBuffer buffer = _clientsById.get(clientId);
@@ -312,6 +361,16 @@ public class ServerProcess
 		public void sendPacket(int clientId, PacketFromServer packet)
 		{
 			_bufferPacket(clientId, packet);
+		}
+		@Override
+		public OutpacketBuffer openOutputBuffer(int clientId)
+		{
+			return _openOutputBuffer(clientId);
+		}
+		@Override
+		public void closeOutputBuffer(int clientId, OutpacketBuffer buffer)
+		{
+			_closeOutputBuffer(clientId, buffer);
 		}
 		@Override
 		public void testingEndOfTick(long tickNumber)

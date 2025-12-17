@@ -48,6 +48,24 @@ public interface IServerAdapter
 	 */
 	void sendPacket(int clientId, PacketFromServer packet);
 	/**
+	 * Requests a buffer for outgoing packets to be sent to clientId.  This allows writes to be serialized, inline,
+	 * without going through multiple levels of the stack or requiring monitor access.  An instance will be returned,
+	 * even if the client has been disconnected.
+	 * Note that the returned value MUST be passed back to closeOutputBuffer().
+	 * 
+	 * @param clientId The ID of the client (as assigned by the adapter implementation).
+	 * @return A buffer which can serialize or collect a sequence of PacketFromServer to send to the client, when
+	 * closed.
+	 */
+	OutpacketBuffer openOutputBuffer(int clientId);
+	/**
+	 * Closes the given buffer, allowing it to be written back to the network for the given clientId.
+	 * 
+	 * @param clientId The ID of the client (as assigned by the adapter implementation).
+	 * @param buffer The instance previously returned by openOutputBuffer().
+	 */
+	void closeOutputBuffer(int clientId, OutpacketBuffer buffer);
+	/**
 	 * Called when an end of tick is received, with the tick number.  This call is purely for tests as this tick isn't
 	 * being sent anywhere.
 	 * 

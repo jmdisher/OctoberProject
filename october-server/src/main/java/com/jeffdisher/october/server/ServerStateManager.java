@@ -555,16 +555,21 @@ public class ServerStateManager
 			Assert.assertTrue(null != clientData);
 			
 			// Notify the other clients that they joined and tell them about the other clients.
-			for (Map.Entry<Integer, ClientState> existingClient : _connectedClients.entrySet())
+			if (!_connectedClients.isEmpty())
 			{
-				int existingClientId = existingClient.getKey();
-				String existingClientName = existingClient.getValue().name;
-				Assert.assertTrue(null != existingClientName);
-				
-				// Tell the old client about the new client.
-				_callouts.network_sendPacket(existingClientId, new Packet_ClientJoined(clientId, clientData.name));
-				// Tell the new client about the old client.
-				_callouts.network_sendPacket(clientId, new Packet_ClientJoined(existingClientId, existingClientName));
+				OutpacketBuffer outerBuffer = _callouts.network_openOutputBuffer(clientId);
+				for (Map.Entry<Integer, ClientState> existingClient : _connectedClients.entrySet())
+				{
+					int existingClientId = existingClient.getKey();
+					String existingClientName = existingClient.getValue().name;
+					Assert.assertTrue(null != existingClientName);
+					
+					// Tell the old client about the new client.
+					_callouts.network_sendPacket(existingClientId, new Packet_ClientJoined(clientId, clientData.name));
+					// Tell the new client about the old client.
+					outerBuffer.writePacket(new Packet_ClientJoined(existingClientId, existingClientName));
+				}
+				_callouts.network_closeOutputBuffer(clientId, outerBuffer);
 			}
 			
 			// We can now add them to the fully-connected clients.
@@ -582,20 +587,21 @@ public class ServerStateManager
 		// incremental updates, based on whether or not they already have this data.
 		boolean shouldSendNewCuboids = _callouts.network_isNetworkWriteReady(clientId);
 		
+		OutpacketBuffer buffer = _callouts.network_openOutputBuffer(clientId);
 		if (null != newCuboidLocation)
 		{
 			// Before we send anything, we want to update our set of known and missing cuboids so we know what they should see.
-			_updateRangeAndSendRemoves(clientId, state, newCuboidLocation);
+			_updateRangeAndSendRemoves(buffer, state, newCuboidLocation);
 		}
 		
 		// We send events, filtered by what they can currently see.
-		_sendEvents(clientId, state, postedEvents);
+		_sendEvents(buffer, state, postedEvents);
 		
 		// We send entities based on how far away they are.
-		_sendEntityUpdates(clientId, state);
+		_sendEntityUpdates(clientId, buffer, state);
 		
 		// We send cuboids based on how far away they are (also capture an update on what cuboids are visible).
-		_sendCuboidUpdates(clientId, state, shouldSendNewCuboids);
+		_sendCuboidUpdates(buffer, state, shouldSendNewCuboids);
 		
 		// Finally, send them the end of tick.
 		// (note that the commit level won't be in the snapshot if they just joined).
@@ -604,7 +610,8 @@ public class ServerStateManager
 				: 0L
 		;
 		Packet_EndOfTick packet = new Packet_EndOfTick(_tickNumber, commitLevel);
-		_callouts.network_sendPacket(clientId, packet);
+		buffer.writePacket(packet);
+		_callouts.network_closeOutputBuffer(clientId, buffer);
 	}
 
 	private void _drainAllClientPacketsAndUpdateClients()
@@ -676,7 +683,7 @@ public class ServerStateManager
 		return didHandle;
 	}
 
-	private void _sendEvents(int clientId, ClientState state, List<EventRecord> postedEvents)
+	private void _sendEvents(OutpacketBuffer buffer, ClientState state, List<EventRecord> postedEvents)
 	{
 		for (EventRecord event : postedEvents)
 		{
@@ -691,7 +698,7 @@ public class ServerStateManager
 				if (state.knownCuboids.contains(event.location().getCuboidAddress()))
 				{
 					Packet_EventBlock packet = new Packet_EventBlock(event.type(), event.location(), event.entitySource());
-					_callouts.network_sendPacket(clientId, packet);
+					buffer.writePacket(packet);
 				}
 				break;
 			case ENTITY_HURT:
@@ -699,7 +706,7 @@ public class ServerStateManager
 				if (state.knownEntities.contains(event.entityTarget()))
 				{
 					Packet_EventEntity packet = new Packet_EventEntity(event.type(), event.cause(), event.location(), event.entityTarget(), event.entitySource());
-					_callouts.network_sendPacket(clientId, packet);
+					buffer.writePacket(packet);
 				}
 				break;
 			case ENTITY_KILLED:
@@ -709,7 +716,7 @@ public class ServerStateManager
 						: null
 				;
 				Packet_EventEntity packet = new Packet_EventEntity(event.type(), event.cause(), targetLocation, event.entityTarget(), event.entitySource());
-				_callouts.network_sendPacket(clientId, packet);
+				buffer.writePacket(packet);
 				break;
 			default:
 				// We must handle all types.
@@ -718,12 +725,12 @@ public class ServerStateManager
 		}
 	}
 
-	private void _sendEntityUpdates(int clientId, ClientState state)
+	private void _sendEntityUpdates(int clientId, OutpacketBuffer buffer, ClientState state)
 	{
 		float entityVisibleDistance = state.getEntityVisibleDistance();
-		_sendNewAndUpdatedEntities(clientId, state, entityVisibleDistance);
-		_sendNewAndUpdatedCreatures(clientId, state, entityVisibleDistance);
-		_sendNewAndUpdatedPassives(clientId, state, entityVisibleDistance);
+		_sendNewAndUpdatedEntities(clientId, buffer, state, entityVisibleDistance);
+		_sendNewAndUpdatedCreatures(buffer, state, entityVisibleDistance);
+		_sendNewAndUpdatedPassives(buffer, state, entityVisibleDistance);
 		
 		// If there are any entities in the state which aren't in the snapshot, remove them since they died or disconnected.
 		Set<Integer> allEntityIds = new HashSet<>(_completedEntities.keySet());
@@ -735,7 +742,7 @@ public class ServerStateManager
 			if (!allEntityIds.contains(entityId))
 			{
 				Packet_RemoveEntity packet = new Packet_RemoveEntity(entityId);
-				_callouts.network_sendPacket(clientId, packet);
+				buffer.writePacket(packet);
 				entityIterator.remove();
 			}
 		}
@@ -746,13 +753,13 @@ public class ServerStateManager
 			if (!_completedPassives.containsKey(passiveId))
 			{
 				Packet_RemovePassive packet = new Packet_RemovePassive(passiveId);
-				_callouts.network_sendPacket(clientId, packet);
+				buffer.writePacket(packet);
 				passiveIterator.remove();
 			}
 		}
 	}
 
-	private void _sendNewAndUpdatedEntities(int clientId, ClientState state, float entityVisibleDistance)
+	private void _sendNewAndUpdatedEntities(int clientId, OutpacketBuffer buffer, ClientState state, float entityVisibleDistance)
 	{
 		// Note that this is similar to _sendNewAndUpdatedCreatures but duplicated to avoid spreading logic with extra levels of indirection.
 		EntityType playerType  = Environment.getShared().creatures.PLAYER;
@@ -768,7 +775,7 @@ public class ServerStateManager
 				{
 					// This is too far away so discard it.
 					Packet_RemoveEntity packet = new Packet_RemoveEntity(entityId);
-					_callouts.network_sendPacket(clientId, packet);
+					buffer.writePacket(packet);
 					state.knownEntities.remove(entityId);
 				}
 				else
@@ -782,14 +789,14 @@ public class ServerStateManager
 							// The client has the full entity so send it.
 							EntityUpdatePerField update = EntityUpdatePerField.update(previousEntityVersion, entity);
 							Packet_EntityUpdateFromServer packet = new Packet_EntityUpdateFromServer(entityId, update);
-							_callouts.network_sendPacket(clientId, packet);
+							buffer.writePacket(packet);
 						}
 						else if (PartialEntityUpdate.canDescribeChange(previousEntityVersion, entity))
 						{
 							// The client will have a partial so just send that.
 							PartialEntityUpdate update = new PartialEntityUpdate(PartialEntity.fromEntity(entity));
 							Packet_PartialEntityUpdateFromServer packet = new Packet_PartialEntityUpdateFromServer(entityId, update);
-							_callouts.network_sendPacket(clientId, packet);
+							buffer.writePacket(packet);
 						}
 					}
 				}
@@ -802,20 +809,20 @@ public class ServerStateManager
 				{
 					// This only won't be already known during the first tick after they join.
 					Packet_Entity packet = new Packet_Entity(entity);
-					_callouts.network_sendPacket(clientId, packet);
+					buffer.writePacket(packet);
 				}
 				else
 				{
 					PartialEntity partial = PartialEntity.fromEntity(entity);
 					Packet_PartialEntity packet = new Packet_PartialEntity(partial);
-					_callouts.network_sendPacket(clientId, packet);
+					buffer.writePacket(packet);
 				}
 				state.knownEntities.add(entityId);
 			}
 		}
 	}
 
-	private void _sendNewAndUpdatedCreatures(int clientId, ClientState state, float entityVisibleDistance)
+	private void _sendNewAndUpdatedCreatures(OutpacketBuffer buffer, ClientState state, float entityVisibleDistance)
 	{
 		// Note that this is similar to _sendNewAndUpdatedEntities but duplicated to avoid spreading logic with extra levels of indirection.
 		EntityType playerType  = Environment.getShared().creatures.PLAYER;
@@ -831,7 +838,7 @@ public class ServerStateManager
 				{
 					// This is too far away so discard it.
 					Packet_RemoveEntity packet = new Packet_RemoveEntity(entityId);
-					_callouts.network_sendPacket(clientId, packet);
+					buffer.writePacket(packet);
 					state.knownEntities.remove(entityId);
 				}
 				else
@@ -843,7 +850,7 @@ public class ServerStateManager
 						// Creatures are always partial.
 						PartialEntityUpdate update = new PartialEntityUpdate(PartialEntity.fromCreature(entity));
 						Packet_PartialEntityUpdateFromServer packet = new Packet_PartialEntityUpdateFromServer(entityId, update);
-						_callouts.network_sendPacket(clientId, packet);
+						buffer.writePacket(packet);
 					}
 				}
 			}
@@ -853,13 +860,13 @@ public class ServerStateManager
 				// Creatures are always partial.
 				PartialEntity partial = PartialEntity.fromCreature(entity);
 				Packet_PartialEntity packet = new Packet_PartialEntity(partial);
-				_callouts.network_sendPacket(clientId, packet);
+				buffer.writePacket(packet);
 				state.knownEntities.add(entityId);
 			}
 		}
 	}
 
-	private void _sendNewAndUpdatedPassives(int clientId, ClientState state, float entityVisibleDistance)
+	private void _sendNewAndUpdatedPassives(OutpacketBuffer buffer, ClientState state, float entityVisibleDistance)
 	{
 		// Note that this is similar to _sendNewAndUpdatedCreatures but duplicated to avoid spreading logic with extra levels of indirection.
 		EntityType playerType  = Environment.getShared().creatures.PLAYER;
@@ -875,7 +882,7 @@ public class ServerStateManager
 				{
 					// This is too far away so discard it.
 					Packet_RemovePassive packet = new Packet_RemovePassive(entityId);
-					_callouts.network_sendPacket(clientId, packet);
+					buffer.writePacket(packet);
 					state.knownPassives.remove(entityId);
 				}
 				else
@@ -885,7 +892,7 @@ public class ServerStateManager
 					if ((null != previousPassiveVersion) && _canDescribePassiveChange(previousPassiveVersion, passive))
 					{
 						Packet_SendPartialPassiveUpdate packet = new Packet_SendPartialPassiveUpdate(entityId, passive.location(), passive.velocity());
-						_callouts.network_sendPacket(clientId, packet);
+						buffer.writePacket(packet);
 					}
 				}
 			}
@@ -900,13 +907,13 @@ public class ServerStateManager
 					, passive.extendedData()
 				);
 				Packet_SendPartialPassive packet = new Packet_SendPartialPassive(partial);
-				_callouts.network_sendPacket(clientId, packet);
+				buffer.writePacket(packet);
 				state.knownPassives.add(entityId);
 			}
 		}
 	}
 
-	private void _sendCuboidUpdates(int clientId
+	private void _sendCuboidUpdates(OutpacketBuffer buffer
 			, ClientState state
 			, boolean shouldSendNewCuboids
 	)
@@ -921,7 +928,7 @@ public class ServerStateManager
 				for (MutationBlockSetBlock mutation : mutations)
 				{
 					Packet_BlockStateUpdate packet = new Packet_BlockStateUpdate(mutation);
-					_callouts.network_sendPacket(clientId, packet);
+					buffer.writePacket(packet);
 				}
 			}
 		}
@@ -941,7 +948,7 @@ public class ServerStateManager
 				// This may not yet be loaded.
 				if (null != cuboidData)
 				{
-					_serializeCuboidAsPackets(clientId, cuboidData);
+					_serializeCuboidAsPackets(buffer, cuboidData);
 					state.knownCuboids.add(address);
 					iter.remove();
 					cuboidsSent += 1;
@@ -967,7 +974,7 @@ public class ServerStateManager
 					// We created this set with an intersection so this must be here.
 					Assert.assertTrue(null != cuboidData);
 					
-					_serializeCuboidAsPackets(clientId, cuboidData);
+					_serializeCuboidAsPackets(buffer, cuboidData);
 					state.knownCuboids.add(address);
 					state.outerMissingCuboids.remove(address);
 					cuboidsSent += 1;
@@ -976,7 +983,7 @@ public class ServerStateManager
 		}
 	}
 
-	private void _updateRangeAndSendRemoves(int clientId, ClientState state, CuboidAddress currentCuboid)
+	private void _updateRangeAndSendRemoves(OutpacketBuffer buffer, ClientState state, CuboidAddress currentCuboid)
 	{
 		int minDistance = -state.cuboidViewDistance;
 		int maxDistance = state.cuboidViewDistance;
@@ -992,7 +999,7 @@ public class ServerStateManager
 			if ((xDelta > maxDistance) || (yDelta > maxDistance) || (zDelta > maxDistance))
 			{
 				Packet_RemoveCuboid packet = new Packet_RemoveCuboid(address);
-				_callouts.network_sendPacket(clientId, packet);
+				buffer.writePacket(packet);
 				iter.remove();
 			}
 		}
@@ -1169,13 +1176,13 @@ public class ServerStateManager
 		;
 	}
 
-	private void _serializeCuboidAsPackets(int clientId, IReadOnlyCuboidData cuboidData)
+	private void _serializeCuboidAsPackets(OutpacketBuffer buffer, IReadOnlyCuboidData cuboidData)
 	{
 		CuboidCodec.Serializer serializer = new CuboidCodec.Serializer(cuboidData);
 		PacketFromServer packet = serializer.getNextPacket();
 		while (null != packet)
 		{
-			_callouts.network_sendPacket(clientId, packet);
+			buffer.writePacket(packet);
 			packet = serializer.getNextPacket();
 		}
 	}
@@ -1206,6 +1213,8 @@ public class ServerStateManager
 		boolean network_isNetworkWriteReady(int clientId);
 		
 		void network_sendPacket(int clientId, PacketFromServer packet);
+		OutpacketBuffer network_openOutputBuffer(int clientId);
+		void network_closeOutputBuffer(int clientId, OutpacketBuffer buffer);
 		
 		// TickRunner.
 		boolean runner_enqueueEntityChange(int entityId, EntityActionSimpleMove<IMutablePlayerEntity> change, long commitLevel);

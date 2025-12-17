@@ -1493,6 +1493,35 @@ public class TestServerStateManager
 		@Override
 		public void network_sendPacket(int clientId, PacketFromServer packet)
 		{
+			_sendPacket(clientId, packet);
+		}
+		@Override
+		public OutpacketBuffer network_openOutputBuffer(int clientId)
+		{
+			return new OutpacketBuffer(null, 0);
+		}
+		@Override
+		public void network_closeOutputBuffer(int clientId, OutpacketBuffer buffer)
+		{
+			for (PacketFromServer packet : buffer.removeOverflow())
+			{
+				_sendPacket(clientId, packet);
+			}
+		}
+		
+		@Override
+		public boolean runner_enqueueEntityChange(int entityId, EntityActionSimpleMove<IMutablePlayerEntity> change, long commitLevel)
+		{
+			return this.didEnqueue;
+		}
+		@Override
+		public void handleClientUpdateOptions(int clientId, int clientViewDistance)
+		{
+			throw new AssertionError("handleClientUpdateOptions");
+		}
+		
+		private void _sendPacket(int clientId, PacketFromServer packet)
+		{
 			if (packet instanceof Packet_Entity)
 			{
 				Assert.assertTrue(this.fullEntitiesSent.add(clientId));
@@ -1621,17 +1650,10 @@ public class TestServerStateManager
 			{
 				throw new AssertionError("network_sendEntityEvent");
 			}
-		}
-		
-		@Override
-		public boolean runner_enqueueEntityChange(int entityId, EntityActionSimpleMove<IMutablePlayerEntity> change, long commitLevel)
-		{
-			return this.didEnqueue;
-		}
-		@Override
-		public void handleClientUpdateOptions(int clientId, int clientViewDistance)
-		{
-			throw new AssertionError("handleClientUpdateOptions");
+			else
+			{
+				throw new AssertionError("Unknown packet type");
+			}
 		}
 	}
 }
