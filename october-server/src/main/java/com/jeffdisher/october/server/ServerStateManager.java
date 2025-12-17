@@ -22,13 +22,32 @@ import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.net.CuboidCodec;
 import com.jeffdisher.october.net.EntityUpdatePerField;
 import com.jeffdisher.october.net.PartialEntityUpdate;
 import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.PacketFromClient;
+import com.jeffdisher.october.net.PacketFromServer;
+import com.jeffdisher.october.net.Packet_BlockStateUpdate;
+import com.jeffdisher.october.net.Packet_ClientJoined;
+import com.jeffdisher.october.net.Packet_ClientLeft;
 import com.jeffdisher.october.net.Packet_ClientUpdateOptions;
+import com.jeffdisher.october.net.Packet_EndOfTick;
+import com.jeffdisher.october.net.Packet_Entity;
+import com.jeffdisher.october.net.Packet_EntityUpdateFromServer;
+import com.jeffdisher.october.net.Packet_EventBlock;
+import com.jeffdisher.october.net.Packet_EventEntity;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
+import com.jeffdisher.october.net.Packet_PartialEntity;
+import com.jeffdisher.october.net.Packet_PartialEntityUpdateFromServer;
+import com.jeffdisher.october.net.Packet_ReceiveChatMessage;
+import com.jeffdisher.october.net.Packet_RemoveCuboid;
+import com.jeffdisher.october.net.Packet_RemoveEntity;
+import com.jeffdisher.october.net.Packet_RemovePassive;
 import com.jeffdisher.october.net.Packet_SendChatMessage;
+import com.jeffdisher.october.net.Packet_SendPartialPassive;
+import com.jeffdisher.october.net.Packet_SendPartialPassiveUpdate;
+import com.jeffdisher.october.net.Packet_ServerSendConfigUpdate;
 import com.jeffdisher.october.persistence.PackagedCuboid;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
@@ -158,7 +177,8 @@ public class ServerStateManager
 		// Notify the other clients that they left.
 		for (Integer existingClient : _connectedClients.keySet())
 		{
-			_callouts.network_sendClientLeft(existingClient, clientId);
+			Packet_ClientLeft packet = new Packet_ClientLeft(clientId);
+			_callouts.network_sendPacket(existingClient, packet);
 		}
 	}
 
@@ -378,7 +398,8 @@ public class ServerStateManager
 		Assert.assertTrue(Thread.currentThread() == _ownerThread);
 		for (Integer clientId : _connectedClients.keySet())
 		{
-			_callouts.network_sendConfig(clientId, config);
+			Packet_ServerSendConfigUpdate packet = new Packet_ServerSendConfigUpdate(config.ticksPerDay, config.dayStartTick);
+			_callouts.network_sendPacket(clientId, packet);
 		}
 	}
 
@@ -541,9 +562,9 @@ public class ServerStateManager
 				Assert.assertTrue(null != existingClientName);
 				
 				// Tell the old client about the new client.
-				_callouts.network_sendClientJoined(existingClientId, clientId, clientData.name);
+				_callouts.network_sendPacket(existingClientId, new Packet_ClientJoined(clientId, clientData.name));
 				// Tell the new client about the old client.
-				_callouts.network_sendClientJoined(clientId, existingClientId, existingClientName);
+				_callouts.network_sendPacket(clientId, new Packet_ClientJoined(existingClientId, existingClientName));
 			}
 			
 			// We can now add them to the fully-connected clients.
@@ -582,7 +603,8 @@ public class ServerStateManager
 				? _commitLevels.get(clientId)
 				: 0L
 		;
-		_callouts.network_sendEndOfTick(clientId, _tickNumber, commitLevel);
+		Packet_EndOfTick packet = new Packet_EndOfTick(_tickNumber, commitLevel);
+		_callouts.network_sendPacket(clientId, packet);
 	}
 
 	private void _drainAllClientPacketsAndUpdateClients()
@@ -668,14 +690,16 @@ public class ServerStateManager
 				// Include these if the cuboid is known to the client.
 				if (state.knownCuboids.contains(event.location().getCuboidAddress()))
 				{
-					_callouts.network_sendBlockEvent(clientId, event.type(), event.location(), event.entitySource());
+					Packet_EventBlock packet = new Packet_EventBlock(event.type(), event.location(), event.entitySource());
+					_callouts.network_sendPacket(clientId, packet);
 				}
 				break;
 			case ENTITY_HURT:
 				// Include this if the entity is known to the client.
 				if (state.knownEntities.contains(event.entityTarget()))
 				{
-					_callouts.network_sendEntityEvent(clientId, event.type(), event.cause(), event.location(), event.entityTarget(), event.entitySource());
+					Packet_EventEntity packet = new Packet_EventEntity(event.type(), event.cause(), event.location(), event.entityTarget(), event.entitySource());
+					_callouts.network_sendPacket(clientId, packet);
 				}
 				break;
 			case ENTITY_KILLED:
@@ -684,7 +708,8 @@ public class ServerStateManager
 						? event.location()
 						: null
 				;
-				_callouts.network_sendEntityEvent(clientId, event.type(), event.cause(), targetLocation, event.entityTarget(), event.entitySource());
+				Packet_EventEntity packet = new Packet_EventEntity(event.type(), event.cause(), targetLocation, event.entityTarget(), event.entitySource());
+				_callouts.network_sendPacket(clientId, packet);
 				break;
 			default:
 				// We must handle all types.
@@ -709,7 +734,8 @@ public class ServerStateManager
 			int entityId = entityIterator.next();
 			if (!allEntityIds.contains(entityId))
 			{
-				_callouts.network_removeEntity(clientId, entityId);
+				Packet_RemoveEntity packet = new Packet_RemoveEntity(entityId);
+				_callouts.network_sendPacket(clientId, packet);
 				entityIterator.remove();
 			}
 		}
@@ -719,7 +745,8 @@ public class ServerStateManager
 			int passiveId = passiveIterator.next();
 			if (!_completedPassives.containsKey(passiveId))
 			{
-				_callouts.network_removePassive(clientId, passiveId);
+				Packet_RemovePassive packet = new Packet_RemovePassive(passiveId);
+				_callouts.network_sendPacket(clientId, packet);
 				passiveIterator.remove();
 			}
 		}
@@ -740,7 +767,8 @@ public class ServerStateManager
 				if (distance > entityVisibleDistance)
 				{
 					// This is too far away so discard it.
-					_callouts.network_removeEntity(clientId, entityId);
+					Packet_RemoveEntity packet = new Packet_RemoveEntity(entityId);
+					_callouts.network_sendPacket(clientId, packet);
 					state.knownEntities.remove(entityId);
 				}
 				else
@@ -753,13 +781,15 @@ public class ServerStateManager
 						{
 							// The client has the full entity so send it.
 							EntityUpdatePerField update = EntityUpdatePerField.update(previousEntityVersion, entity);
-							_callouts.network_sendEntityUpdate(clientId, entityId, update);
+							Packet_EntityUpdateFromServer packet = new Packet_EntityUpdateFromServer(entityId, update);
+							_callouts.network_sendPacket(clientId, packet);
 						}
 						else if (PartialEntityUpdate.canDescribeChange(previousEntityVersion, entity))
 						{
 							// The client will have a partial so just send that.
 							PartialEntityUpdate update = new PartialEntityUpdate(PartialEntity.fromEntity(entity));
-							_callouts.network_sendPartialEntityUpdate(clientId, entityId, update);
+							Packet_PartialEntityUpdateFromServer packet = new Packet_PartialEntityUpdateFromServer(entityId, update);
+							_callouts.network_sendPacket(clientId, packet);
 						}
 					}
 				}
@@ -771,12 +801,14 @@ public class ServerStateManager
 				if (clientId == entityId)
 				{
 					// This only won't be already known during the first tick after they join.
-					_callouts.network_sendFullEntity(clientId, entity);
+					Packet_Entity packet = new Packet_Entity(entity);
+					_callouts.network_sendPacket(clientId, packet);
 				}
 				else
 				{
 					PartialEntity partial = PartialEntity.fromEntity(entity);
-					_callouts.network_sendPartialEntity(clientId, partial);
+					Packet_PartialEntity packet = new Packet_PartialEntity(partial);
+					_callouts.network_sendPacket(clientId, packet);
 				}
 				state.knownEntities.add(entityId);
 			}
@@ -798,7 +830,8 @@ public class ServerStateManager
 				if (distance > entityVisibleDistance)
 				{
 					// This is too far away so discard it.
-					_callouts.network_removeEntity(clientId, entityId);
+					Packet_RemoveEntity packet = new Packet_RemoveEntity(entityId);
+					_callouts.network_sendPacket(clientId, packet);
 					state.knownEntities.remove(entityId);
 				}
 				else
@@ -809,7 +842,8 @@ public class ServerStateManager
 					{
 						// Creatures are always partial.
 						PartialEntityUpdate update = new PartialEntityUpdate(PartialEntity.fromCreature(entity));
-						_callouts.network_sendPartialEntityUpdate(clientId, entityId, update);
+						Packet_PartialEntityUpdateFromServer packet = new Packet_PartialEntityUpdateFromServer(entityId, update);
+						_callouts.network_sendPacket(clientId, packet);
 					}
 				}
 			}
@@ -818,7 +852,8 @@ public class ServerStateManager
 				// We don't know this entity, and they are close by, so send them.
 				// Creatures are always partial.
 				PartialEntity partial = PartialEntity.fromCreature(entity);
-				_callouts.network_sendPartialEntity(clientId, partial);
+				Packet_PartialEntity packet = new Packet_PartialEntity(partial);
+				_callouts.network_sendPacket(clientId, packet);
 				state.knownEntities.add(entityId);
 			}
 		}
@@ -839,7 +874,8 @@ public class ServerStateManager
 				if (distance > entityVisibleDistance)
 				{
 					// This is too far away so discard it.
-					_callouts.network_removePassive(clientId, entityId);
+					Packet_RemovePassive packet = new Packet_RemovePassive(entityId);
+					_callouts.network_sendPacket(clientId, packet);
 					state.knownPassives.remove(entityId);
 				}
 				else
@@ -848,7 +884,8 @@ public class ServerStateManager
 					PassiveEntity previousPassiveVersion = _previousPassiveVersions.get(entityId);
 					if ((null != previousPassiveVersion) && _canDescribePassiveChange(previousPassiveVersion, passive))
 					{
-						_callouts.network_sendPartialPassiveUpdate(clientId, entityId, passive.location(), passive.velocity());
+						Packet_SendPartialPassiveUpdate packet = new Packet_SendPartialPassiveUpdate(entityId, passive.location(), passive.velocity());
+						_callouts.network_sendPacket(clientId, packet);
 					}
 				}
 			}
@@ -862,7 +899,8 @@ public class ServerStateManager
 					// This data is defined by PassiveType, per-instance, and is persisted to disk and sent over the network.
 					, passive.extendedData()
 				);
-				_callouts.network_sendPartialPassive(clientId, partial);
+				Packet_SendPartialPassive packet = new Packet_SendPartialPassive(partial);
+				_callouts.network_sendPacket(clientId, packet);
 				state.knownPassives.add(entityId);
 			}
 		}
@@ -882,7 +920,8 @@ public class ServerStateManager
 				List<MutationBlockSetBlock> mutations = elt.getValue();
 				for (MutationBlockSetBlock mutation : mutations)
 				{
-					_callouts.network_sendBlockUpdate(clientId, mutation);
+					Packet_BlockStateUpdate packet = new Packet_BlockStateUpdate(mutation);
+					_callouts.network_sendPacket(clientId, packet);
 				}
 			}
 		}
@@ -902,7 +941,7 @@ public class ServerStateManager
 				// This may not yet be loaded.
 				if (null != cuboidData)
 				{
-					_callouts.network_sendCuboid(clientId, cuboidData);
+					_serializeCuboidAsPackets(clientId, cuboidData);
 					state.knownCuboids.add(address);
 					iter.remove();
 					cuboidsSent += 1;
@@ -927,7 +966,8 @@ public class ServerStateManager
 					IReadOnlyCuboidData cuboidData = _completedCuboids.get(address);
 					// We created this set with an intersection so this must be here.
 					Assert.assertTrue(null != cuboidData);
-					_callouts.network_sendCuboid(clientId, cuboidData);
+					
+					_serializeCuboidAsPackets(clientId, cuboidData);
 					state.knownCuboids.add(address);
 					state.outerMissingCuboids.remove(address);
 					cuboidsSent += 1;
@@ -951,7 +991,8 @@ public class ServerStateManager
 			int zDelta = Math.abs(currentCuboid.z() - address.z());
 			if ((xDelta > maxDistance) || (yDelta > maxDistance) || (zDelta > maxDistance))
 			{
-				_callouts.network_removeCuboid(clientId, address);
+				Packet_RemoveCuboid packet = new Packet_RemoveCuboid(address);
+				_callouts.network_sendPacket(clientId, packet);
 				iter.remove();
 			}
 		}
@@ -1087,12 +1128,14 @@ public class ServerStateManager
 		{
 			for (Integer clientId : _connectedClients.keySet())
 			{
-				_callouts.network_sendChatMessage(clientId, senderId, message);
+				Packet_ReceiveChatMessage packet = new Packet_ReceiveChatMessage(senderId, message);
+				_callouts.network_sendPacket(clientId, packet);
 			}
 		}
 		else if (_connectedClients.containsKey(targetId))
 		{
-			_callouts.network_sendChatMessage(targetId, senderId, message);
+			Packet_ReceiveChatMessage packet = new Packet_ReceiveChatMessage(senderId, message);
+			_callouts.network_sendPacket(targetId, packet);
 		}
 	}
 
@@ -1126,6 +1169,17 @@ public class ServerStateManager
 		;
 	}
 
+	private void _serializeCuboidAsPackets(int clientId, IReadOnlyCuboidData cuboidData)
+	{
+		CuboidCodec.Serializer serializer = new CuboidCodec.Serializer(cuboidData);
+		PacketFromServer packet = serializer.getNextPacket();
+		while (null != packet)
+		{
+			_callouts.network_sendPacket(clientId, packet);
+			packet = serializer.getNextPacket();
+		}
+	}
+
 
 	public static interface ICallouts
 	{
@@ -1151,27 +1205,7 @@ public class ServerStateManager
 		PacketFromClient network_peekOrRemoveNextPacketFromClient(int clientId, PacketFromClient toRemove);
 		boolean network_isNetworkWriteReady(int clientId);
 		
-		void network_sendFullEntity(int clientId, Entity entity);
-		void network_sendEntityUpdate(int clientId, int entityId, EntityUpdatePerField update);
-		
-		void network_sendPartialEntity(int clientId, PartialEntity entity);
-		void network_sendPartialEntityUpdate(int clientId, int entityId, PartialEntityUpdate update);
-		void network_removeEntity(int clientId, int entityId);
-		
-		void network_sendPartialPassive(int clientId, PartialPassive partial);
-		void network_sendPartialPassiveUpdate(int clientId, int entityId, EntityLocation location, EntityLocation velocity);
-		void network_removePassive(int clientId, int entityId);
-		
-		void network_sendCuboid(int clientId, IReadOnlyCuboidData cuboid);
-		void network_removeCuboid(int clientId, CuboidAddress address);
-		void network_sendBlockUpdate(int clientId, MutationBlockSetBlock update);
-		void network_sendBlockEvent(int clientId, EventRecord.Type type, AbsoluteLocation location, int entitySource);
-		void network_sendEntityEvent(int clientId, EventRecord.Type type, EventRecord.Cause cause, AbsoluteLocation optionalLocation, int entityTarget, int entitySource);
-		void network_sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded);
-		void network_sendConfig(int clientId, WorldConfig config);
-		void network_sendClientJoined(int clientId, int joinedClientId, String name);
-		void network_sendClientLeft(int clientId, int leftClientId);
-		void network_sendChatMessage(int clientId, int senderId, String message);
+		void network_sendPacket(int clientId, PacketFromServer packet);
 		
 		// TickRunner.
 		boolean runner_enqueueEntityChange(int entityId, EntityActionSimpleMove<IMutablePlayerEntity> change, long commitLevel);

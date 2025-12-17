@@ -23,11 +23,28 @@ import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
-import com.jeffdisher.october.mutations.MutationBlockSetBlock;
-import com.jeffdisher.october.net.EntityUpdatePerField;
-import com.jeffdisher.october.net.PartialEntityUpdate;
 import com.jeffdisher.october.net.PacketFromClient;
+import com.jeffdisher.october.net.PacketFromServer;
+import com.jeffdisher.october.net.Packet_BlockStateUpdate;
+import com.jeffdisher.october.net.Packet_ClientJoined;
+import com.jeffdisher.october.net.Packet_ClientLeft;
+import com.jeffdisher.october.net.Packet_CuboidFragment;
+import com.jeffdisher.october.net.Packet_CuboidStart;
+import com.jeffdisher.october.net.Packet_EndOfTick;
+import com.jeffdisher.october.net.Packet_Entity;
+import com.jeffdisher.october.net.Packet_EntityUpdateFromServer;
+import com.jeffdisher.october.net.Packet_EventBlock;
+import com.jeffdisher.october.net.Packet_EventEntity;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
+import com.jeffdisher.october.net.Packet_PartialEntity;
+import com.jeffdisher.october.net.Packet_PartialEntityUpdateFromServer;
+import com.jeffdisher.october.net.Packet_ReceiveChatMessage;
+import com.jeffdisher.october.net.Packet_RemoveCuboid;
+import com.jeffdisher.october.net.Packet_RemoveEntity;
+import com.jeffdisher.october.net.Packet_RemovePassive;
+import com.jeffdisher.october.net.Packet_SendPartialPassive;
+import com.jeffdisher.october.net.Packet_SendPartialPassiveUpdate;
+import com.jeffdisher.october.net.Packet_ServerSendConfigUpdate;
 import com.jeffdisher.october.persistence.PackagedCuboid;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
@@ -39,7 +56,6 @@ import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
-import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
@@ -51,7 +67,6 @@ import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
-import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 
@@ -1476,139 +1491,138 @@ public class TestServerStateManager
 		}
 		
 		@Override
-		public void network_sendFullEntity(int clientId, Entity entity)
+		public void network_sendPacket(int clientId, PacketFromServer packet)
 		{
-			Assert.assertTrue(this.fullEntitiesSent.add(clientId));
-		}
-		@Override
-		public void network_sendEntityUpdate(int clientId, int entityId, EntityUpdatePerField update)
-		{
-			throw new AssertionError("networkSendEntityUpdate");
+			if (packet instanceof Packet_Entity)
+			{
+				Assert.assertTrue(this.fullEntitiesSent.add(clientId));
+			}
+			else if (packet instanceof Packet_PartialEntity)
+			{
+				Packet_PartialEntity safe = (Packet_PartialEntity) packet;
+				if (!this.partialEntitiesPerClient.containsKey(clientId))
+				{
+					this.partialEntitiesPerClient.put(clientId, new HashMap<>());
+				}
+				Object old = this.partialEntitiesPerClient.get(clientId).put(safe.entity.id(), safe.entity);
+				Assert.assertNull(old);
+			}
+			else if (packet instanceof Packet_RemoveEntity)
+			{
+				Packet_RemoveEntity safe = (Packet_RemoveEntity) packet;
+				Map<Integer, PartialEntity> partials = this.partialEntitiesPerClient.get(clientId);
+				PartialEntity didRemove = partials.remove(safe.entityId);
+				Assert.assertNotNull(didRemove);
+			}
+			else if (packet instanceof Packet_SendPartialPassive)
+			{
+				Packet_SendPartialPassive safe = (Packet_SendPartialPassive) packet;
+				if (!this.partialPassivesPerClient.containsKey(clientId))
+				{
+					this.partialPassivesPerClient.put(clientId, new HashMap<>());
+				}
+				Object old = this.partialPassivesPerClient.get(clientId).put(safe.partial.id(), safe.partial);
+				Assert.assertNull(old);
+			}
+			else if (packet instanceof Packet_SendPartialPassiveUpdate)
+			{
+				Packet_SendPartialPassiveUpdate safe = (Packet_SendPartialPassiveUpdate) packet;
+				PartialPassive original = this.partialPassivesPerClient.get(clientId).get(safe.entityId);
+				PartialPassive update = new PartialPassive(safe.entityId
+					, original.type()
+					, safe.location
+					, safe.velocity
+					, original.extendedData()
+				);
+				this.partialPassivesPerClient.get(clientId).put(update.id(), update);
+			}
+			else if (packet instanceof Packet_RemovePassive)
+			{
+				Packet_RemovePassive safe = (Packet_RemovePassive) packet;
+				PartialPassive original = this.partialPassivesPerClient.get(clientId).remove(safe.entityId);
+				Assert.assertNotNull(original);
+			}
+			else if (packet instanceof Packet_CuboidStart)
+			{
+				Packet_CuboidStart safe = (Packet_CuboidStart) packet;
+				if (!this.cuboidsSentToClient.containsKey(clientId))
+				{
+					this.cuboidsSentToClient.put(clientId, new HashSet<>());
+				}
+				boolean didAdd = this.cuboidsSentToClient.get(clientId).add(safe.address);
+				Assert.assertTrue(didAdd);
+			}
+			else if (packet instanceof Packet_CuboidFragment)
+			{
+				// We only care about the start.
+			}
+			else if (packet instanceof Packet_RemoveCuboid)
+			{
+				Packet_RemoveCuboid safe = (Packet_RemoveCuboid) packet;
+				boolean didRemove = this.cuboidsSentToClient.get(clientId).remove(safe.address);
+				Assert.assertTrue(didRemove);
+			}
+			else if (packet instanceof Packet_EntityUpdateFromServer)
+			{
+				throw new AssertionError("networkSendEntityUpdate");
+			}
+			else if (packet instanceof Packet_PartialEntityUpdateFromServer)
+			{
+				Packet_PartialEntityUpdateFromServer safe = (Packet_PartialEntityUpdateFromServer)packet;
+				PartialEntity original = this.partialEntitiesPerClient.get(clientId).get(safe.entityId);
+				MutablePartialEntity mutable = MutablePartialEntity.existing(original);
+				safe.update.applyToEntity(mutable);
+				PartialEntity updated = mutable.freeze();
+				Assert.assertFalse(original.equals(updated));
+				this.partialEntitiesPerClient.get(clientId).put(updated.id(), updated);
+			}
+			else if (packet instanceof Packet_BlockStateUpdate)
+			{
+				throw new AssertionError("networkSendBlockUpdate");
+			}
+			else if (packet instanceof Packet_EndOfTick)
+			{
+				Packet_EndOfTick safe = (Packet_EndOfTick) packet;
+				// For now, just track the commit number.
+				this.lastFinishedCommitPerClient.put(clientId, safe.latestLocalCommitIncluded);
+			}
+			else if (packet instanceof Packet_ServerSendConfigUpdate)
+			{
+				throw new AssertionError("network_sendConfig");
+			}
+			else if (packet instanceof Packet_ClientJoined)
+			{
+				Packet_ClientJoined safe = (Packet_ClientJoined) packet;
+				Map<Integer, String> clients = this.joinedClients.get(clientId);
+				if (null == clients)
+				{
+					clients = new HashMap<>();
+					this.joinedClients.put(clientId, clients);
+				}
+				Object old = clients.put(safe.clientId, safe.clientName);
+				Assert.assertNull(old);
+			}
+			else if (packet instanceof Packet_ClientLeft)
+			{
+				Packet_ClientLeft safe = (Packet_ClientLeft) packet;
+				Map<Integer, String> clients = this.joinedClients.get(clientId);
+				Object old = clients.remove(safe.clientId);
+				Assert.assertNotNull(old);
+			}
+			else if (packet instanceof Packet_ReceiveChatMessage)
+			{
+				throw new AssertionError("network_sendChatMessage");
+			}
+			else if (packet instanceof Packet_EventBlock)
+			{
+				throw new AssertionError("network_sendBlockEvent");
+			}
+			else if (packet instanceof Packet_EventEntity)
+			{
+				throw new AssertionError("network_sendEntityEvent");
+			}
 		}
 		
-		@Override
-		public void network_sendPartialEntity(int clientId, PartialEntity entity)
-		{
-			if (!this.partialEntitiesPerClient.containsKey(clientId))
-			{
-				this.partialEntitiesPerClient.put(clientId, new HashMap<>());
-			}
-			Object old = this.partialEntitiesPerClient.get(clientId).put(entity.id(), entity);
-			Assert.assertNull(old);
-		}
-		@Override
-		public void network_sendPartialEntityUpdate(int clientId, int entityId, PartialEntityUpdate update)
-		{
-			PartialEntity original = this.partialEntitiesPerClient.get(clientId).get(entityId);
-			MutablePartialEntity mutable = MutablePartialEntity.existing(original);
-			update.applyToEntity(mutable);
-			PartialEntity updated = mutable.freeze();
-			Assert.assertFalse(original.equals(updated));
-			this.partialEntitiesPerClient.get(clientId).put(updated.id(), updated);
-		}
-		@Override
-		public void network_removeEntity(int clientId, int entityId)
-		{
-			Map<Integer, PartialEntity> partials = this.partialEntitiesPerClient.get(clientId);
-			PartialEntity didRemove = partials.remove(entityId);
-			Assert.assertNotNull(didRemove);
-		}
-		
-		@Override
-		public void network_sendPartialPassive(int clientId, PartialPassive partial)
-		{
-			if (!this.partialPassivesPerClient.containsKey(clientId))
-			{
-				this.partialPassivesPerClient.put(clientId, new HashMap<>());
-			}
-			Object old = this.partialPassivesPerClient.get(clientId).put(partial.id(), partial);
-			Assert.assertNull(old);
-		}
-		@Override
-		public void network_sendPartialPassiveUpdate(int clientId, int entityId, EntityLocation location, EntityLocation velocity)
-		{
-			PartialPassive original = this.partialPassivesPerClient.get(clientId).get(entityId);
-			PartialPassive update = new PartialPassive(entityId
-				, original.type()
-				, location
-				, velocity
-				, original.extendedData()
-			);
-			this.partialPassivesPerClient.get(clientId).put(update.id(), update);
-		}
-		@Override
-		public void network_removePassive(int clientId, int entityId)
-		{
-			PartialPassive original = this.partialPassivesPerClient.get(clientId).remove(entityId);
-			Assert.assertNotNull(original);
-		}
-		
-		@Override
-		public void network_sendCuboid(int clientId, IReadOnlyCuboidData cuboid)
-		{
-			if (!this.cuboidsSentToClient.containsKey(clientId))
-			{
-				this.cuboidsSentToClient.put(clientId, new HashSet<>());
-			}
-			boolean didAdd = this.cuboidsSentToClient.get(clientId).add(cuboid.getCuboidAddress());
-			Assert.assertTrue(didAdd);
-		}
-		@Override
-		public void network_removeCuboid(int clientId, CuboidAddress address)
-		{
-			boolean didRemove = this.cuboidsSentToClient.get(clientId).remove(address);
-			Assert.assertTrue(didRemove);
-		}
-		@Override
-		public void network_sendBlockUpdate(int clientId, MutationBlockSetBlock update)
-		{
-			throw new AssertionError("networkSendBlockUpdate");
-		}
-		@Override
-		public void network_sendBlockEvent(int clientId, EventRecord.Type type, AbsoluteLocation location, int entitySource)
-		{
-			throw new AssertionError("network_sendBlockEvent");
-		}
-		@Override
-		public void network_sendEntityEvent(int clientId, EventRecord.Type type, EventRecord.Cause cause, AbsoluteLocation optionalLocation, int entityTarget, int entitySource)
-		{
-			throw new AssertionError("network_sendEntityEvent");
-		}
-		@Override
-		public void network_sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded)
-		{
-			// For now, just track the commit number.
-			this.lastFinishedCommitPerClient.put(clientId, latestLocalCommitIncluded);
-		}
-		@Override
-		public void network_sendConfig(int clientId, WorldConfig config)
-		{
-			throw new AssertionError("network_sendConfig");
-		}
-		@Override
-		public void network_sendClientJoined(int clientId, int joinedClientId, String name)
-		{
-			Map<Integer, String> clients = this.joinedClients.get(clientId);
-			if (null == clients)
-			{
-				clients = new HashMap<>();
-				this.joinedClients.put(clientId, clients);
-			}
-			Object old = clients.put(joinedClientId, name);
-			Assert.assertNull(old);
-		}
-		@Override
-		public void network_sendClientLeft(int clientId, int leftClientId)
-		{
-			Map<Integer, String> clients = this.joinedClients.get(clientId);
-			Object old = clients.remove(leftClientId);
-			Assert.assertNotNull(old);
-		}
-		@Override
-		public void network_sendChatMessage(int clientId, int senderId, String message)
-		{
-			throw new AssertionError("network_sendChatMessage");
-		}
 		@Override
 		public boolean runner_enqueueEntityChange(int entityId, EntityActionSimpleMove<IMutablePlayerEntity> change, long commitLevel)
 		{
