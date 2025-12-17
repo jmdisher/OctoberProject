@@ -10,10 +10,29 @@ import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.net.CuboidCodec;
 import com.jeffdisher.october.net.EntityUpdatePerField;
 import com.jeffdisher.october.net.PartialEntityUpdate;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.PacketFromClient;
+import com.jeffdisher.october.net.PacketFromServer;
+import com.jeffdisher.october.net.Packet_BlockStateUpdate;
+import com.jeffdisher.october.net.Packet_ClientJoined;
+import com.jeffdisher.october.net.Packet_ClientLeft;
+import com.jeffdisher.october.net.Packet_EndOfTick;
+import com.jeffdisher.october.net.Packet_Entity;
+import com.jeffdisher.october.net.Packet_EntityUpdateFromServer;
+import com.jeffdisher.october.net.Packet_EventBlock;
+import com.jeffdisher.october.net.Packet_EventEntity;
+import com.jeffdisher.october.net.Packet_PartialEntity;
+import com.jeffdisher.october.net.Packet_PartialEntityUpdateFromServer;
+import com.jeffdisher.october.net.Packet_ReceiveChatMessage;
+import com.jeffdisher.october.net.Packet_RemoveCuboid;
+import com.jeffdisher.october.net.Packet_RemoveEntity;
+import com.jeffdisher.october.net.Packet_RemovePassive;
+import com.jeffdisher.october.net.Packet_SendPartialPassive;
+import com.jeffdisher.october.net.Packet_SendPartialPassiveUpdate;
+import com.jeffdisher.october.net.Packet_ServerSendConfigUpdate;
 import com.jeffdisher.october.persistence.PackagedCuboid;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
@@ -45,10 +64,6 @@ public class ServerRunner
 	 * on modern systems.
 	 */
 	public static final int TICK_RUNNER_THREAD_COUNT = 4;
-	/**
-	 * The "fake" client receives the end-of-tick message so that tests can see progress before client connections.
-	 */
-	public static final int FAKE_CLIENT_ID = 0;
 	/**
 	 * The number of milliseconds in a tick in the standard configuration.
 	 * 50 ms/tick is 20 ticks/sec.
@@ -357,8 +372,8 @@ public class ServerRunner
 					, nextTickChanges.entitiesToUnload()
 			);
 			
-			// We send the end of tick to a "fake" client 0 so tests can rely on seeing that (real implementations should just ignore it).
-			_network.sendEndOfTick(FAKE_CLIENT_ID, snapshot.tickNumber(), 0L);
+			// Send the end of tick to nowhere so tests can rely on seeing that (real implementations should just ignore it).
+			_network.testingEndOfTick(snapshot.tickNumber());
 			
 			// Before we schedule the next tick and start it processing, see if we should be running.
 			boolean shouldResetSchedule = false;
@@ -476,92 +491,117 @@ public class ServerRunner
 		@Override
 		public void network_sendFullEntity(int clientId, Entity entity)
 		{
-			_network.sendFullEntity(clientId, entity);
+			Packet_Entity packet = new Packet_Entity(entity);
+			_network.sendPacket(clientId, packet);
 		}
 		@Override
 		public void network_sendPartialEntity(int clientId, PartialEntity entity)
 		{
-			_network.sendPartialEntity(clientId, entity);
+			Packet_PartialEntity packet = new Packet_PartialEntity(entity);
+			_network.sendPacket(clientId, packet);
 		}
 		@Override
 		public void network_removeEntity(int clientId, int entityId)
 		{
-			_network.removeEntity(clientId, entityId);
+			Packet_RemoveEntity packet = new Packet_RemoveEntity(entityId);
+			_network.sendPacket(clientId, packet);
 		}
 		@Override
 		public void network_sendPartialPassive(int clientId, PartialPassive partial)
 		{
-			_network.sendPartialPassive(clientId, partial);
+			Packet_SendPartialPassive packet = new Packet_SendPartialPassive(partial);
+			_network.sendPacket(clientId, packet);
 		}
 		@Override
 		public void network_sendPartialPassiveUpdate(int clientId, int entityId, EntityLocation location, EntityLocation velocity)
 		{
-			_network.sendPartialPassiveUpdate(clientId, entityId, location, velocity);
+			Packet_SendPartialPassiveUpdate packet = new Packet_SendPartialPassiveUpdate(entityId, location, velocity);
+			_network.sendPacket(clientId, packet);
 		}
 		@Override
 		public void network_removePassive(int clientId, int entityId)
 		{
-			_network.removePassive(clientId, entityId);
+			Packet_RemovePassive packet = new Packet_RemovePassive(entityId);
+			_network.sendPacket(clientId, packet);
 		}
 		@Override
 		public void network_sendCuboid(int clientId, IReadOnlyCuboidData cuboid)
 		{
-			_network.sendCuboid(clientId, cuboid);
+			// Serialize the entire cuboid.
+			// Note that this may be too expensive to do on the server's thread.
+			CuboidCodec.Serializer serializer = new CuboidCodec.Serializer(cuboid);
+			PacketFromServer packet = serializer.getNextPacket();
+			while (null != packet)
+			{
+				_network.sendPacket(clientId, packet);
+				packet = serializer.getNextPacket();
+			}
 		}
 		@Override
 		public void network_removeCuboid(int clientId, CuboidAddress address)
 		{
-			_network.removeCuboid(clientId, address);
+			Packet_RemoveCuboid packet = new Packet_RemoveCuboid(address);
+			_network.sendPacket(clientId, packet);
 		}
 		@Override
 		public void network_sendEntityUpdate(int clientId, int entityId, EntityUpdatePerField update)
 		{
-			_network.sendEntityUpdate(clientId, entityId, update);
+			Packet_EntityUpdateFromServer packet = new Packet_EntityUpdateFromServer(entityId, update);
+			_network.sendPacket(clientId, packet);
 		}
 		@Override
 		public void network_sendPartialEntityUpdate(int clientId, int entityId, PartialEntityUpdate update)
 		{
-			_network.sendPartialEntityUpdate(clientId, entityId, update);
+			Packet_PartialEntityUpdateFromServer packet = new Packet_PartialEntityUpdateFromServer(entityId, update);
+			_network.sendPacket(clientId, packet);
 		}
 		@Override
 		public void network_sendBlockUpdate(int clientId, MutationBlockSetBlock update)
 		{
-			_network.sendBlockUpdate(clientId, update);
+			Packet_BlockStateUpdate packet = new Packet_BlockStateUpdate(update);
+			_network.sendPacket(clientId, packet);
 		}
 		@Override
 		public void network_sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded)
 		{
-			_network.sendEndOfTick(clientId, tickNumber, latestLocalCommitIncluded);
+			Packet_EndOfTick packet = new Packet_EndOfTick(tickNumber, latestLocalCommitIncluded);
+			_network.sendPacket(clientId, packet);
 		}
 		@Override
 		public void network_sendConfig(int clientId, WorldConfig config)
 		{
-			_network.sendConfig(clientId, config);
+			Packet_ServerSendConfigUpdate packet = new Packet_ServerSendConfigUpdate(config.ticksPerDay, config.dayStartTick);
+			_network.sendPacket(clientId, packet);
 		}
 		@Override
 		public void network_sendClientJoined(int clientId, int joinedClientId, String name)
 		{
-			_network.sendClientJoined(clientId, joinedClientId, name);
+			Packet_ClientJoined packet = new Packet_ClientJoined(joinedClientId, name);
+			_network.sendPacket(clientId, packet);
 		}
 		@Override
 		public void network_sendClientLeft(int clientId, int leftClientId)
 		{
-			_network.sendClientLeft(clientId, leftClientId);
+			Packet_ClientLeft packet = new Packet_ClientLeft(leftClientId);
+			_network.sendPacket(clientId, packet);
 		}
 		@Override
 		public void network_sendChatMessage(int clientId, int senderId, String message)
 		{
-			_network.sendChatMessage(clientId, senderId, message);
+			Packet_ReceiveChatMessage packet = new Packet_ReceiveChatMessage(senderId, message);
+			_network.sendPacket(clientId, packet);
 		}
 		@Override
 		public void network_sendBlockEvent(int clientId, EventRecord.Type type, AbsoluteLocation location, int entitySource)
 		{
-			_network.sendBlockEvent(clientId, type, location, entitySource);
+			Packet_EventBlock packet = new Packet_EventBlock(type, location, entitySource);
+			_network.sendPacket(clientId, packet);
 		}
 		@Override
 		public void network_sendEntityEvent(int clientId, EventRecord.Type type, EventRecord.Cause cause, AbsoluteLocation optionalLocation, int entityTarget, int entitySource)
 		{
-			_network.sendEntityEvent(clientId, type, cause, optionalLocation, entityTarget, entitySource);
+			Packet_EventEntity packet = new Packet_EventEntity(type, cause, optionalLocation, entityTarget, entitySource);
+			_network.sendPacket(clientId, packet);
 		}
 		@Override
 		public boolean runner_enqueueEntityChange(int entityId, EntityActionSimpleMove<IMutablePlayerEntity> change, long commitLevel)

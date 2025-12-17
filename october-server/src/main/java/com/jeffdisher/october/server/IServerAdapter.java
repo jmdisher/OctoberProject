@@ -1,19 +1,8 @@
 package com.jeffdisher.october.server;
 
-import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.MutationBlockSetBlock;
-import com.jeffdisher.october.net.EntityUpdatePerField;
-import com.jeffdisher.october.net.PartialEntityUpdate;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.PacketFromClient;
-import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.CuboidAddress;
-import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EventRecord;
-import com.jeffdisher.october.types.PartialEntity;
-import com.jeffdisher.october.types.PartialPassive;
-import com.jeffdisher.october.types.WorldConfig;
+import com.jeffdisher.october.net.PacketFromServer;
 
 
 /**
@@ -51,145 +40,20 @@ public interface IServerAdapter
 	 */
 	PacketFromClient peekOrRemoveNextPacketFromClient(int clientId, PacketFromClient toRemove);
 	/**
-	 * Sends a full entity to a given client.
+	 * Sends a Packet to a client.  Note that this has no failure mode but a disconnect could be triggered
+	 * asynchronously.  However, the caller should assume that the packet is either sent or buffered to be sent.
 	 * 
 	 * @param clientId The ID of the client (as assigned by the adapter implementation).
-	 * @param entity The entity to send.
+	 * @param packet The Packet instance to send.
 	 */
-	void sendFullEntity(int clientId, Entity entity);
+	void sendPacket(int clientId, PacketFromServer packet);
 	/**
-	 * Sends a partial entity to a given client.
+	 * Called when an end of tick is received, with the tick number.  This call is purely for tests as this tick isn't
+	 * being sent anywhere.
 	 * 
-	 * @param clientId The ID of the client (as assigned by the adapter implementation).
-	 * @param entity The entity to send.
+	 * @param tickNumber The tick number which just completed.
 	 */
-	void sendPartialEntity(int clientId, PartialEntity entity);
-	/**
-	 * Tells the given client that an entity should be discarded.
-	 * 
-	 * @param clientId The ID of the client (as assigned by the adapter implementation).
-	 * @param entityId The ID of the entity to remove.
-	 */
-	void removeEntity(int clientId, int entityId);
-	/**
-	 * Sends a new passive to the client.
-	 * 
-	 * @param clientId The ID of the client (as assigned by the adapter implementation).
-	 * @param partial The server's passive data.
-	 */
-	void sendPartialPassive(int clientId, PartialPassive partial);
-	/**
-	 * Tells the client to update the state of a passive.
-	 * 
-	 * @param clientId The ID of the client (as assigned by the adapter implementation).
-	 * @param entityId The ID of the passive to change.
-	 * @param location The new location to set.
-	 * @param velocity The new velocity to set.
-	 */
-	void sendPartialPassiveUpdate(int clientId, int entityId, EntityLocation location, EntityLocation velocity);
-	/**
-	 * Tells the client that this passive should be unloaded
-	 * 
-	 * @param clientId The ID of the client (as assigned by the adapter implementation).
-	 * @param entityId The ID of the passive to unload.
-	 */
-	void removePassive(int clientId, int entityId);
-	/**
-	 * Sends a full cuboid to the given client.
-	 * 
-	 * @param clientId The ID of the client (as assigned by the adapter implementation).
-	 * @param cuboid The cuboid to send.
-	 */
-	void sendCuboid(int clientId, IReadOnlyCuboidData cuboid);
-	/**
-	 * Tells the given client that a cuboid should be discarded.
-	 * 
-	 * @param clientId The ID of the client (as assigned by the adapter implementation).
-	 * @param address The address of the cuboid to remove.
-	 */
-	void removeCuboid(int clientId, CuboidAddress address);
-	/**
-	 * Sends an incremental entity update to the given client.
-	 * 
-	 * @param clientId The ID of the client (as assigned by the adapter implementation).
-	 * @param entityId The ID of the entity impacted by the change.
-	 * @param update The update to send.
-	 */
-	void sendEntityUpdate(int clientId, int entityId, EntityUpdatePerField update);
-	/**
-	 * Sends an incremental partial entity update to the given client.
-	 * 
-	 * @param clientId The ID of the client (as assigned by the adapter implementation).
-	 * @param entityId The ID of the entity impacted by the change.
-	 * @param update The update to send.
-	 */
-	void sendPartialEntityUpdate(int clientId, int entityId, PartialEntityUpdate update);
-	/**
-	 * Sends block state update to the given client.
-	 * 
-	 * @param clientId The ID of the client (as assigned by the adapter implementation).
-	 * @param update The state update to send.
-	 */
-	void sendBlockUpdate(int clientId, MutationBlockSetBlock update);
-	/**
-	 * Delivers an event to clientId describing the block event at location.
-	 * 
-	 * @param clientId The ID of the client to receive the message (must be >0).
-	 * @param type The event type (must be a block event type).
-	 * @param location The location where the event occurred.
-	 * @param entitySourceId The ID of the entity who was the source of the event (may be 0).
-	 */
-	void sendBlockEvent(int clientId, EventRecord.Type type, AbsoluteLocation location, int entitySourceId);
-	/**
-	 * Delivers an event to clientId describing the entity event with an optional location (can be null).
-	 * 
-	 * @param clientId The ID of the client to receive the message (must be >0).
-	 * @param type The event type (must be an entity event type).
-	 * @param cause The event cause.
-	 * @param optionalLocation The location where the event happened or null if not visible.
-	 * @param entityTargetId The ID of the entity who was the target of the event (must be >0).
-	 * @param entitySourceId The ID of the entity who was the source of the event (may be 0).
-	 */
-	void sendEntityEvent(int clientId, EventRecord.Type type, EventRecord.Cause cause, AbsoluteLocation optionalLocation, int entityTargetId, int entitySourceId);
-	/**
-	 * Sends the end of tick message to the given client.  All the messages which the client received since the previous
-	 * end of tick are considered part of this tick.
-	 * 
-	 * @param clientId The ID of the client (as assigned by the adapter implementation).
-	 * @param tickNumber The number of the tick completed (always > 1L).
-	 * @param latestLocalCommitIncluded The latest local commit from the client which is included in this tick.
-	 */
-	void sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded);
-	/**
-	 * Sends a config update packet to the given clientId, derived from the given config.
-	 * 
-	 * @param clientId The ID of the client (as assigned by the adapter implementation).
-	 * @param config The config object (although this is a shared instance the receiver likely has).
-	 */
-	void sendConfig(int clientId, WorldConfig config);
-	/**
-	 * Notifies the given clientId that a new client has joined (or was present when clientId joined).
-	 * 
-	 * @param clientId The ID of the client (as assigned by the adapter implementation).
-	 * @param joinedClientId The ID of the new client.
-	 * @param name The name of the new client.
-	 */
-	void sendClientJoined(int clientId, int joinedClientId, String name);
-	/**
-	 * Notifies the given clientId that another client has left.
-	 * 
-	 * @param clientId The ID of the client (as assigned by the adapter implementation).
-	 * @param leftClientId The ID of the other client.
-	 */
-	void sendClientLeft(int clientId, int leftClientId);
-	/**
-	 * Delivers a message from senderId to clientId.
-	 * 
-	 * @param clientId The ID of the client to receive the message (must be >0).
-	 * @param senderId The ID of the client which send the message (must be >=0 as 0 means "console").
-	 * @param message The message to send.
-	 */
-	void sendChatMessage(int clientId, int senderId, String message);
+	void testingEndOfTick(long tickNumber);
 	/**
 	 * Disconnects the given client.  Note that the implementation may still send messages from them, after this call,
 	 * but will seek to disconnect them.

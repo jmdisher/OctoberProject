@@ -22,16 +22,34 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
-import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.net.EntityUpdatePerField;
-import com.jeffdisher.october.net.PartialEntityUpdate;
 import com.jeffdisher.october.net.PacketFromClient;
+import com.jeffdisher.october.net.PacketFromServer;
+import com.jeffdisher.october.net.Packet_BlockStateUpdate;
+import com.jeffdisher.october.net.Packet_ClientJoined;
+import com.jeffdisher.october.net.Packet_ClientLeft;
+import com.jeffdisher.october.net.Packet_CuboidFragment;
+import com.jeffdisher.october.net.Packet_CuboidStart;
+import com.jeffdisher.october.net.Packet_EndOfTick;
+import com.jeffdisher.october.net.Packet_Entity;
+import com.jeffdisher.october.net.Packet_EntityUpdateFromServer;
+import com.jeffdisher.october.net.Packet_EventBlock;
+import com.jeffdisher.october.net.Packet_EventEntity;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
+import com.jeffdisher.october.net.Packet_PartialEntity;
+import com.jeffdisher.october.net.Packet_PartialEntityUpdateFromServer;
+import com.jeffdisher.october.net.Packet_ReceiveChatMessage;
+import com.jeffdisher.october.net.Packet_RemoveCuboid;
+import com.jeffdisher.october.net.Packet_RemoveEntity;
+import com.jeffdisher.october.net.Packet_RemovePassive;
 import com.jeffdisher.october.net.Packet_SendChatMessage;
+import com.jeffdisher.october.net.Packet_SendPartialPassive;
+import com.jeffdisher.october.net.Packet_SendPartialPassiveUpdate;
+import com.jeffdisher.october.net.Packet_ServerSendConfigUpdate;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.subactions.EntityChangeChangeHotbarSlot;
@@ -48,14 +66,12 @@ import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
-import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
-import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.Encoding;
@@ -545,8 +561,9 @@ public class TestServerRunner
 		monitoringAgent.getCommandSink().requestConfigBroadcast();
 		WorldConfig foundConfig = network.waitForConfig();
 		
-		// This config should be the same one we passed in (the shared instance).
-		Assert.assertTrue(config == foundConfig);
+		// The config is decoded from the packet so we can only compare the elements which are sent.
+		Assert.assertEquals(config.ticksPerDay, foundConfig.ticksPerDay);
+		Assert.assertEquals(config.dayStartTick, foundConfig.dayStartTick);
 		
 		server.clientDisconnected(clientId1);
 		network.resetClient(clientId1);
@@ -971,130 +988,134 @@ public class TestServerRunner
 			return true;
 		}
 		@Override
-		public synchronized void sendFullEntity(int clientId, Entity entity)
+		public synchronized void sendPacket(int clientId, PacketFromServer packet)
 		{
-			Assert.assertFalse(this.clientFullEntities.containsKey(clientId));
-			this.clientFullEntities.put(clientId, entity);
-			this.notifyAll();
-		}
-		@Override
-		public synchronized void sendPartialEntity(int clientId, PartialEntity entity)
-		{
-			int entityId = entity.id();
-			Map<Integer, PartialEntity> clientMap = this.clientPartialEntities.get(clientId);
-			Assert.assertFalse(clientMap.containsKey(entityId));
-			clientMap.put(entityId, entity);
-			this.notifyAll();
-		}
-		@Override
-		public synchronized void removeEntity(int clientId, int entityId)
-		{
-			// This should only ever apply to partials.
-			Map<Integer, PartialEntity> clientMap = this.clientPartialEntities.get(clientId);
-			Assert.assertTrue(clientMap.containsKey(entityId));
-			clientMap.remove(entityId);
-			this.notifyAll();
-		}
-		@Override
-		public void sendPartialPassive(int clientId, PartialPassive partial)
-		{
-			throw new AssertionError("sendPartialPassive");
-		}
-		@Override
-		public void sendPartialPassiveUpdate(int clientId, int entityId, EntityLocation location, EntityLocation velocity)
-		{
-			throw new AssertionError("sendPartialPassiveUpdate");
-		}
-		@Override
-		public void removePassive(int clientId, int entityId)
-		{
-			throw new AssertionError("removePassive");
-		}
-		@Override
-		public synchronized void sendCuboid(int clientId, IReadOnlyCuboidData cuboid)
-		{
-			int count = this.clientCuboidAddedCount.get(clientId);
-			this.clientCuboidAddedCount.put(clientId, count + 1);
-			this.notifyAll();
-		}
-		@Override
-		public synchronized void removeCuboid(int clientId, CuboidAddress address)
-		{
-			int count = this.clientCuboidRemovedCount.get(clientId);
-			this.clientCuboidRemovedCount.put(clientId, count + 1);
-			this.notifyAll();
-		}
-		@Override
-		public synchronized void sendEntityUpdate(int clientId, int entityId, EntityUpdatePerField update)
-		{
-			List<Object> updates = this.clientUpdates.get(clientId);
-			updates.add(update);
-			this.notifyAll();
-		}
-		@Override
-		public synchronized void sendPartialEntityUpdate(int clientId, int entityId, PartialEntityUpdate update)
-		{
-			List<Object> updates = this.clientUpdates.get(clientId);
-			updates.add(update);
-			this.notifyAll();
-		}
-		@Override
-		public synchronized void sendBlockUpdate(int clientId, MutationBlockSetBlock update)
-		{
-			List<Object> updates = this.clientUpdates.get(clientId);
-			updates.add(update);
-			this.notifyAll();
-		}
-		@Override
-		public void sendBlockEvent(int clientId, EventRecord.Type type, AbsoluteLocation location, int entitySourceId)
-		{
-			throw new AssertionError("Unimplemented");
-		}
-		@Override
-		public void sendEntityEvent(int clientId, EventRecord.Type type, EventRecord.Cause cause, AbsoluteLocation optionalLocation, int entityTargetId, int entitySourceId)
-		{
-			throw new AssertionError("Unimplemented");
-		}
-		@Override
-		public synchronized void sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded)
-		{
-			// We want to track the progress of the server, no matter who is connected.
-			if (ServerRunner.FAKE_CLIENT_ID == clientId)
+			if (packet instanceof Packet_Entity)
 			{
-				this.lastTick = tickNumber;
+				Packet_Entity safe = (Packet_Entity) packet;
+				Assert.assertFalse(this.clientFullEntities.containsKey(clientId));
+				this.clientFullEntities.put(clientId, safe.entity);
 				this.notifyAll();
+			}
+			else if (packet instanceof Packet_PartialEntity)
+			{
+				Packet_PartialEntity safe = (Packet_PartialEntity) packet;
+				int entityId = safe.entity.id();
+				Map<Integer, PartialEntity> clientMap = this.clientPartialEntities.get(clientId);
+				Assert.assertFalse(clientMap.containsKey(entityId));
+				clientMap.put(entityId, safe.entity);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_RemoveEntity)
+			{
+				Packet_RemoveEntity safe = (Packet_RemoveEntity) packet;
+				// This should only ever apply to partials.
+				Map<Integer, PartialEntity> clientMap = this.clientPartialEntities.get(clientId);
+				Assert.assertTrue(clientMap.containsKey(safe.entityId));
+				clientMap.remove(safe.entityId);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_SendPartialPassive)
+			{
+				throw new AssertionError("sendPartialPassive");
+			}
+			else if (packet instanceof Packet_SendPartialPassiveUpdate)
+			{
+				throw new AssertionError("sendPartialPassiveUpdate");
+			}
+			else if (packet instanceof Packet_RemovePassive)
+			{
+				throw new AssertionError("removePassive");
+			}
+			else if (packet instanceof Packet_CuboidStart)
+			{
+				int count = this.clientCuboidAddedCount.get(clientId);
+				this.clientCuboidAddedCount.put(clientId, count + 1);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_CuboidFragment)
+			{
+				// We ignore these since we only count the start.
+			}
+			else if (packet instanceof Packet_RemoveCuboid)
+			{
+				int count = this.clientCuboidRemovedCount.get(clientId);
+				this.clientCuboidRemovedCount.put(clientId, count + 1);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_EntityUpdateFromServer)
+			{
+				Packet_EntityUpdateFromServer safe = (Packet_EntityUpdateFromServer) packet;
+				List<Object> updates = this.clientUpdates.get(clientId);
+				updates.add(safe.update);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_PartialEntityUpdateFromServer)
+			{
+				Packet_PartialEntityUpdateFromServer safe = (Packet_PartialEntityUpdateFromServer) packet;
+				List<Object> updates = this.clientUpdates.get(clientId);
+				updates.add(safe.update);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_BlockStateUpdate)
+			{
+				Packet_BlockStateUpdate safe = (Packet_BlockStateUpdate) packet;
+				List<Object> updates = this.clientUpdates.get(clientId);
+				updates.add(safe.stateUpdate);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_EndOfTick)
+			{
+				// Ignore these, in the common case.
+			}
+			else if (packet instanceof Packet_ServerSendConfigUpdate)
+			{
+				Packet_ServerSendConfigUpdate safe = (Packet_ServerSendConfigUpdate) packet;
+				// For now, we will assume that there is only one client for tests using this callback
+				WorldConfig config = new WorldConfig();
+				config.ticksPerDay = safe.ticksPerDay;
+				config.dayStartTick = safe.dayStartTick;
+				Assert.assertNull(this.config);
+				this.config = config;
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_ClientJoined)
+			{
+				Packet_ClientJoined safe = (Packet_ClientJoined) packet;
+				Map<Integer, String> thisClient = this.clientConnectedNames.get(clientId);
+				Assert.assertFalse(thisClient.containsKey(safe.clientId));
+				thisClient.put(safe.clientId, safe.clientName);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_ClientLeft)
+			{
+				Packet_ClientLeft safe = (Packet_ClientLeft) packet;
+				Map<Integer, String> thisClient = this.clientConnectedNames.get(clientId);
+				Assert.assertTrue(thisClient.containsKey(safe.clientId));
+				thisClient.remove(safe.clientId);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_ReceiveChatMessage)
+			{
+				Packet_ReceiveChatMessage safe = (Packet_ReceiveChatMessage) packet;
+				List<String> messages = this.chatMessages.get(clientId);
+				messages.add(safe.sourceId + ": " + safe.message);
+				this.notifyAll();
+			}
+			else if (packet instanceof Packet_EventBlock)
+			{
+				throw new AssertionError("Unimplemented");
+			}
+			else if (packet instanceof Packet_EventEntity)
+			{
+				throw new AssertionError("Unimplemented");
 			}
 		}
 		@Override
-		public synchronized void sendConfig(int clientId, WorldConfig config)
+		public synchronized void testingEndOfTick(long tickNumber)
 		{
-			// For now, we will assume that there is only one client for tests using this callback
-			Assert.assertNotNull(config);
-			Assert.assertNull(this.config);
-			this.config = config;
-			this.notifyAll();
-		}
-		@Override
-		public synchronized void sendClientJoined(int clientId, int joinedClientId, String name)
-		{
-			Map<Integer, String> thisClient = this.clientConnectedNames.get(clientId);
-			Assert.assertFalse(thisClient.containsKey(joinedClientId));
-			thisClient.put(joinedClientId, name);
-			this.notifyAll();
-		}
-		@Override
-		public synchronized void sendClientLeft(int clientId, int leftClientId)
-		{
-			Map<Integer, String> thisClient = this.clientConnectedNames.get(clientId);
-			Assert.assertTrue(thisClient.containsKey(leftClientId));
-			thisClient.remove(leftClientId);
-			this.notifyAll();
-		}
-		@Override
-		public synchronized void sendChatMessage(int clientId, int senderId, String message)
-		{
-			List<String> messages = this.chatMessages.get(clientId);
-			messages.add(senderId + ": " + message);
+			// We want to track the progress of the server, no matter who is connected.
+			this.lastTick = tickNumber;
 			this.notifyAll();
 		}
 		@Override
