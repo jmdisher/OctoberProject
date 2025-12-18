@@ -349,6 +349,9 @@ public class TestProcesses
 		client1.waitForTick(serverTickNumber, currentTimeMillis[0]);
 		client2.waitForTick(serverTickNumber, currentTimeMillis[0]);
 		currentTimeMillis[0] += MILLIS_PER_TICK;
+		// Catch up with any callbacks.
+		client1.advanceTime(currentTimeMillis[0]);
+		client2.advanceTime(currentTimeMillis[0]);
 		
 		// We will need to wait for these commits to come back to both clients as committed (we send 5 and 10 above).
 		long client1CommitLevel = 5;
@@ -370,8 +373,8 @@ public class TestProcesses
 		// By this point, they should both have seen each other move so verify final result.
 		_compareLocation(location1, listener1.getLocalEntity().location());
 		_compareLocation(location1, listener2.otherEntities.get(clientId1).location());
-		_compareLocation(location2, listener1.otherEntities.get(clientId2).location());
 		_compareLocation(location2, listener2.getLocalEntity().location());
+		_compareLocation(location2, listener1.otherEntities.get(clientId2).location());
 		
 		// We are done.
 		client1.disconnect();

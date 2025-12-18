@@ -2,11 +2,9 @@ package com.jeffdisher.october.client;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.LongConsumer;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.Aspect;
@@ -42,37 +40,27 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class ClientRunner
 {
-	/**
-	 * Most operations will only pass if at least this much time has passed.  This avoids corner-cases where some events
-	 * might meaninglessly happen at the same time or the time interval is so small the packet would be a waste.
-	 */
-	public static final long TIME_GATE_MILLIS = 10L;
-
 	private final IClientAdapter _network;
 	private final IProjectionListener _projectionListener;
 	private final IListener _clientListener;
+	private final TimeRunnerList _callsFromNetworkToApply;
+
 	private SpeculativeProjection _projection;
 	private MovementAccumulator _accumulator;
-	private final List<Runnable> _pendingNetworkCallsToFlush;
-
-	// Variables related to moving calls from the network into the caller thread.
-	private final LockedList _callsFromNetworkToApply;
-
-	// We track the last time we called into the runner since time-sensitive changes need to know the time delta.
-	// (failing to correctly set the delta will cause the server to block changes, meaning that the client could be disconnected due to flooding)
-	private long _lastCallMillis;
 
 	// This is set once when the client connects and is only read after that.
 	private int _serverMaximumViewDistance;
 
-	public ClientRunner(IClientAdapter network, IProjectionListener projectionListener, IListener clientListener)
+	public ClientRunner(IClientAdapter network
+		, IProjectionListener projectionListener
+		, IListener clientListener
+		, TimeRunnerList callsFromNetworkToApply
+	)
 	{
 		_network = network;
 		_projectionListener = projectionListener;
 		_clientListener = clientListener;
-		_pendingNetworkCallsToFlush = new ArrayList<>();
-		
-		_callsFromNetworkToApply = new LockedList();
+		_callsFromNetworkToApply = callsFromNetworkToApply;
 		
 		// This constructor probably does more than a constructor should (opening network connections) but this does give us a simple interface.
 		NetworkListener networkListener = new NetworkListener();
@@ -94,25 +82,7 @@ public class ClientRunner
 	{
 		// Note that this might fail.
 		boolean didApply = _accumulator.enqueueSubAction(change, currentTimeMillis);
-		_runAllPendingCalls(currentTimeMillis);
-		_lastCallMillis = currentTimeMillis;
 		return didApply;
-	}
-
-	/**
-	 * Runs any pending call-outs.
-	 * 
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 */
-	public void runPendingCalls(long currentTimeMillis)
-	{
-		long millisToApply = (currentTimeMillis - _lastCallMillis);
-		// Only apply this if it has been running for a while.
-		if (millisToApply > TIME_GATE_MILLIS)
-		{
-			_runAllPendingCalls(currentTimeMillis);
-			_lastCallMillis = currentTimeMillis;
-		}
 	}
 
 	/**
@@ -140,8 +110,6 @@ public class ClientRunner
 	{
 		EntityActionSimpleMove<IMutablePlayerEntity> complete = _accumulator.walk(currentTimeMillis, relativeDirection, runningSpeed);
 		_endAction(complete, currentTimeMillis);
-		_runAllPendingCalls(currentTimeMillis);
-		_lastCallMillis = currentTimeMillis;
 	}
 
 	/**
@@ -154,8 +122,6 @@ public class ClientRunner
 	{
 		EntityActionSimpleMove<IMutablePlayerEntity> complete = _accumulator.sneak(currentTimeMillis, relativeDirection);
 		_endAction(complete, currentTimeMillis);
-		_runAllPendingCalls(currentTimeMillis);
-		_lastCallMillis = currentTimeMillis;
 	}
 
 	/**
@@ -168,8 +134,6 @@ public class ClientRunner
 		// We will interpret this as just standing, since that also accounts for falling.
 		EntityActionSimpleMove<IMutablePlayerEntity> complete = _accumulator.stand(currentTimeMillis);
 		_endAction(complete, currentTimeMillis);
-		_runAllPendingCalls(currentTimeMillis);
-		_lastCallMillis = currentTimeMillis;
 	}
 
 	/**
@@ -204,19 +168,6 @@ public class ClientRunner
 	}
 
 	/**
-	 * Updates the internal last action times and runs callbacks without applying changes to the projection or network.
-	 * This is primarily used in the case where the associated server is paused and the client must skip over that time
-	 * without sending its usual periodic updates.
-	 * 
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 */
-	public void advanceTime(long currentTimeMillis)
-	{
-		_lastCallMillis = currentTimeMillis;
-		_runAllPendingCalls(currentTimeMillis);
-	}
-
-	/**
 	 * Requests that this client disconnect from the server.
 	 */
 	public void disconnect()
@@ -224,15 +175,6 @@ public class ClientRunner
 		_network.disconnect();
 	}
 
-
-	private void _runAllPendingCalls(long currentTimeMillis)
-	{
-		List<LongConsumer> calls = _callsFromNetworkToApply.extractAllRunnables();
-		while (!calls.isEmpty())
-		{
-			calls.remove(0).accept(currentTimeMillis);
-		}
-	}
 
 	private void _endAction(EntityActionSimpleMove<IMutablePlayerEntity> optionalOutput, long currentTimeMillis)
 	{
@@ -242,7 +184,7 @@ public class ClientRunner
 			if (localCommit > 0L)
 			{
 				// This was applied locally so package it up to send to the server.  Currently, we will only flush network calls when we receive a new tick (but this will likely change).
-				_pendingNetworkCallsToFlush.add(() -> {
+				_callsFromNetworkToApply.enqueue((long ignored) -> {
 					_network.sendChange(optionalOutput, localCommit);
 				});
 			}
@@ -280,7 +222,6 @@ public class ClientRunner
 				// We will locally wrap the projection listener we were given so that we will always know the properties of the entity.
 				_projection = new SpeculativeProjection(assignedId, new LocalProjection(), millisPerTick);
 				_accumulator = new MovementAccumulator(_projectionListener, millisPerTick, Environment.getShared().creatures.PLAYER.volume(), currentTimeMillis);
-				_lastCallMillis = currentTimeMillis;
 				_serverMaximumViewDistance = viewDistanceMaximum;
 				// Notify the listener that we were assigned an ID.
 				_clientListener.clientDidConnectAndLogin(assignedId, currentViewDistance);
@@ -398,12 +339,6 @@ public class ClientRunner
 			_events.clear();
 			
 			_callsFromNetworkToApply.enqueue((long currentTimeMillis) -> {
-				// Send anything we have outgoing.
-				while (!_pendingNetworkCallsToFlush.isEmpty())
-				{
-					_pendingNetworkCallsToFlush.remove(0).run();
-				}
-				
 				// Apply the changes from the server.
 				if (null != thisEntity)
 				{
@@ -459,23 +394,6 @@ public class ClientRunner
 			_callsFromNetworkToApply.enqueue((long currentTimeMillis) -> {
 				_clientListener.receivedChatMessage(senderId, message);
 			});
-		}
-	}
-
-	private class LockedList
-	{
-		// Since this is self-contained, we will just use the monitor, for brevity, even though an explicitly lock is technically more appropriate.
-		private final List<LongConsumer> _calls = new LinkedList<>();
-		
-		public synchronized void enqueue(LongConsumer runnable)
-		{
-			_calls.add(runnable);
-		}
-		public synchronized List<LongConsumer> extractAllRunnables()
-		{
-			List<LongConsumer> copy = new LinkedList<>(_calls);
-			_calls.clear();
-			return copy;
 		}
 	}
 

@@ -13,6 +13,7 @@ import com.jeffdisher.october.client.ClientRunner;
 import com.jeffdisher.october.client.IClientAdapter;
 import com.jeffdisher.october.client.IProjectionListener;
 import com.jeffdisher.october.client.MovementAccumulator;
+import com.jeffdisher.october.client.TimeRunnerList;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
@@ -65,7 +66,7 @@ public class ClientProcess
 	public final ServerState serverState;
 
 	private final IListener _listener;
-	private final _LockingList _pendingCallbacks;
+	private final TimeRunnerList _pendingCallbacks;
 	private final ClientRunner _clientRunner;
 	private IClientAdapter.IListener _messagesToClientRunner;
 
@@ -99,8 +100,12 @@ public class ClientProcess
 		this.serverState = new ServerState();
 		
 		_listener = listener;
-		_pendingCallbacks = new _LockingList();
-		_clientRunner = new ClientRunner(new _NetworkAdapter(), new _ProjectionListener(), new _RunnerListener());
+		_pendingCallbacks = new TimeRunnerList();
+		_clientRunner = new ClientRunner(new _NetworkAdapter()
+			, new _ProjectionListener()
+			, new _RunnerListener()
+			, _pendingCallbacks
+		);
 		// This should be set once the runner is started but before it returns.
 		Assert.assertTrue(null != _messagesToClientRunner);
 		
@@ -131,7 +136,7 @@ public class ClientProcess
 	public boolean sendAction(IEntitySubAction<IMutablePlayerEntity> change, long currentTimeMillis)
 	{
 		boolean didApply = _clientRunner.commonApplyEntityAction(change, currentTimeMillis);
-		_runPendingCallbacks();
+		_pendingCallbacks.runFullQueue(currentTimeMillis);
 		return didApply;
 	}
 
@@ -177,8 +182,7 @@ public class ClientProcess
 		{
 			this.wait();
 		}
-		_clientRunner.runPendingCalls(currentTimeMillis);
-		_runPendingCallbacks();
+		_pendingCallbacks.runFullQueue(currentTimeMillis);
 		if (null != _disconnectException)
 		{
 			throw _disconnectException;
@@ -201,8 +205,7 @@ public class ClientProcess
 		{
 			this.wait();
 		}
-		_clientRunner.runPendingCalls(currentTimeMillis);
-		_runPendingCallbacks();
+		_pendingCallbacks.runFullQueue(currentTimeMillis);
 		if (null != _disconnectException)
 		{
 			throw _disconnectException;
@@ -225,8 +228,7 @@ public class ClientProcess
 		{
 			this.wait();
 		}
-		_clientRunner.runPendingCalls(currentTimeMillis);
-		_runPendingCallbacks();
+		_pendingCallbacks.runFullQueue(currentTimeMillis);
 		if (null != _disconnectException)
 		{
 			throw _disconnectException;
@@ -241,8 +243,7 @@ public class ClientProcess
 	 */
 	public void runPendingCalls(long currentTimeMillis)
 	{
-		_clientRunner.runPendingCalls(currentTimeMillis);
-		_runPendingCallbacks();
+		_pendingCallbacks.runFullQueue(currentTimeMillis);
 	}
 
 	/**
@@ -269,7 +270,7 @@ public class ClientProcess
 	public void walk(MovementAccumulator.Relative relativeDirection, boolean runningSpeed, long currentTimeMillis)
 	{
 		_clientRunner.walk(relativeDirection, runningSpeed, currentTimeMillis);
-		_runPendingCallbacks();
+		_pendingCallbacks.runFullQueue(currentTimeMillis);
 	}
 
 	/**
@@ -281,7 +282,7 @@ public class ClientProcess
 	public void sneak(MovementAccumulator.Relative relativeDirection, long currentTimeMillis)
 	{
 		_clientRunner.sneak(relativeDirection, currentTimeMillis);
-		_runPendingCallbacks();
+		_pendingCallbacks.runFullQueue(currentTimeMillis);
 	}
 
 	/**
@@ -292,7 +293,7 @@ public class ClientProcess
 	public void doNothing(long currentTimeMillis)
 	{
 		_clientRunner.standStill(currentTimeMillis);
-		_runPendingCallbacks();
+		_pendingCallbacks.runFullQueue(currentTimeMillis);
 	}
 
 	/**
@@ -326,8 +327,7 @@ public class ClientProcess
 	 */
 	public void advanceTime(long currentTimeMillis)
 	{
-		_clientRunner.advanceTime(currentTimeMillis);
-		_runPendingCallbacks();
+		_pendingCallbacks.runFullQueue(currentTimeMillis);
 	}
 
 
@@ -409,16 +409,6 @@ public class ClientProcess
 	private void _background_setMillisPerTick(long millisPerTick)
 	{
 		this.serverState.millisPerTick = millisPerTick;
-	}
-
-	private void _runPendingCallbacks()
-	{
-		Runnable next = _pendingCallbacks.getNext();
-		while (null != next)
-		{
-			next.run();
-			next = _pendingCallbacks.getNext();
-		}
 	}
 
 
@@ -608,9 +598,7 @@ public class ClientProcess
 		@Override
 		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, CuboidHeightMap cuboidHeightMap, ColumnHeightMap columnHeightMap)
 		{
-			_pendingCallbacks.add(() -> {
-				_listener.cuboidDidLoad(cuboid, columnHeightMap);
-			});
+			_listener.cuboidDidLoad(cuboid, columnHeightMap);
 		}
 		@Override
 		public void cuboidDidChange(IReadOnlyCuboidData cuboid
@@ -620,86 +608,62 @@ public class ClientProcess
 				, Set<Aspect<?, ?>> changedAspects
 		)
 		{
-			_pendingCallbacks.add(() -> {
-				_listener.cuboidDidChange(cuboid, columnHeightMap, changedBlocks, changedAspects);
-			});
+			_listener.cuboidDidChange(cuboid, columnHeightMap, changedBlocks, changedAspects);
 		}
 		@Override
 		public void cuboidDidUnload(CuboidAddress address)
 		{
-			_pendingCallbacks.add(() -> {
-				_listener.cuboidDidUnload(address);
-			});
+			_listener.cuboidDidUnload(address);
 		}
 		@Override
 		public void thisEntityDidLoad(Entity authoritativeEntity)
 		{
-			_pendingCallbacks.add(() -> {
-				_listener.thisEntityDidLoad(authoritativeEntity);
-			});
+			_listener.thisEntityDidLoad(authoritativeEntity);
 		}
 		@Override
 		public void thisEntityDidChange(Entity authoritativeEntity, Entity projectedEntity)
 		{
-			_pendingCallbacks.add(() -> {
-				_listener.thisEntityDidChange(authoritativeEntity, projectedEntity);
-			});
+			_listener.thisEntityDidChange(authoritativeEntity, projectedEntity);
 		}
 		@Override
 		public void otherEntityDidLoad(PartialEntity entity)
 		{
-			_pendingCallbacks.add(() -> {
-				_listener.otherEntityDidLoad(entity);
-			});
+			_listener.otherEntityDidLoad(entity);
 		}
 		@Override
 		public void otherEntityDidChange(PartialEntity entity)
 		{
-			_pendingCallbacks.add(() -> {
-				_listener.otherEntityDidChange(entity);
-			});
+			_listener.otherEntityDidChange(entity);
 		}
 		@Override
 		public void otherEntityDidUnload(int id)
 		{
-			_pendingCallbacks.add(() -> {
-				_listener.otherEntityDidUnload(id);
-			});
+			_listener.otherEntityDidUnload(id);
 		}
 		@Override
 		public void passiveEntityDidLoad(PartialPassive entity)
 		{
-			_pendingCallbacks.add(() -> {
-				_listener.passiveEntityDidLoad(entity);
-			});
+			_listener.passiveEntityDidLoad(entity);
 		}
 		@Override
 		public void passiveEntityDidChange(PartialPassive entity)
 		{
-			_pendingCallbacks.add(() -> {
-				_listener.passiveEntityDidChange(entity);
-			});
+			_listener.passiveEntityDidChange(entity);
 		}
 		@Override
 		public void passiveEntityDidUnload(int id)
 		{
-			_pendingCallbacks.add(() -> {
-				_listener.passiveEntityDidUnload(id);
-			});
+			_listener.passiveEntityDidUnload(id);
 		}
 		@Override
 		public void tickDidComplete(long gameTick)
 		{
-			_pendingCallbacks.add(() -> {
-				_listener.tickDidComplete(gameTick);
-			});
+			_listener.tickDidComplete(gameTick);
 		}
 		@Override
 		public void handleEvent(EventRecord event)
 		{
-			_pendingCallbacks.add(() -> {
-				_listener.handleEvent(event);
-			});
+			_listener.handleEvent(event);
 		}
 	}
 
@@ -709,60 +673,32 @@ public class ClientProcess
 		@Override
 		public void clientDidConnectAndLogin(int assignedLocalEntityId, int currentViewDistance)
 		{
-			_pendingCallbacks.add(() -> {
-				_listener.connectionEstablished(assignedLocalEntityId, currentViewDistance);
-			});
+			_listener.connectionEstablished(assignedLocalEntityId, currentViewDistance);
 		}
 		@Override
 		public void clientDisconnected()
 		{
-			_pendingCallbacks.add(() -> {
-				_listener.connectionClosed();
-			});
+			_listener.connectionClosed();
 		}
 		@Override
 		public void configUpdated(int ticksPerDay, int dayStartTick)
 		{
-			_pendingCallbacks.add(() -> {
-				_listener.configUpdated(ticksPerDay, dayStartTick);
-			});
+			_listener.configUpdated(ticksPerDay, dayStartTick);
 		}
 		@Override
 		public void otherClientJoined(int clientId, String name)
 		{
-			_pendingCallbacks.add(() -> {
-				_listener.otherClientJoined(clientId, name);
-			});
+			_listener.otherClientJoined(clientId, name);
 		}
 		@Override
 		public void otherClientLeft(int clientId)
 		{
-			_pendingCallbacks.add(() -> {
-				_listener.otherClientLeft(clientId);
-			});
+			_listener.otherClientLeft(clientId);
 		}
 		@Override
 		public void receivedChatMessage(int senderId, String message)
 		{
-			_pendingCallbacks.add(() -> {
-				_listener.receivedChatMessage(senderId, message);
-			});
-		}
-	}
-
-	private static class _LockingList
-	{
-		private final Queue<Runnable> _queue = new LinkedList<>();
-		public synchronized void add(Runnable next)
-		{
-			_queue.add(next);
-		}
-		public synchronized Runnable getNext()
-		{
-			return _queue.isEmpty()
-					? null
-					: _queue.poll()
-			;
+			_listener.receivedChatMessage(senderId, message);
 		}
 	}
 

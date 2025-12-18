@@ -80,31 +80,32 @@ public class TestClientRunner
 		TestAdapter network = new TestAdapter();
 		TestProjection projection = new TestProjection();
 		ClientListener clientListener = new ClientListener();
-		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		TimeRunnerList runnerList = new TimeRunnerList();
+		new ClientRunner(network, projection, clientListener, runnerList);
 		
 		// Connect them.
 		int clientId = 1;
 		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		int ticksPerDay = 1000;
 		network.client.receivedConfigUpdate(ticksPerDay, 0);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		Assert.assertEquals(ticksPerDay, clientListener.ticksPerDay);
 		
 		// Send them an entity.
 		network.client.receivedFullEntity(MutableEntity.createForTest(clientId).freeze());
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		// (this requires and end of tick for the projection to be rebuilt)
 		network.client.receivedEndOfTick(1L, 0L);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, projection.thisEntity.id());
 		
 		// Disconnect them.
 		network.client.adapterDisconnected();
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(0, clientListener.assignedLocalEntityId);
 		Assert.assertTrue(projection.events.isEmpty());
@@ -116,31 +117,32 @@ public class TestClientRunner
 		TestAdapter network = new TestAdapter();
 		TestProjection projection = new TestProjection();
 		ClientListener clientListener = new ClientListener();
-		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		TimeRunnerList runnerList = new TimeRunnerList();
+		new ClientRunner(network, projection, clientListener, runnerList);
 		
 		// Connect them.
 		long currentTimeMillis = 100L;
 		int clientId = 1;
 		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		
 		// Send them their own entity and another one.
 		network.client.receivedFullEntity(MutableEntity.createForTest(clientId).freeze());
 		network.client.receivedPartialEntity(PartialEntity.fromEntity(MutableEntity.createForTest(2).freeze()));
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		// (this requires and end of tick for the projection to be rebuilt)
 		network.client.receivedEndOfTick(1L, 0L);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, projection.thisEntity.id());
 		Assert.assertEquals(2, projection.otherEnties.get(2).id());
 		
 		// Disconnect them.
 		network.client.adapterDisconnected();
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(0, clientListener.assignedLocalEntityId);
 		Assert.assertTrue(projection.events.isEmpty());
@@ -156,14 +158,15 @@ public class TestClientRunner
 		TestAdapter network = new TestAdapter();
 		TestProjection projection = new TestProjection();
 		ClientListener clientListener = new ClientListener();
-		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		TimeRunnerList runnerList = new TimeRunnerList();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener, runnerList);
 		
 		// Connect them.
 		int clientId = 1;
 		long currentTimeMillis = 1000L;
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
 		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		
@@ -171,7 +174,7 @@ public class TestClientRunner
 		network.client.receivedFullEntity(MutableEntity.createForTest(clientId).freeze());
 		network.client.receivedCuboid(cuboid);
 		network.client.receivedEndOfTick(1L, 0L);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		Assert.assertTrue(projection.loadedCuboids.containsKey(cuboidAddress));
 		Assert.assertEquals(DIRT.item().number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short)0, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
@@ -186,7 +189,7 @@ public class TestClientRunner
 		// (they only send this after the next tick).
 		network.client.receivedEndOfTick(2L, 0L);
 		currentTimeMillis += 100L;
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		
 		// Observe that this came out in the network.
 		Assert.assertTrue(network.toSend instanceof EntityActionSimpleMove<IMutablePlayerEntity>);
@@ -195,10 +198,10 @@ public class TestClientRunner
 		// The would normally send a setBlock but we will just echo the normal mutation, to keep this simple.
 		network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.authoritativeEntity, network.toSend));
 		network.client.receivedEndOfTick(3L, 1L);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(changeLocation, (short)100, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
 		network.client.receivedEndOfTick(4L, 1L);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		
 		// Verify that the block isn't broken, but is damaged.
 		Assert.assertEquals(DIRT.item().number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
@@ -213,22 +216,22 @@ public class TestClientRunner
 		runner.standStill(currentTimeMillis);
 		network.client.receivedEndOfTick(5L, 1L);
 		currentTimeMillis += 100L;
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		Assert.assertTrue(network.toSend instanceof EntityActionSimpleMove<IMutablePlayerEntity>);
 		Assert.assertEquals(2L, network.commitLevel);
 		network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.authoritativeEntity, network.toSend));
 		network.client.receivedEndOfTick(6L, 2L);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(changeLocation, (short)100, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
 		network.client.receivedEndOfTick(7L, 2L);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		
 		// Verify the final state of the projection.
 		Assert.assertEquals(ENV.special.AIR.item().number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		
 		// Disconnect them.
 		network.client.adapterDisconnected();
-		runner.runPendingCalls(System.currentTimeMillis());
+		runnerList.runFullQueue(System.currentTimeMillis());
 		Assert.assertEquals(0, clientListener.assignedLocalEntityId);
 		
 		// We should see the event for the block being broken.
@@ -248,13 +251,14 @@ public class TestClientRunner
 		TestAdapter network = new TestAdapter();
 		TestProjection projection = new TestProjection();
 		ClientListener clientListener = new ClientListener();
-		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		TimeRunnerList runnerList = new TimeRunnerList();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener, runnerList);
 		
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
 		long currentTimeMillis = 100L;
 		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		MutableEntity mutable = MutableEntity.createForTest(clientId);
@@ -264,7 +268,7 @@ public class TestClientRunner
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE));
 		network.client.receivedEndOfTick(1L, 0L);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		
 		// Start crafting, but not with enough time to complete it.
 		currentTimeMillis += 100L;
@@ -295,13 +299,14 @@ public class TestClientRunner
 		TestAdapter network = new TestAdapter();
 		TestProjection projection = new TestProjection();
 		ClientListener clientListener = new ClientListener();
-		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		TimeRunnerList runnerList = new TimeRunnerList();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener, runnerList);
 		
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
 		long currentTimeMillis = 100L;
 		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		network.client.receivedFullEntity(MutableEntity.createForTest(clientId).freeze());
@@ -311,7 +316,7 @@ public class TestClientRunner
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, 0, 0), STONE));
 		network.client.receivedEndOfTick(1L, 0L);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		
 		// Jump and then try to move to the West and observe the updated location.
@@ -337,13 +342,14 @@ public class TestClientRunner
 		TestAdapter network = new TestAdapter();
 		TestProjection projection = new TestProjection();
 		ClientListener clientListener = new ClientListener();
-		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		TimeRunnerList runnerList = new TimeRunnerList();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener, runnerList);
 		
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
 		long currentTimeMillis = 100L;
 		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		// We want to position ourselves above the ground and drop onto the ground and observe that we no longer move.
@@ -354,7 +360,7 @@ public class TestClientRunner
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE));
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
 		network.client.receivedEndOfTick(1L, 0L);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		
 		// Allow ourselves to fall onto the ground with the expected number of ticks.
 		int expectedChangeCount = 6;
@@ -385,13 +391,14 @@ public class TestClientRunner
 		TestAdapter network = new TestAdapter();
 		TestProjection projection = new TestProjection();
 		ClientListener clientListener = new ClientListener();
-		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		TimeRunnerList runnerList = new TimeRunnerList();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener, runnerList);
 		
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
 		long currentTimeMillis = 100L;
 		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		MutableEntity mutable = MutableEntity.createForTest(clientId);
@@ -403,7 +410,7 @@ public class TestClientRunner
 		// We will just make one of the cuboids out of crafting tables to give us somewhere to craft.
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), ENV.blocks.fromItem(ENV.items.getItemById("op.crafting_table"))));
 		network.client.receivedEndOfTick(1L, 0L);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		
 		// Select a table and load an item into it.
 		AbsoluteLocation table = new AbsoluteLocation(0, 0, -1);
@@ -435,13 +442,14 @@ public class TestClientRunner
 		TestAdapter network = new TestAdapter();
 		TestProjection projection = new TestProjection();
 		ClientListener clientListener = new ClientListener();
-		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		TimeRunnerList runnerList = new TimeRunnerList();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener, runnerList);
 		
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
 		long currentTimeMillis = 100L;
 		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		network.client.receivedFullEntity(MutableEntity.createForTest(clientId).freeze());
@@ -449,7 +457,7 @@ public class TestClientRunner
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE));
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
 		network.client.receivedEndOfTick(1L, 0L);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		
 		// Walk east for 300 frames.
 		runner.setOrientation(OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT);
@@ -484,13 +492,14 @@ public class TestClientRunner
 		TestAdapter network = new TestAdapter();
 		TestProjection projection = new TestProjection();
 		ClientListener clientListener = new ClientListener();
-		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		TimeRunnerList runnerList = new TimeRunnerList();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener, runnerList);
 		
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
 		long currentTimeMillis = 100L;
 		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		Item bread = ENV.items.getItemById("op.bread");
@@ -504,7 +513,7 @@ public class TestClientRunner
 		// We will just make one of the cuboids out of crafting tables to give us somewhere to craft.
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE));
 		network.client.receivedEndOfTick(1L, 0L);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		
 		// Eat the bread, showing that it worked.
 		EntityChangeUseSelectedItemOnSelf eatChange = new EntityChangeUseSelectedItemOnSelf();
@@ -542,20 +551,21 @@ public class TestClientRunner
 		TestAdapter network = new TestAdapter();
 		TestProjection projection = new TestProjection();
 		ClientListener clientListener = new ClientListener();
-		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		TimeRunnerList runnerList = new TimeRunnerList();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener, runnerList);
 		
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
 		long currentTimeMillis = 100L;
 		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		network.client.receivedFullEntity(MutableEntity.createForTest(clientId).freeze());
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, 0, 0), STONE));
 		network.client.receivedEndOfTick(1L, 0L);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		
 		// Set orientation and walk.
@@ -585,13 +595,14 @@ public class TestClientRunner
 		TestAdapter network = new TestAdapter();
 		TestProjection projection = new TestProjection();
 		ClientListener clientListener = new ClientListener();
-		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		TimeRunnerList runnerList = new TimeRunnerList();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener, runnerList);
 		
 		// Connect them.
 		int clientId = 1;
 		long currentTimeMillis = 1000L;
 		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		
@@ -599,7 +610,7 @@ public class TestClientRunner
 		network.client.receivedFullEntity(MutableEntity.createForTest(clientId).freeze());
 		network.client.receivedCuboid(cuboid);
 		network.client.receivedEndOfTick(1L, 0L);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		Assert.assertTrue(projection.loadedCuboids.containsKey(cuboidAddress));
 		Assert.assertEquals(STONE_ITEM.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short)150, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
@@ -613,7 +624,7 @@ public class TestClientRunner
 		currentTimeMillis += 100L;
 		// (they only send this after the next tick).
 		network.client.receivedEndOfTick(2L, 0L);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		
 		// Observe that this came out in the network.
 		Assert.assertTrue(network.toSend instanceof EntityActionSimpleMove<IMutablePlayerEntity>);
@@ -622,10 +633,10 @@ public class TestClientRunner
 		// They would normally send a setBlock but we will just echo the normal mutation, to keep this simple.
 		network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.authoritativeEntity, network.toSend));
 		network.client.receivedEndOfTick(3L, 1L);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalRepair(changeLocation, (short)100)));
 		network.client.receivedEndOfTick(4L, 1L);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		
 		// Verify that the block has been partially repaired.
 		Assert.assertEquals(STONE_ITEM.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
@@ -633,7 +644,7 @@ public class TestClientRunner
 		
 		// Disconnect them.
 		network.client.adapterDisconnected();
-		runner.runPendingCalls(System.currentTimeMillis());
+		runnerList.runFullQueue(System.currentTimeMillis());
 		Assert.assertEquals(0, clientListener.assignedLocalEntityId);
 		Assert.assertTrue(projection.events.isEmpty());
 	}
@@ -645,7 +656,8 @@ public class TestClientRunner
 		TestAdapter network = new TestAdapter();
 		TestProjection projection = new TestProjection();
 		ClientListener clientListener = new ClientListener();
-		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		TimeRunnerList runnerList = new TimeRunnerList();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener, runnerList);
 		
 		// Connect them.
 		int clientId = 1;
@@ -654,7 +666,7 @@ public class TestClientRunner
 		network.client.adapterConnected(clientId, MILLIS_PER_TICK, currentViewDistance, viewDistanceLimit);
 		int ticksPerDay = 1000;
 		network.client.receivedConfigUpdate(ticksPerDay, 0);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		Assert.assertEquals(currentViewDistance, clientListener.currentViewDistance);
@@ -663,22 +675,22 @@ public class TestClientRunner
 		// Send the updated options a few different ways and verify we get the right responses.
 		Assert.assertTrue(runner.updateOptions(3));
 		Assert.assertEquals(3, network.clientViewDistance);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		
 		Assert.assertFalse(runner.updateOptions(4));
 		Assert.assertEquals(3, network.clientViewDistance);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		
 		Assert.assertTrue(runner.updateOptions(0));
 		Assert.assertEquals(0, network.clientViewDistance);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		
 		// Disconnect them.
 		network.client.adapterDisconnected();
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(0, clientListener.assignedLocalEntityId);
 		Assert.assertTrue(projection.events.isEmpty());
@@ -691,7 +703,8 @@ public class TestClientRunner
 		TestAdapter network = new TestAdapter();
 		TestProjection projection = new TestProjection();
 		ClientListener clientListener = new ClientListener();
-		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		TimeRunnerList runnerList = new TimeRunnerList();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener, runnerList);
 		
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
@@ -699,7 +712,7 @@ public class TestClientRunner
 		long tick = 1L;
 		long serverCommit = 0L;
 		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		network.client.receivedFullEntity(MutableEntity.createForTest(clientId).freeze());
@@ -707,7 +720,7 @@ public class TestClientRunner
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE));
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
 		network.client.receivedEndOfTick(tick, serverCommit);
-		runner.runPendingCalls(currentTimeMillis);
+		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		
 		// Jump and watch how we move over time.
@@ -732,7 +745,7 @@ public class TestClientRunner
 			tick += 1L;
 			network.client.receivedEntityUpdate(clientId, EntityUpdatePerField.update(temp, serverEntity));
 			network.client.receivedEndOfTick(tick, serverCommit);
-			runner.runPendingCalls(currentTimeMillis);
+			runnerList.runFullQueue(currentTimeMillis);
 			serverEntity = temp;
 			serverCommit += 1L;
 			currentTimeMillis += 100L;
