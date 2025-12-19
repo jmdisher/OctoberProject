@@ -400,7 +400,7 @@ public class SpeculativeProjection
 			, speculativeModificationsForNotification
 			, columnHeightMaps
 		);
-		_notifyEntityChanges(_shadowState.getThisEntity(), changedLocalEntity, summary.partialEntitiesChanged(), summary.passiveEntitiesChanged());
+		_notifyEntityChanges(changedLocalEntity, summary.partialEntitiesChanged(), summary.passiveEntitiesChanged());
 		
 		// Notify the listeners of what was removed.
 		for (Integer id : removedEntities)
@@ -462,7 +462,7 @@ public class SpeculativeProjection
 					, modifiedBlocks
 					, lightOpt
 			);
-			_notifyEntityChanges(_shadowState.getThisEntity(), changedLocalEntity, Set.of(), Set.of());
+			_notifyEntityChanges(changedLocalEntity, Set.of(), Set.of());
 		}
 		else
 		{
@@ -475,15 +475,14 @@ public class SpeculativeProjection
 	}
 
 
-	private void _notifyEntityChanges(Entity authoritativeLocalEntity
-			, Entity updatedLocalEntity
+	private void _notifyEntityChanges(Entity updatedLocalEntity
 			, Set<Integer> otherEntityIds
 			, Set<Integer> changedPassiveIds
 	)
 	{
 		if (null != updatedLocalEntity)
 		{
-			_listener.thisEntityDidChange(authoritativeLocalEntity, updatedLocalEntity);
+			_listener.thisEntityDidChange(updatedLocalEntity);
 		}
 		for (Integer entityId : otherEntityIds)
 		{

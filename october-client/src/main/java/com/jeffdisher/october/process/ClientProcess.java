@@ -621,9 +621,9 @@ public class ClientProcess
 			_listener.thisEntityDidLoad(authoritativeEntity);
 		}
 		@Override
-		public void thisEntityDidChange(Entity authoritativeEntity, Entity projectedEntity)
+		public void thisEntityDidChange(Entity projectedEntity)
 		{
-			_listener.thisEntityDidChange(authoritativeEntity, projectedEntity);
+			_listener.thisEntityDidChange(projectedEntity);
 		}
 		@Override
 		public void otherEntityDidLoad(PartialEntity entity)
@@ -761,10 +761,9 @@ public class ClientProcess
 		 * Called when the client's entity has changed (either due to server-originating changes or local changes).
 		 * Called very frequently.
 		 * 
-		 * @param authoritativeEntity The entity state from the server.
 		 * @param projectedEntity The client's local state (local changes applied to server data).
 		 */
-		void thisEntityDidChange(Entity authoritativeEntity, Entity projectedEntity);
+		void thisEntityDidChange(Entity projectedEntity);
 		
 		/**
 		 * Called when another entity is loaded for the first time.

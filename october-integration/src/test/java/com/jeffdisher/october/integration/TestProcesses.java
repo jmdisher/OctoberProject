@@ -600,7 +600,7 @@ public class TestProcesses
 			_thisEntity = authoritativeEntity;
 		}
 		@Override
-		public void thisEntityDidChange(Entity authoritativeEntity, Entity projectedEntity)
+		public void thisEntityDidChange(Entity projectedEntity)
 		{
 			Assert.assertNotNull(_thisEntity);
 			_thisEntity = projectedEntity;

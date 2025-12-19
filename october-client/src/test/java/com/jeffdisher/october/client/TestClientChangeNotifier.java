@@ -240,7 +240,7 @@ public class TestClientChangeNotifier
 			throw new AssertionError("Not in test");
 		}
 		@Override
-		public void thisEntityDidChange(Entity authoritativeEntity, Entity projectedEntity)
+		public void thisEntityDidChange(Entity projectedEntity)
 		{
 			throw new AssertionError("Not in test");
 		}

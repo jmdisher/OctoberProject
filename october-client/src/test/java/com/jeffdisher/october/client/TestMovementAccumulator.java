@@ -1296,7 +1296,7 @@ public class TestMovementAccumulator
 		Assert.assertTrue(action.applyChange(context, mutable));
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
-		listener.thisEntityDidChange(entity, entity);
+		listener.thisEntityDidChange(entity);
 		return entity;
 	}
 
@@ -1318,7 +1318,7 @@ public class TestMovementAccumulator
 		Assert.assertTrue(action.applyChange(context, mutable));
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
-		listener.thisEntityDidChange(entity, entity);
+		listener.thisEntityDidChange(entity);
 		CuboidData lazyMutable = null;
 		Set<BlockAddress> changedBlocks = new HashSet<>();
 		for (IMutationBlock mutation : mutations)
@@ -1442,7 +1442,7 @@ public class TestMovementAccumulator
 			this.thisEntity = authoritativeEntity;
 		}
 		@Override
-		public void thisEntityDidChange(Entity authoritativeEntity, Entity projectedEntity)
+		public void thisEntityDidChange(Entity projectedEntity)
 		{
 			int id = projectedEntity.id();
 			Assert.assertFalse(this.otherEnties.containsKey(id));

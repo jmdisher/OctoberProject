@@ -187,6 +187,12 @@ public class ClientRunner
 				_callsFromNetworkToApply.enqueue((long ignored) -> {
 					_network.sendChange(optionalOutput, localCommit);
 				});
+				// This will have caused a notification that the entity changed, thus triggering internal local accumulation.
+			}
+			else
+			{
+				// If something went wrong, discard our accumulation.
+				_accumulator.clearAccumulation();
 			}
 		}
 		_accumulator.applyLocalAccumulation();
@@ -343,7 +349,6 @@ public class ClientRunner
 				if (null != thisEntity)
 				{
 					_projection.setThisEntity(thisEntity);
-					_accumulator.setThisEntity(thisEntity);
 				}
 				_projection.applyChangesForServerTick(tickNumber
 						, addedEntities
@@ -433,17 +438,15 @@ public class ClientRunner
 			_accumulator.setThisEntity(authoritativeEntity);
 		}
 		@Override
-		public void thisEntityDidChange(Entity authoritativeEntity, Entity projectedEntity)
+		public void thisEntityDidChange(Entity projectedEntity)
 		{
 			// We might want to overrule this projected entity with one in the accumulator, if it is there (since this would otherwise revert our state).
-			Entity accumulatorEntity = _accumulator.getLocalAccumulatedEntity();
-			Entity ownerEntity = (null != accumulatorEntity)
-				? accumulatorEntity
-				: projectedEntity
-			;
-			// We only use the projected entity in this class since the authoritative is just for reporting stable numbers.
-			_projectionListener.thisEntityDidChange(authoritativeEntity, ownerEntity);
 			_accumulator.setThisEntity(projectedEntity);
+			boolean didNotify = _accumulator.applyLocalAccumulation();
+			if (!didNotify)
+			{
+				_projectionListener.thisEntityDidChange(projectedEntity);
+			}
 		}
 		@Override
 		public void otherEntityDidLoad(PartialEntity entity)

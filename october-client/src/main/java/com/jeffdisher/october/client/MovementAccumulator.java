@@ -255,8 +255,10 @@ public class MovementAccumulator
 	 * Called after any changes for this same time interval have been made and AFTER any returned action has been
 	 * applied to the SpeculativeProjection.
 	 * This method will apply any pending changes locally, updating the listener.
+	 * 
+	 * @return Returns whether or no a change was observed in the local accumulation and notified.
 	 */
-	public void applyLocalAccumulation()
+	public boolean applyLocalAccumulation()
 	{
 		_lastNotifiedEntity = _getLatestLocalEntity(_lastSampleMillis);
 		if (_thisEntity == _lastNotifiedEntity)
@@ -265,8 +267,9 @@ public class MovementAccumulator
 		}
 		else
 		{
-			_listener.thisEntityDidChange(_lastNotifiedEntity, _lastNotifiedEntity);
+			_listener.thisEntityDidChange(_lastNotifiedEntity);
 		}
+		return (null != _lastNotifiedEntity);
 	}
 
 	/**

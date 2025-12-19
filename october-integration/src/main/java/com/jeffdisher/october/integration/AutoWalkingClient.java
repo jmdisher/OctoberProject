@@ -237,7 +237,7 @@ public class AutoWalkingClient
 		{
 		}
 		@Override
-		public void thisEntityDidChange(Entity authoritativeEntity, Entity projectedEntity)
+		public void thisEntityDidChange(Entity projectedEntity)
 		{
 			this.thisEntity = projectedEntity;
 		}
