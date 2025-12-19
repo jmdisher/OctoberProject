@@ -183,10 +183,7 @@ public class ClientRunner
 			long localCommit = _projection.applyLocalChange(optionalOutput, currentTimeMillis);
 			if (localCommit > 0L)
 			{
-				// This was applied locally so package it up to send to the server.  Currently, we will only flush network calls when we receive a new tick (but this will likely change).
-				_callsFromNetworkToApply.enqueue((long ignored) -> {
-					_network.sendChange(optionalOutput, localCommit);
-				});
+				_network.sendChange(optionalOutput, localCommit);
 				// This will have caused a notification that the entity changed, thus triggering internal local accumulation.
 			}
 			else

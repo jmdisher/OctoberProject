@@ -10,6 +10,7 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.types.BodyPart;
+import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -154,5 +155,30 @@ public class TestEntityUpdatePerField
 		Assert.assertEquals(second.spawnLocation(), output.spawnLocation());
 		Assert.assertEquals(second.ephemeralShared().localCraftOperation(), output.ephemeralShared().localCraftOperation());
 		Assert.assertEquals(second.ephemeralShared().chargeMillis(), output.ephemeralShared().chargeMillis());
+	}
+
+	@Test
+	public void completeCraft() throws Throwable
+	{
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		Craft craft = ENV.crafting.getCraftById("op.stone_to_stone_brick");
+		mutable.newLocalCraftOperation = new CraftOperation(craft, craft.millisPerCraft - 50L);
+		Entity first = mutable.freeze();
+		mutable.newLocalCraftOperation = null;
+		Entity second = mutable.freeze();
+		EntityUpdatePerField update = EntityUpdatePerField.update(first, second);
+		
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		update.serializeToNetworkBuffer(buffer);
+		Assert.assertEquals(12, buffer.position());
+		buffer.flip();
+		EntityUpdatePerField read = EntityUpdatePerField.deserializeFromNetworkBuffer(buffer);
+		
+		MutableEntity baseline = MutableEntity.existing(first);
+		read.applyToEntity(baseline);
+		Entity output = baseline.freeze();
+		
+		Assert.assertEquals(second.location(), output.location());
+		Assert.assertNull(output.ephemeralShared().localCraftOperation());
 	}
 }

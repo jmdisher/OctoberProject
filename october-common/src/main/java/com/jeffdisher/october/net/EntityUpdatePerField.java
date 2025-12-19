@@ -68,8 +68,8 @@ public class EntityUpdatePerField
 			: null
 		;
 		
-		CraftOperation localCraftOperation = (oldEntity.ephemeralShared().localCraftOperation() != newEntity.ephemeralShared().localCraftOperation())
-			? newEntity.ephemeralShared().localCraftOperation()
+		CraftOperation[] localCraftOperation = (oldEntity.ephemeralShared().localCraftOperation() != newEntity.ephemeralShared().localCraftOperation())
+			? new CraftOperation[] { newEntity.ephemeralShared().localCraftOperation() }
 			: null
 		;
 		Integer chargeMillis = (oldEntity.ephemeralShared().chargeMillis() != newEntity.ephemeralShared().chargeMillis())
@@ -223,10 +223,10 @@ public class EntityUpdatePerField
 		}
 		
 		bits <<= 1;
-		CraftOperation localCraftOperation = null;
+		CraftOperation[] localCraftOperation = null;
 		if (0x0 != (0x8000 & bits))
 		{
-			localCraftOperation = CodecHelpers.readCraftOperation(buffer);
+			localCraftOperation = new CraftOperation[] { CodecHelpers.readCraftOperation(buffer) };
 		}
 		
 		bits <<= 1;
@@ -274,7 +274,7 @@ public class EntityUpdatePerField
 	private final Byte _breath;
 	private final EntityLocation _spawnLocation;
 
-	private final CraftOperation _localCraftOperation;
+	private final CraftOperation[] _localCraftOperation;
 	private final Integer _chargeMillis;
 
 	private EntityUpdatePerField(byte yaw
@@ -292,7 +292,7 @@ public class EntityUpdatePerField
 		, Byte breath
 		, EntityLocation spawnLocation
 		
-		, CraftOperation localCraftOperation
+		, CraftOperation[] localCraftOperation
 		, Integer chargeMillis
 	)
 	{
@@ -372,7 +372,7 @@ public class EntityUpdatePerField
 		
 		if (null != _localCraftOperation)
 		{
-			newEntity.newLocalCraftOperation = _localCraftOperation;
+			newEntity.newLocalCraftOperation = _localCraftOperation[0];
 		}
 		if (null != _chargeMillis)
 		{
@@ -536,7 +536,7 @@ public class EntityUpdatePerField
 		bits <<= 1;
 		if (0x0 != (0x8000 & bits))
 		{
-			CodecHelpers.writeCraftOperation(buffer, _localCraftOperation);
+			CodecHelpers.writeCraftOperation(buffer, _localCraftOperation[0]);
 		}
 		
 		bits <<= 1;

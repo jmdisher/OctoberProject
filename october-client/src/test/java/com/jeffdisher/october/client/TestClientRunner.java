@@ -35,6 +35,8 @@ import com.jeffdisher.october.subactions.MutationEntityPushItems;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.Craft;
+import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -757,6 +759,63 @@ public class TestClientRunner
 		// Make sure that we have touched down.
 		Assert.assertEquals(0.0f, projection.thisEntity.location().z(), 0.01f);
 		Assert.assertEquals(0.0f, projection.thisEntity.velocity().z(), 0.01f);
+	}
+
+	@Test
+	public void finishCraft() throws Throwable
+	{
+		// Show that we can see a crafting operation finish, consistently.
+		TestAdapter network = new TestAdapter();
+		TestProjection projection = new TestProjection();
+		ClientListener clientListener = new ClientListener();
+		TimeRunnerList runnerList = new TimeRunnerList();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener, runnerList);
+		
+		// Connect them and send a default entity and basic cuboid.
+		int clientId = 1;
+		long currentTimeMillis = 100L;
+		long tick = 1L;
+		long serverCommit = 0L;
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		runnerList.runFullQueue(currentTimeMillis);
+		currentTimeMillis += 100L;
+		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
+		Craft craft = ENV.crafting.getCraftById("op.log_to_planks");
+		MutableEntity mutable = MutableEntity.createForTest(clientId);
+		mutable.newInventory.addAllItems(LOG_ITEM, 2);
+		mutable.newLocalCraftOperation = new CraftOperation(craft, craft.millisPerCraft - 50L);
+		Entity after = mutable.freeze();
+		network.client.receivedFullEntity(after);
+		// We will stand on the ground, in air, but there will be a wall directly to the West.
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
+		network.client.receivedEndOfTick(tick, serverCommit);
+		runnerList.runFullQueue(currentTimeMillis);
+		currentTimeMillis += 100L;
+		
+		// Jump and watch how we move over time.
+		EntityChangeCraft doCraft = new EntityChangeCraft(craft);
+		runner.commonApplyEntityAction(doCraft, currentTimeMillis);
+		currentTimeMillis += 100L;
+		runner.standStill(currentTimeMillis);
+		Assert.assertNotNull(network.toSend);
+		Assert.assertEquals(serverCommit + 1L, network.commitLevel);
+		tick += 1L;
+		serverCommit += 1L;
+		
+		// We should see that this has completed.
+		Assert.assertNull(projection.thisEntity.ephemeralShared().localCraftOperation());
+		Assert.assertEquals(1, projection.thisEntity.inventory().getCount(LOG_ITEM));
+		Assert.assertEquals(2, projection.thisEntity.inventory().getCount(PLANK_ITEM));
+		
+		// Apply the change from the server and make sure that this is still showing as completed.
+		EntityUpdatePerField update = EntityUpdatePerField.update(after, projection.thisEntity);
+		network.client.receivedEntityUpdate(clientId, update);
+		network.client.receivedEndOfTick(tick, serverCommit);
+		runnerList.runFullQueue(currentTimeMillis);
+		Assert.assertNull(projection.thisEntity.ephemeralShared().localCraftOperation());
+		Assert.assertEquals(1, projection.thisEntity.inventory().getCount(LOG_ITEM));
+		Assert.assertEquals(2, projection.thisEntity.inventory().getCount(PLANK_ITEM));
 	}
 
 
