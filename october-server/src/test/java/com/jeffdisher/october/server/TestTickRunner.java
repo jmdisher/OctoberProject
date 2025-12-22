@@ -510,7 +510,7 @@ public class TestTickRunner
 		// We should also see the durability loss on our tool (one for each committed action).
 		int updatedDurability = PropertyHelpers.getDurability(entityInventory.getNonStackableForKey(entity.hotbarItems()[entity.hotbarIndex()]));
 		int toolUses = (int)nextCommit - 1;
-		Assert.assertEquals(toolUses, (startDurability - updatedDurability));
+		Assert.assertEquals(toolUses * (int)MILLIS_PER_TICK, (startDurability - updatedDurability));
 		
 		runner.shutdown();
 	}

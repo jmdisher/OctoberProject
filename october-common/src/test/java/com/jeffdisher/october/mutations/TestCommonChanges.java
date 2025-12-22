@@ -1073,7 +1073,7 @@ public class TestCommonChanges
 		MutableBlockProxy proxy = new MutableBlockProxy(targetStone, cuboid);
 		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(startDurability - 1, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(1)));
+		Assert.assertEquals(startDurability - (int)holder.context.millisPerTick, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(1)));
 		Assert.assertEquals(10 * duration, cuboid.getData15(AspectRegistry.DAMAGE, targetStone.getBlockAddress()));
 		
 		// Now, do the same to the plank and observe the difference.
@@ -1085,7 +1085,7 @@ public class TestCommonChanges
 		proxy = new MutableBlockProxy(targetLog, cuboid);
 		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(startDurability - 2, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(1)));
+		Assert.assertEquals(startDurability - 2 * (int)holder.context.millisPerTick, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(1)));
 		Assert.assertEquals(duration, cuboid.getData15(AspectRegistry.DAMAGE, targetLog.getBlockAddress()));
 	}
 
@@ -2694,7 +2694,7 @@ public class TestCommonChanges
 		MutableBlockProxy proxy = new MutableBlockProxy(targetStone, cuboid);
 		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(startDurability - 1, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(1)));
+		Assert.assertEquals(startDurability - (int)holder.context.millisPerTick, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(1)));
 		Assert.assertEquals((10 + 5) * duration, cuboid.getData15(AspectRegistry.DAMAGE, targetStone.getBlockAddress()));
 	}
 

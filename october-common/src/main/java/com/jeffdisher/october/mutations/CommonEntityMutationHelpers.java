@@ -1,5 +1,6 @@
 package com.jeffdisher.october.mutations;
 
+import com.jeffdisher.october.aspects.BlockMaterial;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.types.BodyPart;
@@ -87,8 +88,13 @@ public class CommonEntityMutationHelpers
 			int totalDurability = env.durability.getDurability(tool.type());
 			if (totalDurability > 0)
 			{
+				// The durability to remove is different if this is a tool (since that durability is in millis) versus a weapon (since that durability is in uses).
+				int durabilityToRemove = (BlockMaterial.NO_MATERIAL == env.tools.toolTargetMaterial(tool.type()))
+					? 1
+					: (int)context.millisPerTick
+				;
 				int randomNumberTo255 = context.randomInt.applyAsInt(256);
-				NonStackableItem updated = PropertyHelpers.reduceDurabilityOrBreak(tool, 1, randomNumberTo255);
+				NonStackableItem updated = PropertyHelpers.reduceDurabilityOrBreak(tool, durabilityToRemove, randomNumberTo255);
 				if (null != updated)
 				{
 					// Write this back.

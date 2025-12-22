@@ -3,14 +3,14 @@
 # 
 # The given number is non-negative and represents the durability of the item (0 means unbreakable).  Durability is
 # defined by the way the item is used, being different for things like tools, weapons, armour, etc:
-# -tools:  The number of "uses" of the tool (one use per tick).
-# -weapons:  The amount of "uses" of the weapon (one use per tick).
+# -tools:  Milliseconds of sustained use (converted into ticks, internally).
+# -weapons:  The amount of "uses" of the weapon (one use per attack).
 # -armour:  The amount of damage the piece absorbs instead of the target player.
 # Note that every item listed here is non-stackable (which is why 0 is sometimes used).
 
-op.iron_pickaxe	2000
-op.iron_shovel	2000
-op.iron_axe	2000
+op.iron_pickaxe	100000
+op.iron_shovel	100000
+op.iron_axe	100000
 op.iron_sword	2000
 op.bucket_empty	0
 op.bucket_water	0
@@ -19,23 +19,23 @@ op.iron_chestplate	10000
 op.iron_greaves	10000
 op.iron_boots	10000
 op.club	20
-op.stone_knife	30
-op.stone_hatchet	200
-op.wooden_chisel	200
-op.digging_stick	100
+op.stone_knife	1500
+op.stone_hatchet	10000
+op.wooden_chisel	10000
+op.digging_stick	5000
 op.bucket_lava	0
 op.stone_hoe	50
 op.portal_orb	0
-op.copper_pickaxe	1000
-op.copper_shovel	1000
-op.copper_axe	1000
+op.copper_pickaxe	50000
+op.copper_shovel	50000
+op.copper_axe	50000
 op.copper_sword	1000
 op.copper_helmet	5000
 op.copper_chestplate	5000
 op.copper_greaves	5000
 op.copper_boots	5000
-op.diamond_pickaxe	4000
-op.diamond_shovel	4000
-op.diamond_axe	4000
+op.diamond_pickaxe	200000
+op.diamond_shovel	200000
+op.diamond_axe	200000
 op.diamond_sword	4000
 op.bow	500
