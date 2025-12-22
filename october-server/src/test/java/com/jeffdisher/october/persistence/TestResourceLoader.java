@@ -26,7 +26,6 @@ import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
@@ -41,10 +40,8 @@ import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
-import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
-import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV1;
 import com.jeffdisher.october.subactions.EntityChangeAttackEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -739,66 +736,18 @@ public class TestResourceLoader
 		loader.shutdown();
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void writeAndReadCuboidV3() throws Throwable
 	{
 		File worldDirectory = DIRECTORY.newFolder();
 		CuboidAddress address = CuboidAddress.fromInt(3, -5, 0);
 		BlockAddress periodicBlock = BlockAddress.fromInt(1, 2, 3);
-		AbsoluteLocation periodicLocation = address.getBase().relativeForBlock(periodicBlock);
-		
-		// This is a test of our ability to read the V3 cuboid data, showing the different mutation types.  We manually write a file and then attempt to read it, verifying the result is sensible.
-		OctreeShort blockData = OctreeShort.create(STONE.item().number());
-		OctreeObject<Inventory> inventoryData = OctreeObject.create();
-		OctreeShort damageData = OctreeShort.create((short) 0);
-		OctreeObject<CraftOperation> craftingData = OctreeObject.create();
-		OctreeObject<FuelState> fuelledData = OctreeObject.create();
-		OctreeInflatedByte lightData = OctreeInflatedByte.empty();
-		OctreeInflatedByte logicData = OctreeInflatedByte.empty();
-		
-		// We will save a normal store mutation (immediate) and a periodic mutation (delayed) and verify that both are read correctly.
-		MutationBlockStoreItems store = new MutationBlockStoreItems(address.getBase(), new Items(STONE_ITEM, 2), null, Inventory.INVENTORY_ASPECT_INVENTORY);
-		MutationBlockPeriodic periodic = new MutationBlockPeriodic(periodicLocation);
-		
-		// Serialize to buffer.
-		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		buffer.putInt(ResourceLoader.VERSION_CUBOID_V3);
-		
-		// We want to manually write the cuboid in V3 shape.
-		Assert.assertNull(blockData.serializeResumable(null, buffer, (IObjectCodec<Short>) AspectRegistry.ALL_ASPECTS[0].codec()));
-		Assert.assertNull(inventoryData.serializeResumable(null, buffer, (IObjectCodec<Inventory>) AspectRegistry.ALL_ASPECTS[1].codec()));
-		Assert.assertNull(damageData.serializeResumable(null, buffer, (IObjectCodec<Short>) AspectRegistry.ALL_ASPECTS[2].codec()));
-		Assert.assertNull(craftingData.serializeResumable(null, buffer, (IObjectCodec<CraftOperation>) AspectRegistry.ALL_ASPECTS[3].codec()));
-		Assert.assertNull(fuelledData.serializeResumable(null, buffer, (IObjectCodec<FuelState>) AspectRegistry.ALL_ASPECTS[4].codec()));
-		Assert.assertNull(lightData.serializeResumable(null, buffer, (IObjectCodec<Byte>) AspectRegistry.ALL_ASPECTS[5].codec()));
-		Assert.assertNull(logicData.serializeResumable(null, buffer, (IObjectCodec<Byte>) AspectRegistry.ALL_ASPECTS[6].codec()));
-		
-		// 0 creatures.
-		buffer.putInt(0);
-		
-		// Write the scheduled and periodic mutations.
 		long periodicDelay = 1000L;
-		buffer.putInt(2);
-		buffer.putLong(0L);
-		MutationBlockCodec.serializeToBuffer(buffer, store);
-		buffer.putLong(periodicDelay);
-		// Note that we no longer support serialization of periodic mutations so we inline that logic here.
-		buffer.put((byte) periodic.getType().ordinal());
-		CodecHelpers.writeAbsoluteLocation(buffer, periodic.getAbsoluteLocation());
-		buffer.flip();
 		
-		// Write the file.
+		// This was captured from an earlier version of the code.
+		byte[] rawCapture = new byte[] {0, 0, 0, 3, -128, 1, 0, 0, 0, 0, -128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 96, -1, -1, -1, 96, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, -1, -1, 1, 0, 0, 0, 0, 0, 0, 3, -24, 12, 0, 0, 0, 97, -1, -1, -1, 98, 0, 0, 0, 3};
 		String fileName = "cuboid_" + address.x() + "_" + address.y() + "_" + address.z() + ".cuboid";
-		try (
-				RandomAccessFile aFile = new RandomAccessFile(new File(worldDirectory, fileName), "rw");
-				FileChannel outChannel = aFile.getChannel();
-		)
-		{
-			int written = outChannel.write(buffer);
-			outChannel.truncate((long)written);
-		}
-		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
+		_storePerSerialized(worldDirectory, fileName, rawCapture);
 		
 		// Now, read the data and verify that it is correct.
 		WorldConfig config = new WorldConfig();
@@ -833,77 +782,27 @@ public class TestResourceLoader
 	{
 		File worldDirectory = DIRECTORY.newFolder();
 		CuboidAddress address = CuboidAddress.fromInt(3, -5, 0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		
 		// We want to show switches and logic being disabled after load so enable them, now.
 		// (we can build this using current helpers and just save it out)
-		short switchOnNumber = ENV.items.getItemById("DEPRECATED.op.switch_on").number();
 		short switchOffNumber = ENV.items.getItemById("op.switch").number();
 		short wireNumber = ENV.items.getItemById("op.logic_wire").number();
-		short lampOnNumber = ENV.items.getItemById("DEPRECATED.op.lamp_on").number();
 		short lampOffNumber = ENV.items.getItemById("op.lamp").number();
 		AbsoluteLocation switchOnLocation = address.getBase().getRelative(2, 3, 4);
 		AbsoluteLocation wireLocation = switchOnLocation.getRelative(1, 0, 0);
 		AbsoluteLocation lampOnLocation = wireLocation.getRelative(1, 0, 0);
-		cuboid.setData15(AspectRegistry.BLOCK, switchOnLocation.getBlockAddress(), switchOnNumber);
-		cuboid.setData7(AspectRegistry.LOGIC, switchOnLocation.getBlockAddress(), LogicAspect.MAX_LEVEL);
-		cuboid.setData15(AspectRegistry.BLOCK, wireLocation.getBlockAddress(), wireNumber);
-		cuboid.setData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress(), (byte)(LogicAspect.MAX_LEVEL - 1));
-		cuboid.setData15(AspectRegistry.BLOCK, lampOnLocation.getBlockAddress(), lampOnNumber);
-		
-		// We also want to show how doors work in this change (since they were also changed due to the "active" flag).
-		short dirtNumber = ENV.items.getItemById("op.dirt").number();
-		short doorOpenNumber = ENV.items.getItemById("DEPRECATED.op.door_open").number();
 		short doorClosedNumber = ENV.items.getItemById("op.gate").number();
-		short multiDoorOpenNumber = ENV.items.getItemById("DEPRECATED.op.double_door_open_base").number();
 		short multiDoorClosedNumber = ENV.items.getItemById("op.double_door_base").number();
 		AbsoluteLocation doorLocation = switchOnLocation.getRelative(0, 2, 0);
 		AbsoluteLocation multiDoorLocation = doorLocation.getRelative(0, 3, 0);
-		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getRelative(0, 0, -1).getBlockAddress(), dirtNumber);
-		cuboid.setData15(AspectRegistry.BLOCK, multiDoorLocation.getRelative(0, 0, -1).getBlockAddress(), dirtNumber);
-		cuboid.setData15(AspectRegistry.BLOCK, multiDoorLocation.getRelative(1, 0, -1).getBlockAddress(), dirtNumber);
-		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress(), doorOpenNumber);
-		cuboid.setData15(AspectRegistry.BLOCK, multiDoorLocation.getBlockAddress(), multiDoorOpenNumber);
-		cuboid.setData7(AspectRegistry.ORIENTATION, multiDoorLocation.getBlockAddress(), OrientationAspect.directionToByte(OrientationAspect.Direction.NORTH));
-		cuboid.setData15(AspectRegistry.BLOCK, multiDoorLocation.getRelative(0, 0, 1).getBlockAddress(), multiDoorOpenNumber);
-		cuboid.setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, multiDoorLocation.getRelative(0, 0, 1).getBlockAddress(), multiDoorLocation);
-		cuboid.setData15(AspectRegistry.BLOCK, multiDoorLocation.getRelative(1, 0, 0).getBlockAddress(), multiDoorOpenNumber);
-		cuboid.setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, multiDoorLocation.getRelative(1, 0, 0).getBlockAddress(), multiDoorLocation);
-		cuboid.setData15(AspectRegistry.BLOCK, multiDoorLocation.getRelative(1, 0, 1).getBlockAddress(), multiDoorOpenNumber);
-		cuboid.setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, multiDoorLocation.getRelative(1, 0, 1).getBlockAddress(), multiDoorLocation);
-		
-		// Another interesting case is hoppers.
 		short hopperDownNumber = ENV.items.getItemById("op.hopper").number();
-		short hopperNorthNumber = ENV.items.getItemById("DEPRECATED.op.hopper_north").number();
 		AbsoluteLocation hopperDownLocation = address.getBase().getRelative(10, 12, 21);
 		AbsoluteLocation hopperNorthLocation = hopperDownLocation.getRelative(0, -1, 0);
-		cuboid.setData15(AspectRegistry.BLOCK, hopperDownLocation.getBlockAddress(), hopperDownNumber);
-		cuboid.setData15(AspectRegistry.BLOCK, hopperNorthLocation.getBlockAddress(), hopperNorthNumber);
 		
-		// We can save this using the normal helper and then change the version number to see it updated on load.
-		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		buffer.putInt(ResourceLoader.VERSION_CUBOID_V5);
-		Object state = cuboid.serializeResumable(null, buffer);
-		Assert.assertNull(state);
-		// (creature count)
-		buffer.putInt(0);
-		// (suspended mutations)
-		buffer.putInt(0);
-		// (periodic mutations)
-		buffer.putInt(0);
-		buffer.flip();
-		
-		// Write the file.
+		// This was captured from an earlier version of the code.
+		byte[] rawCapture = new byte[] {0, 0, 0, 5, 0, -29, 0, 92, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, -1, -1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 46, 0, 0, 0, 0, 0, 0, 0, 49, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 39, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 73, 0, 73, 0, 0, 0, 0, 0, 73, 0, 73, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 41, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 62, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 1, 3, 0, 0, 15, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 13, 4, 1, 0, 0, 0, 98, -1, -1, -1, 104, 0, 0, 0, 4, 9, 5, 1, 0, 0, 0, 98, -1, -1, -1, 104, 0, 0, 0, 4, 13, 5, 1, 0, 0, 0, 98, -1, -1, -1, 104, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 		String fileName = "cuboid_" + address.x() + "_" + address.y() + "_" + address.z() + ".cuboid";
-		try (
-				RandomAccessFile aFile = new RandomAccessFile(new File(worldDirectory, fileName), "rw");
-				FileChannel outChannel = aFile.getChannel();
-		)
-		{
-			int written = outChannel.write(buffer);
-			outChannel.truncate((long)written);
-		}
-		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
+		_storePerSerialized(worldDirectory, fileName, rawCapture);
 		
 		// Now, read the data and verify that it is correct.
 		WorldConfig config = new WorldConfig();
@@ -925,6 +824,7 @@ public class TestResourceLoader
 		Assert.assertEquals(wireNumber, found.getData15(AspectRegistry.BLOCK, wireLocation.getBlockAddress()));
 		Assert.assertEquals(0, found.getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
 		Assert.assertEquals(lampOffNumber, found.getData15(AspectRegistry.BLOCK, lampOnLocation.getBlockAddress()));
+		Assert.assertEquals(1, found.getData15(AspectRegistry.DAMAGE, lampOnLocation.getBlockAddress()));
 		
 		Assert.assertEquals(doorClosedNumber, found.getData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress()));
 		Assert.assertEquals(multiDoorClosedNumber, found.getData15(AspectRegistry.BLOCK, multiDoorLocation.getBlockAddress()));
