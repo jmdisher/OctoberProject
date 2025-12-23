@@ -1,10 +1,15 @@
 package com.jeffdisher.october.aspects;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
+import com.jeffdisher.october.config.TabListReader;
+import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.types.Block;
-import com.jeffdisher.october.utils.Assert;
+import com.jeffdisher.october.types.Item;
 
 
 /**
@@ -12,21 +17,49 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class SpecialSlotAspect
 {
-	public static final String ID_PEDESTAL = "op.pedestal";
-	public static final String ID_PORTAL_KEYSTONE = "op.portal_keystone";
-	public static final String ID_ENCHANTING_TABLE = "op.enchanting_table";
-
-	public static SpecialSlotAspect load(ItemRegistry items, BlockAspect blocks)
+	public static SpecialSlotAspect load(ItemRegistry items
+		, BlockAspect blocks
+		, InputStream specialSlotStream
+	) throws IOException, TabListException
 	{
-		// TODO:  Convert this logic and constant into some declarative data file.
-		Block pedestal = blocks.fromItem(items.getItemById(ID_PEDESTAL));
-		Assert.assertTrue(null != pedestal);
-		Block keystone = blocks.fromItem(items.getItemById(ID_PORTAL_KEYSTONE));
-		Assert.assertTrue(null != keystone);
-		Block enchantingTable = blocks.fromItem(items.getItemById(ID_ENCHANTING_TABLE));
-		Assert.assertTrue(null != enchantingTable);
+		Set<Block> hasSpecial = new HashSet<>();
+		TabListReader.IParseCallbacks callbacks = new TabListReader.IParseCallbacks() {
+			@Override
+			public void startNewRecord(String name, String[] parameters) throws TabListException
+			{
+				if (0 != parameters.length)
+				{
+					throw new TabListReader.TabListException("No parameters expected for: \"" + name + "\"");
+				}
+				
+				Item item = items.getItemById(name);
+				if (null == item)
+				{
+					throw new TabListReader.TabListException("Not a valid item: \"" + name + "\"");
+				}
+				Block block = blocks.fromItem(item);
+				if (null == block)
+				{
+					throw new TabListReader.TabListException("Not a block: \"" + name + "\"");
+				}
+				boolean didAdd = hasSpecial.add(block);
+				if (!didAdd)
+				{
+					throw new TabListReader.TabListException("Duplicate block: \"" + name + "\"");
+				}
+			}
+			@Override
+			public void endRecord() throws TabListException
+			{
+			}
+			@Override
+			public void processSubRecord(String name, String[] parameters) throws TabListException
+			{
+				throw new TabListReader.TabListException("No sub-records expected");
+			}
+		};
+		TabListReader.readEntireFile(callbacks, specialSlotStream);
 		
-		Set<Block> hasSpecial = Set.of(pedestal, keystone, enchantingTable);
 		return new SpecialSlotAspect(hasSpecial);
 	}
 

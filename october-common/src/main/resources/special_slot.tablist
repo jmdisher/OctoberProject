@@ -1,0 +1,9 @@
+# Entries here have the form:
+# ID
+#
+# This is just a list of block types which have a special slot.  There is no other information required at this time.
+# The ID must be a reference to the item registry.
+
+op.pedestal
+op.portal_keystone
+op.enchanting_table

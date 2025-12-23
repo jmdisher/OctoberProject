@@ -113,7 +113,10 @@ public class Environment
 		this.creatures = CreatureRegistry.loadRegistry(this.items, loader.getResourceAsStream("creature_registry.tablist"));
 		this.multiBlocks = new MultiBlockRegistry(this.items, this.blocks);
 		this.groundCover = new GroundCoverRegistry(this.items, this.blocks);
-		this.specialSlot = SpecialSlotAspect.load(this.items, this.blocks);
+		this.specialSlot = SpecialSlotAspect.load(this.items
+			, this.blocks
+			, loader.getResourceAsStream("special_slot.tablist")
+		);
 		this.enchantments = EnchantmentRegistry.load(this.items, this.blocks, this.durability, this.tools
 			, loader.getResourceAsStream("enchanting.tablist")
 			, loader.getResourceAsStream("infusions.tablist")
