@@ -13,7 +13,6 @@ import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockCraft;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
-import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalRepair;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
@@ -125,25 +124,6 @@ public class TestMutationBlockCodec
 			, buffer
 		));
 		Assert.assertTrue(read instanceof MutationBlockStoreItems);
-		Assert.assertEquals(0, buffer.remaining());
-	}
-
-	@Test
-	public void incrementalBreak() throws Throwable
-	{
-		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
-		short damage = 10;
-		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(location, damage, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
-		
-		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		MutationBlockCodec.serializeToBuffer(buffer, mutation);
-		buffer.flip();
-		IMutationBlock read = MutationBlockCodec.parseAndSeekContext(new DeserializationContext(ENV
-			, buffer
-			, 0L
-			, false
-		));
-		Assert.assertTrue(read instanceof MutationBlockIncrementalBreak);
 		Assert.assertEquals(0, buffer.remaining());
 	}
 

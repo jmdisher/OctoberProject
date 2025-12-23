@@ -11,6 +11,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -103,9 +104,8 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		CodecHelpers.writeAbsoluteLocation(buffer, _location);
-		buffer.putShort(_damageToApply);
-		buffer.putInt(_optionalEntityForStorage);
+		// These should never be serialized since they are never written to disk and network doesn't serialize block mutations.
+		throw Assert.unreachable();
 	}
 
 	@Override
