@@ -87,27 +87,29 @@ public class EntityChangePlaceMultiBlock implements IEntitySubAction<IMutablePla
 		if (isLocationClose && isMultiBlock)
 		{
 			List<AbsoluteLocation> extensions = env.multiBlocks.getExtensions(blockType, _targetBlock, _orientation);
-			boolean canBeReplaced = _canBlocksBeReplaced(env, context, _targetBlock, extensions);
 			boolean isSafeLocation = _canPlace(env, newEntity, _targetBlock, extensions, blockType);
 			
-			if (canBeReplaced && isSafeLocation)
+			if (isSafeLocation)
 			{
-				// We can now remove from the inventory and place the blocks.
-				mutableInventory.removeStackableItems(itemType, 1);
-				if (0 == mutableInventory.getCount(itemType))
-				{
-					newEntity.setSelectedKey(Entity.NO_SELECTION);
-				}
-				
 				// This means that this worked so create the mutations to place all the blocks.
-				// WARNING:  If this mutation fails, the item will have been destroyed.
+				// WARNING:  If this mutation fails in a later phase, the item will have been destroyed.
 				int entityId = newEntity.getId();
-				MultiBlockUtils.send2PhaseMultiBlock(env, context, blockType, _targetBlock, _orientation, entityId);
-				
-				// Do other state reset.
-				newEntity.setCurrentCraftingOperation(null);
-				
-				didApply = true;
+				boolean didAttempt = MultiBlockUtils.send2PhaseMultiBlock(env, context, blockType, _targetBlock, _orientation, entityId);
+				if (didAttempt)
+				{
+					// We can now remove from the inventory and place the blocks.
+					mutableInventory.removeStackableItems(itemType, 1);
+					if (0 == mutableInventory.getCount(itemType))
+					{
+						newEntity.setSelectedKey(Entity.NO_SELECTION);
+					}
+					
+					
+					// Do other state reset.
+					newEntity.setCurrentCraftingOperation(null);
+					
+					didApply = true;
+				}
 			}
 		}
 		return didApply;
@@ -139,17 +141,6 @@ public class EntityChangePlaceMultiBlock implements IEntitySubAction<IMutablePla
 		return "Place selected multi-block " + _targetBlock + " orientation " + _orientation;
 	}
 
-
-	private static boolean _canBlocksBeReplaced(Environment env, TickProcessingContext context, AbsoluteLocation root, List<AbsoluteLocation> extensions)
-	{
-		boolean canBeReplaced = env.blocks.canBeReplaced(context.previousBlockLookUp.apply(root).getBlock());
-		for (AbsoluteLocation location : extensions)
-		{
-			BlockProxy one = context.previousBlockLookUp.apply(location);
-			canBeReplaced &= (null != one) && env.blocks.canBeReplaced(one.getBlock());
-		}
-		return canBeReplaced;
-	}
 
 	private static boolean _canPlace(Environment env, IMutablePlayerEntity newEntity, AbsoluteLocation root, List<AbsoluteLocation> extensions, Block blockType)
 	{

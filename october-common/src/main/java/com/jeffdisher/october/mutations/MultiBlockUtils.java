@@ -80,30 +80,36 @@ public class MultiBlockUtils
 	 * @param rootLocation The place where the root block should be placed.
 	 * @param orientation The orientation of the multi-block.
 	 * @param entityId The ID of the entity placing the blocks (or 0 for no entity).
+	 * @return True if the block placement was attempted (false if something was in the way).
 	 */
-	public static void send2PhaseMultiBlock(Environment env, TickProcessingContext context, Block blockType, AbsoluteLocation rootLocation, OrientationAspect.Direction orientation, int entityId)
+	public static boolean send2PhaseMultiBlock(Environment env, TickProcessingContext context, Block blockType, AbsoluteLocation rootLocation, OrientationAspect.Direction orientation, int entityId)
 	{
 		List<AbsoluteLocation> extensions = env.multiBlocks.getExtensions(blockType, rootLocation, orientation);
-		MutationBlockPlaceMultiBlock phase1 = new MutationBlockPlaceMultiBlock(rootLocation, blockType, rootLocation, orientation, entityId);
-		context.mutationSink.next(phase1);
-		for (AbsoluteLocation location : extensions)
+		boolean canBeReplaced = _canBlocksBeReplaced(env, context, rootLocation, extensions);
+		if (canBeReplaced)
 		{
-			phase1 = new MutationBlockPlaceMultiBlock(location, blockType, rootLocation, orientation, entityId);
+			MutationBlockPlaceMultiBlock phase1 = new MutationBlockPlaceMultiBlock(rootLocation, blockType, rootLocation, orientation, entityId);
 			context.mutationSink.next(phase1);
-		}
-		
-		// We also need to schedule the verification mutation (since these must be placed atomically, the follow-up mutations act as a phase2).
-		// We check the millis per tick since we require a delay (that is, NOT in the client's projection).
-		if (context.millisPerTick > 0L)
-		{
-			MutationBlockPhase2Multi phase2 = new MutationBlockPhase2Multi(rootLocation, rootLocation, orientation, blockType, context.previousBlockLookUp.apply(rootLocation).getBlock());
-			context.mutationSink.future(phase2, context.millisPerTick);
 			for (AbsoluteLocation location : extensions)
 			{
-				phase2 = new MutationBlockPhase2Multi(location, rootLocation, orientation, blockType, context.previousBlockLookUp.apply(location).getBlock());
+				phase1 = new MutationBlockPlaceMultiBlock(location, blockType, rootLocation, orientation, entityId);
+				context.mutationSink.next(phase1);
+			}
+			
+			// We also need to schedule the verification mutation (since these must be placed atomically, the follow-up mutations act as a phase2).
+			// We check the millis per tick since we require a delay (that is, NOT in the client's projection).
+			if (context.millisPerTick > 0L)
+			{
+				MutationBlockPhase2Multi phase2 = new MutationBlockPhase2Multi(rootLocation, rootLocation, orientation, blockType, context.previousBlockLookUp.apply(rootLocation).getBlock());
 				context.mutationSink.future(phase2, context.millisPerTick);
+				for (AbsoluteLocation location : extensions)
+				{
+					phase2 = new MutationBlockPhase2Multi(location, rootLocation, orientation, blockType, context.previousBlockLookUp.apply(location).getBlock());
+					context.mutationSink.future(phase2, context.millisPerTick);
+				}
 			}
 		}
+		return canBeReplaced;
 	}
 
 	/**
@@ -187,6 +193,17 @@ public class MultiBlockUtils
 			mutation = factory.apply(extension);
 			context.mutationSink.next(mutation);
 		}
+	}
+
+	private static boolean _canBlocksBeReplaced(Environment env, TickProcessingContext context, AbsoluteLocation root, List<AbsoluteLocation> extensions)
+	{
+		boolean canBeReplaced = env.blocks.canBeReplaced(context.previousBlockLookUp.apply(root).getBlock());
+		for (AbsoluteLocation location : extensions)
+		{
+			BlockProxy one = context.previousBlockLookUp.apply(location);
+			canBeReplaced &= (null != one) && env.blocks.canBeReplaced(one.getBlock());
+		}
+		return canBeReplaced;
 	}
 
 
