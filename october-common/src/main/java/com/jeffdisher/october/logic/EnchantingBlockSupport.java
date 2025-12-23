@@ -8,7 +8,6 @@ import java.util.Map;
 
 import com.jeffdisher.october.aspects.EnchantmentRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.mutations.MutationBlockChargeEnchantment;
 import com.jeffdisher.october.mutations.MutationBlockCleanEnchantment;
@@ -45,11 +44,11 @@ public class EnchantingBlockSupport
 	)
 	{
 		ItemSlot target = proxy.getSpecialSlot();
-		List<Item> pedestals = _getPedestalItemTypes(context, blockLocation);
+		List<Item> pedestals = _getPedestalItemTypes(env, context, blockLocation, proxy);
 		
 		// If there is already an enchantment, make sure that it is valid.
 		EnchantingOperation operation = proxy.getEnchantingOperation();
-		if ((null != operation) && ((null == target) || !_isValidConfigurationForOperation(operation, target, pedestals)))
+		if ((null != operation) && ((null == target) || (null == pedestals) || !_isValidConfigurationForOperation(operation, target, pedestals)))
 		{
 			// We started an operation but the environment invalidated it.
 			_discardOperation(env, context, blockLocation, operation);
@@ -74,9 +73,9 @@ public class EnchantingBlockSupport
 		// Make sure that there is an enchantment operation, make sure that it is valid, make sure that it is charged to
 		// "previousChargeMillis", then advance the charge by 1 tick.
 		ItemSlot target = proxy.getSpecialSlot();
-		List<Item> pedestals = _getPedestalItemTypes(context, blockLocation);
+		List<Item> pedestals = _getPedestalItemTypes(env, context, blockLocation, proxy);
 		EnchantingOperation operation = proxy.getEnchantingOperation();
-		if ((null != operation) && ((null == target) || !_isValidConfigurationForOperation(operation, target, pedestals)))
+		if ((null != operation) && ((null == target) || (null == pedestals) || !_isValidConfigurationForOperation(operation, target, pedestals)))
 		{
 			// We started an operation but the environment invalidated it.
 			_discardOperation(env, context, blockLocation, operation);
@@ -112,14 +111,15 @@ public class EnchantingBlockSupport
 				else
 				{
 					// Charging done so request the items from pedestals.
-					MutationBlockFetchSpecialForEnchantment north = new MutationBlockFetchSpecialForEnchantment(blockLocation.getRelative(0, 2, 0), blockLocation);
-					context.mutationSink.next(north);
-					MutationBlockFetchSpecialForEnchantment south = new MutationBlockFetchSpecialForEnchantment(blockLocation.getRelative(0, -2, 0), blockLocation);
-					context.mutationSink.next(south);
-					MutationBlockFetchSpecialForEnchantment east = new MutationBlockFetchSpecialForEnchantment(blockLocation.getRelative(2, 0, 0), blockLocation);
-					context.mutationSink.next(east);
-					MutationBlockFetchSpecialForEnchantment west = new MutationBlockFetchSpecialForEnchantment(blockLocation.getRelative(-2, 0, 0), blockLocation);
-					context.mutationSink.next(west);
+					List<AbsoluteLocation> pedestalLocations = CompositeHelpers.getExtensionsIfValid(env, context, blockLocation, proxy);
+					if (null != pedestalLocations)
+					{
+						for (AbsoluteLocation loc : pedestalLocations)
+						{
+							MutationBlockFetchSpecialForEnchantment fetch = new MutationBlockFetchSpecialForEnchantment(loc, blockLocation);
+							context.mutationSink.next(fetch);
+						}
+					}
 					
 					// We also take this opportunity to schedule the clean-up.
 					// Note that this needs to arrive 3 ticks from now since tick 1 will be the fetch and tick 2 will be the receive so tick 3 will be where this should already be done.
@@ -229,7 +229,7 @@ public class EnchantingBlockSupport
 							proxy.setEnchantingOperation(null);
 							
 							// See if this could still be a valid infusion (this will update enchanting operation if one starts).
-							List<Item> pedestals = _getPedestalItemTypes(context, blockLocation);
+							List<Item> pedestals = _getPedestalItemTypes(env, context, blockLocation, proxy);
 							_tryStartNewOperation(env, context, blockLocation, proxy, target, pedestals);
 						}
 						else
@@ -285,15 +285,32 @@ public class EnchantingBlockSupport
 	}
 
 
-	private static List<Item> _getPedestalItemTypes(TickProcessingContext context, AbsoluteLocation blockLocation)
+	private static List<Item> _getPedestalItemTypes(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
 	{
 		// We need to look up the 4 pedestals around the enchanting table and see what is in their special slots.
-		List<Item> result = new ArrayList<>();
-		_addSpecialTypeToList(result, context, blockLocation.getRelative(0, 2, 0));
-		_addSpecialTypeToList(result, context, blockLocation.getRelative(0, -2, 0));
-		_addSpecialTypeToList(result, context, blockLocation.getRelative(2, 0, 0));
-		_addSpecialTypeToList(result, context, blockLocation.getRelative(-2, 0, 0));
-		return EnchantmentRegistry.getCanonicallySortedList(result);
+		List<AbsoluteLocation> pedestalLocations = CompositeHelpers.getExtensionsIfValid(env, context, location, proxy);
+		List<Item> result;
+		if (null != pedestalLocations)
+		{
+			// Fetch these and sort them.
+			List<Item> unsorted = pedestalLocations.stream().map((AbsoluteLocation one) -> {
+				// We know that we can load the proxies since CompositeHelpers decided these are valid.
+				ItemSlot slot = context.previousBlockLookUp.apply(one).getSpecialSlot();
+				Item type = null;
+				if (null != slot)
+				{
+					type = slot.getType();
+				}
+				return type;
+			}).filter((Item found) -> (null != found)).toList();
+			result = EnchantmentRegistry.getCanonicallySortedList(unsorted);
+		}
+		else
+		{
+			// This is invalid so we return null.
+			result = null;
+		}
+		return result;
 	}
 
 	private static boolean _isValidConfigurationForOperation(EnchantingOperation operation, ItemSlot target, List<Item> pedestals)
@@ -327,19 +344,6 @@ public class EnchantingBlockSupport
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, slot
 			);
-		}
-	}
-
-	private static void _addSpecialTypeToList(List<Item> out_result, TickProcessingContext context, AbsoluteLocation target)
-	{
-		BlockProxy proxy = context.previousBlockLookUp.apply(target);
-		if (null != proxy)
-		{
-			ItemSlot slot = proxy.getSpecialSlot();
-			if (null != slot)
-			{
-				out_result.add(slot.getType());
-			}
 		}
 	}
 

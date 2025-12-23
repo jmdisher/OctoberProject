@@ -1,5 +1,6 @@
 package com.jeffdisher.october.logic;
 
+import java.util.List;
 import java.util.Set;
 
 import com.jeffdisher.october.aspects.Environment;
@@ -60,7 +61,7 @@ public class CompositeHelpers
 	public static void processCornerstoneUpdate(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
 	{
 		// NOTE:  This assumes that the type we were given is already a valid cornerstone type.
-		boolean shouldBeActive = _shouldBeActive(env, context, location, proxy);
+		boolean shouldBeActive = (null != _getExtensionsIfValid(env, context, location, proxy));
 		byte flags = proxy.getFlags();
 		boolean wasActive = FlagsAspect.isSet(flags, FlagsAspect.FLAG_ACTIVE);
 		if (shouldBeActive != wasActive)
@@ -74,10 +75,25 @@ public class CompositeHelpers
 		proxy.requestFutureMutation(COMPOSITE_CHECK_FREQUENCY);
 	}
 
-
-	private static boolean _shouldBeActive(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
+	/**
+	 * Will return the list of extension block locations if they are the correct type for the composite root at the given
+	 * location with proxy.  This is read-only and ignores checking if the cornerstone is active or not.
+	 * 
+	 * @param env The environment.
+	 * @param context The current tick context.
+	 * @param location The location of the cornerstone block.
+	 * @param proxy The mutable proxy for the cornerstone block.
+	 * @return The list of extension locations, if they are valid for this composite, or null if invalid.
+	 */
+	public static List<AbsoluteLocation> getExtensionsIfValid(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
 	{
-		boolean isValid = false;
+		return _getExtensionsIfValid(env, context, location, proxy);
+	}
+
+
+	private static List<AbsoluteLocation> _getExtensionsIfValid(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
+	{
+		List<AbsoluteLocation> validExtensions = null;
 		// TODO:  In the future, these hard-coded IDs and relative mappings need to be defined in a data file.
 		Block type = proxy.getBlock();
 		String blockId = type.item().id();
@@ -89,7 +105,10 @@ public class CompositeHelpers
 			{
 				// Check if this is the valid type.
 				Block underType = underProxy.getBlock();
-				isValid = VOID_STONE_ID.equals(underType.item().id());
+				if (VOID_STONE_ID.equals(underType.item().id()))
+				{
+					validExtensions = List.of(underLocation);
+				}
 			}
 			else
 			{
@@ -119,7 +138,10 @@ public class CompositeHelpers
 				, new AbsoluteLocation( 1, 0, 0)
 			);
 			OrientationAspect.Direction orientation = proxy.getOrientation();
-			isValid = _matchBlockTypes(context, orientation, location, stoneSet, stoneBlock);
+			if (_matchBlockTypes(context, orientation, location, stoneSet, stoneBlock))
+			{
+				validExtensions = stoneSet.stream().map((AbsoluteLocation loc) -> location.getRelative(loc.x(), loc.y(), loc.z()) ).toList();
+			}
 		}
 		else if (ENCHANTING_TABLE_ID.equals(blockId))
 		{
@@ -131,14 +153,17 @@ public class CompositeHelpers
 				, new AbsoluteLocation(0, 2, 0)
 			);
 			OrientationAspect.Direction orientation = proxy.getOrientation();
-			isValid = _matchBlockTypes(context, orientation, location, pedestalSet, pedestalBlock);
+			if (_matchBlockTypes(context, orientation, location, pedestalSet, pedestalBlock))
+			{
+				validExtensions = pedestalSet.stream().map((AbsoluteLocation loc) -> location.getRelative(loc.x(), loc.y(), loc.z()) ).toList();
+			}
 		}
 		else
 		{
 			// NOTE:  This can ONLY be called on a valid cornerstone so this would be a usage error.
 			throw Assert.unreachable();
 		}
-		return isValid;
+		return validExtensions;
 	}
 
 	private static boolean _matchBlockTypes(TickProcessingContext context, OrientationAspect.Direction orientation, AbsoluteLocation base, Set<AbsoluteLocation> relatives, Block blockMatch)
