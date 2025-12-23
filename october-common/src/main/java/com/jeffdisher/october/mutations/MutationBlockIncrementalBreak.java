@@ -61,11 +61,11 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 		
 		// We want to see if this is a kind of block which can be broken.
 		Block block = newBlock.getBlock();
-		short toughness = env.damage.getToughness(block);
+		int toughness = env.damage.getToughness(block);
 		if (DamageAspect.UNBREAKABLE != toughness)
 		{
 			// Apply the damage.
-			short damage = (short)(newBlock.getDamage() + _damageToApply);
+			int damage = (newBlock.getDamage() + _damageToApply);
 			
 			// See if this is broken (note that damage could overflow).
 			if ((damage >= toughness) || (damage < 0))

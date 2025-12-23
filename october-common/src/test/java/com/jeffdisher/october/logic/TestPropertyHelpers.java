@@ -89,7 +89,7 @@ public class TestPropertyHelpers
 		NonStackableItem item = new NonStackableItem(IRON_PICKAXE, Map.of(PropertyRegistry.DURABILITY, ENV.durability.getDurability(IRON_PICKAXE)
 			, PropertyRegistry.ENCHANT_TOOL_EFFICIENCY, (byte)5
 		));
-		Assert.assertEquals(15, PropertyHelpers.getToolMaterialEfficiency(ENV, item));
+		Assert.assertEquals(17, PropertyHelpers.getToolMaterialEfficiency(ENV, item));
 	}
 
 	@Test

@@ -1320,11 +1320,15 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, proxy.getInventory().getCount(STONE_BRICK_ITEM));
 		Assert.assertNull(proxy.getCrafting());
 		
-		// Now, break the table and verify that the final inventory state makes sense.
+		// Now, break the table (takes 20 ticks - 2000ms) and verify that the final inventory state makes sense.
 		// We expect the table inventory to spill into the block but the table to end up in the entity's inventory.
-		EntityChangeIncrementalBlockBreak breaking = new EntityChangeIncrementalBlockBreak(location);
-		long commit5 = _wrapAndApply(projector, entity, currentTimeMillis, breaking);
-		Assert.assertEquals(5L, commit5);
+		for (int i = 0; i < 20; ++i)
+		{
+			Assert.assertEquals(craftingTable, proxy.getBlock());
+			EntityChangeIncrementalBlockBreak breaking = new EntityChangeIncrementalBlockBreak(location);
+			long nextCommit = _wrapAndApply(projector, entity, currentTimeMillis, breaking);
+			Assert.assertEquals(5L + i, nextCommit);
+		}
 		proxy = new BlockProxy(blockLocation, listener.lastData);
 		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
 		// Note that the table inventory will spawn as passives, which aren't synthesized in the projection (remove this when empty inventories are completely removed).

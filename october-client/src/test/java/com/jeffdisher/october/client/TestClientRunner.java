@@ -154,7 +154,11 @@ public class TestClientRunner
 	public void multiPhase() throws Throwable
 	{
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
+		
+		// We will create a cuboid of dirt but will mostly break one of the locations so that we can easily break it in 2 hits.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, DIRT);
+		cuboid.setDataSpecial(AspectRegistry.DAMAGE, changeLocation.getBlockAddress(), (int)(ENV.damage.getToughness(DIRT) - 2 * MILLIS_PER_TICK));
 		CuboidData serverCuboid = CuboidData.mutableClone(cuboid);
 		
 		TestAdapter network = new TestAdapter();
@@ -166,10 +170,9 @@ public class TestClientRunner
 		// Connect them.
 		int clientId = 1;
 		long currentTimeMillis = 1000L;
-		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
 		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		runnerList.runFullQueue(currentTimeMillis);
-		currentTimeMillis += 100L;
+		currentTimeMillis += MILLIS_PER_TICK;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		
 		// Send them an entity and a cuboid.
@@ -179,18 +182,18 @@ public class TestClientRunner
 		runnerList.runFullQueue(currentTimeMillis);
 		Assert.assertTrue(projection.loadedCuboids.containsKey(cuboidAddress));
 		Assert.assertEquals(DIRT.item().number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
-		Assert.assertNull(projection.loadedCuboids.get(cuboidAddress).getDataSpecial(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
+		Assert.assertEquals(2800, projection.loadedCuboids.get(cuboidAddress).getDataSpecial(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()).intValue());
 		
-		// Start the multi-phase - we will assume that we need 2 hits to break this block.
-		currentTimeMillis += 100L;
+		// Start the multi-phase - we will 
+		currentTimeMillis += MILLIS_PER_TICK;
 		runner.commonApplyEntityAction(new EntityChangeIncrementalBlockBreak(changeLocation), currentTimeMillis);
-		currentTimeMillis += 100L;
+		currentTimeMillis += MILLIS_PER_TICK;
 		runner.standStill(currentTimeMillis);
-		currentTimeMillis += 100L;
+		currentTimeMillis += MILLIS_PER_TICK;
 		runner.standStill(currentTimeMillis);
 		// (they only send this after the next tick).
 		network.client.receivedEndOfTick(2L, 0L);
-		currentTimeMillis += 100L;
+		currentTimeMillis += MILLIS_PER_TICK;
 		runnerList.runFullQueue(currentTimeMillis);
 		
 		// Observe that this came out in the network.
@@ -207,17 +210,17 @@ public class TestClientRunner
 		
 		// Verify that the block isn't broken, but is damaged.
 		Assert.assertEquals(DIRT.item().number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
-		Assert.assertEquals(100, projection.loadedCuboids.get(cuboidAddress).getDataSpecial(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()).intValue());
+		Assert.assertEquals(2900, projection.loadedCuboids.get(cuboidAddress).getDataSpecial(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()).intValue());
 		
 		// Send the second hit and wait for the same operation.
-		currentTimeMillis += 100L;
+		currentTimeMillis += MILLIS_PER_TICK;
 		runner.commonApplyEntityAction(new EntityChangeIncrementalBlockBreak(changeLocation), currentTimeMillis);
-		currentTimeMillis += 100L;
+		currentTimeMillis += MILLIS_PER_TICK;
 		runner.standStill(currentTimeMillis);
-		currentTimeMillis += 100L;
+		currentTimeMillis += MILLIS_PER_TICK;
 		runner.standStill(currentTimeMillis);
 		network.client.receivedEndOfTick(5L, 1L);
-		currentTimeMillis += 100L;
+		currentTimeMillis += MILLIS_PER_TICK;
 		runnerList.runFullQueue(currentTimeMillis);
 		Assert.assertTrue(network.toSend instanceof EntityActionSimpleMove<IMutablePlayerEntity>);
 		Assert.assertEquals(2L, network.commitLevel);

@@ -395,7 +395,7 @@ public class TestEnchantingBlockSupport
 		
 		NonStackableItem finishedItem = ((ItemSlot)out[0].extendedData()).nonStackable;
 		Assert.assertEquals(IRON_PICKAXE, finishedItem.type());
-		Assert.assertEquals(100000, finishedItem.properties().get(PropertyRegistry.DURABILITY));
+		Assert.assertEquals(500000, finishedItem.properties().get(PropertyRegistry.DURABILITY));
 		Assert.assertEquals((byte)1, finishedItem.properties().get(PropertyRegistry.ENCHANT_DURABILITY));
 	}
 

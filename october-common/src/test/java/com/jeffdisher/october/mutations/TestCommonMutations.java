@@ -93,7 +93,7 @@ public class TestCommonMutations
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		CuboidAddress cuboidAddress = target.getCuboidAddress();
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
-		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
+		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)30000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		_Events events = new _Events();
 		List<PassiveEntity> out_passives = new ArrayList<>();
@@ -158,10 +158,10 @@ public class TestCommonMutations
 		int clientId = 1;
 		Entity entity = MutableEntity.createForTest(clientId).freeze();
 		
-		// Without a tool, this will take 20 hits (ticks).
+		// Without a tool, this will take 300 hits (ticks).
 		MutableBlockProxy proxy = null;
 		sinks.events.expected(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, target, 0, clientId));
-		for (int i = 0; i < 20; ++i)
+		for (int i = 0; i < 300; ++i)
 		{
 			// Check that once we run this change, it requests the appropriate mutation.
 			boolean didApply = longRunningChange.applyChange(context, MutableEntity.existing(entity));
@@ -219,9 +219,9 @@ public class TestCommonMutations
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
 		
-		// We should see the applied damage at 10x the time since we were using the pickaxe (hard-coded since we are partially validating the env lookup).
+		// We should see the applied damage at 12x the time since we were using the pickaxe (hard-coded since we are partially validating the env lookup).
 		Assert.assertEquals(STONE, proxy.getBlock());
-		Assert.assertEquals((short)1000, proxy.getDamage());
+		Assert.assertEquals((short)1200, proxy.getDamage());
 	}
 
 	@Test
@@ -287,7 +287,7 @@ public class TestCommonMutations
 				.finish()
 		;
 		
-		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
+		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)30000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		events.expected(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, target, 0, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY));
 		Assert.assertTrue(mutation.applyMutation(context, proxy));

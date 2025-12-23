@@ -36,73 +36,48 @@ public class DamageAspect
 		FlatTabListCallbacks<Block, Integer> callbacks = new FlatTabListCallbacks<>(new IValueTransformer.BlockTransformer(items, blocks), new IValueTransformer.IntegerTransformer("toughness"));
 		TabListReader.readEntireFile(callbacks, stream);
 		
-		short[] toughnessByBlockType = new short[items.ITEMS_BY_TYPE.length];
+		int[] toughnessByBlockType = new int[items.ITEMS_BY_TYPE.length];
 		// Set defaults:  Blocks get MEDIUM, non-blocks get NOT_BLOCK.
 		for (int i = 0; i < toughnessByBlockType.length; ++i)
 		{
 			Item item = items.ITEMS_BY_TYPE[i];
 			boolean isBlock = (null != blocks.fromItem(item));
-			toughnessByBlockType[i] = isBlock ? MEDIUM : NOT_BLOCK;
+			toughnessByBlockType[i] = isBlock ? DEFAULT_TOUGHNESS : NOT_BLOCK;
 		}
 		
 		// Now, over-write with the values from the file.
 		for (Map.Entry<Block, Integer> elt : callbacks.data.entrySet())
 		{
 			int value = elt.getValue();
-			Assert.assertTrue(value <= MAX_DAMAGE);
-			toughnessByBlockType[elt.getKey().item().number()] = (short)value;
+			Assert.assertTrue(value >= 0);
+			toughnessByBlockType[elt.getKey().item().number()] = value;
 		}
 		return new DamageAspect(toughnessByBlockType);
 	}
 
 	/**
-	 * We are limited to 15 bits to store the damage so we just fix the maximum at a round 32000.
-	 */
-	public static final short MAX_DAMAGE = 32000;
-
-	/**
 	 * The durability of items which CANNOT exist as blocks in the world.
 	 */
-	public static final short NOT_BLOCK = -1;
+	public static final int NOT_BLOCK = -1;
 
 	/**
 	 * Blocks which either can't be broken or don't make sense to break.
 	 */
-	public static final short UNBREAKABLE = 0;
+	public static final int UNBREAKABLE = 0;
 
 	/**
-	 * Very weak blocks which are trivial to break.
+	 * Unless otherwise specified, we will assume blocks take 30 seconds to break with a bare hand.
 	 */
-	public static final short TRIVIAL = 20;
+	public static final int DEFAULT_TOUGHNESS = 30000;
 
-	/**
-	 * Common weak blocks.
-	 */
-	public static final short WEAK = 200;
+	private final int[] _toughnessByBlockType;
 
-	/**
-	 * Common medium toughness blocks.
-	 */
-	public static final short MEDIUM = 2000;
-
-	/**
-	 * Common hard toughness blocks.
-	 */
-	public static final short HARD = 8000;
-
-	/**
-	 * Exceptionally strong blocks.
-	 */
-	public static final short STRONG = 20000;
-
-	private final short[] _toughnessByBlockType;
-
-	private DamageAspect(short[] toughnessByBlockType)
+	private DamageAspect(int[] toughnessByBlockType)
 	{
 		_toughnessByBlockType = toughnessByBlockType;
 	}
 
-	public short getToughness(Block block)
+	public int getToughness(Block block)
 	{
 		return _toughnessByBlockType[block.item().number()];
 	}

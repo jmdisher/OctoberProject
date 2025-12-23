@@ -1074,7 +1074,7 @@ public class TestCommonChanges
 		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(startDurability - (int)holder.context.millisPerTick, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(1)));
-		Assert.assertEquals(10 * duration, cuboid.getDataSpecial(AspectRegistry.DAMAGE, targetStone.getBlockAddress()).intValue());
+		Assert.assertEquals(12 * duration, cuboid.getDataSpecial(AspectRegistry.DAMAGE, targetStone.getBlockAddress()).intValue());
 		
 		// Now, do the same to the plank and observe the difference.
 		EntityChangeIncrementalBlockBreak breakLog = new EntityChangeIncrementalBlockBreak(targetLog);
@@ -1504,16 +1504,22 @@ public class TestCommonChanges
 		proxy.writeBack(cuboid);
 		holder.mutation = null;
 		
-		// Break it and verify it is a closed door in the inventory.
-		EntityChangeIncrementalBlockBreak breaker = new EntityChangeIncrementalBlockBreak(target);
-		Assert.assertTrue(breaker.applyChange(holder.context, newEntity));
-		Assert.assertNotNull(holder.mutation);
-		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
-		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, holder.mutation.getAbsoluteLocation(), 0, entityId));
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		// Break it (takes 20 ticks) and verify it is a closed door in the inventory.
+		for (int i = 0; i < 20; ++i)
+		{
+			EntityChangeIncrementalBlockBreak breaker = new EntityChangeIncrementalBlockBreak(target);
+			Assert.assertTrue(breaker.applyChange(holder.context, newEntity));
+			Assert.assertNotNull(holder.mutation);
+			proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+			if (19 == i)
+			{
+				holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, holder.mutation.getAbsoluteLocation(), 0, entityId));
+			}
+			Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+			proxy.writeBack(cuboid);
+			holder.mutation = null;
+		}
 		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
-		proxy.writeBack(cuboid);
-		holder.mutation = null;
 		Assert.assertTrue(holder.change.applyChange(holder.context, newEntity));
 		holder.change = null;
 		
@@ -2311,15 +2317,18 @@ public class TestCommonChanges
 		Assert.assertEquals(door.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress()));
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, cuboid.getData7(AspectRegistry.FLAGS, target.getRelative(0, 0, 1).getBlockAddress()));
 		
-		// Break it in 2 steps across the surface and verify it is a closed door in the inventory.
-		EntityChangeIncrementalBlockBreak breaker = new EntityChangeIncrementalBlockBreak(target);
-		Assert.assertTrue(breaker.applyChange(context, newEntity));
-		breaker = new EntityChangeIncrementalBlockBreak(target.getRelative(0, 0, 1));
-		Assert.assertTrue(breaker.applyChange(context, newEntity));
+		// Break it in 30 steps across the surface and verify it is a closed door in the inventory.
+		for (int i = 0; i < 15; ++i)
+		{
+			EntityChangeIncrementalBlockBreak breaker = new EntityChangeIncrementalBlockBreak(target);
+			Assert.assertTrue(breaker.applyChange(context, newEntity));
+			breaker = new EntityChangeIncrementalBlockBreak(target.getRelative(0, 0, 1));
+			Assert.assertTrue(breaker.applyChange(context, newEntity));
+		}
 		
 		// Each break will send an incremental break to each block in the multi-block (4 blocks).
-		Assert.assertEquals(8, mutations.size());
-		for (int i = 0; i < 4; ++i)
+		Assert.assertEquals(120, mutations.size());
+		for (int i = 0; i < 116; ++i)
 		{
 			IMutationBlock mutation = mutations.remove(0);
 			MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
@@ -2695,7 +2704,7 @@ public class TestCommonChanges
 		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(startDurability - (int)holder.context.millisPerTick, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(1)));
-		Assert.assertEquals((10 + 5) * duration, cuboid.getDataSpecial(AspectRegistry.DAMAGE, targetStone.getBlockAddress()).intValue());
+		Assert.assertEquals((12 + 5) * duration, cuboid.getDataSpecial(AspectRegistry.DAMAGE, targetStone.getBlockAddress()).intValue());
 	}
 
 	@Test

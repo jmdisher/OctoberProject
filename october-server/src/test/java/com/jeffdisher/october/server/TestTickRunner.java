@@ -482,11 +482,11 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
 		BlockProxy proxy1 = _getBlockProxy(snapshot, changeLocation1);
 		Assert.assertEquals(STONE, proxy1.getBlock());
-		Assert.assertEquals((short)1000, proxy1.getDamage());
+		Assert.assertEquals(1200, proxy1.getDamage());
 		Assert.assertNull(proxy1.getInventory());
 		
 		// Now, enqueue the remaining hits to finish the break.
-		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, entity, changeLocation1, (short)100);
+		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, entity, changeLocation1, (short)2400);
 		
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(nextCommit - 1L, snapshot.entities().get(entityId).commitLevel());
@@ -498,7 +498,7 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
 		BlockProxy proxy2 = _getBlockProxy(snapshot, changeLocation1);
 		Assert.assertEquals(ENV.special.AIR, proxy2.getBlock());
-		Assert.assertEquals((short) 0, proxy2.getDamage());
+		Assert.assertEquals(0, proxy2.getDamage());
 		
 		// Run another tick to see the item move to the entity inventory.
 		runner.startNextTick();
@@ -1159,21 +1159,21 @@ public class TestTickRunner
 	public void waterFlowOnBlockBreakOnly()
 	{
 		// We want to verify that block updates don't happen for things like damage updates so we place a water source,
-		// a gap, and a stone, then incrementally break it.  We should only see the update once the block breaks.
+		// a gap, and a leaf, then incrementally break it.  We should only see the update once the block breaks.
 		WorldConfig config = new WorldConfig();
 		TickRunner runner = _createTestRunnerWithConfig(config);
 		runner.start();
 		CuboidAddress address = CuboidAddress.fromInt(-3, -4, -5);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
-		AbsoluteLocation stoneLocation = address.getBase().getRelative(5, 5, 0);
-		AbsoluteLocation waterLocation = stoneLocation.getRelative(-2, 0, 0);
-		AbsoluteLocation emptyLocation = stoneLocation.getRelative(-1, 0, 0);
-		cuboid.setData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress(), PLANK_ITEM.number());
+		AbsoluteLocation leafLocation = address.getBase().getRelative(5, 5, 0);
+		AbsoluteLocation waterLocation = leafLocation.getRelative(-2, 0, 0);
+		AbsoluteLocation emptyLocation = leafLocation.getRelative(-1, 0, 0);
+		cuboid.setData15(AspectRegistry.BLOCK, leafLocation.getBlockAddress(), LEAF_ITEM.number());
 		cuboid.setData15(AspectRegistry.BLOCK, waterLocation.getBlockAddress(), WATER_SOURCE.item().number());
 		
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
-		mutable.newLocation = new EntityLocation(stoneLocation.x(), stoneLocation.y() - 1, stoneLocation.z());
+		mutable.newLocation = new EntityLocation(leafLocation.x(), leafLocation.y() - 1, leafLocation.z());
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of(), List.of()))
 				, null
@@ -1186,7 +1186,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
 		
 		// Send an incremental update to break the stone, but only partially.
-		long nextCommit = _applyIncrementalBreaks(runner, 1L, entityId, entity, stoneLocation, (short)100);
+		long nextCommit = _applyIncrementalBreaks(runner, 1L, entityId, entity, leafLocation, (short)50);
 		snapshot = runner.waitForPreviousTick();
 		// (we should see the update scheduled and previous tick damage change (assuming this was multiple ticks to break)).
 		Assert.assertEquals(1, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
@@ -1200,10 +1200,10 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
 		Assert.assertEquals(1, snapshot.cuboids().values().iterator().next().blockChanges().size());
 		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
-		Assert.assertEquals(100, snapshot.cuboids().get(address).completed().getDataSpecial(AspectRegistry.DAMAGE, stoneLocation.getBlockAddress()).intValue());
+		Assert.assertEquals(50, snapshot.cuboids().get(address).completed().getDataSpecial(AspectRegistry.DAMAGE, leafLocation.getBlockAddress()).intValue());
 		
 		// Apply the second break attempt, which should break it.
-		_applyIncrementalBreaks(runner, nextCommit, entityId, entity, stoneLocation, (short)100);
+		_applyIncrementalBreaks(runner, nextCommit, entityId, entity, leafLocation, (short)50);
 		snapshot = runner.waitForPreviousTick();
 		// (we should see the update scheduled and previous tick damage change (assuming this was multiple ticks to break)).
 		Assert.assertEquals(1, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
@@ -1217,7 +1217,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
 		Assert.assertEquals(1, snapshot.cuboids().values().iterator().next().blockChanges().size());
 		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
-		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, leafLocation.getBlockAddress()));
 		
 		// Run the tick which will trigger the block update, thus causing the water to flow.
 		runner.startNextTick();
@@ -1243,7 +1243,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
 		Assert.assertEquals(1, snapshot.cuboids().values().iterator().next().blockChanges().size());
 		Assert.assertEquals(WATER_STRONG.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
-		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, leafLocation.getBlockAddress()));
 		
 		runner.shutdown();
 	}
@@ -1468,7 +1468,7 @@ public class TestTickRunner
 		Assert.assertEquals(WHEAT_MATURE_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// Break the mature crop and check the inventory dropped.
-		_applyIncrementalBreaks(runner, 1L, entityId, entity, location, (short)20);
+		_applyIncrementalBreaks(runner, 1L, entityId, entity, location, ENV.damage.getToughness(ENV.blocks.fromItem(WHEAT_MATURE_ITEM)));
 		
 		// Finish the tick for the unwrap, another to break the block, then a third to save to the entity, before checking the inventories.
 		snapshot = runner.waitForPreviousTick();
@@ -1533,7 +1533,7 @@ public class TestTickRunner
 		Assert.assertEquals(WHEAT_SEEDLING_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// Now, break the dirt block.
-		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, entity, dirtLocation, (short)200);
+		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, entity, dirtLocation, ENV.damage.getToughness(ENV.blocks.fromItem(TILLED_SOIL_ITEM)));
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
 		
@@ -3280,7 +3280,7 @@ public class TestTickRunner
 		
 		// Note that we will inject the "break" mutation here.
 		AbsoluteLocation target = new AbsoluteLocation (25, 25, 27);
-		short toughness = ENV.damage.getToughness(sandBlock);
+		int toughness = ENV.damage.getToughness(sandBlock);
 		int fakeEntityId = 1;
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, toughness, fakeEntityId);
 		ScheduledMutation scheduled = new ScheduledMutation(mutation, 0L);
@@ -3596,17 +3596,16 @@ public class TestTickRunner
 		return count;
 	}
 
-	private long _applyIncrementalBreaks(TickRunner runner, long nextCommit, int entityId, Entity entity, AbsoluteLocation changeLocation, short millisOfBreak)
+	private long _applyIncrementalBreaks(TickRunner runner, long nextCommit, int entityId, Entity entity, AbsoluteLocation changeLocation, int millisOfBreak)
 	{
-		short millisRemaining = millisOfBreak;
+		int millisRemaining = millisOfBreak;
 		while (millisRemaining > 0)
 		{
-			short timeToApply = (short) MILLIS_PER_TICK;
 			EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(changeLocation);
 			runner.enqueueEntityChange(entityId, _wrapSubAction(entity, break1), nextCommit);
 			nextCommit += 1L;
 			runner.startNextTick();
-			millisRemaining -= timeToApply;
+			millisRemaining -= MILLIS_PER_TICK;
 		}
 		return nextCommit;
 	}

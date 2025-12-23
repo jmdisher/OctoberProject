@@ -16,7 +16,7 @@
 # Note that the ID is from item_registry.tablist.
 
 op.iron_pickaxe	PICKAXE
-	material_multiplier	10
+	material_multiplier	12
 	weapon_damage	2
 op.iron_shovel	SHOVEL
 	material_multiplier	10
@@ -37,13 +37,13 @@ op.stone_hatchet	AXE
 	material_multiplier	4
 	weapon_damage	2
 op.wooden_chisel	PICKAXE
-	material_multiplier	4
+	material_multiplier	5
 	weapon_damage	1
 op.digging_stick	SHOVEL
 	material_multiplier	6
 	weapon_damage	1
 op.copper_pickaxe	PICKAXE
-	material_multiplier	6
+	material_multiplier	8
 	weapon_damage	2
 op.copper_shovel	SHOVEL
 	material_multiplier	6
@@ -55,7 +55,7 @@ op.copper_sword	NO_MATERIAL
 	material_multiplier	1
 	weapon_damage	7
 op.diamond_pickaxe	PICKAXE
-	material_multiplier	15
+	material_multiplier	20
 	weapon_damage	3
 op.diamond_shovel	SHOVEL
 	material_multiplier	15
