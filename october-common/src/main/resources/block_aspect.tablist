@@ -13,7 +13,6 @@
 # -is_fire_source (the block can start fires nearby)
 # -stops_fire (the block will extinguish a fire below it and prevent the block below from igniting)
 # -is_multiblock (the block is part of a multi-block structure so it can exist but isn't placeable via normal mutations)
-# -is_composition (the block is the cornerstone of an in-world block composition)
 # -has_gravity (the block will fall if not supported by a solid block)
 # block_material is a BlockMaterial enum constant (default of NO_TOOL if not specified).
 # placed_from means that this block is generated, instead of the normal block, when the given item is placed.
@@ -145,11 +144,11 @@ op.ladder	is_ladder
 op.cuboid_loader
 op.portal_stone
 	block_material	PICKAXE
-op.void_lamp	is_composition
+op.void_lamp
 	block_material	PICKAXE
 op.pedestal
 	block_material	PICKAXE
-op.portal_keystone	is_composition
+op.portal_keystone
 	block_material	PICKAXE
 op.portal_surface	is_multiblock
 	viscosity	0
@@ -158,5 +157,5 @@ op.sand	has_gravity
 	block_material	SHOVEL
 op.door	is_multiblock
 	block_material	AXE
-op.enchanting_table	is_composition
+op.enchanting_table
 	block_material	PICKAXE

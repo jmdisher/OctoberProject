@@ -463,7 +463,7 @@ public class CommonBlockMutationHelpers
 		}
 		
 		// If this is the cornerstone of a composition, check the composition state and schedule a periodic update.
-		if (env.blocks.isCompositionCornerstone(newType))
+		if (CompositeHelpers.isActiveCornerstone(newType))
 		{
 			CompositeHelpers.processCornerstoneUpdate(env, context, location, proxy);
 		}

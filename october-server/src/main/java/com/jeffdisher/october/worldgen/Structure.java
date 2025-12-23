@@ -328,7 +328,7 @@ public class Structure
 									}
 									
 									boolean needsGrowth = (plants.growthDivisor(block) > 0);
-									boolean isComposite = CompositeHelpers.isCornerstone(block);
+									boolean isComposite = CompositeHelpers.isActiveCornerstone(block);
 									long perioidicMillisDelay = 0L;
 									if (needsGrowth)
 									{

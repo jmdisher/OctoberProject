@@ -44,7 +44,6 @@ public class BlockAspect
 	private static final String FLAG_STOPS_FIRE = "stops_fire";
 	private static final String FLAG_IS_MULTIBLOCK = "is_multiblock";
 	private static final String FLAG_IS_LADDER = "is_ladder";
-	private static final String FLAG_IS_COMPOSITION = "is_composition";
 	private static final String FLAG_HAS_GRAVITY = "has_gravity";
 	private static final String SUB_PLACED_FROM = "placed_from";
 	private static final String SUB_REQUIRES_SUPPORT = "requires_support";
@@ -108,7 +107,6 @@ public class BlockAspect
 				, parser.specialBlockBreak
 				, parser.blockMaterials
 				, parser.isLadder
-				, parser.isComposition
 				, parser.hasGravity
 		);
 	}
@@ -128,7 +126,6 @@ public class BlockAspect
 	private final Map<Block, DropChance[]> _specialBlockBreak;
 	private final Map<Block, BlockMaterial> _blockMaterials;
 	private final Set<Block> _ladderType;
-	private final Set<Block> _isComposition;
 	private final Set<Block> _hasGravity;
 
 	private BlockAspect(ItemRegistry items
@@ -147,7 +144,6 @@ public class BlockAspect
 			, Map<Block, DropChance[]> specialBlockBreak
 			, Map<Block, BlockMaterial> blockMaterials
 			, Set<Block> ladderType
-			, Set<Block> isComposition
 			, Set<Block> hasGravity
 	)
 	{
@@ -167,7 +163,6 @@ public class BlockAspect
 		_specialBlockBreak = Collections.unmodifiableMap(specialBlockBreak);
 		_blockMaterials = Collections.unmodifiableMap(blockMaterials);
 		_ladderType = Collections.unmodifiableSet(ladderType);
-		_isComposition = Collections.unmodifiableSet(isComposition);
 		_hasGravity = Collections.unmodifiableSet(hasGravity);
 	}
 
@@ -441,17 +436,6 @@ public class BlockAspect
 	}
 
 	/**
-	 * Checks if the given block is intended to be the cornerstone of an in-world block composition.
-	 * 
-	 * @param block The block to check.
-	 * @return True if this block is a cornerstone.
-	 */
-	public boolean isCompositionCornerstone(Block block)
-	{
-		return _isComposition.contains(block);
-	}
-
-	/**
 	 * A simple helper which just states whether or not the given block is subject to gravity.  This can be used to
 	 * determine if other checks are required.
 	 * 
@@ -513,7 +497,6 @@ public class BlockAspect
 		public Set<Block> stopsFire = new HashSet<>();
 		public Set<Block> isMultiBlock = new HashSet<>();
 		public Set<Block> isLadder  = new HashSet<>();
-		public Set<Block> isComposition = new HashSet<>();
 		public Set<Block> hasGravity = new HashSet<>();
 		public Map<Block, Integer> nonSolidViscosity = new HashMap<>();
 		public Map<Block, Integer> blockDamage = new HashMap<>();
@@ -574,10 +557,6 @@ public class BlockAspect
 				else if (FLAG_IS_LADDER.equals(value))
 				{
 					this.isLadder.add(_currentBlock);
-				}
-				else if (FLAG_IS_COMPOSITION.equals(value))
-				{
-					this.isComposition.add(_currentBlock);
 				}
 				else if (FLAG_HAS_GRAVITY.equals(value))
 				{

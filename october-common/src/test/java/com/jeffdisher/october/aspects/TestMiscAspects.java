@@ -7,6 +7,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.logic.CompositeHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockVolume;
@@ -132,9 +133,14 @@ public class TestMiscAspects
 	{
 		Block voidStone = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_stone"));
 		Block voidLamp = ENV.blocks.fromItem(ENV.items.getItemById("op.void_lamp"));
+		Block enchantingTable = ENV.blocks.fromItem(ENV.items.getItemById("op.enchanting_table"));
 		
-		Assert.assertFalse(ENV.blocks.isCompositionCornerstone(voidStone));
-		Assert.assertTrue(ENV.blocks.isCompositionCornerstone(voidLamp));
+		Assert.assertFalse(CompositeHelpers.isActiveCornerstone(voidStone));
+		Assert.assertTrue(CompositeHelpers.isActiveCornerstone(voidLamp));
+		Assert.assertFalse(CompositeHelpers.isPassiveCornerstone(voidStone));
+		Assert.assertFalse(CompositeHelpers.isPassiveCornerstone(voidStone));
+		Assert.assertFalse(CompositeHelpers.isActiveCornerstone(enchantingTable));
+		Assert.assertTrue(CompositeHelpers.isPassiveCornerstone(enchantingTable));
 		Assert.assertEquals(0, ENV.lighting.getLightEmission(voidLamp, false));
 		Assert.assertEquals(LightAspect.MAX_LIGHT, ENV.lighting.getLightEmission(voidLamp, true));
 	}

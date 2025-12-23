@@ -19,6 +19,10 @@ import com.jeffdisher.october.utils.Assert;
  * blocks are arranged around it.
  * These helpers are used apply that emergent behaviour and change corresponding block states or schedule follow-up
  * mutations in response.
+ * Note that there are ACTIVE and PASSIVE composite structures:
+ * -ACTIVE: These structures automatically check if they are valid and set an "ACTIVE" flag state within themselves.
+ * -PASSIVE: These structures do nothing on their own and are only declared so that other helpers can ask about
+ *  extension block locations for their own reasons.
  */
 public class CompositeHelpers
 {
@@ -37,15 +41,27 @@ public class CompositeHelpers
 	public static final String PEDESTAL_ID = "op.pedestal";
 
 	/**
-	 * Checks if the given block is a cornerstone type.
+	 * Checks if the given block is a cornerstone type with an active nature.
 	 * 
 	 * @param block The block type to check.
-	 * @return True if this is a cornerstone.
+	 * @return True if this is an active-type cornerstone.
 	 */
-	public static boolean isCornerstone(Block block)
+	public static boolean isActiveCornerstone(Block block)
+	{
+		return _isActiveCornerstone(block);
+	}
+
+	/**
+	 * Checks if the given block is a cornerstone type with a passive nature.
+	 * 
+	 * @param block The block type to check.
+	 * @return True if this is a passive-type cornerstone.
+	 */
+	public static boolean isPassiveCornerstone(Block block)
 	{
 		String blockId = block.item().id();
-		return VOID_LAMP_ID.equals(blockId) || PORTAL_KEYSTONE_ID.equals(blockId) || ENCHANTING_TABLE_ID.equals(blockId);
+		// Note that the enchanting table is the only current PASSIVE composite (as it only acts in response to crafting attempts, not on its own).
+		return ENCHANTING_TABLE_ID.equals(blockId);
 	}
 
 	/**
@@ -60,7 +76,9 @@ public class CompositeHelpers
 	 */
 	public static void processCornerstoneUpdate(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
 	{
-		// NOTE:  This assumes that the type we were given is already a valid cornerstone type.
+		// Note that this only operates on active cornerstone types and we assume it was called for that reason.
+		Assert.assertTrue(_isActiveCornerstone(proxy.getBlock()));
+		
 		boolean shouldBeActive = (null != _getExtensionsIfValid(env, context, location, proxy));
 		byte flags = proxy.getFlags();
 		boolean wasActive = FlagsAspect.isSet(flags, FlagsAspect.FLAG_ACTIVE);
@@ -192,5 +210,12 @@ public class CompositeHelpers
 			}
 		}
 		return isValid;
+	}
+
+	private static boolean _isActiveCornerstone(Block block)
+	{
+		String blockId = block.item().id();
+		// Note that the enchanting table is the only current PASSIVE composite (as it only acts in response to crafting attempts, not on its own).
+		return VOID_LAMP_ID.equals(blockId) || PORTAL_KEYSTONE_ID.equals(blockId);
 	}
 }

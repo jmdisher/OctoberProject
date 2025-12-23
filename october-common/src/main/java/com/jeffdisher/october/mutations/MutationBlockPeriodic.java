@@ -78,7 +78,7 @@ public class MutationBlockPeriodic implements IMutationBlock
 			newBlock.requestFutureMutation(MILLIS_BETWEEN_HOPPER_CALLS);
 			didApply = true;
 		}
-		else if (env.blocks.isCompositionCornerstone(block))
+		else if (CompositeHelpers.isActiveCornerstone(block))
 		{
 			// See if we need to change the state of the composite.
 			// Note that this implicitly calls requestFutureMutation (called via multiple paths).

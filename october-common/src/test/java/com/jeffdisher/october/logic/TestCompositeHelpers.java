@@ -1,5 +1,6 @@
 package com.jeffdisher.october.logic;
 
+import java.util.List;
 import java.util.Set;
 
 import org.junit.AfterClass;
@@ -163,13 +164,13 @@ public class TestCompositeHelpers
 			}, null, null)
 			.finish()
 		;
-		MutableBlockProxy onProxy = new MutableBlockProxy(centre, cuboid);
-		CompositeHelpers.processCornerstoneUpdate(ENV, context, centre, onProxy);
-		Assert.assertFalse(onProxy.didChange());
-		onProxy.writeBack(cuboid);
-		byte flags = cuboid.getData7(AspectRegistry.FLAGS, centre.getBlockAddress());
-		Assert.assertEquals((byte)0x0, flags);
-		Assert.assertEquals(CompositeHelpers.COMPOSITE_CHECK_FREQUENCY, onProxy.periodicDelayMillis);
+		
+		// This is a passive type so we can't call "CompositeHelpers.processCornerstoneUpdate()".
+		Assert.assertTrue(CompositeHelpers.isPassiveCornerstone(ENCHATING_TABLE));
+		
+		// We shouldn't see the extensions until there are pedestals there.
+		MutableBlockProxy proxy = new MutableBlockProxy(centre, cuboid);
+		Assert.assertNull(CompositeHelpers.getExtensionsIfValid(ENV, context, centre, proxy));
 		
 		// Show that it becomes active after the pedestals are added.
 		cuboid.setData15(AspectRegistry.BLOCK, centre.getRelative(-2, 0, 0).getBlockAddress(), PEDESTAL.item().number());
@@ -177,13 +178,12 @@ public class TestCompositeHelpers
 		cuboid.setData15(AspectRegistry.BLOCK, centre.getRelative(0, -2, 0).getBlockAddress(), PEDESTAL.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, centre.getRelative(0, 2, 0).getBlockAddress(), PEDESTAL.item().number());
 		
-		onProxy = new MutableBlockProxy(centre, cuboid);
-		CompositeHelpers.processCornerstoneUpdate(ENV, context, centre, onProxy);
-		Assert.assertTrue(onProxy.didChange());
-		onProxy.writeBack(cuboid);
-		flags = cuboid.getData7(AspectRegistry.FLAGS, centre.getBlockAddress());
-		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, flags);
-		Assert.assertEquals(CompositeHelpers.COMPOSITE_CHECK_FREQUENCY, onProxy.periodicDelayMillis);
+		List<AbsoluteLocation> extensions = CompositeHelpers.getExtensionsIfValid(ENV, context, centre, proxy);
+		Assert.assertEquals(4, extensions.size());
+		for (AbsoluteLocation loc : extensions)
+		{
+			Assert.assertEquals(PEDESTAL.item().number(), cuboid.getData15(AspectRegistry.BLOCK, loc.getBlockAddress()));
+		}
 	}
 
 
