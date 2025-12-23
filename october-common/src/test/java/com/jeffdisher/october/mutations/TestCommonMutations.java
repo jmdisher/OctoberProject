@@ -742,11 +742,11 @@ public class TestCommonMutations
 		AbsoluteLocation wrongType = new AbsoluteLocation(5, 0, 10);
 		AbsoluteLocation noDamage = new AbsoluteLocation(5, 1, 10);
 		AbsoluteLocation valid = new AbsoluteLocation(6, 0, 10);
-		short damaged = 150;
+		int damaged = 150;
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, noDamage.getBlockAddress(), STONE_ITEM.number());
 		cuboid.setData15(AspectRegistry.BLOCK, valid.getBlockAddress(), STONE_ITEM.number());
-		cuboid.setData15(AspectRegistry.DAMAGE, valid.getBlockAddress(), damaged);
+		cuboid.setDataSpecial(AspectRegistry.DAMAGE, valid.getBlockAddress(), damaged);
 		
 		short repairMillis = 100;
 		MutableBlockProxy wrongProxy = new MutableBlockProxy(wrongType, cuboid);

@@ -187,9 +187,9 @@ public class TestCuboidData
 		test.setDataSpecial(AspectRegistry.INVENTORY, testAddress, null);
 		Assert.assertTrue(new BlockProxy(testAddress, base).doAspectsMatch(new BlockProxy(testAddress, test)));
 		
-		test.setData15(AspectRegistry.DAMAGE, testAddress, (short)100);
+		test.setDataSpecial(AspectRegistry.DAMAGE, testAddress, 100);
 		Assert.assertFalse(new BlockProxy(testAddress, base).doAspectsMatch(new BlockProxy(testAddress, test)));
-		test.setData15(AspectRegistry.DAMAGE, testAddress, (short)0);
+		test.setDataSpecial(AspectRegistry.DAMAGE, testAddress, null);
 		Assert.assertTrue(new BlockProxy(testAddress, base).doAspectsMatch(new BlockProxy(testAddress, test)));
 		
 		CraftOperation c1 = new CraftOperation(null, 100L);

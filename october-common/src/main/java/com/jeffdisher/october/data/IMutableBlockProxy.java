@@ -33,7 +33,7 @@ public interface IMutableBlockProxy extends IBlockProxy
 	/**
 	 * @param damage The new damage value.
 	 */
-	void setDamage(short damage);
+	void setDamage(int damage);
 	/**
 	 * @param crafting The new crafting operation (can be null).
 	 */

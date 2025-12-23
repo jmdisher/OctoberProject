@@ -77,7 +77,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		
 		// Clear other aspects since they are all based on the item type.
 		_setDataSpecial(AspectRegistry.INVENTORY, null);
-		_setData15(AspectRegistry.DAMAGE, (short)0);
+		_setDataSpecial(AspectRegistry.DAMAGE, null);
 		_setDataSpecial(AspectRegistry.CRAFTING, null);
 		_setDataSpecial(AspectRegistry.FUELLED, null);
 		// Note that we EXPLICTLY avoid clearing the light value since that is updated via a delayed mechanism.
@@ -119,15 +119,30 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	}
 
 	@Override
-	public short getDamage()
+	public int getDamage()
 	{
-		return _getData15(AspectRegistry.DAMAGE);
+		Integer object = _getDataSpecial(AspectRegistry.DAMAGE);
+		return (null != object)
+			? object.intValue()
+			: 0
+		;
 	}
 
 	@Override
-	public void setDamage(short damage)
+	public void setDamage(int damage)
 	{
-		_setData15(AspectRegistry.DAMAGE, damage);
+		Integer val;
+		if (damage > 0)
+		{
+			val = damage;
+		}
+		else
+		{
+			// This cannot be negative.
+			Assert.assertTrue(0 == damage);
+			val = null;
+		}
+		_setDataSpecial(AspectRegistry.DAMAGE, val);
 	}
 
 	@Override

@@ -33,7 +33,7 @@ public class CuboidGenerator
 	{
 		OctreeShort blockData = OctreeShort.create(fillBlock.item().number());
 		OctreeObject<?> inventoryData = OctreeObject.create();
-		OctreeShort damageData = OctreeShort.create((short) 0);
+		OctreeObject<?> damageData = OctreeObject.create();
 		OctreeObject<?> craftingData = OctreeObject.create();
 		OctreeObject<?> fuelledData = OctreeObject.create();
 		OctreeInflatedByte lightData = OctreeInflatedByte.empty();

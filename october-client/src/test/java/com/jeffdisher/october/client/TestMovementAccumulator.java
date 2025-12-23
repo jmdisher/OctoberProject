@@ -652,7 +652,7 @@ public class TestMovementAccumulator
 		Assert.assertTrue(out.getSubAction() instanceof EntityChangeIncrementalBlockBreak);
 		entity = _applyToEntityAndUpdateCuboid(millisPerTick, currentTimeMillis, cuboid, entity, out, accumulator, listener);
 		accumulator.applyLocalAccumulation();
-		Assert.assertEquals((short)100, listener.loadedCuboids.get(cuboid.getCuboidAddress()).getData15(AspectRegistry.DAMAGE, targetBlock.getBlockAddress()));
+		Assert.assertEquals(100, listener.loadedCuboids.get(cuboid.getCuboidAddress()).getDataSpecial(AspectRegistry.DAMAGE, targetBlock.getBlockAddress()).intValue());
 	}
 
 	@Test

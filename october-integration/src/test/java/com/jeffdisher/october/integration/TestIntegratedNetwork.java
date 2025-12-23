@@ -279,7 +279,7 @@ public class TestIntegratedNetwork
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidData.createNew(cuboidAddress, new IOctree[] { octree
 				, OctreeObject.create()
-				, OctreeShort.create((short)0)
+				, OctreeObject.create()
 				, OctreeObject.create()
 				, OctreeObject.create()
 				, OctreeInflatedByte.empty()

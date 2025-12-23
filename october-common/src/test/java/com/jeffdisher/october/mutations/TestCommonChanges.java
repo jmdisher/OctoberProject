@@ -1074,7 +1074,7 @@ public class TestCommonChanges
 		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(startDurability - (int)holder.context.millisPerTick, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(1)));
-		Assert.assertEquals(10 * duration, cuboid.getData15(AspectRegistry.DAMAGE, targetStone.getBlockAddress()));
+		Assert.assertEquals(10 * duration, cuboid.getDataSpecial(AspectRegistry.DAMAGE, targetStone.getBlockAddress()).intValue());
 		
 		// Now, do the same to the plank and observe the difference.
 		EntityChangeIncrementalBlockBreak breakLog = new EntityChangeIncrementalBlockBreak(targetLog);
@@ -1086,7 +1086,7 @@ public class TestCommonChanges
 		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(startDurability - 2 * (int)holder.context.millisPerTick, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(1)));
-		Assert.assertEquals(duration, cuboid.getData15(AspectRegistry.DAMAGE, targetLog.getBlockAddress()));
+		Assert.assertEquals(duration, cuboid.getDataSpecial(AspectRegistry.DAMAGE, targetLog.getBlockAddress()).intValue());
 	}
 
 	@Test
@@ -2072,14 +2072,14 @@ public class TestCommonChanges
 		AbsoluteLocation wrongType = new AbsoluteLocation(5, 0, 10);
 		AbsoluteLocation noDamage = new AbsoluteLocation(5, 1, 10);
 		AbsoluteLocation valid = new AbsoluteLocation(6, 0, 10);
-		short damaged = 150;
+		int damaged = 150;
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, tooFar.getBlockAddress(), STONE_ITEM.number());
-		cuboid.setData15(AspectRegistry.DAMAGE, tooFar.getBlockAddress(), damaged);
+		cuboid.setDataSpecial(AspectRegistry.DAMAGE, tooFar.getBlockAddress(), damaged);
 		// wrongType will just be air.
 		cuboid.setData15(AspectRegistry.BLOCK, noDamage.getBlockAddress(), STONE_ITEM.number());
 		cuboid.setData15(AspectRegistry.BLOCK, valid.getBlockAddress(), STONE_ITEM.number());
-		cuboid.setData15(AspectRegistry.DAMAGE, valid.getBlockAddress(), damaged);
+		cuboid.setDataSpecial(AspectRegistry.DAMAGE, valid.getBlockAddress(), damaged);
 		// (we also need to make sure that we are standing on something)
 		cuboid.setData15(AspectRegistry.BLOCK, newEntity.newLocation.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), PLANK_ITEM.number());
 		
@@ -2695,7 +2695,7 @@ public class TestCommonChanges
 		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(startDurability - (int)holder.context.millisPerTick, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(1)));
-		Assert.assertEquals((10 + 5) * duration, cuboid.getData15(AspectRegistry.DAMAGE, targetStone.getBlockAddress()));
+		Assert.assertEquals((10 + 5) * duration, cuboid.getDataSpecial(AspectRegistry.DAMAGE, targetStone.getBlockAddress()).intValue());
 	}
 
 	@Test

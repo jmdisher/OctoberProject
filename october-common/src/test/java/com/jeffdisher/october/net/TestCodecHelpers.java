@@ -381,6 +381,7 @@ public class TestCodecHelpers
 			, buffer
 			, newAliveMillis
 			, false
+			, false
 		);
 		
 		int newId = 3;
@@ -487,6 +488,7 @@ public class TestCodecHelpers
 			, buffer
 			, newAliveMillis
 			, false
+			, false
 		);
 		
 		int newId = 3;
@@ -543,6 +545,7 @@ public class TestCodecHelpers
 		DeserializationContext context = new DeserializationContext(Environment.getShared()
 			, buffer
 			, newAliveMillis
+			, false
 			, false
 		);
 		

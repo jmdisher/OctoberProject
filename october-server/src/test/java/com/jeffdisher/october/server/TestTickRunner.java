@@ -669,7 +669,7 @@ public class TestTickRunner
 		// Run a tick and verify that we see the cuboid mutation from this in the snapshot.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(0, snapshot.cuboids().get(stoneAddress).completed().getData15(AspectRegistry.DAMAGE, BlockAddress.fromInt(1, 1, 31)));
+		Assert.assertNull(snapshot.cuboids().get(stoneAddress).completed().getDataSpecial(AspectRegistry.DAMAGE, BlockAddress.fromInt(1, 1, 31)));
 		Assert.assertEquals(1, snapshot.cuboids().get(stoneAddress).scheduledBlockMutations().size());
 		MutationBlockIncrementalBreak mutation = (MutationBlockIncrementalBreak) snapshot.cuboids().get(stoneAddress).scheduledBlockMutations().get(0).mutation();
 		
@@ -692,7 +692,7 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		// Note that we no longer see block update events in the scheduled mutations and nothing else was scheduled.
 		Assert.assertEquals(0, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
-		Assert.assertEquals(MILLIS_PER_TICK, snapshot.cuboids().get(stoneAddress).completed().getData15(AspectRegistry.DAMAGE, BlockAddress.fromInt(1, 1, 31)));
+		Assert.assertEquals(MILLIS_PER_TICK, snapshot.cuboids().get(stoneAddress).completed().getDataSpecial(AspectRegistry.DAMAGE, BlockAddress.fromInt(1, 1, 31)).intValue());
 		
 		runner.shutdown();
 	}
@@ -1200,7 +1200,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
 		Assert.assertEquals(1, snapshot.cuboids().values().iterator().next().blockChanges().size());
 		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
-		Assert.assertEquals((short)100, snapshot.cuboids().get(address).completed().getData15(AspectRegistry.DAMAGE, stoneLocation.getBlockAddress()));
+		Assert.assertEquals(100, snapshot.cuboids().get(address).completed().getDataSpecial(AspectRegistry.DAMAGE, stoneLocation.getBlockAddress()).intValue());
 		
 		// Apply the second break attempt, which should break it.
 		_applyIncrementalBreaks(runner, nextCommit, entityId, entity, stoneLocation, (short)100);
@@ -1944,7 +1944,7 @@ public class TestTickRunner
 		
 		// We just enqueue a future mutation to do basic damage.
 		AbsoluteLocation target = new AbsoluteLocation(16, 16, 16);
-		short damage = 100;
+		int damage = 100;
 		long delayMillis = 2L * MILLIS_PER_TICK - 1L;
 		MutationBlockIncrementalBreak takeDamage = new MutationBlockIncrementalBreak(target, damage, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		runner.enqueueEntityChange(entityId, _wrapSubAction(entity.entity(), new EntityChangeFutureBlock(takeDamage, delayMillis)), 1L);
@@ -1962,11 +1962,11 @@ public class TestTickRunner
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
 		Assert.assertEquals(0, snap.stats().committedCuboidMutationCount());
-		Assert.assertEquals(0, snap.cuboids().get(address).completed().getData15(AspectRegistry.DAMAGE, target.getBlockAddress()));
+		Assert.assertNull(snap.cuboids().get(address).completed().getDataSpecial(AspectRegistry.DAMAGE, target.getBlockAddress()));
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snap.stats().committedCuboidMutationCount());
-		Assert.assertEquals(damage, snap.cuboids().get(address).completed().getData15(AspectRegistry.DAMAGE, target.getBlockAddress()));
+		Assert.assertEquals(damage, snap.cuboids().get(address).completed().getDataSpecial(AspectRegistry.DAMAGE, target.getBlockAddress()).intValue());
 	}
 
 	@Test

@@ -37,10 +37,10 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 
 
 	private final AbsoluteLocation _location;
-	private final short _damageToApply;
+	private final int _damageToApply;
 	private final int _optionalEntityForStorage;
 
-	public MutationBlockIncrementalBreak(AbsoluteLocation location, short damageToApply, int optionalEntityForStorage)
+	public MutationBlockIncrementalBreak(AbsoluteLocation location, int damageToApply, int optionalEntityForStorage)
 	{
 		_location = location;
 		_damageToApply = damageToApply;

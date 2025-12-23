@@ -69,9 +69,13 @@ public class BlockProxy implements IBlockProxy
 	}
 
 	@Override
-	public short getDamage()
+	public int getDamage()
 	{
-		return _getData15(AspectRegistry.DAMAGE);
+		Integer object = _getDataSpecial(AspectRegistry.DAMAGE);
+		return (null != object)
+			? object.intValue()
+			: 0
+		;
 	}
 
 	@Override

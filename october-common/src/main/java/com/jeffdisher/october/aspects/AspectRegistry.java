@@ -4,6 +4,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.jeffdisher.october.data.CraftingAspectCodec;
+import com.jeffdisher.october.data.DamageAspectCodec;
 import com.jeffdisher.october.data.EnchantingAspectCodec;
 import com.jeffdisher.october.data.FuelledAspectCodec;
 import com.jeffdisher.october.data.IObjectCodec;
@@ -57,17 +58,17 @@ public class AspectRegistry
 	/**
 	 * Block "damage value".  This is usually 0 ("not damaged") but can be as high as 32000, used to handle things like
 	 * incremental block breaking, etc.
+	 * This is stored as OctreeObject<Integer> since the data is usually very sparse and we want reasonable precision.
 	 * In theory, this could probably be made into something non-persistent if we wanted to save storage space, but the
 	 * benefit would probably be negligible.
 	 */
-	public static final Aspect<Short, OctreeShort> DAMAGE = registerAspect(Short.class
-			, OctreeShort.class
-			, () -> OctreeShort.empty()
-			, (OctreeShort original) -> {
-				return original.cloneData();
+	public static final Aspect<Integer, OctreeObject<Integer>> DAMAGE = registerAspect(Integer.class
+			, OctreeObject.getDecoratedClass()
+			, () -> OctreeObject.create()
+			, (OctreeObject<Integer> original) -> {
+				return original.cloneMapShallow();
 			}
-			// IAspectCodec only exists for OctreeObject types.
-			, null
+			, new DamageAspectCodec()
 	);
 	/**
 	 * CraftOperation objects, usually null.  Note that these must be combined with Inventory aspect in order to craft.

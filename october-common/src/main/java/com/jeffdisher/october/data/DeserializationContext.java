@@ -15,6 +15,7 @@ public record DeserializationContext(Environment env
 	, ByteBuffer buffer
 	, long currentGameMillis
 	, boolean usePreV8NonStackableDecoding
+	, boolean usePreV11DamageDecoding
 )
 {
 	/**
@@ -30,6 +31,7 @@ public record DeserializationContext(Environment env
 		return new DeserializationContext(env
 			, buffer
 			, 0L
+			, false
 			, false
 		);
 	}

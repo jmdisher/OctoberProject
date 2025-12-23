@@ -50,7 +50,7 @@ public class MutationBlockIncrementalRepair implements IMutationBlock
 		boolean didApply = false;
 		
 		// Check that this block is damaged.
-		short damage = newBlock.getDamage();
+		int damage = newBlock.getDamage();
 		boolean hasPositiveDamage = (damage > 0);
 		
 		if (hasPositiveDamage)

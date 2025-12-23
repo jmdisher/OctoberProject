@@ -201,7 +201,17 @@ public class CuboidData implements IReadOnlyCuboidData
 			if (buffer.hasRemaining())
 			{
 				Aspect<?, ?> type = AspectRegistry.ALL_ASPECTS[i];
-				Object octreeResume = _deserializeSafe(context, octreeState, type);
+				Object octreeResume;
+				if (context.usePreV11DamageDecoding() && (i == AspectRegistry.DAMAGE.index()))
+				{
+					// We just need to read this entry to keep decoding consistent but we will drop it.
+					IOctree<Short> oldTree = OctreeShort.empty();
+					octreeResume = oldTree.deserializeResumable(octreeState, context, null);
+				}
+				else
+				{
+					octreeResume = _deserializeSafe(context, octreeState, type);
+				}
 				if (null != octreeResume)
 				{
 					resume = new _ResumableState(i, octreeResume);

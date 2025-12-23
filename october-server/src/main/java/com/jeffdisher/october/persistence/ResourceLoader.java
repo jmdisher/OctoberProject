@@ -476,10 +476,12 @@ public class ResourceLoader
 			// We want to create the decoder context here since we have version data.
 			Environment env = Environment.getShared();
 			boolean usePreV8NonStackableDecoding = (version <= VERSION_CUBOID_V7);
+			boolean usePreV11DamageDecoding = (version <= VERSION_CUBOID_V10);
 			DeserializationContext context = new DeserializationContext(env
 				, buffer
 				, currentGameMillis
 				, usePreV8NonStackableDecoding
+				, usePreV11DamageDecoding
 			);
 			
 			Supplier<SuspendedCuboid<CuboidData>> dataReader;
@@ -1192,11 +1194,13 @@ public class ResourceLoader
 			
 			// We want to create the decoder context here since we have version data.
 			Environment env = Environment.getShared();
-			boolean usePreV8NonStackableDecoding = (version <= VERSION_CUBOID_V7);
+			boolean usePreV8NonStackableDecoding = (version <= VERSION_ENTITY_V7);
+			boolean usePreV11DamageDecoding = false;
 			DeserializationContext context = new DeserializationContext(env
 				, buffer
 				, currentGameMillis
 				, usePreV8NonStackableDecoding
+				, usePreV11DamageDecoding
 			);
 			
 			Supplier<SuspendedEntity> dataReader;

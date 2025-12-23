@@ -29,7 +29,7 @@ public interface IBlockProxy
 	/**
 	 * @return The damage value for this block (usually 0).
 	 */
-	short getDamage();
+	int getDamage();
 	/**
 	 * @return The crafting operation for this block (usually null).
 	 */

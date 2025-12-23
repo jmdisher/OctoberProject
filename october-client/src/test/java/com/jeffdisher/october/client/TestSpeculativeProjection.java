@@ -874,7 +874,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, commit1);
 		Assert.assertEquals(1, listener.changeCount);
 		Assert.assertEquals(STONE_ITEM.number(), listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
-		Assert.assertEquals((short)100, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
+		Assert.assertEquals(100, listener.lastData.getDataSpecial(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()).intValue());
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
 		Assert.assertEquals(1, listener.lastChangedAspects.size());
@@ -895,7 +895,7 @@ public class TestSpeculativeProjection
 		}
 		long commit2 = nextCommit - 1L;
 		Assert.assertEquals(ENV.special.AIR.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
-		Assert.assertEquals((short) 0, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
+		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		// We should see no inventory in the block but the item should be in the entity's inventory.
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
 		Assert.assertEquals(1, listener.thisEntityState.inventory().getCount(STONE.item()));
@@ -940,7 +940,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(hitsToBreak - 1, speculativeCount);
 		Assert.assertEquals(changes, listener.changeCount);
 		Assert.assertEquals(ENV.special.AIR.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
-		Assert.assertEquals((short) 0, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
+		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
 		Assert.assertEquals(1, listener.thisEntityState.inventory().getCount(STONE.item()));
 		
@@ -965,7 +965,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(changes, listener.changeCount);
 		Assert.assertEquals(ENV.special.AIR.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
-		Assert.assertEquals((short) 0, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
+		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
 		// (the authoritative side doesn't synthesize the item entering the inventory so it will be empty until the authoritative answer arrives).
 		Assert.assertEquals(1, listener.thisEntityState.inventory().getCount(STONE.item()));
@@ -2021,7 +2021,7 @@ public class TestSpeculativeProjection
 		long commit1 = _wrapAndApply(projector, entity, currentTimeMillis, placeBlock);
 		Assert.assertEquals(hitsToBreak + 1, commit1);
 		Assert.assertEquals(dirt.number(), listener.lastData.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
-		Assert.assertEquals(0, listener.lastData.getData15(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
+		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
 		Assert.assertEquals(0, listener.thisEntityState.inventory().getCount(dirt));
 		Assert.assertEquals(2, listener.events.size());
 		Assert.assertEquals(EventRecord.Type.BLOCK_PLACED, listener.events.get(1).type());
@@ -2053,7 +2053,7 @@ public class TestSpeculativeProjection
 			);
 			Assert.assertEquals(hitsToBreak - i, speculativeCount);
 			Assert.assertEquals(dirt.number(), listener.lastData.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
-			Assert.assertEquals(0, listener.lastData.getData15(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
+			Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
 			Assert.assertEquals(0, listener.thisEntityState.inventory().getCount(dirt));
 		}
 		
@@ -2077,7 +2077,7 @@ public class TestSpeculativeProjection
 		);
 		Assert.assertEquals(1, speculativeCount);
 		Assert.assertEquals(dirt.number(), listener.lastData.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
-		Assert.assertEquals(0, listener.lastData.getData15(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
+		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
 		Assert.assertEquals(0, listener.thisEntityState.inventory().getCount(dirt));
 		
 		// We need to track a representation of the server-side Entity due to how the updates to the client are encoded.
@@ -2107,7 +2107,7 @@ public class TestSpeculativeProjection
 		);
 		Assert.assertEquals(1, speculativeCount);
 		Assert.assertEquals(dirt.number(), listener.lastData.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
-		Assert.assertEquals(0, listener.lastData.getData15(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
+		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
 		Assert.assertEquals(0, listener.thisEntityState.inventory().getCount(dirt));
 		
 		currentTimeMillis += 100L;
@@ -2130,7 +2130,7 @@ public class TestSpeculativeProjection
 		);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(dirt.number(), listener.lastData.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
-		Assert.assertEquals(0, listener.lastData.getData15(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
+		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
 		Assert.assertEquals(0, listener.thisEntityState.inventory().getCount(dirt));
 		
 		currentTimeMillis += 100L;
@@ -2153,7 +2153,7 @@ public class TestSpeculativeProjection
 		);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(dirt.number(), listener.lastData.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
-		Assert.assertEquals(0, listener.lastData.getData15(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
+		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
 		Assert.assertEquals(0, listener.thisEntityState.inventory().getCount(dirt));
 		Assert.assertEquals(2, listener.events.size());
 	}

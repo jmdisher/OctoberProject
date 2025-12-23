@@ -346,8 +346,8 @@ public class TestResourceLoader
 		// Make sure that we see this written back.
 		File cuboidFile = new File(worldDirectory, "cuboid_" + airAddress.x() + "_" + airAddress.y() + "_" + airAddress.z() + ".cuboid");
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 75 bytes.
-		Assert.assertEquals(75L, cuboidFile.length());
+		// Experimentally, we know that this is 77 bytes.
+		Assert.assertEquals(77L, cuboidFile.length());
 		
 		// Now, create a new loader, load, and resave this.
 		loader = new ResourceLoader(worldDirectory, null, null);
@@ -361,8 +361,8 @@ public class TestResourceLoader
 		
 		// Verify that the file has been truncated.
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 52 bytes.
-		Assert.assertEquals(52L, cuboidFile.length());
+		// Experimentally, we know that this is 54 bytes.
+		Assert.assertEquals(54L, cuboidFile.length());
 		
 		// Load it again and verify that the mutation is missing and we parsed without issue.
 		loader = new ResourceLoader(worldDirectory, null, null);
@@ -824,7 +824,8 @@ public class TestResourceLoader
 		Assert.assertEquals(wireNumber, found.getData15(AspectRegistry.BLOCK, wireLocation.getBlockAddress()));
 		Assert.assertEquals(0, found.getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
 		Assert.assertEquals(lampOffNumber, found.getData15(AspectRegistry.BLOCK, lampOnLocation.getBlockAddress()));
-		Assert.assertEquals(1, found.getData15(AspectRegistry.DAMAGE, lampOnLocation.getBlockAddress()));
+		// We just drop old damage version so this was written as (short)1 but will be read as null.
+		Assert.assertNull(found.getDataSpecial(AspectRegistry.DAMAGE, lampOnLocation.getBlockAddress()));
 		
 		Assert.assertEquals(doorClosedNumber, found.getData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress()));
 		Assert.assertEquals(multiDoorClosedNumber, found.getData15(AspectRegistry.BLOCK, multiDoorLocation.getBlockAddress()));

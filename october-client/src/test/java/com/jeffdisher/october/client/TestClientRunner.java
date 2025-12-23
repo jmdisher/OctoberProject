@@ -179,7 +179,7 @@ public class TestClientRunner
 		runnerList.runFullQueue(currentTimeMillis);
 		Assert.assertTrue(projection.loadedCuboids.containsKey(cuboidAddress));
 		Assert.assertEquals(DIRT.item().number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
-		Assert.assertEquals((short)0, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
+		Assert.assertNull(projection.loadedCuboids.get(cuboidAddress).getDataSpecial(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		
 		// Start the multi-phase - we will assume that we need 2 hits to break this block.
 		currentTimeMillis += 100L;
@@ -207,7 +207,7 @@ public class TestClientRunner
 		
 		// Verify that the block isn't broken, but is damaged.
 		Assert.assertEquals(DIRT.item().number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
-		Assert.assertEquals((short)100, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
+		Assert.assertEquals(100, projection.loadedCuboids.get(cuboidAddress).getDataSpecial(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()).intValue());
 		
 		// Send the second hit and wait for the same operation.
 		currentTimeMillis += 100L;
@@ -591,7 +591,7 @@ public class TestClientRunner
 		CuboidAddress cuboidAddress = changeLocation.getCuboidAddress();
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress(), STONE.item().number());
-		cuboid.setData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress(), (short)150);
+		cuboid.setDataSpecial(AspectRegistry.DAMAGE, changeLocation.getBlockAddress(), 150);
 		CuboidData serverCuboid = CuboidData.mutableClone(cuboid);
 		
 		TestAdapter network = new TestAdapter();
@@ -615,7 +615,7 @@ public class TestClientRunner
 		runnerList.runFullQueue(currentTimeMillis);
 		Assert.assertTrue(projection.loadedCuboids.containsKey(cuboidAddress));
 		Assert.assertEquals(STONE_ITEM.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
-		Assert.assertEquals((short)150, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
+		Assert.assertEquals(150, projection.loadedCuboids.get(cuboidAddress).getDataSpecial(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()).intValue());
 		
 		// Run a repair call and observe the damage value change.
 		currentTimeMillis += 100L;
@@ -642,7 +642,7 @@ public class TestClientRunner
 		
 		// Verify that the block has been partially repaired.
 		Assert.assertEquals(STONE_ITEM.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
-		Assert.assertEquals((short)50, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
+		Assert.assertEquals(50, projection.loadedCuboids.get(cuboidAddress).getDataSpecial(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()).intValue());
 		
 		// Disconnect them.
 		network.client.adapterDisconnected();
