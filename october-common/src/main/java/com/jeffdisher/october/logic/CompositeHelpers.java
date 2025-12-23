@@ -118,32 +118,8 @@ public class CompositeHelpers
 				, new AbsoluteLocation( 2, 0, 0)
 				, new AbsoluteLocation( 1, 0, 0)
 			);
-			Set<AbsoluteLocation> airSet = Set.of(
-				new AbsoluteLocation(-1, 0, 1)
-				, new AbsoluteLocation(0, 0, 1)
-				, new AbsoluteLocation(1, 0, 1)
-				, new AbsoluteLocation(-1, 0, 2)
-				, new AbsoluteLocation(0, 0, 2)
-				, new AbsoluteLocation(1, 0, 2)
-				, new AbsoluteLocation(-1, 0, 3)
-				, new AbsoluteLocation(0, 0, 3)
-				, new AbsoluteLocation(1, 0, 3)
-			);
 			OrientationAspect.Direction orientation = proxy.getOrientation();
 			isValid = _matchBlockTypes(context, orientation, location, stoneSet, stoneBlock);
-			if (isValid)
-			{
-				boolean airValid = _matchBlockTypes(context, orientation, location, airSet, env.special.AIR);
-				if (airValid)
-				{
-					isValid = true;
-				}
-				else
-				{
-					Block portalSurfaceBlock = env.blocks.fromItem(env.items.getItemById(PORTAL_SURFACE_ID));
-					isValid = _matchBlockTypes(context, orientation, location, airSet, portalSurfaceBlock);
-				}
-			}
 		}
 		else if (ENCHANTING_TABLE_ID.equals(blockId))
 		{
