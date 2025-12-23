@@ -69,10 +69,8 @@ public class CuboidCodec
 		{
 			ByteBuffer buffer = ByteBuffer.wrap(fragment.payload);
 			// This is network related so we can just use no special rules.
-			DeserializationContext context = new DeserializationContext(Environment.getShared()
+			DeserializationContext context = DeserializationContext.empty(Environment.getShared()
 				, buffer
-				, 0L
-				, false
 			);
 			_state = _cuboid.deserializeResumable(_state, context);
 			// We return the cuboid if this is the last fragment.

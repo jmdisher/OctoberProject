@@ -337,10 +337,8 @@ public class MutationBlockSetBlock
 	private static <T> T _readSpecial(Aspect<T, ?> type, ByteBuffer buffer)
 	{
 		// This is an in-memory copy so we can just use no special rules.
-		DeserializationContext context = new DeserializationContext(Environment.getShared()
+		DeserializationContext context = DeserializationContext.empty(Environment.getShared()
 			, buffer
-			, 0L
-			, false
 		);
 		return type.codec().loadData(context);
 	}

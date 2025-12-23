@@ -95,10 +95,8 @@ public class TestCodecHelpers
 		;
 		CodecHelpers.writeInventory(buffer, test);
 		buffer.flip();
-		DeserializationContext context = new DeserializationContext(Environment.getShared()
+		DeserializationContext context = DeserializationContext.empty(Environment.getShared()
 			, buffer
-			, 0L
-			, false
 		);
 		Inventory output = CodecHelpers.readInventory(context);
 		// Inventory has not .equals so check some internal data.
@@ -119,10 +117,8 @@ public class TestCodecHelpers
 		Inventory test = null;
 		CodecHelpers.writeInventory(buffer, test);
 		buffer.flip();
-		DeserializationContext context = new DeserializationContext(Environment.getShared()
+		DeserializationContext context = DeserializationContext.empty(Environment.getShared()
 			, buffer
-			, 0L
-			, false
 		);
 		Inventory output = CodecHelpers.readInventory(context);
 		Assert.assertNull(output);
@@ -207,10 +203,8 @@ public class TestCodecHelpers
 		Entity test = MutableEntity.createForTest(1).freeze();
 		CodecHelpers.writeEntityDisk(buffer, test);
 		buffer.flip();
-		Entity output = CodecHelpers.readEntityDisk(new DeserializationContext(ENV
+		Entity output = CodecHelpers.readEntityDisk(DeserializationContext.empty(ENV
 			, buffer
-			, 0L
-			, false
 		));
 		// Entity contains Inventory, which has no .equals, so compare other parts.
 		Assert.assertEquals(test.id(), output.id());
@@ -228,10 +222,8 @@ public class TestCodecHelpers
 		Entity test = mutable.freeze();
 		CodecHelpers.writeEntityNetwork(buffer, test);
 		buffer.flip();
-		Entity output = CodecHelpers.readEntityNetwork(new DeserializationContext(ENV
+		Entity output = CodecHelpers.readEntityNetwork(DeserializationContext.empty(ENV
 			, buffer
-			, 0L
-			, false
 		));
 		
 		Assert.assertEquals(test.id(), output.id());
@@ -256,10 +248,8 @@ public class TestCodecHelpers
 		FuelState test = new FuelState(0, null, Inventory.start(10).addStackable(STONE_ITEM, 1).finish());
 		CodecHelpers.writeFuelState(buffer, test);
 		buffer.flip();
-		DeserializationContext context = new DeserializationContext(Environment.getShared()
+		DeserializationContext context = DeserializationContext.empty(Environment.getShared()
 			, buffer
-			, 0L
-			, false
 		);
 		FuelState output = CodecHelpers.readFuelState(context);
 		Assert.assertEquals(test.millisFuelled(), output.millisFuelled());
@@ -271,10 +261,8 @@ public class TestCodecHelpers
 		test = null;
 		CodecHelpers.writeFuelState(buffer, test);
 		buffer.flip();
-		context = new DeserializationContext(Environment.getShared()
+		context = DeserializationContext.empty(Environment.getShared()
 			, buffer
-			, 0L
-			, false
 		);
 		output = CodecHelpers.readFuelState(context);
 		Assert.assertNull(output);
@@ -287,20 +275,16 @@ public class TestCodecHelpers
 		NonStackableItem test = new NonStackableItem(STONE_ITEM, Map.of(PropertyRegistry.DURABILITY, 10));
 		CodecHelpers.writeNonStackableItem(buffer, test);
 		buffer.flip();
-		NonStackableItem output = CodecHelpers.readNonStackableItem(new DeserializationContext(ENV
+		NonStackableItem output = CodecHelpers.readNonStackableItem(DeserializationContext.empty(ENV
 			, buffer
-			, 0L
-			, false
 		));
 		Assert.assertEquals(test, output);
 		
 		buffer.clear();
 		CodecHelpers.writeNonStackableItem(buffer, null);
 		buffer.flip();
-		output = CodecHelpers.readNonStackableItem(new DeserializationContext(ENV
+		output = CodecHelpers.readNonStackableItem(DeserializationContext.empty(ENV
 			, buffer
-			, 0L
-			, false
 		));
 		Assert.assertNull(output);
 	}
@@ -346,10 +330,8 @@ public class TestCodecHelpers
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		CodecHelpers.writeSlot(buffer, null);
 		buffer.flip();
-		DeserializationContext context = new DeserializationContext(Environment.getShared()
+		DeserializationContext context = DeserializationContext.empty(Environment.getShared()
 			, buffer
-			, 0L
-			, false
 		);
 		Assert.assertNull(CodecHelpers.readSlot(context));
 		
@@ -357,10 +339,8 @@ public class TestCodecHelpers
 		NonStackableItem sword = new NonStackableItem(IRON_SWORD_ITEM, Map.of(PropertyRegistry.DURABILITY, 103));
 		CodecHelpers.writeSlot(buffer, ItemSlot.fromNonStack(sword));
 		buffer.flip();
-		context = new DeserializationContext(Environment.getShared()
+		context = DeserializationContext.empty(Environment.getShared()
 			, buffer
-			, 0L
-			, false
 		);
 		ItemSlot output = CodecHelpers.readSlot(context);
 		Assert.assertEquals(sword, output.nonStackable);
@@ -369,10 +349,8 @@ public class TestCodecHelpers
 		Items stack = new Items(STONE_ITEM, 5);
 		CodecHelpers.writeSlot(buffer, ItemSlot.fromStack(stack));
 		buffer.flip();
-		context = new DeserializationContext(Environment.getShared()
+		context = DeserializationContext.empty(Environment.getShared()
 			, buffer
-			, 0L
-			, false
 		);
 		output = CodecHelpers.readSlot(context);
 		Assert.assertEquals(stack, output.stack);
@@ -447,20 +425,16 @@ public class TestCodecHelpers
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		CodecHelpers.writeEntityNetwork(buffer, test);
 		buffer.flip();
-		Entity network = CodecHelpers.readEntityNetwork(new DeserializationContext(ENV
+		Entity network = CodecHelpers.readEntityNetwork(DeserializationContext.empty(ENV
 			, buffer
-			, 0L
-			, false
 		));
 		Assert.assertEquals(1234, network.ephemeralShared().chargeMillis());
 		
 		buffer = buffer.clear();
 		CodecHelpers.writeEntityDisk(buffer, test);
 		buffer.flip();
-		Entity disk = CodecHelpers.readEntityDisk(new DeserializationContext(ENV
+		Entity disk = CodecHelpers.readEntityDisk(DeserializationContext.empty(ENV
 			, buffer
-			, 0L
-			, false
 		));
 		Assert.assertEquals(0, disk.ephemeralShared().chargeMillis());
 	}
@@ -646,10 +620,8 @@ public class TestCodecHelpers
 		CodecHelpers.writeEnchantingOperation(buffer, nullOp);
 		
 		buffer.flip();
-		DeserializationContext context = new DeserializationContext(Environment.getShared()
+		DeserializationContext context = DeserializationContext.empty(Environment.getShared()
 			, buffer
-			, 0L
-			, false
 		);
 		EnchantingOperation eoOut = CodecHelpers.readEnchantingOperation(context);
 		EnchantingOperation ioOut = CodecHelpers.readEnchantingOperation(context);

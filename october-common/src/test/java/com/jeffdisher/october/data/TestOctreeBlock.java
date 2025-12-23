@@ -375,10 +375,8 @@ public class TestOctreeBlock
 		buffer.flip();
 		Assert.assertEquals(1, buffer.remaining());
 		OctreeInflatedByte test = OctreeInflatedByte.empty();
-		DeserializationContext context = new DeserializationContext(Environment.getShared()
+		DeserializationContext context = DeserializationContext.empty(Environment.getShared()
 			, buffer
-			, 0L
-			, false
 		);
 		state = test.deserializeResumable(null, context, null);
 		Assert.assertNull(state);
@@ -395,10 +393,8 @@ public class TestOctreeBlock
 		buffer.flip();
 		Assert.assertEquals(36, buffer.remaining());
 		OctreeInflatedByte test2 = OctreeInflatedByte.empty();
-		context = new DeserializationContext(Environment.getShared()
+		context = DeserializationContext.empty(Environment.getShared()
 			, buffer
-			, 0L
-			, false
 		);
 		state = test2.deserializeResumable(null, context, null);
 		Assert.assertNull(state);
@@ -425,10 +421,8 @@ public class TestOctreeBlock
 		
 		buffer.flip();
 		OctreeShort output = OctreeShort.empty();
-		DeserializationContext context = new DeserializationContext(Environment.getShared()
+		DeserializationContext context = DeserializationContext.empty(Environment.getShared()
 			, buffer
-			, 0L
-			, false
 		);
 		state = output.deserializeResumable(null, context, null);
 		Assert.assertNull(state);
@@ -471,10 +465,8 @@ public class TestOctreeBlock
 		
 		buffer.flip();
 		OctreeByte output = OctreeByte.empty();
-		DeserializationContext context = new DeserializationContext(Environment.getShared()
+		DeserializationContext context = DeserializationContext.empty(Environment.getShared()
 			, buffer
-			, 0L
-			, false
 		);
 		state = output.deserializeResumable(null, context, null);
 		Assert.assertNull(state);

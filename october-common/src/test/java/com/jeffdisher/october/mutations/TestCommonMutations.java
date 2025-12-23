@@ -386,10 +386,8 @@ public class TestCommonMutations
 		ByteBuffer buffer = ByteBuffer.allocate(64);
 		replace.serializeToBuffer(buffer);
 		buffer.flip();
-		MutationBlockReplace test = MutationBlockReplace.deserialize(new DeserializationContext(ENV
+		MutationBlockReplace test = MutationBlockReplace.deserialize(DeserializationContext.empty(ENV
 			, buffer
-			, 0L
-			, false
 		));
 		Assert.assertNotNull(test);
 	}

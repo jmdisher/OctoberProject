@@ -123,10 +123,8 @@ public class EntityUpdatePerField
 	public static EntityUpdatePerField deserializeFromNetworkBuffer(ByteBuffer buffer)
 	{
 		// This is always coming in from the network so it has no version-specific considerations.
-		DeserializationContext context = new DeserializationContext(Environment.getShared()
+		DeserializationContext context = DeserializationContext.empty(Environment.getShared()
 			, buffer
-			, 0L
-			, false
 		);
 		
 		// We store a 16-bit vector for the fields present as a header.

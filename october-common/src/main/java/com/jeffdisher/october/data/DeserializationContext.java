@@ -17,4 +17,20 @@ public record DeserializationContext(Environment env
 	, boolean usePreV8NonStackableDecoding
 )
 {
+	/**
+	 * A helper to handle the common case of creating a context with no special options.  This is often used in tests or
+	 * in places related to the network where there are no special options based on versioning.
+	 * 
+	 * @param env The environment.
+	 * @param buffer The buffer to deserialize.
+	 * @return A context with no special deserialization options.
+	 */
+	public static DeserializationContext empty(Environment env, ByteBuffer buffer)
+	{
+		return new DeserializationContext(env
+			, buffer
+			, 0L
+			, false
+		);
+	}
 }

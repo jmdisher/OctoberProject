@@ -665,7 +665,7 @@ public class CodecHelpers
 		EntityLocation velocity = _readEntityLocation(buffer);
 		
 		// We need to fake-up a context with defaults to read this.
-		DeserializationContext context = new DeserializationContext(Environment.getShared(), buffer, 0L, false);
+		DeserializationContext context = DeserializationContext.empty(Environment.getShared(), buffer);
 		Object extendedData = type.extendedCodec().read(context);
 		
 		return new PartialPassive(id

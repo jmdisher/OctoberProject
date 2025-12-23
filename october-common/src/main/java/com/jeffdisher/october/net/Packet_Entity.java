@@ -16,10 +16,8 @@ public class Packet_Entity extends PacketFromServer
 	{
 		opcodeTable[TYPE.ordinal()] = (ByteBuffer buffer) -> {
 			// This is network so we don't need version-specific decoding.
-			DeserializationContext context = new DeserializationContext(Environment.getShared()
+			DeserializationContext context = DeserializationContext.empty(Environment.getShared()
 				, buffer
-				, 0L
-				, false
 			);
 			Entity entity = CodecHelpers.readEntityNetwork(context);
 			return new Packet_Entity(entity);

@@ -52,10 +52,8 @@ public class TestCuboidData
 		buffer.flip();
 		
 		CuboidData output = CuboidData.createEmpty(cuboidAddress);
-		DeserializationContext context = new DeserializationContext(Environment.getShared()
+		DeserializationContext context = DeserializationContext.empty(Environment.getShared()
 			, buffer
-			, 0L
-			, false
 		);
 		resume = output.deserializeResumable(null, context);
 		Assert.assertNull(resume);
@@ -79,10 +77,8 @@ public class TestCuboidData
 		buffer.flip();
 		
 		CuboidData output = CuboidData.createEmpty(cuboidAddress);
-		DeserializationContext context = new DeserializationContext(Environment.getShared()
+		DeserializationContext context = DeserializationContext.empty(Environment.getShared()
 			, buffer
-			, 0L
-			, false
 		);
 		resume = output.deserializeResumable(null, context);
 		Assert.assertNull(resume);
@@ -112,10 +108,8 @@ public class TestCuboidData
 		{
 			resumeSerialize = input.serializeResumable(resumeSerialize, buffer);
 			buffer.flip();
-			DeserializationContext context = new DeserializationContext(Environment.getShared()
+			DeserializationContext context = DeserializationContext.empty(Environment.getShared()
 				, buffer
-				, 0L
-				, false
 			);
 			resumeDeserialize = output.deserializeResumable(resumeDeserialize, context);
 			buffer.clear();
@@ -143,10 +137,8 @@ public class TestCuboidData
 		{
 			resumeSerialize = input.serializeResumable(resumeSerialize, buffer);
 			buffer.flip();
-			DeserializationContext context = new DeserializationContext(Environment.getShared()
+			DeserializationContext context = DeserializationContext.empty(Environment.getShared()
 				, buffer
-				, 0L
-				, false
 			);
 			resumeDeserialize = output.deserializeResumable(resumeDeserialize, context);
 			buffer.clear();
@@ -243,10 +235,8 @@ public class TestCuboidData
 		buffer.flip();
 		
 		CuboidData output = CuboidData.createEmpty(cuboidAddress);
-		DeserializationContext context = new DeserializationContext(Environment.getShared()
+		DeserializationContext context = DeserializationContext.empty(Environment.getShared()
 			, buffer
-			, 0L
-			, false
 		);
 		resume = output.deserializeResumable(null, context);
 		Assert.assertNull(resume);

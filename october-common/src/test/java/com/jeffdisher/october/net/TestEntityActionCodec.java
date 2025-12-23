@@ -41,10 +41,8 @@ public class TestEntityActionCodec
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		EntityActionCodec.serializeToBuffer(buffer, change);
 		buffer.flip();
-		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV
+		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(DeserializationContext.empty(ENV
 			, buffer
-			, 0L
-			, false
 		));
 		Assert.assertTrue(read instanceof EntityActionTakeDamageFromEntity);
 		Assert.assertEquals(0, buffer.remaining());
@@ -69,10 +67,8 @@ public class TestEntityActionCodec
 		buffer.put(cause);
 		
 		buffer.flip();
-		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(new DeserializationContext(ENV
+		IEntityAction<IMutablePlayerEntity> read = EntityActionCodec.parseAndSeekContext(DeserializationContext.empty(ENV
 			, buffer
-			, 0L
-			, false
 		));
 		Assert.assertTrue(read instanceof Deprecated_EntityAction);
 		Assert.assertEquals(0, buffer.remaining());
