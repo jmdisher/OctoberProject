@@ -1,9 +1,17 @@
 package com.jeffdisher.october.aspects;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.jeffdisher.october.config.TabListReader;
+import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.Item;
 
 
 /**
@@ -13,25 +21,128 @@ import com.jeffdisher.october.types.Block;
  * specifically.
  * An example of a different use-case is tilled soil:  It doesn't spread but is made invalid by placing things on top of
  * it and converts to dirt.
- * TODO:  For now, we just hard-code all of this but it should move to data files in the future.
  */
 public class GroundCoverRegistry
 {
+	public static final String KEY_CAN_SPREAD = "can_spread";
+
+	public static GroundCoverRegistry load(ItemRegistry items
+		, BlockAspect blocks
+		, InputStream stream
+	) throws IOException, TabListException
+	{
+		Map<Block, Block> spreadingGroundCoverToTargets = new HashMap<>();
+		Map<Block, Block> nonSpreadingToBaseType = new HashMap<>();
+		Map<Block, Set<Block>> canGrowGroundCover = new HashMap<>();
+		
+		TabListReader.IParseCallbacks callbacks = new TabListReader.IParseCallbacks() {
+			private Block _block;
+			private Block _baseBlock;
+			private Boolean _canSpread;
+			@Override
+			public void startNewRecord(String name, String[] parameters) throws TabListException
+			{
+				_block = _getBlock(name);
+				if (spreadingGroundCoverToTargets.containsKey(_block) || nonSpreadingToBaseType.containsKey(_block))
+				{
+					throw new TabListReader.TabListException("Duplicate entry for: \"" + name + "\"");
+				}
+				if (1 != parameters.length)
+				{
+					throw new TabListReader.TabListException("Base block type expected for: \"" + name + "\"");
+				}
+				_baseBlock = _getBlock(parameters[0]);
+			}
+			@Override
+			public void endRecord() throws TabListException
+			{
+				if (null == _canSpread)
+				{
+					throw new TabListReader.TabListException("Missing \"can_spread\" sub-field for: \"" + _block + "\"");
+				}
+				if (_canSpread)
+				{
+					spreadingGroundCoverToTargets.put(_block, _baseBlock);
+				}
+				else
+				{
+					nonSpreadingToBaseType.put(_block, _baseBlock);
+				}
+				
+				Set<Block> revert = canGrowGroundCover.get(_baseBlock);
+				if (null == revert)
+				{
+					revert = Set.of(_block);
+				}
+				else
+				{
+					Set<Block> mutable = new HashSet<>();
+					mutable.addAll(revert);
+					mutable.add(_block);
+					revert = Collections.unmodifiableSet(mutable);
+				}
+				canGrowGroundCover.put(_baseBlock, revert);
+				
+				_block = null;
+				_baseBlock = null;
+				_canSpread = null;
+			}
+			@Override
+			public void processSubRecord(String name, String[] parameters) throws TabListException
+			{
+				if (KEY_CAN_SPREAD.equals(name))
+				{
+					if (null != _canSpread)
+					{
+						throw new TabListReader.TabListException("Duplicate \"can_spread\" sub-field for: \"" + _block + "\"");
+					}
+					if (1 != parameters.length)
+					{
+						throw new TabListReader.TabListException("Sub-field \"can_spread\" expects only one parameter for: \"" + name + "\"");
+					}
+					_canSpread = Boolean.parseBoolean(parameters[0]);
+				}
+				else
+				{
+					throw new TabListReader.TabListException("Unknown sub-field \"" + name + "\" for: \"" + _block + "\"");
+				}
+			}
+			private Block _getBlock(String name) throws TabListException
+			{
+				Item item = items.getItemById(name);
+				if (null == item)
+				{
+					throw new TabListReader.TabListException("Not a valid item: \"" + name + "\"");
+				}
+				Block block = blocks.fromItem(item);
+				if (null == block)
+				{
+					throw new TabListReader.TabListException("Not a block: \"" + name + "\"");
+				}
+				return block;
+			}
+		};
+		TabListReader.readEntireFile(callbacks, stream);
+		
+		return new GroundCoverRegistry(spreadingGroundCoverToTargets
+			, nonSpreadingToBaseType
+			, canGrowGroundCover
+		);
+	}
+
+
 	private final Map<Block, Block> _groundCoverToTargets;
 	private final Map<Block, Block> _nonSpreadingToBaseType;
 	private final Map<Block, Set<Block>> _canGrowGroundCover;
 
-	public GroundCoverRegistry(ItemRegistry items, BlockAspect blocks)
+	private GroundCoverRegistry(Map<Block, Block> groundCoverToTargets
+		, Map<Block, Block> nonSpreadingToBaseType
+		, Map<Block, Set<Block>> canGrowGroundCover
+	)
 	{
-		Block grass = blocks.getAsPlaceableBlock(items.getItemById("op.grass"));
-		Block dirt = blocks.getAsPlaceableBlock(items.getItemById("op.dirt"));
-		Block soil = blocks.getAsPlaceableBlock(items.getItemById("op.tilled_soil"));
-		_groundCoverToTargets = Map.of(grass, dirt
-		);
-		_nonSpreadingToBaseType = Map.of(soil, dirt
-		);
-		_canGrowGroundCover = Map.of(dirt, Set.of(grass)
-		);
+		_groundCoverToTargets = Collections.unmodifiableMap(groundCoverToTargets);
+		_nonSpreadingToBaseType = Collections.unmodifiableMap(nonSpreadingToBaseType);
+		_canGrowGroundCover = Collections.unmodifiableMap(canGrowGroundCover);
 	}
 
 	/**

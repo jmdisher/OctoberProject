@@ -1,0 +1,13 @@
+# Entries here have the form:
+# ID<TAB>base_type_id
+# <TAB>can_spread<TAB>(true|false)
+#
+# All entries of ID type revert to base_type_id when covered by a block which can't breathe.
+# If "can_spread" is true, this ground cover type will actively spread to nearby uncovered base_type_id blocks. 
+#
+# Note that the ID references are against block_aspect.tablist.
+
+op.grass	op.dirt
+	can_spread	true
+op.tilled_soil	op.dirt
+	can_spread	false

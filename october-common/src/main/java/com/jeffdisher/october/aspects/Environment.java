@@ -120,7 +120,10 @@ public class Environment
 			, this.blocks
 			, loader.getResourceAsStream("composite_registry.tablist")
 		);
-		this.groundCover = new GroundCoverRegistry(this.items, this.blocks);
+		this.groundCover = GroundCoverRegistry.load(this.items
+			, this.blocks
+			, loader.getResourceAsStream("ground_cover_registry.tablist")
+		);
 		this.specialSlot = SpecialSlotAspect.load(this.items
 			, this.blocks
 			, loader.getResourceAsStream("special_slot.tablist")
