@@ -115,6 +115,7 @@ public class Environment
 		this.multiBlocks = new MultiBlockRegistry(this.items, this.blocks);
 		this.composites = CompositeRegistry.load(this.items
 			, this.blocks
+			, loader.getResourceAsStream("composite_registry.tablist")
 		);
 		this.groundCover = new GroundCoverRegistry(this.items, this.blocks);
 		this.specialSlot = SpecialSlotAspect.load(this.items

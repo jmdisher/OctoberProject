@@ -1,0 +1,30 @@
+# Entries here have the form:
+# ID<TAB>(ACTIVE|PASSIVE)
+# [<TAB>block_id<TAB>relX<TAB>relY<TAB>relZ]+
+#
+# Note that the relative locations are relative to the keystone block location in NORTH orientation.
+# The ID and block_id references are against the block_aspect.tablist.
+
+op.void_lamp	ACTIVE
+	op.portal_stone	0	0	-1
+op.portal_keystone	ACTIVE
+	op.portal_stone	-1	0	0
+	op.portal_stone	-2	0	0
+	op.portal_stone	-2	0	1
+	op.portal_stone	-2	0	2
+	op.portal_stone	-2	0	3
+	op.portal_stone	-2	0	4
+	op.portal_stone	-1	0	4
+	op.portal_stone	0	0	4
+	op.portal_stone	1	0	4
+	op.portal_stone	2	0	4
+	op.portal_stone	2	0	3
+	op.portal_stone	2	0	2
+	op.portal_stone	2	0	1
+	op.portal_stone	2	0	0
+	op.portal_stone	1	0	0
+op.enchanting_table	PASSIVE
+	op.pedestal	-2	0	0
+	op.pedestal	2	0	0
+	op.pedestal	0	-2	0
+	op.pedestal	0	2	0
