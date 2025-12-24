@@ -90,8 +90,8 @@ public class TestMiscAspects
 		List<AbsoluteLocation> extensions = ENV.multiBlocks.getExtensions(doorClosed, start, OrientationAspect.Direction.NORTH);
 		Assert.assertEquals(3, extensions.size());
 		Assert.assertEquals(new AbsoluteLocation(0, 0, 1), extensions.get(0));
-		Assert.assertEquals(new AbsoluteLocation(1, 0, 1), extensions.get(1));
-		Assert.assertEquals(new AbsoluteLocation(1, 0, 0), extensions.get(2));
+		Assert.assertEquals(new AbsoluteLocation(1, 0, 0), extensions.get(1));
+		Assert.assertEquals(new AbsoluteLocation(1, 0, 1), extensions.get(2));
 		Assert.assertEquals(new BlockVolume(2, 1, 2), ENV.multiBlocks.getDefaultVolume(doorClosed));
 	}
 

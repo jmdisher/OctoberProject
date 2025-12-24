@@ -1,13 +1,20 @@
 package com.jeffdisher.october.aspects;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import com.jeffdisher.october.config.TabListReader;
+import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockVolume;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -18,42 +25,84 @@ public class MultiBlockRegistry
 {
 	public static MultiBlockRegistry load(ItemRegistry items
 		, BlockAspect blocks
-	)
+		, InputStream stream
+	) throws IOException, TabListException
 	{
-		// For now, we just hard-code this but it should move into data, eventually.
-		Block doubleDoor = blocks.getAsPlaceableBlock(items.getItemById("op.double_door_base"));
-		Block portalSurface = blocks.getAsPlaceableBlock(items.getItemById("op.portal_surface"));
-		Block door = blocks.getAsPlaceableBlock(items.getItemById("op.door"));
+		Map<Block, List<AbsoluteLocation>> structures = new HashMap<>();
+		TabListReader.IParseCallbacks callbacks = new TabListReader.IParseCallbacks() {
+			private Block _currentKeystone;
+			private Set<AbsoluteLocation> _extensions;
+			
+			@Override
+			public void startNewRecord(String name, String[] parameters) throws TabListException
+			{
+				Block block = _mapToBlock(name);
+				_currentKeystone = block;
+				
+				if (0 != parameters.length)
+				{
+					throw new TabListReader.TabListException("No flags expected for: \"" + name + "\"");
+				}
+				_extensions = new HashSet<>();
+			}
+			@Override
+			public void endRecord() throws TabListException
+			{
+				if (structures.containsKey(_currentKeystone))
+				{
+					throw new TabListReader.TabListException("Duplicate key: \"" + _currentKeystone);
+				}
+				if (_extensions.isEmpty())
+				{
+					throw new TabListReader.TabListException("No extensions listed for: \"" + _currentKeystone);
+				}
+				structures.put(_currentKeystone, _extensions.stream().toList());
+				_currentKeystone = null;
+				_extensions = null;
+			}
+			@Override
+			public void processSubRecord(String name, String[] parameters) throws TabListException
+			{
+				if (!"EXTENSION".equals(name))
+				{
+					throw new TabListReader.TabListException("Unknown sub-record: \"" + name + "\" under \"" + _currentKeystone + "\"");
+				}
+				if (3 != parameters.length)
+				{
+					throw new TabListReader.TabListException("Sub-record missing x/y/z for: \"" + name + "\" under \"" + _currentKeystone + "\"");
+				}
+				AbsoluteLocation location;
+				try
+				{
+					location = new AbsoluteLocation(Integer.parseInt(parameters[0]), Integer.parseInt(parameters[1]), Integer.parseInt(parameters[2]));
+				}
+				catch (NumberFormatException e)
+				{
+					throw new TabListReader.TabListException("Invalid x/y/z number for: \"" + name + "\" under \"" + _currentKeystone + "\"");
+				}
+				if (_extensions.contains(location))
+				{
+					throw new TabListReader.TabListException("Duplicate extension for: \"" + name + "\" under \"" + _currentKeystone + "\"");
+				}
+				_extensions.add(location);
+			}
+			private Block _mapToBlock(String name) throws TabListException
+			{
+				Item item = items.getItemById(name);
+				if (null == item)
+				{
+					throw new TabListReader.TabListException("Not a valid item: \"" + name + "\"");
+				}
+				Block block = blocks.fromItem(item);
+				if (null == block)
+				{
+					throw new TabListReader.TabListException("Not a block: \"" + name + "\"");
+				}
+				return block;
+			}
+		};
+		TabListReader.readEntireFile(callbacks, stream);
 		
-		// We expect to find this in the block list.
-		Assert.assertTrue(null != doubleDoor);
-		Assert.assertTrue(null != portalSurface);
-		
-		// Double-door root is bottom-left block.
-		List<AbsoluteLocation> doubleDoorExtensions = List.of(new AbsoluteLocation(0, 0, 1)
-				, new AbsoluteLocation(1, 0, 1)
-				, new AbsoluteLocation(1, 0, 0)
-		);
-		
-		// Portal surface root is bottom-centre.
-		List<AbsoluteLocation> portalSurfaceExtensions = List.of(new AbsoluteLocation(-1, 0, 0)
-				, new AbsoluteLocation(1, 0, 0)
-				, new AbsoluteLocation(-1, 0, 1)
-				, new AbsoluteLocation( 0, 0, 1)
-				, new AbsoluteLocation( 1, 0, 1)
-				, new AbsoluteLocation(-1, 0, 2)
-				, new AbsoluteLocation( 0, 0, 2)
-				, new AbsoluteLocation( 1, 0, 2)
-		);
-		
-		// Door root is bottom block.
-		List<AbsoluteLocation> doorExtensions = List.of(new AbsoluteLocation(0, 0, 1)
-		);
-		
-		Map<Block, List<AbsoluteLocation>> structures = Map.of(doubleDoor, doubleDoorExtensions
-			, portalSurface, portalSurfaceExtensions
-			, door, doorExtensions
-		);
 		Map<Block, BlockVolume> dimensions = new HashMap<>();
 		for (Map.Entry<Block, List<AbsoluteLocation>> ent : structures.entrySet())
 		{

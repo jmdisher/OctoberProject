@@ -1,0 +1,22 @@
+# Entries here have the form:
+# ID<TAB>
+# [<TAB>EXTENSION<TAB>relX<TAB>relY<TAB>relZ]+
+#
+# Note that the relative locations are relative to the base block location in NORTH orientation.
+# The ID references are against the block_aspect.tablist.
+
+op.double_door_base
+	EXTENSION	0	0	1
+	EXTENSION	1	0	1
+	EXTENSION	1	0	0
+op.portal_surface
+	EXTENSION	-1	0	0
+	EXTENSION	1	0	0
+	EXTENSION	-1	0	1
+	EXTENSION	0	0	1
+	EXTENSION	1	0	1
+	EXTENSION	-1	0	2
+	EXTENSION	0	0	2
+	EXTENSION	1	0	2
+op.door
+	EXTENSION	0	0	1

@@ -114,6 +114,7 @@ public class Environment
 		this.creatures = CreatureRegistry.loadRegistry(this.items, loader.getResourceAsStream("creature_registry.tablist"));
 		this.multiBlocks = MultiBlockRegistry.load(this.items
 			, this.blocks
+			, loader.getResourceAsStream("multi_block_registry.tablist")
 		);
 		this.composites = CompositeRegistry.load(this.items
 			, this.blocks
