@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.CompositeRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
@@ -23,7 +24,6 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.MutableBlockProxy;
-import com.jeffdisher.october.logic.CompositeHelpers;
 import com.jeffdisher.october.logic.PlantHelpers;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.properties.PropertyRegistry;
@@ -1399,7 +1399,7 @@ public class TestCommonMutations
 		
 		// Verify that it is active and requested an update check.
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, cuboid.getData7(AspectRegistry.FLAGS, target.getBlockAddress()));
-		Assert.assertEquals(CompositeHelpers.COMPOSITE_CHECK_FREQUENCY, proxy.periodicDelayMillis);
+		Assert.assertEquals(CompositeRegistry.COMPOSITE_CHECK_FREQUENCY, proxy.periodicDelayMillis);
 		
 		// Invalidate one of the corners and run the re-check.
 		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 2, 4).getBlockAddress(), STONE.item().number());
@@ -1412,7 +1412,7 @@ public class TestCommonMutations
 		
 		// Verify that it is inactive but requested an update check.
 		Assert.assertEquals(0x0, cuboid.getData7(AspectRegistry.FLAGS, target.getBlockAddress()));
-		Assert.assertEquals(CompositeHelpers.COMPOSITE_CHECK_FREQUENCY, proxy.periodicDelayMillis);
+		Assert.assertEquals(CompositeRegistry.COMPOSITE_CHECK_FREQUENCY, proxy.periodicDelayMillis);
 	}
 
 	@Test

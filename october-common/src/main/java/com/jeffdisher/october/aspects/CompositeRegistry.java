@@ -1,11 +1,10 @@
-package com.jeffdisher.october.logic;
+package com.jeffdisher.october.aspects;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.FlagsAspect;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -24,7 +23,7 @@ import com.jeffdisher.october.utils.Assert;
  * -PASSIVE: These structures do nothing on their own and are only declared so that other helpers can ask about
  *  extension block locations for their own reasons.
  */
-public class CompositeHelpers
+public class CompositeRegistry
 {
 	/**
 	 * We will poll the composite cornerstone every 5 seconds to see if it should change its active state.
@@ -36,9 +35,65 @@ public class CompositeHelpers
 	public static final String VOID_STONE_ID = "op.portal_stone";
 	public static final String VOID_LAMP_ID = "op.void_lamp";
 	public static final String PORTAL_KEYSTONE_ID = "op.portal_keystone";
-	public static final String PORTAL_SURFACE_ID = "op.portal_surface";
 	public static final String ENCHANTING_TABLE_ID = "op.enchanting_table";
 	public static final String PEDESTAL_ID = "op.pedestal";
+
+	public static CompositeRegistry load(ItemRegistry items, BlockAspect blocks)
+	{
+		Block voidStone = blocks.fromItem(items.getItemById(VOID_STONE_ID));
+		Block voidLamp = blocks.fromItem(items.getItemById(VOID_LAMP_ID));
+		Block portalKeystone = blocks.fromItem(items.getItemById(PORTAL_KEYSTONE_ID));
+		Block enchantingTable = blocks.fromItem(items.getItemById(ENCHANTING_TABLE_ID));
+		Block pedestal = blocks.fromItem(items.getItemById(PEDESTAL_ID));
+		
+		Set<AbsoluteLocation> stoneSet = Set.of(
+			new AbsoluteLocation(-1, 0, 0)
+			, new AbsoluteLocation(-2, 0, 0)
+			, new AbsoluteLocation(-2, 0, 1)
+			, new AbsoluteLocation(-2, 0, 2)
+			, new AbsoluteLocation(-2, 0, 3)
+			, new AbsoluteLocation(-2, 0, 4)
+			, new AbsoluteLocation(-1, 0, 4)
+			, new AbsoluteLocation( 0, 0, 4)
+			, new AbsoluteLocation( 1, 0, 4)
+			, new AbsoluteLocation( 2, 0, 4)
+			, new AbsoluteLocation( 2, 0, 3)
+			, new AbsoluteLocation( 2, 0, 2)
+			, new AbsoluteLocation( 2, 0, 1)
+			, new AbsoluteLocation( 2, 0, 0)
+			, new AbsoluteLocation( 1, 0, 0)
+		);
+		Map<AbsoluteLocation, Block> portalStoneMap = stoneSet.stream()
+			.collect(Collectors.toMap((AbsoluteLocation key) -> key, (AbsoluteLocation value) -> voidStone))
+		;
+		Set<AbsoluteLocation> pedestalSet = Set.of(
+			new AbsoluteLocation(-2, 0, 0)
+			, new AbsoluteLocation(2, 0, 0)
+			, new AbsoluteLocation(0, -2, 0)
+			, new AbsoluteLocation(0, 2, 0)
+		);
+		Map<AbsoluteLocation, Block> pedestalMap = pedestalSet.stream()
+			.collect(Collectors.toMap((AbsoluteLocation key) -> key, (AbsoluteLocation value) -> pedestal))
+		;
+		
+		Map<Block, Map<AbsoluteLocation, Block>> activeComposites = Map.of(voidLamp, Map.of(new AbsoluteLocation(0, 0, -1), voidStone)
+			, portalKeystone, portalStoneMap
+		);
+		Map<Block, Map<AbsoluteLocation, Block>> passiveComposites = Map.of(enchantingTable, pedestalMap
+		);
+		
+		return new CompositeRegistry(activeComposites, passiveComposites);
+	}
+
+
+	private final Map<Block, Map<AbsoluteLocation, Block>> _activeComposites;
+	private final Map<Block, Map<AbsoluteLocation, Block>> _passiveComposites;
+
+	private CompositeRegistry(Map<Block, Map<AbsoluteLocation, Block>> activeComposites, Map<Block, Map<AbsoluteLocation, Block>> passiveComposites)
+	{
+		_activeComposites = activeComposites;
+		_passiveComposites = passiveComposites;
+	}
 
 	/**
 	 * Checks if the given block is a cornerstone type with an active nature.
@@ -46,7 +101,7 @@ public class CompositeHelpers
 	 * @param block The block type to check.
 	 * @return True if this is an active-type cornerstone.
 	 */
-	public static boolean isActiveCornerstone(Block block)
+	public boolean isActiveCornerstone(Block block)
 	{
 		return _isActiveCornerstone(block);
 	}
@@ -57,11 +112,9 @@ public class CompositeHelpers
 	 * @param block The block type to check.
 	 * @return True if this is a passive-type cornerstone.
 	 */
-	public static boolean isPassiveCornerstone(Block block)
+	public boolean isPassiveCornerstone(Block block)
 	{
-		String blockId = block.item().id();
-		// Note that the enchanting table is the only current PASSIVE composite (as it only acts in response to crafting attempts, not on its own).
-		return ENCHANTING_TABLE_ID.equals(blockId);
+		return _passiveComposites.containsKey(block);
 	}
 
 	/**
@@ -74,7 +127,7 @@ public class CompositeHelpers
 	 * @param location The location of the cornerstone block.
 	 * @param proxy The mutable proxy for the cornerstone block.
 	 */
-	public static void processCornerstoneUpdate(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
+	public void processCornerstoneUpdate(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
 	{
 		// Note that this only operates on active cornerstone types and we assume it was called for that reason.
 		Assert.assertTrue(_isActiveCornerstone(proxy.getBlock()));
@@ -103,77 +156,30 @@ public class CompositeHelpers
 	 * @param proxy The mutable proxy for the cornerstone block.
 	 * @return The list of extension locations, if they are valid for this composite, or null if invalid.
 	 */
-	public static List<AbsoluteLocation> getExtensionsIfValid(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
+	public List<AbsoluteLocation> getExtensionsIfValid(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
 	{
 		return _getExtensionsIfValid(env, context, location, proxy);
 	}
 
 
-	private static List<AbsoluteLocation> _getExtensionsIfValid(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
+	private List<AbsoluteLocation> _getExtensionsIfValid(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
 	{
 		List<AbsoluteLocation> validExtensions = null;
 		// TODO:  In the future, these hard-coded IDs and relative mappings need to be defined in a data file.
 		Block type = proxy.getBlock();
-		String blockId = type.item().id();
-		if (VOID_LAMP_ID.equals(blockId))
+		
+		Map<AbsoluteLocation, Block> relativeExtensionMap = _activeComposites.get(type);
+		if (null == relativeExtensionMap)
 		{
-			AbsoluteLocation underLocation = location.getRelative(0, 0, -1);
-			BlockProxy underProxy = context.previousBlockLookUp.apply(underLocation);
-			if (null != underProxy)
-			{
-				// Check if this is the valid type.
-				Block underType = underProxy.getBlock();
-				if (VOID_STONE_ID.equals(underType.item().id()))
-				{
-					validExtensions = List.of(underLocation);
-				}
-			}
-			else
-			{
-				// Note that we could request that this be loaded here but that would easily cause cycles when multiple
-				// cornerstones exist in neighbouring cuboids so we will just assume that this case only happens in the
-				// periphery of users and allow it to become inactive.
-			}
+			relativeExtensionMap = _passiveComposites.get(type);
 		}
-		else if (PORTAL_KEYSTONE_ID.equals(blockId))
+		
+		if (null != relativeExtensionMap)
 		{
-			Block stoneBlock = env.blocks.fromItem(env.items.getItemById(VOID_STONE_ID));
-			Set<AbsoluteLocation> stoneSet = Set.of(
-				new AbsoluteLocation(-1, 0, 0)
-				, new AbsoluteLocation(-2, 0, 0)
-				, new AbsoluteLocation(-2, 0, 1)
-				, new AbsoluteLocation(-2, 0, 2)
-				, new AbsoluteLocation(-2, 0, 3)
-				, new AbsoluteLocation(-2, 0, 4)
-				, new AbsoluteLocation(-1, 0, 4)
-				, new AbsoluteLocation( 0, 0, 4)
-				, new AbsoluteLocation( 1, 0, 4)
-				, new AbsoluteLocation( 2, 0, 4)
-				, new AbsoluteLocation( 2, 0, 3)
-				, new AbsoluteLocation( 2, 0, 2)
-				, new AbsoluteLocation( 2, 0, 1)
-				, new AbsoluteLocation( 2, 0, 0)
-				, new AbsoluteLocation( 1, 0, 0)
-			);
 			OrientationAspect.Direction orientation = proxy.getOrientation();
-			if (_matchBlockTypes(context, orientation, location, stoneSet, stoneBlock))
+			if (_matchBlockTypes(context, orientation, location, relativeExtensionMap))
 			{
-				validExtensions = stoneSet.stream().map((AbsoluteLocation loc) -> location.getRelative(loc.x(), loc.y(), loc.z()) ).toList();
-			}
-		}
-		else if (ENCHANTING_TABLE_ID.equals(blockId))
-		{
-			Block pedestalBlock = env.blocks.fromItem(env.items.getItemById(PEDESTAL_ID));
-			Set<AbsoluteLocation> pedestalSet = Set.of(
-				new AbsoluteLocation(-2, 0, 0)
-				, new AbsoluteLocation(2, 0, 0)
-				, new AbsoluteLocation(0, -2, 0)
-				, new AbsoluteLocation(0, 2, 0)
-			);
-			OrientationAspect.Direction orientation = proxy.getOrientation();
-			if (_matchBlockTypes(context, orientation, location, pedestalSet, pedestalBlock))
-			{
-				validExtensions = pedestalSet.stream().map((AbsoluteLocation loc) -> location.getRelative(loc.x(), loc.y(), loc.z()) ).toList();
+				validExtensions = relativeExtensionMap.keySet().stream().map((AbsoluteLocation loc) -> location.getRelative(loc.x(), loc.y(), loc.z()) ).toList();
 			}
 		}
 		else
@@ -184,11 +190,13 @@ public class CompositeHelpers
 		return validExtensions;
 	}
 
-	private static boolean _matchBlockTypes(TickProcessingContext context, OrientationAspect.Direction orientation, AbsoluteLocation base, Set<AbsoluteLocation> relatives, Block blockMatch)
+	private boolean _matchBlockTypes(TickProcessingContext context, OrientationAspect.Direction orientation, AbsoluteLocation base, Map<AbsoluteLocation, Block> relatives)
 	{
 		boolean isValid = true;
-		for (AbsoluteLocation target : relatives)
+		for (Map.Entry<AbsoluteLocation, Block> ent : relatives.entrySet())
 		{
+			AbsoluteLocation target = ent.getKey();
+			
 			// Note that we need to correct this for orientation.
 			AbsoluteLocation rotated = orientation.rotateAboutZ(target);
 			AbsoluteLocation relative = base.getRelative(rotated.x(), rotated.y(), rotated.z());
@@ -202,7 +210,7 @@ public class CompositeHelpers
 				isValid = false;
 				break;
 			}
-			else if (blockMatch != targetProxy.getBlock())
+			else if (ent.getValue() != targetProxy.getBlock())
 			{
 				// Not the correct block so fail out.
 				isValid = false;
@@ -212,10 +220,8 @@ public class CompositeHelpers
 		return isValid;
 	}
 
-	private static boolean _isActiveCornerstone(Block block)
+	private boolean _isActiveCornerstone(Block block)
 	{
-		String blockId = block.item().id();
-		// Note that the enchanting table is the only current PASSIVE composite (as it only acts in response to crafting attempts, not on its own).
-		return VOID_LAMP_ID.equals(blockId) || PORTAL_KEYSTONE_ID.equals(blockId);
+		return _activeComposites.containsKey(block);
 	}
 }

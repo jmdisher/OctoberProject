@@ -77,6 +77,7 @@ public class Environment
 	public final LogicAspect logic;
 	public final CreatureRegistry creatures;
 	public final MultiBlockRegistry multiBlocks;
+	public final CompositeRegistry composites;
 	public final GroundCoverRegistry groundCover;
 	public final SpecialSlotAspect specialSlot;
 	public final EnchantmentRegistry enchantments;
@@ -112,6 +113,9 @@ public class Environment
 		this.logic = LogicAspect.load(this.items, this.blocks, loader.getResourceAsStream("logic.tablist"));
 		this.creatures = CreatureRegistry.loadRegistry(this.items, loader.getResourceAsStream("creature_registry.tablist"));
 		this.multiBlocks = new MultiBlockRegistry(this.items, this.blocks);
+		this.composites = CompositeRegistry.load(this.items
+			, this.blocks
+		);
 		this.groundCover = new GroundCoverRegistry(this.items, this.blocks);
 		this.specialSlot = SpecialSlotAspect.load(this.items
 			, this.blocks

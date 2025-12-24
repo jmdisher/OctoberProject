@@ -9,7 +9,6 @@ import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IBlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
-import com.jeffdisher.october.logic.CompositeHelpers;
 import com.jeffdisher.october.logic.FireHelpers;
 import com.jeffdisher.october.logic.GroundCoverHelpers;
 import com.jeffdisher.october.logic.HopperHelpers;
@@ -463,9 +462,9 @@ public class CommonBlockMutationHelpers
 		}
 		
 		// If this is the cornerstone of a composition, check the composition state and schedule a periodic update.
-		if (CompositeHelpers.isActiveCornerstone(newType))
+		if (env.composites.isActiveCornerstone(newType))
 		{
-			CompositeHelpers.processCornerstoneUpdate(env, context, location, proxy);
+			env.composites.processCornerstoneUpdate(env, context, location, proxy);
 		}
 	}
 

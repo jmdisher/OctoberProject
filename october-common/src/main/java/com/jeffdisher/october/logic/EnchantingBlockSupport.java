@@ -111,7 +111,7 @@ public class EnchantingBlockSupport
 				else
 				{
 					// Charging done so request the items from pedestals.
-					List<AbsoluteLocation> pedestalLocations = CompositeHelpers.getExtensionsIfValid(env, context, blockLocation, proxy);
+					List<AbsoluteLocation> pedestalLocations = env.composites.getExtensionsIfValid(env, context, blockLocation, proxy);
 					if (null != pedestalLocations)
 					{
 						for (AbsoluteLocation loc : pedestalLocations)
@@ -288,7 +288,7 @@ public class EnchantingBlockSupport
 	private static List<Item> _getPedestalItemTypes(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
 	{
 		// We need to look up the 4 pedestals around the enchanting table and see what is in their special slots.
-		List<AbsoluteLocation> pedestalLocations = CompositeHelpers.getExtensionsIfValid(env, context, location, proxy);
+		List<AbsoluteLocation> pedestalLocations = env.composites.getExtensionsIfValid(env, context, location, proxy);
 		List<Item> result;
 		if (null != pedestalLocations)
 		{

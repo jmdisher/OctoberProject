@@ -5,7 +5,6 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IMutableBlockProxy;
-import com.jeffdisher.october.logic.CompositeHelpers;
 import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.logic.PlantHelpers;
 import com.jeffdisher.october.logic.PortalHelpers;
@@ -78,11 +77,11 @@ public class MutationBlockPeriodic implements IMutationBlock
 			newBlock.requestFutureMutation(MILLIS_BETWEEN_HOPPER_CALLS);
 			didApply = true;
 		}
-		else if (CompositeHelpers.isActiveCornerstone(block))
+		else if (env.composites.isActiveCornerstone(block))
 		{
 			// See if we need to change the state of the composite.
 			// Note that this implicitly calls requestFutureMutation (called via multiple paths).
-			CompositeHelpers.processCornerstoneUpdate(env, context, _location, newBlock);
+			env.composites.processCornerstoneUpdate(env, context, _location, newBlock);
 			
 			// If this is the portal cornerstone, see if it needs to update the portal.
 			if (PortalHelpers.isKeystone(newBlock))

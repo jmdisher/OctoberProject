@@ -14,7 +14,6 @@ import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.aspects.PlantRegistry;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.logic.CompositeHelpers;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
 import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.properties.PropertyRegistry;
@@ -328,7 +327,7 @@ public class Structure
 									}
 									
 									boolean needsGrowth = (plants.growthDivisor(block) > 0);
-									boolean isComposite = CompositeHelpers.isActiveCornerstone(block);
+									boolean isComposite = env.composites.isActiveCornerstone(block);
 									long perioidicMillisDelay = 0L;
 									if (needsGrowth)
 									{

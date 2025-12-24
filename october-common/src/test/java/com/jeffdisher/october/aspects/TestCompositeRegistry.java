@@ -1,4 +1,4 @@
-package com.jeffdisher.october.logic;
+package com.jeffdisher.october.aspects;
 
 import java.util.List;
 import java.util.Set;
@@ -8,10 +8,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.FlagsAspect;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
@@ -23,7 +19,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 
-public class TestCompositeHelpers
+public class TestCompositeRegistry
 {
 	private static Environment ENV;
 	private static Block VOID_STONE;
@@ -66,17 +62,17 @@ public class TestCompositeHelpers
 			.finish()
 		;
 		MutableBlockProxy onProxy = new MutableBlockProxy(onLamp, cuboid);
-		CompositeHelpers.processCornerstoneUpdate(ENV, context, onLamp, onProxy);
+		ENV.composites.processCornerstoneUpdate(ENV, context, onLamp, onProxy);
 		Assert.assertTrue(onProxy.didChange());
 		onProxy.writeBack(cuboid);
 		byte flags = cuboid.getData7(AspectRegistry.FLAGS, onLamp.getBlockAddress());
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, flags);
-		Assert.assertEquals(CompositeHelpers.COMPOSITE_CHECK_FREQUENCY, onProxy.periodicDelayMillis);
+		Assert.assertEquals(CompositeRegistry.COMPOSITE_CHECK_FREQUENCY, onProxy.periodicDelayMillis);
 		
 		MutableBlockProxy offProxy = new MutableBlockProxy(offLamp, cuboid);
-		CompositeHelpers.processCornerstoneUpdate(ENV, context, offLamp, offProxy);
+		ENV.composites.processCornerstoneUpdate(ENV, context, offLamp, offProxy);
 		Assert.assertFalse(offProxy.didChange());
-		Assert.assertEquals(CompositeHelpers.COMPOSITE_CHECK_FREQUENCY, offProxy.periodicDelayMillis);
+		Assert.assertEquals(CompositeRegistry.COMPOSITE_CHECK_FREQUENCY, offProxy.periodicDelayMillis);
 	}
 
 	@Test
@@ -99,12 +95,12 @@ public class TestCompositeHelpers
 			.finish()
 		;
 		MutableBlockProxy onProxy = new MutableBlockProxy(centre, cuboid);
-		CompositeHelpers.processCornerstoneUpdate(ENV, context, centre, onProxy);
+		ENV.composites.processCornerstoneUpdate(ENV, context, centre, onProxy);
 		Assert.assertTrue(onProxy.didChange());
 		onProxy.writeBack(cuboid);
 		byte flags = cuboid.getData7(AspectRegistry.FLAGS, centre.getBlockAddress());
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, flags);
-		Assert.assertEquals(CompositeHelpers.COMPOSITE_CHECK_FREQUENCY, onProxy.periodicDelayMillis);
+		Assert.assertEquals(CompositeRegistry.COMPOSITE_CHECK_FREQUENCY, onProxy.periodicDelayMillis);
 	}
 
 	@Test
@@ -143,12 +139,12 @@ public class TestCompositeHelpers
 			.finish()
 		;
 		MutableBlockProxy onProxy = new MutableBlockProxy(centre, cuboid);
-		CompositeHelpers.processCornerstoneUpdate(ENV, context, centre, onProxy);
+		ENV.composites.processCornerstoneUpdate(ENV, context, centre, onProxy);
 		Assert.assertFalse(onProxy.didChange());
 		onProxy.writeBack(cuboid);
 		byte flags = cuboid.getData7(AspectRegistry.FLAGS, centre.getBlockAddress());
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, flags);
-		Assert.assertEquals(CompositeHelpers.COMPOSITE_CHECK_FREQUENCY, onProxy.periodicDelayMillis);
+		Assert.assertEquals(CompositeRegistry.COMPOSITE_CHECK_FREQUENCY, onProxy.periodicDelayMillis);
 	}
 
 	@Test
@@ -166,11 +162,11 @@ public class TestCompositeHelpers
 		;
 		
 		// This is a passive type so we can't call "CompositeHelpers.processCornerstoneUpdate()".
-		Assert.assertTrue(CompositeHelpers.isPassiveCornerstone(ENCHATING_TABLE));
+		Assert.assertTrue(ENV.composites.isPassiveCornerstone(ENCHATING_TABLE));
 		
 		// We shouldn't see the extensions until there are pedestals there.
 		MutableBlockProxy proxy = new MutableBlockProxy(centre, cuboid);
-		Assert.assertNull(CompositeHelpers.getExtensionsIfValid(ENV, context, centre, proxy));
+		Assert.assertNull(ENV.composites.getExtensionsIfValid(ENV, context, centre, proxy));
 		
 		// Show that it becomes active after the pedestals are added.
 		cuboid.setData15(AspectRegistry.BLOCK, centre.getRelative(-2, 0, 0).getBlockAddress(), PEDESTAL.item().number());
@@ -178,7 +174,7 @@ public class TestCompositeHelpers
 		cuboid.setData15(AspectRegistry.BLOCK, centre.getRelative(0, -2, 0).getBlockAddress(), PEDESTAL.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, centre.getRelative(0, 2, 0).getBlockAddress(), PEDESTAL.item().number());
 		
-		List<AbsoluteLocation> extensions = CompositeHelpers.getExtensionsIfValid(ENV, context, centre, proxy);
+		List<AbsoluteLocation> extensions = ENV.composites.getExtensionsIfValid(ENV, context, centre, proxy);
 		Assert.assertEquals(4, extensions.size());
 		for (AbsoluteLocation loc : extensions)
 		{
