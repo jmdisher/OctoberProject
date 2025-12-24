@@ -1,5 +1,7 @@
 package com.jeffdisher.october.aspects;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -14,12 +16,9 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class MultiBlockRegistry
 {
-	// Every multi-block structure is composed of multiple instances of the same block (these can sometimes all change to another).
-	private final Map<Block, List<AbsoluteLocation>> _structures;
-	// For client-side rendering help, we also provide the blocks-space dimensions of the structure.
-	private final Map<Block, BlockVolume> _dimensions;
-
-	public MultiBlockRegistry(ItemRegistry items, BlockAspect blocks)
+	public static MultiBlockRegistry load(ItemRegistry items
+		, BlockAspect blocks
+	)
 	{
 		// For now, we just hard-code this but it should move into data, eventually.
 		Block doubleDoor = blocks.getAsPlaceableBlock(items.getItemById("op.double_door_base"));
@@ -51,14 +50,45 @@ public class MultiBlockRegistry
 		List<AbsoluteLocation> doorExtensions = List.of(new AbsoluteLocation(0, 0, 1)
 		);
 		
-		_structures = Map.of(doubleDoor, doubleDoorExtensions
+		Map<Block, List<AbsoluteLocation>> structures = Map.of(doubleDoor, doubleDoorExtensions
 			, portalSurface, portalSurfaceExtensions
 			, door, doorExtensions
 		);
-		_dimensions = Map.of(doubleDoor, new BlockVolume(2, 1, 2)
-			, portalSurface, new BlockVolume(3, 1, 3)
-			, door, new BlockVolume(1, 1, 2)
-		);
+		Map<Block, BlockVolume> dimensions = new HashMap<>();
+		for (Map.Entry<Block, List<AbsoluteLocation>> ent : structures.entrySet())
+		{
+			// All min/max start at 0, since that is where the base is.
+			int minX = 0;
+			int maxX = 0;
+			int minY = 0;
+			int maxY = 0;
+			int minZ = 0;
+			int maxZ = 0;
+			for (AbsoluteLocation loc : ent.getValue())
+			{
+				minX = Math.min(minX, loc.x());
+				maxX = Math.max(maxX, loc.x());
+				minY = Math.min(minY, loc.y());
+				maxY = Math.max(maxY, loc.y());
+				minZ = Math.min(minZ, loc.z());
+				maxZ = Math.max(maxZ, loc.z());
+			}
+			// We need to add 1 to each of these to account for the volume of the edge.
+			dimensions.put(ent.getKey(), new BlockVolume(maxX - minX + 1, maxY - minY + 1, maxZ - minZ + 1));
+		}
+		return new MultiBlockRegistry(structures, dimensions);
+	}
+
+
+	// Every multi-block structure is composed of multiple instances of the same block (these can sometimes all change to another).
+	private final Map<Block, List<AbsoluteLocation>> _structures;
+	// For client-side rendering help, we also provide the blocks-space dimensions of the structure.
+	private final Map<Block, BlockVolume> _dimensions;
+
+	private MultiBlockRegistry(Map<Block, List<AbsoluteLocation>> structures, Map<Block, BlockVolume> dimensions)
+	{
+		_structures = Collections.unmodifiableMap(structures);
+		_dimensions = Collections.unmodifiableMap(dimensions);
 	}
 
 	/**

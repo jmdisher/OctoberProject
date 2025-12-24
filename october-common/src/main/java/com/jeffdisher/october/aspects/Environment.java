@@ -112,7 +112,9 @@ public class Environment
 		this.stations = StationRegistry.load(this.items, this.blocks, this.crafting, loader.getResourceAsStream("station_registry.tablist"));
 		this.logic = LogicAspect.load(this.items, this.blocks, loader.getResourceAsStream("logic.tablist"));
 		this.creatures = CreatureRegistry.loadRegistry(this.items, loader.getResourceAsStream("creature_registry.tablist"));
-		this.multiBlocks = new MultiBlockRegistry(this.items, this.blocks);
+		this.multiBlocks = MultiBlockRegistry.load(this.items
+			, this.blocks
+		);
 		this.composites = CompositeRegistry.load(this.items
 			, this.blocks
 			, loader.getResourceAsStream("composite_registry.tablist")
