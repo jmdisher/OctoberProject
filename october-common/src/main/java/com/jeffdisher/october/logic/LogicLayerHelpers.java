@@ -6,7 +6,6 @@ import java.util.function.Function;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -181,7 +180,7 @@ public class LogicLayerHelpers
 				if (FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE))
 				{
 					// We only want to actually consider this source if it is facing into eventualTarget or is omni-directional.
-					if (OrientationAspect.doesSingleBlockRequireOrientation(type))
+					if (env.orientations.doesSingleBlockRequireOrientation(type))
 					{
 						FacingDirection blockDirection = proxy.getOrientation();
 						FacingDirection requiredDirection = FacingDirection.getRelativeDirection(checkLocation, eventualTarget);

@@ -1,5 +1,6 @@
 package com.jeffdisher.october.aspects;
 
+import java.util.Collections;
 import java.util.Set;
 
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -14,32 +15,47 @@ import com.jeffdisher.october.types.FacingDirection;
  */
 public class OrientationAspect
 {
-	public static final String HOPPER = "op.hopper";
-	public static final String EMITTER = "op.emitter";
-	public static final String DIODE = "op.diode";
-	public static final String AND_GATE = "op.and_gate";
-	public static final String OR_GATE = "op.or_gate";
-	public static final String NOT_GATE = "op.not_gate";
-	public static final String SENSOR_INVENTORY = "op.sensor_inventory";
-	public static final String PORTAL_KEYSTONE = "op.portal_keystone";
+	public static OrientationAspect load(ItemRegistry items, BlockAspect blocks)
+	{
+		Block hopper = blocks.fromItem(items.getItemById("op.hopper"));
+		Block emitter = blocks.fromItem(items.getItemById("op.emitter"));
+		Block diode = blocks.fromItem(items.getItemById("op.diode"));
+		Block andGate = blocks.fromItem(items.getItemById("op.and_gate"));
+		Block orGate = blocks.fromItem(items.getItemById("op.or_gate"));
+		Block notGate = blocks.fromItem(items.getItemById("op.not_gate"));
+		Block sensorInventory = blocks.fromItem(items.getItemById("op.sensor_inventory"));
+		Block portalKeystone = blocks.fromItem(items.getItemById("op.portal_keystone"));
+		
+		Set<Block> hasOrientation = Set.of(hopper
+			, emitter
+			, diode
+			, andGate
+			, orGate
+			, notGate
+			, sensorInventory
+			, portalKeystone
+		);
+		Set<Block> flatOnly = Set.of(emitter
+			, diode
+			, andGate
+			, orGate
+			, notGate
+			, sensorInventory
+			, portalKeystone
+		);
+		
+		return new OrientationAspect(hasOrientation, flatOnly);
+	}
 
-	public static final Set<String> HAS_ORIENTATION = Set.of(HOPPER
-			, EMITTER
-			, DIODE
-			, AND_GATE
-			, OR_GATE
-			, NOT_GATE
-			, SENSOR_INVENTORY
-			, PORTAL_KEYSTONE
-	);
-	public static final Set<String> FLAT_ONLY = Set.of(EMITTER
-			, DIODE
-			, AND_GATE
-			, OR_GATE
-			, NOT_GATE
-			, SENSOR_INVENTORY
-			, PORTAL_KEYSTONE
-	);
+
+	private final Set<Block> _hasOrientation;
+	private final Set<Block> _flatOnly;
+
+	private OrientationAspect(Set<Block> hasOrientation, Set<Block> flatOnly)
+	{
+		_hasOrientation = Collections.unmodifiableSet(hasOrientation);
+		_flatOnly = Collections.unmodifiableSet(flatOnly);
+	}
 
 	/**
 	 * Checks if this block can and MUST be stored with an orientation byte in order for it to be correctly interpreted.
@@ -49,10 +65,9 @@ public class OrientationAspect
 	 * @param blockType The block type.
 	 * @return True if this MUST be stored with an orientation byte.
 	 */
-	public static boolean doesSingleBlockRequireOrientation(Block blockType)
+	public boolean doesSingleBlockRequireOrientation(Block blockType)
 	{
-		String blockId = blockType.item().id();
-		return HAS_ORIENTATION.contains(blockId);
+		return _hasOrientation.contains(blockType);
 	}
 
 	/**
@@ -62,10 +77,9 @@ public class OrientationAspect
 	 * @param blockType The block type.
 	 * @return True if this MUST store an orientation byte and can store a DOWN orientation.
 	 */
-	public static boolean doesAllowDownwardOutput(Block blockType)
+	public boolean doesAllowDownwardOutput(Block blockType)
 	{
-		String blockId = blockType.item().id();
-		return _downAllowDownwardOutput(blockId);
+		return _downAllowDownwardOutput(blockType);
 	}
 
 	/**
@@ -78,11 +92,10 @@ public class OrientationAspect
 	 * @param outputLocation The location where the block is "facing" (output).
 	 * @return The Direction enum for this block or null, if it shouldn't use one or doesn't have a valid output.
 	 */
-	public static FacingDirection getDirectionIfApplicableToSingle(Block blockType, AbsoluteLocation blockLocation, AbsoluteLocation outputLocation)
+	public FacingDirection getDirectionIfApplicableToSingle(Block blockType, AbsoluteLocation blockLocation, AbsoluteLocation outputLocation)
 	{
-		String blockId = blockType.item().id();
-		boolean has4 = FLAT_ONLY.contains(blockId);
-		boolean has5 = _downAllowDownwardOutput(blockId);
+		boolean has4 = _flatOnly.contains(blockType);
+		boolean has5 = _downAllowDownwardOutput(blockType);
 		FacingDirection outputDirection;
 		if ((has4 || has5) && (null != outputLocation))
 		{
@@ -103,8 +116,8 @@ public class OrientationAspect
 	}
 
 
-	private static boolean _downAllowDownwardOutput(String blockId)
+	private boolean _downAllowDownwardOutput(Block blockType)
 	{
-		return HAS_ORIENTATION.contains(blockId) && !FLAT_ONLY.contains(blockId);
+		return _hasOrientation.contains(blockType) && !_flatOnly.contains(blockType);
 	}
 }

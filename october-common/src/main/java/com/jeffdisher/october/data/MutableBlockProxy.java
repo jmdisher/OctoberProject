@@ -8,7 +8,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -607,7 +606,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 
 	private byte _populateBitsForSource(Block type, FacingDirection direction, byte changeBits)
 	{
-		if (OrientationAspect.doesSingleBlockRequireOrientation(type))
+		if (Environment.getShared().orientations.doesSingleBlockRequireOrientation(type))
 		{
 			switch (direction)
 			{

@@ -11,7 +11,6 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.GroundCoverRegistry;
 import com.jeffdisher.october.aspects.LightAspect;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.aspects.PlantRegistry;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
@@ -293,12 +292,12 @@ public class Structure
 									{
 										if (FacingDirection.DOWN == aspectData.orientation)
 										{
-											Assert.assertTrue(OrientationAspect.doesAllowDownwardOutput(block));
+											Assert.assertTrue(env.orientations.doesAllowDownwardOutput(block));
 										}
 										else if (!env.blocks.isMultiBlock(block))
 										{
 											// Multi-blocks all use a directed orientation.
-											Assert.assertTrue(OrientationAspect.doesSingleBlockRequireOrientation(block));
+											Assert.assertTrue(env.orientations.doesSingleBlockRequireOrientation(block));
 										}
 										FacingDirection rotatedOrientation = rotation.rotateOrientation(aspectData.orientation);
 										cuboid.setData7(AspectRegistry.ORIENTATION, blockAddress, FacingDirection.directionToByte(rotatedOrientation));

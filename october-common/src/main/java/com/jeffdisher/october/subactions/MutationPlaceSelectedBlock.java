@@ -5,7 +5,6 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.SpatialHelpers;
@@ -103,10 +102,10 @@ public class MutationPlaceSelectedBlock implements IEntitySubAction<IMutablePlay
 		if (isTargetAir && isItemSelected && isLocationClose && isLocationNotColliding && blockIsSupported)
 		{
 			// Decide if this block type needs special orientation considerations.
-			FacingDirection outputDirection = OrientationAspect.getDirectionIfApplicableToSingle(blockType, _targetBlock, _blockOutput);
+			FacingDirection outputDirection = env.orientations.getDirectionIfApplicableToSingle(blockType, _targetBlock, _blockOutput);
 			
 			// Make sure that the output direction matches the needs of this block type.
-			if (OrientationAspect.doesSingleBlockRequireOrientation(blockType) == (null != outputDirection))
+			if (env.orientations.doesSingleBlockRequireOrientation(blockType) == (null != outputDirection))
 			{
 				// This means that this worked so create the mutation to place the block.
 				// WARNING:  If this mutation fails, the item will have been destroyed.

@@ -3,7 +3,6 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -47,7 +46,7 @@ public class MutationBlockOverwriteByEntity implements IMutationBlock
 		// Using this with AIR doesn't make sense.
 		Assert.assertTrue(!env.blocks.canBeReplaced(blockType));
 		// Note that outputDirection can be null if that doesn't matter for this block type.
-		Assert.assertTrue(OrientationAspect.doesSingleBlockRequireOrientation(blockType) == (null != outputDirection));
+		Assert.assertTrue(env.orientations.doesSingleBlockRequireOrientation(blockType) == (null != outputDirection));
 		// This mutation always requires an entity ID.
 		Assert.assertTrue(0 != entityId);
 		

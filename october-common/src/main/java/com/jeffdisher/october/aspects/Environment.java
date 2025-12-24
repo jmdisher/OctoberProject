@@ -81,6 +81,7 @@ public class Environment
 	public final GroundCoverRegistry groundCover;
 	public final SpecialSlotAspect specialSlot;
 	public final EnchantmentRegistry enchantments;
+	public final OrientationAspect orientations;
 	public final SpecialConstants special;
 
 	private Environment() throws IOException, TabListException
@@ -131,6 +132,9 @@ public class Environment
 		this.enchantments = EnchantmentRegistry.load(this.items, this.blocks, this.durability, this.tools
 			, loader.getResourceAsStream("enchanting.tablist")
 			, loader.getResourceAsStream("infusions.tablist")
+		);
+		this.orientations = OrientationAspect.load(this.items
+			, this.blocks
 		);
 		this.special = new SpecialConstants(this.items, this.blocks);
 	}
