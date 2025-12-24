@@ -10,6 +10,7 @@ import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.FacingDirection;
 
 
 /**
@@ -39,7 +40,7 @@ public class LogicLayerHelpers
 	 * @param type The type of block being placed.
 	 * @return True if the active flag should be set when placing the block.
 	 */
-	public static boolean shouldSetActive(Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, OrientationAspect.Direction outputDirection, Block type)
+	public static boolean shouldSetActive(Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, FacingDirection outputDirection, Block type)
 	{
 		// Only sinks can be set to active during placement (sources can be changed to active by a user).
 		boolean isActive = false;
@@ -182,8 +183,8 @@ public class LogicLayerHelpers
 					// We only want to actually consider this source if it is facing into eventualTarget or is omni-directional.
 					if (OrientationAspect.doesSingleBlockRequireOrientation(type))
 					{
-						OrientationAspect.Direction blockDirection = proxy.getOrientation();
-						OrientationAspect.Direction requiredDirection = OrientationAspect.getRelativeDirection(checkLocation, eventualTarget);
+						FacingDirection blockDirection = proxy.getOrientation();
+						FacingDirection requiredDirection = FacingDirection.getRelativeDirection(checkLocation, eventualTarget);
 						isValueHigh = (blockDirection == requiredDirection);
 					}
 					else

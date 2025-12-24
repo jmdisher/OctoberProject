@@ -13,6 +13,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -227,7 +228,7 @@ public class CompositeRegistry
 		
 		if (null != relativeExtensionMap)
 		{
-			OrientationAspect.Direction orientation = proxy.getOrientation();
+			FacingDirection orientation = proxy.getOrientation();
 			if (_matchBlockTypes(context, orientation, location, relativeExtensionMap))
 			{
 				validExtensions = relativeExtensionMap.keySet().stream().map((AbsoluteLocation loc) -> location.getRelative(loc.x(), loc.y(), loc.z()) ).toList();
@@ -241,7 +242,7 @@ public class CompositeRegistry
 		return validExtensions;
 	}
 
-	private boolean _matchBlockTypes(TickProcessingContext context, OrientationAspect.Direction orientation, AbsoluteLocation base, Map<AbsoluteLocation, Block> relatives)
+	private boolean _matchBlockTypes(TickProcessingContext context, FacingDirection orientation, AbsoluteLocation base, Map<AbsoluteLocation, Block> relatives)
 	{
 		boolean isValid = true;
 		for (Map.Entry<AbsoluteLocation, Block> ent : relatives.entrySet())

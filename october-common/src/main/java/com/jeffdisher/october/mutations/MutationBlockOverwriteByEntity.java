@@ -10,6 +10,7 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.EventRecord;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -29,7 +30,7 @@ public class MutationBlockOverwriteByEntity implements IMutationBlock
 		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		Block blockType = env.blocks.getAsPlaceableBlock(CodecHelpers.readItem(buffer));
-		OrientationAspect.Direction outputDirection = CodecHelpers.readOrientation(buffer);
+		FacingDirection outputDirection = CodecHelpers.readOrientation(buffer);
 		int entityId = buffer.getInt();
 		return new MutationBlockOverwriteByEntity(location, blockType, outputDirection, entityId);
 	}
@@ -37,10 +38,10 @@ public class MutationBlockOverwriteByEntity implements IMutationBlock
 
 	private final AbsoluteLocation _location;
 	private final Block _blockType;
-	private final OrientationAspect.Direction _outputDirection;
+	private final FacingDirection _outputDirection;
 	private final int _entityId;
 
-	public MutationBlockOverwriteByEntity(AbsoluteLocation location, Block blockType, OrientationAspect.Direction outputDirection, int entityId)
+	public MutationBlockOverwriteByEntity(AbsoluteLocation location, Block blockType, FacingDirection outputDirection, int entityId)
 	{
 		Environment env = Environment.getShared();
 		// Using this with AIR doesn't make sense.

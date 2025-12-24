@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.properties.PropertyType;
@@ -26,6 +25,7 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Entity.Ephemeral_Shared;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
@@ -559,20 +559,20 @@ public class CodecHelpers
 		_writeBoolean(buffer, flag);
 	}
 
-	public static OrientationAspect.Direction readOrientation(ByteBuffer buffer)
+	public static FacingDirection readOrientation(ByteBuffer buffer)
 	{
 		byte val = buffer.get();
 		return ((byte)0xFF == val)
 				? null
-				: OrientationAspect.byteToDirection(val)
+				: FacingDirection.byteToDirection(val)
 		;
 	}
 
-	public static void writeOrientation(ByteBuffer buffer, OrientationAspect.Direction orientation)
+	public static void writeOrientation(ByteBuffer buffer, FacingDirection orientation)
 	{
 		byte val = (null == orientation)
 				? (byte)0xFF
-				: OrientationAspect.directionToByte(orientation)
+				: FacingDirection.directionToByte(orientation)
 		;
 		buffer.put(val);
 	}

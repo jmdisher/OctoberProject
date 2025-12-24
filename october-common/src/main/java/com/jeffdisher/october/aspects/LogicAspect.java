@@ -12,6 +12,7 @@ import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.FacingDirection;
 
 
 /**
@@ -257,6 +258,6 @@ public class LogicAspect
 		 * @param outputDirection The output direction of the block.
 		 * @return True if it would receive a high signal here.
 		 */
-		public boolean shouldStoreHighSignal(Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, OrientationAspect.Direction outputDirection);
+		public boolean shouldStoreHighSignal(Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, FacingDirection outputDirection);
 	}
 }

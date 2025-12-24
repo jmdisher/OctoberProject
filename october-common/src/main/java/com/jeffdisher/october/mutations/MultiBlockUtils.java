@@ -4,11 +4,11 @@ import java.util.List;
 import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -82,7 +82,7 @@ public class MultiBlockUtils
 	 * @param entityId The ID of the entity placing the blocks (or 0 for no entity).
 	 * @return True if the block placement was attempted (false if something was in the way).
 	 */
-	public static boolean send2PhaseMultiBlock(Environment env, TickProcessingContext context, Block blockType, AbsoluteLocation rootLocation, OrientationAspect.Direction orientation, int entityId)
+	public static boolean send2PhaseMultiBlock(Environment env, TickProcessingContext context, Block blockType, AbsoluteLocation rootLocation, FacingDirection orientation, int entityId)
 	{
 		List<AbsoluteLocation> extensions = env.multiBlocks.getExtensions(blockType, rootLocation, orientation);
 		boolean canBeReplaced = _canBlocksBeReplaced(env, context, rootLocation, extensions);

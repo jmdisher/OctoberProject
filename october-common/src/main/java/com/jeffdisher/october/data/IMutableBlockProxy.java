@@ -2,11 +2,11 @@ package com.jeffdisher.october.data;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.EnchantingOperation;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.ItemSlot;
@@ -91,7 +91,7 @@ public interface IMutableBlockProxy extends IBlockProxy
 	 * 
 	 * @param direction The direction to set.
 	 */
-	void setOrientation(OrientationAspect.Direction direction);
+	void setOrientation(FacingDirection direction);
 	/**
 	 * Sets the location of the root block of this multi-block.
 	 * 

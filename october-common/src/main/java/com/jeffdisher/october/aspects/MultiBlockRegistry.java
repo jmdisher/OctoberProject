@@ -14,6 +14,7 @@ import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockVolume;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.utils.Assert;
 
@@ -150,7 +151,7 @@ public class MultiBlockRegistry
 	 * @return The list of other locations (not including rootLocation) where the other "extension" blocks need to be
 	 * placed.
 	 */
-	public List<AbsoluteLocation> getExtensions(Block root, AbsoluteLocation rootLocation, OrientationAspect.Direction direction)
+	public List<AbsoluteLocation> getExtensions(Block root, AbsoluteLocation rootLocation, FacingDirection direction)
 	{
 		List<AbsoluteLocation> relative = _structures.get(root);
 		// We should only call this if we know it is a multi-block.

@@ -10,13 +10,13 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
@@ -46,9 +46,9 @@ public class TestMultiBlockUtils
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		AbsoluteLocation base = new AbsoluteLocation(1, 2, 3);
 		
-		OrientationAspect.Direction direction = OrientationAspect.Direction.NORTH;
+		FacingDirection direction = FacingDirection.NORTH;
 		cuboid.setData15(AspectRegistry.BLOCK, base.getBlockAddress(), DOOR.item().number());
-		cuboid.setData7(AspectRegistry.ORIENTATION, base.getBlockAddress(), OrientationAspect.directionToByte(direction));
+		cuboid.setData7(AspectRegistry.ORIENTATION, base.getBlockAddress(), FacingDirection.directionToByte(direction));
 		for (AbsoluteLocation extension : ENV.multiBlocks.getExtensions(DOOR, base, direction))
 		{
 			cuboid.setData15(AspectRegistry.BLOCK, extension.getBlockAddress(), DOOR.item().number());
@@ -102,9 +102,9 @@ public class TestMultiBlockUtils
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		AbsoluteLocation base = new AbsoluteLocation(1, 2, 3);
 		
-		OrientationAspect.Direction direction = OrientationAspect.Direction.NORTH;
+		FacingDirection direction = FacingDirection.NORTH;
 		cuboid.setData15(AspectRegistry.BLOCK, base.getBlockAddress(), DOOR.item().number());
-		cuboid.setData7(AspectRegistry.ORIENTATION, base.getBlockAddress(), OrientationAspect.directionToByte(direction));
+		cuboid.setData7(AspectRegistry.ORIENTATION, base.getBlockAddress(), FacingDirection.directionToByte(direction));
 		for (AbsoluteLocation extension : ENV.multiBlocks.getExtensions(DOOR, base, direction))
 		{
 			cuboid.setData15(AspectRegistry.BLOCK, extension.getBlockAddress(), DOOR.item().number());
@@ -144,9 +144,9 @@ public class TestMultiBlockUtils
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		AbsoluteLocation base = new AbsoluteLocation(1, 2, 3);
 		
-		OrientationAspect.Direction direction = OrientationAspect.Direction.NORTH;
+		FacingDirection direction = FacingDirection.NORTH;
 		cuboid.setData15(AspectRegistry.BLOCK, base.getBlockAddress(), DOOR.item().number());
-		cuboid.setData7(AspectRegistry.ORIENTATION, base.getBlockAddress(), OrientationAspect.directionToByte(direction));
+		cuboid.setData7(AspectRegistry.ORIENTATION, base.getBlockAddress(), FacingDirection.directionToByte(direction));
 		for (AbsoluteLocation extension : ENV.multiBlocks.getExtensions(DOOR, base, direction))
 		{
 			cuboid.setData15(AspectRegistry.BLOCK, extension.getBlockAddress(), DOOR.item().number());
@@ -164,7 +164,7 @@ public class TestMultiBlockUtils
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		AbsoluteLocation base = new AbsoluteLocation(1, 2, 3);
-		OrientationAspect.Direction direction = OrientationAspect.Direction.NORTH;
+		FacingDirection direction = FacingDirection.NORTH;
 		
 		Set<AbsoluteLocation> nextLocations = new HashSet<>();
 		Set<AbsoluteLocation> futureLocations = new HashSet<>();
@@ -210,9 +210,9 @@ public class TestMultiBlockUtils
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		AbsoluteLocation base = new AbsoluteLocation(1, 2, 3);
 		
-		OrientationAspect.Direction direction = OrientationAspect.Direction.NORTH;
+		FacingDirection direction = FacingDirection.NORTH;
 		cuboid.setData15(AspectRegistry.BLOCK, base.getBlockAddress(), DOOR.item().number());
-		cuboid.setData7(AspectRegistry.ORIENTATION, base.getBlockAddress(), OrientationAspect.directionToByte(direction));
+		cuboid.setData7(AspectRegistry.ORIENTATION, base.getBlockAddress(), FacingDirection.directionToByte(direction));
 		for (AbsoluteLocation extension : ENV.multiBlocks.getExtensions(DOOR, base, direction))
 		{
 			cuboid.setData15(AspectRegistry.BLOCK, extension.getBlockAddress(), DOOR.item().number());

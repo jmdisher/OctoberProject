@@ -5,7 +5,6 @@ import java.util.List;
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IBlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
@@ -18,6 +17,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.DropChance;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.ItemSlot;
@@ -74,7 +74,7 @@ public class CommonBlockMutationHelpers
 	 * @param isMultiBlockExtension True if this is a multi-block extension (since they ignore block support rules).
 	 * @return True if the block was written or false if the write was aborted.
 	 */
-	public static boolean overwriteBlock(TickProcessingContext context, IMutableBlockProxy newBlock, AbsoluteLocation location, OrientationAspect.Direction outputDirection, Block blockType, boolean isMultiBlockExtension)
+	public static boolean overwriteBlock(TickProcessingContext context, IMutableBlockProxy newBlock, AbsoluteLocation location, FacingDirection outputDirection, Block blockType, boolean isMultiBlockExtension)
 	{
 		Environment env = Environment.getShared();
 		boolean didApply = false;
@@ -201,7 +201,7 @@ public class CommonBlockMutationHelpers
 	public static void setBlockCheckingFire(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy, Block newType)
 	{
 		// This isn't an explicit block placement, so it has no direction.
-		OrientationAspect.Direction outputDirection = null;
+		FacingDirection outputDirection = null;
 		_setBlockCheckingFire(env, context, location, proxy, newType, outputDirection);
 	}
 
@@ -277,7 +277,7 @@ public class CommonBlockMutationHelpers
 		
 		// NOTE:  We use this common helper just as a consistent idiom but setting to air never starts fires.
 		// This isn't an explicit block placement, so it has no direction.
-		OrientationAspect.Direction outputDirection = null;
+		FacingDirection outputDirection = null;
 		_setBlockCheckingFire(env, context, location, proxy, emptyBlock, outputDirection);
 		
 		// Spawn any related passives from the dropped blocks.
@@ -411,7 +411,7 @@ public class CommonBlockMutationHelpers
 		return slots;
 	}
 
-	private static void _setBlockCheckingFire(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy, Block newType, OrientationAspect.Direction outputDirection)
+	private static void _setBlockCheckingFire(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy, Block newType, FacingDirection outputDirection)
 	{
 		Block oldType = proxy.getBlock();
 		

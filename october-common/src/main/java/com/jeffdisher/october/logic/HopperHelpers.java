@@ -1,7 +1,6 @@
 package com.jeffdisher.october.logic;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IBlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
@@ -9,6 +8,7 @@ import com.jeffdisher.october.mutations.MutationBlockPushToBlock;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -111,7 +111,7 @@ public class HopperHelpers
 		if (itemId.equals(HOPPER))
 		{
 			// This is a hopper so read the orientation byte to figure out the output.
-			OrientationAspect.Direction outputDirection = hopperBlock.getOrientation();
+			FacingDirection outputDirection = hopperBlock.getOrientation();
 			sinkLocation = outputDirection.getOutputBlockLocation(hopperLocation);
 		}
 		else

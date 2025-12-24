@@ -15,6 +15,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
@@ -82,7 +83,7 @@ public class TestCompositeRegistry
 		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
 		Set<AbsoluteLocation> stoneSet = _getPortalStoneFrameEast(centre);
 		cuboid.setData15(AspectRegistry.BLOCK, centre.getBlockAddress(), PORTAL_KEYSTONE.item().number());
-		cuboid.setData7(AspectRegistry.ORIENTATION, centre.getBlockAddress(), OrientationAspect.directionToByte(OrientationAspect.Direction.EAST));
+		cuboid.setData7(AspectRegistry.ORIENTATION, centre.getBlockAddress(), FacingDirection.directionToByte(FacingDirection.EAST));
 		for (AbsoluteLocation location : stoneSet)
 		{
 			cuboid.setData15(AspectRegistry.BLOCK, location.getBlockAddress(), VOID_STONE.item().number());
@@ -110,7 +111,7 @@ public class TestCompositeRegistry
 		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
 		Set<AbsoluteLocation> stoneSet = _getPortalStoneFrameEast(centre);
 		cuboid.setData15(AspectRegistry.BLOCK, centre.getBlockAddress(), PORTAL_KEYSTONE.item().number());
-		cuboid.setData7(AspectRegistry.ORIENTATION, centre.getBlockAddress(), OrientationAspect.directionToByte(OrientationAspect.Direction.EAST));
+		cuboid.setData7(AspectRegistry.ORIENTATION, centre.getBlockAddress(), FacingDirection.directionToByte(FacingDirection.EAST));
 		cuboid.setData7(AspectRegistry.FLAGS, centre.getBlockAddress(), FlagsAspect.FLAG_ACTIVE);
 		for (AbsoluteLocation location : stoneSet)
 		{

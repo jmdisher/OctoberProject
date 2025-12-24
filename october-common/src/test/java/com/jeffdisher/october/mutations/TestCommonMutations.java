@@ -19,7 +19,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.DeserializationContext;
@@ -38,6 +37,7 @@ import com.jeffdisher.october.types.EnchantingOperation;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
@@ -569,7 +569,7 @@ public class TestCommonMutations
 		Block hopper = ENV.blocks.fromItem(ENV.items.getItemById("op.hopper"));
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 0), STONE.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 1), hopper.item().number());
-		cuboid.setData7(AspectRegistry.ORIENTATION, BlockAddress.fromInt(1, 1, 1), OrientationAspect.directionToByte(OrientationAspect.Direction.DOWN));
+		cuboid.setData7(AspectRegistry.ORIENTATION, BlockAddress.fromInt(1, 1, 1), FacingDirection.directionToByte(FacingDirection.DOWN));
 		
 		// First, we want to make sure that the wheat fails to grow due to darkness.
 		TickProcessingContext context = ContextBuilder.build()
@@ -1075,7 +1075,7 @@ public class TestCommonMutations
 		Item logicWire = ENV.items.getItemById("op.logic_wire");
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
 		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress(), door.number());
-		cuboid.setData7(AspectRegistry.ORIENTATION, doorLocation.getBlockAddress(), OrientationAspect.directionToByte(OrientationAspect.Direction.NORTH));
+		cuboid.setData7(AspectRegistry.ORIENTATION, doorLocation.getBlockAddress(), FacingDirection.directionToByte(FacingDirection.NORTH));
 		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getRelative(0, 0, 1).getBlockAddress(), door.number());
 		cuboid.setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, doorLocation.getRelative(0, 0, 1).getBlockAddress(), doorLocation);
 		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getRelative(1, 0, 1).getBlockAddress(), door.number());
@@ -1390,7 +1390,7 @@ public class TestCommonMutations
 			.finish()
 		;
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
-		MutationBlockOverwriteByEntity overwrite = new MutationBlockOverwriteByEntity(target, portalBlock, OrientationAspect.Direction.EAST, 1);
+		MutationBlockOverwriteByEntity overwrite = new MutationBlockOverwriteByEntity(target, portalBlock, FacingDirection.EAST, 1);
 		boolean didApply = overwrite.applyMutation(context, proxy);
 		
 		Assert.assertTrue(didApply);
@@ -1437,7 +1437,7 @@ public class TestCommonMutations
 		);
 		cuboid.setData15(AspectRegistry.BLOCK, keystoneLocation.getBlockAddress(), portalBlock.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), surfaceBlock.item().number());
-		cuboid.setData7(AspectRegistry.ORIENTATION, target.getBlockAddress(), OrientationAspect.directionToByte(OrientationAspect.Direction.EAST));
+		cuboid.setData7(AspectRegistry.ORIENTATION, target.getBlockAddress(), FacingDirection.directionToByte(FacingDirection.EAST));
 		for (AbsoluteLocation location : outline)
 		{
 			cuboid.setData15(AspectRegistry.BLOCK, location.getBlockAddress(), surfaceBlock.item().number());
@@ -1521,24 +1521,24 @@ public class TestCommonMutations
 		;
 		
 		// Show that the root cares about this.
-		MutationBlockPlaceMultiBlock rootPass = new MutationBlockPlaceMultiBlock(aboveKeystone, surfaceBlock, aboveKeystone, OrientationAspect.Direction.NORTH, 0);
+		MutationBlockPlaceMultiBlock rootPass = new MutationBlockPlaceMultiBlock(aboveKeystone, surfaceBlock, aboveKeystone, FacingDirection.NORTH, 0);
 		MutableBlockProxy proxy = new MutableBlockProxy(aboveKeystone, cuboid);
 		boolean didApply = rootPass.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
-		MutationBlockPlaceMultiBlock rootFail = new MutationBlockPlaceMultiBlock(notAboveKeystone, surfaceBlock, notAboveKeystone, OrientationAspect.Direction.NORTH, 0);
+		MutationBlockPlaceMultiBlock rootFail = new MutationBlockPlaceMultiBlock(notAboveKeystone, surfaceBlock, notAboveKeystone, FacingDirection.NORTH, 0);
 		proxy = new MutableBlockProxy(notAboveKeystone, cuboid);
 		didApply = rootFail.applyMutation(context, proxy);
 		Assert.assertFalse(didApply);
 		Assert.assertFalse(proxy.didChange());
 		
 		// But that the extensions do not.
-		MutationBlockPlaceMultiBlock extensionPass = new MutationBlockPlaceMultiBlock(aboveKeystone, surfaceBlock, keystoneLocation, OrientationAspect.Direction.NORTH, 0);
+		MutationBlockPlaceMultiBlock extensionPass = new MutationBlockPlaceMultiBlock(aboveKeystone, surfaceBlock, keystoneLocation, FacingDirection.NORTH, 0);
 		proxy = new MutableBlockProxy(aboveKeystone, cuboid);
 		didApply = extensionPass.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
-		MutationBlockPlaceMultiBlock extensionFail = new MutationBlockPlaceMultiBlock(notAboveKeystone, surfaceBlock, keystoneLocation, OrientationAspect.Direction.NORTH, 0);
+		MutationBlockPlaceMultiBlock extensionFail = new MutationBlockPlaceMultiBlock(notAboveKeystone, surfaceBlock, keystoneLocation, FacingDirection.NORTH, 0);
 		proxy = new MutableBlockProxy(notAboveKeystone, cuboid);
 		didApply = extensionFail.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
@@ -1557,7 +1557,7 @@ public class TestCommonMutations
 		NonStackableItem portalOrb = new NonStackableItem(ENV.items.getItemById("op.portal_orb"), Map.of(PropertyRegistry.LOCATION, new AbsoluteLocation(10, 10, 10)));
 		Set<AbsoluteLocation> outline = _getEastFacingPortalVoidStones(keystoneLocation);
 		cuboid.setData15(AspectRegistry.BLOCK, keystoneLocation.getBlockAddress(), portalBlock.item().number());
-		cuboid.setData7(AspectRegistry.ORIENTATION, keystoneLocation.getBlockAddress(), OrientationAspect.directionToByte(OrientationAspect.Direction.EAST));
+		cuboid.setData7(AspectRegistry.ORIENTATION, keystoneLocation.getBlockAddress(), FacingDirection.directionToByte(FacingDirection.EAST));
 		cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, keystoneLocation.getBlockAddress(), ItemSlot.fromNonStack(portalOrb));
 		for (AbsoluteLocation location : outline)
 		{
@@ -1687,7 +1687,7 @@ public class TestCommonMutations
 		;
 		
 		// Place only the single block.
-		MutationBlockPlaceMultiBlock place = new MutationBlockPlaceMultiBlock(target, surfaceBlock, root, OrientationAspect.Direction.NORTH, 0);
+		MutationBlockPlaceMultiBlock place = new MutationBlockPlaceMultiBlock(target, surfaceBlock, root, FacingDirection.NORTH, 0);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		boolean didApply = place.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
@@ -1696,7 +1696,7 @@ public class TestCommonMutations
 		Assert.assertEquals(surfaceBlock.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		
 		// Show that we fail and revert on phase2.
-		MutationBlockPhase2Multi fail = new MutationBlockPhase2Multi(target, root, OrientationAspect.Direction.NORTH, surfaceBlock, ENV.special.AIR);
+		MutationBlockPhase2Multi fail = new MutationBlockPhase2Multi(target, root, FacingDirection.NORTH, surfaceBlock, ENV.special.AIR);
 		proxy = new MutableBlockProxy(target, cuboid);
 		didApply = fail.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);

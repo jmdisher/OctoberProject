@@ -5,6 +5,7 @@ import java.util.function.Function;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.utils.Assert;
 
@@ -20,7 +21,7 @@ public class LogicSpecialRegistry
 	/**
 	 * The common case of sinks, they just check all 6 adjacent blocks to see if any are high (conduit or source).
 	 */
-	public static final LogicAspect.ISignalChangeCallback GENERIC_SINK = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, OrientationAspect.Direction outputDirection) ->
+	public static final LogicAspect.ISignalChangeCallback GENERIC_SINK = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, FacingDirection outputDirection) ->
 	{
 		return LogicLayerHelpers.isBlockReceivingHighSignal(env, proxyLookup, location);
 	};
@@ -28,7 +29,7 @@ public class LogicSpecialRegistry
 	/**
 	 * A diode is a special case where it only checks the source "behind" (opposite its output) it.  Conduit or source.
 	 */
-	public static final LogicAspect.ISignalChangeCallback DIODE_SINK = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, OrientationAspect.Direction outputDirection) ->
+	public static final LogicAspect.ISignalChangeCallback DIODE_SINK = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, FacingDirection outputDirection) ->
 	{
 		AbsoluteLocation checkLocation = _getInputOpposite(location, outputDirection);
 		return LogicLayerHelpers.isEmittedLogicValueHigh(env, proxyLookup, location, checkLocation);
@@ -38,7 +39,7 @@ public class LogicSpecialRegistry
 	 * A AND gate is a special case where it only checks the source "left" and "right" of the "output".  Conduit or
 	 * source.
 	 */
-	public static final LogicAspect.ISignalChangeCallback AND_SINK = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, OrientationAspect.Direction outputDirection) ->
+	public static final LogicAspect.ISignalChangeCallback AND_SINK = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, FacingDirection outputDirection) ->
 	{
 		AbsoluteLocation[] leftRight = _getInputLeftRight(location, outputDirection);
 		boolean left = LogicLayerHelpers.isEmittedLogicValueHigh(env, proxyLookup, location, leftRight[0]);
@@ -50,7 +51,7 @@ public class LogicSpecialRegistry
 	 * A OR gate is a special case where it only checks the source "left" and "right" of the "output".  Conduit or
 	 * source.
 	 */
-	public static final LogicAspect.ISignalChangeCallback OR_SINK = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, OrientationAspect.Direction outputDirection) ->
+	public static final LogicAspect.ISignalChangeCallback OR_SINK = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, FacingDirection outputDirection) ->
 	{
 		AbsoluteLocation[] leftRight = _getInputLeftRight(location, outputDirection);
 		boolean left = LogicLayerHelpers.isEmittedLogicValueHigh(env, proxyLookup, location, leftRight[0]);
@@ -61,7 +62,7 @@ public class LogicSpecialRegistry
 	/**
 	 * A NOT gate is a special case where it only checks the source "behind" (opposite its output) it.  Conduit or source.
 	 */
-	public static final LogicAspect.ISignalChangeCallback NOT_SINK = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, OrientationAspect.Direction outputDirection) ->
+	public static final LogicAspect.ISignalChangeCallback NOT_SINK = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, FacingDirection outputDirection) ->
 	{
 		AbsoluteLocation checkLocation = _getInputOpposite(location, outputDirection);
 		return !LogicLayerHelpers.isEmittedLogicValueHigh(env, proxyLookup, location, checkLocation);
@@ -70,7 +71,7 @@ public class LogicSpecialRegistry
 	/**
 	 * Emitters are always outputting a signal.
 	 */
-	public static final LogicAspect.ISignalChangeCallback EMITTER = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, OrientationAspect.Direction outputDirection) ->
+	public static final LogicAspect.ISignalChangeCallback EMITTER = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, FacingDirection outputDirection) ->
 	{
 		return true;
 	};
@@ -79,7 +80,7 @@ public class LogicSpecialRegistry
 	 * In inventory sensor is only run on initial placement and block update, not logic updates.  It will output a high
 	 * signal to its output if there is a non-empty inventory behind it.
 	 */
-	public static final LogicAspect.ISignalChangeCallback SENSOR_INVENTORY = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, OrientationAspect.Direction outputDirection) ->
+	public static final LogicAspect.ISignalChangeCallback SENSOR_INVENTORY = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, FacingDirection outputDirection) ->
 	{
 		AbsoluteLocation checkLocation = _getInputOpposite(location, outputDirection);
 		
@@ -94,7 +95,7 @@ public class LogicSpecialRegistry
 	};
 
 
-	private static AbsoluteLocation _getInputOpposite(AbsoluteLocation location, OrientationAspect.Direction outputDirection)
+	private static AbsoluteLocation _getInputOpposite(AbsoluteLocation location, FacingDirection outputDirection)
 	{
 		AbsoluteLocation checkLocation;
 		switch(outputDirection)
@@ -122,7 +123,7 @@ public class LogicSpecialRegistry
 		return checkLocation;
 	}
 
-	private static AbsoluteLocation[] _getInputLeftRight(AbsoluteLocation location, OrientationAspect.Direction outputDirection)
+	private static AbsoluteLocation[] _getInputLeftRight(AbsoluteLocation location, FacingDirection outputDirection)
 	{
 		AbsoluteLocation checkLeft;
 		AbsoluteLocation checkRight;

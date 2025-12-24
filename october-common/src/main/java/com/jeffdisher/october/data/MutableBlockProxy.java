@@ -15,6 +15,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.EnchantingOperation;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -83,7 +84,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		// Note that we EXPLICTLY avoid clearing the light value since that is updated via a delayed mechanism.
 		
 		_setData7(AspectRegistry.FLAGS, (byte)0);
-		_setData7(AspectRegistry.ORIENTATION, OrientationAspect.directionToByte(OrientationAspect.Direction.NORTH));
+		_setData7(AspectRegistry.ORIENTATION, FacingDirection.directionToByte(FacingDirection.NORTH));
 		_setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, null);
 		_setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, null);
 		_setDataSpecial(AspectRegistry.ENCHANTING, null);
@@ -231,16 +232,16 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	}
 
 	@Override
-	public OrientationAspect.Direction getOrientation()
+	public FacingDirection getOrientation()
 	{
 		byte ordinal = _getData7(AspectRegistry.ORIENTATION);
-		return OrientationAspect.byteToDirection(ordinal);
+		return FacingDirection.byteToDirection(ordinal);
 	}
 
 	@Override
-	public void setOrientation(OrientationAspect.Direction direction)
+	public void setOrientation(FacingDirection direction)
 	{
-		byte ordinal = OrientationAspect.directionToByte(direction);
+		byte ordinal = FacingDirection.directionToByte(direction);
 		_setData7(AspectRegistry.ORIENTATION, ordinal);
 	}
 
@@ -501,12 +502,12 @@ public class MutableBlockProxy implements IMutableBlockProxy
 			// block type changed or the flag changed.
 			if (_env.logic.isSource(originalBlock))
 			{
-				OrientationAspect.Direction direction = OrientationAspect.byteToDirection(_data.getData7(AspectRegistry.ORIENTATION, _address));
+				FacingDirection direction = FacingDirection.byteToDirection(_data.getData7(AspectRegistry.ORIENTATION, _address));
 				changeBits = _populateBitsForSource(originalBlock, direction, changeBits);
 			}
 			if (_env.logic.isSource(_cachedBlock))
 			{
-				OrientationAspect.Direction direction = OrientationAspect.byteToDirection(_write7[AspectRegistry.ORIENTATION.index()]);
+				FacingDirection direction = FacingDirection.byteToDirection(_write7[AspectRegistry.ORIENTATION.index()]);
 				changeBits = _populateBitsForSource(_cachedBlock, direction, changeBits);
 			}
 		}
@@ -604,7 +605,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		newData.setDataSpecial(aspect, address, aspect.type().cast(value));
 	}
 
-	private byte _populateBitsForSource(Block type, OrientationAspect.Direction direction, byte changeBits)
+	private byte _populateBitsForSource(Block type, FacingDirection direction, byte changeBits)
 	{
 		if (OrientationAspect.doesSingleBlockRequireOrientation(type))
 		{

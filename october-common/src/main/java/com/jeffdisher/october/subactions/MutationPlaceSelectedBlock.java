@@ -17,6 +17,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -102,7 +103,7 @@ public class MutationPlaceSelectedBlock implements IEntitySubAction<IMutablePlay
 		if (isTargetAir && isItemSelected && isLocationClose && isLocationNotColliding && blockIsSupported)
 		{
 			// Decide if this block type needs special orientation considerations.
-			OrientationAspect.Direction outputDirection = OrientationAspect.getDirectionIfApplicableToSingle(blockType, _targetBlock, _blockOutput);
+			FacingDirection outputDirection = OrientationAspect.getDirectionIfApplicableToSingle(blockType, _targetBlock, _blockOutput);
 			
 			// Make sure that the output direction matches the needs of this block type.
 			if (OrientationAspect.doesSingleBlockRequireOrientation(blockType) == (null != outputDirection))

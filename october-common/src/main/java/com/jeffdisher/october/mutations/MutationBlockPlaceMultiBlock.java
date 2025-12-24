@@ -3,13 +3,13 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.EventRecord;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -30,7 +30,7 @@ public class MutationBlockPlaceMultiBlock implements IMutationBlock
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		Block blockType = env.blocks.getAsPlaceableBlock(CodecHelpers.readItem(buffer));
 		AbsoluteLocation rootLocation = CodecHelpers.readAbsoluteLocation(buffer);
-		OrientationAspect.Direction direction = CodecHelpers.readOrientation(buffer);
+		FacingDirection direction = CodecHelpers.readOrientation(buffer);
 		int entityId = buffer.getInt();
 		return new MutationBlockPlaceMultiBlock(location, blockType, rootLocation, direction, entityId);
 	}
@@ -39,10 +39,10 @@ public class MutationBlockPlaceMultiBlock implements IMutationBlock
 	private final AbsoluteLocation _location;
 	private final Block _blockType;
 	private final AbsoluteLocation _rootLocation;
-	private final OrientationAspect.Direction _direction;
+	private final FacingDirection _direction;
 	private final int _entityId;
 
-	public MutationBlockPlaceMultiBlock(AbsoluteLocation location, Block blockType, AbsoluteLocation rootLocation, OrientationAspect.Direction direction, int entityId)
+	public MutationBlockPlaceMultiBlock(AbsoluteLocation location, Block blockType, AbsoluteLocation rootLocation, FacingDirection direction, int entityId)
 	{
 		Environment env = Environment.getShared();
 		// This MUST be a multi-block type.
@@ -69,7 +69,7 @@ public class MutationBlockPlaceMultiBlock implements IMutationBlock
 		Environment env = Environment.getShared();
 		boolean isRoot = _rootLocation.equals(_location);
 		Block oldBlock = newBlock.getBlock();
-		OrientationAspect.Direction outputIfRoot = isRoot ? _direction : null;
+		FacingDirection outputIfRoot = isRoot ? _direction : null;
 		boolean isMultiBlockExtension = !isRoot;
 		boolean didApply = CommonBlockMutationHelpers.overwriteBlock(context, newBlock, _location, outputIfRoot, _blockType, isMultiBlockExtension);
 		if (didApply)

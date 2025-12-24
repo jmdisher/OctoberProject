@@ -9,7 +9,6 @@ import java.util.Random;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
@@ -25,6 +24,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.CuboidGenerator;
@@ -197,11 +197,11 @@ public class BasicWorldGenerator implements IWorldGenerator
 		int x = (int)(distance * Math.cos(angle));
 		int y = (int)(distance * Math.sin(angle));
 		int height = 100;
-		_structures.register(structures.nexusCastle, new AbsoluteLocation(x + CommonStructures.CASTLE_X, y + CommonStructures.CASTLE_Y, height + CommonStructures.CASTLE_Z), OrientationAspect.Direction.NORTH);
-		_structures.register(structures.distanceTower, new AbsoluteLocation(x + CommonStructures.TOWER_NORTH_X, y + CommonStructures.TOWER_NORTH_Y, height + CommonStructures.TOWER_Z), OrientationAspect.Direction.NORTH);
-		_structures.register(structures.distanceTower, new AbsoluteLocation(x + CommonStructures.TOWER_SOUTH_X, y + CommonStructures.TOWER_SOUTH_Y, height + CommonStructures.TOWER_Z), OrientationAspect.Direction.SOUTH);
-		_structures.register(structures.distanceTower, new AbsoluteLocation(x + CommonStructures.TOWER_EAST_X, y + CommonStructures.TOWER_EAST_Y, height + CommonStructures.TOWER_Z), OrientationAspect.Direction.EAST);
-		_structures.register(structures.distanceTower, new AbsoluteLocation(x + CommonStructures.TOWER_WEST_X, y + CommonStructures.TOWER_WEST_Y, height + CommonStructures.TOWER_Z), OrientationAspect.Direction.WEST);
+		_structures.register(structures.nexusCastle, new AbsoluteLocation(x + CommonStructures.CASTLE_X, y + CommonStructures.CASTLE_Y, height + CommonStructures.CASTLE_Z), FacingDirection.NORTH);
+		_structures.register(structures.distanceTower, new AbsoluteLocation(x + CommonStructures.TOWER_NORTH_X, y + CommonStructures.TOWER_NORTH_Y, height + CommonStructures.TOWER_Z), FacingDirection.NORTH);
+		_structures.register(structures.distanceTower, new AbsoluteLocation(x + CommonStructures.TOWER_SOUTH_X, y + CommonStructures.TOWER_SOUTH_Y, height + CommonStructures.TOWER_Z), FacingDirection.SOUTH);
+		_structures.register(structures.distanceTower, new AbsoluteLocation(x + CommonStructures.TOWER_EAST_X, y + CommonStructures.TOWER_EAST_Y, height + CommonStructures.TOWER_Z), FacingDirection.EAST);
+		_structures.register(structures.distanceTower, new AbsoluteLocation(x + CommonStructures.TOWER_WEST_X, y + CommonStructures.TOWER_WEST_Y, height + CommonStructures.TOWER_Z), FacingDirection.WEST);
 	}
 
 	@Override
@@ -417,7 +417,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 									data.setData15(AspectRegistry.BLOCK, dirtBlock, _blockDirt.item().number());
 								}
 							}
-							Structure.FollowUp followUp = _basicTree.applyToCuboid(data, rootLocation, OrientationAspect.Direction.NORTH, airNumber);
+							Structure.FollowUp followUp = _basicTree.applyToCuboid(data, rootLocation, FacingDirection.NORTH, airNumber);
 							Assert.assertTrue(followUp.isEmpty());
 						}
 					}
@@ -437,7 +437,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 			int relativeY = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
 			int absoluteZ = random.nextInt(range) + minZ;
 			AbsoluteLocation rootLocation = new AbsoluteLocation(relativeBaseX + relativeX, relativeBaseY + relativeY, absoluteZ);
-			Structure.FollowUp followUp = node.applyToCuboid(data, rootLocation, OrientationAspect.Direction.NORTH, stoneNumber);
+			Structure.FollowUp followUp = node.applyToCuboid(data, rootLocation, FacingDirection.NORTH, stoneNumber);
 			Assert.assertTrue(followUp.isEmpty());
 		}
 	}

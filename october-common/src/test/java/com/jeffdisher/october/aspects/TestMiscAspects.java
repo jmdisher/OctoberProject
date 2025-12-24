@@ -12,6 +12,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockVolume;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.DropChance;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.Item;
 
 
@@ -75,11 +76,11 @@ public class TestMiscAspects
 	public void orientationRotate() throws Throwable
 	{
 		AbsoluteLocation start = new AbsoluteLocation(1, 2, 3);
-		Assert.assertEquals(start, OrientationAspect.Direction.NORTH.rotateAboutZ(start));
-		Assert.assertEquals(new AbsoluteLocation(-2, 1, 3), OrientationAspect.Direction.WEST.rotateAboutZ(start));
-		Assert.assertEquals(new AbsoluteLocation(-1, -2, 3), OrientationAspect.Direction.SOUTH.rotateAboutZ(start));
-		Assert.assertEquals(new AbsoluteLocation(2, -1, 3), OrientationAspect.Direction.EAST.rotateAboutZ(start));
-		Assert.assertArrayEquals(new float[] { -2.4f, -1.1f }, OrientationAspect.Direction.EAST.rotateXYTupleAboutZ(new float[] { 1.1f, -2.4f }), 0.01f);
+		Assert.assertEquals(start, FacingDirection.NORTH.rotateAboutZ(start));
+		Assert.assertEquals(new AbsoluteLocation(-2, 1, 3), FacingDirection.WEST.rotateAboutZ(start));
+		Assert.assertEquals(new AbsoluteLocation(-1, -2, 3), FacingDirection.SOUTH.rotateAboutZ(start));
+		Assert.assertEquals(new AbsoluteLocation(2, -1, 3), FacingDirection.EAST.rotateAboutZ(start));
+		Assert.assertArrayEquals(new float[] { -2.4f, -1.1f }, FacingDirection.EAST.rotateXYTupleAboutZ(new float[] { 1.1f, -2.4f }), 0.01f);
 	}
 
 	@Test
@@ -87,7 +88,7 @@ public class TestMiscAspects
 	{
 		Block doorClosed = ENV.blocks.fromItem(ENV.items.getItemById("op.double_door_base"));
 		AbsoluteLocation start = new AbsoluteLocation(0, 0, 0);
-		List<AbsoluteLocation> extensions = ENV.multiBlocks.getExtensions(doorClosed, start, OrientationAspect.Direction.NORTH);
+		List<AbsoluteLocation> extensions = ENV.multiBlocks.getExtensions(doorClosed, start, FacingDirection.NORTH);
 		Assert.assertEquals(3, extensions.size());
 		Assert.assertEquals(new AbsoluteLocation(0, 0, 1), extensions.get(0));
 		Assert.assertEquals(new AbsoluteLocation(1, 0, 0), extensions.get(1));
@@ -101,8 +102,8 @@ public class TestMiscAspects
 		AbsoluteLocation blockLocation = new AbsoluteLocation(1, 2, 3);
 		AbsoluteLocation outputNorth = blockLocation.getRelative(0, 1, 0);
 		AbsoluteLocation outputDown = blockLocation.getRelative(0, 0, -1);
-		Assert.assertEquals(OrientationAspect.Direction.NORTH, OrientationAspect.getRelativeDirection(blockLocation, outputNorth));
-		Assert.assertEquals(OrientationAspect.Direction.DOWN, OrientationAspect.getRelativeDirection(blockLocation, outputDown));
+		Assert.assertEquals(FacingDirection.NORTH, FacingDirection.getRelativeDirection(blockLocation, outputNorth));
+		Assert.assertEquals(FacingDirection.DOWN, FacingDirection.getRelativeDirection(blockLocation, outputDown));
 	}
 
 	@Test

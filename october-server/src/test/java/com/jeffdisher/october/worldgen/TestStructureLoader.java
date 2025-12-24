@@ -10,7 +10,6 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.PropertyHelpers;
@@ -21,6 +20,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
@@ -58,7 +58,7 @@ public class TestStructureLoader
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		Structure structure = loader.loadFromStrings(zLayers);
 		AbsoluteLocation target = new AbsoluteLocation(5, 6, 7);
-		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
+		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, FacingDirection.NORTH, Structure.REPLACE_ALL);
 		Assert.assertTrue(followUp.isEmpty());
 		
 		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(4, 5, 6)));
@@ -88,7 +88,7 @@ public class TestStructureLoader
 		Assert.assertEquals(new AbsoluteLocation(5, 3, 3), structure.totalVolume());
 		
 		AbsoluteLocation target = new AbsoluteLocation(5, 6, 7);
-		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
+		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, FacingDirection.NORTH, Structure.REPLACE_ALL);
 		Assert.assertTrue(followUp.isEmpty());
 		
 		Assert.assertEquals(STONE_BRICK.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
@@ -119,14 +119,14 @@ public class TestStructureLoader
 		
 		// Offset with the positive edge.
 		AbsoluteLocation target = new AbsoluteLocation(30, 30, 30);
-		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
+		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, FacingDirection.NORTH, Structure.REPLACE_ALL);
 		Assert.assertTrue(followUp.isEmpty());
 		Assert.assertEquals(STONE_BRICK.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(DIRT.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 1, 0).getBlockAddress()));
 		
 		// Offset with the negative edge.
 		AbsoluteLocation negativeTarget = target.getRelative(-32, -32, -32);
-		followUp = structure.applyToCuboid(cuboid, negativeTarget, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
+		followUp = structure.applyToCuboid(cuboid, negativeTarget, FacingDirection.NORTH, Structure.REPLACE_ALL);
 		Assert.assertTrue(followUp.isEmpty());
 		Assert.assertEquals(STONE_BRICK.item().number(), cuboid.getData15(AspectRegistry.BLOCK, negativeTarget.getRelative(2, 2, 2).getBlockAddress()));
 	}
@@ -142,7 +142,7 @@ public class TestStructureLoader
 		Structure structure = loader.loadFromStrings(zLayers);
 		
 		AbsoluteLocation target = new AbsoluteLocation(5, 6, 7);
-		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
+		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, FacingDirection.NORTH, Structure.REPLACE_ALL);
 		// We expect 3 things here with x-offsets: +1, +5, +9.
 		AbsoluteLocation wait1 = target.getRelative(1, 0, 0);
 		AbsoluteLocation wait2 = target.getRelative(5, 0, 0);
@@ -198,7 +198,7 @@ public class TestStructureLoader
 		short coalOreValue = ENV.items.getItemById("op.coal_ore").number();
 		short ironOreValue = ENV.items.getItemById("op.iron_ore").number();
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
-		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, stoneBlockValue);
+		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, FacingDirection.NORTH, stoneBlockValue);
 		Assert.assertTrue(followUp.isEmpty());
 		for (byte z = 1; z < Encoding.CUBOID_EDGE_SIZE; ++z)
 		{
@@ -233,7 +233,7 @@ public class TestStructureLoader
 		short logValue = ENV.items.getItemById("op.log").number();
 		short leafValue = ENV.items.getItemById("op.leaf").number();
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
-		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
+		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, FacingDirection.NORTH, Structure.REPLACE_ALL);
 		Assert.assertTrue(followUp.isEmpty());
 		Assert.assertEquals(logValue, cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(leafValue, cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 1, 1).getBlockAddress()));
@@ -260,7 +260,7 @@ public class TestStructureLoader
 		
 		// Load into the base of the cuboid and see that only the stone blocks have been replaced but the air left unchanged.
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
-		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL);
+		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, FacingDirection.NORTH, Structure.REPLACE_ALL);
 		
 		// We expect 1 update since the void lamp is a composite structure.
 		AbsoluteLocation wait1 = target.getRelative(0, 0, 1);
@@ -304,10 +304,10 @@ public class TestStructureLoader
 		CuboidData swCuboid = CuboidGenerator.createFilledCuboid(swCuboidAddress, ENV.special.AIR);
 		CuboidData seCuboid = CuboidGenerator.createFilledCuboid(seCuboidAddress, ENV.special.AIR);
 		AbsoluteLocation rootLocation = new AbsoluteLocation(-1, -1, 7);
-		Assert.assertTrue(structure.applyToCuboid(nwCuboid, rootLocation, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL).isEmpty());
-		Assert.assertTrue(structure.applyToCuboid(neCuboid, rootLocation, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL).isEmpty());
-		Assert.assertTrue(structure.applyToCuboid(swCuboid, rootLocation, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL).isEmpty());
-		Assert.assertTrue(structure.applyToCuboid(seCuboid, rootLocation, OrientationAspect.Direction.NORTH, Structure.REPLACE_ALL).isEmpty());
+		Assert.assertTrue(structure.applyToCuboid(nwCuboid, rootLocation, FacingDirection.NORTH, Structure.REPLACE_ALL).isEmpty());
+		Assert.assertTrue(structure.applyToCuboid(neCuboid, rootLocation, FacingDirection.NORTH, Structure.REPLACE_ALL).isEmpty());
+		Assert.assertTrue(structure.applyToCuboid(swCuboid, rootLocation, FacingDirection.NORTH, Structure.REPLACE_ALL).isEmpty());
+		Assert.assertTrue(structure.applyToCuboid(seCuboid, rootLocation, FacingDirection.NORTH, Structure.REPLACE_ALL).isEmpty());
 		Assert.assertEquals(coalOreValue, nwCuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(31, 0, 7)));
 		Assert.assertEquals(ironOreValue, neCuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 0, 7)));
 		Assert.assertEquals(dirtValue, swCuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(31, 31, 7)));
@@ -319,10 +319,10 @@ public class TestStructureLoader
 		swCuboid = CuboidGenerator.createFilledCuboid(swCuboidAddress, ENV.special.AIR);
 		seCuboid = CuboidGenerator.createFilledCuboid(seCuboidAddress, ENV.special.AIR);
 		rootLocation = new AbsoluteLocation(-1, 0, 7);
-		Assert.assertTrue(structure.applyToCuboid(nwCuboid, rootLocation, OrientationAspect.Direction.EAST, Structure.REPLACE_ALL).isEmpty());
-		Assert.assertTrue(structure.applyToCuboid(neCuboid, rootLocation, OrientationAspect.Direction.EAST, Structure.REPLACE_ALL).isEmpty());
-		Assert.assertTrue(structure.applyToCuboid(swCuboid, rootLocation, OrientationAspect.Direction.EAST, Structure.REPLACE_ALL).isEmpty());
-		Assert.assertTrue(structure.applyToCuboid(seCuboid, rootLocation, OrientationAspect.Direction.EAST, Structure.REPLACE_ALL).isEmpty());
+		Assert.assertTrue(structure.applyToCuboid(nwCuboid, rootLocation, FacingDirection.EAST, Structure.REPLACE_ALL).isEmpty());
+		Assert.assertTrue(structure.applyToCuboid(neCuboid, rootLocation, FacingDirection.EAST, Structure.REPLACE_ALL).isEmpty());
+		Assert.assertTrue(structure.applyToCuboid(swCuboid, rootLocation, FacingDirection.EAST, Structure.REPLACE_ALL).isEmpty());
+		Assert.assertTrue(structure.applyToCuboid(seCuboid, rootLocation, FacingDirection.EAST, Structure.REPLACE_ALL).isEmpty());
 		Assert.assertEquals(dirtValue, nwCuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(31, 0, 7)));
 		Assert.assertEquals(coalOreValue, neCuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 7)));
 		Assert.assertEquals(stoneBrickValue, swCuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(31, 30, 7)));
@@ -334,10 +334,10 @@ public class TestStructureLoader
 		swCuboid = CuboidGenerator.createFilledCuboid(swCuboidAddress, ENV.special.AIR);
 		seCuboid = CuboidGenerator.createFilledCuboid(seCuboidAddress, ENV.special.AIR);
 		rootLocation = new AbsoluteLocation(0, 0, 7);
-		Assert.assertTrue(structure.applyToCuboid(nwCuboid, rootLocation, OrientationAspect.Direction.SOUTH, Structure.REPLACE_ALL).isEmpty());
-		Assert.assertTrue(structure.applyToCuboid(neCuboid, rootLocation, OrientationAspect.Direction.SOUTH, Structure.REPLACE_ALL).isEmpty());
-		Assert.assertTrue(structure.applyToCuboid(swCuboid, rootLocation, OrientationAspect.Direction.SOUTH, Structure.REPLACE_ALL).isEmpty());
-		Assert.assertTrue(structure.applyToCuboid(seCuboid, rootLocation, OrientationAspect.Direction.SOUTH, Structure.REPLACE_ALL).isEmpty());
+		Assert.assertTrue(structure.applyToCuboid(nwCuboid, rootLocation, FacingDirection.SOUTH, Structure.REPLACE_ALL).isEmpty());
+		Assert.assertTrue(structure.applyToCuboid(neCuboid, rootLocation, FacingDirection.SOUTH, Structure.REPLACE_ALL).isEmpty());
+		Assert.assertTrue(structure.applyToCuboid(swCuboid, rootLocation, FacingDirection.SOUTH, Structure.REPLACE_ALL).isEmpty());
+		Assert.assertTrue(structure.applyToCuboid(seCuboid, rootLocation, FacingDirection.SOUTH, Structure.REPLACE_ALL).isEmpty());
 		Assert.assertEquals(stoneBrickValue, nwCuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(30, 0, 7)));
 		Assert.assertEquals(dirtValue, neCuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 7)));
 		Assert.assertEquals(ironOreValue, swCuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(30, 31, 7)));
@@ -349,10 +349,10 @@ public class TestStructureLoader
 		swCuboid = CuboidGenerator.createFilledCuboid(swCuboidAddress, ENV.special.AIR);
 		seCuboid = CuboidGenerator.createFilledCuboid(seCuboidAddress, ENV.special.AIR);
 		rootLocation = new AbsoluteLocation(0, -1, 7);
-		Assert.assertTrue(structure.applyToCuboid(nwCuboid, rootLocation, OrientationAspect.Direction.WEST, Structure.REPLACE_ALL).isEmpty());
-		Assert.assertTrue(structure.applyToCuboid(neCuboid, rootLocation, OrientationAspect.Direction.WEST, Structure.REPLACE_ALL).isEmpty());
-		Assert.assertTrue(structure.applyToCuboid(swCuboid, rootLocation, OrientationAspect.Direction.WEST, Structure.REPLACE_ALL).isEmpty());
-		Assert.assertTrue(structure.applyToCuboid(seCuboid, rootLocation, OrientationAspect.Direction.WEST, Structure.REPLACE_ALL).isEmpty());
+		Assert.assertTrue(structure.applyToCuboid(nwCuboid, rootLocation, FacingDirection.WEST, Structure.REPLACE_ALL).isEmpty());
+		Assert.assertTrue(structure.applyToCuboid(neCuboid, rootLocation, FacingDirection.WEST, Structure.REPLACE_ALL).isEmpty());
+		Assert.assertTrue(structure.applyToCuboid(swCuboid, rootLocation, FacingDirection.WEST, Structure.REPLACE_ALL).isEmpty());
+		Assert.assertTrue(structure.applyToCuboid(seCuboid, rootLocation, FacingDirection.WEST, Structure.REPLACE_ALL).isEmpty());
 		Assert.assertEquals(ironOreValue, nwCuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(31, 1, 7)));
 		Assert.assertEquals(stoneBrickValue, neCuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 1, 7)));
 		Assert.assertEquals(coalOreValue, swCuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(31, 31, 7)));
@@ -378,10 +378,10 @@ public class TestStructureLoader
 		Map<Character, Structure.AspectData> mapping = Map.of(
 			'C', new Structure.AspectData(chest, inv, null, null, null)
 			, 'I', new Structure.AspectData(pedestal, null, null, ItemSlot.fromNonStack(customSword), null)
-			, 'N', new Structure.AspectData(andGate, null, OrientationAspect.Direction.NORTH, null, null)
-			, 'E', new Structure.AspectData(andGate, null, OrientationAspect.Direction.EAST, null, null)
-			, 'W', new Structure.AspectData(andGate, null, OrientationAspect.Direction.WEST, null, null)
-			, 'S', new Structure.AspectData(andGate, null, OrientationAspect.Direction.SOUTH, null, null)
+			, 'N', new Structure.AspectData(andGate, null, FacingDirection.NORTH, null, null)
+			, 'E', new Structure.AspectData(andGate, null, FacingDirection.EAST, null, null)
+			, 'W', new Structure.AspectData(andGate, null, FacingDirection.WEST, null, null)
+			, 'S', new Structure.AspectData(andGate, null, FacingDirection.SOUTH, null, null)
 		);
 		StructureLoader loader = new StructureLoader(mapping);
 		String[] zLayers = new String[] {""
@@ -393,13 +393,13 @@ public class TestStructureLoader
 		
 		// Load into the base of the cuboid and see that only the stone blocks have been replaced but the air left unchanged.
 		AbsoluteLocation target = new AbsoluteLocation(15, 15, 15);
-		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, OrientationAspect.Direction.EAST, Structure.REPLACE_ALL);
+		Structure.FollowUp followUp = structure.applyToCuboid(cuboid, target, FacingDirection.EAST, Structure.REPLACE_ALL);
 		Assert.assertTrue(followUp.isEmpty());
 		
 		Assert.assertEquals(inv, cuboid.getDataSpecial(AspectRegistry.INVENTORY, target.getRelative(0, -1, 0).getBlockAddress()));
 		Assert.assertEquals("Custom name", cuboid.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, target.getRelative(0, -3, 0).getBlockAddress()).nonStackable.properties().get(PropertyRegistry.NAME));
-		Assert.assertEquals(OrientationAspect.Direction.EAST.ordinal(), cuboid.getData7(AspectRegistry.ORIENTATION, target.getRelative(0, -5, 0).getBlockAddress()));
-		Assert.assertEquals(OrientationAspect.Direction.NORTH.ordinal(), cuboid.getData7(AspectRegistry.ORIENTATION, target.getRelative(0, -9, 0).getBlockAddress()));
+		Assert.assertEquals(FacingDirection.EAST.ordinal(), cuboid.getData7(AspectRegistry.ORIENTATION, target.getRelative(0, -5, 0).getBlockAddress()));
+		Assert.assertEquals(FacingDirection.NORTH.ordinal(), cuboid.getData7(AspectRegistry.ORIENTATION, target.getRelative(0, -9, 0).getBlockAddress()));
 	}
 
 	@Test
@@ -411,10 +411,10 @@ public class TestStructureLoader
 		};
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		Structure structure = loader.loadFromStrings(zLayers);
-		Assert.assertTrue(structure.doesIntersectCuboid(address, new AbsoluteLocation(-1, 0, 0), OrientationAspect.Direction.NORTH));
-		Assert.assertFalse(structure.doesIntersectCuboid(address, new AbsoluteLocation(-1, 0, 0), OrientationAspect.Direction.EAST));
-		Assert.assertTrue(structure.doesIntersectCuboid(address, new AbsoluteLocation(31, 0, 0), OrientationAspect.Direction.NORTH));
-		Assert.assertFalse(structure.doesIntersectCuboid(address, new AbsoluteLocation(31, 40, 0), OrientationAspect.Direction.NORTH));
+		Assert.assertTrue(structure.doesIntersectCuboid(address, new AbsoluteLocation(-1, 0, 0), FacingDirection.NORTH));
+		Assert.assertFalse(structure.doesIntersectCuboid(address, new AbsoluteLocation(-1, 0, 0), FacingDirection.EAST));
+		Assert.assertTrue(structure.doesIntersectCuboid(address, new AbsoluteLocation(31, 0, 0), FacingDirection.NORTH));
+		Assert.assertFalse(structure.doesIntersectCuboid(address, new AbsoluteLocation(31, 40, 0), FacingDirection.NORTH));
 	}
 
 	@Test
@@ -426,9 +426,9 @@ public class TestStructureLoader
 		};
 		Structure structure = loader.loadFromStrings(zLayers);
 		AbsoluteLocation furtherTarget = new AbsoluteLocation(-1, 1000, 0);
-		Assert.assertTrue(structure.doesIntersectCuboid(furtherTarget.getCuboidAddress(), furtherTarget, OrientationAspect.Direction.EAST));
-		Assert.assertTrue(structure.doesIntersectCuboid(furtherTarget.getRelative(0, -32, 0).getCuboidAddress(), furtherTarget, OrientationAspect.Direction.EAST));
-		Assert.assertFalse(structure.doesIntersectCuboid(furtherTarget.getRelative(0, 32, 0).getCuboidAddress(), furtherTarget, OrientationAspect.Direction.EAST));
+		Assert.assertTrue(structure.doesIntersectCuboid(furtherTarget.getCuboidAddress(), furtherTarget, FacingDirection.EAST));
+		Assert.assertTrue(structure.doesIntersectCuboid(furtherTarget.getRelative(0, -32, 0).getCuboidAddress(), furtherTarget, FacingDirection.EAST));
+		Assert.assertFalse(structure.doesIntersectCuboid(furtherTarget.getRelative(0, 32, 0).getCuboidAddress(), furtherTarget, FacingDirection.EAST));
 	}
 
 	@Test

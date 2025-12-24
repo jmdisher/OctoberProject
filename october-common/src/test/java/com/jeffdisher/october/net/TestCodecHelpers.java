@@ -11,7 +11,6 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.properties.PropertyRegistry;
@@ -27,6 +26,7 @@ import com.jeffdisher.october.types.Enchantment;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Infusion;
 import com.jeffdisher.october.types.Inventory;
@@ -310,14 +310,14 @@ public class TestCodecHelpers
 	public void orientation() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		OrientationAspect.Direction north = OrientationAspect.Direction.NORTH;
-		OrientationAspect.Direction missing = null;
+		FacingDirection north = FacingDirection.NORTH;
+		FacingDirection missing = null;
 		CodecHelpers.writeOrientation(buffer, north);
 		CodecHelpers.writeOrientation(buffer, missing);
 		buffer.flip();
 		Assert.assertEquals(2, buffer.remaining());
 		
-		OrientationAspect.Direction output = CodecHelpers.readOrientation(buffer);
+		FacingDirection output = CodecHelpers.readOrientation(buffer);
 		Assert.assertTrue(north == output);
 		output = CodecHelpers.readOrientation(buffer);
 		Assert.assertTrue(missing == output);

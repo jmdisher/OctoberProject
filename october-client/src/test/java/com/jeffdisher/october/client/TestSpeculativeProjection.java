@@ -20,7 +20,6 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.CraftAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LightAspect;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
@@ -61,6 +60,7 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EventRecord;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
@@ -2488,7 +2488,7 @@ public class TestSpeculativeProjection
 		
 		// Place the block and verify the full placement completes.
 		currentTimeMillis += 100L;
-		EntityChangePlaceMultiBlock placeBlock = new EntityChangePlaceMultiBlock(targetLocation, OrientationAspect.Direction.EAST);
+		EntityChangePlaceMultiBlock placeBlock = new EntityChangePlaceMultiBlock(targetLocation, FacingDirection.EAST);
 		long commit1 = _wrapAndApply(projector, entity, currentTimeMillis, placeBlock);
 		Assert.assertEquals(1, commit1);
 		Assert.assertEquals(1, listener.changeCount);

@@ -3,7 +3,7 @@ package com.jeffdisher.october.logic;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.october.aspects.OrientationAspect;
+import com.jeffdisher.october.types.FacingDirection;
 
 
 public class TestOrientationHelpers
@@ -90,9 +90,9 @@ public class TestOrientationHelpers
 	@Test
 	public void directionsFromYaw()
 	{
-		Assert.assertEquals(OrientationAspect.Direction.NORTH, OrientationHelpers.getYawDirection((byte)10));
-		Assert.assertEquals(OrientationAspect.Direction.WEST, OrientationHelpers.getYawDirection((byte)50));
-		Assert.assertEquals(OrientationAspect.Direction.SOUTH, OrientationHelpers.getYawDirection((byte)140));
-		Assert.assertEquals(OrientationAspect.Direction.EAST, OrientationHelpers.getYawDirection((byte)200));
+		Assert.assertEquals(FacingDirection.NORTH, OrientationHelpers.getYawDirection((byte)10));
+		Assert.assertEquals(FacingDirection.WEST, OrientationHelpers.getYawDirection((byte)50));
+		Assert.assertEquals(FacingDirection.SOUTH, OrientationHelpers.getYawDirection((byte)140));
+		Assert.assertEquals(FacingDirection.EAST, OrientationHelpers.getYawDirection((byte)200));
 	}
 }

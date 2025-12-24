@@ -9,7 +9,6 @@ import java.util.function.Function;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.SpatialHelpers;
@@ -21,6 +20,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -45,15 +45,15 @@ public class EntityChangePlaceMultiBlock implements IEntitySubAction<IMutablePla
 	public static EntityChangePlaceMultiBlock deserializeFromBuffer(ByteBuffer buffer)
 	{
 		AbsoluteLocation target = CodecHelpers.readAbsoluteLocation(buffer);
-		OrientationAspect.Direction orientation = CodecHelpers.readOrientation(buffer);
+		FacingDirection orientation = CodecHelpers.readOrientation(buffer);
 		return new EntityChangePlaceMultiBlock(target, orientation);
 	}
 
 
 	private final AbsoluteLocation _targetBlock;
-	private final OrientationAspect.Direction _orientation;
+	private final FacingDirection _orientation;
 
-	public EntityChangePlaceMultiBlock(AbsoluteLocation targetBlock, OrientationAspect.Direction orientation)
+	public EntityChangePlaceMultiBlock(AbsoluteLocation targetBlock, FacingDirection orientation)
 	{
 		_targetBlock = targetBlock;
 		_orientation = orientation;

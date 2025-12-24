@@ -9,12 +9,12 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
@@ -150,7 +150,7 @@ public class TestMutableBlockProxy
 		
 		MutableBlockProxy rootProxy = new MutableBlockProxy(rootLocation, input);
 		rootProxy.setBlockAndClear(door);
-		rootProxy.setOrientation(OrientationAspect.Direction.NORTH);
+		rootProxy.setOrientation(FacingDirection.NORTH);
 		Assert.assertTrue(rootProxy.didChange());
 		rootProxy.writeBack(input);
 		MutableBlockProxy extensionProxy = new MutableBlockProxy(extensionLocation, input);
@@ -160,7 +160,7 @@ public class TestMutableBlockProxy
 		extensionProxy.writeBack(input);
 		
 		Assert.assertEquals(door.item().number(), input.getData15(AspectRegistry.BLOCK, rootLocation.getBlockAddress()));
-		Assert.assertEquals(OrientationAspect.directionToByte(OrientationAspect.Direction.NORTH), input.getData7(AspectRegistry.ORIENTATION, rootLocation.getBlockAddress()));
+		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.NORTH), input.getData7(AspectRegistry.ORIENTATION, rootLocation.getBlockAddress()));
 		Assert.assertEquals(door.item().number(), input.getData15(AspectRegistry.BLOCK, extensionLocation.getBlockAddress()));
 		Assert.assertEquals(rootLocation, input.getDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, extensionLocation.getBlockAddress()));
 		
@@ -175,7 +175,7 @@ public class TestMutableBlockProxy
 		extensionProxy.writeBack(input);
 		
 		Assert.assertEquals(ENV.special.AIR.item().number(), input.getData15(AspectRegistry.BLOCK, rootLocation.getBlockAddress()));
-		Assert.assertEquals(OrientationAspect.directionToByte(OrientationAspect.Direction.NORTH), input.getData7(AspectRegistry.ORIENTATION, rootLocation.getBlockAddress()));
+		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.NORTH), input.getData7(AspectRegistry.ORIENTATION, rootLocation.getBlockAddress()));
 		Assert.assertEquals(ENV.special.AIR.item().number(), input.getData15(AspectRegistry.BLOCK, extensionLocation.getBlockAddress()));
 		Assert.assertEquals(null, input.getDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, extensionLocation.getBlockAddress()));
 	}

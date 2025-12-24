@@ -2,13 +2,13 @@ package com.jeffdisher.october.logic;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.mutations.MultiBlockUtils;
 import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -64,7 +64,7 @@ public class PortalHelpers
 				if (!isPortalSurfaceActive)
 				{
 					Block portalSurface = env.blocks.fromItem(env.items.getItemById(PORTAL_SURFACE_ID));
-					OrientationAspect.Direction orientation = keystoneProxy.getOrientation();
+					FacingDirection orientation = keystoneProxy.getOrientation();
 					int entityId = 0;
 					MultiBlockUtils.send2PhaseMultiBlock(env, context, portalSurface, surfaceRootLocation, orientation, entityId);
 				}

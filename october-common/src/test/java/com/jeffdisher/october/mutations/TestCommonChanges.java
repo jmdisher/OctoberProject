@@ -26,7 +26,6 @@ import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -83,6 +82,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.EventRecord;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -1554,7 +1554,7 @@ public class TestCommonChanges
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(0, -1, 0), 0, entityId));
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
 		Assert.assertEquals(ENV.items.getItemById("op.hopper"), proxy.getBlock().item());
-		Assert.assertEquals(OrientationAspect.Direction.NORTH, proxy.getOrientation());
+		Assert.assertEquals(FacingDirection.NORTH, proxy.getOrientation());
 		proxy.writeBack(cuboid);
 		holder.mutation = null;
 		
@@ -1565,7 +1565,7 @@ public class TestCommonChanges
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(0, 1, 0), 0, entityId));
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
 		Assert.assertEquals(ENV.items.getItemById("op.hopper"), proxy.getBlock().item());
-		Assert.assertEquals(OrientationAspect.Direction.SOUTH, proxy.getOrientation());
+		Assert.assertEquals(FacingDirection.SOUTH, proxy.getOrientation());
 		proxy.writeBack(cuboid);
 		holder.mutation = null;
 		
@@ -1576,7 +1576,7 @@ public class TestCommonChanges
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(-1, 0, 0), 0, entityId));
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
 		Assert.assertEquals(ENV.items.getItemById("op.hopper"), proxy.getBlock().item());
-		Assert.assertEquals(OrientationAspect.Direction.EAST, proxy.getOrientation());
+		Assert.assertEquals(FacingDirection.EAST, proxy.getOrientation());
 		proxy.writeBack(cuboid);
 		holder.mutation = null;
 		
@@ -1587,7 +1587,7 @@ public class TestCommonChanges
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(1, 0, 0), 0, entityId));
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
 		Assert.assertEquals(ENV.items.getItemById("op.hopper"), proxy.getBlock().item());
-		Assert.assertEquals(OrientationAspect.Direction.WEST, proxy.getOrientation());
+		Assert.assertEquals(FacingDirection.WEST, proxy.getOrientation());
 		proxy.writeBack(cuboid);
 		holder.mutation = null;
 		
@@ -2223,7 +2223,7 @@ public class TestCommonChanges
 		Assert.assertEquals(0, mutations.size());
 		
 		// Show that we correctly place when using the right helper.
-		EntityChangePlaceMultiBlock place = new EntityChangePlaceMultiBlock(target, OrientationAspect.Direction.NORTH);
+		EntityChangePlaceMultiBlock place = new EntityChangePlaceMultiBlock(target, FacingDirection.NORTH);
 		Assert.assertTrue(place.applyChange(context, newEntity));
 		
 		// We also need to apply the actual mutations.
@@ -2791,7 +2791,7 @@ public class TestCommonChanges
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(0, -1, 0), 0, entityId));
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
 		Assert.assertEquals(itemKeystone, proxy.getBlock().item());
-		Assert.assertEquals(OrientationAspect.Direction.NORTH, proxy.getOrientation());
+		Assert.assertEquals(FacingDirection.NORTH, proxy.getOrientation());
 		proxy.writeBack(cuboid);
 		holder.mutation = null;
 		
@@ -2802,7 +2802,7 @@ public class TestCommonChanges
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(-1, 0, 0), 0, entityId));
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
 		Assert.assertEquals(itemKeystone, proxy.getBlock().item());
-		Assert.assertEquals(OrientationAspect.Direction.EAST, proxy.getOrientation());
+		Assert.assertEquals(FacingDirection.EAST, proxy.getOrientation());
 		proxy.writeBack(cuboid);
 		holder.mutation = null;
 		

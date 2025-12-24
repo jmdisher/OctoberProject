@@ -5,7 +5,6 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IMutableBlockProxy;
@@ -15,6 +14,7 @@ import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -182,7 +182,7 @@ public class MutationBlockUpdate implements IMutationBlock
 			LogicAspect.ISignalChangeCallback handler = env.logic.blockUpdateHandler(thisBlock);
 			if (null != handler)
 			{
-				OrientationAspect.Direction outputDirection = newBlock.getOrientation();
+				FacingDirection outputDirection = newBlock.getOrientation();
 				boolean isActive = handler.shouldStoreHighSignal(env, context.previousBlockLookUp, _blockLocation, outputDirection);
 				byte flags = newBlock.getFlags();
 				if (isActive != FlagsAspect.isSet(flags, FlagsAspect.FLAG_ACTIVE))

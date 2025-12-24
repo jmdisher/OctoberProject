@@ -5,10 +5,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -28,7 +28,7 @@ public class StructureRegistry
 	 * @param globalRoot The location where the structure is located.
 	 * @param rotation The rotation of the structure.
 	 */
-	public void register(Structure structure, AbsoluteLocation globalRoot, OrientationAspect.Direction rotation)
+	public void register(Structure structure, AbsoluteLocation globalRoot, FacingDirection rotation)
 	{
 		Set<CuboidAddress> addresses = structure.findIntersectingCuboids(globalRoot, rotation);
 		Assert.assertTrue(addresses.size() > 0);
@@ -63,6 +63,6 @@ public class StructureRegistry
 	}
 
 
-	private static record _StructureIdiom(Structure structure, AbsoluteLocation globalRoot, OrientationAspect.Direction rotation)
+	private static record _StructureIdiom(Structure structure, AbsoluteLocation globalRoot, FacingDirection rotation)
 	{}
 }

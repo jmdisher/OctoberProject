@@ -4,13 +4,13 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -32,7 +32,7 @@ public class MutationBlockPhase2Multi implements IMutationBlock
 		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		AbsoluteLocation rootLocation = CodecHelpers.readAbsoluteLocation(buffer);
-		OrientationAspect.Direction orientation = CodecHelpers.readOrientation(buffer);
+		FacingDirection orientation = CodecHelpers.readOrientation(buffer);
 		Block rootType = env.blocks.getAsPlaceableBlock(CodecHelpers.readItem(buffer));
 		Block revertType = env.blocks.getAsPlaceableBlock(CodecHelpers.readItem(buffer));
 		return new MutationBlockPhase2Multi(location, rootLocation, orientation, rootType, revertType);
@@ -41,11 +41,11 @@ public class MutationBlockPhase2Multi implements IMutationBlock
 
 	private final AbsoluteLocation _location;
 	private final AbsoluteLocation _rootLocation;
-	private final OrientationAspect.Direction _orientation;
+	private final FacingDirection _orientation;
 	private final Block _rootType;
 	private final Block _revertType;
 
-	public MutationBlockPhase2Multi(AbsoluteLocation location, AbsoluteLocation rootLocation, OrientationAspect.Direction orientation, Block rootType, Block revertType)
+	public MutationBlockPhase2Multi(AbsoluteLocation location, AbsoluteLocation rootLocation, FacingDirection orientation, Block rootType, Block revertType)
 	{
 		Environment env = Environment.getShared();
 		// This can only be called if the root is a multi-block.

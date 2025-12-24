@@ -26,7 +26,6 @@ import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IObjectCodec;
@@ -55,6 +54,7 @@ import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
@@ -829,7 +829,7 @@ public class TestResourceLoader
 		
 		Assert.assertEquals(doorClosedNumber, found.getData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress()));
 		Assert.assertEquals(multiDoorClosedNumber, found.getData15(AspectRegistry.BLOCK, multiDoorLocation.getBlockAddress()));
-		Assert.assertEquals(OrientationAspect.directionToByte(OrientationAspect.Direction.NORTH), found.getData7(AspectRegistry.ORIENTATION, multiDoorLocation.getBlockAddress()));
+		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.NORTH), found.getData7(AspectRegistry.ORIENTATION, multiDoorLocation.getBlockAddress()));
 		Assert.assertEquals(multiDoorClosedNumber, found.getData15(AspectRegistry.BLOCK, multiDoorLocation.getRelative(0, 0, 1).getBlockAddress()));
 		Assert.assertEquals(multiDoorLocation, found.getDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, multiDoorLocation.getRelative(0, 0, 1).getBlockAddress()));
 		Assert.assertEquals(multiDoorClosedNumber, found.getData15(AspectRegistry.BLOCK, multiDoorLocation.getRelative(1, 0, 0).getBlockAddress()));
@@ -838,9 +838,9 @@ public class TestResourceLoader
 		Assert.assertEquals(multiDoorLocation, found.getDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, multiDoorLocation.getRelative(1, 0, 1).getBlockAddress()));
 		
 		Assert.assertEquals(hopperDownNumber, found.getData15(AspectRegistry.BLOCK, hopperDownLocation.getBlockAddress()));
-		Assert.assertEquals(OrientationAspect.directionToByte(OrientationAspect.Direction.DOWN), found.getData7(AspectRegistry.ORIENTATION, hopperDownLocation.getBlockAddress()));
+		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.DOWN), found.getData7(AspectRegistry.ORIENTATION, hopperDownLocation.getBlockAddress()));
 		Assert.assertEquals(hopperDownNumber, found.getData15(AspectRegistry.BLOCK, hopperNorthLocation.getBlockAddress()));
-		Assert.assertEquals(OrientationAspect.directionToByte(OrientationAspect.Direction.NORTH), found.getData7(AspectRegistry.ORIENTATION, hopperNorthLocation.getBlockAddress()));
+		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.NORTH), found.getData7(AspectRegistry.ORIENTATION, hopperNorthLocation.getBlockAddress()));
 		
 		loader.shutdown();
 	}

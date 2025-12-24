@@ -9,7 +9,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
@@ -21,6 +20,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
@@ -68,7 +68,7 @@ public class TestHopperHelpers
 		// We will start with an item in the hopper to see it take 2 actions.
 		proxy = new MutableBlockProxy(hopperLocation, cuboid);
 		proxy.setBlockAndClear(hopper);
-		proxy.setOrientation(OrientationAspect.Direction.NORTH);
+		proxy.setOrientation(FacingDirection.NORTH);
 		proxy.setInventory(Inventory.start(10).addStackable(charcoal, 1).finish());
 		proxy.writeBack(cuboid);
 		

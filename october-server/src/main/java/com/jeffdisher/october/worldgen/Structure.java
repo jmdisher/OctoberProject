@@ -22,6 +22,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.NonStackableItem;
@@ -72,7 +73,7 @@ public class Structure
 	 * @return True if any part of the receiver would intersect the given cuboid when injected at globalRoot with
 	 * rotation.
 	 */
-	public boolean doesIntersectCuboid(CuboidAddress cuboidAddress, AbsoluteLocation globalRoot, OrientationAspect.Direction rotation)
+	public boolean doesIntersectCuboid(CuboidAddress cuboidAddress, AbsoluteLocation globalRoot, FacingDirection rotation)
 	{
 		AbsoluteLocation rotatedVolume = rotation.rotateAboutZ(_totalVolume());
 		int minX;
@@ -124,7 +125,7 @@ public class Structure
 	 * @return True if any part of the receiver would intersect the given cuboid when injected at globalRoot with
 	 * rotation.
 	 */
-	public Set<CuboidAddress> findIntersectingCuboids(AbsoluteLocation globalRoot, OrientationAspect.Direction rotation)
+	public Set<CuboidAddress> findIntersectingCuboids(AbsoluteLocation globalRoot, FacingDirection rotation)
 	{
 		AbsoluteLocation rotatedVolume = rotation.rotateAboutZ(_totalVolume());
 		int minX;
@@ -190,7 +191,7 @@ public class Structure
 	 * everything).
 	 * @return Follow-up changes to apply after this structure after it is loaded.
 	 */
-	public FollowUp applyToCuboid(CuboidData cuboid, AbsoluteLocation rootLocation, OrientationAspect.Direction rotation, short replaceTypeMask)
+	public FollowUp applyToCuboid(CuboidData cuboid, AbsoluteLocation rootLocation, FacingDirection rotation, short replaceTypeMask)
 	{
 		int sizeX = _width;
 		int sizeY = _getYSize();
@@ -290,17 +291,17 @@ public class Structure
 									}
 									if (null != aspectData.orientation)
 									{
-										if (OrientationAspect.Direction.DOWN == aspectData.orientation)
+										if (FacingDirection.DOWN == aspectData.orientation)
 										{
 											Assert.assertTrue(OrientationAspect.doesAllowDownwardOutput(block));
 										}
 										else if (!env.blocks.isMultiBlock(block))
 										{
 											// Multi-blocks all use a directed orientation.
-											Assert.assertTrue(OrientationAspect.HAS_ORIENTATION.contains(block.item().id()));
+											Assert.assertTrue(OrientationAspect.doesSingleBlockRequireOrientation(block));
 										}
-										OrientationAspect.Direction rotatedOrientation = rotation.rotateOrientation(aspectData.orientation);
-										cuboid.setData7(AspectRegistry.ORIENTATION, blockAddress, OrientationAspect.directionToByte(rotatedOrientation));
+										FacingDirection rotatedOrientation = rotation.rotateOrientation(aspectData.orientation);
+										cuboid.setData7(AspectRegistry.ORIENTATION, blockAddress, FacingDirection.directionToByte(rotatedOrientation));
 									}
 									if (null != aspectData.specialItemSlot)
 									{
@@ -378,7 +379,7 @@ public class Structure
 
 	public static record AspectData(Block block
 		, Inventory normalInventory
-		, OrientationAspect.Direction orientation
+		, FacingDirection orientation
 		, ItemSlot specialItemSlot
 		, AbsoluteLocation relativeMultiBlockRoot
 	) {}

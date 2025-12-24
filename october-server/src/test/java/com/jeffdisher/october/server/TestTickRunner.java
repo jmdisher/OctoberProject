@@ -19,7 +19,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
@@ -70,6 +69,7 @@ import com.jeffdisher.october.types.Enchantment;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
@@ -2419,11 +2419,11 @@ public class TestTickRunner
 		_placeItemAsBlock(cuboid, emitterSpace2.getRelative(0, 2, 0), itemGate, null, false);
 		
 		AbsoluteLocation existingEmitter1 = cuboid.getCuboidAddress().getBase().getRelative(2, 12, 1);
-		_placeItemAsBlock(cuboid, existingEmitter1, itemEmitter, OrientationAspect.Direction.EAST, true);
+		_placeItemAsBlock(cuboid, existingEmitter1, itemEmitter, FacingDirection.EAST, true);
 		AbsoluteLocation doorSpace1_1 = existingEmitter1.getRelative(1, 0, 0);
 		AbsoluteLocation doorSpace1_2 = existingEmitter1.getRelative(0, 1, 0);
 		AbsoluteLocation existingEmitter2 = cuboid.getCuboidAddress().getBase().getRelative(12, 12, 1);
-		_placeItemAsBlock(cuboid, existingEmitter2, itemEmitter, OrientationAspect.Direction.EAST, true);
+		_placeItemAsBlock(cuboid, existingEmitter2, itemEmitter, FacingDirection.EAST, true);
 		AbsoluteLocation wireSpace2_1 = existingEmitter2.getRelative(1, 0, 0);
 		AbsoluteLocation wireSpace2_2 = existingEmitter2.getRelative(0, 1, 0);
 		_placeItemAsBlock(cuboid, wireSpace2_1.getRelative(1, 0, 0), itemGate, null, false);
@@ -2486,8 +2486,8 @@ public class TestTickRunner
 		IReadOnlyCuboidData output = snapshot.cuboids().get(cuboid.getCuboidAddress()).completed();
 		
 		// Verify that all the blocks were placed correctly.
-		_checkBlock(output, emitterSpace1, itemEmitter, OrientationAspect.Direction.EAST, true);
-		_checkBlock(output, emitterSpace2, itemEmitter, OrientationAspect.Direction.EAST, true);
+		_checkBlock(output, emitterSpace1, itemEmitter, FacingDirection.EAST, true);
+		_checkBlock(output, emitterSpace2, itemEmitter, FacingDirection.EAST, true);
 		_checkBlock(output, doorSpace1_1, itemGate, null, false);
 		_checkBlock(output, doorSpace1_2, itemGate, null, false);
 		_checkBlock(output, wireSpace2_1, itemWire, null, false);
@@ -2528,37 +2528,37 @@ public class TestTickRunner
 		// This will need several areas, each with their own entity to run concurrently.
 		// (1) We will place diodes relative to the emitters.
 		AbsoluteLocation emitterActiveDirect = cuboid.getCuboidAddress().getBase().getRelative(2, 2, 1);
-		_placeItemAsBlock(cuboid, emitterActiveDirect, itemEmitter, OrientationAspect.Direction.EAST, true);
+		_placeItemAsBlock(cuboid, emitterActiveDirect, itemEmitter, FacingDirection.EAST, true);
 		AbsoluteLocation emitterActiveIndirect = cuboid.getCuboidAddress().getBase().getRelative(2, 12, 1);
-		_placeItemAsBlock(cuboid, emitterActiveIndirect, itemEmitter, OrientationAspect.Direction.EAST, true);
+		_placeItemAsBlock(cuboid, emitterActiveIndirect, itemEmitter, FacingDirection.EAST, true);
 		_placeItemAsBlock(cuboid, emitterActiveIndirect.getRelative(1, 0, 0), itemWire, null, false);
 		cuboid.setData7(AspectRegistry.LOGIC, emitterActiveIndirect.getRelative(1, 0, 0).getBlockAddress(), LogicAspect.MAX_LEVEL);
 		_placeItemAsBlock(cuboid, emitterActiveIndirect.getRelative(0, 1, 0), itemWire, null, false);
 		
 		// (2) We will place emitters before the diodes.
 		AbsoluteLocation diodeDirect = cuboid.getCuboidAddress().getBase().getRelative(12, 2, 1);
-		_placeItemAsBlock(cuboid, diodeDirect, itemDiode, OrientationAspect.Direction.EAST, false);
+		_placeItemAsBlock(cuboid, diodeDirect, itemDiode, FacingDirection.EAST, false);
 		AbsoluteLocation diodeIndirect = cuboid.getCuboidAddress().getBase().getRelative(12, 12, 1);
-		_placeItemAsBlock(cuboid, diodeIndirect, itemDiode, OrientationAspect.Direction.EAST, false);
+		_placeItemAsBlock(cuboid, diodeIndirect, itemDiode, FacingDirection.EAST, false);
 		_placeItemAsBlock(cuboid, diodeIndirect.getRelative(-1, 0, 0), itemWire, null, false);
 		
 		// (3) We will place a door after active diodes.
 		AbsoluteLocation diodeActiveDirect = cuboid.getCuboidAddress().getBase().getRelative(22, 2, 1);
-		_placeItemAsBlock(cuboid, diodeActiveDirect, itemDiode, OrientationAspect.Direction.EAST, true);
-		_placeItemAsBlock(cuboid, diodeActiveDirect.getRelative(-1, 0, 0), itemEmitter, OrientationAspect.Direction.EAST, true);
+		_placeItemAsBlock(cuboid, diodeActiveDirect, itemDiode, FacingDirection.EAST, true);
+		_placeItemAsBlock(cuboid, diodeActiveDirect.getRelative(-1, 0, 0), itemEmitter, FacingDirection.EAST, true);
 		AbsoluteLocation diodeActiveIndirect = cuboid.getCuboidAddress().getBase().getRelative(22, 12, 1);
-		_placeItemAsBlock(cuboid, diodeActiveIndirect, itemDiode, OrientationAspect.Direction.EAST, true);
+		_placeItemAsBlock(cuboid, diodeActiveIndirect, itemDiode, FacingDirection.EAST, true);
 		_placeItemAsBlock(cuboid, diodeActiveIndirect.getRelative(1, 0, 0), itemWire, null, false);
 		cuboid.setData7(AspectRegistry.LOGIC, diodeActiveIndirect.getRelative(1, 0, 0).getBlockAddress(), LogicAspect.MAX_LEVEL);
 		_placeItemAsBlock(cuboid, diodeActiveIndirect.getRelative(-1, 0, 0), itemWire, null, false);
 		cuboid.setData7(AspectRegistry.LOGIC, diodeActiveIndirect.getRelative(-1, 0, 0).getBlockAddress(), LogicAspect.MAX_LEVEL);
-		_placeItemAsBlock(cuboid, diodeActiveIndirect.getRelative(-2, 0, 0), itemEmitter, OrientationAspect.Direction.EAST, true);
+		_placeItemAsBlock(cuboid, diodeActiveIndirect.getRelative(-2, 0, 0), itemEmitter, FacingDirection.EAST, true);
 		
 		// (4) We will build a common logic pipeline and just flick switches.
 		AbsoluteLocation switchIndirect = cuboid.getCuboidAddress().getBase().getRelative(22, 22, 1);
 		_placeItemAsBlock(cuboid, switchIndirect, itemSwitch, null, false);
 		_placeItemAsBlock(cuboid, switchIndirect.getRelative(1, 0, 0), itemWire, null, false);
-		_placeItemAsBlock(cuboid, switchIndirect.getRelative(2, 0, 0), itemDiode, OrientationAspect.Direction.EAST, false);
+		_placeItemAsBlock(cuboid, switchIndirect.getRelative(2, 0, 0), itemDiode, FacingDirection.EAST, false);
 		_placeItemAsBlock(cuboid, switchIndirect.getRelative(3, 0, 0), itemWire, null, false);
 		_placeItemAsBlock(cuboid, switchIndirect.getRelative(4, 0, 0), itemGate, null, false);
 		
@@ -2656,18 +2656,18 @@ public class TestTickRunner
 		IReadOnlyCuboidData phase1 = snapshot.cuboids().get(cuboid.getCuboidAddress()).completed();
 		
 		// Check (1) fail cases.
-		_checkBlock(phase1, emitterActiveDirect.getRelative(0, 1, 0), itemDiode, OrientationAspect.Direction.EAST, false);
-		_checkBlock(phase1, emitterActiveIndirect.getRelative(0, 2, 0), itemDiode, OrientationAspect.Direction.EAST, false);
+		_checkBlock(phase1, emitterActiveDirect.getRelative(0, 1, 0), itemDiode, FacingDirection.EAST, false);
+		_checkBlock(phase1, emitterActiveIndirect.getRelative(0, 2, 0), itemDiode, FacingDirection.EAST, false);
 		// Check (2) fail cases.
-		_checkBlock(phase1, diodeDirect.getRelative(0, -1, 0), itemEmitter, OrientationAspect.Direction.EAST, true);
-		_checkBlock(phase1, diodeIndirect.getRelative(0, -2, 0), itemEmitter, OrientationAspect.Direction.EAST, true);
-		_checkBlock(phase1, diodeDirect, itemDiode, OrientationAspect.Direction.EAST, false);
-		_checkBlock(phase1, diodeIndirect, itemDiode, OrientationAspect.Direction.EAST, false);
+		_checkBlock(phase1, diodeDirect.getRelative(0, -1, 0), itemEmitter, FacingDirection.EAST, true);
+		_checkBlock(phase1, diodeIndirect.getRelative(0, -2, 0), itemEmitter, FacingDirection.EAST, true);
+		_checkBlock(phase1, diodeDirect, itemDiode, FacingDirection.EAST, false);
+		_checkBlock(phase1, diodeIndirect, itemDiode, FacingDirection.EAST, false);
 		// Check (3) fail cases.
 		_checkBlock(phase1, diodeActiveDirect.getRelative(0, 1, 0), itemGate, null, false);
 		_checkBlock(phase1, diodeActiveIndirect.getRelative(0, 2, 0), itemGate, null, false);
 		// Check (4) "on".
-		_checkBlock(phase1, switchIndirect.getRelative(2, 0, 0), itemDiode, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase1, switchIndirect.getRelative(2, 0, 0), itemDiode, FacingDirection.EAST, true);
 		_checkBlock(phase1, switchIndirect.getRelative(4, 0, 0), itemGate, null, true);
 		
 		// We can now run phase2.
@@ -2713,18 +2713,18 @@ public class TestTickRunner
 		IReadOnlyCuboidData phase2 = snapshot.cuboids().get(cuboid.getCuboidAddress()).completed();
 		
 		// Check (1) pass cases.
-		_checkBlock(phase2, emitterActiveDirect.getRelative(1, 0, 0), itemDiode, OrientationAspect.Direction.EAST, true);
-		_checkBlock(phase2, emitterActiveIndirect.getRelative(2, 0, 0), itemDiode, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase2, emitterActiveDirect.getRelative(1, 0, 0), itemDiode, FacingDirection.EAST, true);
+		_checkBlock(phase2, emitterActiveIndirect.getRelative(2, 0, 0), itemDiode, FacingDirection.EAST, true);
 		// Check (2) pass cases.
-		_checkBlock(phase2, diodeDirect.getRelative(-1, 0, 0), itemEmitter, OrientationAspect.Direction.EAST, true);
-		_checkBlock(phase2, diodeIndirect.getRelative(-2, 0, 0), itemEmitter, OrientationAspect.Direction.EAST, true);
-		_checkBlock(phase2, diodeDirect, itemDiode, OrientationAspect.Direction.EAST, true);
-		_checkBlock(phase2, diodeIndirect, itemDiode, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase2, diodeDirect.getRelative(-1, 0, 0), itemEmitter, FacingDirection.EAST, true);
+		_checkBlock(phase2, diodeIndirect.getRelative(-2, 0, 0), itemEmitter, FacingDirection.EAST, true);
+		_checkBlock(phase2, diodeDirect, itemDiode, FacingDirection.EAST, true);
+		_checkBlock(phase2, diodeIndirect, itemDiode, FacingDirection.EAST, true);
 		// Check (3) pass cases.
 		_checkBlock(phase2, diodeActiveDirect.getRelative(1, 0, 0), itemGate, null, true);
 		_checkBlock(phase2, diodeActiveIndirect.getRelative(2, 0, 0), itemGate, null, true);
 		// Check (4) "off".
-		_checkBlock(phase2, switchIndirect.getRelative(2, 0, 0), itemDiode, OrientationAspect.Direction.EAST, false);
+		_checkBlock(phase2, switchIndirect.getRelative(2, 0, 0), itemDiode, FacingDirection.EAST, false);
 		_checkBlock(phase2, switchIndirect.getRelative(4, 0, 0), itemGate, null, false);
 		
 		runner.shutdown();
@@ -2812,11 +2812,11 @@ public class TestTickRunner
 		IReadOnlyCuboidData phase1 = snapshot.cuboids().get(cuboid.getCuboidAddress()).completed();
 		
 		// Check the gate and door states.
-		_checkBlock(phase1, andGate, itemAnd, OrientationAspect.Direction.EAST, false);
+		_checkBlock(phase1, andGate, itemAnd, FacingDirection.EAST, false);
 		_checkBlock(phase1, andGate.getRelative(1, 0, 0), itemGate, null, false);
-		_checkBlock(phase1, orGate, itemOr, OrientationAspect.Direction.EAST, false);
+		_checkBlock(phase1, orGate, itemOr, FacingDirection.EAST, false);
 		_checkBlock(phase1, orGate.getRelative(1, 0, 0), itemGate, null, false);
-		_checkBlock(phase1, notGate, itemNot, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase1, notGate, itemNot, FacingDirection.EAST, true);
 		_checkBlock(phase1, notGate.getRelative(1, 0, 0), itemGate, null, true);
 		
 		// Run phase2 - we flip the switches and should see OR and NOT change.
@@ -2852,11 +2852,11 @@ public class TestTickRunner
 		IReadOnlyCuboidData phase2 = snapshot.cuboids().get(cuboid.getCuboidAddress()).completed();
 		
 		// Check that the OR gate and door changed, same with NOT, but not the AND.
-		_checkBlock(phase2, andGate, itemAnd, OrientationAspect.Direction.EAST, false);
+		_checkBlock(phase2, andGate, itemAnd, FacingDirection.EAST, false);
 		_checkBlock(phase2, andGate.getRelative(1, 0, 0), itemGate, null, false);
-		_checkBlock(phase2, orGate, itemOr, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase2, orGate, itemOr, FacingDirection.EAST, true);
 		_checkBlock(phase2, orGate.getRelative(1, 0, 0), itemGate, null, true);
-		_checkBlock(phase2, notGate, itemNot, OrientationAspect.Direction.EAST, false);
+		_checkBlock(phase2, notGate, itemNot, FacingDirection.EAST, false);
 		_checkBlock(phase2, notGate.getRelative(1, 0, 0), itemGate, null, false);
 		
 		// Run phase3 - we flip the switches and should see AND change.
@@ -2891,11 +2891,11 @@ public class TestTickRunner
 		IReadOnlyCuboidData phase3 = snapshot.cuboids().get(cuboid.getCuboidAddress()).completed();
 		
 		// We should now see the final AND change.
-		_checkBlock(phase3, andGate, itemAnd, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase3, andGate, itemAnd, FacingDirection.EAST, true);
 		_checkBlock(phase3, andGate.getRelative(1, 0, 0), itemGate, null, true);
-		_checkBlock(phase3, orGate, itemOr, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase3, orGate, itemOr, FacingDirection.EAST, true);
 		_checkBlock(phase3, orGate.getRelative(1, 0, 0), itemGate, null, true);
-		_checkBlock(phase3, notGate, itemNot, OrientationAspect.Direction.EAST, false);
+		_checkBlock(phase3, notGate, itemNot, FacingDirection.EAST, false);
 		_checkBlock(phase3, notGate.getRelative(1, 0, 0), itemGate, null, false);
 		
 		runner.shutdown();
@@ -2962,7 +2962,7 @@ public class TestTickRunner
 		IReadOnlyCuboidData phase1 = snapshot.cuboids().get(cuboid.getCuboidAddress()).completed();
 		
 		// Check the sensor and door states.
-		_checkBlock(phase1, sensorSpace, itemSensor, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase1, sensorSpace, itemSensor, FacingDirection.EAST, true);
 		_checkBlock(phase1, doorSpace, itemGate, null, true);
 		
 		// Run phase2 - empty chest inventory.
@@ -2996,7 +2996,7 @@ public class TestTickRunner
 		IReadOnlyCuboidData phase2 = snapshot.cuboids().get(cuboid.getCuboidAddress()).completed();
 		
 		// Check the sensor and door states.
-		_checkBlock(phase2, sensorSpace, itemSensor, OrientationAspect.Direction.EAST, false);
+		_checkBlock(phase2, sensorSpace, itemSensor, FacingDirection.EAST, false);
 		_checkBlock(phase2, doorSpace, itemGate, null, false);
 		
 		// Run phase3 - fill chest inventory.
@@ -3030,7 +3030,7 @@ public class TestTickRunner
 		IReadOnlyCuboidData phase3 = snapshot.cuboids().get(cuboid.getCuboidAddress()).completed();
 		
 		// Check the sensor and door states.
-		_checkBlock(phase3, sensorSpace, itemSensor, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase3, sensorSpace, itemSensor, FacingDirection.EAST, true);
 		_checkBlock(phase3, doorSpace, itemGate, null, true);
 		
 		runner.shutdown();
@@ -3635,12 +3635,12 @@ public class TestTickRunner
 		return cuboid;
 	}
 
-	private static void _placeItemAsBlock(CuboidData cuboid, AbsoluteLocation location, Item item, OrientationAspect.Direction orientation, boolean active)
+	private static void _placeItemAsBlock(CuboidData cuboid, AbsoluteLocation location, Item item, FacingDirection orientation, boolean active)
 	{
 		cuboid.setData15(AspectRegistry.BLOCK, location.getBlockAddress(), item.number());
 		if (null != orientation)
 		{
-			cuboid.setData7(AspectRegistry.ORIENTATION, location.getBlockAddress(), OrientationAspect.directionToByte(orientation));
+			cuboid.setData7(AspectRegistry.ORIENTATION, location.getBlockAddress(), FacingDirection.directionToByte(orientation));
 		}
 		if (active)
 		{
@@ -3648,12 +3648,12 @@ public class TestTickRunner
 		}
 	}
 
-	private static void _checkBlock(IReadOnlyCuboidData cuboid, AbsoluteLocation location, Item item, OrientationAspect.Direction orientation, boolean active)
+	private static void _checkBlock(IReadOnlyCuboidData cuboid, AbsoluteLocation location, Item item, FacingDirection orientation, boolean active)
 	{
 		Assert.assertEquals(item.number(), cuboid.getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		if (null != orientation)
 		{
-			Assert.assertEquals(OrientationAspect.directionToByte(orientation), cuboid.getData7(AspectRegistry.ORIENTATION, location.getBlockAddress()));
+			Assert.assertEquals(FacingDirection.directionToByte(orientation), cuboid.getData7(AspectRegistry.ORIENTATION, location.getBlockAddress()));
 		}
 		if (active)
 		{

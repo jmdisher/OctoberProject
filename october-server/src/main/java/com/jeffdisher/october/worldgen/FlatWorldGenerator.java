@@ -7,7 +7,6 @@ import java.util.Map;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
@@ -22,6 +21,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
@@ -70,11 +70,11 @@ public class FlatWorldGenerator implements IWorldGenerator
 		_shouldGenerateStructures = shouldGenerateStructures;
 		CommonStructures structures = new CommonStructures(env);
 		_structures = new StructureRegistry();
-		_structures.register(structures.nexusCastle, BASE, OrientationAspect.Direction.NORTH);
-		_structures.register(structures.distanceTower, PORTAL_NORTH, OrientationAspect.Direction.NORTH);
-		_structures.register(structures.distanceTower, PORTAL_SOUTH, OrientationAspect.Direction.SOUTH);
-		_structures.register(structures.distanceTower, PORTAL_EAST, OrientationAspect.Direction.EAST);
-		_structures.register(structures.distanceTower, PORTAL_WEST, OrientationAspect.Direction.WEST);
+		_structures.register(structures.nexusCastle, BASE, FacingDirection.NORTH);
+		_structures.register(structures.distanceTower, PORTAL_NORTH, FacingDirection.NORTH);
+		_structures.register(structures.distanceTower, PORTAL_SOUTH, FacingDirection.SOUTH);
+		_structures.register(structures.distanceTower, PORTAL_EAST, FacingDirection.EAST);
+		_structures.register(structures.distanceTower, PORTAL_WEST, FacingDirection.WEST);
 	}
 
 	@Override
