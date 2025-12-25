@@ -1,11 +1,17 @@
 package com.jeffdisher.october.aspects;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
+import com.jeffdisher.october.config.TabListReader;
+import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FacingDirection;
+import com.jeffdisher.october.types.Item;
 
 
 /**
@@ -15,34 +21,68 @@ import com.jeffdisher.october.types.FacingDirection;
  */
 public class OrientationAspect
 {
-	public static OrientationAspect load(ItemRegistry items, BlockAspect blocks)
+	public static final String FLAG_ALLOWS_DOWN = "allows_down";
+
+	public static OrientationAspect load(ItemRegistry items
+		, BlockAspect blocks
+		, InputStream stream
+	) throws IOException, TabListException
 	{
-		Block hopper = blocks.fromItem(items.getItemById("op.hopper"));
-		Block emitter = blocks.fromItem(items.getItemById("op.emitter"));
-		Block diode = blocks.fromItem(items.getItemById("op.diode"));
-		Block andGate = blocks.fromItem(items.getItemById("op.and_gate"));
-		Block orGate = blocks.fromItem(items.getItemById("op.or_gate"));
-		Block notGate = blocks.fromItem(items.getItemById("op.not_gate"));
-		Block sensorInventory = blocks.fromItem(items.getItemById("op.sensor_inventory"));
-		Block portalKeystone = blocks.fromItem(items.getItemById("op.portal_keystone"));
+		Set<Block> hasOrientation = new HashSet<>();
+		Set<Block> flatOnly = new HashSet<>();
 		
-		Set<Block> hasOrientation = Set.of(hopper
-			, emitter
-			, diode
-			, andGate
-			, orGate
-			, notGate
-			, sensorInventory
-			, portalKeystone
-		);
-		Set<Block> flatOnly = Set.of(emitter
-			, diode
-			, andGate
-			, orGate
-			, notGate
-			, sensorInventory
-			, portalKeystone
-		);
+		TabListReader.IParseCallbacks callbacks = new TabListReader.IParseCallbacks() {
+			@Override
+			public void startNewRecord(String name, String[] parameters) throws TabListException
+			{
+				Block block = _getBlock(name);
+				if (hasOrientation.contains(block))
+				{
+					throw new TabListReader.TabListException("Duplicate entry for: \"" + name + "\"");
+				}
+				if (parameters.length > 1)
+				{
+					throw new TabListReader.TabListException("Must have 0 or 1 parameter: \"" + name + "\"");
+				}
+				
+				hasOrientation.add(block);
+				if (1 == parameters.length)
+				{
+					if (!FLAG_ALLOWS_DOWN.equals(parameters[0]))
+					{
+						throw new TabListReader.TabListException("Unknown flag \"" + parameters[0] + "\" for: \"" + name + "\"");
+					}
+				}
+				else
+				{
+					flatOnly.add(block);
+				}
+			}
+			@Override
+			public void endRecord() throws TabListException
+			{
+			}
+			@Override
+			public void processSubRecord(String name, String[] parameters) throws TabListException
+			{
+				throw new TabListReader.TabListException("No sub-records expected for: \"" + name + "\"");
+			}
+			private Block _getBlock(String name) throws TabListException
+			{
+				Item item = items.getItemById(name);
+				if (null == item)
+				{
+					throw new TabListReader.TabListException("Not a valid item: \"" + name + "\"");
+				}
+				Block block = blocks.fromItem(item);
+				if (null == block)
+				{
+					throw new TabListReader.TabListException("Not a block: \"" + name + "\"");
+				}
+				return block;
+			}
+		};
+		TabListReader.readEntireFile(callbacks, stream);
 		
 		return new OrientationAspect(hasOrientation, flatOnly);
 	}

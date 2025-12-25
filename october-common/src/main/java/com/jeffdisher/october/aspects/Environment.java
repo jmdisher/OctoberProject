@@ -135,6 +135,7 @@ public class Environment
 		);
 		this.orientations = OrientationAspect.load(this.items
 			, this.blocks
+			, loader.getResourceAsStream("orientation_aspect.tablist")
 		);
 		this.special = new SpecialConstants(this.items, this.blocks);
 	}

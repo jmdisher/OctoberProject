@@ -1,0 +1,16 @@
+# Entries here have the form:
+# ID[<TAB>allows_down]
+#
+# If "allows_down" is specified, this block can have a downward orientation.  Otherwise, it can only be flat.
+#
+# Anything not referenced here, which is a block, will always use the default "NORTH" orientation (ie: "none").
+# Note that the ID references are against block_aspect.tablist.
+
+op.hopper	allows_down
+op.emitter
+op.diode
+op.and_gate
+op.or_gate
+op.not_gate
+op.sensor_inventory
+op.portal_keystone
