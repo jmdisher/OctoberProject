@@ -10,7 +10,6 @@ import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
-import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -48,39 +47,51 @@ public class EntitySubActionDropItemsAsPassive implements IEntitySubAction<IMuta
 	{
 		// Make sure that we actually have this much of the referenced item in our inventory.
 		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
-		Items stackable = mutableInventory.getStackForKey(_localInventoryId);
-		NonStackableItem nonStackable = mutableInventory.getNonStackableForKey(_localInventoryId);
-		// We should see precisely one of these.
-		Assert.assertTrue((null != stackable) != (null != nonStackable));
+		ItemSlot slot = mutableInventory.getSlotForKey(_localInventoryId);
 		
-		ItemSlot slotToMove;
-		if (null != stackable)
+		if (null != slot)
 		{
-			if (!_dropAll && (stackable.count() > 1))
+			ItemSlot slotToMove;
+			if (null != slot.stack)
 			{
-				// We will just drop 1.
-				stackable = new Items(stackable.type(), 1);
+				Items stackToDrop;
+				if (!_dropAll && (slot.stack.count() > 1))
+				{
+					// We will just drop 1.
+					stackToDrop = new Items(slot.stack.type(), 1);
+				}
+				else
+				{
+					// Drop the whole stack.
+					stackToDrop = slot.stack;
+				}
+				mutableInventory.removeStackableItems(stackToDrop.type(), stackToDrop.count());
+				slotToMove = ItemSlot.fromStack(stackToDrop);
 			}
-			mutableInventory.removeStackableItems(stackable.type(), stackable.count());
-			slotToMove = ItemSlot.fromStack(stackable);
+			else
+			{
+				mutableInventory.removeNonStackableItems(_localInventoryId);
+				slotToMove = ItemSlot.fromNonStack(slot.nonStackable);
+			}
+			
+			// Drop the passive.
+			EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+			context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, newEntity.getLocation(), velocity, slotToMove);
+			
+			// If this removed something from the inventory, entirely, make sure it is removed from any hotbar slots.
+			boolean shouldClear = (null != slot.nonStackable) || (0 == mutableInventory.getCount(slot.stack.type()));
+			if (shouldClear)
+			{
+				newEntity.clearHotBarWithKey(_localInventoryId);
+			}
 		}
 		else
 		{
-			mutableInventory.removeNonStackableItems(_localInventoryId);
-			slotToMove = ItemSlot.fromNonStack(nonStackable);
+			// This isn't in the inventory (sometimes happens when the action is taken when out of sync).
 		}
 		
-		// Drop the passive.
-		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
-		context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, newEntity.getLocation(), velocity, slotToMove);
-		
-		// If this removed something from the inventory, entirely, make sure it is removed from any hotbar slots.
-		boolean shouldClear = (null != nonStackable) || (0 == mutableInventory.getCount(stackable.type()));
-		if (shouldClear)
-		{
-			newEntity.clearHotBarWithKey(_localInventoryId);
-		}
-		return true;
+		// We will succeed if there was something to drop.
+		return (null != slot);
 	}
 
 	@Override

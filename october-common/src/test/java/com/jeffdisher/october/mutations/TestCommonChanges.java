@@ -3082,6 +3082,11 @@ public class TestCommonChanges
 		PassiveEntity pass3 = out[0];
 		out[0] = null;
 		
+		// If we try again, we should fail since this key isn't here.
+		EntitySubActionDropItemsAsPassive failDrop = new EntitySubActionDropItemsAsPassive(2, true);
+		Assert.assertFalse(failDrop.applyChange(context, newEntity));
+		Assert.assertNull(out[0]);
+		
 		// Verify the inventory is empty, nothing is selected, and the passives contain what is expected.
 		Assert.assertEquals(0, newEntity.newInventory.getCurrentEncumbrance());
 		Assert.assertEquals(0, newEntity.getSelectedKey());
