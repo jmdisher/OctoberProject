@@ -170,12 +170,19 @@ public class OneOffRunner
 			;
 		});
 		int thisEntityId = state.thisEntity().id();
+		TickProcessingContext.IPassiveSearch passiveSearch = new TickProcessingContext.IPassiveSearch() {
+			@Override
+			public PartialPassive getById(int id)
+			{
+				return state.passives.get(id);
+			}
+		};
 		TickProcessingContext context = new TickProcessingContext(gameTick
 				, cachingLoader
 				, (Integer entityId) -> (thisEntityId == entityId)
 					? MinimalEntity.fromEntity(state.thisEntity())
 					: MinimalEntity.fromPartialEntity(state.otherEntities.get(entityId))
-				, (Integer passiveId) -> state.passives.get(passiveId)
+				, passiveSearch
 				, null
 				, newMutationSink
 				, newChangeSink

@@ -42,7 +42,7 @@ public class ContextBuilder
 	public long currentTick;
 	public Function<AbsoluteLocation, BlockProxy> previousBlockLookUp;
 	public Function<Integer, MinimalEntity> previousEntityLookUp;
-	public Function<Integer, PartialPassive> previousPassiveLookUp;
+	public TickProcessingContext.IPassiveSearch previousPassiveLookUp;
 	public IByteLookup<AbsoluteLocation> skyLight;
 	public TickProcessingContext.IMutationSink mutationSink;
 	public TickProcessingContext.IChangeSink newChangeSink;
@@ -74,7 +74,7 @@ public class ContextBuilder
 
 	public ContextBuilder lookups(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
 		, Function<Integer, MinimalEntity> previousEntityLookUp
-		, Function<Integer, PartialPassive> previousPassiveLookUp
+		, TickProcessingContext.IPassiveSearch previousPassiveLookUp
 	)
 	{
 		this.previousBlockLookUp = previousBlockLookUp;

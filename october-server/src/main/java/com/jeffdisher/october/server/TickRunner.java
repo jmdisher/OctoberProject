@@ -456,24 +456,29 @@ public class TickRunner
 				PassiveEntity entity = new PassiveEntity(id, type, location, velocity, extendedData, currentTickTimeMillis);
 				spawnedPassives.add(entity);
 			};
+			TickProcessingContext.IPassiveSearch passiveSearch = new TickProcessingContext.IPassiveSearch() {
+				@Override
+				public PartialPassive getById(int id)
+				{
+					PassiveEntity passive = thisTickMaterials.completedPassives.get(id);
+					return (null != passive)
+						? new PartialPassive(passive.id()
+							, passive.type()
+							, passive.location()
+							, passive.velocity()
+							, passive.extendedData()
+						)
+						: null
+					;
+				}
+			};
 			Set<CuboidAddress> internallyMarkedAlive = new HashSet<>();
 			TickProcessingContext context = new TickProcessingContext(materials.thisGameTick
 					, cachingLoader
 					, (Integer entityId) -> (entityId > 0)
 						? MinimalEntity.fromEntity(thisTickMaterials.completedEntities.get(entityId))
 						: MinimalEntity.fromCreature(thisTickMaterials.completedCreatures.get(entityId))
-					, (Integer passiveId) -> {
-						PassiveEntity passive = thisTickMaterials.completedPassives.get(passiveId);
-						return (null != passive)
-							? new PartialPassive(passive.id()
-								, passive.type()
-								, passive.location()
-								, passive.velocity()
-								, passive.extendedData()
-							)
-							: null
-						;
-					}
+					, passiveSearch
 					, (AbsoluteLocation blockLocation) -> {
 						CuboidColumnAddress column = blockLocation.getCuboidAddress().getColumn();
 						BlockAddress blockAddress = blockLocation.getBlockAddress();

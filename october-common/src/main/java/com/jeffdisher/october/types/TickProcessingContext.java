@@ -34,12 +34,9 @@ public class TickProcessingContext
 	public final Function<Integer, MinimalEntity> previousEntityLookUp;
 
 	/**
-	 * A helper to look up loaded passive entities at the end of the previous tick.  This exclusively looks up passives
-	 * and expects a positive ID.  Note that passive IDs, like creature IDs, are not permanent, and will change each
-	 * time the instance is loaded.
-	 * Returns null if the requested passive isn't loaded.
+	 * A helper to look up loaded passive entities at the end of the previous tick.
 	 */
-	public final Function<Integer, PartialPassive> previousPassiveLookUp;
+	public final IPassiveSearch previousPassiveLookUp;
 
 	/**
 	 * Looks up the sky light landing on the block at the given location as of the previous tick.
@@ -106,7 +103,7 @@ public class TickProcessingContext
 	public TickProcessingContext(long currentTick
 			, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
 			, Function<Integer, MinimalEntity> previousEntityLookUp
-			, Function<Integer, PartialPassive> previousPassiveLookUp
+			, IPassiveSearch previousPassiveLookUp
 			, IByteLookup<AbsoluteLocation> skyLight
 			, IMutationSink mutationSink
 			, IChangeSink newChangeSink
@@ -238,5 +235,20 @@ public class TickProcessingContext
 	public static interface IPassiveSpawner
 	{
 		void spawnPassive(PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData);
+	}
+
+	/**
+	 * An interface to look up passives via various mechanisms required by the mutations and actions.
+	 */
+	public static interface IPassiveSearch
+	{
+		/**
+		 * Looks up passives and expects a positive ID.  Note that passive IDs, like creature IDs, are not permanent,
+		 * and will change each time the instance is loaded.
+		 * 
+		 * @param id The ID of the passive (must be positive).
+		 * @return The passive or null if not loaded/known.
+		 */
+		PartialPassive getById(int id);
 	}
 }

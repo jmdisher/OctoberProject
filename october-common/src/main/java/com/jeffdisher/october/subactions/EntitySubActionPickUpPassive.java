@@ -46,7 +46,7 @@ public class EntitySubActionPickUpPassive implements IEntitySubAction<IMutablePl
 	{
 		// Verify that this passive exists, is within range, and we have space for at least something from it.
 		boolean didApply = false;
-		PartialPassive passive = context.previousPassiveLookUp.apply(_passiveId);
+		PartialPassive passive = context.previousPassiveLookUp.getById(_passiveId);
 		if ((null != passive)
 			&& (PassiveType.ITEM_SLOT == passive.type())
 			&& (SpatialHelpers.distanceFromPlayerEyeToVolume(newEntity.getLocation(), newEntity.getType(), passive.location(), passive.type().volume()) <= PICKUP_DISTANCE)

@@ -747,12 +747,19 @@ public class SpeculativeProjection
 				_listener.handleEvent(event);
 			}
 		};
+		TickProcessingContext.IPassiveSearch passiveSearch = new TickProcessingContext.IPassiveSearch() {
+			@Override
+			public PartialPassive getById(int id)
+			{
+				return _shadowState.getPassive(id);
+			}
+		};
 		TickProcessingContext context = new TickProcessingContext(gameTick
 				, cachingLoader
 				, (Integer entityId) -> (_localEntityId == entityId)
 					? MinimalEntity.fromEntity(_shadowState.getThisEntity())
 					: MinimalEntity.fromPartialEntity(_shadowState.getEntity(entityId))
-				, (Integer passiveId) -> _shadowState.getPassive(passiveId)
+				, passiveSearch
 				, null
 				, newMutationSink
 				, newChangeSink

@@ -3148,8 +3148,15 @@ public class TestCommonChanges
 		);
 		
 		int[] out = new int[1];
+		TickProcessingContext.IPassiveSearch passiveSearch = new TickProcessingContext.IPassiveSearch() {
+			@Override
+			public PartialPassive getById(int id)
+			{
+				return map.get(id);
+			}
+		};
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(null, null, (Integer id) -> map.get(id))
+			.lookups(null, null, passiveSearch)
 			.sinks(null, new TickProcessingContext.IChangeSink()
 			{
 				@Override
