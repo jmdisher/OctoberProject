@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.actions.passive.PassiveActionPickUp;
+import com.jeffdisher.october.actions.passive.PassiveActionRequestStoreToInventory;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
@@ -298,7 +299,8 @@ public class TestEnginePassives
 		;
 		EntityCollection entityCollection = EntityCollection.emptyCollection();
 		
-		PassiveEntity result = EnginePassives.processOneCreature(context, entityCollection, passive, List.of());
+		PassiveActionRequestStoreToInventory request = new PassiveActionRequestStoreToInventory(hopperLocation);
+		PassiveEntity result = EnginePassives.processOneCreature(context, entityCollection, passive, List.of(request));
 		Assert.assertNull(result);
 		Assert.assertNotNull(out_mutation[0]);
 		Assert.assertEquals(hopperLocation, out_mutation[0].getAbsoluteLocation());

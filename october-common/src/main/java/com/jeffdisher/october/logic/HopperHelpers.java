@@ -1,13 +1,14 @@
 package com.jeffdisher.october.logic;
 
+import com.jeffdisher.october.actions.passive.PassiveActionRequestStoreToInventory;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IBlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.mutations.MutationBlockPushToBlock;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
@@ -16,7 +17,7 @@ import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
-import com.jeffdisher.october.types.PassiveEntity;
+import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -74,31 +75,6 @@ public class HopperHelpers
 			}
 			_processHopper(context, hopperLocation, hopperBlock, sourceLocation, sourceInventory, sinkLocation, sinkInventory, inventoryType);
 		}
-	}
-
-	public static PassiveEntity tryAbsorbingIntoHopper(TickProcessingContext context, PassiveEntity entity)
-	{
-		AbsoluteLocation currentLocation = entity.location().getBlockLocation();
-		AbsoluteLocation below = currentLocation.getRelative(0, 0, -1);
-		BlockProxy belowProxy = context.previousBlockLookUp.apply(below);
-		PassiveEntity stillAlive = entity;
-		if ((null != belowProxy) && belowProxy.getBlock().item().id().equals(HOPPER))
-		{
-			// We will allow this if it fits or if it is less than half full (since we will over-fill it).
-			Environment env = Environment.getShared();
-			Inventory inv = belowProxy.getInventory();
-			ItemSlot slot = (ItemSlot)entity.extendedData();
-			int size = env.encumbrance.getEncumbrance(slot.getType()) * slot.getCount();
-			int available = inv.maxEncumbrance - inv.currentEncumbrance;
-			if ((size <= available) || (((float)inv.currentEncumbrance / (float)inv.maxEncumbrance) < 0.5f))
-			{
-				// We will send this to the hopper and then despawn.
-				MutationBlockStoreItems storeToSink = new MutationBlockStoreItems(below, slot.stack, slot.nonStackable, Inventory.INVENTORY_ASPECT_INVENTORY);
-				context.mutationSink.next(storeToSink);
-				stillAlive = null;
-			}
-		}
-		return stillAlive;
 	}
 
 
@@ -168,14 +144,43 @@ public class HopperHelpers
 		
 		// Next step is to see how much space we have in our inventory (minus whatever we pushed), and see if there is something in the source which can fit there.
 		int spaceInHopper = hopperCapacity - mutable.getCurrentEncumbrance();
-		if ((spaceInHopper > 0) && (null != sourceInventory))
+		if (spaceInHopper > 0)
 		{
-			int largestSourceKey = _findLargestKey(env, sourceInventory, spaceInHopper);
-			if (0 != largestSourceKey)
+			// See if we need to pull from an inventory or if we need to look for passives above us.
+			if (null != sourceInventory)
 			{
-				// We always pull directly from normal inventory and only move 1 item at a time.
-				MutationBlockPushToBlock fetchFromSource = new MutationBlockPushToBlock(sourceLocation, largestSourceKey, 1, Inventory.INVENTORY_ASPECT_INVENTORY, hopperLocation);
-				context.mutationSink.next(fetchFromSource);
+				int largestSourceKey = _findLargestKey(env, sourceInventory, spaceInHopper);
+				if (0 != largestSourceKey)
+				{
+					// We always pull directly from normal inventory and only move 1 item at a time.
+					MutationBlockPushToBlock fetchFromSource = new MutationBlockPushToBlock(sourceLocation, largestSourceKey, 1, Inventory.INVENTORY_ASPECT_INVENTORY, hopperLocation);
+					context.mutationSink.next(fetchFromSource);
+				}
+			}
+			else
+			{
+				// Look for passives in the block above us and request that any which fit be pulled in.
+				EntityLocation base = sourceLocation.toEntityLocation();
+				EntityLocation edge = new EntityLocation(base.x() + 0.99f, base.y() + 0.99f, base.z() + 0.99f);
+				PartialPassive[] passives = context.previousPassiveLookUp.findPassiveItemSlotsInRegion(base, edge);
+				
+				for (PartialPassive passive : passives)
+				{
+					// We will allow this if it fits or if it is less than half full (since we will over-fill it).
+					ItemSlot slot = (ItemSlot)passive.extendedData();
+					int size = env.encumbrance.getEncumbrance(slot.getType()) * slot.getCount();
+					if ((size <= spaceInHopper) || (((float)spaceInHopper / (float)hopperCapacity) >= 0.5f))
+					{
+						// Send the request to the passive.
+						PassiveActionRequestStoreToInventory requestStore = new PassiveActionRequestStoreToInventory(hopperLocation);
+						context.newChangeSink.passive(passive.id(), requestStore);
+						spaceInHopper -= size;
+						if (spaceInHopper <= 0)
+						{
+							break;
+						}
+					}
+				}
 			}
 		}
 		hopperBlock.setInventory(mutable.freeze());

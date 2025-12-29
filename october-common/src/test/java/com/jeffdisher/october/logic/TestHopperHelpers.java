@@ -1,13 +1,16 @@
 package com.jeffdisher.october.logic;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.actions.passive.PassiveActionRequestStoreToInventory;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -21,11 +24,16 @@ import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.FacingDirection;
+import com.jeffdisher.october.types.IEntityAction;
+import com.jeffdisher.october.types.IMutableCreatureEntity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
+import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -151,76 +159,100 @@ public class TestHopperHelpers
 		proxy.setInventory(mutable.freeze());
 		proxy.writeBack(cuboid);
 		
-		MutationBlockStoreItems[] out_mutations = new MutationBlockStoreItems[1];
-		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
-				, null
-				, null
-			)
-			.sinks(new TickProcessingContext.IMutationSink() {
-				@Override
-				public boolean next(IMutationBlock mutation)
-				{
-					Assert.assertNull(out_mutations[0]);
-					out_mutations[0] = (MutationBlockStoreItems) mutation;
-					return true;
-				}
-				@Override
-				public boolean future(IMutationBlock mutation, long millisToDelay)
-				{
-					throw new AssertionError("Not in test");
-				}
-			}, null)
-			.finish()
-		;
-		
 		ItemSlot oneSword = ItemSlot.fromNonStack(PropertyHelpers.newItemWithDefaults(ENV, sword));
 		ItemSlot fullWheat = ItemSlot.fromStack(new Items(wheatSeed, capacity));
 		ItemSlot halfWheat = ItemSlot.fromStack(new Items(wheatSeed, capacity / 2));
 		
-		// Show that all of these fit into the nearly empty (since we will over-fill if less than half full).
-		PassiveEntity result = HopperHelpers.tryAbsorbingIntoHopper(context, _passiveAbove(nearlyEmptyHopper, oneSword));
-		Assert.assertNull(result);
-		Assert.assertNotNull(out_mutations[0]);
-		out_mutations[0] = null;
-		result = HopperHelpers.tryAbsorbingIntoHopper(context, _passiveAbove(nearlyEmptyHopper, fullWheat));
-		Assert.assertNull(result);
-		Assert.assertNotNull(out_mutations[0]);
-		out_mutations[0] = null;
-		result = HopperHelpers.tryAbsorbingIntoHopper(context, _passiveAbove(nearlyEmptyHopper, halfWheat));
-		Assert.assertNull(result);
-		Assert.assertNotNull(out_mutations[0]);
-		out_mutations[0] = null;
+		Map<Integer, PassiveEntity> map = new HashMap<>();
+		map.put(1, _passiveAbove(1, nearlyEmptyHopper, oneSword));
+		map.put(2, _passiveAbove(2, nearlyEmptyHopper, fullWheat));
+		map.put(3, _passiveAbove(3, nearlyEmptyHopper, halfWheat));
 		
-		// Show that full and half doesn't fit in half full.
-		result = HopperHelpers.tryAbsorbingIntoHopper(context, _passiveAbove(mostlyFullHopper, oneSword));
-		Assert.assertNull(result);
-		Assert.assertNotNull(out_mutations[0]);
-		out_mutations[0] = null;
-		result = HopperHelpers.tryAbsorbingIntoHopper(context, _passiveAbove(mostlyFullHopper, fullWheat));
-		Assert.assertNotNull(result);
-		Assert.assertNull(out_mutations[0]);
-		result = HopperHelpers.tryAbsorbingIntoHopper(context, _passiveAbove(mostlyFullHopper, halfWheat));
-		Assert.assertNotNull(result);
-		Assert.assertNull(out_mutations[0]);
+		map.put(4, _passiveAbove(4, mostlyFullHopper, oneSword));
+		map.put(5, _passiveAbove(5, mostlyFullHopper, fullWheat));
+		map.put(6, _passiveAbove(6, mostlyFullHopper, halfWheat));
+		
+		map.put(7, _passiveAbove(7, fullHopper, oneSword));
+		map.put(8, _passiveAbove(8, fullHopper, fullWheat));
+		map.put(9, _passiveAbove(9, fullHopper, halfWheat));
+		
+		SpatialIndex.Builder builder = new SpatialIndex.Builder();
+		for (Map.Entry<Integer, PassiveEntity> elt : map.entrySet())
+		{
+			builder.add(elt.getKey(), elt.getValue().location());
+		}
+		SpatialIndex spatialIndex = builder.finish(PassiveType.ITEM_SLOT.volume());
+		
+		TickProcessingContext.IPassiveSearch previousPassiveLookUp = new TickProcessingContext.IPassiveSearch() {
+			@Override
+			public PartialPassive getById(int id)
+			{
+				throw new AssertionError("Not in test");
+			}
+			@Override
+			public PartialPassive[] findPassiveItemSlotsInRegion(EntityLocation base, EntityLocation edge)
+			{
+				return spatialIndex.idsIntersectingRegion(base, edge).stream()
+					.map((Integer id) -> PartialPassive.fromPassive(map.get(id)))
+					.toArray((int size) -> new PartialPassive[size])
+				;
+			}
+		};
+		Map<Integer, IPassiveAction> output = new HashMap<>();
+		TickProcessingContext.IChangeSink changeSink = new TickProcessingContext.IChangeSink() {
+			@Override
+			public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+			{
+				throw new AssertionError("Not in test");
+			}
+			@Override
+			public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+			{
+				throw new AssertionError("Not in test");
+			}
+			@Override
+			public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+			{
+				throw new AssertionError("Not in test");
+			}
+			@Override
+			public boolean passive(int targetPassiveId, IPassiveAction action)
+			{
+				Object old = output.put(targetPassiveId, action);
+				Assert.assertNull(old);
+				return true;
+			}
+		};
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
+				, null
+				, previousPassiveLookUp
+			)
+			.sinks(null, changeSink)
+			.finish()
+		;
+		
+		// Show that we partially-load the first hopper (the second will cause us to overflow and stop).
+		HopperHelpers.tryProcessHopper(context, nearlyEmptyHopper, new MutableBlockProxy(nearlyEmptyHopper, cuboid));
+		Assert.assertEquals(2, output.size());
+		Assert.assertNotNull((PassiveActionRequestStoreToInventory) output.remove(1));
+		Assert.assertNotNull((PassiveActionRequestStoreToInventory) output.remove(2));
+		
+		// Show that only a single element will fill the mostly full hopper.
+		HopperHelpers.tryProcessHopper(context, mostlyFullHopper, new MutableBlockProxy(mostlyFullHopper, cuboid));
+		Assert.assertEquals(1, output.size());
+		Assert.assertNotNull((PassiveActionRequestStoreToInventory) output.remove(4));
 		
 		// Show that nothing fits in full.
-		result = HopperHelpers.tryAbsorbingIntoHopper(context, _passiveAbove(fullHopper, oneSword));
-		Assert.assertNotNull(result);
-		Assert.assertNull(out_mutations[0]);
-		result = HopperHelpers.tryAbsorbingIntoHopper(context, _passiveAbove(fullHopper, fullWheat));
-		Assert.assertNotNull(result);
-		Assert.assertNull(out_mutations[0]);
-		result = HopperHelpers.tryAbsorbingIntoHopper(context, _passiveAbove(fullHopper, halfWheat));
-		Assert.assertNotNull(result);
-		Assert.assertNull(out_mutations[0]);
+		HopperHelpers.tryProcessHopper(context, fullHopper, new MutableBlockProxy(fullHopper, cuboid));
+		Assert.assertEquals(0, output.size());
 	}
 
 
-	private static PassiveEntity _passiveAbove(AbsoluteLocation blockUnder, ItemSlot slot)
+	private static PassiveEntity _passiveAbove(int id, AbsoluteLocation blockUnder, ItemSlot slot)
 	{
 		EntityLocation location = blockUnder.getRelative(0, 0, 1).toEntityLocation();
-		return new PassiveEntity(1
+		return new PassiveEntity(id
 			, PassiveType.ITEM_SLOT
 			, location
 			, new EntityLocation(0.0f, 0.0f, 0.0f)

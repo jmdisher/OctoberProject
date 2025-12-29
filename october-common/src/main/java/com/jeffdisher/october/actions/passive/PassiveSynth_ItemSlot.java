@@ -3,7 +3,6 @@ package com.jeffdisher.october.actions.passive;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.DamageHelpers;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
-import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.PassiveEntity;
@@ -100,12 +99,7 @@ public class PassiveSynth_ItemSlot
 				result = entity;
 			}
 			
-			// See if this should be drawn into a hopper - just check the block under this one.
-			// TODO:  This should probably be a decision made by the hopper but that would require determining poll rate and creating a new way to look up passives from TickProcessingContext.
-			if (null != result)
-			{
-				result = HopperHelpers.tryAbsorbingIntoHopper(context, result);
-			}
+			// Note that the other case where this can despawn is being pulled into a hopper, but that is requested by the hopper.
 		}
 		return result;
 	}
