@@ -120,7 +120,7 @@ public class TestClientBuffer
 	}
 
 
-	private static class _Token implements NetworkLayer.PeerToken
+	private static class _Token implements NetworkLayer.IPeerToken
 	{
 		private Object _userData;
 		@Override

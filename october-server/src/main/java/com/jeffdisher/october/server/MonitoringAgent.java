@@ -19,7 +19,7 @@ import com.jeffdisher.october.utils.Assert;
 public class MonitoringAgent
 {
 	private final Map<Integer, String> _connectedClientIds = new HashMap<>();
-	private final Map<Integer, NetworkLayer.PeerToken> _connectedClientTokens = new HashMap<>();
+	private final Map<Integer, NetworkLayer.IPeerToken> _connectedClientTokens = new HashMap<>();
 	private volatile NetworkServer<?> _network;
 	private volatile TickRunner.Snapshot _lastSnapshot;
 	private volatile OperatorCommandSink _commandSink;
@@ -31,7 +31,7 @@ public class MonitoringAgent
 		_network = network;
 	}
 
-	public synchronized void clientConnected(int clientId, NetworkLayer.PeerToken token, String name)
+	public synchronized void clientConnected(int clientId, NetworkLayer.IPeerToken token, String name)
 	{
 		String old = _connectedClientIds.put(clientId, name);
 		Assert.assertTrue(null == old);
@@ -70,7 +70,7 @@ public class MonitoringAgent
 		return new HashMap<>(_connectedClientIds);
 	}
 
-	public synchronized NetworkLayer.PeerToken getTokenForClient(int clientId)
+	public synchronized NetworkLayer.IPeerToken getTokenForClient(int clientId)
 	{
 		return _connectedClientTokens.get(clientId);
 	}

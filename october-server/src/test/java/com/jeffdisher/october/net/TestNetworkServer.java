@@ -33,10 +33,10 @@ public class TestNetworkServer
 		int[] leftCount = new int[1];
 		Map<Integer, String> joinNames = new HashMap<>();
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
+		NetworkServer<NetworkLayer.IPeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
 		{
 			@Override
-			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.IPeerToken> userJoined(NetworkLayer.IPeerToken token, String name, int cuboidViewDistance)
 			{
 				int id = name.hashCode();
 				Assert.assertFalse(joinNames.containsKey(id));
@@ -44,18 +44,18 @@ public class TestNetworkServer
 				return new NetworkServer.ConnectingClientDescription<>(id, token);
 			}
 			@Override
-			public void userLeft(NetworkLayer.PeerToken token)
+			public void userLeft(NetworkLayer.IPeerToken token)
 			{
 				// We don't always see that the user has left if we shut down first.
 				leftCount[0] += 1;
 			}
 			@Override
-			public void networkWriteReady(NetworkLayer.PeerToken token, ByteBuffer bufferToWrite)
+			public void networkWriteReady(NetworkLayer.IPeerToken token, ByteBuffer bufferToWrite)
 			{
 				// We aren't acting on this in our test.
 			}
 			@Override
-			public void networkReadReady(NetworkLayer.PeerToken token)
+			public void networkReadReady(NetworkLayer.IPeerToken token)
 			{
 				// Should not happen in this test.
 				Assert.fail();
@@ -87,14 +87,14 @@ public class TestNetworkServer
 		// Note that we only use Packet_SendChatMessage here since it is "some message type" for the test but the server internals will use it differently.
 		int port = 3000;
 		@SuppressWarnings("unchecked")
-		NetworkServer<NetworkLayer.PeerToken>[] holder = new NetworkServer[1];
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
+		NetworkServer<NetworkLayer.IPeerToken>[] holder = new NetworkServer[1];
+		NetworkServer<NetworkLayer.IPeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
 		{
 			private List<String> _messagesFor1 = new ArrayList<>();
-			NetworkLayer.PeerToken _firstPeer = null;
+			NetworkLayer.IPeerToken _firstPeer = null;
 			private ByteBuffer _bufferToWrite = null;
 			@Override
-			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.IPeerToken> userJoined(NetworkLayer.IPeerToken token, String name, int cuboidViewDistance)
 			{
 				// If this is the first peer, hold on to it.
 				if (null == _firstPeer)
@@ -104,17 +104,17 @@ public class TestNetworkServer
 				return new NetworkServer.ConnectingClientDescription<>(name.hashCode(), token);
 			}
 			@Override
-			public void userLeft(NetworkLayer.PeerToken token)
+			public void userLeft(NetworkLayer.IPeerToken token)
 			{
 			}
 			@Override
-			public void networkWriteReady(NetworkLayer.PeerToken token, ByteBuffer bufferToWrite)
+			public void networkWriteReady(NetworkLayer.IPeerToken token, ByteBuffer bufferToWrite)
 			{
 				_bufferToWrite = bufferToWrite;
 				_handle();
 			}
 			@Override
-			public void networkReadReady(NetworkLayer.PeerToken token)
+			public void networkReadReady(NetworkLayer.IPeerToken token)
 			{
 				List<PacketFromClient> packets = holder[0].readBufferedPackets(token);
 				for (Packet packet : packets)
@@ -190,7 +190,7 @@ public class TestNetworkServer
 	{
 		// Show what happens when we receive a corrupt packet from the client.
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		NetworkServer<NetworkLayer.IPeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		
 		// Connect a client.
 		SocketChannel client1 = _connectAndHandshakeClient(port, "Client 1");
@@ -219,7 +219,7 @@ public class TestNetworkServer
 	{
 		// Show what happens when we receive a "from server" packet from the client.
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		NetworkServer<NetworkLayer.IPeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		
 		// Connect a client.
 		SocketChannel client1 = _connectAndHandshakeClient(port, "Client 1");
@@ -244,7 +244,7 @@ public class TestNetworkServer
 	{
 		// Show what happens when we receive a restricted mutation from a client.
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		NetworkServer<NetworkLayer.IPeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		
 		// Connect a client.
 		SocketChannel client1 = _connectAndHandshakeClient(port, "Client 1");
@@ -287,7 +287,7 @@ public class TestNetworkServer
 			return timeToReturn;
 		};
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), timeSupplier, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		NetworkServer<NetworkLayer.IPeerToken> server = new NetworkServer<>(new _ServerListener(), timeSupplier, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		
 		// Open a socket.
 		SocketChannel socket = SocketChannel.open(new InetSocketAddress(InetAddress.getLocalHost(), port));
@@ -316,7 +316,7 @@ public class TestNetworkServer
 	{
 		// We will check what happens when we pass an unknown version on connect.
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		NetworkServer<NetworkLayer.IPeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		
 		// Connect a client.
 		SocketChannel client = SocketChannel.open(new InetSocketAddress(InetAddress.getLocalHost(), port));
@@ -346,27 +346,27 @@ public class TestNetworkServer
 		int[] joinLeaveCounts = new int[2];
 		CountDownLatch closeLatch = new CountDownLatch(threadCount);
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
+		NetworkServer<NetworkLayer.IPeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
 		{
 			@Override
-			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.IPeerToken> userJoined(NetworkLayer.IPeerToken token, String name, int cuboidViewDistance)
 			{
 				joinLeaveCounts[0] += 1;
 				return new NetworkServer.ConnectingClientDescription<>(joinLeaveCounts[0], token);
 			}
 			@Override
-			public void userLeft(NetworkLayer.PeerToken token)
+			public void userLeft(NetworkLayer.IPeerToken token)
 			{
 				joinLeaveCounts[1] += 1;
 				closeLatch.countDown();
 			}
 			@Override
-			public void networkWriteReady(NetworkLayer.PeerToken token, ByteBuffer bufferToWrite)
+			public void networkWriteReady(NetworkLayer.IPeerToken token, ByteBuffer bufferToWrite)
 			{
 				// We aren't acting on this in our test.
 			}
 			@Override
-			public void networkReadReady(NetworkLayer.PeerToken token)
+			public void networkReadReady(NetworkLayer.IPeerToken token)
 			{
 				// Should not happen in this test.
 				Assert.fail();
@@ -422,7 +422,7 @@ public class TestNetworkServer
 	{
 		// Just poll for status.
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		NetworkServer<NetworkLayer.IPeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		
 		// Connect a client.
 		SocketChannel client = SocketChannel.open(new InetSocketAddress(InetAddress.getLocalHost(), port));
@@ -499,23 +499,23 @@ public class TestNetworkServer
 	}
 
 
-	private static class _ServerListener implements NetworkServer.IListener<NetworkLayer.PeerToken>
+	private static class _ServerListener implements NetworkServer.IListener<NetworkLayer.IPeerToken>
 	{
 		@Override
-		public ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
+		public ConnectingClientDescription<NetworkLayer.IPeerToken> userJoined(NetworkLayer.IPeerToken token, String name, int cuboidViewDistance)
 		{
 			return new NetworkServer.ConnectingClientDescription<>(name.hashCode(), token);
 		}
 		@Override
-		public void userLeft(NetworkLayer.PeerToken data)
+		public void userLeft(NetworkLayer.IPeerToken data)
 		{
 		}
 		@Override
-		public void networkWriteReady(NetworkLayer.PeerToken data, ByteBuffer bufferToWrite)
+		public void networkWriteReady(NetworkLayer.IPeerToken data, ByteBuffer bufferToWrite)
 		{
 		}
 		@Override
-		public void networkReadReady(NetworkLayer.PeerToken data)
+		public void networkReadReady(NetworkLayer.IPeerToken data)
 		{
 		}
 		@Override

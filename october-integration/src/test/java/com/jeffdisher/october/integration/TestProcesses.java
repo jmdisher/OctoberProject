@@ -425,7 +425,7 @@ public class TestProcesses
 		// Disconnect them.
 		Assert.assertEquals(1, monitoringAgent.getClientsCopy().size());
 		int clientId = monitoringAgent.getClientsCopy().keySet().iterator().next();
-		NetworkLayer.PeerToken token = monitoringAgent.getTokenForClient(clientId);
+		NetworkLayer.IPeerToken token = monitoringAgent.getTokenForClient(clientId);
 		monitoringAgent.getNetwork().disconnectClient(token);
 		
 		// Wait for disconnect.

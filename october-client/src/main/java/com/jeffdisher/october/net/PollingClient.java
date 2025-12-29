@@ -91,7 +91,7 @@ public class PollingClient
 
 	private class _OnePoll
 	{
-		private NetworkLayer.PeerToken _token;
+		private NetworkLayer.IPeerToken _token;
 		private ByteBuffer _writeableBuffer;
 		private final NetworkLayer<PacketFromServer> _network;
 		private _OnePoll(InetSocketAddress serverToPoll) throws IOException
@@ -99,7 +99,7 @@ public class PollingClient
 			_network = NetworkLayer.connectToServer(new NetworkLayer.IListener()
 			{
 				@Override
-				public void peerConnected(NetworkLayer.PeerToken token, ByteBuffer byteBuffer)
+				public void peerConnected(NetworkLayer.IPeerToken token, ByteBuffer byteBuffer)
 				{
 					// Since this is client mode, this is called before the connectToServer returns.
 					Assert.assertTrue(null == _token);
@@ -108,19 +108,19 @@ public class PollingClient
 					_writeableBuffer = byteBuffer;
 				}
 				@Override
-				public void peerDisconnected(NetworkLayer.PeerToken token)
+				public void peerDisconnected(NetworkLayer.IPeerToken token)
 				{
 					_queue.enqueue(() -> {
 						_network.stop();
 					});
 				}
 				@Override
-				public void peerReadyForWrite(NetworkLayer.PeerToken token, ByteBuffer byteBuffer)
+				public void peerReadyForWrite(NetworkLayer.IPeerToken token, ByteBuffer byteBuffer)
 				{
 					// We only start with the one write.
 				}
 				@Override
-				public void peerReadyForRead(NetworkLayer.PeerToken token)
+				public void peerReadyForRead(NetworkLayer.IPeerToken token)
 				{
 					long endMillis = System.currentTimeMillis();
 					_queue.enqueue(() -> {

@@ -34,7 +34,7 @@ public class TestNetworkClient
 				// We aren't acting on this in our test.
 			}
 			@Override
-			public void networkReady()
+			public void networkWriteReady()
 			{
 				// We aren't acting on this in our test.
 			}
@@ -84,7 +84,7 @@ public class TestNetworkClient
 				// We aren't acting on this in our test.
 			}
 			@Override
-			public void networkReady()
+			public void networkWriteReady()
 			{
 				// We aren't acting on this in our test.
 			}
@@ -145,7 +145,7 @@ public class TestNetworkClient
 				latch.countDown();
 			}
 			@Override
-			public void networkReady()
+			public void networkWriteReady()
 			{
 				sync.release();
 			}
@@ -298,7 +298,7 @@ public class TestNetworkClient
 		{
 		}
 		@Override
-		public void networkReady()
+		public void networkWriteReady()
 		{
 		}
 		@Override

@@ -24,7 +24,7 @@ import com.jeffdisher.october.utils.Assert;
 public class ClientBuffer
 {
 	// We leave these immutable constants public.
-	public final NetworkLayer.PeerToken token;
+	public final NetworkLayer.IPeerToken token;
 	public final int clientId;
 	
 	private final Queue<PacketFromServer> _outgoing;
@@ -34,7 +34,7 @@ public class ClientBuffer
 	private PacketFromClient _lastPeeked;
 	private boolean _isNetworkReadable;
 	
-	public ClientBuffer(NetworkLayer.PeerToken token, int clientId)
+	public ClientBuffer(NetworkLayer.IPeerToken token, int clientId)
 	{
 		this.token = token;
 		this.clientId = clientId;

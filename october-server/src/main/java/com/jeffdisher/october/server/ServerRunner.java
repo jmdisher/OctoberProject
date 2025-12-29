@@ -270,7 +270,7 @@ public class ServerRunner
 	private class NetworkListener implements IServerAdapter.IListener
 	{
 		@Override
-		public void clientConnected(int clientId, NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
+		public void clientConnected(int clientId, NetworkLayer.IPeerToken token, String name, int cuboidViewDistance)
 		{
 			Assert.assertTrue(cuboidViewDistance >= 0);
 			_messages.enqueue(() -> {

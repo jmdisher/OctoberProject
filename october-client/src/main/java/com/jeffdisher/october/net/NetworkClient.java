@@ -35,7 +35,7 @@ public class NetworkClient
 		_network = NetworkLayer.connectToServer(new NetworkLayer.IListener()
 		{
 			@Override
-			public void peerConnected(NetworkLayer.PeerToken token, ByteBuffer byteBuffer)
+			public void peerConnected(NetworkLayer.IPeerToken token, ByteBuffer byteBuffer)
 			{
 				// Since this is client mode, this is called before the connectToServer returns.
 				Assert.assertTrue(null == _token);
@@ -44,19 +44,19 @@ public class NetworkClient
 				_writeableBuffer = byteBuffer;
 			}
 			@Override
-			public void peerDisconnected(NetworkLayer.PeerToken token)
+			public void peerDisconnected(NetworkLayer.IPeerToken token)
 			{
 				_listener.serverDisconnected();
 			}
 			@Override
-			public void peerReadyForWrite(NetworkLayer.PeerToken token, ByteBuffer byteBuffer)
+			public void peerReadyForWrite(NetworkLayer.IPeerToken token, ByteBuffer byteBuffer)
 			{
 				Assert.assertTrue(null == _writeableBuffer);
 				if (_token.didFinishHandshake())
 				{
 					_writeableBuffer = byteBuffer;
 					// Just pass this back since we are done with it.
-					_listener.networkReady();
+					_listener.networkWriteReady();
 				}
 				else
 				{
@@ -65,7 +65,7 @@ public class NetworkClient
 				}
 			}
 			@Override
-			public void peerReadyForRead(NetworkLayer.PeerToken token)
+			public void peerReadyForRead(NetworkLayer.IPeerToken token)
 			{
 				List<PacketFromServer> packets = _network.receiveMessages(token);
 				Assert.assertTrue(!packets.isEmpty());
@@ -89,7 +89,7 @@ public class NetworkClient
 						// See if the network is ready yet (since there was likely a race here).
 						if (null != _writeableBuffer)
 						{
-							_listener.networkReady();
+							_listener.networkWriteReady();
 						}
 					}
 				}
@@ -168,7 +168,7 @@ public class NetworkClient
 		 * Called when the network is free to send more messages to the server.  Note that this is first called once the
 		 * handshake with the server is complete.
 		 */
-		void networkReady();
+		void networkWriteReady();
 		/**
 		 * Called when a new message has arrived from the server.
 		 * 
@@ -183,12 +183,12 @@ public class NetworkClient
 
 	private static class _State
 	{
-		public final NetworkLayer.PeerToken token;
+		public final NetworkLayer.IPeerToken token;
 		
 		private boolean _didFinishHandshake;
 		private int _clientId;
 		
-		public _State(NetworkLayer.PeerToken token)
+		public _State(NetworkLayer.IPeerToken token)
 		{
 			this.token = token;
 		}

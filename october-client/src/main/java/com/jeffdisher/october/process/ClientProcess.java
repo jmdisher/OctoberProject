@@ -425,7 +425,7 @@ public class ClientProcess
 			_background_setMillisPerTick(millisPerTick);
 		}
 		@Override
-		public synchronized void networkReady()
+		public synchronized void networkWriteReady()
 		{
 			_background_networkReadyForWrite();
 		}

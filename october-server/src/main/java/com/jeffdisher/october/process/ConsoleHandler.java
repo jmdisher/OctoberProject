@@ -211,7 +211,7 @@ public class ConsoleHandler
 				for (String param : parameters)
 				{
 					int clientId = _readInt(parameters[0], -1);
-					NetworkLayer.PeerToken token = (clientId > 0)
+					NetworkLayer.IPeerToken token = (clientId > 0)
 							? monitoringAgent.getTokenForClient(clientId)
 							: null
 					;

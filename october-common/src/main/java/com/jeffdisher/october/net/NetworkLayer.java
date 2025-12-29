@@ -77,15 +77,15 @@ public class NetworkLayer<IN extends Packet>
 	private final Thread _internalThread;
 	private final IListener _listener;
 	private final Selector _selector;
-	private final IdentityHashMap<PeerToken, _PeerState> _connectedPeers;
+	private final IdentityHashMap<IPeerToken, _PeerState> _connectedPeers;
 	private final ReentrantLock _lock;
 
 	// Data related to the hand-off between internal and background threads.
 	private boolean _keepRunning;
-	private IdentityHashMap<PeerToken, ByteBuffer> _shared_outgoingBuffers;
-	private final IdentityHashMap<PeerToken, List<IN>> _shared_incomingPackets;
-	private Set<PeerToken> _shared_resumeReads;
-	private Queue<PeerToken> _shared_disconnectRequests;
+	private IdentityHashMap<IPeerToken, ByteBuffer> _shared_outgoingBuffers;
+	private final IdentityHashMap<IPeerToken, List<IN>> _shared_incomingPackets;
+	private Set<IPeerToken> _shared_resumeReads;
+	private Queue<IPeerToken> _shared_disconnectRequests;
 	
 	// Server mode details.
 	private final ServerSocketChannel _acceptorSocket;
@@ -199,7 +199,7 @@ public class NetworkLayer<IN extends Packet>
 	 * @param peer The target of the message.
 	 * @param buffer The buffer previously sent back to be populated.
 	 */
-	public void sendBuffer(PeerToken peer, ByteBuffer buffer)
+	public void sendBuffer(IPeerToken peer, ByteBuffer buffer)
 	{
 		try
 		{
@@ -225,7 +225,7 @@ public class NetworkLayer<IN extends Packet>
 	 * 
 	 * @param peer The target of the message.
 	 */
-	public List<IN> receiveMessages(PeerToken peer)
+	public List<IN> receiveMessages(IPeerToken peer)
 	{
 		try
 		{
@@ -254,7 +254,7 @@ public class NetworkLayer<IN extends Packet>
 	 * 
 	 * @param token The peer to disconnect.
 	 */
-	public void disconnectPeer(PeerToken token)
+	public void disconnectPeer(IPeerToken token)
 	{
 		try
 		{
@@ -285,16 +285,16 @@ public class NetworkLayer<IN extends Packet>
 				throw Assert.unexpected(e);
 			}
 			// We are often just woken up to update the set of interested operations so this may be empty.
-			Map<PeerToken, List<IN>> peersAwaitingRead = null;
+			Map<IPeerToken, List<IN>> peersAwaitingRead = null;
 			if (selectedKeyCount > 0) {
 				peersAwaitingRead = _backgroundProcessSelectedKeys();
 			}
 			// Check the handoff map.
-			IdentityHashMap<PeerToken, ByteBuffer> buffersToWrite;
-			Queue<PeerToken> peersToDisconnect;
-			Set<PeerToken> readsToResume;
+			IdentityHashMap<IPeerToken, ByteBuffer> buffersToWrite;
+			Queue<IPeerToken> peersToDisconnect;
+			Set<IPeerToken> readsToResume;
 			// We want to notify the listener outside of the lock so we build this list.
-			List<PeerToken> peersToNotify = new ArrayList<>();
+			List<IPeerToken> peersToNotify = new ArrayList<>();
 			try
 			{
 				_lock.lock();
@@ -308,9 +308,9 @@ public class NetworkLayer<IN extends Packet>
 				if (null != peersAwaitingRead)
 				{
 					// We want to pass back the packets we read, but we also want to prove that we didn't read from something already awaiting read.
-					for (Map.Entry<PeerToken, List<IN>> elt : peersAwaitingRead.entrySet())
+					for (Map.Entry<IPeerToken, List<IN>> elt : peersAwaitingRead.entrySet())
 					{
-						PeerToken peer = elt.getKey();
+						IPeerToken peer = elt.getKey();
 						Assert.assertTrue(!_shared_incomingPackets.containsKey(peer));
 						_shared_incomingPackets.put(peer, elt.getValue());
 						// We also want to notify that they have data to read.
@@ -323,7 +323,7 @@ public class NetworkLayer<IN extends Packet>
 				_lock.unlock();
 			}
 			// Notify any readable listeners.
-			for (PeerToken peer : peersToNotify)
+			for (IPeerToken peer : peersToNotify)
 			{
 				_listener.peerReadyForRead(peer);
 			}
@@ -331,7 +331,7 @@ public class NetworkLayer<IN extends Packet>
 			// Re-enable reads.
 			if (null != readsToResume)
 			{
-				for (PeerToken peer : readsToResume)
+				for (IPeerToken peer : readsToResume)
 				{
 					_PeerState client = _connectedPeers.get(peer);
 					Assert.assertTrue(0 == (client.key.interestOps() & SelectionKey.OP_READ));
@@ -341,7 +341,7 @@ public class NetworkLayer<IN extends Packet>
 			// First, disconnect anyone we can.
 			if (null != peersToDisconnect)
 			{
-				for (PeerToken peer : peersToDisconnect)
+				for (IPeerToken peer : peersToDisconnect)
 				{
 					_PeerState client = _connectedPeers.get(peer);
 					// This may have already disconnected elsewhere.
@@ -354,7 +354,7 @@ public class NetworkLayer<IN extends Packet>
 			// Now, send any outgoing packets.
 			if (null != buffersToWrite)
 			{
-				for (Map.Entry<PeerToken, ByteBuffer> elt : buffersToWrite.entrySet())
+				for (Map.Entry<IPeerToken, ByteBuffer> elt : buffersToWrite.entrySet())
 				{
 					_PeerState client = _connectedPeers.get(elt.getKey());
 					// The peer may have disconnected.
@@ -381,9 +381,9 @@ public class NetworkLayer<IN extends Packet>
 		_connectedPeers.clear();
 	}
 
-	private Map<PeerToken, List<IN>> _backgroundProcessSelectedKeys()
+	private Map<IPeerToken, List<IN>> _backgroundProcessSelectedKeys()
 	{
-		Map<PeerToken, List<IN>> peersWaitingOnPacketRead = new IdentityHashMap<>();
+		Map<IPeerToken, List<IN>> peersWaitingOnPacketRead = new IdentityHashMap<>();
 		Set<SelectionKey> keys = _selector.selectedKeys();
 		for (SelectionKey key : keys)
 		{
@@ -588,33 +588,33 @@ public class NetworkLayer<IN extends Packet>
 		 * @param token The peer's opaque token.
 		 * @param byteBuffer The buffer which can be used for serializing outgoing data.
 		 */
-		void peerConnected(PeerToken token, ByteBuffer byteBuffer);
+		void peerConnected(IPeerToken token, ByteBuffer byteBuffer);
 		/**
 		 * Called when a peer has disconnected.
 		 * 
 		 * @param token The peer's opaque token.
 		 */
-		void peerDisconnected(PeerToken token);
+		void peerDisconnected(IPeerToken token);
 		/**
 		 * Called when the connection to a peer is ready to receive new messages to send.
 		 * 
 		 * @param token The peer's opaque token.
 		 * @param byteBuffer The buffer which can be used for serializing outgoing data.
 		 */
-		void peerReadyForWrite(PeerToken token, ByteBuffer byteBuffer);
+		void peerReadyForWrite(IPeerToken token, ByteBuffer byteBuffer);
 		/**
 		 * Called when the connection to a peer has messages to read.
 		 * 
 		 * @param token The peer's opaque token.
 		 */
-		void peerReadyForRead(PeerToken token);
+		void peerReadyForRead(IPeerToken token);
 	}
 
 	/**
 	 * Mostly just an opaque token, but does allow for get/set of user data for caller use.
 	 * NOTE:  The internal interface is expected to assert that this user data is never changed once non-null.
 	 */
-	public static interface PeerToken
+	public static interface IPeerToken
 	{
 		Object getData();
 		void setData(Object userData);
@@ -627,7 +627,7 @@ public class NetworkLayer<IN extends Packet>
 	 * be writeable in the selector (with the exception of initial startup where it is instantiated here, for symmetry,
 	 * but quickly sent elsewhere).
 	 */
-	private static class _PeerState implements PeerToken
+	private static class _PeerState implements IPeerToken
 	{
 		public final SocketChannel channel;
 		public final SelectionKey key;

@@ -116,7 +116,7 @@ public class ServerProcess
 		this.notifyAll();
 	}
 
-	private synchronized NetworkServer.ConnectingClientDescription<ClientBuffer> _createClient(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
+	private synchronized NetworkServer.ConnectingClientDescription<ClientBuffer> _createClient(NetworkLayer.IPeerToken token, String name, int cuboidViewDistance)
 	{
 		// For now, we will just hash the string and use that as the ID (Java's string hash is reasonable).  We still want the number to be positive, though.
 		// In the future, we probably want an in-memory whitelist so this can remain synchronous.
@@ -304,7 +304,7 @@ public class ServerProcess
 	private class _NetworkListener implements NetworkServer.IListener<ClientBuffer>
 	{
 		@Override
-		public NetworkServer.ConnectingClientDescription<ClientBuffer> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
+		public NetworkServer.ConnectingClientDescription<ClientBuffer> userJoined(NetworkLayer.IPeerToken token, String name, int cuboidViewDistance)
 		{
 			return _createClient(token, name, cuboidViewDistance);
 		}

@@ -94,7 +94,7 @@ public interface IServerAdapter
 		 * @param name The client's human-readable name.
 		 * @param cuboidViewDistance The initial cuboid view distance to attempt to use (may be restricted).
 		 */
-		void clientConnected(int clientId, NetworkLayer.PeerToken token, String name, int cuboidViewDistance);
+		void clientConnected(int clientId, NetworkLayer.IPeerToken token, String name, int cuboidViewDistance);
 		/**
 		 * Called when a client disconnects.
 		 * Note that a call receiving this MUST call acknowledgeDisconnect(clientId) once it has accounted for this.

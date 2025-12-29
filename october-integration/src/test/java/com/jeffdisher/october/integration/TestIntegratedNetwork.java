@@ -64,31 +64,31 @@ public class TestIntegratedNetwork
 	{
 		int[] leftCount = new int[1];
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
+		NetworkServer<NetworkLayer.IPeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
 		{
 			Map<Integer, String> _joinNames = new HashMap<>();
 			@Override
-			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.IPeerToken> userJoined(NetworkLayer.IPeerToken token, String name, int cuboidViewDistance)
 			{
 				// We might not see these if we connect/disconnect too quickly but we shouldn't see duplication.
 				int id = name.hashCode();
 				Assert.assertFalse(_joinNames.containsKey(id));
 				_joinNames.put(id, name);
-				return new NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken>(id, token);
+				return new NetworkServer.ConnectingClientDescription<NetworkLayer.IPeerToken>(id, token);
 			}
 			@Override
-			public void userLeft(NetworkLayer.PeerToken token)
+			public void userLeft(NetworkLayer.IPeerToken token)
 			{
 				// We don't always see that the user has left if we shut down first.
 				leftCount[0] += 1;
 			}
 			@Override
-			public void networkWriteReady(NetworkLayer.PeerToken token, ByteBuffer bufferToWrite)
+			public void networkWriteReady(NetworkLayer.IPeerToken token, ByteBuffer bufferToWrite)
 			{
 				// We aren't acting on this in our test.
 			}
 			@Override
-			public void networkReadReady(NetworkLayer.PeerToken token)
+			public void networkReadReady(NetworkLayer.IPeerToken token)
 			{
 				// Should not happen in this test.
 				Assert.fail();
@@ -118,14 +118,14 @@ public class TestIntegratedNetwork
 		// Note that we only use Packet_SendChatMessage here since it is "some message type" for the test but the server internals will use it differently.
 		int port = 3000;
 		@SuppressWarnings("unchecked")
-		NetworkServer<NetworkLayer.PeerToken>[] holder = new NetworkServer[1];
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
+		NetworkServer<NetworkLayer.IPeerToken>[] holder = new NetworkServer[1];
+		NetworkServer<NetworkLayer.IPeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
 		{
 			private List<String> _messagesFor1 = new ArrayList<>();
-			NetworkLayer.PeerToken _firstPeer = null;
+			NetworkLayer.IPeerToken _firstPeer = null;
 			private ByteBuffer _bufferToWrite = null;
 			@Override
-			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.IPeerToken> userJoined(NetworkLayer.IPeerToken token, String name, int cuboidViewDistance)
 			{
 				// If this is the first peer, hold on to it.
 				if (null == _firstPeer)
@@ -135,17 +135,17 @@ public class TestIntegratedNetwork
 				return new NetworkServer.ConnectingClientDescription<>(name.hashCode(), token);
 			}
 			@Override
-			public void userLeft(NetworkLayer.PeerToken token)
+			public void userLeft(NetworkLayer.IPeerToken token)
 			{
 			}
 			@Override
-			public void networkWriteReady(NetworkLayer.PeerToken token, ByteBuffer bufferToWrite)
+			public void networkWriteReady(NetworkLayer.IPeerToken token, ByteBuffer bufferToWrite)
 			{
 				_bufferToWrite = bufferToWrite;
 				_handle();
 			}
 			@Override
-			public void networkReadReady(NetworkLayer.PeerToken token)
+			public void networkReadReady(NetworkLayer.IPeerToken token)
 			{
 				List<PacketFromClient> packets = holder[0].readBufferedPackets(token);
 				for (PacketFromClient packet : packets)
@@ -192,7 +192,7 @@ public class TestIntegratedNetwork
 				handoff.store(packet);
 			}
 			@Override
-			public void networkReady()
+			public void networkWriteReady()
 			{
 			}
 			@Override
@@ -214,7 +214,7 @@ public class TestIntegratedNetwork
 			{
 			}
 			@Override
-			public void networkReady()
+			public void networkWriteReady()
 			{
 				try
 				{
@@ -302,22 +302,22 @@ public class TestIntegratedNetwork
 		// Now, create a server, connect a client to it, and send the data to the client and make sure it arrives correctly.
 		int port = 3000;
 		@SuppressWarnings("unchecked")
-		NetworkServer<NetworkLayer.PeerToken>[] holder = new NetworkServer[1];
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
+		NetworkServer<NetworkLayer.IPeerToken>[] holder = new NetworkServer[1];
+		NetworkServer<NetworkLayer.IPeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
 		{
 			int _nextIndex = 0;
 			@Override
-			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.IPeerToken> userJoined(NetworkLayer.IPeerToken token, String name, int cuboidViewDistance)
 			{
 				// We will sent the message once the network is ready.
 				return new NetworkServer.ConnectingClientDescription<>(name.hashCode(), token);
 			}
 			@Override
-			public void userLeft(NetworkLayer.PeerToken token)
+			public void userLeft(NetworkLayer.IPeerToken token)
 			{
 			}
 			@Override
-			public void networkWriteReady(NetworkLayer.PeerToken token, ByteBuffer bufferToWrite)
+			public void networkWriteReady(NetworkLayer.IPeerToken token, ByteBuffer bufferToWrite)
 			{
 				if (_nextIndex < outgoing.length)
 				{
@@ -328,7 +328,7 @@ public class TestIntegratedNetwork
 				}
 			}
 			@Override
-			public void networkReadReady(NetworkLayer.PeerToken token)
+			public void networkReadReady(NetworkLayer.IPeerToken token)
 			{
 				// We don't expect this in these tests.
 				Assert.fail();
@@ -354,7 +354,7 @@ public class TestIntegratedNetwork
 			{
 			}
 			@Override
-			public void networkReady()
+			public void networkWriteReady()
 			{
 				// We don't send anything from the client in this case.
 			}
@@ -400,8 +400,8 @@ public class TestIntegratedNetwork
 		int threadCount = Thread.activeCount();
 		int port0 = 3000;
 		int port1 = 3001;
-		NetworkServer<NetworkLayer.PeerToken> server0 = _pollOnlyServer(port0);
-		NetworkServer<NetworkLayer.PeerToken> server1 = _pollOnlyServer(port1);
+		NetworkServer<NetworkLayer.IPeerToken> server0 = _pollOnlyServer(port0);
+		NetworkServer<NetworkLayer.IPeerToken> server1 = _pollOnlyServer(port1);
 		
 		CountDownLatch statusLatch = new CountDownLatch(4);
 		CountDownLatch timeoutLatch = new CountDownLatch(2);
@@ -449,7 +449,7 @@ public class TestIntegratedNetwork
 			{
 			}
 			@Override
-			public void networkReady()
+			public void networkWriteReady()
 			{
 			}
 			@Override
@@ -464,27 +464,27 @@ public class TestIntegratedNetwork
 		return clientId;
 	}
 
-	private NetworkServer<NetworkLayer.PeerToken> _pollOnlyServer(int port) throws IOException
+	private NetworkServer<NetworkLayer.IPeerToken> _pollOnlyServer(int port) throws IOException
 	{
 		return new NetworkServer<>(new NetworkServer.IListener<>()
 		{
 			@Override
-			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name, int cuboidViewDistance)
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.IPeerToken> userJoined(NetworkLayer.IPeerToken token, String name, int cuboidViewDistance)
 			{
 				throw new AssertionError("Not called");
 			}
 			@Override
-			public void userLeft(NetworkLayer.PeerToken token)
+			public void userLeft(NetworkLayer.IPeerToken token)
 			{
 				throw new AssertionError("Not called");
 			}
 			@Override
-			public void networkWriteReady(NetworkLayer.PeerToken token, ByteBuffer bufferToWrite)
+			public void networkWriteReady(NetworkLayer.IPeerToken token, ByteBuffer bufferToWrite)
 			{
 				throw new AssertionError("Not called");
 			}
 			@Override
-			public void networkReadReady(NetworkLayer.PeerToken token)
+			public void networkReadReady(NetworkLayer.IPeerToken token)
 			{
 				throw new AssertionError("Not called");
 			}

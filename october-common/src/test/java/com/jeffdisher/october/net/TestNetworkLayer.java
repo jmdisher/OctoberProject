@@ -19,7 +19,7 @@ public class TestNetworkLayer
 	{
 		// Start the server.
 		int port = 3000;
-		NetworkLayer.PeerToken[] tokenHolder = new NetworkLayer.PeerToken[1];
+		NetworkLayer.IPeerToken[] tokenHolder = new NetworkLayer.IPeerToken[1];
 		ByteBuffer[] bufferHolder = new ByteBuffer[1];
 		CountDownLatch connectLatch = new CountDownLatch(1);
 		CountDownLatch disconnectLatch = new CountDownLatch(1);
@@ -31,7 +31,7 @@ public class TestNetworkLayer
 		NetworkLayer<PacketFromClient> server = NetworkLayer.startListening(new NetworkLayer.IListener()
 		{
 			@Override
-			public void peerConnected(NetworkLayer.PeerToken token, ByteBuffer byteBuffer)
+			public void peerConnected(NetworkLayer.IPeerToken token, ByteBuffer byteBuffer)
 			{
 				Assert.assertNull(tokenHolder[0]);
 				Assert.assertNull(bufferHolder[0]);
@@ -40,17 +40,17 @@ public class TestNetworkLayer
 				connectLatch.countDown();
 			}
 			@Override
-			public void peerDisconnected(NetworkLayer.PeerToken token)
+			public void peerDisconnected(NetworkLayer.IPeerToken token)
 			{
 				disconnectLatch.countDown();
 			}
 			@Override
-			public void peerReadyForWrite(NetworkLayer.PeerToken token, ByteBuffer byteBuffer)
+			public void peerReadyForWrite(NetworkLayer.IPeerToken token, ByteBuffer byteBuffer)
 			{
 				// We ignore this in this test.
 			}
 			@Override
-			public void peerReadyForRead(NetworkLayer.PeerToken token)
+			public void peerReadyForRead(NetworkLayer.IPeerToken token)
 			{
 				List<PacketFromClient> packets = internal[0].receiveMessages(token);
 				Assert.assertEquals(1, packets.size());
@@ -97,7 +97,7 @@ public class TestNetworkLayer
 	public void clientTest() throws Throwable
 	{
 		int port = 3000;
-		NetworkLayer.PeerToken[] tokenHolder = new NetworkLayer.PeerToken[1];
+		NetworkLayer.IPeerToken[] tokenHolder = new NetworkLayer.IPeerToken[1];
 		ByteBuffer[] bufferHolder = new ByteBuffer[1];
 		// We want to fake up a server.
 		InetSocketAddress address = new InetSocketAddress(port);
@@ -112,7 +112,7 @@ public class TestNetworkLayer
 		NetworkLayer<PacketFromServer> client = NetworkLayer.connectToServer(new NetworkLayer.IListener()
 		{
 			@Override
-			public void peerConnected(NetworkLayer.PeerToken token, ByteBuffer byteBuffer)
+			public void peerConnected(NetworkLayer.IPeerToken token, ByteBuffer byteBuffer)
 			{
 				Assert.assertNull(tokenHolder[0]);
 				Assert.assertNull(bufferHolder[0]);
@@ -120,17 +120,17 @@ public class TestNetworkLayer
 				bufferHolder[0] = byteBuffer;
 			}
 			@Override
-			public void peerDisconnected(NetworkLayer.PeerToken token)
+			public void peerDisconnected(NetworkLayer.IPeerToken token)
 			{
 				throw new AssertionError("Not in client mode");
 			}
 			@Override
-			public void peerReadyForWrite(NetworkLayer.PeerToken token, ByteBuffer byteBuffer)
+			public void peerReadyForWrite(NetworkLayer.IPeerToken token, ByteBuffer byteBuffer)
 			{
 				// We ignore this in this test.
 			}
 			@Override
-			public void peerReadyForRead(NetworkLayer.PeerToken token)
+			public void peerReadyForRead(NetworkLayer.IPeerToken token)
 			{
 				List<PacketFromServer> packets = internal[0].receiveMessages(token);
 				Assert.assertEquals(1, packets.size());
