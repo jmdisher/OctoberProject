@@ -473,12 +473,7 @@ public class TickRunner
 				{
 					PassiveEntity passive = thisTickMaterials.completedPassives.get(id);
 					return (null != passive)
-						? new PartialPassive(passive.id()
-							, passive.type()
-							, passive.location()
-							, passive.velocity()
-							, passive.extendedData()
-						)
+						? PartialPassive.fromPassive(passive)
 						: null
 					;
 				}
@@ -488,12 +483,7 @@ public class TickRunner
 					return passiveSpatialIndex.idsIntersectingRegion(base, edge).stream()
 						.map((Integer id) -> {
 							PassiveEntity passive = thisTickMaterials.completedPassives.get(id);
-							return new PartialPassive(passive.id()
-								, passive.type()
-								, passive.location()
-								, passive.velocity()
-								, passive.extendedData()
-							);
+							return PartialPassive.fromPassive(passive);
 						})
 						.toArray((int size) -> new PartialPassive[size])
 					;

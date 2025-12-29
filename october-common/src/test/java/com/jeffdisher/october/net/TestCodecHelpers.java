@@ -395,12 +395,7 @@ public class TestCodecHelpers
 		Assert.assertEquals(newAliveMillis, output.lastAliveMillis());
 		
 		// Make sure that this works for the partial variant, as well (used for the network case, only).
-		PartialPassive partial = new PartialPassive(input.id()
-			, input.type()
-			, input.location()
-			, input.velocity()
-			, input.extendedData()
-		);
+		PartialPassive partial = PartialPassive.fromPassive(input);
 		buffer.clear();
 		CodecHelpers.writePartialPassive(buffer, partial);
 		
@@ -502,12 +497,7 @@ public class TestCodecHelpers
 		Assert.assertEquals(newAliveMillis, output.lastAliveMillis());
 		
 		// Make sure that this works for the partial variant, as well (used for the network case, only).
-		PartialPassive partial = new PartialPassive(input.id()
-			, input.type()
-			, input.location()
-			, input.velocity()
-			, input.extendedData()
-		);
+		PartialPassive partial = PartialPassive.fromPassive(input);
 		buffer.clear();
 		CodecHelpers.writePartialPassive(buffer, partial);
 		
@@ -560,12 +550,7 @@ public class TestCodecHelpers
 		Assert.assertEquals(newAliveMillis, output.lastAliveMillis());
 		
 		// Make sure that this works for the partial variant, as well (used for the network case, only).
-		PartialPassive partial = new PartialPassive(input.id()
-			, input.type()
-			, input.location()
-			, input.velocity()
-			, input.extendedData()
-		);
+		PartialPassive partial = PartialPassive.fromPassive(input);
 		buffer.clear();
 		CodecHelpers.writePartialPassive(buffer, partial);
 		

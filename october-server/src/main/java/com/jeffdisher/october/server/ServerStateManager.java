@@ -891,13 +891,7 @@ public class ServerStateManager
 			else if (distance <= entityVisibleDistance)
 			{
 				// We don't know this passive, and they are close by, so send them.
-				PartialPassive partial = new PartialPassive(passive.id()
-					, passive.type()
-					, passive.location()
-					, passive.velocity()
-					// This data is defined by PassiveType, per-instance, and is persisted to disk and sent over the network.
-					, passive.extendedData()
-				);
+				PartialPassive partial = PartialPassive.fromPassive(passive);
 				Packet_SendPartialPassive packet = new Packet_SendPartialPassive(partial);
 				buffer.writePacket(packet);
 				state.knownPassives.add(entityId);

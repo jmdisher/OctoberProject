@@ -14,4 +14,13 @@ public record PartialPassive(int id
 	, Object extendedData
 )
 {
+	public static PartialPassive fromPassive(PassiveEntity passive)
+	{
+		return new PartialPassive(passive.id()
+			, passive.type()
+			, passive.location()
+			, passive.velocity()
+			, passive.extendedData()
+		);
+	}
 }
