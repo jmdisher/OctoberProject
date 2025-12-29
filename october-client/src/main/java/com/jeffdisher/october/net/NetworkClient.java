@@ -14,10 +14,8 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class NetworkClient
 {
-	private final IListener _listener;
 	private final NetworkLayer<PacketFromServer> _network;
-	private _State _token;
-	private ByteBuffer _writeableBuffer;
+	private final _NetworkWrapper _wrapper;
 
 	/**
 	 * Creates a new client, returning once the connection has been established, but before the handshake is complete.
@@ -31,81 +29,16 @@ public class NetworkClient
 	 */
 	public NetworkClient(IListener listener, InetAddress host, int port, String clientName, int cuboidViewDistance) throws IOException
 	{
-		_listener = listener;
-		_network = NetworkLayer.connectToServer(new NetworkLayer.IListener()
-		{
-			@Override
-			public void peerConnected(NetworkLayer.IPeerToken token, ByteBuffer byteBuffer)
-			{
-				// Since this is client mode, this is called before the connectToServer returns.
-				Assert.assertTrue(null == _token);
-				_token = new _State(token);
-				Assert.assertTrue(null == _writeableBuffer);
-				_writeableBuffer = byteBuffer;
-			}
-			@Override
-			public void peerDisconnected(NetworkLayer.IPeerToken token)
-			{
-				_listener.serverDisconnected();
-			}
-			@Override
-			public void peerReadyForWrite(NetworkLayer.IPeerToken token, ByteBuffer byteBuffer)
-			{
-				Assert.assertTrue(null == _writeableBuffer);
-				if (_token.didFinishHandshake())
-				{
-					_writeableBuffer = byteBuffer;
-					// Just pass this back since we are done with it.
-					_listener.networkWriteReady();
-				}
-				else
-				{
-					// We already started the handshake so record the network is ready while we wait for it to finish.
-					_writeableBuffer = byteBuffer;
-				}
-			}
-			@Override
-			public void peerReadyForRead(NetworkLayer.IPeerToken token)
-			{
-				List<PacketFromServer> packets = _network.receiveMessages(token);
-				Assert.assertTrue(!packets.isEmpty());
-				for (Packet packet : packets)
-				{
-					if (_token.didFinishHandshake())
-					{
-						// Pass this on to the listener.
-						_listener.packetReceived(packet);
-					}
-					else
-					{
-						// We are expected to consume this as the completion of the handshake.
-						// This MUST be the ID assignment (the actual ID isn't relevant, just the message).
-						Assert.assertTrue(PacketType.SERVER_SEND_CLIENT_ID == packet.type);
-						Packet_ServerSendClientId safe = (Packet_ServerSendClientId) packet;
-						int assignedId = safe.clientId;
-						_token.setHandshakeCompleted(assignedId);
-						_listener.handshakeCompleted(assignedId, safe.millisPerTick, safe.currentViewDistance, safe.viewDistanceMaximum);
-						
-						// See if the network is ready yet (since there was likely a race here).
-						if (null != _writeableBuffer)
-						{
-							_listener.networkWriteReady();
-						}
-					}
-				}
-			}
-		}, host, port);
+		_NetworkLayerListener internalListener = new _NetworkLayerListener(listener);
+		_network = NetworkLayer.connectToServer(internalListener
+			, host
+			, port
+		);
 		
-		// We expect that the token will be set before connectToServer returns.
-		Assert.assertTrue(null != _token);
-		Assert.assertTrue(null != _writeableBuffer);
+		_wrapper = internalListener.buildWrapper(_network);
 		
 		// The connection starts writable so kick-off the handshake.
-		PacketCodec.serializeToBuffer(_writeableBuffer, new Packet_ClientSendDescription(Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION, clientName, cuboidViewDistance));
-		_writeableBuffer.flip();
-		ByteBuffer buffer = _writeableBuffer;
-		_writeableBuffer = null;
-		_network.sendBuffer(_token.token, buffer);
+		_wrapper.sendHandshake(clientName, cuboidViewDistance);
 	}
 
 	/**
@@ -123,17 +56,7 @@ public class NetworkClient
 	 */
 	public void sendMessage(PacketFromClient packet)
 	{
-		// We need to wait for handshake before trying to use the client.
-		Assert.assertTrue(_token.didFinishHandshake());
-		Assert.assertTrue(null != _writeableBuffer);
-		
-		PacketCodec.serializeToBuffer(_writeableBuffer, packet);
-		_writeableBuffer.flip();
-		
-		// NOTE:  We need to clear the write buffer BEFORE sending the message since the NEXT ready callback could come in between the lines of code.
-		ByteBuffer buffer = _writeableBuffer;
-		_writeableBuffer = null;
-		_network.sendBuffer(_token.token, buffer);
+		_wrapper.sendMessage(packet);
 	}
 
 	/**
@@ -145,7 +68,7 @@ public class NetworkClient
 	 */
 	public int getClientId() throws InterruptedException
 	{
-		return _token.getClientId();
+		return _wrapper._token.getClientId();
 	}
 
 
@@ -210,6 +133,135 @@ public class NetworkClient
 				this.wait();
 			}
 			return _clientId;
+		}
+	}
+
+	private static class _NetworkLayerListener implements NetworkLayer.IListener
+	{
+		private final IListener _listener;
+		private _State _token;
+		private ByteBuffer _writeableBuffer;
+		private _NetworkWrapper _wrapper;
+		public _NetworkLayerListener(IListener listener)
+		{
+			_listener = listener;
+		}
+		public _NetworkWrapper buildWrapper(NetworkLayer<PacketFromServer> network)
+		{
+			// We expect the connection to be up and writeable.
+			Assert.assertTrue(null != _token);
+			Assert.assertTrue(null != _writeableBuffer);
+			Assert.assertTrue(null == _wrapper);
+			_wrapper = new _NetworkWrapper(network, _listener, _token, _writeableBuffer);
+			_token = null;
+			_writeableBuffer = null;
+			return _wrapper;
+		}
+		@Override
+		public void peerConnected(NetworkLayer.IPeerToken token, ByteBuffer byteBuffer)
+		{
+			// Since this is client mode, this is called before the connectToServer returns.
+			Assert.assertTrue(null == _token);
+			_token = new _State(token);
+			Assert.assertTrue(null == _writeableBuffer);
+			_writeableBuffer = byteBuffer;
+		}
+		@Override
+		public void peerDisconnected(NetworkLayer.IPeerToken token)
+		{
+			_listener.serverDisconnected();
+		}
+		@Override
+		public void peerReadyForWrite(NetworkLayer.IPeerToken token, ByteBuffer byteBuffer)
+		{
+			_wrapper.writeReady(byteBuffer);
+		}
+		@Override
+		public void peerReadyForRead(NetworkLayer.IPeerToken token)
+		{
+			_wrapper.receiveMessages();
+		}
+	}
+
+	private static class _NetworkWrapper
+	{
+		private final NetworkLayer<PacketFromServer> _network;
+		private final IListener _listener;
+		private final _State _token;
+		private ByteBuffer _writeableBuffer;
+		
+		public _NetworkWrapper(NetworkLayer<PacketFromServer> network, IListener listener, _State token, ByteBuffer writeableBuffer)
+		{
+			_network = network;
+			_listener = listener;
+			_token = token;
+			_writeableBuffer = writeableBuffer;
+		}
+		public void writeReady(ByteBuffer byteBuffer)
+		{
+			Assert.assertTrue(null == _writeableBuffer);
+			if (_token.didFinishHandshake())
+			{
+				_writeableBuffer = byteBuffer;
+				// Just pass this back since we are done with it.
+				_listener.networkWriteReady();
+			}
+			else
+			{
+				// We already started the handshake so record the network is ready while we wait for it to finish.
+				_writeableBuffer = byteBuffer;
+			}
+		}
+		public void sendHandshake(String clientName, int cuboidViewDistance)
+		{
+			PacketCodec.serializeToBuffer(_writeableBuffer, new Packet_ClientSendDescription(Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION, clientName, cuboidViewDistance));
+			_writeableBuffer.flip();
+			ByteBuffer buffer = _writeableBuffer;
+			_writeableBuffer = null;
+			_network.sendBuffer(_token.token, buffer);
+		}
+		public void sendMessage(PacketFromClient packet)
+		{
+			// We need to wait for handshake before trying to use the client.
+			Assert.assertTrue(_token.didFinishHandshake());
+			Assert.assertTrue(null != _writeableBuffer);
+			
+			PacketCodec.serializeToBuffer(_writeableBuffer, packet);
+			_writeableBuffer.flip();
+			
+			// NOTE:  We need to clear the write buffer BEFORE sending the message since the NEXT ready callback could come in between the lines of code.
+			ByteBuffer buffer = _writeableBuffer;
+			_writeableBuffer = null;
+			_network.sendBuffer(_token.token, buffer);
+		}
+		public void receiveMessages()
+		{
+			List<PacketFromServer> packets = _network.receiveMessages(_token.token);
+			Assert.assertTrue(!packets.isEmpty());
+			for (Packet packet : packets)
+			{
+				if (_token.didFinishHandshake())
+				{
+					// Pass this on to the listener.
+					_listener.packetReceived(packet);
+				}
+				else
+				{
+					// We are expected to consume this as the completion of the handshake.
+					// This MUST be the ID assignment (the actual ID isn't relevant, just the message).
+					Assert.assertTrue(PacketType.SERVER_SEND_CLIENT_ID == packet.type);
+					Packet_ServerSendClientId safe = (Packet_ServerSendClientId) packet;
+					int assignedId = safe.clientId;
+					_token.setHandshakeCompleted(assignedId);
+					_listener.handshakeCompleted(assignedId, safe.millisPerTick, safe.currentViewDistance, safe.viewDistanceMaximum);
+					
+					// See if the network is ready yet (since there was likely a race here).
+					if (null != _writeableBuffer)
+					{
+						_listener.networkWriteReady();
+					}
+				}
+			}
 		}
 	}
 }
