@@ -1,5 +1,7 @@
 package com.jeffdisher.october.logic;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -230,6 +232,81 @@ public class TestEntityCollection
 		counts[1] = 0;
 		collection.walkAlignedIntersections(ENV, new EntityLocation(2.1f, 2.1f, 2.1f), new EntityLocation(2.2f, 2.2f, 2.2f), entityConsumer, creatureConsumer);
 		Assert.assertArrayEquals(new int[] {1, 1}, counts);
+	}
+
+	@Test
+	public void heavyIntersectionsPerf()
+	{
+		int playerCount = 10000;
+		Map<Integer, Entity> players = new HashMap<>();
+		for (int i = 0; i < playerCount; ++i)
+		{
+			float location = -(playerCount / 2) + (float)i;
+			Entity player = _buildPlayer(i, new EntityLocation(location, location, location));
+			players.put(i, player);
+		}
+		
+		int[] count = new int[1];
+		Consumer<Entity> entityConsumer = (Entity entity) -> {
+			count[0] += 1;
+		};
+		EntityCollection collection = null;
+		for (int i = 0; i < 10; ++i)
+		{
+			collection = EntityCollection.fromMaps(players, Map.of());
+			Assert.assertNotNull(collection);
+		}
+		long start = System.nanoTime();
+		for (int i = 0; i < 10; ++i)
+		{
+			collection = EntityCollection.fromMaps(players, Map.of());
+			Assert.assertNotNull(collection);
+		}
+		long end = System.nanoTime();
+		System.out.printf("Cost to create EntityCollection with %d elements: %d ns\n", playerCount, (end - start) / 10);
+		
+		// Warm the JIT.
+		for (int i = 0; i < 10; ++i)
+		{
+			count[0] = 0;
+			collection.walkAlignedIntersections(ENV, new EntityLocation(1.0f, 1.0f, 1.0f), new EntityLocation(2.0f, 2.0f, 3.0f), entityConsumer, null);
+			Assert.assertArrayEquals(new int[] {2}, count);
+		}
+		
+		int samples = 10;
+		long[] reasonableNanos = new long[samples];
+		long[] nothingNanos = new long[samples];
+		long[] everythingNanos = new long[samples];
+		for (int i = 0; i < samples; ++i)
+		{
+			// Find player count in a reasonable area.
+			long t0 = System.nanoTime();
+			count[0] = 0;
+			collection.walkAlignedIntersections(ENV, new EntityLocation(1.0f, 1.0f, 1.0f), new EntityLocation(2.0f, 2.0f, 3.0f), entityConsumer, null);
+			Assert.assertArrayEquals(new int[] {2}, count);
+			
+			// Intersect nothing.
+			long t1 = System.nanoTime();
+			count[0] = 0;
+			collection.walkAlignedIntersections(ENV, new EntityLocation(0.0f, 0.0f, 6000.0f), new EntityLocation(0.0f, 0.0f, 7000.0f), entityConsumer, null);
+			Assert.assertArrayEquals(new int[] {0}, count);
+			
+			// Intersect everything.
+			long t2 = System.nanoTime();
+			count[0] = 0;
+			collection.walkAlignedIntersections(ENV, new EntityLocation(-10000.0f, -10000.0f, -10000.0f), new EntityLocation(10000.0f, 10000.0f, 10000.0f), entityConsumer, null);
+			Assert.assertArrayEquals(new int[] {playerCount}, count);
+			
+			long t3 = System.nanoTime();
+			reasonableNanos[i] = t1 - t0;
+			nothingNanos[i] = t2 - t1;
+			everythingNanos[i] = t3 - t2;
+		}
+		
+		long reasonable = Arrays.stream(reasonableNanos).sum() / (long)samples;
+		long nothing = Arrays.stream(nothingNanos).sum() / (long)samples;
+		long everything = Arrays.stream(everythingNanos).sum() / (long)samples;
+		System.out.printf("EntityCollection query times:\nMatch few:  %d ns\nMatch none: %d ns\nMatch many: %d ns\n", reasonable, nothing, everything);
 	}
 
 

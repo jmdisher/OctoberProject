@@ -1,12 +1,14 @@
 package com.jeffdisher.october.logic;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -42,13 +44,44 @@ public class EntityCollection
 
 
 	private final Map<Integer, Entity> _players;
+	private final SpatialIndex _playerIndex;
 	private final Map<Integer, CreatureEntity> _creatures;
+	private final SpatialIndex[] _creatureIndices;
 
 	private EntityCollection(Map<Integer, Entity> players, Map<Integer, CreatureEntity> creatures)
 	{
-		// TODO:  Build useful indexes once we have a good sense of the performance profile of how this is used.
 		_players = players;
+		SpatialIndex.Builder builder = new SpatialIndex.Builder();
+		for (Map.Entry<Integer, Entity> elt : players.entrySet())
+		{
+			builder.add(elt.getKey(), elt.getValue().location());
+		}
+		Environment env = Environment.getShared();
+		_playerIndex = builder.finish(env.creatures.PLAYER.volume());
 		_creatures = creatures;
+		_creatureIndices = new SpatialIndex[env.creatures.ENTITY_BY_NUMBER.length];
+		for (int i = 0; i < env.creatures.ENTITY_BY_NUMBER.length; ++i)
+		{
+			EntityType type = env.creatures.ENTITY_BY_NUMBER[i];
+			if (null != type)
+			{
+				SpatialIndex.Builder creatureBuilder = new SpatialIndex.Builder();
+				boolean didAdd = false;
+				for (Map.Entry<Integer, CreatureEntity> elt : creatures.entrySet())
+				{
+					CreatureEntity creature = elt.getValue();
+					if (creature.type() == type)
+					{
+						creatureBuilder.add(elt.getKey(), creature.location());
+						didAdd = true;
+					}
+				}
+				if (didAdd)
+				{
+					_creatureIndices[i] = creatureBuilder.finish(type.volume());
+				}
+			}
+		}
 	}
 
 	/**
@@ -216,8 +249,8 @@ public class EntityCollection
 	 * axis-aligned bounding boxes.
 	 * 
 	 * @param env The environment.
-	 * @param base The base of the region to check (west, south, bottom corner).
-	 * @param edge The edge of the region to check (east, north, up corner).
+	 * @param base The inclusive base of the region to check (west, south, bottom corner).
+	 * @param edge The inclusive edge of the region to check (east, north, up corner).
 	 * @param entityVisit The consumer for player entities found (can be null).
 	 * @param creatureVisit The consumer for creatures found (can be null).
 	 */
@@ -228,29 +261,27 @@ public class EntityCollection
 		Assert.assertTrue(base.y() <= edge.y());
 		Assert.assertTrue(base.z() <= edge.z());
 		
-		// TODO:  This is VERY inefficient when a large world is loaded so we need to redesign this based on a different way of organizing or indexing the entities and creatures.
 		if (null != entityVisit)
 		{
-			EntityVolume playerVolume = env.creatures.PLAYER.volume();
-			
-			for (Entity player : _players.values())
+			Set<Integer> ids = _playerIndex.idsIntersectingRegion(base, edge);
+			for (int id : ids)
 			{
-				EntityLocation playerLocation = player.location();
-				if (_regionsIntersect(base, edge, playerLocation, playerVolume))
-				{
-					entityVisit.accept(player);
-				}
+				Entity player = _players.get(id);
+				entityVisit.accept(player);
 			}
 		}
 		if (null != creatureVisit)
 		{
-			for (CreatureEntity creature : _creatures.values())
+			for (SpatialIndex index : _creatureIndices)
 			{
-				EntityLocation creatureLocation = creature.location();
-				EntityVolume creatureVolume = creature.type().volume();
-				if (_regionsIntersect(base, edge, creatureLocation, creatureVolume))
+				if (null != index)
 				{
-					creatureVisit.accept(creature);
+					Set<Integer> ids = index.idsIntersectingRegion(base, edge);
+					for (int id : ids)
+					{
+						CreatureEntity creature = _creatures.get(id);
+						creatureVisit.accept(creature);
+					}
 				}
 			}
 		}
@@ -266,26 +297,6 @@ public class EntityCollection
 			isInRange = true;
 		}
 		return isInRange;
-	}
-
-	private static boolean _regionsIntersect(EntityLocation base, EntityLocation edge, EntityLocation checkLocation, EntityVolume checkVolume)
-	{
-		float deltaX = base.x() - checkLocation.x();
-		boolean intersectX = (deltaX >= 0.0f)
-			? (deltaX <= checkVolume.width())
-			: (-deltaX <= (edge.x() - base.x()))
-		;
-		float deltaY = base.y() - checkLocation.y();
-		boolean intersectY = (deltaY >= 0.0f)
-			? (deltaY <= checkVolume.width())
-			: (-deltaY <= (edge.y() - base.y()))
-		;
-		float deltaZ = base.z() - checkLocation.z();
-		boolean intersectZ = (deltaZ >= 0.0f)
-			? (deltaZ <= checkVolume.height())
-			: (-deltaZ <= (edge.z() - base.z()))
-		;
-		return intersectX && intersectY && intersectZ;
 	}
 
 
