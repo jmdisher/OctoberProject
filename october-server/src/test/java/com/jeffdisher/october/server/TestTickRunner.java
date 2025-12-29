@@ -44,6 +44,7 @@ import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.mutations.MutationBlockSetLogicState;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationBlockSwapSpecialSlot;
+import com.jeffdisher.october.mutations.PassiveCheckMutation;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.mutations.SaturatingDamage;
 import com.jeffdisher.october.mutations.ShockwaveMutation;
@@ -3203,7 +3204,15 @@ public class TestTickRunner
 			, extendedData
 			, lastAliveMillis
 		);
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of(), List.of(passive)))
+		PassiveCheckMutation checkOutput = new PassiveCheckMutation(location.getBlockLocation());
+		SuspendedCuboid<IReadOnlyCuboidData> suspended = new SuspendedCuboid<IReadOnlyCuboidData>(cuboid
+			, HeightMapHelpers.buildHeightMap(cuboid)
+			, List.of()
+			, List.of(new ScheduledMutation(checkOutput, 0L))
+			, Map.of()
+			, List.of(passive)
+		);
+		runner.setupChangesForTick(List.of(suspended)
 			, null
 			, null
 			, null
@@ -3225,6 +3234,8 @@ public class TestTickRunner
 			processedPassives += stats.passivesProcessed();
 		}
 		Assert.assertEquals(1, processedPassives);
+		Assert.assertEquals(1, checkOutput.output.length);
+		Assert.assertEquals(extendedData, checkOutput.output[0].extendedData());
 		
 		// Run a few more ticks until we see them start to move due to accumulated z-velocity.
 		float vZ = snapshot.passives().get(id).completed().velocity().z();

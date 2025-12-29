@@ -250,5 +250,14 @@ public class TickProcessingContext
 		 * @return The passive or null if not loaded/known.
 		 */
 		PartialPassive getById(int id);
+		/**
+		 * Searches for the passive ITEM_SLOT entities in the given volume of space, returning them as an array.  All
+		 * returned elements will be of this type.
+		 * 
+		 * @param base The inclusive base (west, south, down) corner of the search volume.
+		 * @param edge The inclusive edge (east, north, up) corner of the search volume.
+		 * @return The passives in this region (empty list if none found).
+		 */
+		PartialPassive[] findPassiveItemSlotsInRegion(EntityLocation base, EntityLocation edge);
 	}
 }

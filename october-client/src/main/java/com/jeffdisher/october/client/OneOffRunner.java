@@ -176,6 +176,12 @@ public class OneOffRunner
 			{
 				return state.passives.get(id);
 			}
+			@Override
+			public PartialPassive[] findPassiveItemSlotsInRegion(EntityLocation base, EntityLocation edge)
+			{
+				// We don't do passive processing on the client.
+				return new PartialPassive[0];
+			}
 		};
 		TickProcessingContext context = new TickProcessingContext(gameTick
 				, cachingLoader

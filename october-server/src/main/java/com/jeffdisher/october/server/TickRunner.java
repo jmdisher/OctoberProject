@@ -41,6 +41,7 @@ import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
+import com.jeffdisher.october.logic.SpatialIndex;
 import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
@@ -456,6 +457,16 @@ public class TickRunner
 				PassiveEntity entity = new PassiveEntity(id, type, location, velocity, extendedData, currentTickTimeMillis);
 				spawnedPassives.add(entity);
 			};
+			// NOTE:  We only expose passive entities in the interface since we only have a use-case for them, at the moment.
+			SpatialIndex.Builder builder = new SpatialIndex.Builder();
+			for (PassiveEntity passive : thisTickMaterials.completedPassives.values())
+			{
+				if (PassiveType.ITEM_SLOT == passive.type())
+				{
+					builder.add(passive.id(), passive.location());
+				}
+			}
+			SpatialIndex passiveSpatialIndex = builder.finish(PassiveType.ITEM_SLOT.volume());
 			TickProcessingContext.IPassiveSearch passiveSearch = new TickProcessingContext.IPassiveSearch() {
 				@Override
 				public PartialPassive getById(int id)
@@ -469,6 +480,22 @@ public class TickRunner
 							, passive.extendedData()
 						)
 						: null
+					;
+				}
+				@Override
+				public PartialPassive[] findPassiveItemSlotsInRegion(EntityLocation base, EntityLocation edge)
+				{
+					return passiveSpatialIndex.idsIntersectingRegion(base, edge).stream()
+						.map((Integer id) -> {
+							PassiveEntity passive = thisTickMaterials.completedPassives.get(id);
+							return new PartialPassive(passive.id()
+								, passive.type()
+								, passive.location()
+								, passive.velocity()
+								, passive.extendedData()
+							);
+						})
+						.toArray((int size) -> new PartialPassive[size])
 					;
 				}
 			};

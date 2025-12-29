@@ -3154,6 +3154,11 @@ public class TestCommonChanges
 			{
 				return map.get(id);
 			}
+			@Override
+			public PartialPassive[] findPassiveItemSlotsInRegion(EntityLocation base, EntityLocation edge)
+			{
+				throw new AssertionError("Not in test");
+			}
 		};
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups(null, null, passiveSearch)
