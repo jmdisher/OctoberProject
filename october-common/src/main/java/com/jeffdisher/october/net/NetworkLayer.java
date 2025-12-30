@@ -39,6 +39,26 @@ public class NetworkLayer<IN extends Packet>
 	public static final int BUFFER_SIZE_BYTES = PacketCodec.MAX_PACKET_BYTES;
 
 	/**
+	 * Creates a layer which is listening as a server using only the loopback interface and an ephemeral port.  Returns
+	 * once the port has been bound and the internal thread has started.  The port number can be found by reading
+	 * "localPort" on the returned object.
+	 * 
+	 * @param  The type used as a token to describe connections.
+	 * @param listener The callback interface (which will be called on the internal thread).
+	 * @param port The port on which to listen for connections.
+	 * @return The network layer abstraction.
+	 * @throws IOException An error occurred while configuring the network.
+	 */
+	public static NetworkLayer<PacketFromClient> startListeningLoopbackOnly(IListener listener) throws IOException
+	{
+		InetAddress loopback = InetAddress.getLoopbackAddress();
+		InetSocketAddress address = new InetSocketAddress(loopback, 0);
+		ServerSocketChannel socket = ServerSocketChannel.open();
+		socket.bind(address);
+		return new NetworkLayer<>(PacketFromClient.class, listener, socket, null, "Server Network Layer");
+	}
+
+	/**
 	 * Creates a layer which is listening as a server.  Returns once the requested port has been bound and the internal
 	 * thread has started.
 	 * 
@@ -48,7 +68,7 @@ public class NetworkLayer<IN extends Packet>
 	 * @return The network layer abstraction.
 	 * @throws IOException An error occurred while configuring the network.
 	 */
-	public static NetworkLayer<PacketFromClient> startListening(IListener listener, int port) throws IOException
+	public static NetworkLayer<PacketFromClient> startListeningPublic(IListener listener, int port) throws IOException
 	{
 		InetSocketAddress address = new InetSocketAddress(port);
 		ServerSocketChannel socket = ServerSocketChannel.open();
@@ -73,6 +93,10 @@ public class NetworkLayer<IN extends Packet>
 	}
 
 
+	/**
+	 * Note that this is the "local end" of the open port:  If this is a server, it is the port clients should use.
+	 */
+	public final int localPort;
 	private final Class<IN> _inClass;
 	private final Thread _internalThread;
 	private final IListener _listener;
@@ -95,6 +119,11 @@ public class NetworkLayer<IN extends Packet>
 	{
 		// We can only be running in server mode OR client mode.
 		Assert.assertTrue((null != serverSocket) != (null != clientSocket));
+		
+		this.localPort = (null != serverSocket)
+			? serverSocket.socket().getLocalPort()
+			: clientSocket.socket().getLocalPort()
+		;
 		
 		// We need the incoming class for casting.
 		_inClass = inClass;

@@ -28,7 +28,7 @@ public class TestNetworkLayer
 		
 		@SuppressWarnings("unchecked")
 		NetworkLayer<PacketFromClient>[] internal = new NetworkLayer[1];
-		NetworkLayer<PacketFromClient> server = NetworkLayer.startListening(new NetworkLayer.IListener()
+		NetworkLayer<PacketFromClient> server = NetworkLayer.startListeningPublic(new NetworkLayer.IListener()
 		{
 			@Override
 			public void peerConnected(NetworkLayer.IPeerToken token, ByteBuffer byteBuffer)
@@ -59,6 +59,7 @@ public class TestNetworkLayer
 				receiveLatch.countDown();
 			}
 		}, port);
+		Assert.assertEquals(port, server.localPort);
 		internal[0] = server;
 		
 		// Connect a client and observe that we see a connected peer.
@@ -139,6 +140,7 @@ public class TestNetworkLayer
 				receiveLatch.countDown();
 			}
 		}, InetAddress.getLocalHost(), port);
+		Assert.assertTrue(client.localPort > 0);
 		internal[0] = client;
 		SocketChannel server = socket.accept();
 		
@@ -168,5 +170,85 @@ public class TestNetworkLayer
 		client.stop();
 		server.close();
 		socket.close();
+	}
+
+	@Test
+	public void serverEphemeralPort() throws Throwable
+	{
+		// Start the server.
+		NetworkLayer.IPeerToken[] tokenHolder = new NetworkLayer.IPeerToken[1];
+		ByteBuffer[] bufferHolder = new ByteBuffer[1];
+		CountDownLatch connectLatch = new CountDownLatch(1);
+		CountDownLatch disconnectLatch = new CountDownLatch(1);
+		Packet[] holder = new Packet[1];
+		CountDownLatch receiveLatch = new CountDownLatch(1);
+		
+		@SuppressWarnings("unchecked")
+		NetworkLayer<PacketFromClient>[] internal = new NetworkLayer[1];
+		NetworkLayer<PacketFromClient> server = NetworkLayer.startListeningLoopbackOnly(new NetworkLayer.IListener()
+		{
+			@Override
+			public void peerConnected(NetworkLayer.IPeerToken token, ByteBuffer byteBuffer)
+			{
+				Assert.assertNull(tokenHolder[0]);
+				Assert.assertNull(bufferHolder[0]);
+				tokenHolder[0] = token;
+				bufferHolder[0] = byteBuffer;
+				connectLatch.countDown();
+			}
+			@Override
+			public void peerDisconnected(NetworkLayer.IPeerToken token)
+			{
+				disconnectLatch.countDown();
+			}
+			@Override
+			public void peerReadyForWrite(NetworkLayer.IPeerToken token, ByteBuffer byteBuffer)
+			{
+				// We ignore this in this test.
+			}
+			@Override
+			public void peerReadyForRead(NetworkLayer.IPeerToken token)
+			{
+				List<PacketFromClient> packets = internal[0].receiveMessages(token);
+				Assert.assertEquals(1, packets.size());
+				Assert.assertNull(holder[0]);
+				holder[0] = packets.get(0);
+				receiveLatch.countDown();
+			}
+		});
+		internal[0] = server;
+		
+		// Connect a client and observe that we see a connected peer.
+		int port = server.localPort;
+		Assert.assertTrue(port > 0);
+		SocketChannel client = SocketChannel.open(new InetSocketAddress(InetAddress.getLoopbackAddress(), port));
+		connectLatch.await();
+		
+		// Now, both sides should be able to send a message, right away (we will just use the ID assignment, since it is simple).
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		PacketCodec.serializeToBuffer(buffer, new Packet_ClientSendDescription(0, "test", 1));
+		buffer.flip();
+		client.write(buffer);
+		
+		PacketCodec.serializeToBuffer(bufferHolder[0], new Packet_ServerSendClientId(2, 100L, 1, 1));
+		bufferHolder[0].flip();
+		server.sendBuffer(tokenHolder[0], bufferHolder[0]);
+		
+		// Verify that we received both.
+		receiveLatch.await();
+		Assert.assertEquals("test", ((Packet_ClientSendDescription) holder[0]).name);
+		
+		buffer.clear();
+		client.read(buffer);
+		buffer.flip();
+		Packet clientRead = PacketCodec.parseAndSeekFlippedBuffer(buffer);
+		Assert.assertEquals(2, ((Packet_ServerSendClientId) clientRead).clientId);
+		Assert.assertEquals(100L, ((Packet_ServerSendClientId) clientRead).millisPerTick);
+		Assert.assertEquals(1, ((Packet_ServerSendClientId) clientRead).viewDistanceMaximum);
+		
+		// Close the client and verify that the server sees the disconnect.
+		client.close();
+		disconnectLatch.await();
+		server.stop();
 	}
 }

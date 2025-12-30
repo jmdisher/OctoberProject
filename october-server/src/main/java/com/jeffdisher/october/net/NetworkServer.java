@@ -47,7 +47,7 @@ public class NetworkServer<L>
 			, serverMillisPerTick
 			, viewDistanceMaximum
 		);
-		_network = NetworkLayer.startListening(internalListener
+		_network = NetworkLayer.startListeningPublic(internalListener
 			, port
 		);
 		
