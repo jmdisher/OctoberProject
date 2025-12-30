@@ -455,10 +455,65 @@ public class TestNetworkServer
 		server.stop();
 	}
 
+	@Test
+	public void basicHandshakeDisconnectEphemeral() throws IOException
+	{
+		int[] leftCount = new int[1];
+		Map<Integer, String> joinNames = new HashMap<>();
+		NetworkServer<NetworkLayer.IPeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
+		{
+			@Override
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.IPeerToken> userJoined(NetworkLayer.IPeerToken token, String name, int cuboidViewDistance)
+			{
+				int id = name.hashCode();
+				Assert.assertFalse(joinNames.containsKey(id));
+				joinNames.put(id, name);
+				return new NetworkServer.ConnectingClientDescription<>(id, token);
+			}
+			@Override
+			public void userLeft(NetworkLayer.IPeerToken token)
+			{
+				// We don't always see that the user has left if we shut down first.
+				leftCount[0] += 1;
+			}
+			@Override
+			public void networkWriteReady(NetworkLayer.IPeerToken token, ByteBuffer bufferToWrite)
+			{
+				// We aren't acting on this in our test.
+			}
+			@Override
+			public void networkReadReady(NetworkLayer.IPeerToken token)
+			{
+				// Should not happen in this test.
+				Assert.fail();
+			}
+			@Override
+			public NetworkServer.ServerStatus pollServerStatus()
+			{
+				// Should not happen in this test.
+				Assert.fail();
+				return null;
+			}
+		}, TIME_SUPPLIER, 0, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		int port = server.getPort();
+		Assert.assertTrue(port > 0);
+		
+		int client1 = _runClient(port, "Client 1");
+		int client2 = _runClient(port, "Client 2");
+		Assert.assertEquals("Client 1".hashCode(), client1);
+		Assert.assertEquals("Client 2".hashCode(), client2);
+		// We should see at least one disconnect, since we do these in series.
+		Assert.assertTrue(leftCount[0] > 0);
+		// Similarly, we will see the first client appear, since the disconnect-accept is lock-step on the server, but maybe not the second.
+		Assert.assertEquals(joinNames.get(client1), "Client 1");
+		
+		server.stop();
+	}
+
 
 	private int _runClient(int port, String name) throws IOException, UnknownHostException
 	{
-		SocketChannel client = SocketChannel.open(new InetSocketAddress(InetAddress.getLocalHost(), port));
+		SocketChannel client = SocketChannel.open(new InetSocketAddress(InetAddress.getLoopbackAddress(), port));
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		
 		// Send the first step of the handshake.

@@ -43,7 +43,8 @@ public class ServerProcess
 	 * the server has started running.
 	 * Note that the instance takes ownership of CuboidLoader and will shut it down when stopped.
 	 * 
-	 * @param port The port on which to listen for client connections.
+	 * @param port The port which should be bound for accepting incoming connections (0 if the port should be ephemeral
+	 * and only bound on the loopback address).
 	 * @param millisPerTick The number of milliseconds which should be allowed to pass between logical ticks.
 	 * @param cuboidLoader The loader object which will load or generate required cuboids.
 	 * @param currentTimeMillisProvider The provider of the current system time, in milliseconds.
@@ -79,6 +80,16 @@ public class ServerProcess
 				, config.clientViewDistanceMaximum
 		);
 		monitoringAgent.setNetwork(_network);
+	}
+
+	/**
+	 * Checks the port number the receiver is using to listen for new client connections.
+	 * 
+	 * @return The server's port number.
+	 */
+	public int getPort()
+	{
+		return _network.getPort();
 	}
 
 	/**

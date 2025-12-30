@@ -26,10 +26,13 @@ public class NetworkServer<L>
 
 	/**
 	 * Creates a new server, returning once the port is bound.
+	 * If the given port is > 0, then that port will be bound on all interfaces.  If it is 0, then an ephemeral port
+	 * will be used, only on the loopback interface.
 	 * 
 	 * @param listener The listener which will receive callbacks related to the server (on the network thread).
 	 * @param currentTimeMillisProvider Returns the current system time, in milliseconds.
-	 * @param port The port which should be bound for accepting incoming connections.
+	 * @param port The port which should be bound for accepting incoming connections (0 if the port should be ephemeral
+	 * and only bound on the loopback address).
 	 * @param serverMillisPerTick The number of milliseconds per tick for this server instance.
 	 * @param viewDistanceMaximum The maximum number of cuboids away from the cuboid where the client is which will be
 	 * sent to the client (the client defaults to "1" and can request a change of at least 0 and at most this number).
@@ -47,12 +50,35 @@ public class NetworkServer<L>
 			, serverMillisPerTick
 			, viewDistanceMaximum
 		);
-		_network = NetworkLayer.startListeningPublic(internalListener
-			, port
-		);
+		
+		if (port > 0)
+		{
+			// Listen on this port, on all interfaces.
+			_network = NetworkLayer.startListeningPublic(internalListener
+				, port
+			);
+		}
+		else
+		{
+			// A negative value is invalid.
+			Assert.assertTrue(0 == port);
+			
+			// Use the loopback-only ephemeral port.
+			_network = NetworkLayer.startListeningLoopbackOnly(internalListener);
+		}
 		
 		// The listener needs the network, as well.
 		internalListener.setNetwork(_network);
+	}
+
+	/**
+	 * Checks the port number the receiver is using to listen for new client connections.
+	 * 
+	 * @return The server's port number.
+	 */
+	public int getPort()
+	{
+		return _network.localPort;
 	}
 
 	/**
