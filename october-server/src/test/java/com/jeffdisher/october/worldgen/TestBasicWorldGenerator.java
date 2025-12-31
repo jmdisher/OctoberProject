@@ -43,7 +43,7 @@ public class TestBasicWorldGenerator
 	public void internals() throws Throwable
 	{
 		int seed = 42;
-		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
 		Assert.assertEquals(1353309739, generator.test_getCuboidSeed((short)0, (short)0));
 		Assert.assertEquals(Biomes.BIOMES[8], generator.test_getBiome((short)0, (short)0));
 	}
@@ -52,7 +52,7 @@ public class TestBasicWorldGenerator
 	public void biomeDistribution() throws Throwable
 	{
 		int seed = 42;
-		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
 		Map<Biomes.Biome, Integer> samples = new HashMap<>();
 		for (int i = 0; i < 10000; ++i)
 		{
@@ -88,7 +88,7 @@ public class TestBasicWorldGenerator
 	public void renderCuboid() throws Throwable
 	{
 		int seed = 42;
-		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, CuboidAddress.fromInt(0, 0, 0), 0L);
 		CuboidData cuboid = suspended.cuboid();
 		short stoneNumber = ENV.items.getItemById("op.stone").number();
@@ -198,7 +198,7 @@ public class TestBasicWorldGenerator
 	public void checkDefaultSpawn() throws Throwable
 	{
 		int seed = 42;
-		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
 		EntityLocation spawn = generator.getDefaultSpawnLocation();
 		// This expected value was verified by looking at the renderRegion() test output.
 		// (a 9 is the greatest value in the centre cuboid and is first found by walking up along y in the first x location - then we add 1 to be on top).
@@ -210,7 +210,7 @@ public class TestBasicWorldGenerator
 	{
 		Block stoneBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 		int seed = 42;
-		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
 		
 		// This one is in the middle of the range so it should see some values.
 		CuboidAddress address = CuboidAddress.fromInt(5, 2, -1);
@@ -235,7 +235,7 @@ public class TestBasicWorldGenerator
 	public void buildBiomeMap() throws Throwable
 	{
 		int seed = 42;
-		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
 		for (short y = -10; y <= 10; ++y)
 		{
 			for (short x = -10; x <= 10; ++x)
@@ -251,7 +251,7 @@ public class TestBasicWorldGenerator
 	public void forestCuboid() throws Throwable
 	{
 		int seed = 42;
-		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, CuboidAddress.fromInt(-10, -9, 0), 0L);
 		CuboidData cuboid = suspended.cuboid();
 		int dirtBlocks = 18;
@@ -262,7 +262,7 @@ public class TestBasicWorldGenerator
 	public void gullyDepth() throws Throwable
 	{
 		int seed = 42;
-		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
 		// These were identified experimentally.
 		Assert.assertEquals(5, generator.test_getGullyDepth((short)-7, (short)6));
 		Assert.assertEquals(0, generator.test_getGullyDepth((short)-6, (short)6));
@@ -272,7 +272,7 @@ public class TestBasicWorldGenerator
 	public void wheatField() throws Throwable
 	{
 		int seed = 42;
-		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
 		// We know that this cuboid has a gully in a field biome so it will contain wheat.
 		// (this will spawn cows so make sure we have an ID assigner).
 		CreatureIdAssigner creatureIdAssigner = new CreatureIdAssigner();
@@ -299,7 +299,7 @@ public class TestBasicWorldGenerator
 	public void carrotField() throws Throwable
 	{
 		int seed = 42;
-		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
 		// We know that this cuboid has a gully in a meadow biome so it will contain carrots.
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, CuboidAddress.fromInt(-9, -5, 0), 0L);
 		CuboidData cuboid = suspended.cuboid();
@@ -313,7 +313,7 @@ public class TestBasicWorldGenerator
 	{
 		// This test verifies that we don't fail when we try to generate a forest on a stone peak (experimentally found this seed).
 		int seed = 10256;
-		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, CuboidAddress.fromInt(1, -1, 0), 0L);
 		CuboidData cuboid = suspended.cuboid();
 		int dirtBlocks = 17;
@@ -325,7 +325,7 @@ public class TestBasicWorldGenerator
 	{
 		// Show the transition between the crust and the mantle.
 		int seed = 42;
-		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
 		
 		// Verify the surface shape.
 		CuboidAddress highAddress = CuboidAddress.fromInt(-1, 2, 0);
@@ -347,7 +347,7 @@ public class TestBasicWorldGenerator
 	{
 		// We will test that some cows will spawn at random (based on cuboid seed), even if there is no gully.
 		int seed = 42;
-		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
 		// We know that this cuboid is a field so it will have some random wheat.
 		// (this will spawn cows so make sure we have an ID assigner).
 		CreatureIdAssigner creatureIdAssigner = new CreatureIdAssigner();
@@ -368,7 +368,7 @@ public class TestBasicWorldGenerator
 	{
 		// Tests that caves carve out some of the stone from the cuboid.
 		int seed = 10256;
-		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
 		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 		CuboidAddress address = CuboidAddress.fromInt(-98, -96, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, stone);
@@ -391,7 +391,7 @@ public class TestBasicWorldGenerator
 	public void surfaceCaves() throws Throwable
 	{
 		int seed = 42;
-		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
 		CreatureIdAssigner creatureIdAssigner = new CreatureIdAssigner();
 		// We know that this cuboid generates a surface cave.
 		CuboidAddress address = CuboidAddress.fromInt(-12, 13, 0);
@@ -407,7 +407,7 @@ public class TestBasicWorldGenerator
 	public void lake() throws Throwable
 	{
 		int seed = 42;
-		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
 		CreatureIdAssigner creatureIdAssigner = new CreatureIdAssigner();
 		// We generate a small lake to see how its shore works.
 		CuboidAddress address = CuboidAddress.fromInt(1, 9, -1);
@@ -439,7 +439,7 @@ public class TestBasicWorldGenerator
 	{
 		// This test verifies that the next castle generates,
 		int seed = 10256;
-		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
 		AbsoluteLocation generatedRoot = new AbsoluteLocation(199, 447, 90);
 		AbsoluteLocation portalKeystone = generatedRoot.getRelative(8, 3, 9);
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, portalKeystone.getCuboidAddress(), 0L);
@@ -454,7 +454,7 @@ public class TestBasicWorldGenerator
 	{
 		// Verify that a sand block generates in a known location.
 		int seed = 933657015;
-		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
 		AbsoluteLocation sand = new AbsoluteLocation(37, 93, -1);
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, sand.getCuboidAddress(), 0L);
 		CuboidData cuboid = suspended.cuboid();
@@ -673,5 +673,12 @@ public class TestBasicWorldGenerator
 			c = 'E';
 		}
 		return c;
+	}
+
+	private static BasicWorldGenerator _worldGeneratorWithSeed(int seed)
+	{
+		WorldGenConfig worldGenConfig = WorldGenHelpers.buildDefaultWorldGenConfig(ENV);
+		BasicWorldGenerator generator = new BasicWorldGenerator(worldGenConfig, seed);
+		return generator;
 	}
 }

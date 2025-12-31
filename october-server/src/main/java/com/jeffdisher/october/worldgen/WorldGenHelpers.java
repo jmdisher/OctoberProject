@@ -19,18 +19,42 @@ public class WorldGenHelpers
 	 */
 	public static IWorldGenerator createConfiguredWorldGenerator(Environment env, WorldConfig config)
 	{
+		WorldGenConfig worldGenConfig = _buildDefaultWorldGenConfig(env);
+		
 		IWorldGenerator worldGen;
 		switch (config.worldGeneratorName)
 		{
 		case BASIC:
-			worldGen = new BasicWorldGenerator(env, config.basicSeed);
+			worldGen = new BasicWorldGenerator(worldGenConfig, config.basicSeed);
 			break;
 		case FLAT:
-			worldGen = new FlatWorldGenerator(env, true);
+			worldGen = new FlatWorldGenerator(worldGenConfig, true);
 			break;
 			default:
 				throw Assert.unreachable();
 		}
 		return worldGen;
+	}
+
+	public static WorldGenConfig buildDefaultWorldGenConfig(Environment env)
+	{
+		return _buildDefaultWorldGenConfig(env);
+	}
+
+
+	private static WorldGenConfig _buildDefaultWorldGenConfig(Environment env)
+	{
+		// Look up the various data required for world gen.
+		TerrainBindings terrainBindings = new TerrainBindings(env);
+		SpecialItemReferences specialItems = new SpecialItemReferences(env);
+		CommonStructures commonStructures = new CommonStructures(env, terrainBindings, specialItems);
+		CreatureBindings creatureBindings = new CreatureBindings(env);
+		WorldGenConfig worldGenConfig = new WorldGenConfig(env
+			, terrainBindings
+			, specialItems
+			, commonStructures
+			, creatureBindings
+		);
+		return worldGenConfig;
 	}
 }

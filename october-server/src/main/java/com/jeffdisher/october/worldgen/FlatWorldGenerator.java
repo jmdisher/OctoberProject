@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
@@ -38,7 +37,7 @@ public class FlatWorldGenerator implements IWorldGenerator
 	public static final AbsoluteLocation PORTAL_EAST = new AbsoluteLocation(CommonStructures.TOWER_EAST_X, CommonStructures.TOWER_EAST_Y, CommonStructures.TOWER_Z);
 	public static final AbsoluteLocation PORTAL_WEST = new AbsoluteLocation(CommonStructures.TOWER_WEST_X, CommonStructures.TOWER_WEST_Y, CommonStructures.TOWER_Z);
 
-	private final Environment _env;
+	private final Block _airBlock;
 	private final Block _stoneBlock;
 	private final Block _dirtBlock;
 	private final Block _logBlock;
@@ -56,19 +55,19 @@ public class FlatWorldGenerator implements IWorldGenerator
 	 * @param env The shared environment.
 	 * @param shouldGenerateStructures True if generated structures should be added, false if not.
 	 */
-	public FlatWorldGenerator(Environment env, boolean shouldGenerateStructures)
+	public FlatWorldGenerator(WorldGenConfig worldGenConfig, boolean shouldGenerateStructures)
 	{
-		_env = env;
-		_stoneBlock = env.blocks.fromItem(env.items.getItemById("op.stone"));
-		_dirtBlock = env.blocks.fromItem(env.items.getItemById("op.dirt"));
-		_logBlock = env.blocks.fromItem(env.items.getItemById("op.log"));
-		_coalOreBlock = env.blocks.fromItem(env.items.getItemById("op.coal_ore"));
-		_ironOreBlock = env.blocks.fromItem(env.items.getItemById("op.iron_ore"));
-		_waterSourceBlock = env.blocks.fromItem(env.items.getItemById("op.water_source"));
-		_cow = env.creatures.getTypeById("op.cow");
+		_airBlock = worldGenConfig.terrainBindings.airBlock;
+		_stoneBlock = worldGenConfig.terrainBindings.stoneBlock;
+		_dirtBlock = worldGenConfig.terrainBindings.dirtBlock;
+		_logBlock = worldGenConfig.terrainBindings.logBlock;
+		_coalOreBlock = worldGenConfig.terrainBindings.coalOreBlock;
+		_ironOreBlock = worldGenConfig.terrainBindings.ironOreBlock;
+		_waterSourceBlock = worldGenConfig.terrainBindings.waterSourceBlock;
+		_cow = worldGenConfig.creatureBindings.cow;
 		
 		_shouldGenerateStructures = shouldGenerateStructures;
-		CommonStructures structures = new CommonStructures(env);
+		CommonStructures structures = worldGenConfig.commonStructures;
 		_structures = new StructureRegistry();
 		_structures.register(structures.nexusCastle, BASE, FacingDirection.NORTH);
 		_structures.register(structures.distanceTower, PORTAL_NORTH, FacingDirection.NORTH);
@@ -95,7 +94,7 @@ public class FlatWorldGenerator implements IWorldGenerator
 		}
 		else
 		{
-			data = CuboidGenerator.createFilledCuboid(address, _env.special.AIR);
+			data = CuboidGenerator.createFilledCuboid(address, _airBlock);
 		}
 		
 		// See if this is a cuboid where we want to generate our structure (it is in the 8 cuboids around the origin).

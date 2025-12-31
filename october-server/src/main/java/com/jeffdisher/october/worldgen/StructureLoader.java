@@ -4,8 +4,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.jeffdisher.october.aspects.BlockAspect;
-import com.jeffdisher.october.aspects.ItemRegistry;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.utils.Assert;
 
@@ -46,33 +44,31 @@ public class StructureLoader
 	/**
 	 * Creates the mapping structure for the basic loader cases (when everything is internally defined and block-only).
 	 * 
-	 * @param items The items to aid in block lookup.
-	 * @param blocks The blocks to use to populate the loader mapping.
+	 * @param terrainBindings The bindings from the WorldGenConfig.
 	 * @return A mapping to use when defining a StructureLoader.
 	 */
-	public static Map<Character, Structure.AspectData> getBasicMapping(ItemRegistry items, BlockAspect blocks)
+	public static Map<Character, Structure.AspectData> getBasicMapping(TerrainBindings terrainBindings)
 	{
 		Map<Character, Structure.AspectData> temp = new HashMap<>();
-		Assert.assertTrue(null == temp.put(C_DIRT, _wrapBlockWithNulls(items, blocks, "op.dirt")));
-		Assert.assertTrue(null == temp.put(C_SOIL, _wrapBlockWithNulls(items, blocks, "op.tilled_soil")));
-		Assert.assertTrue(null == temp.put(C_WATER, _wrapBlockWithNulls(items, blocks, "op.water_source")));
-		Assert.assertTrue(null == temp.put(C_BRICK, _wrapBlockWithNulls(items, blocks, "op.stone_brick")));
-		Assert.assertTrue(null == temp.put(C_LANTERN, _wrapBlockWithNulls(items, blocks, "op.lantern")));
-		Assert.assertTrue(null == temp.put(C_SEEDLING, _wrapBlockWithNulls(items, blocks, "op.wheat_seedling")));
-		Assert.assertTrue(null == temp.put(C_SAPLING, _wrapBlockWithNulls(items, blocks, "op.sapling")));
-		Assert.assertTrue(null == temp.put(C_CARROT, _wrapBlockWithNulls(items, blocks, "op.carrot_seedling")));
-		Assert.assertTrue(null == temp.put(C_COAL_ORE, _wrapBlockWithNulls(items, blocks, "op.coal_ore")));
-		Assert.assertTrue(null == temp.put(C_IRON_ORE, _wrapBlockWithNulls(items, blocks, "op.iron_ore")));
-		Assert.assertTrue(null == temp.put(C_TREE_LOG, _wrapBlockWithNulls(items, blocks, "op.log")));
-		Assert.assertTrue(null == temp.put(C_TREE_LEAF, _wrapBlockWithNulls(items, blocks, "op.leaf")));
-		Assert.assertTrue(null == temp.put(C_COPPER_ORE, _wrapBlockWithNulls(items, blocks, "op.copper_ore")));
-		Assert.assertTrue(null == temp.put(C_DIAMOND_ORE, _wrapBlockWithNulls(items, blocks, "op.diamond_ore")));
+		Assert.assertTrue(null == temp.put(C_DIRT, _wrapBlockWithNulls(terrainBindings.dirtBlock)));
+		Assert.assertTrue(null == temp.put(C_SOIL, _wrapBlockWithNulls(terrainBindings.tilledSoilBlock)));
+		Assert.assertTrue(null == temp.put(C_WATER, _wrapBlockWithNulls(terrainBindings.waterSourceBlock)));
+		Assert.assertTrue(null == temp.put(C_BRICK, _wrapBlockWithNulls(terrainBindings.stoneBrickBlock)));
+		Assert.assertTrue(null == temp.put(C_LANTERN, _wrapBlockWithNulls(terrainBindings.lanternBlock)));
+		Assert.assertTrue(null == temp.put(C_SEEDLING, _wrapBlockWithNulls(terrainBindings.wheatSeedlingBlock)));
+		Assert.assertTrue(null == temp.put(C_SAPLING, _wrapBlockWithNulls(terrainBindings.saplingBlock)));
+		Assert.assertTrue(null == temp.put(C_CARROT, _wrapBlockWithNulls(terrainBindings.carrotSeedlingBlock)));
+		Assert.assertTrue(null == temp.put(C_COAL_ORE, _wrapBlockWithNulls(terrainBindings.coalOreBlock)));
+		Assert.assertTrue(null == temp.put(C_IRON_ORE, _wrapBlockWithNulls(terrainBindings.ironOreBlock)));
+		Assert.assertTrue(null == temp.put(C_TREE_LOG, _wrapBlockWithNulls(terrainBindings.logBlock)));
+		Assert.assertTrue(null == temp.put(C_TREE_LEAF, _wrapBlockWithNulls(terrainBindings.leafBlock)));
+		Assert.assertTrue(null == temp.put(C_COPPER_ORE, _wrapBlockWithNulls(terrainBindings.copperOreBlock)));
+		Assert.assertTrue(null == temp.put(C_DIAMOND_ORE, _wrapBlockWithNulls(terrainBindings.diamondOreBlock)));
 		return Collections.unmodifiableMap(temp);
 	}
 
-	private static Structure.AspectData _wrapBlockWithNulls(ItemRegistry items, BlockAspect blocks, String id)
+	private static Structure.AspectData _wrapBlockWithNulls(Block block)
 	{
-		Block block = blocks.fromItem(items.getItemById(id));
 		return new Structure.AspectData(block, null, null, null, null);
 	}
 

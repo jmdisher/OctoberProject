@@ -50,7 +50,7 @@ public class TestStructureLoader
 	@Test
 	public void singleBlock()
 	{
-		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(ENV.items, ENV.blocks));
+		StructureLoader loader = _buildDefaultStructureLoader();
 		String[] zLayers = new String[] {
 				"D\n",
 		};
@@ -68,7 +68,7 @@ public class TestStructureLoader
 	@Test
 	public void smallPrism()
 	{
-		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(ENV.items, ENV.blocks));
+		StructureLoader loader = _buildDefaultStructureLoader();
 		String[] zLayers = new String[] {""
 				+ "B B B\n"
 				+ " D D \n"
@@ -99,7 +99,7 @@ public class TestStructureLoader
 	@Test
 	public void offsetPrism()
 	{
-		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(ENV.items, ENV.blocks));
+		StructureLoader loader = _buildDefaultStructureLoader();
 		String[] zLayers = new String[] {""
 				+ "B B B\n"
 				+ " D D \n"
@@ -134,8 +134,7 @@ public class TestStructureLoader
 	@Test
 	public void delayedPlacement()
 	{
-		// Make sure that things which grow or are light sources are replaced by air with mutations to place later.
-		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(ENV.items, ENV.blocks));
+		StructureLoader loader = _buildDefaultStructureLoader();
 		String[] zLayers = new String[] {" P B S B L \n"};
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, DIRT);
@@ -166,7 +165,7 @@ public class TestStructureLoader
 	@Test
 	public void oreNode()
 	{
-		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(ENV.items, ENV.blocks));
+		StructureLoader loader = _buildDefaultStructureLoader();
 		String[] zLayers = new String[] {""
 				+ "A A\n"
 				+ "III\n"
@@ -217,7 +216,7 @@ public class TestStructureLoader
 	@Test
 	public void treeParts()
 	{
-		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(ENV.items, ENV.blocks));
+		StructureLoader loader = _buildDefaultStructureLoader();
 		String[] zLayers = new String[] {""
 				+ "T \n"
 				+ "  \n"
@@ -279,8 +278,7 @@ public class TestStructureLoader
 	@Test
 	public void rotation()
 	{
-		// Test what happens when we try writing a rotated structure into the cuboid edges.
-		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(ENV.items, ENV.blocks));
+		StructureLoader loader = _buildDefaultStructureLoader();
 		// NOTE:  The way that these are specified is west->east, south->north (NOT left->right, top->bottom).
 		String[] zLayers = new String[] {""
 				+ "DTB\n"
@@ -405,7 +403,7 @@ public class TestStructureLoader
 	@Test
 	public void cuboidIntersection()
 	{
-		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(ENV.items, ENV.blocks));
+		StructureLoader loader = _buildDefaultStructureLoader();
 		String[] zLayers = new String[] {
 				"DDD\n",
 		};
@@ -420,7 +418,7 @@ public class TestStructureLoader
 	@Test
 	public void bigCuboidIntersection()
 	{
-		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(ENV.items, ENV.blocks));
+		StructureLoader loader = _buildDefaultStructureLoader();
 		String[] zLayers = new String[] {
 				"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD\n",
 		};
@@ -435,7 +433,8 @@ public class TestStructureLoader
 	public void portalsInFlat()
 	{
 		// Make sure that the portals are properly placed in the FlatWorldGenerator.
-		FlatWorldGenerator gen = new FlatWorldGenerator(ENV, true);
+		WorldGenConfig worldGenConfig = WorldGenHelpers.buildDefaultWorldGenConfig(ENV);
+		FlatWorldGenerator gen = new FlatWorldGenerator(worldGenConfig, true);
 		
 		AbsoluteLocation northFacingKeystone = new AbsoluteLocation(0, 5, -1);
 		SuspendedCuboid<CuboidData> northFacing = gen.generateCuboid(new CreatureIdAssigner(), northFacingKeystone.getCuboidAddress(), 0L);
@@ -453,5 +452,13 @@ public class TestStructureLoader
 		
 		Assert.assertEquals(southFacingKeystone, northFacingTarget);
 		Assert.assertEquals(northFacingKeystone, southFacingTarget);
+	}
+
+
+	private static StructureLoader _buildDefaultStructureLoader()
+	{
+		TerrainBindings terrainBindings = new TerrainBindings(ENV);
+		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(terrainBindings));
+		return loader;
 	}
 }

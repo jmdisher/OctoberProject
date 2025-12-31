@@ -79,6 +79,8 @@ import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.Encoding;
 import com.jeffdisher.october.worldgen.FlatWorldGenerator;
 import com.jeffdisher.october.worldgen.IWorldGenerator;
+import com.jeffdisher.october.worldgen.WorldGenConfig;
+import com.jeffdisher.october.worldgen.WorldGenHelpers;
 
 
 public class TestServerRunner
@@ -541,7 +543,8 @@ public class TestServerRunner
 		TestAdapter network = new TestAdapter();
 		WorldConfig config = new WorldConfig();
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(ENV, false), config);
+		WorldGenConfig worldGenConfig = WorldGenHelpers.buildDefaultWorldGenConfig(ENV);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(worldGenConfig, false), config);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, network

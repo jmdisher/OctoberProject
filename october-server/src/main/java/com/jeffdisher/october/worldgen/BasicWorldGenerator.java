@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Random;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
@@ -136,8 +135,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 	public static final int CAVERN_LIMIT_RADIUS = 7;
 	public static final int RANDOM_CAVERN_DENOMINATOR = 4;
 
-	private final Environment _env;
 	private final int _seed;
+	private final Block _blockAir;
 	private final Block _blockStone;
 	private final Block _blockGrass;
 	private final Block _blockDirt;
@@ -162,25 +161,25 @@ public class BasicWorldGenerator implements IWorldGenerator
 	 * @param env The environment.
 	 * @param seed A base seed for the world generator.
 	 */
-	public BasicWorldGenerator(Environment env, int seed)
+	public BasicWorldGenerator(WorldGenConfig worldGenConfig, int seed)
 	{
-		_env = env;
 		_seed = seed;
 		
-		_blockStone = env.blocks.fromItem(env.items.getItemById("op.stone"));
-		_blockGrass = env.blocks.fromItem(env.items.getItemById("op.grass"));
-		_blockDirt = env.blocks.fromItem(env.items.getItemById("op.dirt"));
-		_blockSoil = env.blocks.fromItem(env.items.getItemById("op.tilled_soil"));
-		_blockSand = env.blocks.fromItem(env.items.getItemById("op.sand"));
-		_blockWheatMature = env.blocks.fromItem(env.items.getItemById("op.wheat_mature"));
-		_blockCarrotMature = env.blocks.fromItem(env.items.getItemById("op.carrot_mature"));
-		_blockWaterSource = env.blocks.fromItem(env.items.getItemById("op.water_source"));
-		_blockBasalt = env.blocks.fromItem(env.items.getItemById("op.basalt"));
-		_blockLavaSource = env.blocks.fromItem(env.items.getItemById("op.lava_source"));
+		_blockAir = worldGenConfig.terrainBindings.airBlock;
+		_blockStone = worldGenConfig.terrainBindings.stoneBlock;
+		_blockGrass = worldGenConfig.terrainBindings.grassBlock;
+		_blockDirt = worldGenConfig.terrainBindings.dirtBlock;
+		_blockSoil = worldGenConfig.terrainBindings.tilledSoilBlock;
+		_blockSand = worldGenConfig.terrainBindings.sandBlock;
+		_blockWheatMature = worldGenConfig.terrainBindings.wheatMatureBlock;
+		_blockCarrotMature = worldGenConfig.terrainBindings.carrotMatureBlock;
+		_blockWaterSource = worldGenConfig.terrainBindings.waterSourceBlock;
+		_blockBasalt = worldGenConfig.terrainBindings.basaltBlock;
+		_blockLavaSource = worldGenConfig.terrainBindings.lavaSourceBlock;
 		
-		_cow = env.creatures.getTypeById("op.cow");
+		_cow = worldGenConfig.creatureBindings.cow;
 		
-		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(env.items, env.blocks));
+		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(worldGenConfig.terrainBindings));
 		_coalNode = loader.loadFromStrings(COAL_NODE);
 		_copperNode = loader.loadFromStrings(COPPER_NODE);
 		_ironNode = loader.loadFromStrings(IRON_NODE);
@@ -189,7 +188,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		
 		// We will place the base of the nexus castle at a random location (based directly on seed), 500 blocks from the
 		// world origin.
-		CommonStructures structures = new CommonStructures(env);
+		CommonStructures structures = worldGenConfig.commonStructures;
 		_structures = new StructureRegistry();
 		Random random = new Random(_seed);
 		float angle = 2.0f * (float)Math.PI * random.nextFloat();
@@ -368,7 +367,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 	{
 		// Since the nodes can cross cuboid boundaries, we will consider the 9 chunk columns around this one and apply all generated nodes to this cuboid.
 		// (in the future, we might short-circuit this to avoid cases where the generation isn't possibly here - for now, we always do it to test the code path)
-		short airNumber = _env.special.AIR.item().number();
+		short airNumber = _blockAir.item().number();
 		for (int y = -1; y <= 1; ++y)
 		{
 			for (int x = -1; x <= 1; ++x)
@@ -451,7 +450,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 			short supportBlockToReplace = _blockGrass.item().number();
 			short supportBlockToAdd = _blockSoil.item().number();
 			// We only want to replace air (since this could be under water).
-			short blockToReplace = _env.special.AIR.item().number();
+			short blockToReplace = _blockAir.item().number();
 			short blockToAdd = (Biomes.FIELD_CODE == biome.code())
 					? _blockWheatMature.item().number()
 					: _blockCarrotMature.item().number()
@@ -628,7 +627,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		if (cuboidZ >= WATER_Z_LEVEL)
 		{
 			// Air.
-			defaultEmptyBlock = _env.special.AIR;
+			defaultEmptyBlock = _blockAir;
 		}
 		else
 		{
@@ -658,8 +657,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 	{
 		// This function carves the block from a uniform default into a formed crust of only stone.
 		// Verify that the default blocks are the cases we are assuming.
-		Assert.assertTrue((_blockWaterSource == defaultEmptyBlock) || (_env.special.AIR == defaultEmptyBlock));
-		Assert.assertTrue((_blockStone == defaultBlock) || (_blockWaterSource == defaultBlock) || (_env.special.AIR == defaultBlock));
+		Assert.assertTrue((_blockWaterSource == defaultEmptyBlock) || (_blockAir == defaultEmptyBlock));
+		Assert.assertTrue((_blockStone == defaultBlock) || (_blockWaterSource == defaultBlock) || (_blockAir == defaultBlock));
 		
 		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
@@ -837,7 +836,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		
 		// We then connect those caverns to adjacent caverns in the 6 adjacent cuboids, if they exist.
 		short stoneNumber = _blockStone.item().number();
-		short airNumber = _env.special.AIR.item().number();
+		short airNumber = _blockAir.item().number();
 		for (int z = -1; z <= 1; ++z)
 		{
 			for (int y = -1; y <= 1; ++y)
