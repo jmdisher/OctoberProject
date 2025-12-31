@@ -2,6 +2,7 @@
 # ID<TAB>[creates_source]
 # <TAB>flow_delay_millis<TAB>millis
 # <TAB>full_bucket<TAB>ID
+# <TAB>empty_bucket<TAB>ID
 # <TAB>strong_flow<TAB>ID
 # <TAB>weak_flow<TAB>ID
 # <TAB>solid_block<TAB>ID
@@ -11,12 +12,14 @@
 op.water_source	creates_source
 	flow_delay_millis	100
 	full_bucket	op.bucket_water
+	empty_bucket	op.bucket_empty
 	strong_flow	op.water_strong
 	weak_flow	op.water_weak
 	solid_block	op.stone
 op.lava_source
 	flow_delay_millis	1000
 	full_bucket	op.bucket_lava
+	empty_bucket	op.bucket_empty
 	strong_flow	op.lava_strong
 	weak_flow	op.lava_weak
 	solid_block	op.basalt

@@ -21,6 +21,7 @@ public class LiquidRegistry
 	public static final String FLAG_CREATES_SOURCE = "creates_source";
 	public static final String SUB_FLOW_DELAY_MILLIS = "flow_delay_millis";
 	public static final String SUB_FULL_BUCKET = "full_bucket";
+	public static final String SUB_EMPTY_BUCKET = "empty_bucket";
 	public static final String SUB_STRONG_FLOW = "strong_flow";
 	public static final String SUB_WEAK_FLOW = "weak_flow";
 	public static final String SUB_SOLID_BLOCK = "solid_block";
@@ -44,6 +45,7 @@ public class LiquidRegistry
 		Set<Block> sourceCreationSources = new HashSet<>();
 		Map<Item, Block> fullBucketToSource = new HashMap<>();
 		Map<Block, Item> sourceToFullBucket = new HashMap<>();
+		Map<Block, Item> sourceToEmptyBucket = new HashMap<>();
 		
 		TabListReader.readEntireFile(new TabListReader.IParseCallbacks() {
 			private Block _currentSource;
@@ -101,6 +103,13 @@ public class LiquidRegistry
 					Item bucket = _getItem(fullBucket);
 					fullBucketToSource.put(bucket, _currentSource);
 					sourceToFullBucket.put(_currentSource, bucket);
+				}
+				else if (SUB_EMPTY_BUCKET.equals(name))
+				{
+					// We also want to store the type of empty bucket required to pick up a given source type.
+					String emptyBucket = _getSingleParam(SUB_EMPTY_BUCKET, name, parameters);
+					Item bucket = _getItem(emptyBucket);
+					sourceToEmptyBucket.put(_currentSource, bucket);
 				}
 				else if (SUB_STRONG_FLOW.equals(name))
 				{
@@ -167,7 +176,6 @@ public class LiquidRegistry
 			}
 		}, stream);
 		
-		Item bucketEmpty = items.getItemById("op.bucket_empty");
 		return new LiquidRegistry(blocksToSource
 			, blocksToStrength
 			, sourceToSolid
@@ -176,7 +184,7 @@ public class LiquidRegistry
 			, sourceCreationSources
 			, fullBucketToSource
 			, sourceToFullBucket
-			, bucketEmpty
+			, sourceToEmptyBucket
 		);
 	}
 
@@ -189,7 +197,7 @@ public class LiquidRegistry
 	private final Set<Block> _sourceCreationSources;
 	private final Map<Item, Block> _fullBucketToSource;
 	private final Map<Block, Item> _sourceToFullBucket;
-	private final Item _bucketEmpty;
+	private final Map<Block, Item> _sourceToEmptyBucket;
 	private final long _defaultDelayMillis;
 
 	private LiquidRegistry(Map<Block, Block> blocksToSource
@@ -200,10 +208,9 @@ public class LiquidRegistry
 			, Set<Block> sourceCreationSources
 			, Map<Item, Block> fullBucketToSource
 			, Map<Block, Item> sourceToFullBucket
-			, Item bucketEmpty
+			, Map<Block, Item> sourceToEmptyBucket
 	)
 	{
-		Assert.assertTrue(null != bucketEmpty);
 		Assert.assertTrue(!sourceToDelayMillis.isEmpty());
 		
 		_blocksToSource = Map.copyOf(blocksToSource);
@@ -214,10 +221,16 @@ public class LiquidRegistry
 		_sourceCreationSources = Set.copyOf(sourceCreationSources);
 		_fullBucketToSource = Map.copyOf(fullBucketToSource);
 		_sourceToFullBucket = Map.copyOf(sourceToFullBucket);
-		_bucketEmpty = bucketEmpty;
+		_sourceToEmptyBucket = Map.copyOf(sourceToEmptyBucket);
 		_defaultDelayMillis = sourceToDelayMillis.values().stream().max((Long one, Long two) -> (int)(one - two)).get();
 	}
 
+	/**
+	 * Checks if the given block type is a liquid source (that is, the lower-strength liquid will flow from this block).
+	 * 
+	 * @param block The block type to check.
+	 * @return True if this is a source.
+	 */
 	public boolean isSource(Block block)
 	{
 		return _sourceToSolid.containsKey(block);
@@ -342,18 +355,37 @@ public class LiquidRegistry
 		return updatedBlock;
 	}
 
+	/**
+	 * Checks to see possibleBucket can be used to pick up or place a liquid in possibleSource.
+	 * 
+	 * @param env The environment.
+	 * @param possibleBucket The item which may be a bucket.
+	 * @param possibleSource The block which may be a liquid.
+	 * @return True if possibleBucket can be used on this possibleSource.
+	 */
 	public boolean isBucketForUseOneBlock(Environment env, Item possibleBucket, Block possibleSource)
 	{
-		boolean isEmptyBucket = (_bucketEmpty == possibleBucket);
+		Item requiredEmptyBucket = _sourceToEmptyBucket.get(possibleSource);
+		boolean isEmptyBucket = (requiredEmptyBucket == possibleBucket);
 		boolean canBeReplaced = env.blocks.canBeReplaced(possibleSource);
 		Block outputBlock = _fullBucketToSource.get(possibleBucket);
 		boolean canBeScooped = _sourceToFullBucket.containsKey(possibleSource);
 		return (isEmptyBucket && canBeScooped) || (canBeReplaced && (null != outputBlock));
 	}
 
+	/**
+	 * Returns the updated bucket after using possibleBucket on possibleSource.  This could involve picking up or
+	 * placing a liquid.
+	 * 
+	 * @param env The environment.
+	 * @param possibleBucket The item which may be a bucket.
+	 * @param possibleSource The block which may be a liquid.
+	 * @return The updated bucket, after the action (null if this request was invalid).
+	 */
 	public Item bucketAfterUse(Environment env, Item possibleBucket, Block possibleSource)
 	{
-		boolean isEmptyBucket = (_bucketEmpty == possibleBucket);
+		Item requiredEmptyBucket = _sourceToEmptyBucket.get(possibleSource);
+		boolean isEmptyBucket = (requiredEmptyBucket == possibleBucket);
 		boolean canBeReplaced = env.blocks.canBeReplaced(possibleSource);
 		Item bucketAfterPickup = _sourceToFullBucket.get(possibleSource);
 		
@@ -366,7 +398,8 @@ public class LiquidRegistry
 		else if (canBeReplaced && _fullBucketToSource.containsKey(possibleBucket))
 		{
 			// This is a full bucket and we can place it.
-			outputBucket = _bucketEmpty;
+			// This means we need to find the empty bucket from this source type we create in placement.
+			outputBucket = _sourceToEmptyBucket.get(_fullBucketToSource.get(possibleBucket));
 		}
 		else
 		{
@@ -376,9 +409,19 @@ public class LiquidRegistry
 		return outputBucket;
 	}
 
+	/**
+	 * Returns the updated block type after using possibleBucket on possibleSource.  This could involve picking up or
+	 * placing a liquid so the new block will be air or a liquid source.
+	 * 
+	 * @param env The environment.
+	 * @param possibleBucket The item which may be a bucket.
+	 * @param possibleSource The block which may be a liquid.
+	 * @return The updated block type, after the action (null if this request was invalid).
+	 */
 	public Block blockAfterBucketUse(Environment env, Item possibleBucket, Block possibleSource)
 	{
-		boolean isEmptyBucket = (_bucketEmpty == possibleBucket);
+		Item requiredEmptyBucket = _sourceToEmptyBucket.get(possibleSource);
+		boolean isEmptyBucket = (requiredEmptyBucket == possibleBucket);
 		boolean canBeReplaced = env.blocks.canBeReplaced(possibleSource);
 		Block sourceAfterDrop = _fullBucketToSource.get(possibleBucket);
 		
