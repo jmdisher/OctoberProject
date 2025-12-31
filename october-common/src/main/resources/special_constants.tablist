@@ -1,0 +1,21 @@
+# Entries here have the form:
+# KEY<TAB>ID
+#
+# The KEY values and what ID must be an Item or Block is defined by the SpecialConstants.java implementation.
+
+item_arrow	op.arrow
+item_portal_orb	op.portal_orb
+item_fertilizer	op.fertilizer
+item_stone_hoe	op.stone_hoe
+
+block_air	op.air
+block_hopper	op.hopper
+block_log	op.log
+block_leaf	op.leaf
+block_portal_keystone	op.portal_keystone
+block_portal_surface	op.portal_surface
+block_cuboid_loader	op.cuboid_loader
+block_bed	op.bed
+block_dirt	op.dirt
+block_grass	op.grass
+block_tilled_soil	op.tilled_soil

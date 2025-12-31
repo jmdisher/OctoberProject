@@ -10,7 +10,6 @@ import com.jeffdisher.october.utils.Assert;
  * This is the root anchoring point for all the data loaded into aspects (or just registries, if there is no physical
  * aspect to store the data).  These aspects and registries can then be accessed via public instance variables.
  * This must be created during start-up so that the shared instance is available throughout the system, while running.
- * TODO:  In the future, this needs to be adapted to load the data files which describe these data types.
  */
 public class Environment
 {
@@ -137,6 +136,9 @@ public class Environment
 			, this.blocks
 			, loader.getResourceAsStream("orientation_aspect.tablist")
 		);
-		this.special = new SpecialConstants(this.items, this.blocks);
+		this.special = SpecialConstants.load(this.items
+			, this.blocks
+			, loader.getResourceAsStream("special_constants.tablist")
+		);
 	}
 }
