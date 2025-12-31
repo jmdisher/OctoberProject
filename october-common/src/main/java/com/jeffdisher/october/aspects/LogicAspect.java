@@ -2,6 +2,7 @@ package com.jeffdisher.october.aspects;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -21,12 +22,6 @@ import com.jeffdisher.october.types.FacingDirection;
 public class LogicAspect
 {
 	public static final byte MAX_LEVEL = 15;
-
-	/**
-	 * We handle logic wire as a special-case since it would have otherwise required specializing the entire parser
-	 * just to mention it by ID (since none of the other parameters would apply).
-	 */
-	public static final String LOGIC_WIRE_ID = "op.logic_wire";
 
 	/**
 	 * Loads the logic-sensitive blocks types from the tablist in the given stream, sourcing Blocks from the given item
@@ -51,18 +46,35 @@ public class LogicAspect
 		
 		TabListReader.readEntireFile(callbacks, stream);
 		
-		// Note that all of the logic-sensitive blocks (either sinks or sources) are required to have alternates.
-		for (Block block : callbacks.topLevel.keySet())
+		// We want to find the "logic wire" and then strip it out of the parser map.
+		// (for now, we expect precisely one of these wire types).
+		Map<Block, _Role> roles = new HashMap<>();
+		Block logicWire = null;
+		for (Map.Entry<Block, _Role> elt : callbacks.topLevel.entrySet())
 		{
-			if (!blocks.hasActiveVariant(block))
+			Block block = elt.getKey();
+			_Role role = elt.getValue();
+			if (_Role.CONDUIT == role)
+			{
+				if (null != logicWire)
+				{
+					throw new TabListReader.TabListException("Only one CONDUIT type supported: Both " + block + " and " + logicWire + " specified");
+				}
+				logicWire = block;
+			}
+			else if (!blocks.hasActiveVariant(block))
 			{
 				throw new TabListReader.TabListException("Block does not have an active variant: " + block);
+			}
+			else
+			{
+				roles.put(block, role);
 			}
 		}
 		
 		// We can just pass these in, directly.
-		return new LogicAspect(callbacks.topLevel
-				, blocks.fromItem(items.getItemById(LOGIC_WIRE_ID))
+		return new LogicAspect(roles
+			, logicWire
 		);
 	}
 
@@ -209,6 +221,8 @@ public class LogicAspect
 		NOT_GATE(true, LogicSpecialRegistry.NOT_SINK, null, LogicSpecialRegistry.NOT_SINK, false),
 		SENSOR_INVENTORY(true, LogicSpecialRegistry.SENSOR_INVENTORY, LogicSpecialRegistry.SENSOR_INVENTORY, null, false),
 		OFFLINE_MANUAL(false, null, null, null, true),
+		// NOTE:  CONDUIT is a degenerate type, only used for parsing (these are never seen after bootstrap).
+		CONDUIT(false, null, null, null, false),
 		;
 		
 		public static IValueTransformer<_Role> transformer = new IValueTransformer<>() {

@@ -19,3 +19,4 @@ op.not_gate	not_gate
 op.sensor_inventory	sensor_inventory
 op.cuboid_loader	offline_manual
 op.door	door
+op.logic_wire	conduit
