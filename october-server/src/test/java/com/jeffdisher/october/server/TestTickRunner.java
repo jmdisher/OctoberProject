@@ -969,7 +969,7 @@ public class TestTickRunner
 		);
 		
 		// We should see a layer modified (1024 = 32 * 32) for each of the 32 layers.
-		long millisToFlow = ENV.liquids.flowDelayMillis(ENV, WATER_SOURCE);
+		long millisToFlow = ENV.liquids.flowDelayMillis(WATER_SOURCE);
 		int ticksToPass = (int)(millisToFlow / MILLIS_PER_TICK);
 		for (int i = 0; i < 32; ++i)
 		{
@@ -1046,7 +1046,7 @@ public class TestTickRunner
 		
 		// Wait for this to trickle through the cuboid.
 		// This will take 33 steps, with some ticks between to allow flow - found experimentally.
-		long millisToFlow = ENV.liquids.flowDelayMillis(ENV, WATER_SOURCE);
+		long millisToFlow = ENV.liquids.flowDelayMillis(WATER_SOURCE);
 		int ticksToPass = (int)(millisToFlow / MILLIS_PER_TICK);
 		for (int i = 0; i < 33; ++i)
 		{
@@ -1126,7 +1126,7 @@ public class TestTickRunner
 		
 		// Wait for this to trickle through the cuboid.
 		// This will take 65 steps, with some ticks between to allow flow - found experimentally.
-		long millisToFlow = ENV.liquids.flowDelayMillis(ENV, WATER_SOURCE);
+		long millisToFlow = ENV.liquids.flowDelayMillis(WATER_SOURCE);
 		int ticksToPass = (int)(millisToFlow / MILLIS_PER_TICK);
 		for (int i = 0; i < 65; ++i)
 		{
@@ -1225,7 +1225,7 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		
 		// We need to wait for some number of ticks before the flow is ready to happen.
-		long millisToFlow = ENV.liquids.flowDelayMillis(ENV, WATER_SOURCE);
+		long millisToFlow = ENV.liquids.flowDelayMillis(WATER_SOURCE);
 		int ticksToPass = (int)(millisToFlow / MILLIS_PER_TICK);
 		for (int j = 0; j < ticksToPass; ++j)
 		{
@@ -2003,7 +2003,7 @@ public class TestTickRunner
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		
 		// Wait for lava to flow twice.
-		long millisToFlow = ENV.liquids.flowDelayMillis(ENV, lavaSource);
+		long millisToFlow = ENV.liquids.flowDelayMillis(lavaSource);
 		int ticksToPass = (int)(2 * millisToFlow / MILLIS_PER_TICK) + 4;
 		for (int j = 0; j < ticksToPass; ++j)
 		{
@@ -2093,7 +2093,7 @@ public class TestTickRunner
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		
 		// Wait for lava to flow twice, then another iteration for solidification, another 2 to let liquid fade, and a few more for final lava flow.
-		long millisToFlow = ENV.liquids.flowDelayMillis(ENV, lavaSource);
+		long millisToFlow = ENV.liquids.flowDelayMillis(lavaSource);
 		int ticksForOneLavaFlow = (int)(millisToFlow / MILLIS_PER_TICK) + 2;
 		int ticksToPass = 8 * ticksForOneLavaFlow;
 		for (int j = 0; j < ticksToPass; ++j)
@@ -2185,7 +2185,7 @@ public class TestTickRunner
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		
 		// Wait for lava to flow twice.
-		long millisToFlow = ENV.liquids.flowDelayMillis(ENV, lavaSource);
+		long millisToFlow = ENV.liquids.flowDelayMillis(lavaSource);
 		int ticksToPass = (int)(2 * millisToFlow / MILLIS_PER_TICK) + 5;
 		for (int j = 0; j < ticksToPass; ++j)
 		{

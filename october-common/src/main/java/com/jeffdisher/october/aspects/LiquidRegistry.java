@@ -444,14 +444,28 @@ public class LiquidRegistry
 		return outputBlock;
 	}
 
-	public long flowDelayMillis(Environment env, Block type)
+	/**
+	 * Checks the number of milliseconds to wait from when a block is placed to when it can flow into neighbouring block
+	 * spaces (returns the longest known delay if this isn't a liquid).
+	 * 
+	 * @param type The block type which may be a liquid block.
+	 * @return The number of milliseconds to delay before flowing.
+	 */
+	public long flowDelayMillis(Block type)
 	{
-		return _flowDelayMillis(env, type);
+		return _flowDelayMillis(type);
 	}
 
-	public long minFlowDelayMillis(Environment env, Block type1, Block type2)
+	/**
+	 * Finds the minimum flow delay, in milliseconds, between 2 different blocks which may be liquids.
+	 * 
+	 * @param type1 One block type, which may be a liquid block.
+	 * @param type2 Another block type, which may be a liquid block.
+	 * @return The smallest of the two flow delays for the 2 block types.
+	 */
+	public long minFlowDelayMillis(Block type1, Block type2)
 	{
-		return Math.min(_flowDelayMillis(env, type1), _flowDelayMillis(env, type2));
+		return Math.min(_flowDelayMillis(type1), _flowDelayMillis(type2));
 	}
 
 	/**
@@ -467,7 +481,7 @@ public class LiquidRegistry
 	}
 
 
-	private long _flowDelayMillis(Environment env, Block type)
+	private long _flowDelayMillis(Block type)
 	{
 		Block liquidType = _blocksToSource.get(type);
 		return _getFromMap(_sourceToDelayMillis, liquidType, _defaultDelayMillis);

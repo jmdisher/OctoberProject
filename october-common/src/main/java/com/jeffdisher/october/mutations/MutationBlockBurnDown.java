@@ -65,7 +65,7 @@ public class MutationBlockBurnDown implements IMutationBlock
 			Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, emptyBlock);
 			if (emptyBlock != eventualBlock)
 			{
-				long millisDelay = env.liquids.minFlowDelayMillis(env, eventualBlock, eventualBlock);
+				long millisDelay = env.liquids.minFlowDelayMillis(eventualBlock, eventualBlock);
 				context.mutationSink.future(new MutationBlockLiquidFlowInto(_blockLocation), millisDelay);
 			}
 			

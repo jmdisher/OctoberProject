@@ -96,16 +96,16 @@ public class TestLiquidRegistry
 	public void queries() throws Throwable
 	{
 		// Check the millisecond delays on flows (based on known constants in the config).
-		Assert.assertEquals(100L, ENV.liquids.flowDelayMillis(ENV, WATER_SOURCE));
-		Assert.assertEquals(100L, ENV.liquids.flowDelayMillis(ENV, WATER_STRONG));
-		Assert.assertEquals(100L, ENV.liquids.flowDelayMillis(ENV, WATER_WEAK));
-		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(ENV, LAVA_SOURCE));
-		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(ENV, LAVA_STRONG));
-		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(ENV, LAVA_WEAK));
-		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(ENV, ENV.special.AIR));
-		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(ENV, STONE));
-		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(ENV, BASALT));
-		Assert.assertEquals(100L, ENV.liquids.minFlowDelayMillis(ENV, WATER_SOURCE, BASALT));
+		Assert.assertEquals(100L, ENV.liquids.flowDelayMillis(WATER_SOURCE));
+		Assert.assertEquals(100L, ENV.liquids.flowDelayMillis(WATER_STRONG));
+		Assert.assertEquals(100L, ENV.liquids.flowDelayMillis(WATER_WEAK));
+		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(LAVA_SOURCE));
+		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(LAVA_STRONG));
+		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(LAVA_WEAK));
+		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(ENV.special.AIR));
+		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(STONE));
+		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(BASALT));
+		Assert.assertEquals(100L, ENV.liquids.minFlowDelayMillis(WATER_SOURCE, BASALT));
 	}
 
 	@Test

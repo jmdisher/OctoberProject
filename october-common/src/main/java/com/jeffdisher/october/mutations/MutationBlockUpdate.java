@@ -63,7 +63,7 @@ public class MutationBlockUpdate implements IMutationBlock
 			if (newType != thisBlock)
 			{
 				// This block needs to be changed due to some kind of flowing liquid so schedule the mutation to do that.
-				long millisDelay = env.liquids.minFlowDelayMillis(env, newType, thisBlock);
+				long millisDelay = env.liquids.minFlowDelayMillis(newType, thisBlock);
 				context.mutationSink.future(new MutationBlockLiquidFlowInto(_blockLocation), millisDelay);
 				didApply = true;
 			}
@@ -89,7 +89,7 @@ public class MutationBlockUpdate implements IMutationBlock
 				// The block isn't supported so break it (replace with air) and then see if a liquid needs to change anything).
 				if (emptyBlock != eventualBlock)
 				{
-					long millisDelay = env.liquids.minFlowDelayMillis(env, eventualBlock, thisBlock);
+					long millisDelay = env.liquids.minFlowDelayMillis(eventualBlock, thisBlock);
 					context.mutationSink.future(new MutationBlockLiquidFlowInto(_blockLocation), millisDelay);
 				}
 				
@@ -118,7 +118,7 @@ public class MutationBlockUpdate implements IMutationBlock
 			else if (env.blocks.isBrokenByFlowingLiquid(thisBlock) && (emptyBlock != eventualBlock))
 			{
 				// The block is supported but can be broken by a flowing liquid and flowing liquid should touch it so schedule this update.
-				long millisDelay = env.liquids.minFlowDelayMillis(env, eventualBlock, thisBlock);
+				long millisDelay = env.liquids.minFlowDelayMillis(eventualBlock, thisBlock);
 				context.mutationSink.future(new MutationBlockLiquidFlowInto(_blockLocation), millisDelay);
 				didApply = true;
 			}
