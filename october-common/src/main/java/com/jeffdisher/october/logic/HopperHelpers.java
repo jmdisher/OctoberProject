@@ -27,8 +27,6 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class HopperHelpers
 {
-	public static final String HOPPER  = "op.hopper";
-
 	public static boolean isHopper(AbsoluteLocation hopperLocation, IMutableBlockProxy hopperBlock)
 	{
 		AbsoluteLocation sinkLocation = _sinkLocationIfHopper(hopperLocation, hopperBlock);
@@ -80,11 +78,11 @@ public class HopperHelpers
 
 	private static AbsoluteLocation _sinkLocationIfHopper(AbsoluteLocation hopperLocation, IMutableBlockProxy hopperBlock)
 	{
+		Environment env = Environment.getShared();
 		Block block = hopperBlock.getBlock();
-		String itemId = block.item().id();
 		
 		AbsoluteLocation sinkLocation;
-		if (itemId.equals(HOPPER))
+		if (env.special.blockHopper == block)
 		{
 			// This is a hopper so read the orientation byte to figure out the output.
 			FacingDirection outputDirection = hopperBlock.getOrientation();

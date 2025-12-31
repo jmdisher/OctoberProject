@@ -11,7 +11,6 @@ import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IEntitySubAction;
@@ -30,8 +29,6 @@ public class EntitySubActionTravelViaBlock implements IEntitySubAction<IMutableP
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.TRAVEL_VIA_BLOCK;
 	public static final long TRAVEL_COOLDOWN_MILLIS = 10_000L;
-	public static final String PORTAL_SURFACE_ID = "op.portal_surface";
-	public static final String PORTAL_KEYSTONE_ID = "op.portal_keystone";
 
 	/**
 	 * Checks if the given entity location and volume is intersecting a portal and returns a valid portal surface
@@ -50,10 +47,9 @@ public class EntitySubActionTravelViaBlock implements IEntitySubAction<IMutableP
 	)
 	{
 		// See if we are intersecting with a portal surface.
-		Block surface = env.blocks.fromItem(env.items.getItemById(PORTAL_SURFACE_ID));
 		Predicate<AbsoluteLocation> supplier = (AbsoluteLocation loc) -> {
 			BlockProxy proxy = previousBlockLookUp.apply(loc);
-			return (null != proxy) && (surface == proxy.getBlock());
+			return (null != proxy) && (env.special.blockPortalSurface == proxy.getBlock());
 		};
 		return EntityMovementHelpers.checkTypeIntersection(location, volume, supplier);
 	}
@@ -147,7 +143,8 @@ public class EntitySubActionTravelViaBlock implements IEntitySubAction<IMutableP
 	{
 		EntityLocation newLocation = null;
 		BlockProxy surfaceProxy = context.previousBlockLookUp.apply(portalSurfaceLocation);
-		if ((null != surfaceProxy) && PORTAL_SURFACE_ID.equals(surfaceProxy.getBlock().item().id()))
+		Environment env = Environment.getShared();
+		if ((null != surfaceProxy) && (env.special.blockPortalSurface == surfaceProxy.getBlock()))
 		{
 			AbsoluteLocation rootLocation = surfaceProxy.getMultiBlockRoot();
 			if (null == rootLocation)
@@ -156,7 +153,7 @@ public class EntitySubActionTravelViaBlock implements IEntitySubAction<IMutableP
 			}
 			AbsoluteLocation keystoneLocation = rootLocation.getRelative(0, 0, -1);
 			BlockProxy target = context.previousBlockLookUp.apply(keystoneLocation);
-			if ((null != target) && PORTAL_KEYSTONE_ID.equals(target.getBlock().item().id()))
+			if ((null != target) && (env.special.blockPortalKeystone == target.getBlock()))
 			{
 				ItemSlot slot = target.getSpecialSlot();
 				NonStackableItem nonStack = (null != slot) ? slot.nonStackable : null;

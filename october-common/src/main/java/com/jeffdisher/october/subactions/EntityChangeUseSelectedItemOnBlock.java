@@ -37,12 +37,6 @@ import com.jeffdisher.october.utils.Assert;
 public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMutablePlayerEntity>
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.USE_SELECTED_ITEM_ON_BLOCK;
-	public static final String FERTILIZER = "op.fertilizer";
-	public static final String STONE_HOE = "op.stone_hoe";
-	public static final String DIRT = "op.dirt";
-	public static final String GRASS = "op.grass";
-	public static final String TILLED_SOIL = "op.tilled_soil";
-	public static final String PORTAL_ORB = "op.portal_orb";
 	public static final long COOLDOWN_MILLIS = 250L;
 
 	public static EntityChangeUseSelectedItemOnBlock deserializeFromBuffer(ByteBuffer buffer)
@@ -61,14 +55,9 @@ public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMut
 	public static boolean canUseOnBlock(Item item, Block block)
 	{
 		Environment env = Environment.getShared();
-		Item fertilizer = env.items.getItemById(FERTILIZER);
-		Item stoneHoe = env.items.getItemById(STONE_HOE);
-		Item dirtItem = env.items.getItemById(DIRT);
-		Item grassItem = env.items.getItemById(GRASS);
-		Item portalOrbItem = env.items.getItemById(PORTAL_ORB);
 		
 		boolean canUse;
-		if ((item == fertilizer) && (env.plants.growthDivisor(block) > 0))
+		if ((env.special.itemFertilizer == item) && (env.plants.growthDivisor(block) > 0))
 		{
 			canUse = true;
 		}
@@ -76,11 +65,11 @@ public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMut
 		{
 			canUse = true;
 		}
-		else if ((stoneHoe == item) && ((dirtItem == block.item()) || (grassItem == block.item())))
+		else if ((env.special.itemStoneHoe == item) && ((env.special.blockDirt == block) || (env.special.blockGrass == block)))
 		{
 			canUse = true;
 		}
-		else if (portalOrbItem == item)
+		else if (env.special.itemPortalOrb == item)
 		{
 			canUse = true;
 		}
@@ -163,12 +152,7 @@ public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMut
 					? stack.type()
 					: null
 		;
-		Item fertilizer = env.items.getItemById(FERTILIZER);
-		Item stoneHoe = env.items.getItemById(STONE_HOE);
-		Item dirtItem = env.items.getItemById(DIRT);
-		Item grassItem = env.items.getItemById(GRASS);
-		Item portalOrbItem = env.items.getItemById(PORTAL_ORB);
-		boolean isFertilizer = (type == fertilizer);
+		boolean isFertilizer = (env.special.itemFertilizer == type);
 		BlockProxy proxy = context.previousBlockLookUp.apply(_target);
 		Block block = (null != proxy) ? proxy.getBlock() : null;
 		boolean isGrowable = (env.plants.growthDivisor(block) > 0);
@@ -197,7 +181,7 @@ public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMut
 			context.mutationSink.next(new MutationBlockForceGrow(_target));
 			didApply = true;
 		}
-		else if ((stoneHoe == type) && ((dirtItem == block.item()) || (grassItem == block.item())))
+		else if ((env.special.itemStoneHoe == type) && ((env.special.blockDirt == block) || (env.special.blockGrass == block)))
 		{
 			// We will decrement the durability of the hoe and replace the target block with tilled soil.
 			int randomNumberTo255 = context.randomInt.applyAsInt(256);
@@ -213,11 +197,10 @@ public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMut
 				mutableInventory.removeNonStackableItems(selectedKey);
 				newEntity.setSelectedKey(Entity.NO_SELECTION);
 			}
-			Item tilledSoil = env.items.getItemById(TILLED_SOIL);
-			context.mutationSink.next(new MutationBlockReplace(_target, block, env.blocks.fromItem(tilledSoil)));
+			context.mutationSink.next(new MutationBlockReplace(_target, block, env.special.blockTilledSoil));
 			didApply = true;
 		}
-		else if (portalOrbItem == type)
+		else if (env.special.itemPortalOrb == type)
 		{
 			// Set the location in the orb to the touched block.
 			AbsoluteLocation oldTarget = PropertyHelpers.getLocation(nonStack);

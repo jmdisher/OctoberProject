@@ -110,8 +110,8 @@ public class PlantHelpers
 	private static void _growTree(TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
-		Block log = env.blocks.fromItem(env.items.getItemById("op.log"));
-		Block leaf = env.blocks.fromItem(env.items.getItemById("op.leaf"));
+		Block log = env.special.blockLog;
+		Block leaf = env.special.blockLeaf;
 		// Replace this with a log and leaf blocks.
 		// TODO:  Figure out how to make more interesting trees.
 		

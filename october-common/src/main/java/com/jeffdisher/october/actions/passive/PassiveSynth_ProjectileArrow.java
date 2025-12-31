@@ -149,7 +149,7 @@ public class PassiveSynth_ProjectileArrow
 					if (0 == context.randomInt.applyAsInt(DROP_FRACTION))
 					{
 						EntityLocation stillVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
-						ItemSlot stack = ItemSlot.fromStack(new Items(env.items.getItemById("op.arrow"), 1));
+						ItemSlot stack = ItemSlot.fromStack(new Items(env.special.itemArrow, 1));
 						context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, finalLocation, stillVelocity, stack);
 					}
 					result = null;

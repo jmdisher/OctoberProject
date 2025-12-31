@@ -1,5 +1,6 @@
 package com.jeffdisher.october.logic;
 
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.IMutableBlockProxy;
@@ -14,15 +15,10 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class SpecialLogicChangeHelpers
 {
-	/**
-	 * We need to handle the cuboid loader block as a special-case.
-	 */
-	public static final String SPECIAL_CUBOID_LOADER = "op.cuboid_loader";
-
 	public static void handleSpecialLogicChange(TickProcessingContext context, IMutableBlockProxy mutable, AbsoluteLocation location, Block block, byte currentFlags, boolean setHigh)
 	{
-		String blockId = block.item().id();
-		if (SPECIAL_CUBOID_LOADER.equals(blockId))
+		Environment env = Environment.getShared();
+		if (env.special.blockCuboidLoader == block)
 		{
 			// If we are becoming active, we just want to request our cuboid be loaded and request a follow-up mutation so we can re-check the keep-alive.
 			if (setHigh)
@@ -44,8 +40,8 @@ public class SpecialLogicChangeHelpers
 
 	public static void periodicUpdate(TickProcessingContext context, IMutableBlockProxy mutable, AbsoluteLocation location, Block block, byte currentFlags)
 	{
-		String blockId = block.item().id();
-		if (SPECIAL_CUBOID_LOADER.equals(blockId))
+		Environment env = Environment.getShared();
+		if (env.special.blockCuboidLoader == block)
 		{
 			boolean isActive = FlagsAspect.isSet(currentFlags, FlagsAspect.FLAG_ACTIVE);
 			if (isActive)

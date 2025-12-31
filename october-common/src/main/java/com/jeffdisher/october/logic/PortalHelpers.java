@@ -7,7 +7,6 @@ import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.mutations.MultiBlockUtils;
 import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.NonStackableItem;
@@ -21,10 +20,6 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class PortalHelpers
 {
-	public static final String PORTAL_KEYSTONE_ID = "op.portal_keystone";
-	public static final String PORTAL_SURFACE_ID = "op.portal_surface";
-	public static final String PORTAL_ORB_ID = "op.portal_orb";
-
 	/**
 	 * Checks that the given proxy is currently a portal keystone.
 	 * 
@@ -33,7 +28,8 @@ public class PortalHelpers
 	 */
 	public static boolean isKeystone(IMutableBlockProxy proxy)
 	{
-		return PORTAL_KEYSTONE_ID.equals(proxy.getBlock().item().id());
+		Environment env = Environment.getShared();
+		return (env.special.blockPortalKeystone == proxy.getBlock());
 	}
 
 	/**
@@ -53,7 +49,7 @@ public class PortalHelpers
 		
 		if (null != rootProxy)
 		{
-			boolean isPortalSurfaceActive = PORTAL_SURFACE_ID.equals(rootProxy.getBlock().item().id());
+			boolean isPortalSurfaceActive = (env.special.blockPortalSurface == rootProxy.getBlock());
 			AbsoluteLocation activeTarget = _checkActiveTarget(keystoneProxy);
 			
 			if (null != activeTarget)
@@ -63,10 +59,9 @@ public class PortalHelpers
 				// We need to create, or maintain, the portal surface.
 				if (!isPortalSurfaceActive)
 				{
-					Block portalSurface = env.blocks.fromItem(env.items.getItemById(PORTAL_SURFACE_ID));
 					FacingDirection orientation = keystoneProxy.getOrientation();
 					int entityId = 0;
-					MultiBlockUtils.send2PhaseMultiBlock(env, context, portalSurface, surfaceRootLocation, orientation, entityId);
+					MultiBlockUtils.send2PhaseMultiBlock(env, context, env.special.blockPortalSurface, surfaceRootLocation, orientation, entityId);
 				}
 			}
 			else
@@ -75,8 +70,7 @@ public class PortalHelpers
 				if (isPortalSurfaceActive)
 				{
 					// This is always replacing with air
-					Block portalSurface = env.blocks.fromItem(env.items.getItemById(PORTAL_SURFACE_ID));
-					MultiBlockUtils.replaceMultiBlock(env, context, surfaceRootLocation, portalSurface, env.special.AIR);
+					MultiBlockUtils.replaceMultiBlock(env, context, surfaceRootLocation, env.special.blockPortalSurface, env.special.AIR);
 				}
 			}
 		}
