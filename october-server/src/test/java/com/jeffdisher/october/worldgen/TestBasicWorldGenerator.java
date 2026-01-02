@@ -1,5 +1,6 @@
 package com.jeffdisher.october.worldgen;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -675,7 +676,7 @@ public class TestBasicWorldGenerator
 		return c;
 	}
 
-	private static BasicWorldGenerator _worldGeneratorWithSeed(int seed)
+	private static BasicWorldGenerator _worldGeneratorWithSeed(int seed) throws IOException
 	{
 		WorldGenConfig worldGenConfig = WorldGenHelpers.buildDefaultWorldGenConfig(ENV);
 		BasicWorldGenerator generator = new BasicWorldGenerator(worldGenConfig, seed);

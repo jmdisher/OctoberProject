@@ -431,7 +431,7 @@ public class TestStructureLoader
 	}
 
 	@Test
-	public void portalsInFlat()
+	public void portalsInFlat() throws Throwable
 	{
 		// Make sure that the portals are properly placed in the FlatWorldGenerator.
 		WorldGenConfig worldGenConfig = WorldGenHelpers.buildDefaultWorldGenConfig(ENV);

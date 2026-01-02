@@ -1,5 +1,7 @@
 package com.jeffdisher.october.worldgen;
 
+import java.io.IOException;
+
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
@@ -16,8 +18,9 @@ public class WorldGenHelpers
 	 * @param env The environment.
 	 * @param config The config, containing information related to the world generator.
 	 * @return The new world generator instance (never null).
+	 * @throws IOException There was an error while reading generated structure definitions.
 	 */
-	public static IWorldGenerator createConfiguredWorldGenerator(Environment env, WorldConfig config)
+	public static IWorldGenerator createConfiguredWorldGenerator(Environment env, WorldConfig config) throws IOException
 	{
 		WorldGenConfig worldGenConfig = _buildDefaultWorldGenConfig(env);
 		
@@ -36,13 +39,13 @@ public class WorldGenHelpers
 		return worldGen;
 	}
 
-	public static WorldGenConfig buildDefaultWorldGenConfig(Environment env)
+	public static WorldGenConfig buildDefaultWorldGenConfig(Environment env) throws IOException
 	{
 		return _buildDefaultWorldGenConfig(env);
 	}
 
 
-	private static WorldGenConfig _buildDefaultWorldGenConfig(Environment env)
+	private static WorldGenConfig _buildDefaultWorldGenConfig(Environment env) throws IOException
 	{
 		// Look up the various data required for world gen.
 		TerrainBindings terrainBindings = new TerrainBindings(env);
