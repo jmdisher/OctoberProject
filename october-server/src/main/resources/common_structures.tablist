@@ -1,0 +1,55 @@
+# This tablist is one of the more complicated since it defines multiple layers of item and block references used to
+# populate structures defined in "*.structure" files.
+# Each section is explained where it is defined.
+
+# Item references:
+# Each starts with "item_def" stanza with one parameter called a "ref_name", which is a symbolic name which can be used
+# to reference the defined item.  Sub-record stanzas:
+# -item	item_id
+#	Currently, only non-stackable item_id references are permitted.
+# -name	human_readable
+#	Optional human-readable "PropertyRegistry.NAME".
+# -location_rel	x	y	z
+#	Optional "PropertyRegistry.LOCATION" relative to the block where the item is stored on generation.
+# -enchant_durability	level
+#	Optional "PropertyRegistry.ENCHANT_DURABILITY" enchantment level.
+# -enchant_efficiency	level
+#	Optional "PropertyRegistry.ENCHANT_TOOL_EFFICIENCY" enchantment level.
+# -enchant_melee	level
+#	Optional "PropertyRegistry.ENCHANT_WEAPON_MELEE" enchantment level.
+
+item_def	north_orb
+	item	op.portal_orb
+	location_rel	0	1000	0
+item_def	south_orb
+	item	op.portal_orb
+	location_rel	0	-1000	0
+item_def	east_orb
+	item	op.portal_orb
+	location_rel	1000	0	0
+item_def	west_orb
+	item	op.portal_orb
+	location_rel	-1000	0	0
+item_def	reverse_orb
+	item	op.portal_orb
+	location_rel	0	-1000	0
+item_def	special_pickaxe
+	item	op.diamond_pickaxe
+	name	Hewing Pick Axe
+	enchant_durability	5
+	enchant_efficiency	5
+item_def	special_shovel
+	item	op.diamond_shovel
+	name	Excavator Shovel
+	enchant_durability	5
+	enchant_efficiency	5
+item_def	special_axe
+	item	op.diamond_axe
+	name	Cleaving Axe
+	enchant_durability	5
+	enchant_efficiency	5
+item_def	special_sword
+	item	op.diamond_sword
+	name	Vorpal Blade
+	enchant_durability	5
+	enchant_melee	5
