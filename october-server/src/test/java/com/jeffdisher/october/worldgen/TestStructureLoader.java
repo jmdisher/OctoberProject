@@ -1,5 +1,6 @@
 package com.jeffdisher.october.worldgen;
 
+import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -452,6 +453,40 @@ public class TestStructureLoader
 		
 		Assert.assertEquals(southFacingKeystone, northFacingTarget);
 		Assert.assertEquals(northFacingKeystone, southFacingTarget);
+	}
+
+	@Test
+	public void parseBasicStream() throws Throwable
+	{
+		String input = ""
+			+ "B B B\n"
+			+ " D D \n"
+			+ "B B B\n"
+			+ "\n"
+			+ " D D \n"
+			+ "B B B\n"
+			+ " D D \n"
+			+ "\n"
+			+ "B B B\n"
+			+ " D D \n"
+			+ "B B B\n"
+			+ "\n"
+		;
+		String[] layers = StructureLoader.splitStreamIntoZLayerStrings(new ByteArrayInputStream(input.getBytes()));
+		String[] expectedLayers = new String[] {""
+			+ "B B B\n"
+			+ " D D \n"
+			+ "B B B\n"
+			, ""
+			+ " D D \n"
+			+ "B B B\n"
+			+ " D D \n"
+			, ""
+			+ "B B B\n"
+			+ " D D \n"
+			+ "B B B\n"
+		};
+		Assert.assertArrayEquals(expectedLayers, layers);
 	}
 
 

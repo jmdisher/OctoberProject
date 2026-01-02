@@ -1,7 +1,13 @@
 package com.jeffdisher.october.worldgen;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.types.Block;
@@ -65,6 +71,79 @@ public class StructureLoader
 		Assert.assertTrue(null == temp.put(C_COPPER_ORE, _wrapBlockWithNulls(terrainBindings.copperOreBlock)));
 		Assert.assertTrue(null == temp.put(C_DIAMOND_ORE, _wrapBlockWithNulls(terrainBindings.diamondOreBlock)));
 		return Collections.unmodifiableMap(temp);
+	}
+
+	/**
+	 * A helper to read a full description of a generated structure from the given input stream and split it into the
+	 * z-layers which are expected in the other load paths.
+	 * Each z-layer must be followed by an empty line (including the final layer).  Each non-empty line must be the same
+	 * length and each z-layer must have the same number of lines.
+	 * The first character in the stream represents the West-South-Bottom corner of the structure while the last
+	 * non-newline character in the stream represents the East-North-Top corner of the structure.
+	 * 
+	 * @param stream The stream containing the string defining the structure.
+	 * @return The z-layers as strings (bottom-first).
+	 * @throws IOException There was a problem reading the stream.
+	 */
+	public static String[] splitStreamIntoZLayerStrings(InputStream stream) throws IOException
+	{
+		// All lines must be the same length and all layers must have the same number of lines.
+		int xWidth = 0;
+		int yHeight = 0;
+		int currentLineCount = 0;
+		
+		List<String> processed = new ArrayList<>();
+		StringBuilder currentChunk = new StringBuilder();
+		
+		BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+		String line;
+		while (null != (line = reader.readLine()))
+		{
+			int length = line.length();
+			if (0 == length)
+			{
+				// This comes at the end of every layer so carve off the previous.
+				String layer = currentChunk.toString();
+				if (processed.isEmpty())
+				{
+					// This is the first chunk, so we will calibrate our checks on dimensions.
+					// This better be at least one line.
+					Assert.assertTrue(currentLineCount > 0);
+					yHeight = currentLineCount;
+				}
+				else
+				{
+					// This layer must be the same number of lines as the others.
+					Assert.assertTrue(yHeight == currentLineCount);
+				}
+				
+				processed.add(layer);
+				currentChunk = new StringBuilder();
+				currentLineCount = 0;
+			}
+			else
+			{
+				if (0 == xWidth)
+				{
+					// This is the first line so capture it.
+					xWidth = length;
+				}
+				else
+				{
+					// All lines must be the same length.
+					Assert.assertTrue(xWidth == length);
+				}
+				
+				currentChunk.append(line);
+				currentChunk.append('\n');
+				currentLineCount += 1;
+			}
+		}
+		
+		// We expect the last chunk to be closed in order to be considered a valid end of file.
+		Assert.assertTrue(currentChunk.toString().isEmpty());
+		
+		return processed.toArray((int size) -> new String[size]);
 	}
 
 	private static Structure.AspectData _wrapBlockWithNulls(Block block)
