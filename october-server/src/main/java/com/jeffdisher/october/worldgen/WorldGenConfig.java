@@ -10,20 +10,17 @@ public class WorldGenConfig
 {
 	public final Environment environment;
 	public final TerrainBindings terrainBindings;
-	public final SpecialItemReferences specialItems;
 	public final CommonStructures commonStructures;
 	public final CreatureBindings creatureBindings;
 
 	public WorldGenConfig(Environment environment
 		, TerrainBindings terrainBindings
-		, SpecialItemReferences specialItems
 		, CommonStructures commonStructures
 		, CreatureBindings creatureBindings
 	)
 	{
 		this.environment = environment;
 		this.terrainBindings = terrainBindings;
-		this.specialItems = specialItems;
 		this.commonStructures = commonStructures;
 		this.creatureBindings = creatureBindings;
 	}

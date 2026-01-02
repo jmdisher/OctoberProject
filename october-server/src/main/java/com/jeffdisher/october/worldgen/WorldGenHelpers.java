@@ -49,12 +49,10 @@ public class WorldGenHelpers
 	{
 		// Look up the various data required for world gen.
 		TerrainBindings terrainBindings = new TerrainBindings(env);
-		SpecialItemReferences specialItems = new SpecialItemReferences(env);
-		CommonStructures commonStructures = new CommonStructures(env, terrainBindings, specialItems);
+		CommonStructures commonStructures = new CommonStructures(env);
 		CreatureBindings creatureBindings = new CreatureBindings(env);
 		WorldGenConfig worldGenConfig = new WorldGenConfig(env
 			, terrainBindings
-			, specialItems
 			, commonStructures
 			, creatureBindings
 		);
