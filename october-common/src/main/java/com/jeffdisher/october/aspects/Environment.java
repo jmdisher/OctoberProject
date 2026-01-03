@@ -1,10 +1,13 @@
 package com.jeffdisher.october.aspects;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.utils.Assert;
+import com.jeffdisher.october.utils.LayeredInputStream;
 
 
 /**
@@ -39,7 +42,23 @@ public class Environment
 	public static Environment createSharedInstance() throws IOException, TabListReader.TabListException
 	{
 		Assert.assertTrue(null == INSTANCE);
-		INSTANCE = new Environment();
+		INSTANCE = new Environment(new ModLayer[0]);
+		return INSTANCE;
+	}
+
+	/**
+	 * Create the shared instance with the given layers of mods on top of the base installation.
+	 * Asserts that the environment does NOT exist.
+	 * 
+	 * @param layers The mods to load on top of the base installation.
+	 * @return The shared instance of the environment.
+	 * @throws IOException Error accessing local resources.
+	 * @throws TabListReader.TabListException Local resources have invalid definition.
+	 */
+	public static Environment createModdedInstance(ModLayer[] layers) throws IOException, TabListReader.TabListException
+	{
+		Assert.assertTrue(null == INSTANCE);
+		INSTANCE = new Environment(layers);
 		return INSTANCE;
 	}
 
@@ -78,16 +97,16 @@ public class Environment
 	public final OrientationAspect orientations;
 	public final SpecialConstants special;
 
-	private Environment() throws IOException, TabListReader.TabListException
+	private Environment(ModLayer[] mods) throws IOException, TabListReader.TabListException
 	{
 		// Local instantiation only.
 		ClassLoader loader = getClass().getClassLoader();
-		try (InputStream itemStream = loader.getResourceAsStream("item_registry.tablist"))
+		try (InputStream itemStream = _openModded(loader, mods, ModLayer.FILE_ITEM_REGISTRY))
 		{
 			this.items = ItemRegistry.loadRegistry(itemStream);
 		}
-		try (InputStream blockStream = loader.getResourceAsStream("block_aspect.tablist");
-			InputStream blockActiveStream = loader.getResourceAsStream("block_aspect_A.tablist")
+		try (InputStream blockStream = _openModded(loader, mods, ModLayer.FILE_BLOCK_ASPECT);
+			InputStream blockActiveStream = _openModded(loader, mods, ModLayer.FILE_BLOCK_ASPECT_ACTIVE)
 		)
 		{
 			this.blocks = BlockAspect.loadRegistry(this.items
@@ -95,26 +114,26 @@ public class Environment
 				, blockActiveStream
 			);
 		}
-		try (InputStream liquidStream = loader.getResourceAsStream("liquid_registry.tablist"))
+		try (InputStream liquidStream = _openModded(loader, mods, ModLayer.FILE_LIQUID_REGISTRY))
 		{
 			this.liquids = LiquidRegistry.loadRegistry(this.items
 				, this.blocks
 				, liquidStream
 			);
 		}
-		try (InputStream durabilityStream = loader.getResourceAsStream("durability.tablist"))
+		try (InputStream durabilityStream = _openModded(loader, mods, ModLayer.FILE_DURABILITY))
 		{
 			this.durability = DurabilityAspect.load(this.items
 				, durabilityStream
 			);
 		}
-		try (InputStream durabilityStream = loader.getResourceAsStream("inventory_encumbrance.tablist"))
+		try (InputStream durabilityStream = _openModded(loader, mods, ModLayer.FILE_INVENTORY_ENCUMBRANCE))
 		{
 			this.encumbrance = InventoryEncumbrance.load(this.items
 				, durabilityStream
 			);
 		}
-		try (InputStream recipeStream = loader.getResourceAsStream("crafting_recipes.tablist"))
+		try (InputStream recipeStream = _openModded(loader, mods, ModLayer.FILE_CRAFTING_RECIPES))
 		{
 			this.crafting = CraftAspect.load(this.items
 				, this.blocks
@@ -122,22 +141,22 @@ public class Environment
 				, recipeStream
 			);
 		}
-		try (InputStream toughnessStream = loader.getResourceAsStream("toughness.tablist"))
+		try (InputStream toughnessStream = _openModded(loader, mods, ModLayer.FILE_TOUGHNESS))
 		{
 			this.damage = DamageAspect.load(this.items
 				, this.blocks
 				, toughnessStream
 			);
 		}
-		try (InputStream fuelStream = loader.getResourceAsStream("fuel_millis.tablist"))
+		try (InputStream fuelStream = _openModded(loader, mods, ModLayer.FILE_FUEL_MILLIS))
 		{
 			this.fuel = FuelAspect.load(this.items
 				, fuelStream
 			);
 		}
-		try (InputStream opacityStream = loader.getResourceAsStream("light_opacity.tablist");
-			InputStream sourceStream = loader.getResourceAsStream("light_sources.tablist");
-			InputStream sourceActiveStream = loader.getResourceAsStream("light_sources_A.tablist")
+		try (InputStream opacityStream = _openModded(loader, mods, ModLayer.FILE_LIGHT_OPACITY);
+			InputStream sourceStream = _openModded(loader, mods, ModLayer.FILE_LIGHT_SOURCES);
+			InputStream sourceActiveStream = _openModded(loader, mods, ModLayer.FILE_LIGHT_SOURCE_ACTIVE)
 		)
 		{
 			this.lighting = LightAspect.load(this.items
@@ -147,32 +166,32 @@ public class Environment
 				, sourceActiveStream
 			);
 		}
-		try (InputStream plantStream = loader.getResourceAsStream("plant_registry.tablist"))
+		try (InputStream plantStream = _openModded(loader, mods, ModLayer.FILE_PLANT_REGISTRY))
 		{
 			this.plants = PlantRegistry.load(this.items
 				, this.blocks
 				, plantStream
 			);
 		}
-		try (InputStream foodStream = loader.getResourceAsStream("foods.tablist"))
+		try (InputStream foodStream = _openModded(loader, mods, ModLayer.FILE_FOODS))
 		{
 			this.foods = FoodRegistry.load(this.items
 				, foodStream
 			);
 		}
-		try (InputStream toolStream = loader.getResourceAsStream("tool_registry.tablist"))
+		try (InputStream toolStream = _openModded(loader, mods, ModLayer.FILE_TOOL_REGISTRY))
 		{
 			this.tools = ToolRegistry.load(this.items
 				, toolStream
 			);
 		}
-		try (InputStream armourStream = loader.getResourceAsStream("armour_registry.tablist"))
+		try (InputStream armourStream = _openModded(loader, mods, ModLayer.FILE_ARMOUR_REGISTRY))
 		{
 			this.armour = ArmourRegistry.load(this.items
 				, armourStream
 			);
 		}
-		try (InputStream stationStream = loader.getResourceAsStream("station_registry.tablist"))
+		try (InputStream stationStream = _openModded(loader, mods, ModLayer.FILE_STATION_REGISTRY))
 		{
 			this.stations = StationRegistry.load(this.items
 				, this.blocks
@@ -180,49 +199,49 @@ public class Environment
 				, stationStream
 			);
 		}
-		try (InputStream logicStream = loader.getResourceAsStream("logic.tablist"))
+		try (InputStream logicStream = _openModded(loader, mods, ModLayer.FILE_LOGIC))
 		{
 			this.logic = LogicAspect.load(this.items
 				, this.blocks
 				, logicStream
 			);
 		}
-		try (InputStream creatureStream = loader.getResourceAsStream("creature_registry.tablist"))
+		try (InputStream creatureStream = _openModded(loader, mods, ModLayer.FILE_CRETURE_REGISTRY))
 		{
 			this.creatures = CreatureRegistry.loadRegistry(this.items
 				, creatureStream
 			);
 		}
-		try (InputStream multiBlockStream = loader.getResourceAsStream("multi_block_registry.tablist"))
+		try (InputStream multiBlockStream = _openModded(loader, mods, ModLayer.FILE_MULTI_BLOCK_REGISTRY))
 		{
 			this.multiBlocks = MultiBlockRegistry.load(this.items
 				, this.blocks
 				, multiBlockStream
 			);
 		}
-		try (InputStream compositeStream = loader.getResourceAsStream("composite_registry.tablist"))
+		try (InputStream compositeStream = _openModded(loader, mods, ModLayer.FILE_COMPOSITE_REGISTRY))
 		{
 			this.composites = CompositeRegistry.load(this.items
 				, this.blocks
 				, compositeStream
 			);
 		}
-		try (InputStream groundCoverStream = loader.getResourceAsStream("ground_cover_registry.tablist"))
+		try (InputStream groundCoverStream = _openModded(loader, mods, ModLayer.FILE_GROUND_COVER_REGISTRY))
 		{
 			this.groundCover = GroundCoverRegistry.load(this.items
 				, this.blocks
 				, groundCoverStream
 			);
 		}
-		try (InputStream specialSlotStream = loader.getResourceAsStream("special_slot.tablist"))
+		try (InputStream specialSlotStream = _openModded(loader, mods, ModLayer.FILE_SPECIAL_SLOT))
 		{
 			this.specialSlot = SpecialSlotAspect.load(this.items
 				, this.blocks
 				, specialSlotStream
 			);
 		}
-		try (InputStream enchantingStream = loader.getResourceAsStream("enchanting.tablist");
-			InputStream infusionsStream = loader.getResourceAsStream("infusions.tablist");
+		try (InputStream enchantingStream = _openModded(loader, mods, ModLayer.FILE_ENCHANTING);
+			InputStream infusionsStream = _openModded(loader, mods, ModLayer.FILE_INFUSIONS);
 		)
 		{
 			this.enchantments = EnchantmentRegistry.load(this.items
@@ -233,19 +252,38 @@ public class Environment
 				, infusionsStream
 			);
 		}
-		try (InputStream orientationStream = loader.getResourceAsStream("orientation_aspect.tablist"))
+		try (InputStream orientationStream = _openModded(loader, mods, ModLayer.FILE_ORIENTATION_ASPECT))
 		{
 			this.orientations = OrientationAspect.load(this.items
 				, this.blocks
 				, orientationStream
 			);
 		}
-		try (InputStream specialConstantsStream = loader.getResourceAsStream("special_constants.tablist"))
+		try (InputStream specialConstantsStream = _openModded(loader, mods, ModLayer.FILE_SPECIAL_CONSTANTS))
 		{
 			this.special = SpecialConstants.load(this.items
 				, this.blocks
 				, specialConstantsStream
 			);
 		}
+	}
+
+	private static InputStream _openModded(ClassLoader loader, ModLayer[] mods, String fileName)
+	{
+		InputStream[] modStreams = Arrays.stream(mods)
+			.map((ModLayer layer) -> {
+				byte[] raw = layer.contents.get(fileName);
+				InputStream open = null;
+				if (null != raw)
+				{
+					open = new ByteArrayInputStream(raw);
+				}
+				return open;
+			})
+			.filter((InputStream possible) -> (null != possible))
+			.toArray((int size) -> new InputStream[size])
+		;
+		InputStream baseline = ClassLoader.getSystemResourceAsStream(fileName);
+		return new LayeredInputStream(baseline, modStreams);
 	}
 }
