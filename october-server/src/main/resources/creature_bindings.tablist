@@ -1,0 +1,7 @@
+# Mappings used by the world generation when spawning creatures in the world.
+# This may seem redundant, as the names imply the direct mapping type, but this allows a different block definition to
+# fit into the same world generator without hard-coded assumptions of the creature IDs.  The names may become more
+# abstract, in the future.
+# They are all in the form: "VAR<TAB>creature_id"
+
+cow	op.cow
