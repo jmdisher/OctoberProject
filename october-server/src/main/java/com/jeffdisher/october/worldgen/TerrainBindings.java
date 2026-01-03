@@ -1,12 +1,19 @@
 package com.jeffdisher.october.worldgen;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
+
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.config.FlatTabListCallbacks;
+import com.jeffdisher.october.config.IValueTransformer;
+import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
  * The bindings for general terrain blocks used in world generation.
- * TODO:  Move this into declarative data.
  */
 public class TerrainBindings
 {
@@ -27,23 +34,45 @@ public class TerrainBindings
 	public final Block carrotMatureBlock;
 	public final Block logBlock;
 
-	public TerrainBindings(Environment env)
+	public TerrainBindings(Environment env) throws IOException
 	{
-		this.airBlock = env.blocks.fromItem(env.items.getItemById("op.air"));
-		this.stoneBlock = env.blocks.fromItem(env.items.getItemById("op.stone"));
-		this.dirtBlock = env.blocks.fromItem(env.items.getItemById("op.dirt"));
-		this.grassBlock = env.blocks.fromItem(env.items.getItemById("op.grass"));
-		this.tilledSoilBlock = env.blocks.fromItem(env.items.getItemById("op.tilled_soil"));
-		this.sandBlock = env.blocks.fromItem(env.items.getItemById("op.sand"));
-		this.basaltBlock = env.blocks.fromItem(env.items.getItemById("op.basalt"));
-		this.coalOreBlock = env.blocks.fromItem(env.items.getItemById("op.coal_ore"));
-		this.ironOreBlock = env.blocks.fromItem(env.items.getItemById("op.iron_ore"));
+		Map<String, Block> mapping;
+		try (InputStream stream  = getClass().getClassLoader().getResourceAsStream("terrain_bindings.tablist"))
+		{
+			FlatTabListCallbacks<String, Block> callbacks = new FlatTabListCallbacks<>((String value) -> value, new IValueTransformer.BlockTransformer(env.items, env.blocks));
+			TabListReader.readEntireFile(callbacks, stream);
+			mapping = callbacks.data;
+		}
+		catch (TabListReader.TabListException e)
+		{
+			// TODO:  Determine a better way to handle this.
+			throw Assert.unexpected(e);
+		}
 		
-		this.waterSourceBlock = env.blocks.fromItem(env.items.getItemById("op.water_source"));
-		this.lavaSourceBlock = env.blocks.fromItem(env.items.getItemById("op.lava_source"));
+		// We will require that all of these be found.
+		this.airBlock = _requiredBlock(mapping, "airBlock");
+		this.stoneBlock = _requiredBlock(mapping, "stoneBlock");
+		this.dirtBlock = _requiredBlock(mapping, "dirtBlock");
+		this.grassBlock = _requiredBlock(mapping, "grassBlock");
+		this.tilledSoilBlock = _requiredBlock(mapping, "tilledSoilBlock");
+		this.sandBlock = _requiredBlock(mapping, "sandBlock");
+		this.basaltBlock = _requiredBlock(mapping, "basaltBlock");
+		this.coalOreBlock = _requiredBlock(mapping, "coalOreBlock");
+		this.ironOreBlock = _requiredBlock(mapping, "ironOreBlock");
 		
-		this.wheatMatureBlock = env.blocks.fromItem(env.items.getItemById("op.wheat_mature"));
-		this.carrotMatureBlock = env.blocks.fromItem(env.items.getItemById("op.carrot_mature"));
-		this.logBlock = env.blocks.fromItem(env.items.getItemById("op.log"));
+		this.waterSourceBlock = _requiredBlock(mapping, "waterSourceBlock");
+		this.lavaSourceBlock = _requiredBlock(mapping, "lavaSourceBlock");
+		
+		this.wheatMatureBlock = _requiredBlock(mapping, "wheatMatureBlock");
+		this.carrotMatureBlock = _requiredBlock(mapping, "carrotMatureBlock");
+		this.logBlock = _requiredBlock(mapping, "logBlock");
+	}
+
+
+	private Block _requiredBlock(Map<String, Block> mapping, String name)
+	{
+		Block block = mapping.get(name);
+		Assert.assertTrue(null != block);
+		return block;
 	}
 }

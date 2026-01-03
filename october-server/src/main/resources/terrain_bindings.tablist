@@ -1,0 +1,21 @@
+# The mappings here are to map block IDs from the environment into the common instance variables in the
+# TerrainBindings.java class for use in the world generators.
+# This may seem redundant, as the names imply the direct mapping type, but this allows a different block definition to
+# fit into the same world generator without hard-coded assumptions of the block definitions.  The names may become more
+# abstract, in the future.
+# They are all in the form: "VAR<TAB>block_id"
+
+airBlock	op.air
+stoneBlock	op.stone
+dirtBlock	op.dirt
+grassBlock	op.grass
+tilledSoilBlock	op.tilled_soil
+sandBlock	op.sand
+basaltBlock	op.basalt
+coalOreBlock	op.coal_ore
+ironOreBlock	op.iron_ore
+waterSourceBlock	op.water_source
+lavaSourceBlock	op.lava_source
+wheatMatureBlock	op.wheat_mature
+carrotMatureBlock	op.carrot_mature
+logBlock	op.log

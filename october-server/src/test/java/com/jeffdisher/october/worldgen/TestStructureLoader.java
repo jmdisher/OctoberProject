@@ -1,6 +1,7 @@
 package com.jeffdisher.october.worldgen;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +51,7 @@ public class TestStructureLoader
 	}
 
 	@Test
-	public void singleBlock()
+	public void singleBlock() throws Throwable
 	{
 		StructureLoader loader = _buildDefaultStructureLoader();
 		String[] zLayers = new String[] {
@@ -68,7 +69,7 @@ public class TestStructureLoader
 	}
 
 	@Test
-	public void smallPrism()
+	public void smallPrism() throws Throwable
 	{
 		StructureLoader loader = _buildDefaultStructureLoader();
 		String[] zLayers = new String[] {""
@@ -99,7 +100,7 @@ public class TestStructureLoader
 	}
 
 	@Test
-	public void offsetPrism()
+	public void offsetPrism() throws Throwable
 	{
 		StructureLoader loader = _buildDefaultStructureLoader();
 		String[] zLayers = new String[] {""
@@ -134,7 +135,7 @@ public class TestStructureLoader
 	}
 
 	@Test
-	public void delayedPlacement()
+	public void delayedPlacement() throws Throwable
 	{
 		StructureLoader loader = _buildDefaultStructureLoader();
 		String[] zLayers = new String[] {" P B S B L \n"};
@@ -165,7 +166,7 @@ public class TestStructureLoader
 	}
 
 	@Test
-	public void oreNode()
+	public void oreNode() throws Throwable
 	{
 		StructureLoader loader = _buildDefaultStructureLoader();
 		String[] zLayers = new String[] {""
@@ -216,7 +217,7 @@ public class TestStructureLoader
 	}
 
 	@Test
-	public void treeParts()
+	public void treeParts() throws Throwable
 	{
 		StructureLoader loader = _buildDefaultStructureLoader();
 		String[] zLayers = new String[] {""
@@ -278,7 +279,7 @@ public class TestStructureLoader
 	}
 
 	@Test
-	public void rotation()
+	public void rotation() throws Throwable
 	{
 		StructureLoader loader = _buildDefaultStructureLoader();
 		// NOTE:  The way that these are specified is west->east, south->north (NOT left->right, top->bottom).
@@ -403,7 +404,7 @@ public class TestStructureLoader
 	}
 
 	@Test
-	public void cuboidIntersection()
+	public void cuboidIntersection() throws Throwable
 	{
 		StructureLoader loader = _buildDefaultStructureLoader();
 		String[] zLayers = new String[] {
@@ -418,7 +419,7 @@ public class TestStructureLoader
 	}
 
 	@Test
-	public void bigCuboidIntersection()
+	public void bigCuboidIntersection() throws Throwable
 	{
 		StructureLoader loader = _buildDefaultStructureLoader();
 		String[] zLayers = new String[] {
@@ -491,7 +492,7 @@ public class TestStructureLoader
 	}
 
 
-	private static StructureLoader _buildDefaultStructureLoader()
+	private static StructureLoader _buildDefaultStructureLoader() throws IOException
 	{
 		// These mappings were once the default mapping for StructureLoader but are now only used in tests.
 		TerrainBindings terrainBindings = new TerrainBindings(ENV);
