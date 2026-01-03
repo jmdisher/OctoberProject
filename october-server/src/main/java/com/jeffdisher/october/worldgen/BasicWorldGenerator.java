@@ -57,47 +57,6 @@ public class BasicWorldGenerator implements IWorldGenerator
 	public static final int STONE_PEAK_Z_LEVEL = 16;
 	public static final int LAVA_Z_DEPTH = -200;
 
-	public static final String[] COAL_NODE = new String[] {""
-			+ "AA\n"
-			+ "AA\n"
-			, ""
-			+ "AA\n"
-			+ "AA\n"
-	};
-	public static final String[] COPPER_NODE = new String[] {""
-			+ " R \n"
-			+ "RRR\n"
-			+ " R \n"
-			, ""
-			+ "RRR\n"
-			+ "RRR\n"
-			+ "RRR\n"
-			, ""
-			+ " R \n"
-			+ "RRR\n"
-			+ " R \n"
-	};
-	public static final String[] IRON_NODE = new String[] {""
-			+ "III\n"
-			+ "III\n"
-			+ "III\n"
-			, ""
-			+ "III\n"
-			+ "III\n"
-			+ "III\n"
-			, ""
-			+ "III\n"
-			+ "III\n"
-			+ "III\n"
-	};
-	public static final String[] DIAMOND_NODE = new String[] {""
-			+ "M \n"
-			+ " M\n"
-			, ""
-			+ " M\n"
-			+ "M \n"
-	};
-
 	// We generate ores in column segments, generating a certain number of ore nodes in the given segment.
 	public static final int COAL1_NODES = 40;
 	public static final int COAL1_MIN_Z = -30;
@@ -119,15 +78,6 @@ public class BasicWorldGenerator implements IWorldGenerator
 	public static final int DIAMOND_MAX_Z = -150;
 
 	public static final int FOREST_TREE_COUNT = 18;
-	public static final String[] BASIC_TREE = new String[] {""
-			+ "   \n"
-			+ " T \n"
-			+ "   \n"
-			, ""
-			+ " E \n"
-			+ "ETE\n"
-			+ " E \n"
-	};
 	public static final int FIELD_WHEAT_COUNT = 4;
 	public static final int FIELD_CARROT_COUNT = 3;
 	public static final int HERD_SIZE = 5;
@@ -179,12 +129,11 @@ public class BasicWorldGenerator implements IWorldGenerator
 		
 		_cow = worldGenConfig.creatureBindings.cow;
 		
-		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(worldGenConfig.terrainBindings));
-		_coalNode = loader.loadFromStrings(COAL_NODE);
-		_copperNode = loader.loadFromStrings(COPPER_NODE);
-		_ironNode = loader.loadFromStrings(IRON_NODE);
-		_diamondNode = loader.loadFromStrings(DIAMOND_NODE);
-		_basicTree = loader.loadFromStrings(BASIC_TREE);
+		_coalNode = worldGenConfig.commonStructures.coalNode;
+		_copperNode = worldGenConfig.commonStructures.copperNode;
+		_ironNode = worldGenConfig.commonStructures.ironNode;
+		_diamondNode = worldGenConfig.commonStructures.diamondNode;
+		_basicTree = worldGenConfig.commonStructures.basicTree;
 		
 		// We will place the base of the nexus castle at a random location (based directly on seed), 500 blocks from the
 		// world origin.

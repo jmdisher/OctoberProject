@@ -57,6 +57,11 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 
 	public final Structure nexusCastle;
 	public final Structure distanceTower;
+	public final Structure basicTree;
+	public final Structure coalNode;
+	public final Structure copperNode;
+	public final Structure ironNode;
+	public final Structure diamondNode;
 
 	private final Environment _env;
 	private final Map<String, NonStackableItem> _namedItems;
@@ -80,16 +85,13 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 		}
 		
 		StructureLoader loader = new StructureLoader(_blockMapping);
-		try (InputStream stream  = classLoader.getResourceAsStream("nexus_castle.structure"))
-		{
-			String[] zLayers = StructureLoader.splitStreamIntoZLayerStrings(stream);
-			this.nexusCastle = loader.loadFromStrings(zLayers);
-		}
-		try (InputStream stream  = classLoader.getResourceAsStream("distance_tower.structure"))
-		{
-			String[] zLayers = StructureLoader.splitStreamIntoZLayerStrings(stream);
-			this.distanceTower = loader.loadFromStrings(zLayers);
-		}
+		this.nexusCastle = _loadStructureResource(classLoader, loader, "nexus_castle.structure");
+		this.distanceTower = _loadStructureResource(classLoader, loader, "distance_tower.structure");
+		this.basicTree = _loadStructureResource(classLoader, loader, "basic_tree.structure");
+		this.coalNode = _loadStructureResource(classLoader, loader, "coal_node.structure");
+		this.copperNode = _loadStructureResource(classLoader, loader, "copper_node.structure");
+		this.ironNode = _loadStructureResource(classLoader, loader, "iron_node.structure");
+		this.diamondNode = _loadStructureResource(classLoader, loader, "diamond_node.structure");
 	}
 
 	private String _mode;
@@ -397,5 +399,15 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 			throw new TabListReader.TabListException("Invalid " + key + " under \"" + _currentRef + "\": \"" + parameters[0] + "\"");
 		}
 		return value;
+	}
+	private static Structure _loadStructureResource(ClassLoader classLoader, StructureLoader loader, String fileName) throws IOException
+	{
+		Structure structure;
+		try (InputStream stream  = classLoader.getResourceAsStream(fileName))
+		{
+			String[] zLayers = StructureLoader.splitStreamIntoZLayerStrings(stream);
+			structure = loader.loadFromStrings(zLayers);
+		}
+		return structure;
 	}
 }

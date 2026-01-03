@@ -129,3 +129,15 @@ block_def	3
 block_def	4
 	block	op.pedestal
 	item_slot	special_sword
+block_def	_
+	block	op.coal_ore
+block_def	-
+	block	op.copper_ore
+block_def	+
+	block	op.iron_ore
+block_def	*
+	block	op.diamond_ore
+block_def	L
+	block	op.log
+block_def	l
+	block	op.leaf
