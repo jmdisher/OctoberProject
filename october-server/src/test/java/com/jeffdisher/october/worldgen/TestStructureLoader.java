@@ -1,6 +1,7 @@
 package com.jeffdisher.october.worldgen;
 
 import java.io.ByteArrayInputStream;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -492,8 +493,28 @@ public class TestStructureLoader
 
 	private static StructureLoader _buildDefaultStructureLoader()
 	{
+		// These mappings were once the default mapping for StructureLoader but are now only used in tests.
 		TerrainBindings terrainBindings = new TerrainBindings(ENV);
-		StructureLoader loader = new StructureLoader(StructureLoader.getBasicMapping(terrainBindings));
-		return loader;
+		Map<Character, Structure.AspectData> mappings = new HashMap<>();
+		Assert.assertTrue(null == mappings.put('D', _wrapBlockWithNulls(terrainBindings.dirtBlock)));
+		Assert.assertTrue(null == mappings.put('O', _wrapBlockWithNulls(terrainBindings.tilledSoilBlock)));
+		Assert.assertTrue(null == mappings.put('W', _wrapBlockWithNulls(terrainBindings.waterSourceBlock)));
+		Assert.assertTrue(null == mappings.put('B', _wrapBlockWithNulls(ENV.blocks.fromItem(ENV.items.getItemById("op.stone_brick")))));
+		Assert.assertTrue(null == mappings.put('L', _wrapBlockWithNulls(ENV.blocks.fromItem(ENV.items.getItemById("op.lantern")))));
+		Assert.assertTrue(null == mappings.put('P', _wrapBlockWithNulls(ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_seedling")))));
+		Assert.assertTrue(null == mappings.put('S', _wrapBlockWithNulls(ENV.blocks.fromItem(ENV.items.getItemById("op.sapling")))));
+		Assert.assertTrue(null == mappings.put('C', _wrapBlockWithNulls(ENV.blocks.fromItem(ENV.items.getItemById("op.carrot_seedling")))));
+		Assert.assertTrue(null == mappings.put('A', _wrapBlockWithNulls(terrainBindings.coalOreBlock)));
+		Assert.assertTrue(null == mappings.put('I', _wrapBlockWithNulls(terrainBindings.ironOreBlock)));
+		Assert.assertTrue(null == mappings.put('T', _wrapBlockWithNulls(terrainBindings.logBlock)));
+		Assert.assertTrue(null == mappings.put('E', _wrapBlockWithNulls(ENV.blocks.fromItem(ENV.items.getItemById("op.leaf")))));
+		Assert.assertTrue(null == mappings.put('R', _wrapBlockWithNulls(ENV.blocks.fromItem(ENV.items.getItemById("op.copper_ore")))));
+		Assert.assertTrue(null == mappings.put('M', _wrapBlockWithNulls(ENV.blocks.fromItem(ENV.items.getItemById("op.diamond_ore")))));
+		return new StructureLoader(mappings);
+	}
+
+	private static Structure.AspectData _wrapBlockWithNulls(Block block)
+	{
+		return new Structure.AspectData(block, null, null, null, null);
 	}
 }

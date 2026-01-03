@@ -5,12 +5,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -31,48 +28,6 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class StructureLoader
 {
-	// We will list supported block types here (built into a map for quick lookup).
-	public static final char C_DIRT     = 'D';
-	public static final char C_SOIL     = 'O';
-	public static final char C_WATER    = 'W';
-	public static final char C_BRICK    = 'B';
-	public static final char C_LANTERN  = 'L';
-	public static final char C_SEEDLING = 'P';
-	public static final char C_SAPLING  = 'S';
-	public static final char C_CARROT   = 'C';
-	public static final char C_COAL_ORE = 'A';
-	public static final char C_IRON_ORE = 'I';
-	public static final char C_TREE_LOG = 'T';
-	public static final char C_TREE_LEAF= 'E';
-	public static final char C_COPPER_ORE = 'R';
-	public static final char C_DIAMOND_ORE = 'M';
-
-	/**
-	 * Creates the mapping structure for the basic loader cases (when everything is internally defined and block-only).
-	 * 
-	 * @param terrainBindings The bindings from the WorldGenConfig.
-	 * @return A mapping to use when defining a StructureLoader.
-	 */
-	public static Map<Character, Structure.AspectData> getBasicMapping(TerrainBindings terrainBindings)
-	{
-		Map<Character, Structure.AspectData> temp = new HashMap<>();
-		Assert.assertTrue(null == temp.put(C_DIRT, _wrapBlockWithNulls(terrainBindings.dirtBlock)));
-		Assert.assertTrue(null == temp.put(C_SOIL, _wrapBlockWithNulls(terrainBindings.tilledSoilBlock)));
-		Assert.assertTrue(null == temp.put(C_WATER, _wrapBlockWithNulls(terrainBindings.waterSourceBlock)));
-		Assert.assertTrue(null == temp.put(C_BRICK, _wrapBlockWithNulls(terrainBindings.stoneBrickBlock)));
-		Assert.assertTrue(null == temp.put(C_LANTERN, _wrapBlockWithNulls(terrainBindings.lanternBlock)));
-		Assert.assertTrue(null == temp.put(C_SEEDLING, _wrapBlockWithNulls(terrainBindings.wheatSeedlingBlock)));
-		Assert.assertTrue(null == temp.put(C_SAPLING, _wrapBlockWithNulls(terrainBindings.saplingBlock)));
-		Assert.assertTrue(null == temp.put(C_CARROT, _wrapBlockWithNulls(terrainBindings.carrotSeedlingBlock)));
-		Assert.assertTrue(null == temp.put(C_COAL_ORE, _wrapBlockWithNulls(terrainBindings.coalOreBlock)));
-		Assert.assertTrue(null == temp.put(C_IRON_ORE, _wrapBlockWithNulls(terrainBindings.ironOreBlock)));
-		Assert.assertTrue(null == temp.put(C_TREE_LOG, _wrapBlockWithNulls(terrainBindings.logBlock)));
-		Assert.assertTrue(null == temp.put(C_TREE_LEAF, _wrapBlockWithNulls(terrainBindings.leafBlock)));
-		Assert.assertTrue(null == temp.put(C_COPPER_ORE, _wrapBlockWithNulls(terrainBindings.copperOreBlock)));
-		Assert.assertTrue(null == temp.put(C_DIAMOND_ORE, _wrapBlockWithNulls(terrainBindings.diamondOreBlock)));
-		return Collections.unmodifiableMap(temp);
-	}
-
 	/**
 	 * A helper to read a full description of a generated structure from the given input stream and split it into the
 	 * z-layers which are expected in the other load paths.
@@ -144,11 +99,6 @@ public class StructureLoader
 		Assert.assertTrue(currentChunk.toString().isEmpty());
 		
 		return processed.toArray((int size) -> new String[size]);
-	}
-
-	private static Structure.AspectData _wrapBlockWithNulls(Block block)
-	{
-		return new Structure.AspectData(block, null, null, null, null);
 	}
 
 
