@@ -1,6 +1,7 @@
 package com.jeffdisher.october.aspects;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.utils.Assert;
@@ -81,58 +82,170 @@ public class Environment
 	{
 		// Local instantiation only.
 		ClassLoader loader = getClass().getClassLoader();
-		this.items = ItemRegistry.loadRegistry(loader.getResourceAsStream("item_registry.tablist"));
-		this.blocks = BlockAspect.loadRegistry(this.items
-				, loader.getResourceAsStream("block_aspect.tablist")
-				, loader.getResourceAsStream("block_aspect_A.tablist")
-		);
-		this.liquids = LiquidRegistry.loadRegistry(this.items, this.blocks, loader.getResourceAsStream("liquid_registry.tablist"));
-		this.durability = DurabilityAspect.load(this.items, loader.getResourceAsStream("durability.tablist"));
-		this.encumbrance = InventoryEncumbrance.load(this.items
-				, loader.getResourceAsStream("inventory_encumbrance.tablist")
-		);
-		this.crafting = CraftAspect.load(this.items, this.blocks, this.encumbrance, loader.getResourceAsStream("crafting_recipes.tablist"));
-		this.damage = DamageAspect.load(this.items, this.blocks, loader.getResourceAsStream("toughness.tablist"));
-		this.fuel = FuelAspect.load(this.items, loader.getResourceAsStream("fuel_millis.tablist"));
-		this.lighting = LightAspect.load(this.items, this.blocks
-				, loader.getResourceAsStream("light_opacity.tablist")
-				, loader.getResourceAsStream("light_sources.tablist")
-				, loader.getResourceAsStream("light_sources_A.tablist")
-		);
-		this.plants = PlantRegistry.load(this.items, this.blocks, loader.getResourceAsStream("plant_registry.tablist"));
-		this.foods = FoodRegistry.load(this.items, loader.getResourceAsStream("foods.tablist"));
-		this.tools = ToolRegistry.load(this.items, loader.getResourceAsStream("tool_registry.tablist"));
-		this.armour = ArmourRegistry.load(this.items, loader.getResourceAsStream("armour_registry.tablist"));
-		this.stations = StationRegistry.load(this.items, this.blocks, this.crafting, loader.getResourceAsStream("station_registry.tablist"));
-		this.logic = LogicAspect.load(this.items, this.blocks, loader.getResourceAsStream("logic.tablist"));
-		this.creatures = CreatureRegistry.loadRegistry(this.items, loader.getResourceAsStream("creature_registry.tablist"));
-		this.multiBlocks = MultiBlockRegistry.load(this.items
-			, this.blocks
-			, loader.getResourceAsStream("multi_block_registry.tablist")
-		);
-		this.composites = CompositeRegistry.load(this.items
-			, this.blocks
-			, loader.getResourceAsStream("composite_registry.tablist")
-		);
-		this.groundCover = GroundCoverRegistry.load(this.items
-			, this.blocks
-			, loader.getResourceAsStream("ground_cover_registry.tablist")
-		);
-		this.specialSlot = SpecialSlotAspect.load(this.items
-			, this.blocks
-			, loader.getResourceAsStream("special_slot.tablist")
-		);
-		this.enchantments = EnchantmentRegistry.load(this.items, this.blocks, this.durability, this.tools
-			, loader.getResourceAsStream("enchanting.tablist")
-			, loader.getResourceAsStream("infusions.tablist")
-		);
-		this.orientations = OrientationAspect.load(this.items
-			, this.blocks
-			, loader.getResourceAsStream("orientation_aspect.tablist")
-		);
-		this.special = SpecialConstants.load(this.items
-			, this.blocks
-			, loader.getResourceAsStream("special_constants.tablist")
-		);
+		try (InputStream itemStream = loader.getResourceAsStream("item_registry.tablist"))
+		{
+			this.items = ItemRegistry.loadRegistry(itemStream);
+		}
+		try (InputStream blockStream = loader.getResourceAsStream("block_aspect.tablist");
+			InputStream blockActiveStream = loader.getResourceAsStream("block_aspect_A.tablist")
+		)
+		{
+			this.blocks = BlockAspect.loadRegistry(this.items
+				, blockStream
+				, blockActiveStream
+			);
+		}
+		try (InputStream liquidStream = loader.getResourceAsStream("liquid_registry.tablist"))
+		{
+			this.liquids = LiquidRegistry.loadRegistry(this.items
+				, this.blocks
+				, liquidStream
+			);
+		}
+		try (InputStream durabilityStream = loader.getResourceAsStream("durability.tablist"))
+		{
+			this.durability = DurabilityAspect.load(this.items
+				, durabilityStream
+			);
+		}
+		try (InputStream durabilityStream = loader.getResourceAsStream("inventory_encumbrance.tablist"))
+		{
+			this.encumbrance = InventoryEncumbrance.load(this.items
+				, durabilityStream
+			);
+		}
+		try (InputStream recipeStream = loader.getResourceAsStream("crafting_recipes.tablist"))
+		{
+			this.crafting = CraftAspect.load(this.items
+				, this.blocks
+				, this.encumbrance
+				, recipeStream
+			);
+		}
+		try (InputStream toughnessStream = loader.getResourceAsStream("toughness.tablist"))
+		{
+			this.damage = DamageAspect.load(this.items
+				, this.blocks
+				, toughnessStream
+			);
+		}
+		try (InputStream fuelStream = loader.getResourceAsStream("fuel_millis.tablist"))
+		{
+			this.fuel = FuelAspect.load(this.items
+				, fuelStream
+			);
+		}
+		try (InputStream opacityStream = loader.getResourceAsStream("light_opacity.tablist");
+			InputStream sourceStream = loader.getResourceAsStream("light_sources.tablist");
+			InputStream sourceActiveStream = loader.getResourceAsStream("light_sources_A.tablist")
+		)
+		{
+			this.lighting = LightAspect.load(this.items
+				, this.blocks
+				, opacityStream
+				, sourceStream
+				, sourceActiveStream
+			);
+		}
+		try (InputStream plantStream = loader.getResourceAsStream("plant_registry.tablist"))
+		{
+			this.plants = PlantRegistry.load(this.items
+				, this.blocks
+				, plantStream
+			);
+		}
+		try (InputStream foodStream = loader.getResourceAsStream("foods.tablist"))
+		{
+			this.foods = FoodRegistry.load(this.items
+				, foodStream
+			);
+		}
+		try (InputStream toolStream = loader.getResourceAsStream("tool_registry.tablist"))
+		{
+			this.tools = ToolRegistry.load(this.items
+				, toolStream
+			);
+		}
+		try (InputStream armourStream = loader.getResourceAsStream("armour_registry.tablist"))
+		{
+			this.armour = ArmourRegistry.load(this.items
+				, armourStream
+			);
+		}
+		try (InputStream stationStream = loader.getResourceAsStream("station_registry.tablist"))
+		{
+			this.stations = StationRegistry.load(this.items
+				, this.blocks
+				, this.crafting
+				, stationStream
+			);
+		}
+		try (InputStream logicStream = loader.getResourceAsStream("logic.tablist"))
+		{
+			this.logic = LogicAspect.load(this.items
+				, this.blocks
+				, logicStream
+			);
+		}
+		try (InputStream creatureStream = loader.getResourceAsStream("creature_registry.tablist"))
+		{
+			this.creatures = CreatureRegistry.loadRegistry(this.items
+				, creatureStream
+			);
+		}
+		try (InputStream multiBlockStream = loader.getResourceAsStream("multi_block_registry.tablist"))
+		{
+			this.multiBlocks = MultiBlockRegistry.load(this.items
+				, this.blocks
+				, multiBlockStream
+			);
+		}
+		try (InputStream compositeStream = loader.getResourceAsStream("composite_registry.tablist"))
+		{
+			this.composites = CompositeRegistry.load(this.items
+				, this.blocks
+				, compositeStream
+			);
+		}
+		try (InputStream groundCoverStream = loader.getResourceAsStream("ground_cover_registry.tablist"))
+		{
+			this.groundCover = GroundCoverRegistry.load(this.items
+				, this.blocks
+				, groundCoverStream
+			);
+		}
+		try (InputStream specialSlotStream = loader.getResourceAsStream("special_slot.tablist"))
+		{
+			this.specialSlot = SpecialSlotAspect.load(this.items
+				, this.blocks
+				, specialSlotStream
+			);
+		}
+		try (InputStream enchantingStream = loader.getResourceAsStream("enchanting.tablist");
+			InputStream infusionsStream = loader.getResourceAsStream("infusions.tablist");
+		)
+		{
+			this.enchantments = EnchantmentRegistry.load(this.items
+				, this.blocks
+				, this.durability
+				, this.tools
+				, enchantingStream
+				, infusionsStream
+			);
+		}
+		try (InputStream orientationStream = loader.getResourceAsStream("orientation_aspect.tablist"))
+		{
+			this.orientations = OrientationAspect.load(this.items
+				, this.blocks
+				, orientationStream
+			);
+		}
+		try (InputStream specialConstantsStream = loader.getResourceAsStream("special_constants.tablist"))
+		{
+			this.special = SpecialConstants.load(this.items
+				, this.blocks
+				, specialConstantsStream
+			);
+		}
 	}
 }
