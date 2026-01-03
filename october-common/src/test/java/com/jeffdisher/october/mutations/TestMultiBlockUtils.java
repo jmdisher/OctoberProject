@@ -27,7 +27,7 @@ public class TestMultiBlockUtils
 	private static Block DOOR;
 	private static Block STONE;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		DOOR = ENV.blocks.fromItem(ENV.items.getItemById("op.double_door_base"));

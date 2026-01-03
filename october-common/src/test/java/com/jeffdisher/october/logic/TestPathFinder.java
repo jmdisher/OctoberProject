@@ -18,7 +18,7 @@ import com.jeffdisher.october.types.EntityLocation;
 public class TestPathFinder
 {
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		Environment.createSharedInstance();
 	}

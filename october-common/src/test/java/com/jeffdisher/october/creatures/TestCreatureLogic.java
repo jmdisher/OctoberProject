@@ -55,7 +55,7 @@ public class TestCreatureLogic
 	private static EntityType ORC;
 	private static EntityType COW_BABY;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		WHEAT = ENV.items.getItemById("op.wheat_item");

@@ -39,7 +39,7 @@ public class TestPortalHelpers
 	private static Block KEYSTONE;
 	private static Block PORTAL_SURFACE;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		ORB_ITEM = ENV.items.getItemById("op.portal_orb");

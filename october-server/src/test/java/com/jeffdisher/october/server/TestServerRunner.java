@@ -93,7 +93,7 @@ public class TestServerRunner
 	private static Block CUBOID_LOADER;
 	private static EntityType COW;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");

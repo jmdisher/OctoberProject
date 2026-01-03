@@ -28,7 +28,7 @@ public class TestMutationBlockSetBlock
 	private static Block STONE;
 	private static Block LOG;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");

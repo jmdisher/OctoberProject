@@ -30,7 +30,7 @@ public class TestCompositeRegistry
 	private static Block ENCHATING_TABLE;
 	private static Block PEDESTAL;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		VOID_STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_stone"));

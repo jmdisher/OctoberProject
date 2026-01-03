@@ -47,7 +47,7 @@ public class TestCodecHelpers
 	private static Item PLANK_ITEM;
 	private static Item IRON_SWORD_ITEM;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");

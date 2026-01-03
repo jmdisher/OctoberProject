@@ -63,7 +63,7 @@ public class TestMovementAccumulator
 	private static Block STONE;
 	private static Block WATER_SOURCE;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");

@@ -43,7 +43,7 @@ public class TestEngineSpawner
 	private static EntityType ORC;
 	private static EntityType SKELETON;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		AIR = ENV.blocks.fromItem(ENV.items.getItemById("op.air"));

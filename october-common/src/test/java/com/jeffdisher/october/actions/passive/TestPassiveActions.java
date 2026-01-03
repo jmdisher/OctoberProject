@@ -44,7 +44,7 @@ public class TestPassiveActions
 	private static Item STONE_ITEM;
 	private static Block LOG_BLOCK;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");

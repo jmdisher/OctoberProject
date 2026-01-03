@@ -21,7 +21,7 @@ public class TestPropertyHelpers
 	private static Item IRON_PICKAXE;
 	private static Item PORTAL_ORB;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		IRON_SWORD = ENV.items.getItemById("op.iron_sword");

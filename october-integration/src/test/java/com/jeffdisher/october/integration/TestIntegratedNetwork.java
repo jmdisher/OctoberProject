@@ -49,7 +49,7 @@ public class TestIntegratedNetwork
 	public static final long MILLIS_PER_TICK = 100L;
 
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		Environment.createSharedInstance();
 	}

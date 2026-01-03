@@ -12,6 +12,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
@@ -30,7 +31,7 @@ public class TestBasicWorldGenerator
 {
 	private static Environment ENV;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 	}
@@ -676,7 +677,7 @@ public class TestBasicWorldGenerator
 		return c;
 	}
 
-	private static BasicWorldGenerator _worldGeneratorWithSeed(int seed) throws IOException
+	private static BasicWorldGenerator _worldGeneratorWithSeed(int seed) throws IOException, TabListReader.TabListException
 	{
 		WorldGenConfig worldGenConfig = WorldGenHelpers.buildDefaultWorldGenConfig(ENV);
 		BasicWorldGenerator generator = new BasicWorldGenerator(worldGenConfig, seed);

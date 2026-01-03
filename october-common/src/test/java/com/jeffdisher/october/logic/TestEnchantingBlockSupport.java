@@ -48,7 +48,7 @@ public class TestEnchantingBlockSupport
 	private static Block ENCHATING_TABLE;
 	private static Block PEDESTAL;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		IRON_PICKAXE = ENV.items.getItemById("op.iron_pickaxe");

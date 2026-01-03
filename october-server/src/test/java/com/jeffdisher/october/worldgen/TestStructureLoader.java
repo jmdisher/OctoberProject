@@ -13,6 +13,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.PropertyHelpers;
@@ -38,7 +39,7 @@ public class TestStructureLoader
 	private static Block DIRT;
 	private static Block STONE_BRICK;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		DIRT = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
@@ -492,7 +493,7 @@ public class TestStructureLoader
 	}
 
 
-	private static StructureLoader _buildDefaultStructureLoader() throws IOException
+	private static StructureLoader _buildDefaultStructureLoader() throws IOException, TabListReader.TabListException
 	{
 		// These mappings were once the default mapping for StructureLoader but are now only used in tests.
 		TerrainBindings terrainBindings = new TerrainBindings(ENV);

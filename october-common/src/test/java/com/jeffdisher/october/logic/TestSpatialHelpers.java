@@ -29,7 +29,7 @@ public class TestSpatialHelpers
 	private static Block STONE;
 	private static EntityType COW;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));

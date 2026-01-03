@@ -21,7 +21,7 @@ public class TestEntityActionCodec
 {
 	private static Environment ENV;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 	}

@@ -34,7 +34,7 @@ public class TerrainBindings
 	public final Block carrotMatureBlock;
 	public final Block logBlock;
 
-	public TerrainBindings(Environment env) throws IOException
+	public TerrainBindings(Environment env) throws IOException, TabListReader.TabListException
 	{
 		Map<String, Block> mapping;
 		try (InputStream stream  = getClass().getClassLoader().getResourceAsStream("terrain_bindings.tablist"))
@@ -42,11 +42,6 @@ public class TerrainBindings
 			FlatTabListCallbacks<String, Block> callbacks = new FlatTabListCallbacks<>((String value) -> value, new IValueTransformer.BlockTransformer(env.items, env.blocks));
 			TabListReader.readEntireFile(callbacks, stream);
 			mapping = callbacks.data;
-		}
-		catch (TabListReader.TabListException e)
-		{
-			// TODO:  Determine a better way to handle this.
-			throw Assert.unexpected(e);
 		}
 		
 		// We will require that all of these be found.

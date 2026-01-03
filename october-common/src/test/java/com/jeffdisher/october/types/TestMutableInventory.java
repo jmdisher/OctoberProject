@@ -20,7 +20,7 @@ public class TestMutableInventory
 	private static Item DIRT_ITEM;
 	private static Item SWORD_ITEM;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");

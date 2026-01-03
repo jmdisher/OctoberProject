@@ -13,7 +13,7 @@ public class TestMutableEntity
 	private static Environment ENV;
 	private static Item STONE_ITEM;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");

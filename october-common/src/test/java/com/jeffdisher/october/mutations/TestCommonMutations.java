@@ -71,7 +71,7 @@ public class TestCommonMutations
 	private static Block WATER_STRONG;
 	private static Block WATER_WEAK;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");

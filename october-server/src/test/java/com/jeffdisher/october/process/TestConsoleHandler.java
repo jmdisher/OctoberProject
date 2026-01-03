@@ -26,7 +26,7 @@ import com.jeffdisher.october.types.WorldConfig;
 public class TestConsoleHandler
 {
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		Environment.createSharedInstance();
 	}

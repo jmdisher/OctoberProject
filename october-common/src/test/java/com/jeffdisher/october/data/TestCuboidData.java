@@ -28,7 +28,7 @@ public class TestCuboidData
 	private static Item STONE_ITEM;
 	private static Item IRON_SWORD;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");

@@ -33,7 +33,7 @@ public class TestEnchantmentRegistry
 	private static Item DIAMOND;
 	private static Item COPPER_INGOT;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		ENCHANTING_TABLE = ENV.blocks.fromItem(ENV.items.getItemById("op.enchanting_table"));

@@ -8,6 +8,7 @@ import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.client.MovementAccumulator;
+import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.OrientationHelpers;
@@ -56,7 +57,7 @@ public class AutoWalkingClient
 	 */
 	public static final long REPORT_INTERVAL_MILLIS = 10_000L;
 
-	public static void main(String[] args) throws IOException, InterruptedException, ClientProcess.DisconnectException
+	public static void main(String[] args) throws IOException, InterruptedException, ClientProcess.DisconnectException, TabListReader.TabListException
 	{
 		if (3 == args.length)
 		{
@@ -79,7 +80,7 @@ public class AutoWalkingClient
 	}
 
 
-	private static _Packaged _connectAndWaitForCommand(InetSocketAddress serverAddress, String clientName) throws IOException, InterruptedException, ClientProcess.DisconnectException
+	private static _Packaged _connectAndWaitForCommand(InetSocketAddress serverAddress, String clientName) throws IOException, InterruptedException, ClientProcess.DisconnectException, TabListReader.TabListException
 	{
 		Environment.createSharedInstance();
 		_Listener listener = new _Listener();

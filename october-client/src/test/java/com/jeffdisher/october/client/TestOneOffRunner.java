@@ -42,7 +42,7 @@ public class TestOneOffRunner
 	private static Item DIRT_ITEM;
 	private static Block STONE_BLOCK;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");

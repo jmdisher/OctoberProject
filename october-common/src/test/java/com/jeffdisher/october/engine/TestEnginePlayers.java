@@ -36,7 +36,7 @@ public class TestEnginePlayers
 	private static Environment ENV;
 	private static Block STONE;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));

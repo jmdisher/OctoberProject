@@ -27,7 +27,7 @@ public class TestDamageHelpers
 	private static Block LAVA_SOURCE;
 	private static Block LOG;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		LAVA_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_source"));

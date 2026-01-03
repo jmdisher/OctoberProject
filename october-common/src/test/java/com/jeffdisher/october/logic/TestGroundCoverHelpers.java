@@ -26,7 +26,7 @@ public class TestGroundCoverHelpers
 	private static Block DIRT;
 	private static Block GRASS;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		DIRT = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));

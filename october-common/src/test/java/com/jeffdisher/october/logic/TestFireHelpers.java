@@ -29,7 +29,7 @@ public class TestFireHelpers
 	private static Block LOG;
 	private static Block WATER_SOURCE;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));

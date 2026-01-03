@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.server.MonitoringAgent;
@@ -24,31 +25,42 @@ public class ServerMain
 		if (1 == args.length)
 		{
 			int port = Integer.parseInt(args[0]);
-			System.out.println("Starting server on port " + port);
+			
+			System.out.println("Reading local resources and configuration...");
+			File worldDirectory = new File("world");
+			if (!worldDirectory.isDirectory())
+			{
+				Assert.assertTrue(worldDirectory.mkdirs());
+			}
+			MonitoringAgent monitoringAgent = new MonitoringAgent();
+			WorldConfig config = new WorldConfig();
+			Environment env;
+			IWorldGenerator worldGen;
 			try
 			{
-				// We will just store the world in the current directory.
-				File worldDirectory = new File("world");
-				if (!worldDirectory.isDirectory())
-				{
-					Assert.assertTrue(worldDirectory.mkdirs());
-				}
-				Environment env = Environment.createSharedInstance();
-				// We will just use the flat world generator since it should be populated with what we need for testing.
-				MonitoringAgent monitoringAgent = new MonitoringAgent();
-				WorldConfig config = new WorldConfig();
+				env = Environment.createSharedInstance();
 				boolean didLoadConfig = ResourceLoader.populateWorldConfig(worldDirectory, config);
-				IWorldGenerator worldGen = WorldGenHelpers.createConfiguredWorldGenerator(env, config);
+				worldGen = WorldGenHelpers.createConfiguredWorldGenerator(env, config);
 				if (!didLoadConfig)
 				{
 					// There is no config so ask the world-gen for the default spawn.
 					EntityLocation spawnLocation = worldGen.getDefaultSpawnLocation();
 					config.worldSpawn = spawnLocation.getBlockLocation();
 				}
-				ResourceLoader cuboidLoader = new ResourceLoader(worldDirectory
-						, worldGen
-						, config
-				);
+			}
+			catch (IOException | TabListReader.TabListException e)
+			{
+				// This is a fatal error.
+				throw new FatalStartupError("Pre-start loading", e);
+			}
+			ResourceLoader cuboidLoader = new ResourceLoader(worldDirectory
+				, worldGen
+				, config
+			);
+			
+			System.out.println("Starting server on port " + port);
+			try
+			{
 				ServerProcess process = new ServerProcess(port
 						, ServerRunner.DEFAULT_MILLIS_PER_TICK
 						, cuboidLoader
@@ -71,18 +83,29 @@ public class ServerMain
 				// We can now re-write the config.
 				cuboidLoader.storeWorldConfig(config);
 				System.out.println("Exiting normally");
-				Environment.clearSharedInstance();
 			}
 			catch (IOException e)
 			{
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				// This is a fatal error.
+				throw new FatalStartupError("Running server", e);
 			}
+			Environment.clearSharedInstance();
 		}
 		else
 		{
 			System.err.println("Usage:  ServerMain PORT");
 			System.exit(1);
 		}
+	}
+
+
+	public static class FatalStartupError extends RuntimeException
+	{
+		public FatalStartupError(String activity, Throwable t)
+		{
+			super(activity, t);
+		}
+
+		private static final long serialVersionUID = 1L;
 	}
 }

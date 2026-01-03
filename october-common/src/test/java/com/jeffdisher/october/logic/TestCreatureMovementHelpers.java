@@ -32,7 +32,7 @@ public class TestCreatureMovementHelpers
 	private static Block STONE;
 	private static Block WATER_SOURCE;
 	@BeforeClass
-	public static void setup()
+	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		COW = ENV.creatures.getTypeById("op.cow");

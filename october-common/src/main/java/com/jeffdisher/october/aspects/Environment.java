@@ -2,7 +2,7 @@ package com.jeffdisher.october.aspects;
 
 import java.io.IOException;
 
-import com.jeffdisher.october.config.TabListReader.TabListException;
+import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -32,19 +32,13 @@ public class Environment
 	 * Asserts that the environment does NOT exist.
 	 * 
 	 * @return The shared instance of the environment.
+	 * @throws IOException Error accessing local resources.
+	 * @throws TabListReader.TabListException Local resources have invalid definition.
 	 */
-	public static Environment createSharedInstance()
+	public static Environment createSharedInstance() throws IOException, TabListReader.TabListException
 	{
 		Assert.assertTrue(null == INSTANCE);
-		try
-		{
-			INSTANCE = new Environment();
-		}
-		catch (IOException | TabListException e)
-		{
-			// TODO:  Determine a better way to handle this.
-			throw Assert.unexpected(e);
-		}
+		INSTANCE = new Environment();
 		return INSTANCE;
 	}
 
@@ -83,7 +77,7 @@ public class Environment
 	public final OrientationAspect orientations;
 	public final SpecialConstants special;
 
-	private Environment() throws IOException, TabListException
+	private Environment() throws IOException, TabListReader.TabListException
 	{
 		// Local instantiation only.
 		ClassLoader loader = getClass().getClassLoader();

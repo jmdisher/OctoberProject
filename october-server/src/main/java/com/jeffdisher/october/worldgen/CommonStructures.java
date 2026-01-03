@@ -67,7 +67,7 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 	private final Map<String, NonStackableItem> _namedItems;
 	private final Map<Character, Structure.AspectData> _blockMapping;
 
-	public CommonStructures(Environment env) throws IOException
+	public CommonStructures(Environment env) throws IOException, TabListReader.TabListException
 	{
 		ClassLoader classLoader = getClass().getClassLoader();
 		
@@ -77,11 +77,6 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 		try (InputStream stream  = classLoader.getResourceAsStream("common_structures.tablist"))
 		{
 			TabListReader.readEntireFile(this, stream);
-		}
-		catch (TabListReader.TabListException e)
-		{
-			// TODO:  Determine a better way to handle this.
-			throw Assert.unexpected(e);
 		}
 		
 		StructureLoader loader = new StructureLoader(_blockMapping);
