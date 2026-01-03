@@ -9,11 +9,13 @@ import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.config.TabListReader;
+import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.properties.PropertyType;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FacingDirection;
+import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.NonStackableItem;
@@ -47,34 +49,26 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 	public static final String KEY_ENCHANT_EFFICIENCY = "enchant_efficiency";
 	public static final String KEY_ENCHANT_MELEE = "enchant_melee";
 
+	public static final String STANZA_BLOCK_DEF = "block_def";
+	public static final String KEY_BLOCK = "block";
+	public static final String KEY_FACING_DIRECTION = "facing_direction";
+	public static final String KEY_ITEM_SLOT = "item_slot";
+	public static final String KEY_ROOT_REL = "root_rel";
+
 	public final Structure nexusCastle;
 	public final Structure distanceTower;
 
 	private final Environment _env;
 	private final Map<String, NonStackableItem> _namedItems;
+	private final Map<Character, Structure.AspectData> _blockMapping;
 
 	public CommonStructures(Environment env) throws IOException
 	{
 		ClassLoader classLoader = getClass().getClassLoader();
 		
-		Block airBlock = env.blocks.fromItem(env.items.getItemById("op.air"));
-		Block stoneBlock = env.blocks.fromItem(env.items.getItemById("op.stone"));
-		Block stoneBrickBlock = env.blocks.fromItem(env.items.getItemById("op.stone_brick"));
-		Block dirtBlock = env.blocks.fromItem(env.items.getItemById("op.dirt"));
-		Block grassBlock = env.blocks.fromItem(env.items.getItemById("op.grass"));
-		Block tilledSoilBlock = env.blocks.fromItem(env.items.getItemById("op.tilled_soil"));
-		Block torchBlock = env.blocks.fromItem(env.items.getItemById("op.torch"));
-		Block wheatBlock = env.blocks.fromItem(env.items.getItemById("op.wheat_seedling"));
-		Block carrotBlock = env.blocks.fromItem(env.items.getItemById("op.carrot_seedling"));
-		Block saplingBlock = env.blocks.fromItem(env.items.getItemById("op.sapling"));
-		Block waterSourceBlock = env.blocks.fromItem(env.items.getItemById("op.water_source"));
-		Block voidStoneBlock = env.blocks.fromItem(env.items.getItemById("op.portal_stone"));
-		Block doorBlock = env.blocks.fromItem(env.items.getItemById("op.door"));
-		Block portalKeystoneBlock = env.blocks.fromItem(env.items.getItemById("op.portal_keystone"));
-		Block pedestalBlock = env.blocks.fromItem(env.items.getItemById("op.pedestal"));
-		
 		_env = env;
 		_namedItems = new HashMap<>();
+		_blockMapping = new HashMap<>();
 		try (InputStream stream  = classLoader.getResourceAsStream("common_structures.tablist"))
 		{
 			TabListReader.readEntireFile(this, stream);
@@ -85,43 +79,7 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 			throw Assert.unexpected(e);
 		}
 		
-		NonStackableItem northOrb = _getRequiredItem("north_orb");
-		NonStackableItem southOrb = _getRequiredItem("south_orb");
-		NonStackableItem eastOrb = _getRequiredItem("east_orb");
-		NonStackableItem westOrb = _getRequiredItem("west_orb");
-		NonStackableItem reverseOrb = _getRequiredItem("reverse_orb");
-		
-		NonStackableItem specialPick = _getRequiredItem("special_pickaxe");
-		NonStackableItem specialShovel = _getRequiredItem("special_shovel");
-		NonStackableItem specialAxe = _getRequiredItem("special_axe");
-		NonStackableItem specialSword = _getRequiredItem("special_sword");
-		
-		Map<Character, Structure.AspectData> mapping = new HashMap<>();
-		Assert.assertTrue(null == mapping.put('A', new Structure.AspectData(airBlock, null, null, null, null)));
-		Assert.assertTrue(null == mapping.put('#', new Structure.AspectData(stoneBlock, null, null, null, null)));
-		Assert.assertTrue(null == mapping.put('B', new Structure.AspectData(stoneBrickBlock, null, null, null, null)));
-		Assert.assertTrue(null == mapping.put('D', new Structure.AspectData(dirtBlock, null, null, null, null)));
-		Assert.assertTrue(null == mapping.put('G', new Structure.AspectData(grassBlock, null, null, null, null)));
-		Assert.assertTrue(null == mapping.put('i', new Structure.AspectData(torchBlock, null, null, null, null)));
-		Assert.assertTrue(null == mapping.put('w', new Structure.AspectData(wheatBlock, null, null, null, null)));
-		Assert.assertTrue(null == mapping.put('c', new Structure.AspectData(carrotBlock, null, null, null, null)));
-		Assert.assertTrue(null == mapping.put('t', new Structure.AspectData(saplingBlock, null, null, null, null)));
-		Assert.assertTrue(null == mapping.put('O', new Structure.AspectData(tilledSoilBlock, null, null, null, null)));
-		Assert.assertTrue(null == mapping.put('T', new Structure.AspectData(waterSourceBlock, null, null, null, null)));
-		Assert.assertTrue(null == mapping.put('V', new Structure.AspectData(voidStoneBlock, null, null, null, null)));
-		Assert.assertTrue(null == mapping.put('[', new Structure.AspectData(doorBlock, null, FacingDirection.NORTH, null, null)));
-		Assert.assertTrue(null == mapping.put(']', new Structure.AspectData(doorBlock, null, null, null, new AbsoluteLocation(0, 0, -1))));
-		Assert.assertTrue(null == mapping.put('N', new Structure.AspectData(portalKeystoneBlock, null, FacingDirection.NORTH, ItemSlot.fromNonStack(northOrb), null)));
-		Assert.assertTrue(null == mapping.put('S', new Structure.AspectData(portalKeystoneBlock, null, FacingDirection.SOUTH, ItemSlot.fromNonStack(southOrb), null)));
-		Assert.assertTrue(null == mapping.put('E', new Structure.AspectData(portalKeystoneBlock, null, FacingDirection.EAST, ItemSlot.fromNonStack(eastOrb), null)));
-		Assert.assertTrue(null == mapping.put('W', new Structure.AspectData(portalKeystoneBlock, null, FacingDirection.WEST, ItemSlot.fromNonStack(westOrb), null)));
-		Assert.assertTrue(null == mapping.put('R', new Structure.AspectData(portalKeystoneBlock, null, FacingDirection.NORTH, ItemSlot.fromNonStack(reverseOrb), null)));
-		Assert.assertTrue(null == mapping.put('1', new Structure.AspectData(pedestalBlock, null, null, ItemSlot.fromNonStack(specialPick), null)));
-		Assert.assertTrue(null == mapping.put('2', new Structure.AspectData(pedestalBlock, null, null, ItemSlot.fromNonStack(specialShovel), null)));
-		Assert.assertTrue(null == mapping.put('3', new Structure.AspectData(pedestalBlock, null, null, ItemSlot.fromNonStack(specialAxe), null)));
-		Assert.assertTrue(null == mapping.put('4', new Structure.AspectData(pedestalBlock, null, null, ItemSlot.fromNonStack(specialSword), null)));
-		
-		StructureLoader loader = new StructureLoader(mapping);
+		StructureLoader loader = new StructureLoader(_blockMapping);
 		try (InputStream stream  = classLoader.getResourceAsStream("nexus_castle.structure"))
 		{
 			String[] zLayers = StructureLoader.splitStreamIntoZLayerStrings(stream);
@@ -134,6 +92,9 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 		}
 	}
 
+	private String _mode;
+
+	// Item state.
 	private String _currentRef;
 	private Item _item;
 	private AbsoluteLocation _relativeLocation;
@@ -141,6 +102,13 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 	private byte _enchantDurability;
 	private byte _enchantEfficiency;
 	private byte _enchantMelee;
+
+	// Block state.
+	private char _currentBlockRef;
+	private Block _block;
+	private FacingDirection _facingDirection;
+	private NonStackableItem _itemSlot;
+	private AbsoluteLocation _rootRelative;
 
 	@Override
 	public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
@@ -157,6 +125,21 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 				throw new TabListReader.TabListException("Duplicate item ref: \"" + refName + "\"");
 			}
 			_currentRef = refName;
+			_mode = STANZA_ITEM_DEF;
+		}
+		else if (STANZA_BLOCK_DEF.equals(name))
+		{
+			if ((1 != parameters.length) || (1 != parameters[0].length()))
+			{
+				throw new TabListReader.TabListException(STANZA_BLOCK_DEF + " requires 1 parameter with only 1 character");
+			}
+			char refName = parameters[0].charAt(0);
+			if (_blockMapping.containsKey(refName))
+			{
+				throw new TabListReader.TabListException("Duplicate block ref: \"" + refName + "\"");
+			}
+			_currentBlockRef = refName;
+			_mode = STANZA_BLOCK_DEF;
 		}
 		else
 		{
@@ -165,6 +148,40 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 	}
 	@Override
 	public void endRecord() throws TabListReader.TabListException
+	{
+		if (STANZA_ITEM_DEF == _mode)
+		{
+			_endItem();
+		}
+		else if (STANZA_BLOCK_DEF == _mode)
+		{
+			_endBlock();
+		}
+		else
+		{
+			Assert.unreachable();
+		}
+		_mode = null;
+	}
+	@Override
+	public void processSubRecord(String name, String[] parameters) throws TabListReader.TabListException
+	{
+		if (STANZA_ITEM_DEF == _mode)
+		{
+			_itemSubRecord(name, parameters);
+		}
+		else if (STANZA_BLOCK_DEF == _mode)
+		{
+			_blockSubRecord(name, parameters);
+		}
+		else
+		{
+			Assert.unreachable();
+		}
+	}
+
+
+	private void _endItem()
 	{
 		Map<PropertyType<?>, Object> properties = new HashMap<>();
 		properties.put(PropertyRegistry.DURABILITY, _env.durability.getDurability(_item));
@@ -200,8 +217,51 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 		_enchantEfficiency = 0;
 		_enchantMelee = 0;
 	}
-	@Override
-	public void processSubRecord(String name, String[] parameters) throws TabListReader.TabListException
+
+	private void _endBlock() throws TabListReader.TabListException
+	{
+		if (null == _block)
+		{
+			throw new TabListReader.TabListException("Missing block type: \"" + _currentBlockRef + "\"");
+		}
+		
+		// Check the various rules.
+		boolean requiresFacing = _env.orientations.doesSingleBlockRequireOrientation(_block) || (_env.blocks.isMultiBlock(_block) && (null == _rootRelative));
+		if ((null != _facingDirection) != requiresFacing)
+		{
+			throw new TabListReader.TabListException("Inconsistent facing: \"" + _currentBlockRef + "\"");
+		}
+		if ((null != _itemSlot) && !_env.specialSlot.hasSpecialSlot(_block))
+		{
+			throw new TabListReader.TabListException("Block should not have an item slot: \"" + _currentBlockRef + "\"");
+		}
+		if ((null != _rootRelative) && !_env.blocks.isMultiBlock(_block))
+		{
+			throw new TabListReader.TabListException("Only multi-blocks can have root relative locations: \"" + _currentBlockRef + "\"");
+		}
+		
+		// The reader can currently only handle null inventories.
+		Inventory normalInventory = null;
+		ItemSlot specialItemSlot = (null != _itemSlot)
+			? ItemSlot.fromNonStack(_itemSlot)
+			: null
+		;
+		Structure.AspectData aspectData = new Structure.AspectData(_block
+			, normalInventory
+			, _facingDirection
+			, specialItemSlot
+			, _rootRelative
+		);
+		_blockMapping.put(_currentBlockRef, aspectData);
+		
+		_currentBlockRef = '\0';
+		_block = null;
+		_facingDirection = null;
+		_itemSlot = null;
+		_rootRelative = null;
+	}
+
+	private void _itemSubRecord(String name, String[] parameters) throws TabListException
 	{
 		if (KEY_ITEM.equals(name))
 		{
@@ -251,6 +311,56 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 		}
 	}
 
+	private void _blockSubRecord(String name, String[] parameters) throws TabListException
+	{
+		if (KEY_BLOCK.equals(name))
+		{
+			_checkValidSubRecord(KEY_BLOCK, _block, 1, parameters);
+			_block = _env.blocks.fromItem(_env.items.getItemById(parameters[0]));
+			if (null == _block)
+			{
+				throw new TabListReader.TabListException("Invalid " + KEY_BLOCK + " under \"" + _currentBlockRef + "\": \"" + parameters[0] + "\"");
+			}
+		}
+		else if (KEY_FACING_DIRECTION.equals(name))
+		{
+			_checkValidSubRecord(KEY_FACING_DIRECTION, _facingDirection, 1, parameters);
+			try
+			{
+				_facingDirection = FacingDirection.valueOf(parameters[0]);
+			}
+			catch (IllegalArgumentException e)
+			{
+				throw new TabListReader.TabListException("Invalid " + KEY_FACING_DIRECTION + " under \"" + _currentBlockRef + "\": \"" + parameters[0] + "\"");
+			}
+		}
+		else if (KEY_ITEM_SLOT.equals(name))
+		{
+			_checkValidSubRecord(KEY_ITEM_SLOT, _itemSlot, 1, parameters);
+			_itemSlot = _namedItems.get(parameters[0]);
+			if (null == _itemSlot)
+			{
+				throw new TabListReader.TabListException("Unknown item for " + KEY_ITEM_SLOT + " under \"" + _currentBlockRef + "\": \"" + parameters[0] + "\"");
+			}
+		}
+		else if (KEY_ROOT_REL.equals(name))
+		{
+			_checkValidSubRecord(KEY_ROOT_REL, _rootRelative, 3, parameters);
+			try
+			{
+				_rootRelative = new AbsoluteLocation(Integer.parseInt(parameters[0]), Integer.parseInt(parameters[1]), Integer.parseInt(parameters[2]));
+			}
+			catch (NumberFormatException e)
+			{
+				throw new TabListReader.TabListException("Invalid " + KEY_ROOT_REL + " under \"" + _currentBlockRef + "\": " + Arrays.toString(parameters));
+			}
+		}
+		else
+		{
+			throw new TabListReader.TabListException("Unknown sub-record key: \"" + name + "\"");
+		}
+	}
+
 	private void _checkValidSubRecord(String key, Object existing, int requiredCount, String[] parameters) throws TabListReader.TabListException
 	{
 		if (requiredCount != parameters.length)
@@ -287,12 +397,5 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 			throw new TabListReader.TabListException("Invalid " + key + " under \"" + _currentRef + "\": \"" + parameters[0] + "\"");
 		}
 		return value;
-	}
-
-	private NonStackableItem _getRequiredItem(String name)
-	{
-		NonStackableItem item = _namedItems.get(name);
-		Assert.assertTrue(null != item);
-		return item;
 	}
 }

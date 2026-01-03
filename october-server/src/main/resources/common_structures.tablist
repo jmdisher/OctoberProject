@@ -53,3 +53,79 @@ item_def	special_sword
 	name	Vorpal Blade
 	enchant_durability	5
 	enchant_melee	5
+
+
+# Block references:
+# Each starts with "block_def" stanza with one parameter, which must be 1-character long, which is the symbol which will
+# be used to reference this block when it appears in a structure definition.  Sub-record stanzas:
+# -block	block_id
+#	Required for each and must reference a valid block ID.
+# -facing_direction value
+#	Optional, where value must be an instance of the FacingDirection enum.
+# -item_slot item_ref
+#	Optional and references one of the above items as item_ref.
+# -root_rel	x	y	z
+#	Optional references the root of this multi-block by relative location.
+
+block_def	A
+	block	op.air
+block_def	#
+	block	op.stone
+block_def	B
+	block	op.stone_brick
+block_def	D
+	block	op.dirt
+block_def	G
+	block	op.grass
+block_def	i
+	block	op.torch
+block_def	w
+	block	op.wheat_seedling
+block_def	c
+	block	op.carrot_seedling
+block_def	t
+	block	op.sapling
+block_def	O
+	block	op.tilled_soil
+block_def	T
+	block	op.water_source
+block_def	V
+	block	op.portal_stone
+block_def	[
+	block	op.door
+	facing_direction	NORTH
+block_def	]
+	block	op.door
+	root_rel	0	0	-1
+block_def	N
+	block	op.portal_keystone
+	facing_direction	NORTH
+	item_slot	north_orb
+block_def	S
+	block	op.portal_keystone
+	facing_direction	SOUTH
+	item_slot	south_orb
+block_def	E
+	block	op.portal_keystone
+	facing_direction	EAST
+	item_slot	east_orb
+block_def	W
+	block	op.portal_keystone
+	facing_direction	WEST
+	item_slot	west_orb
+block_def	R
+	block	op.portal_keystone
+	facing_direction	NORTH
+	item_slot	reverse_orb
+block_def	1
+	block	op.pedestal
+	item_slot	special_pickaxe
+block_def	2
+	block	op.pedestal
+	item_slot	special_shovel
+block_def	3
+	block	op.pedestal
+	item_slot	special_axe
+block_def	4
+	block	op.pedestal
+	item_slot	special_sword
