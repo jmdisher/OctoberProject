@@ -24,17 +24,7 @@ public class PollingClient
 		_listener = listener;
 		_queue = new MessageQueue();
 		_thread = new Thread(() -> {
-			try
-			{
-				_backgroundThreadMain();
-			}
-			catch (Throwable t)
-			{
-				// This is a fatal error so just stop.
-				// We will manage this differently in the future but this makes test/debug turn-around simpler in the near-term.
-				t.printStackTrace();
-				System.exit(100);
-			}
+			_backgroundThreadMain();
 		}, "Polling Client");
 		_thread.start();
 	}

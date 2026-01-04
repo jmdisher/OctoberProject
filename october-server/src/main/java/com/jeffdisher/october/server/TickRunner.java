@@ -153,18 +153,8 @@ public class TickRunner
 		{
 			int id = i;
 			_threads[i] = new Thread(() -> {
-				try
-				{
-					ProcessorElement thisThread = new ProcessorElement(id, _syncPoint, atomic);
-					_backgroundThreadMain(thisThread);
-				}
-				catch (Throwable t)
-				{
-					// This is a fatal error so just stop.
-					// We will manage this differently in the future but this makes test/debug turn-around simpler in the near-term.
-					t.printStackTrace();
-					System.exit(100);
-				}
+				ProcessorElement thisThread = new ProcessorElement(id, _syncPoint, atomic);
+				_backgroundThreadMain(thisThread);
 			}, "Tick Runner #" + i);
 		}
 	}

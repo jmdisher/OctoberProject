@@ -21,6 +21,8 @@ public class ServerMain
 {
 	public static void main(String[] args)
 	{
+		_setupDefaultExceptionHandler();
+		
 		// For now, we will only assume 1 argument:  port number.
 		if (1 == args.length)
 		{
@@ -96,6 +98,21 @@ public class ServerMain
 			System.err.println("Usage:  ServerMain PORT");
 			System.exit(1);
 		}
+	}
+
+
+	private static void _setupDefaultExceptionHandler()
+	{
+		Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler()
+		{
+			@Override
+			public void uncaughtException(Thread t, Throwable e)
+			{
+				System.err.println("Fatal error in thread: " + t);
+				e.printStackTrace(System.err);
+				System.exit(2);
+			}
+		});
 	}
 
 

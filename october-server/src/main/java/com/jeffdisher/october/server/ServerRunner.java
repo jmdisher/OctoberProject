@@ -91,17 +91,7 @@ public class ServerRunner
 		
 		_messages = new MessageQueue();
 		_background = new Thread(()-> {
-			try
-			{
-				_backgroundMain();
-			}
-			catch (Throwable t)
-			{
-				// This is a fatal error so just stop.
-				// We will manage this differently in the future but this makes test/debug turn-around simpler in the near-term.
-				t.printStackTrace();
-				System.exit(101);
-			}
+			_backgroundMain();
 		}, "ServerRunner");
 		_currentTimeMillisProvider = currentTimeMillisProvider;
 		_monitoringAgent = monitoringAgent;
