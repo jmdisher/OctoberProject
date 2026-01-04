@@ -184,18 +184,22 @@ public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMut
 		else if ((env.special.itemStoneHoe == type) && ((env.special.blockDirt == block) || (env.special.blockGrass == block)))
 		{
 			// We will decrement the durability of the hoe and replace the target block with tilled soil.
-			int randomNumberTo255 = context.randomInt.applyAsInt(256);
-			NonStackableItem newItem = PropertyHelpers.reduceDurabilityOrBreak(nonStack, 1, randomNumberTo255);
-			if (null != newItem)
+			// (we ignore tool durability on the client)
+			if (null != context.randomInt)
 			{
-				// Normal wear.
-				mutableInventory.replaceNonStackable(selectedKey, newItem);
-			}
-			else
-			{
-				// Broken.
-				mutableInventory.removeNonStackableItems(selectedKey);
-				newEntity.setSelectedKey(Entity.NO_SELECTION);
+				int randomNumberTo255 = context.randomInt.applyAsInt(256);
+				NonStackableItem newItem = PropertyHelpers.reduceDurabilityOrBreak(nonStack, 1, randomNumberTo255);
+				if (null != newItem)
+				{
+					// Normal wear.
+					mutableInventory.replaceNonStackable(selectedKey, newItem);
+				}
+				else
+				{
+					// Broken.
+					mutableInventory.removeNonStackableItems(selectedKey);
+					newEntity.setSelectedKey(Entity.NO_SELECTION);
+				}
 			}
 			context.mutationSink.next(new MutationBlockReplace(_target, block, env.special.blockTilledSoil));
 			didApply = true;

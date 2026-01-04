@@ -11,6 +11,8 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.HeightMapHelpers;
+import com.jeffdisher.october.logic.PropertyHelpers;
+import com.jeffdisher.october.subactions.EntityChangeUseSelectedItemOnBlock;
 import com.jeffdisher.october.subactions.EntitySubActionDropItemsAsPassive;
 import com.jeffdisher.october.subactions.EntitySubActionPickUpPassive;
 import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
@@ -27,6 +29,7 @@ import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -40,14 +43,18 @@ public class TestOneOffRunner
 	private static Environment ENV;
 	private static Item STONE_ITEM;
 	private static Item DIRT_ITEM;
+	private static Item STONE_HOE;
 	private static Block STONE_BLOCK;
+	private static Block TILLED_SOIL_BLOCK;
 	@BeforeClass
 	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");
 		DIRT_ITEM = ENV.items.getItemById("op.dirt");
+		STONE_HOE = ENV.items.getItemById("op.stone_hoe");
 		STONE_BLOCK = ENV.blocks.fromItem(STONE_ITEM);
+		TILLED_SOIL_BLOCK = ENV.blocks.fromItem(ENV.items.getItemById("op.tilled_soil"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -251,6 +258,32 @@ public class TestOneOffRunner
 		
 		Entity result = end.thisEntity();
 		Assert.assertEquals(target, result.location());
+	}
+
+	@Test
+	public void ignoreHoeWear() throws Throwable
+	{
+		// Just shoe that using a hoe on a block ignores the tool durability degradation.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = new EntityLocation(5.0f, 5.0f, 5.0f);
+		NonStackableItem hoe = PropertyHelpers.newItemWithDefaults(ENV, STONE_HOE);
+		mutable.newInventory.addNonStackableAllowingOverflow(hoe);
+		mutable.setSelectedKey(1);
+		Entity entity = mutable.freeze();
+		AbsoluteLocation target = mutable.newLocation.getBlockLocation().getRelative(0, 0, -1);
+		
+		CuboidAddress airAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(airAddress, ENV.special.AIR);
+		airCuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), DIRT_ITEM.number());
+		
+		EntityChangeUseSelectedItemOnBlock till = new EntityChangeUseSelectedItemOnBlock(target);
+		OneOffRunner.StatePackage start = new OneOffRunner.StatePackage(entity, Map.of(airAddress, airCuboid
+		), Map.of(airAddress, HeightMapHelpers.buildHeightMap(airCuboid)
+		), null, Map.of(), Map.of());
+		OneOffRunner.StatePackage end = OneOffRunner.runOneChange(start, null, MILLIS_PER_TICK, 1_000L, new OneOffSubActionWrapper(till));
+		
+		Assert.assertEquals(TILLED_SOIL_BLOCK.item().number(), end.world().get(airAddress).getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertTrue(hoe == end.thisEntity().inventory().getNonStackableForKey(1));
 	}
 
 
