@@ -20,10 +20,12 @@ import com.jeffdisher.october.mutations.MutationBlockFetchSpecialForEnchantment;
 import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EnchantingOperation;
 import com.jeffdisher.october.types.Enchantment;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
@@ -387,7 +389,19 @@ public class TestEnchantingBlockSupport
 				, 1000L
 			);
 		};
-		TickProcessingContext context = _createContextWithSinks(cuboid, null, spawner);
+		EventRecord[] out_events = new EventRecord[1];
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation blockLocation) -> {
+				Assert.assertEquals(cuboid.getCuboidAddress(), blockLocation.getCuboidAddress());
+				return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
+			}, null, null)
+			.passive(spawner)
+			.eventSink((EventRecord event) -> {
+				Assert.assertNull(out_events[0]);
+				out_events[0] = event;
+			})
+			.finish()
+		;
 		MutableBlockProxy proxy = new MutableBlockProxy(TABLE_LOCATION, cuboid);
 		EnchantingBlockSupport.receiveConsumedInputItem(ENV, context, TABLE_LOCATION, proxy, ItemSlot.fromStack(new Items(IRON_INGOT, 1)));
 		EnchantingOperation operation = proxy.getEnchantingOperation();
@@ -397,6 +411,12 @@ public class TestEnchantingBlockSupport
 		Assert.assertEquals(IRON_PICKAXE, finishedItem.type());
 		Assert.assertEquals(500000, finishedItem.properties().get(PropertyRegistry.DURABILITY));
 		Assert.assertEquals((byte)1, finishedItem.properties().get(PropertyRegistry.ENCHANT_DURABILITY));
+		Assert.assertEquals(new EventRecord(EventRecord.Type.ENCHANT_COMPLETE
+			, EventRecord.Cause.NONE
+			, TABLE_LOCATION
+			, 0
+			, 0
+		), out_events[0]);
 	}
 
 	@Test

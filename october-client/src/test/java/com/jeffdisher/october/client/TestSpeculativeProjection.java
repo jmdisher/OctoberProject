@@ -1133,7 +1133,13 @@ public class TestSpeculativeProjection
 				, currentTimeMillis
 		);
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertTrue(listener.events.isEmpty());
+		Assert.assertEquals(1, listener.events.size());
+		Assert.assertEquals(new EventRecord(EventRecord.Type.CRAFT_IN_INVENTORY_COMPLETE
+			, EventRecord.Cause.NONE
+			, entity.location().getBlockLocation()
+			, entityId
+			, entityId
+		), listener.events.remove(0));
 	}
 
 	@Test
@@ -1200,7 +1206,13 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, inv.getCount(STONE_BRICK_ITEM));
 		entity = listener.thisEntityState;
 		Assert.assertEquals(Entity.NO_SELECTION, entity.hotbarItems()[entity.hotbarIndex()]);
-		Assert.assertTrue(listener.events.isEmpty());
+		Assert.assertEquals(1, listener.events.size());
+		Assert.assertEquals(new EventRecord(EventRecord.Type.CRAFT_IN_INVENTORY_COMPLETE
+			, EventRecord.Cause.NONE
+			, entity.location().getBlockLocation()
+			, entityId
+			, entityId
+		), listener.events.remove(0));
 	}
 
 	@Test

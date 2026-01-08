@@ -202,38 +202,45 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		
-		// We will create a bogus context which just says that they are standing in a wall so they don't try to move.
-		TickProcessingContext context = _createSimpleContext();
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		_ContextHolder holder = new _ContextHolder(cuboid, false, false);
 		
 		// Give the entity some items and verify that they default to selected.
 		EntityActionStoreToInventory accept = new EntityActionStoreToInventory(new Items(LOG_ITEM, 1), null);
-		Assert.assertTrue(accept.applyChange(context, newEntity));
+		Assert.assertTrue(accept.applyChange(holder.context, newEntity));
 		Assert.assertEquals(LOG_ITEM, _selectedItemType(newEntity));
 		
 		// We want to capture the key for the log so we can try to reference it later.
 		int logKey = newEntity.newInventory.getIdOfStackableType(LOG_ITEM);
 		
 		// Craft some items to use these up and verify that the selection is cleared.
-		for (long spent = 0L; spent < logToPlanks.millisPerCraft; spent += context.millisPerTick)
+		holder.events.expected(new EventRecord(EventRecord.Type.CRAFT_IN_INVENTORY_COMPLETE
+			, EventRecord.Cause.NONE
+			, newEntity.getLocation().getBlockLocation()
+			, newEntity.getId()
+			, newEntity.getId()
+		));
+		for (long spent = 0L; spent < logToPlanks.millisPerCraft; spent += holder.context.millisPerTick)
 		{
 			EntityChangeCraft craft = new EntityChangeCraft(logToPlanks);
-			Assert.assertTrue(craft.applyChange(context, newEntity));
+			Assert.assertTrue(craft.applyChange(holder.context, newEntity));
 		}
+		Assert.assertTrue(holder.events.didPost());
 		Assert.assertEquals(Entity.NO_SELECTION, newEntity.getSelectedKey());
 		
 		// Actively select the type and verify it is selected.
 		MutationEntitySelectItem select = new MutationEntitySelectItem(newEntity.newInventory.getIdOfStackableType(PLANK_ITEM));
-		Assert.assertTrue(select.applyChange(context, newEntity));
+		Assert.assertTrue(select.applyChange(holder.context, newEntity));
 		Assert.assertEquals(PLANK_ITEM, _selectedItemType(newEntity));
 		
 		// Demonstrate that we can't select something we don't have (the logs we just used).
 		MutationEntitySelectItem select2 = new MutationEntitySelectItem(logKey);
-		Assert.assertFalse(select2.applyChange(context, newEntity));
+		Assert.assertFalse(select2.applyChange(holder.context, newEntity));
 		Assert.assertEquals(PLANK_ITEM, _selectedItemType(newEntity));
 		
 		// Show that we can unselect.
 		MutationEntitySelectItem select3 = new MutationEntitySelectItem(Entity.NO_SELECTION);
-		Assert.assertTrue(select3.applyChange(context, newEntity));
+		Assert.assertTrue(select3.applyChange(holder.context, newEntity));
 		Assert.assertEquals(Entity.NO_SELECTION, newEntity.getSelectedKey());
 	}
 
@@ -500,9 +507,16 @@ public class TestCommonChanges
 		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
 		
 		// We will create a bogus context which just says that they are floating in the air so they can drop.
-		TickProcessingContext context = _createSimpleContext();
+		_Events events = new _Events();
+		TickProcessingContext context = _createSimpleContextWithEvents(events);
 		
 		// Craft some items to use these up and verify that we also moved.
+		events.expected(new EventRecord(EventRecord.Type.CRAFT_IN_INVENTORY_COMPLETE
+			, EventRecord.Cause.NONE
+			, newEntity.getLocation().getBlockLocation().getRelative(0, 0, -5)
+			, newEntity.getId()
+			, newEntity.getId()
+		));
 		for (long spent = 0L; spent < logToPlanks.millisPerCraft; spent += context.millisPerTick)
 		{
 			EntityChangeCraft craft = new EntityChangeCraft(logToPlanks);
@@ -514,6 +528,7 @@ public class TestCommonChanges
 				TickUtils.applyEnvironmentalDamage(context, newEntity);
 			}
 		}
+		Assert.assertTrue(events.didPost());
 		Assert.assertEquals(14.61f, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(-9.8, newEntity.newVelocity.z(), 0.01f);
 	}
@@ -944,19 +959,25 @@ public class TestCommonChanges
 		newEntity.newInventory.addAllItems(bread, 1);
 		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
 		newEntity.newFood = 90;
-		TickProcessingContext context = ContextBuilder.build()
-				.tick(5L)
-				.finish()
-		;
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		_ContextHolder holder = new _ContextHolder(cuboid, false, false);
 		
 		// We will fail to eat the log.
 		EntityChangeUseSelectedItemOnSelf eat = new EntityChangeUseSelectedItemOnSelf();
-		Assert.assertFalse(eat.applyChange(context, newEntity));
+		Assert.assertFalse(eat.applyChange(holder.context, newEntity));
 		Assert.assertEquals(90, newEntity.newFood);
 		
 		// We should succeed in eating the bread, though.
+		holder.events.expected(new EventRecord(EventRecord.Type.ENTITY_ATE_FOOD
+			, EventRecord.Cause.NONE
+			, newEntity.newLocation.getBlockLocation()
+			, newEntity.getId()
+			, newEntity.getId()
+		));
 		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(bread));
-		Assert.assertTrue(eat.applyChange(context, newEntity));
+		Assert.assertTrue(eat.applyChange(holder.context, newEntity));
+		Assert.assertTrue(holder.events.didPost());
 		
 		Assert.assertEquals(Entity.NO_SELECTION, newEntity.getSelectedKey());
 		Assert.assertEquals(1, newEntity.newInventory.getCount(STONE_ITEM));
@@ -1685,25 +1706,39 @@ public class TestCommonChanges
 		newEntity.newHotbarIndex = 0;
 		newEntity.freeze();
 		
-		// We will create a bogus context which just says that they are standing in a wall so they don't try to move.
-		TickProcessingContext context = _createSimpleContext();
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		_ContextHolder holder = new _ContextHolder(cuboid, false, false);
 		
-		for (long spent = 0L; spent < logToPlanks.millisPerCraft; spent += context.millisPerTick)
+		holder.events.expected(new EventRecord(EventRecord.Type.CRAFT_IN_INVENTORY_COMPLETE
+			, EventRecord.Cause.NONE
+			, newEntity.getLocation().getBlockLocation()
+			, newEntity.getId()
+			, newEntity.getId()
+		));
+		for (long spent = 0L; spent < logToPlanks.millisPerCraft; spent += holder.context.millisPerTick)
 		{
 			EntityChangeCraft craft = new EntityChangeCraft(logToPlanks);
-			Assert.assertTrue(craft.applyChange(context, newEntity));
+			Assert.assertTrue(craft.applyChange(holder.context, newEntity));
 		}
+		Assert.assertTrue(holder.events.didPost());
 		Assert.assertNull(newEntity.newLocalCraftOperation);
 		Assert.assertEquals(Entity.NO_SELECTION, newEntity.newHotbar[0]);
 		Assert.assertEquals(2, newEntity.newHotbar[1]);
 		Assert.assertEquals(0, newEntity.newHotbarIndex);
 		newEntity.freeze();
 		
-		for (long spent = 0L; spent < stoneToBrick.millisPerCraft; spent += context.millisPerTick)
+		holder.events.expected(new EventRecord(EventRecord.Type.CRAFT_IN_INVENTORY_COMPLETE
+			, EventRecord.Cause.NONE
+			, newEntity.getLocation().getBlockLocation()
+			, newEntity.getId()
+			, newEntity.getId()
+		));
+		for (long spent = 0L; spent < stoneToBrick.millisPerCraft; spent += holder.context.millisPerTick)
 		{
 			EntityChangeCraft craft = new EntityChangeCraft(stoneToBrick);
-			Assert.assertTrue(craft.applyChange(context, newEntity));
+			Assert.assertTrue(craft.applyChange(holder.context, newEntity));
 		}
+		Assert.assertTrue(holder.events.didPost());
 		Assert.assertNull(newEntity.newLocalCraftOperation);
 		Assert.assertEquals(Entity.NO_SELECTION, newEntity.newHotbar[0]);
 		Assert.assertEquals(Entity.NO_SELECTION, newEntity.newHotbar[1]);
@@ -1812,6 +1847,12 @@ public class TestCommonChanges
 		mutable.writeBack(cuboid);
 		
 		// Run the crafting operation.
+		holder.events.expected(new EventRecord(EventRecord.Type.CRAFT_IN_BLOCK_COMPLETE
+			, EventRecord.Cause.NONE
+			, quern
+			, 0
+			, 0
+		));
 		for (long spent = 0L; spent < grindFlour.millisPerCraft; spent += holder.context.millisPerTick)
 		{
 			EntityChangeCraftInBlock craft = new EntityChangeCraftInBlock(quern, grindFlour);
@@ -1835,6 +1876,7 @@ public class TestCommonChanges
 			holder.mutation = null;
 			mutable.writeBack(cuboid);
 		}
+		Assert.assertTrue(holder.events.didPost());
 	}
 
 	@Test
@@ -2461,7 +2503,8 @@ public class TestCommonChanges
 		newEntity.newHotbar[1] = 2;
 		
 		// We will create a bogus context which just says that they are standing in a wall so they don't try to move.
-		TickProcessingContext context = _createSimpleContext();
+		_Events events = new _Events();
+		TickProcessingContext context = _createSimpleContextWithEvents(events);
 		
 		// We will only explicitly name the crafting operation the first time.
 		EntityChangeCraft craft = new EntityChangeCraft(logToPlanks);
@@ -2469,11 +2512,18 @@ public class TestCommonChanges
 		Assert.assertNotNull(newEntity.newLocalCraftOperation);
 		
 		// ... and use null for the follow-ups.
+		events.expected(new EventRecord(EventRecord.Type.CRAFT_IN_INVENTORY_COMPLETE
+			, EventRecord.Cause.NONE
+			, newEntity.getLocation().getBlockLocation()
+			, newEntity.getId()
+			, newEntity.getId()
+		));
 		for (long spent = context.millisPerTick; spent < logToPlanks.millisPerCraft; spent += context.millisPerTick)
 		{
 			craft = new EntityChangeCraft(null);
 			Assert.assertTrue(craft.applyChange(context, newEntity));
 		}
+		Assert.assertTrue(events.didPost());
 		
 		// If nothing is selected, null should just fail.
 		craft = new EntityChangeCraft(null);

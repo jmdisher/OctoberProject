@@ -18,6 +18,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.EnchantingOperation;
 import com.jeffdisher.october.types.Enchantment;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.Infusion;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
@@ -195,6 +196,14 @@ public class EnchantingBlockSupport
 							);
 							proxy.setEnchantingOperation(null);
 							proxy.setSpecialSlot(null);
+							
+							// Report the event (in block, so no entity ID).
+							context.eventSink.post(new EventRecord(EventRecord.Type.ENCHANT_COMPLETE
+								, EventRecord.Cause.NONE
+								, blockLocation
+								, 0
+								, 0
+							));
 						}
 						else
 						{

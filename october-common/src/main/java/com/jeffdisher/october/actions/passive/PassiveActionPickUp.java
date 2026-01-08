@@ -1,6 +1,7 @@
 package com.jeffdisher.october.actions.passive;
 
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.PassiveEntity;
@@ -38,6 +39,17 @@ public class PassiveActionPickUp implements IPassiveAction
 		EntityActionStoreToInventory store = new EntityActionStoreToInventory(slot.stack, slot.nonStackable);
 		
 		boolean didSchedule = context.newChangeSink.next(_callingEntityId, store);
+		
+		if (didSchedule)
+		{
+			// Report the event (even though the passive will de-spawn).
+			context.eventSink.post(new EventRecord(EventRecord.Type.ENTITY_PICKED_UP_PASSIVE
+				, EventRecord.Cause.NONE
+				, entity.location().getBlockLocation()
+				, _callingEntityId
+				, entity.id()
+			));
+		}
 		
 		// We will despawn if we sent the change.
 		return didSchedule

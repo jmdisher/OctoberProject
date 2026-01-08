@@ -25,6 +25,7 @@ import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -125,7 +126,8 @@ public class TestPassiveActions
 	public void passiveDespawnOnPickUp() throws Throwable
 	{
 		// We will show that a passive item slot will request that it despawn when picked up so long as the requesting player is still online.
-		PassiveEntity stackIngot = new PassiveEntity(1
+		int passiveId = 2;
+		PassiveEntity stackIngot = new PassiveEntity(passiveId
 			, PassiveType.ITEM_SLOT
 			, new EntityLocation(5.0f, 5.0f, 5.0f)
 			, new EntityLocation(0.0f, 0.0f, 0.0f)
@@ -134,6 +136,7 @@ public class TestPassiveActions
 		);
 		
 		int idLoaded = 1;
+		EventRecord[] out_events = new EventRecord[1];
 		TickProcessingContext context = ContextBuilder.build()
 			.sinks(null, new TickProcessingContext.IChangeSink()
 			{
@@ -159,12 +162,24 @@ public class TestPassiveActions
 					throw new AssertionError("Not in test");
 				}
 			})
+			.eventSink((EventRecord event) -> {
+				Assert.assertNull(out_events[0]);
+				out_events[0] = event;
+			})
 			.finish()
 		;
 		
 		// This should despawn if we ack the pick-up to the loaded ID, only.
 		Assert.assertNull(new PassiveActionPickUp(idLoaded).applyChange(context, stackIngot));
+		Assert.assertNotNull(out_events[0]);
 		Assert.assertEquals(stackIngot, new PassiveActionPickUp(2).applyChange(context, stackIngot));
+		Assert.assertNotNull(out_events[0]);
+		Assert.assertEquals(new EventRecord(EventRecord.Type.ENTITY_PICKED_UP_PASSIVE
+			, EventRecord.Cause.NONE
+			, stackIngot.location().getBlockLocation()
+			, idLoaded
+			, passiveId
+		), out_events[0]);
 	}
 
 	@Test

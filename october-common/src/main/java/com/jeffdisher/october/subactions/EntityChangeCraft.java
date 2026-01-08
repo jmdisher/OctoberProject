@@ -10,6 +10,7 @@ import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -106,6 +107,14 @@ public class EntityChangeCraft implements IEntitySubAction<IMutablePlayerEntity>
 				// Clear the current operation since we are done.
 				newEntity.setCurrentCraftingOperation(null);
 				isValid = didCraft;
+				
+				// Report the event (use our ID).
+				context.eventSink.post(new EventRecord(EventRecord.Type.CRAFT_IN_INVENTORY_COMPLETE
+					, EventRecord.Cause.NONE
+					, newEntity.getLocation().getBlockLocation()
+					, newEntity.getId()
+					, newEntity.getId()
+				));
 			}
 			else
 			{

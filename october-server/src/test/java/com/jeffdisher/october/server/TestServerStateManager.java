@@ -1380,6 +1380,11 @@ public class TestServerStateManager
 		EventRecord entityKilledEvent = new EventRecord(EventRecord.Type.ENTITY_KILLED, EventRecord.Cause.SUFFOCATION, new AbsoluteLocation(2, 2, 2), clientId1, 0);
 		EventRecord liquidRemovedEvent = new EventRecord(EventRecord.Type.LIQUID_REMOVED, EventRecord.Cause.NONE, new AbsoluteLocation(2, 2, 2), 0, 0);
 		EventRecord liquidPlacedEvent = new EventRecord(EventRecord.Type.LIQUID_PLACED, EventRecord.Cause.NONE, new AbsoluteLocation(2, 2, 2), 0, 0);
+		EventRecord ateFoodEvent = new EventRecord(EventRecord.Type.ENTITY_ATE_FOOD, EventRecord.Cause.NONE, new AbsoluteLocation(2, 2, 2), clientId1, 0);
+		EventRecord pickedUpPassiveEvent = new EventRecord(EventRecord.Type.ENTITY_PICKED_UP_PASSIVE, EventRecord.Cause.NONE, new AbsoluteLocation(2, 2, 2), clientId1, 0);
+		EventRecord craftInInventoryCompleteEvent = new EventRecord(EventRecord.Type.CRAFT_IN_INVENTORY_COMPLETE, EventRecord.Cause.NONE, new AbsoluteLocation(2, 2, 2), clientId1, 0);
+		EventRecord craftInBlockCompleteEvent = new EventRecord(EventRecord.Type.CRAFT_IN_BLOCK_COMPLETE, EventRecord.Cause.NONE, new AbsoluteLocation(2, 2, 2), 0, 0);
+		EventRecord enchantCompleteEvent = new EventRecord(EventRecord.Type.ENCHANT_COMPLETE, EventRecord.Cause.NONE, new AbsoluteLocation(2, 2, 2), 0, 0);
 		
 		snapshot = new TickRunner.Snapshot(snapshot.tickNumber() + 1L
 			, snapshot.cuboids()
@@ -1394,6 +1399,11 @@ public class TestServerStateManager
 				, entityKilledEvent
 				, liquidRemovedEvent
 				, liquidPlacedEvent
+				, ateFoodEvent
+				, pickedUpPassiveEvent
+				, craftInInventoryCompleteEvent
+				, craftInBlockCompleteEvent
+				, enchantCompleteEvent
 			)
 			, snapshot.internallyMarkedAlive()
 			
@@ -1403,14 +1413,19 @@ public class TestServerStateManager
 		Assert.assertEquals(0, changes.newCuboids().size());
 		Assert.assertEquals(0, changes.newEntities().size());
 		
-		Assert.assertEquals(4, callouts.blockEventsSentToClient.get(clientId1).size());
+		Assert.assertEquals(6, callouts.blockEventsSentToClient.get(clientId1).size());
 		Assert.assertEquals(blockBrokenEvent, callouts.blockEventsSentToClient.get(clientId1).remove(0));
 		Assert.assertEquals(blockPlacedEvent, callouts.blockEventsSentToClient.get(clientId1).remove(0));
 		Assert.assertEquals(liquidRemovedEvent, callouts.blockEventsSentToClient.get(clientId1).remove(0));
 		Assert.assertEquals(liquidPlacedEvent, callouts.blockEventsSentToClient.get(clientId1).remove(0));
-		Assert.assertEquals(2, callouts.entityEventsSentToClient.get(clientId1).size());
+		Assert.assertEquals(craftInBlockCompleteEvent, callouts.blockEventsSentToClient.get(clientId1).remove(0));
+		Assert.assertEquals(enchantCompleteEvent, callouts.blockEventsSentToClient.get(clientId1).remove(0));
+		Assert.assertEquals(5, callouts.entityEventsSentToClient.get(clientId1).size());
 		Assert.assertEquals(entityHurtEvent, callouts.entityEventsSentToClient.get(clientId1).remove(0));
 		Assert.assertEquals(entityKilledEvent, callouts.entityEventsSentToClient.get(clientId1).remove(0));
+		Assert.assertEquals(ateFoodEvent, callouts.entityEventsSentToClient.get(clientId1).remove(0));
+		Assert.assertEquals(pickedUpPassiveEvent, callouts.entityEventsSentToClient.get(clientId1).remove(0));
+		Assert.assertEquals(craftInInventoryCompleteEvent, callouts.entityEventsSentToClient.get(clientId1).remove(0));
 		
 		manager.clientDisconnected(clientId1);
 		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));

@@ -6,15 +6,18 @@ import com.jeffdisher.october.aspects.CraftAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.IBlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
+import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -34,12 +37,14 @@ public class CraftingBlockSupport
 	 * NOTE:  This assumes that this block supports manual crafting.
 	 * 
 	 * @param env The environment.
+	 * @param context The context for reporting events.
 	 * @param newBlock The block.
+	 * @param location The location of the block.
 	 * @param startCraft The crafting operation to start, null to just continue what is happening.
 	 * @param millisToApply The milliseconds of crafting work to apply.
 	 * @return True if some crafting work was done.
 	 */
-	public static boolean runManual(Environment env, IMutableBlockProxy newBlock, Craft startCraft, long millisToApply)
+	public static boolean runManual(Environment env, TickProcessingContext context, IMutableBlockProxy newBlock, AbsoluteLocation location, Craft startCraft, long millisToApply)
 	{
 		boolean didApply;
 		Block craftingBlock = newBlock.getBlock();
@@ -66,6 +71,8 @@ public class CraftingBlockSupport
 						newBlock.setInventory(mutable.freeze());
 						newBlock.setCrafting(null);
 					}
+					
+					_reportCraftInBlockEvent(context, location);
 				}
 				else
 				{
@@ -121,12 +128,14 @@ public class CraftingBlockSupport
 	 * NOTE:  This assumes that this block supports fuelled crafting.
 	 * 
 	 * @param env The environment.
+	 * @param context The context for reporting events.
 	 * @param newBlock The block.
+	 * @param location The location of the block.
 	 * @param millisToApply The milliseconds of crafting work to apply.
 	 * @return The result tuple, describing whether some work was done and whether the caller should schedule another
 	 * crafting operation against this block.
 	 */
-	public static FuelledResult runFuelled(Environment env, IMutableBlockProxy newBlock, long millisToApply)
+	public static FuelledResult runFuelled(Environment env, TickProcessingContext context, IMutableBlockProxy newBlock, AbsoluteLocation location, long millisToApply)
 	{
 		boolean didApply;
 		boolean shouldReschedule;
@@ -175,6 +184,8 @@ public class CraftingBlockSupport
 					CraftAspect.craft(env, craft.selectedCraft(), inv);
 					newBlock.setInventory(inv.freeze());
 					craft = null;
+					
+					_reportCraftInBlockEvent(context, location);
 				}
 				newBlock.setCrafting(craft);
 				newBlock.setFuel(fuel);
@@ -284,6 +295,20 @@ public class CraftingBlockSupport
 			}
 		}
 		return canCraft;
+	}
+
+	private static void _reportCraftInBlockEvent(TickProcessingContext context, AbsoluteLocation location)
+	{
+		// Report the event if running server-side (in block, so no entity ID).
+		if (context.currentTick > 0L)
+		{
+			context.eventSink.post(new EventRecord(EventRecord.Type.CRAFT_IN_BLOCK_COMPLETE
+				, EventRecord.Cause.NONE
+				, location
+				, 0
+				, 0
+			));
+		}
 	}
 
 

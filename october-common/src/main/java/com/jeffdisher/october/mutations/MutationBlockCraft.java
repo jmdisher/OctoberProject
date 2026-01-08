@@ -60,7 +60,7 @@ public class MutationBlockCraft implements IMutationBlock
 		// Make sure that we are a crafting table.
 		if (env.stations.getManualMultiplier(newBlock.getBlock()) > 0)
 		{
-			didApply = CraftingBlockSupport.runManual(env, newBlock, _craft, _millisToApply);
+			didApply = CraftingBlockSupport.runManual(env, context, newBlock, _location, _craft, _millisToApply);
 		}
 		return didApply;
 	}

@@ -27,6 +27,7 @@ import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -136,7 +137,7 @@ public class TestEnginePassives
 	@Test
 	public void pickedUp()
 	{
-		int passiveId = 1;
+		int passiveId = 2;
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
 		ItemSlot slot = ItemSlot.fromStack(new Items(STONE_ITEM, 2));
 		long lastAliveMillis = PassiveType.ITEM_SLOT_DESPAWN_MILLIS + 1L;
@@ -160,13 +161,33 @@ public class TestEnginePassives
 				return true;
 			}
 		};
-		TickProcessingContext context = _createContextWithSink(sink);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		EventRecord[] out_events = new EventRecord[1];
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(1L)
+			.lookups((AbsoluteLocation lookupLocation) -> {
+				Assert.assertEquals(airCuboid.getCuboidAddress(), lookupLocation.getCuboidAddress());
+				return new BlockProxy(lookupLocation.getBlockAddress(), airCuboid);
+			} , null, null)
+			.sinks(null, sink)
+			.eventSink((EventRecord event) -> {
+				Assert.assertNull(out_events[0]);
+				out_events[0] = event;
+			})
+			.finish()
+		;
 		EntityCollection entityCollection = EntityCollection.emptyCollection();
 		
 		PassiveActionPickUp pickUp = new PassiveActionPickUp(entityId);
 		PassiveEntity result = EnginePassives.processOneCreature(context, entityCollection, passive, List.of(pickUp));
 		Assert.assertNull(result);
 		Assert.assertNotNull(out[0]);
+		Assert.assertEquals(new EventRecord(EventRecord.Type.ENTITY_PICKED_UP_PASSIVE
+			, EventRecord.Cause.NONE
+			, passive.location().getBlockLocation()
+			, entityId
+			, passive.id()
+		), out_events[0]);
 	}
 
 	@Test

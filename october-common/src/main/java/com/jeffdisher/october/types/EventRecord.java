@@ -21,6 +21,24 @@ public record EventRecord(Type type
 		ENTITY_KILLED,
 		LIQUID_REMOVED,
 		LIQUID_PLACED,
+		/**
+		 * Both entityTarget and entitySource set to the entity ID.
+		 */
+		ENTITY_ATE_FOOD,
+		/**
+		 * entityTarget picked it up and entitySource is the now-gone passive.
+		 */
+		ENTITY_PICKED_UP_PASSIVE,
+		/**
+		 * The entityTarget and entitySource will be set to the entity ID.
+		 */
+		CRAFT_IN_INVENTORY_COMPLETE,
+		/**
+		 * This type refers to crafting in a block, be in manually crafted or automatic/fueled crafting.
+		 * The entityTarget and entitySource will be set to 0.
+		 */
+		CRAFT_IN_BLOCK_COMPLETE,
+		ENCHANT_COMPLETE,
 	}
 
 	/**

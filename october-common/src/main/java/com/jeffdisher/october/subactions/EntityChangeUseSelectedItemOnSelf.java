@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -58,6 +59,14 @@ public class EntityChangeUseSelectedItemOnSelf implements IEntitySubAction<IMuta
 			
 			if (didApply)
 			{
+				// Report the event.
+				context.eventSink.post(new EventRecord(EventRecord.Type.ENTITY_ATE_FOOD
+					, EventRecord.Cause.NONE
+					, newEntity.getLocation().getBlockLocation()
+					, newEntity.getId()
+					, newEntity.getId()
+				));
+				
 				// Rate-limit us by updating the special action time.
 				newEntity.setLastSpecialActionMillis(context.currentTickTimeMillis);
 				newEntity.setCurrentChargeMillis(0);

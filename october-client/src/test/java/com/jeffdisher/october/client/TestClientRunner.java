@@ -546,7 +546,19 @@ public class TestClientRunner
 		currentTimeMillis += 80L;
 		runner.standStill(currentTimeMillis);
 		Assert.assertEquals(0, projection.thisEntity.inventory().getCount(bread));
-		Assert.assertTrue(projection.events.isEmpty());
+		Assert.assertEquals(2, projection.events.size());
+		Assert.assertEquals(new EventRecord(EventRecord.Type.ENTITY_ATE_FOOD
+			, EventRecord.Cause.NONE
+			, startEntity.location().getBlockLocation()
+			, clientId
+			, clientId
+		), projection.events.remove(0));
+		Assert.assertEquals(new EventRecord(EventRecord.Type.ENTITY_ATE_FOOD
+			, EventRecord.Cause.NONE
+			, startEntity.location().getBlockLocation()
+			, clientId
+			, clientId
+		), projection.events.remove(0));
 	}
 
 	@Test

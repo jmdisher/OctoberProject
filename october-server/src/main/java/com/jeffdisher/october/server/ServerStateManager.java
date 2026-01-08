@@ -686,6 +686,8 @@ public class ServerStateManager
 			case BLOCK_PLACED:
 			case LIQUID_REMOVED:
 			case LIQUID_PLACED:
+			case CRAFT_IN_BLOCK_COMPLETE:
+			case ENCHANT_COMPLETE:
 				// Include these if the cuboid is known to the client.
 				if (state.knownCuboids.contains(event.location().getCuboidAddress()))
 				{
@@ -694,6 +696,9 @@ public class ServerStateManager
 				}
 				break;
 			case ENTITY_HURT:
+			case ENTITY_ATE_FOOD:
+			case ENTITY_PICKED_UP_PASSIVE:
+			case CRAFT_IN_INVENTORY_COMPLETE:
 				// Include this if the entity is known to the client.
 				if (state.knownEntities.contains(event.entityTarget()))
 				{
