@@ -58,6 +58,7 @@ import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
@@ -1314,6 +1315,107 @@ public class TestServerStateManager
 		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 	}
 
+	@Test
+	public void basicEvents()
+	{
+		// Show that we don't see creatures or passives if they are too far away.
+		_Callouts callouts = new _Callouts();
+		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
+		manager.setOwningThread();
+		int clientId1 = 1;
+		String clientName1 = "client1";
+		int viewDistance = 3;
+		manager.clientConnected(clientId1, clientName1, viewDistance);
+		
+		// Load the initial player entity so we will send the updates somewhere.
+		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
+		MutableEntity mutable = MutableEntity.createForTest(clientId1);
+		EntityLocation clientLocation = new EntityLocation(5.0f, 5.0f, 0.0f);
+		mutable.setLocation(clientLocation);
+		callouts.loadedEntities.add(new SuspendedEntity(mutable.freeze(), List.of()));
+		changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
+		Assert.assertEquals(0, changes.newCuboids().size());
+		Assert.assertEquals(1, changes.newEntities().size());
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		callouts.loadedCuboids.add(new SuspendedCuboid<>(cuboid
+			, HeightMapHelpers.buildHeightMap(cuboid)
+			, List.of()
+			, List.of()
+			, Map.of()
+			, List.of()
+		));
+		snapshot = _modifySnapshot(snapshot
+			, Map.of(
+			)
+			, Map.of(clientId1, new TickRunner.SnapshotEntity(mutable.freeze(), null, 1L, List.of()))
+			, snapshot.creatures()
+			, snapshot.passives()
+			, Map.of(
+			)
+			, Set.of()
+		);
+		changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
+		Assert.assertEquals(1, changes.newCuboids().size());
+		Assert.assertTrue(callouts.fullEntitiesSent.contains(clientId1));
+		
+		// Run another snapshot to send the cuboid.
+		snapshot = _modifySnapshot(_advanceSnapshot(snapshot, 1L)
+			, Map.of(cuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(cuboid, null, List.of(), Map.of()))
+			, Map.of(clientId1, new TickRunner.SnapshotEntity(mutable.freeze(), null, 1L, List.of()))
+			, snapshot.creatures()
+			, snapshot.passives()
+			, HeightMapHelpers.buildColumnMaps(Map.of(
+				cuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(cuboid)
+			))
+			, Set.of()
+		);
+		changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
+		
+		// Now, just inject our events and make sure we see them come out the other side.
+		EventRecord blockBrokenEvent = new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, new AbsoluteLocation(2, 2, 2), 0, 0);
+		EventRecord blockPlacedEvent = new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, new AbsoluteLocation(2, 2, 2), 0, 0);
+		EventRecord entityHurtEvent = new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.FALL, new AbsoluteLocation(2, 2, 2), clientId1, 0);
+		EventRecord entityKilledEvent = new EventRecord(EventRecord.Type.ENTITY_KILLED, EventRecord.Cause.SUFFOCATION, new AbsoluteLocation(2, 2, 2), clientId1, 0);
+		EventRecord liquidRemovedEvent = new EventRecord(EventRecord.Type.LIQUID_REMOVED, EventRecord.Cause.NONE, new AbsoluteLocation(2, 2, 2), 0, 0);
+		EventRecord liquidPlacedEvent = new EventRecord(EventRecord.Type.LIQUID_PLACED, EventRecord.Cause.NONE, new AbsoluteLocation(2, 2, 2), 0, 0);
+		
+		snapshot = new TickRunner.Snapshot(snapshot.tickNumber() + 1L
+			, snapshot.cuboids()
+			, snapshot.entities()
+			, snapshot.creatures()
+			, snapshot.passives()
+			, snapshot.completedHeightMaps()
+			
+			, List.of(blockBrokenEvent
+				, blockPlacedEvent
+				, entityHurtEvent
+				, entityKilledEvent
+				, liquidRemovedEvent
+				, liquidPlacedEvent
+			)
+			, snapshot.internallyMarkedAlive()
+			
+			, snapshot.stats()
+		);
+		changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
+		Assert.assertEquals(0, changes.newCuboids().size());
+		Assert.assertEquals(0, changes.newEntities().size());
+		
+		Assert.assertEquals(4, callouts.blockEventsSentToClient.get(clientId1).size());
+		Assert.assertEquals(blockBrokenEvent, callouts.blockEventsSentToClient.get(clientId1).remove(0));
+		Assert.assertEquals(blockPlacedEvent, callouts.blockEventsSentToClient.get(clientId1).remove(0));
+		Assert.assertEquals(liquidRemovedEvent, callouts.blockEventsSentToClient.get(clientId1).remove(0));
+		Assert.assertEquals(liquidPlacedEvent, callouts.blockEventsSentToClient.get(clientId1).remove(0));
+		Assert.assertEquals(2, callouts.entityEventsSentToClient.get(clientId1).size());
+		Assert.assertEquals(entityHurtEvent, callouts.entityEventsSentToClient.get(clientId1).remove(0));
+		Assert.assertEquals(entityKilledEvent, callouts.entityEventsSentToClient.get(clientId1).remove(0));
+		
+		manager.clientDisconnected(clientId1);
+		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
+	}
+
 
 	private TickRunner.Snapshot _createEmptySnapshot()
 	{
@@ -1444,6 +1546,8 @@ public class TestServerStateManager
 		public Map<Integer, Map<Integer, PartialEntity>> partialEntitiesPerClient = new HashMap<>();
 		public Map<Integer, Map<Integer, PartialPassive>> partialPassivesPerClient = new HashMap<>();
 		public Map<Integer, Set<CuboidAddress>> cuboidsSentToClient = new HashMap<>();
+		public Map<Integer, List<EventRecord>> blockEventsSentToClient = new HashMap<>();
+		public Map<Integer, List<EventRecord>> entityEventsSentToClient = new HashMap<>();
 		public boolean isNetworkWriteReady = true;
 		
 		@Override
@@ -1655,11 +1759,31 @@ public class TestServerStateManager
 			}
 			else if (packet instanceof Packet_EventBlock)
 			{
-				throw new AssertionError("network_sendBlockEvent");
+				Packet_EventBlock safe = (Packet_EventBlock) packet;
+				if (!this.blockEventsSentToClient.containsKey(clientId))
+				{
+					this.blockEventsSentToClient.put(clientId, new ArrayList<>());
+				}
+				this.blockEventsSentToClient.get(clientId).add(new EventRecord(safe.eventType
+					, EventRecord.Cause.NONE
+					, safe.location
+					, 0
+					, safe.entitySourceId
+				));
 			}
 			else if (packet instanceof Packet_EventEntity)
 			{
-				throw new AssertionError("network_sendEntityEvent");
+				Packet_EventEntity safe = (Packet_EventEntity) packet;
+				if (!this.entityEventsSentToClient.containsKey(clientId))
+				{
+					this.entityEventsSentToClient.put(clientId, new ArrayList<>());
+				}
+				this.entityEventsSentToClient.get(clientId).add(new EventRecord(safe.eventType
+					, safe.cause
+					, safe.optionalLocation
+					, safe.entityTargetId
+					, safe.entitySourceId
+				));
 			}
 			else
 			{
