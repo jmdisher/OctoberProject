@@ -11,12 +11,21 @@ public record EventRecord(Type type
 	{
 		BLOCK_BROKEN,
 		BLOCK_PLACED,
+		/**
+		 * entityTarget took damage from entitySource (may be 0 if environmental).
+		 */
 		ENTITY_HURT,
+		/**
+		 * entityTarget killed by entitySource (may be 0 if environmental).
+		 */
 		ENTITY_KILLED,
 		LIQUID_REMOVED,
 		LIQUID_PLACED,
 	}
 
+	/**
+	 * The cause is always NONE except when the type is ENTITY_HURT or ENTITY_KILLED.
+	 */
 	public enum Cause
 	{
 		NONE,

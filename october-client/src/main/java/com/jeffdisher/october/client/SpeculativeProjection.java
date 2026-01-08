@@ -83,11 +83,12 @@ public class SpeculativeProjection
 	 * changes for application on future ticks.
 	 */
 	public static final int MAX_FOLLOW_UP_TICKS = 3;
+	// We want to always pass through the events which are related to entities (since we don't speculate on other entities).
+	public static final Set<EventRecord.Type> ENTITY_HURT_EVENT_TYPES = Set.of(EventRecord.Type.ENTITY_HURT, EventRecord.Type.ENTITY_KILLED);
 
 	private final int _localEntityId;
 	private final IProjectionListener _listener;
 	private final long _serverMillisPerTick;
-	private final Set<EventRecord.Type> _eventTypesToAlwaysReport;
 
 	private final ShadowState _shadowState;
 	private ProjectedState _projectedState;
@@ -114,8 +115,6 @@ public class SpeculativeProjection
 		_localEntityId = localEntityId;
 		_listener = listener;
 		_serverMillisPerTick = serverMillisPerTick;
-		// We want to always pass through the events which are related to entities (since we don't speculate on other entities).
-		_eventTypesToAlwaysReport = Set.of(EventRecord.Type.ENTITY_HURT, EventRecord.Type.ENTITY_KILLED);
 		
 		_shadowState = new ShadowState();
 		this.projectionBlockLoader = (AbsoluteLocation location) -> {
@@ -212,13 +211,13 @@ public class SpeculativeProjection
 		// ***** By this point, the shadow state has been updated so we can rebuild the projected state.
 		
 		// First, we can send the events since they are unrelated to our projected state.
-		int thisEntityId = _shadowState.getThisEntity().id();
 		for (EventRecord event : events)
 		{
-			// We may need to strip off some events to avoid redundant reporting:  If the event has this entity as its source AND it is a block-based event, it should be skipped.
-			// Events related to other entities are still let through since we don't apply speculative changes to other entities (only the local entity and the world).
-			boolean isSourceLocal = thisEntityId == event.entitySource();
-			boolean shouldReport = !isSourceLocal || _eventTypesToAlwaysReport.contains(event.type());
+			// We want to avoid redundantly reporting events we already reported when they happened locally.
+			// Note that this still could drop events which should have been detected locally, but were only seen on the
+			// server due to changes from others (for example, we fall but only because of knockback from another entity
+			// the server saw first).
+			boolean shouldReport = !_isLocalEvent(_localEntityId, event);
 			if (shouldReport)
 			{
 				_listener.handleEvent(event);
@@ -743,7 +742,8 @@ public class SpeculativeProjection
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
 			if (shouldSendEvents)
 			{
-				// We will just send these events directly.
+				// Anything running locally must be what we expect as local to not miss reporting.
+				Assert.assertTrue(_isLocalEvent(_localEntityId, event));
 				_listener.handleEvent(event);
 			}
 		};
@@ -886,6 +886,28 @@ public class SpeculativeProjection
 			}
 		}
 		return speculativeModificationsForNotification;
+	}
+
+	private static boolean _isLocalEvent(int thisEntityId, EventRecord event)
+	{
+		// Local events are typically those which list this entity as the source but the local fall damage event is
+		// also generated on the client (since fall damage is calculated here, too).
+		// However, since we don't run local follow-up actions against entities, we also want to account for those
+		// which were injuries to other entities caused by us.
+		boolean isLocalEvent;
+		if ((thisEntityId == event.entitySource()) && !ENTITY_HURT_EVENT_TYPES.contains(event.type()))
+		{
+			isLocalEvent = true;
+		}
+		else if ((0 == event.entitySource()) && (thisEntityId == event.entityTarget()) && (EventRecord.Cause.FALL == event.cause()))
+		{
+			isLocalEvent = true;
+		}
+		else
+		{
+			isLocalEvent = false;
+		}
+		return isLocalEvent;
 	}
 
 

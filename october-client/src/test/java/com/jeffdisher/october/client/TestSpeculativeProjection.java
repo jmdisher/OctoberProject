@@ -87,6 +87,8 @@ public class TestSpeculativeProjection
 	private static Item CRAFTING_TABLE_ITEM;
 	private static Item FURNACE_ITEM;
 	private static Block STONE;
+	private static Block WATER_SOURCE;
+	private static Block LAVA_SOURCE;
 	private static EntityType ORC;
 	@BeforeClass
 	public static void setup() throws Throwable
@@ -99,6 +101,8 @@ public class TestSpeculativeProjection
 		CRAFTING_TABLE_ITEM = ENV.items.getItemById("op.crafting_table");
 		FURNACE_ITEM = ENV.items.getItemById("op.furnace");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
+		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		LAVA_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_source"));
 		ORC = ENV.creatures.getTypeById("op.orc");
 	}
 	@AfterClass
@@ -2907,6 +2911,253 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, remaining);
 		Assert.assertEquals(new EntityLocation(1.18f, 1.36f, 0.0f), listener.thisEntityState.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntityState.velocity());
+	}
+
+	@Test
+	public void hitGroundDamageEvent()
+	{
+		// Shows that the event to take damage from hitting the ground is only seen once, despite re-playing local changes or absorbing server changes.
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		mutable.newLocation = new EntityLocation(1.0f, 1.0f, 0.1f);
+		mutable.newVelocity = new EntityLocation(0.0f, 0.0f, -20.0f);
+		mutable.newFood = (byte)50;
+		Entity localEntity = mutable.freeze();
+		projector.setThisEntity(localEntity);
+		long currentTimeMillis = 1L;
+		CuboidAddress airAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(airAddress, ENV.special.AIR);
+		int remaining = projector.applyChangesForServerTick(1L
+			, List.of()
+			, List.of()
+			, List.of(airCuboid)
+			, null
+			, Collections.emptyMap()
+			, Collections.emptyMap()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, List.of()
+			, 0L
+			, currentTimeMillis
+		);
+		Assert.assertEquals(0, remaining);
+		
+		// Apply the local change of standing still while we hit the ground to see what happens.
+		EntityActionSimpleMove<IMutablePlayerEntity> passiveFall = new EntityActionSimpleMove<>(0.0f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.STANDING
+			, (byte)0
+			, (byte)0
+			, null
+		);
+		long commit = projector.applyLocalChange(passiveFall, currentTimeMillis);
+		Assert.assertEquals(1L, commit);
+		Assert.assertEquals((byte)53, listener.thisEntityState.health());
+		Assert.assertEquals(new EntityLocation(1.0f, 1.0f, 0.0f), listener.thisEntityState.location());
+		Assert.assertEquals(1, listener.events.size());
+		EventRecord record = listener.events.remove(0);
+		Assert.assertEquals(new EventRecord(EventRecord.Type.ENTITY_HURT
+			, EventRecord.Cause.FALL
+			, listener.thisEntityState.location().getBlockLocation()
+			, entityId
+			, 0
+		), record);
+		
+		// Apply a change from the server to slightly move the entity over but not include this commit, so we should still see them hit bottom on replay.
+		Entity previous = localEntity;
+		mutable = MutableEntity.existing(localEntity);
+		mutable.newLocation = new EntityLocation(2.0f, 2.0f, 0.1f);
+		localEntity = mutable.freeze();
+		currentTimeMillis += MILLIS_PER_TICK;
+		remaining = projector.applyChangesForServerTick(2L
+			, List.of()
+			, List.of()
+			, List.of()
+			, EntityUpdatePerField.update(previous, localEntity)
+			, Map.of()
+			, Map.of()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, List.of()
+			, 0L
+			, currentTimeMillis
+		);
+		Assert.assertEquals(1, remaining);
+		Assert.assertEquals((byte)53, listener.thisEntityState.health());
+		Assert.assertEquals(new EntityLocation(2.0f, 2.0f, 0.0f), listener.thisEntityState.location());
+		Assert.assertEquals(0, listener.events.size());
+		
+		// Now, apply the change from the server, with the event, but show that it doesn't pass through since we assume it is an echo.
+		localEntity = listener.thisEntityState;
+		currentTimeMillis += MILLIS_PER_TICK;
+		remaining = projector.applyChangesForServerTick(3L
+			, List.of()
+			, List.of()
+			, List.of()
+			, EntityUpdatePerField.update(previous, localEntity)
+			, Map.of()
+			, Map.of()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, List.of(record)
+			, commit
+			, currentTimeMillis
+		);
+		Assert.assertEquals(0, remaining);
+		Assert.assertEquals((byte)53, listener.thisEntityState.health());
+		Assert.assertEquals(new EntityLocation(2.0f, 2.0f, 0.0f), listener.thisEntityState.location());
+		Assert.assertEquals(0, listener.events.size());
+	}
+
+	@Test
+	public void noEventSuffocate()
+	{
+		// Show that we don't see a suffocation damage event generated in the projection (these only come from the server).
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		mutable.newLocation = new EntityLocation(5.0f, 5.0f, 5.0f);
+		mutable.newBreath = (byte)0;
+		Entity localEntity = mutable.freeze();
+		projector.setThisEntity(localEntity);
+		long currentTimeMillis = 100_000L;
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, WATER_SOURCE);
+		int remaining = projector.applyChangesForServerTick(1L
+			, List.of()
+			, List.of()
+			, List.of(cuboid)
+			, null
+			, Collections.emptyMap()
+			, Collections.emptyMap()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, List.of()
+			, 0L
+			, currentTimeMillis
+		);
+		Assert.assertEquals(0, remaining);
+		
+		// Apply a standing change and make sure we see no damage event.
+		EntityActionSimpleMove<IMutablePlayerEntity> passiveFall = new EntityActionSimpleMove<>(0.0f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.STANDING
+			, (byte)0
+			, (byte)0
+			, null
+		);
+		currentTimeMillis += MILLIS_PER_TICK;
+		long commit = projector.applyLocalChange(passiveFall, currentTimeMillis);
+		Assert.assertEquals(1L, commit);
+		Assert.assertEquals((byte)100, listener.thisEntityState.health());
+		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 4.95f), listener.thisEntityState.location());
+		Assert.assertEquals(0, listener.events.size());
+	}
+
+	@Test
+	public void noEventStarve()
+	{
+		// Show that we don't see a starvation damage event generated in the projection (these only come from the server).
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		mutable.newLocation = new EntityLocation(5.0f, 5.0f, 0.0f);
+		mutable.newFood = (byte)0;
+		Entity localEntity = mutable.freeze();
+		projector.setThisEntity(localEntity);
+		long currentTimeMillis = 100_000L;
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		int remaining = projector.applyChangesForServerTick(1L
+			, List.of()
+			, List.of()
+			, List.of(cuboid)
+			, null
+			, Collections.emptyMap()
+			, Collections.emptyMap()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, List.of()
+			, 0L
+			, currentTimeMillis
+		);
+		Assert.assertEquals(0, remaining);
+		
+		// Apply a standing change and make sure we see no damage event.
+		EntityActionSimpleMove<IMutablePlayerEntity> passiveFall = new EntityActionSimpleMove<>(0.0f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.STANDING
+			, (byte)0
+			, (byte)0
+			, null
+		);
+		currentTimeMillis += MILLIS_PER_TICK;
+		long commit = projector.applyLocalChange(passiveFall, currentTimeMillis);
+		Assert.assertEquals(1L, commit);
+		Assert.assertEquals((byte)100, listener.thisEntityState.health());
+		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 0.0f), listener.thisEntityState.location());
+		Assert.assertEquals(0, listener.events.size());
+	}
+
+	@Test
+	public void noEventBurning()
+	{
+		// Show that we don't see a burning damage event generated in the projection (these only come from the server).
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		mutable.newLocation = new EntityLocation(5.0f, 5.0f, 5.0f);
+		Entity localEntity = mutable.freeze();
+		projector.setThisEntity(localEntity);
+		long currentTimeMillis = 100_000L;
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, LAVA_SOURCE);
+		int remaining = projector.applyChangesForServerTick(1L
+			, List.of()
+			, List.of()
+			, List.of(cuboid)
+			, null
+			, Collections.emptyMap()
+			, Collections.emptyMap()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, List.of()
+			, 0L
+			, currentTimeMillis
+		);
+		Assert.assertEquals(0, remaining);
+		
+		// Apply a standing change and make sure we see no damage event.
+		EntityActionSimpleMove<IMutablePlayerEntity> passiveFall = new EntityActionSimpleMove<>(0.0f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.STANDING
+			, (byte)0
+			, (byte)0
+			, null
+		);
+		currentTimeMillis += MILLIS_PER_TICK;
+		long commit = projector.applyLocalChange(passiveFall, currentTimeMillis);
+		Assert.assertEquals(1L, commit);
+		Assert.assertEquals((byte)100, listener.thisEntityState.health());
+		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 4.98f), listener.thisEntityState.location());
+		Assert.assertEquals(0, listener.events.size());
 	}
 
 
