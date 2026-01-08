@@ -2177,6 +2177,72 @@ public class TestCommonMutations
 		Assert.assertEquals(context.millisPerTick, continuedOperation.chargedMillis());
 	}
 
+	@Test
+	public void swapInAndOutOfTable() throws Throwable
+	{
+		// We just create a stand-alone table and swap an item in and out to make sure it doesn't make any assumptions about pedestals or contents.
+		Block enchantmentTable = ENV.blocks.fromItem(ENV.items.getItemById("op.enchanting_table"));
+		Item ironPickaxe = ENV.items.getItemById("op.iron_pickaxe");
+		NonStackableItem pick = PropertyHelpers.newItemWithDefaults(ENV, ironPickaxe);
+		AbsoluteLocation tableLocation = new AbsoluteLocation(5, 6, 7);
+		
+		ItemSlot slot = ItemSlot.fromNonStack(pick);
+		int returnEntityId = 1;
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, tableLocation.getBlockAddress(), enchantmentTable.item().number());
+		
+		EntityActionStoreToInventory[] out_change = new EntityActionStoreToInventory[1];
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(200L)
+			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
+			.sinks(null, new TickProcessingContext.IChangeSink() {
+				@Override
+				public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+				{
+					Assert.assertEquals(returnEntityId, targetEntityId);
+					Assert.assertNull(out_change[0]);
+					out_change[0] = (EntityActionStoreToInventory) change;
+					return true;
+				}
+				@Override
+				public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+				{
+					throw new AssertionError("Not in test");
+				}
+				@Override
+				public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+				{
+					throw new AssertionError("Not in test");
+				}
+				@Override
+				public boolean passive(int targetPassiveId, IPassiveAction action)
+				{
+					throw new AssertionError("Not in test");
+				}
+			})
+			.finish()
+		;
+		
+		// Swap in.
+		MutationBlockSwapSpecialSlot swapIn = new MutationBlockSwapSpecialSlot(tableLocation, slot, returnEntityId);
+		MutableBlockProxy proxy = new MutableBlockProxy(tableLocation, cuboid);
+		Assert.assertTrue(swapIn.applyMutation(context, proxy));
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		Assert.assertNull(out_change[0]);
+		Assert.assertEquals(pick, cuboid.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getBlockAddress()).nonStackable);
+		
+		// Swap out.
+		MutationBlockSwapSpecialSlot swapOut = new MutationBlockSwapSpecialSlot(tableLocation, null, returnEntityId);
+		proxy = new MutableBlockProxy(tableLocation, cuboid);
+		Assert.assertTrue(swapOut.applyMutation(context, proxy));
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		Assert.assertNotNull(out_change[0]);
+		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getBlockAddress()));
+	}
+
 
 	private static Set<AbsoluteLocation> _getEastFacingPortalVoidStones(AbsoluteLocation keystoneLocation)
 	{

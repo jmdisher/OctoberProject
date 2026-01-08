@@ -58,7 +58,7 @@ public class EnchantingBlockSupport
 		}
 		
 		// If there is NOT an enchantment, see if there is a valid one which could start and then start it.
-		if ((null == operation) && (null != target))
+		if ((null == operation) && (null != target) && (null != pedestals))
 		{
 			_tryStartNewOperation(env, context, blockLocation, proxy, target, pedestals);
 		}
