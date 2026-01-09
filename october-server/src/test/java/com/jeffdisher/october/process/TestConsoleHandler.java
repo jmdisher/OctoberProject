@@ -5,6 +5,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.AfterClass;
@@ -13,22 +15,29 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.actions.EntityActionOperatorSpawnCreature;
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.engine.EnginePlayers;
 import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.server.TickRunner;
+import com.jeffdisher.october.server.TickRunner.SnapshotCuboid;
+import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.WorldConfig;
+import com.jeffdisher.october.utils.CuboidGenerator;
 
 
 public class TestConsoleHandler
 {
+	private static Environment ENV;
 	@BeforeClass
 	public static void setup() throws Throwable
 	{
-		Environment.createSharedInstance();
+		ENV = Environment.createSharedInstance();
 	}
 	@AfterClass
 	public static void tearDown()
@@ -303,6 +312,27 @@ public class TestConsoleHandler
 		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, config);
 		Assert.assertArrayEquals("Shutting down...\n".getBytes(), out.toByteArray());
 		Assert.assertTrue(didBroadcast[0]);
+	}
+
+	@Test
+	public void findNearestBlock() throws Throwable
+	{
+		// Verifies the search for block types.
+		InputStream in = new ByteArrayInputStream("!find_nearest_block op.stone 5 -1 7\n!stop\n".getBytes());
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		PrintStream printer = new PrintStream(out);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		long tickNumber = 50L;
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, -1, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 2, 3), ENV.items.getItemById("op.stone").number());
+		
+		Map<CuboidAddress, SnapshotCuboid> map = Map.of(cuboid.getCuboidAddress()
+			, new SnapshotCuboid(cuboid, List.of(), List.of(), Map.of())
+		);
+		monitoringAgent.snapshotPublished(new TickRunner.Snapshot(tickNumber, map, null, null, null, null, null, null, null));
+		WorldConfig config = new WorldConfig();
+		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, config);
+		Assert.assertArrayEquals("Block found: AbsoluteLocation[x=1, y=-30, z=3]\nShutting down...\n".getBytes(), out.toByteArray());
 	}
 
 

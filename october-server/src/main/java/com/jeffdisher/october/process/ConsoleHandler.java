@@ -8,21 +8,27 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.jeffdisher.october.actions.EntityActionOperatorSetCreative;
 import com.jeffdisher.october.actions.EntityActionOperatorSetLocation;
 import com.jeffdisher.october.actions.EntityActionOperatorSpawnCreature;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.engine.EnginePlayers;
+import com.jeffdisher.october.logic.MiscHelpers;
 import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
 import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.server.TickRunner;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
 
@@ -445,6 +451,53 @@ public class ConsoleHandler
 			else
 			{
 				out.println("Usage:  <creature_id> <x> <y> <z>");
+			}
+		}),
+		FIND_NEAREST_BLOCK((PrintStream out, _ConsoleState state, String[] parameters) -> {
+			// We expect <block_id> <x> <y> <z>.
+			if (4 == parameters.length)
+			{
+				Environment env = Environment.getShared();
+				Item item = env.items.getItemById(parameters[0]);
+				Block block = (null != item)
+					? env.blocks.fromItem(item)
+					: null
+				;
+				int x = _readInt(parameters[1], Integer.MIN_VALUE);
+				int y = _readInt(parameters[2], Integer.MIN_VALUE);
+				int z = _readInt(parameters[3], Integer.MIN_VALUE);
+				
+				if ((null != block)
+						&& (Integer.MIN_VALUE != x)
+						&& (Integer.MIN_VALUE != y)
+						&& (Integer.MIN_VALUE != z)
+				)
+				{
+					MonitoringAgent monitoringAgent = state.monitoringAgent;
+					TickRunner.Snapshot snapshot = monitoringAgent.getLastSnapshot();
+					AbsoluteLocation centre = new AbsoluteLocation(x, y, z);
+					Set<IReadOnlyCuboidData> cuboids = snapshot.cuboids().values().stream()
+						.map((TickRunner.SnapshotCuboid cuboid) -> cuboid.completed())
+						.collect(Collectors.toSet())
+					;
+					AbsoluteLocation closest = MiscHelpers.findClosestBlock(cuboids, centre, block);
+					if (null != closest)
+					{
+						out.println("Block found: " + closest);
+					}
+					else
+					{
+						out.println("Block NOT found");
+					}
+				}
+				else
+				{
+					out.println("Usage:  <block_id> <x> <y> <z>");
+				}
+			}
+			else
+			{
+				out.println("Usage:  <block_id> <x> <y> <z>");
 			}
 		}),
 		;
