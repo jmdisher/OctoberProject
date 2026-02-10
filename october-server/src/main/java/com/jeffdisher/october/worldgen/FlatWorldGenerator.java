@@ -84,10 +84,10 @@ public class FlatWorldGenerator implements IWorldGenerator
 		if (address.z() < (short)0)
 		{
 			data = CuboidGenerator.createFilledCuboid(address, _stoneBlock);
-			_fillPlane(data, (byte)31, _dirtBlock);
-			_fillPlane(data, (byte)29, _logBlock);
-			_fillPlane(data, (byte)27, _coalOreBlock);
-			_fillPlane(data, (byte)25, _ironOreBlock);
+			CuboidGenerator.fillPlane(data, (byte)31, _dirtBlock);
+			CuboidGenerator.fillPlane(data, (byte)29, _logBlock);
+			CuboidGenerator.fillPlane(data, (byte)27, _coalOreBlock);
+			CuboidGenerator.fillPlane(data, (byte)25, _ironOreBlock);
 			// We want to add a bit of water.
 			data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(6, 6, 31), _waterSourceBlock.item().number());
 			data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(7, 7, 31), _waterSourceBlock.item().number());
@@ -159,18 +159,5 @@ public class FlatWorldGenerator implements IWorldGenerator
 	public EntityLocation getDefaultSpawnLocation()
 	{
 		return new EntityLocation(0.0f, 0.0f, 0.0f);
-	}
-
-
-	private static void _fillPlane(CuboidData data, byte z, Block block)
-	{
-		short number = block.item().number();
-		for (byte y = 0; y < 32; ++y)
-		{
-			for (byte x = 0; x < 32; ++x)
-			{
-				data.setData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z), number);
-			}
-		}
 	}
 }

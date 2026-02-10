@@ -24,6 +24,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -1193,14 +1194,8 @@ public class TestCreatureLogic
 
 	private void _setLayer(CuboidData input, byte z, String name)
 	{
-		short stoneNumber = ENV.items.getItemById(name).number();
-		for (byte x = 0; x < 32; ++x)
-		{
-			for (byte y = 0; y < 32; ++y)
-			{
-				input.setData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z), stoneNumber);
-			}
-		}
+		Block block = ENV.blocks.fromItem(ENV.items.getItemById(name));
+		CuboidGenerator.fillPlane(input, z, block);
 	}
 
 	private static CreatureEntity _updateKeepAlive(CreatureEntity original, long gameMillis)
