@@ -1,5 +1,7 @@
 package com.jeffdisher.october.logic;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 import org.junit.AfterClass;
@@ -17,6 +19,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.utils.CuboidGenerator;
@@ -295,6 +298,84 @@ public class TestSpatialHelpers
 		Assert.assertEquals(null, SpatialHelpers.getBallisticVector(new EntityLocation(0.0f, 0.0f, 0.0f), new EntityLocation(0.0f, 10.0f, 5.0f), 10.0f));
 		Assert.assertEquals(new EntityLocation(0.0f, 10.0f, -0.1f), SpatialHelpers.getBallisticVector(new EntityLocation(0.0f, 0.0f, 0.0f), new EntityLocation(0.0f, 10.0f, -5.0f), 10.0f));
 		Assert.assertEquals(new EntityLocation(4.46f, 4.46f, 7.76f), SpatialHelpers.getBallisticVector(new EntityLocation(0.0f, 0.0f, 0.0f), new EntityLocation(3.0f, 3.0f, 3.0f), 10.0f));
+	}
+
+	@Test
+	public void perf_groundCheck()
+	{
+		// A test intended for performance analysis to examine the hot-point that is SpatialHelpers.isStandingOnGround.
+		// Configure these variables based on analysis being performed.
+		boolean useBlockCache = false;
+		boolean infiniteLoopForProfiler = false;
+		boolean longLoopForObjectiveScore = false;
+		
+		// We want to show how this behaves when checking on some complex cuboids.
+		EntityLocation location = new EntityLocation(31.5f, 31.5f, 0.0f);
+		EntityVolume volume = new EntityVolume(1.8f, 0.8f);
+		
+		// Note that these CuboidAddress instances aren't going to be honoured since we duplicate them in the map.
+		CuboidData complexCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		Block dirtBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
+		CuboidGenerator.fillPlane(complexCuboid, (byte)31, dirtBlock);
+		Block logBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.log"));
+		CuboidGenerator.fillPlane(complexCuboid, (byte)29, logBlock);
+		Block coalOreBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.coal_ore"));
+		CuboidGenerator.fillPlane(complexCuboid, (byte)27, coalOreBlock);
+		Block ironOreBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.iron_ore"));
+		CuboidGenerator.fillPlane(complexCuboid, (byte)25, ironOreBlock);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		Map<CuboidAddress, CuboidData> mappedWorld = new HashMap<>();
+		mappedWorld.put(CuboidAddress.fromInt(0, 0, -1), complexCuboid);
+		mappedWorld.put(CuboidAddress.fromInt(0, 1, -1), complexCuboid);
+		mappedWorld.put(CuboidAddress.fromInt(1, 0, -1), complexCuboid);
+		mappedWorld.put(CuboidAddress.fromInt(1, 1, -1), complexCuboid);
+		mappedWorld.put(CuboidAddress.fromInt(0, 0, 0), airCuboid);
+		mappedWorld.put(CuboidAddress.fromInt(0, 1, 0), airCuboid);
+		mappedWorld.put(CuboidAddress.fromInt(1, 0, 0), airCuboid);
+		mappedWorld.put(CuboidAddress.fromInt(1, 1, 0), airCuboid);
+		
+		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> {
+			CuboidData cuboid = mappedWorld.get(l.getCuboidAddress());
+			return (null != cuboid)
+				? new BlockProxy(l.getBlockAddress(), cuboid)
+				: null
+			;
+		};
+		ViscosityReader reader;
+		if (useBlockCache)
+		{
+			LazyLocationCache<BlockProxy> cachingLoader = new LazyLocationCache<>(blockTypeReader);
+			reader = new ViscosityReader(ENV, cachingLoader);
+		}
+		else
+		{
+			reader = new ViscosityReader(ENV, blockTypeReader);
+		}
+		
+		// Do the appropriate run type.
+		if (infiniteLoopForProfiler)
+		{
+			while(true)
+			{
+				Assert.assertTrue(SpatialHelpers.isStandingOnGround(reader, location, volume));
+			}
+		}
+		else if (longLoopForObjectiveScore)
+		{
+			int iterationCount = 1_000_000;
+			long startNanos = System.nanoTime();
+			for (int i = 0; i < iterationCount; ++i)
+			{
+				Assert.assertTrue(SpatialHelpers.isStandingOnGround(reader, location, volume));
+			}
+			long endNanos = System.nanoTime();
+			System.out.println("Nanos per: " + ((endNanos - startNanos) / iterationCount));
+		}
+		else
+		{
+			// We are just using this as a unit test, not a performance measurement, so just verify that it is correct.
+			Assert.assertTrue(SpatialHelpers.isStandingOnGround(reader, location, volume));
+		}
 	}
 
 
