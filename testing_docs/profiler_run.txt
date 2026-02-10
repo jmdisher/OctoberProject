@@ -1,0 +1,9 @@
+Not a shell script, just a description of an effective way to invoke the visualvm CPU profiler in order to collect data.
+
+We will assume that PID is the process ID of the target application.
+
+./bin/visualvm --start-cpu-sampler $PID@sampling-rate=20
+sleep 30
+./bin/visualvm --stop-sampler $PID
+
+

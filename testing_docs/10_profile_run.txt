@@ -10,16 +10,16 @@ java -Xmx256m -jar october-server/target/october-server-0.0-SNAPSHOT-jar-with-de
 
 Wait until the server starts and then start the clients:
 
-java -Xmx128m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot000 > /dev/null & \
-java -Xmx128m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot001 > /dev/null & \
-java -Xmx128m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot002 > /dev/null & \
-java -Xmx128m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot003 > /dev/null & \
-java -Xmx128m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot004 > /dev/null & \
-java -Xmx128m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot005 > /dev/null & \
-java -Xmx128m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot006 > /dev/null & \
-java -Xmx128m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot007 > /dev/null & \
-java -Xmx128m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot008 > /dev/null & \
-java -Xmx128m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot009 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot000 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot001 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot002 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot003 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot004 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot005 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot006 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot007 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot008 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot009 > /dev/null & \
 true
 
 
