@@ -1,13 +1,14 @@
 package com.jeffdisher.october.client;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
@@ -15,6 +16,7 @@ import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -22,7 +24,6 @@ import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
-import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -57,6 +58,7 @@ public class MovementAccumulator
 	private final Map<CuboidAddress, IReadOnlyCuboidData> _world;
 	private final Map<Integer, PartialEntity> _otherEntities;
 	private final Map<Integer, PartialPassive> _passives;
+	private final Map<AbsoluteLocation, BlockProxy> _proxyCache;
 	private final Function<AbsoluteLocation, BlockProxy> _proxyLookup;
 	private final ViscosityReader _reader;
 
@@ -86,12 +88,19 @@ public class MovementAccumulator
 		
 		_discardAccumulation(currentTimeMillis);
 		
+		_proxyCache = new HashMap<>();
 		_proxyLookup = (AbsoluteLocation location) -> {
-			IReadOnlyCuboidData cuboid = _world.get(location.getCuboidAddress());
-			return (null != cuboid)
-					? new BlockProxy(location.getBlockAddress(), cuboid)
-					: null
-			;
+			BlockProxy proxy = _proxyCache.get(location);
+			if (null == proxy)
+			{
+				IReadOnlyCuboidData cuboid = _world.get(location.getCuboidAddress());
+				if (null != cuboid)
+				{
+					proxy = new BlockProxy(location.getBlockAddress(), cuboid);
+					_proxyCache.put(location, proxy);
+				}
+			}
+			return proxy;
 		};
 		_reader = new ViscosityReader(_env, _proxyLookup);
 	}
@@ -294,12 +303,20 @@ public class MovementAccumulator
 	 * Sets or updates a cuboid in the local reference state.
 	 * 
 	 * @param cuboid The cuboid.
-	 * @param heightMap The height map for the cuboid.
+	 * @param changedBlocks The set of blocks which changed in this cuboid.
 	 */
-	public void setCuboid(IReadOnlyCuboidData cuboid, CuboidHeightMap heightMap)
+	public void setCuboid(IReadOnlyCuboidData cuboid, Set<BlockAddress> changedBlocks)
 	{
 		CuboidAddress address = cuboid.getCuboidAddress();
 		_world.put(address, cuboid);
+		
+		// Invalidate any caching of the changed blocks.
+		AbsoluteLocation base = address.getBase();
+		for (BlockAddress block: changedBlocks)
+		{
+			AbsoluteLocation loc = base.relativeForBlock(block);
+			_proxyCache.remove(loc);
+		}
 	}
 
 	/**
@@ -310,6 +327,17 @@ public class MovementAccumulator
 	public void removeCuboid(CuboidAddress address)
 	{
 		Assert.assertTrue(null != _world.remove(address));
+		
+		// Clean up the proxy cache.
+		Iterator<AbsoluteLocation> iter = _proxyCache.keySet().iterator();
+		while (iter.hasNext())
+		{
+			AbsoluteLocation location = iter.next();
+			if (address.equals(location.getCuboidAddress()))
+			{
+				iter.remove();
+			}
+		}
 	}
 
 	/**
@@ -416,18 +444,11 @@ public class MovementAccumulator
 	// Returns null if there was an error in toRun or _thisEntity, if it was a success but had no impact.
 	private Entity _generateLocalEntity(EntityActionSimpleMove<IMutablePlayerEntity> toRun, long millisToApply, long currentTimeMillis)
 	{
-		LazyLocationCache<BlockProxy> cachingLoader = new LazyLocationCache<>((AbsoluteLocation location) -> {
-			IReadOnlyCuboidData cuboid = _world.get(location.getCuboidAddress());
-			return (null != cuboid)
-				? new BlockProxy(location.getBlockAddress(), cuboid)
-				: null
-			;
-		});
 		OneOffRunner.InputState input = new OneOffRunner.InputState(_thisEntity
 			, _world
 			, _otherEntities
 			, _passives
-			, cachingLoader
+			, _proxyLookup
 		);
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
 			// We can probably ignore events in this path since they will either be entity-related (hence sent by the

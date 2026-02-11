@@ -33,6 +33,7 @@ import com.jeffdisher.october.subactions.EntityChangeCraftInBlock;
 import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.subactions.EntityChangeJump;
 import com.jeffdisher.october.subactions.EntityChangeSwim;
+import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
 import com.jeffdisher.october.subactions.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -90,8 +91,8 @@ public class TestMovementAccumulator
 		// Create the baseline data we need.
 		Entity entity = MutableEntity.createForTest(1).freeze();
 		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
-		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
+		accumulator.setCuboid(airCuboid, Set.of());
+		accumulator.setCuboid(stoneCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
 		
@@ -131,8 +132,8 @@ public class TestMovementAccumulator
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
-		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
-		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
+		accumulator.setCuboid(airCuboid, Set.of());
+		accumulator.setCuboid(stoneCuboid, Set.of());
 		
 		// Walk until the action is generated.
 		currentTimeMillis += 50L;
@@ -169,8 +170,8 @@ public class TestMovementAccumulator
 		// Create the baseline data we need.
 		Entity entity = MutableEntity.createForTest(1).freeze();
 		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
-		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
+		accumulator.setCuboid(airCuboid, Set.of());
+		accumulator.setCuboid(stoneCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
 		
@@ -210,8 +211,8 @@ public class TestMovementAccumulator
 		mutable.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
-		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
+		accumulator.setCuboid(airCuboid, Set.of());
+		accumulator.setCuboid(stoneCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
 		
@@ -251,8 +252,8 @@ public class TestMovementAccumulator
 		// Create the baseline data we need.
 		Entity entity = MutableEntity.createForTest(1).freeze();
 		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(topCuboid, HeightMapHelpers.buildHeightMap(topCuboid));
-		accumulator.setCuboid(bottomCuboid, HeightMapHelpers.buildHeightMap(bottomCuboid));
+		accumulator.setCuboid(topCuboid, Set.of());
+		accumulator.setCuboid(bottomCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
 		
@@ -299,8 +300,8 @@ public class TestMovementAccumulator
 		mutable.newVelocity = new EntityLocation(0.0f, 0.0f, EntityMovementHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND);
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(topCuboid, HeightMapHelpers.buildHeightMap(topCuboid));
-		accumulator.setCuboid(bottomCuboid, HeightMapHelpers.buildHeightMap(bottomCuboid));
+		accumulator.setCuboid(topCuboid, Set.of());
+		accumulator.setCuboid(bottomCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
 		
@@ -379,7 +380,7 @@ public class TestMovementAccumulator
 		mutable.newVelocity = new EntityLocation(0.0f, 0.0f, -0.1f);
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(cuboid, HeightMapHelpers.buildHeightMap(cuboid));
+		accumulator.setCuboid(cuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
 		
@@ -446,8 +447,8 @@ public class TestMovementAccumulator
 		mutable.setSelectedKey(1);
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(cuboid, cuboidMap);
-		accumulator.setCuboid(blockingCuboid, blockingMap);
+		accumulator.setCuboid(cuboid, Set.of());
+		accumulator.setCuboid(blockingCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
 		listener.cuboidDidLoad(blockingCuboid, blockingMap, columnMap);
@@ -493,8 +494,8 @@ public class TestMovementAccumulator
 		// Create the baseline data we need.
 		Entity entity = MutableEntity.createForTest(1).freeze();
 		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(topCuboid, HeightMapHelpers.buildHeightMap(topCuboid));
-		accumulator.setCuboid(bottomCuboid, HeightMapHelpers.buildHeightMap(bottomCuboid));
+		accumulator.setCuboid(topCuboid, Set.of());
+		accumulator.setCuboid(bottomCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
 		
@@ -543,8 +544,8 @@ public class TestMovementAccumulator
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
-		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
-		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
+		accumulator.setCuboid(airCuboid, Set.of());
+		accumulator.setCuboid(stoneCuboid, Set.of());
 		
 		// Walk until the action is generated.
 		currentTimeMillis += 50L;
@@ -589,8 +590,8 @@ public class TestMovementAccumulator
 		mutable.newInventory.addAllItems(LOG_ITEM, 1);
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(cuboid, cuboidMap);
-		accumulator.setCuboid(blockingCuboid, blockingMap);
+		accumulator.setCuboid(cuboid, Set.of());
+		accumulator.setCuboid(blockingCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
 		listener.cuboidDidLoad(blockingCuboid, blockingMap, columnMap);
@@ -637,7 +638,7 @@ public class TestMovementAccumulator
 		mutable.newInventory.addAllItems(LOG_ITEM, 1);
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(cuboid, cuboidMap);
+		accumulator.setCuboid(cuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
 		accumulator.clearAccumulation();
@@ -675,8 +676,8 @@ public class TestMovementAccumulator
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
-		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
-		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
+		accumulator.setCuboid(airCuboid, Set.of());
+		accumulator.setCuboid(stoneCuboid, Set.of());
 		
 		currentTimeMillis += 16L;
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
@@ -730,7 +731,7 @@ public class TestMovementAccumulator
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
-		accumulator.setCuboid(cuboid, HeightMapHelpers.buildHeightMap(cuboid));
+		accumulator.setCuboid(cuboid, Set.of());
 		
 		// Enqueue and then stand around for a bit (enough that we will properly collide with the ground).
 		currentTimeMillis += 25L;
@@ -766,8 +767,8 @@ public class TestMovementAccumulator
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
-		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
-		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
+		accumulator.setCuboid(airCuboid, Set.of());
+		accumulator.setCuboid(stoneCuboid, Set.of());
 		
 		// Walk for part of a tick.
 		currentTimeMillis += 40L;
@@ -816,7 +817,7 @@ public class TestMovementAccumulator
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
-		accumulator.setCuboid(cuboid, cuboidHeightMap);
+		accumulator.setCuboid(cuboid, Set.of());
 		listener.cuboidDidLoad(cuboid, cuboidHeightMap, columnHeightMap);
 		
 		// Enqueue and then stand around for a bit (enough that we will properly collide with the ground).
@@ -854,8 +855,8 @@ public class TestMovementAccumulator
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
-		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
-		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
+		accumulator.setCuboid(airCuboid, Set.of());
+		accumulator.setCuboid(stoneCuboid, Set.of());
 		
 		// Start running and continue by walking.
 		currentTimeMillis += 50L;
@@ -898,7 +899,7 @@ public class TestMovementAccumulator
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
-		accumulator.setCuboid(cuboid, HeightMapHelpers.buildHeightMap(cuboid));
+		accumulator.setCuboid(cuboid, Set.of());
 		
 		// Take a few steps and verify that we can move but not fall off.
 		// Start running and continue by walking.
@@ -944,7 +945,7 @@ public class TestMovementAccumulator
 		mutable.newLocation = startEntityLocation;
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(cuboid, cuboidMap);
+		accumulator.setCuboid(cuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
 		accumulator.clearAccumulation();
@@ -978,10 +979,9 @@ public class TestMovementAccumulator
 		
 		// Create, update, remove a cuboid.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		CuboidHeightMap cuboidMap = HeightMapHelpers.buildHeightMap(cuboid);
-		accumulator.setCuboid(cuboid, cuboidMap);
+		accumulator.setCuboid(cuboid, Set.of());
 		// (these are just set again).
-		accumulator.setCuboid(cuboid, cuboidMap);
+		accumulator.setCuboid(cuboid, Set.of());
 		accumulator.removeCuboid(cuboid.getCuboidAddress());
 		
 		// Create, update, remove other entity (either a creature or other player).
@@ -1024,8 +1024,8 @@ public class TestMovementAccumulator
 		mutable.newInventory.addAllItems(LOG_ITEM, 1);
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(cuboid, cuboidMap);
-		accumulator.setCuboid(blockingCuboid, blockingMap);
+		accumulator.setCuboid(cuboid, Set.of());
+		accumulator.setCuboid(blockingCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
 		listener.cuboidDidLoad(blockingCuboid, blockingMap, columnMap);
@@ -1077,8 +1077,8 @@ public class TestMovementAccumulator
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(cuboid, cuboidMap);
-		accumulator.setCuboid(blockingCuboid, blockingMap);
+		accumulator.setCuboid(cuboid, Set.of());
+		accumulator.setCuboid(blockingCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
 		listener.cuboidDidLoad(blockingCuboid, blockingMap, columnMap);
@@ -1113,8 +1113,8 @@ public class TestMovementAccumulator
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
-		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
-		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
+		accumulator.setCuboid(airCuboid, Set.of());
+		accumulator.setCuboid(stoneCuboid, Set.of());
 		
 		// Show that we don't move in even partial movement.
 		currentTimeMillis += 50L;
@@ -1155,8 +1155,8 @@ public class TestMovementAccumulator
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
-		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
-		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
+		accumulator.setCuboid(airCuboid, Set.of());
+		accumulator.setCuboid(stoneCuboid, Set.of());
 		
 		// Show that we don't move in even partial movement.
 		currentTimeMillis += 50L;
@@ -1206,8 +1206,8 @@ public class TestMovementAccumulator
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
-		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
-		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
+		accumulator.setCuboid(airCuboid, Set.of());
+		accumulator.setCuboid(stoneCuboid, Set.of());
 		
 		// Walk forward-right, then forward until the action is generated.
 		currentTimeMillis += 50L;
@@ -1301,14 +1301,14 @@ public class TestMovementAccumulator
 		mutable.newLocation = new EntityLocation(31.8f, 31.8f, 0.0f);
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(bottomCuboid00, HeightMapHelpers.buildHeightMap(bottomCuboid00));
-		accumulator.setCuboid(bottomCuboid01, HeightMapHelpers.buildHeightMap(bottomCuboid01));
-		accumulator.setCuboid(bottomCuboid10, HeightMapHelpers.buildHeightMap(bottomCuboid10));
-		accumulator.setCuboid(bottomCuboid11, HeightMapHelpers.buildHeightMap(bottomCuboid11));
-		accumulator.setCuboid(topCuboid00, HeightMapHelpers.buildHeightMap(topCuboid00));
-		accumulator.setCuboid(topCuboid01, HeightMapHelpers.buildHeightMap(topCuboid01));
-		accumulator.setCuboid(topCuboid10, HeightMapHelpers.buildHeightMap(topCuboid10));
-		accumulator.setCuboid(topCuboid11, HeightMapHelpers.buildHeightMap(topCuboid11));
+		accumulator.setCuboid(bottomCuboid00, Set.of());
+		accumulator.setCuboid(bottomCuboid01, Set.of());
+		accumulator.setCuboid(bottomCuboid10, Set.of());
+		accumulator.setCuboid(bottomCuboid11, Set.of());
+		accumulator.setCuboid(topCuboid00, Set.of());
+		accumulator.setCuboid(topCuboid01, Set.of());
+		accumulator.setCuboid(topCuboid10, Set.of());
+		accumulator.setCuboid(topCuboid11, Set.of());
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
 		
@@ -1351,6 +1351,59 @@ public class TestMovementAccumulator
 		Assert.assertEquals(new EntityLocation(31.8f, 31.8f, 0.0f), listener.thisEntity.location());
 	}
 
+	@Test
+	public void fallInterruptedByBlock() throws Throwable
+	{
+		// Show that the BlockProxy cache used internally is properly updated when new blocks are changed.
+		long millisPerTick = 100L;
+		long currentTimeMillis = 1000L;
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Create the baseline data we need.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = new EntityLocation(5.8f, 5.8f, 30.0f);
+		Entity entity = mutable.freeze();
+		accumulator.setThisEntity(entity);
+		accumulator.setCuboid(cuboid, Set.of());
+		listener.thisEntityDidLoad(entity);
+		accumulator.clearAccumulation();
+		
+		// Run the first move.
+		long millisPerMove = 60L;
+		currentTimeMillis += millisPerMove;
+		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
+		Assert.assertNull(out);
+		Assert.assertEquals(new EntityLocation(5.8f, 5.8f, 30.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(5.8f, 5.8f, 29.96f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.59f), listener.thisEntity.velocity());
+		
+		// Now, place a block in the way and show that they pop out of it.
+		BlockAddress changed = BlockAddress.fromInt(6, 6, 30);
+		cuboid.setData15(AspectRegistry.BLOCK, changed, STONE.item().number());
+		accumulator.setCuboid(cuboid, Set.of(changed));
+		
+		// Run the second move.
+		currentTimeMillis += millisPerMove;
+		out = accumulator.stand(currentTimeMillis);
+		Assert.assertNotNull(out);
+		Assert.assertTrue(out.getSubAction() instanceof EntitySubActionPopOutOfBlock);
+		
+		// We need to apply this to our state since it would be considered part of the underlying state.
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
+		Assert.assertEquals(new EntityLocation(5.8f, 5.59f, 29.9f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.98f), listener.thisEntity.velocity());
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(5.8f, 5.59f, 29.88f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -1.18f), listener.thisEntity.velocity());
+		
+		// Make sure that removing this doesn't cause issues.
+		accumulator.removeCuboid(cuboid.getCuboidAddress());
+	}
+
 
 	private Entity _runFallingTest(long millisPerMove, int iterationCount, CuboidData cuboid, Entity entity)
 	{
@@ -1360,7 +1413,7 @@ public class TestMovementAccumulator
 		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
 		
 		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(cuboid, HeightMapHelpers.buildHeightMap(cuboid));
+		accumulator.setCuboid(cuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
 		
@@ -1440,7 +1493,7 @@ public class TestMovementAccumulator
 			CuboidAddress address = lazyMutable.getCuboidAddress();
 			CuboidHeightMap cuboidHeightMap = HeightMapHelpers.buildHeightMap(lazyMutable);
 			ColumnHeightMap columnHeightMap = HeightMapHelpers.buildColumnMaps(Map.of(address, cuboidHeightMap)).get(address.getColumn());
-			accumulator.setCuboid(lazyMutable, cuboidHeightMap);
+			accumulator.setCuboid(lazyMutable, Set.of());
 			// To keep things simple for these tests, we assume only block aspect changes.
 			listener.cuboidDidChange(lazyMutable, cuboidHeightMap, columnHeightMap, changedBlocks, Set.of(AspectRegistry.BLOCK));
 		}

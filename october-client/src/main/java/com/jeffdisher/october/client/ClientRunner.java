@@ -406,7 +406,7 @@ public class ClientRunner
 		{
 			// Ignored.
 			_projectionListener.cuboidDidLoad(cuboid, cuboidHeightMap, columnHeightMap);
-			_accumulator.setCuboid(cuboid, cuboidHeightMap);
+			_accumulator.setCuboid(cuboid, Set.of());
 		}
 		@Override
 		public void cuboidDidChange(IReadOnlyCuboidData cuboid
@@ -418,7 +418,7 @@ public class ClientRunner
 		{
 			// Ignored.
 			_projectionListener.cuboidDidChange(cuboid, cuboidHeightMap, columnHeightMap, changedBlocks, changedAspects);
-			_accumulator.setCuboid(cuboid, cuboidHeightMap);
+			_accumulator.setCuboid(cuboid, changedBlocks);
 		}
 		@Override
 		public void cuboidDidUnload(CuboidAddress address)
