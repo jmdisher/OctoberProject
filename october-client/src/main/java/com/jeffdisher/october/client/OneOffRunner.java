@@ -51,7 +51,7 @@ public class OneOffRunner
 	 * @param mutation The entity change to run.
 	 * @return The state after the change, or null if the entity change failed.
 	 */
-	public static StatePackage runOneChange(StatePackage state
+	public static OutputState runOneChange(InputState state
 			, TickProcessingContext.IEventSink eventSink
 			, long millisPerTick
 			, long currentTickTimeMillis 
@@ -138,22 +138,16 @@ public class OneOffRunner
 		}
 		
 		// Repackage results.
-		StatePackage updatedState = null;
+		OutputState outputState = null;
 		if (wasSuccess)
 		{
-			Map<CuboidAddress, IReadOnlyCuboidData> initialCuboids = new HashMap<>(state.world);
-			Map<CuboidAddress, CuboidHeightMap> initialHeights = new HashMap<>(state.heights);
-			Map<Integer, PartialEntity> initialCrowd = new HashMap<>(state.otherEntities);
-			Map<Integer, PartialPassive> initialPassives = new HashMap<>(state.passives);
-			initialCuboids.putAll(changedCuboids);
-			initialHeights.putAll(heightFragment);
-			updatedState = new StatePackage(updatedEntity, initialCuboids, initialHeights, optionalBlockChanges, initialCrowd, initialPassives);
+			outputState = new OutputState(updatedEntity);
 		}
-		return updatedState;
+		return outputState;
 	}
 
 
-	private static TickProcessingContext _createContext(StatePackage state
+	private static TickProcessingContext _createContext(InputState state
 			, CommonMutationSink newMutationSink
 			, CommonChangeSink newChangeSink
 			, TickProcessingContext.IEventSink eventSink
@@ -211,14 +205,19 @@ public class OneOffRunner
 
 
 	/**
-	 * A packaged read-only state.
-	 * Note that, when output, this will only include what changed (which could mean it is completely empty).
+	 * A packaged read-only state passed as the input to the OneOffRunner.
 	 */
-	public static record StatePackage(Entity thisEntity
+	public static record InputState(Entity thisEntity
 		, Map<CuboidAddress, IReadOnlyCuboidData> world
 		, Map<CuboidAddress, CuboidHeightMap> heights
-		, Map<CuboidAddress, List<BlockChangeDescription>> optionalBlockChanges
 		, Map<Integer, PartialEntity> otherEntities
 		, Map<Integer, PartialPassive> passives
+	) {}
+
+	/**
+	 * The packaged output state of the OneOffRunner.
+	 * Elements here are null if unchanged.
+	 */
+	public static record OutputState(Entity thisEntity
 	) {}
 }

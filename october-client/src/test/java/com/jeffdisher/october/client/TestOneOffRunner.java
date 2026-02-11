@@ -45,7 +45,6 @@ public class TestOneOffRunner
 	private static Item DIRT_ITEM;
 	private static Item STONE_HOE;
 	private static Block STONE_BLOCK;
-	private static Block TILLED_SOIL_BLOCK;
 	@BeforeClass
 	public static void setup() throws Throwable
 	{
@@ -54,7 +53,6 @@ public class TestOneOffRunner
 		DIRT_ITEM = ENV.items.getItemById("op.dirt");
 		STONE_HOE = ENV.items.getItemById("op.stone_hoe");
 		STONE_BLOCK = ENV.blocks.fromItem(STONE_ITEM);
-		TILLED_SOIL_BLOCK = ENV.blocks.fromItem(ENV.items.getItemById("op.tilled_soil"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -79,17 +77,15 @@ public class TestOneOffRunner
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(stoneAddress, ENV.blocks.fromItem(STONE_ITEM));
 		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(target, null);
 		
-		OneOffRunner.StatePackage start = new OneOffRunner.StatePackage(entity, Map.of(airAddress, airCuboid
+		OneOffRunner.InputState start = new OneOffRunner.InputState(entity, Map.of(airAddress, airCuboid
 				, stoneAddress, stoneCuboid
 		), Map.of(airAddress, HeightMapHelpers.buildHeightMap(airCuboid)
 				, stoneAddress, HeightMapHelpers.buildHeightMap(stoneCuboid)
-		), null, Map.of(), Map.of());
+		), Map.of(), Map.of());
 		_Events catcher = new _Events();
-		OneOffRunner.StatePackage end = OneOffRunner.runOneChange(start, catcher, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(place));
+		OneOffRunner.OutputState end = OneOffRunner.runOneChange(start, catcher, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(place));
 		
 		Assert.assertEquals(EventRecord.Type.BLOCK_PLACED, catcher.event.type());
-		Assert.assertTrue(start.world().get(stoneAddress) == end.world().get(stoneAddress));
-		Assert.assertEquals(STONE_ITEM.number(), end.world().get(stoneAddress).getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(0, end.thisEntity().inventory().currentEncumbrance);
 	}
 
@@ -110,13 +106,13 @@ public class TestOneOffRunner
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(stoneAddress, ENV.blocks.fromItem(STONE_ITEM));
 		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(target, null);
 		
-		OneOffRunner.StatePackage start = new OneOffRunner.StatePackage(entity, Map.of(airAddress, airCuboid
+		OneOffRunner.InputState start = new OneOffRunner.InputState(entity, Map.of(airAddress, airCuboid
 				, stoneAddress, stoneCuboid
 		), Map.of(airAddress, HeightMapHelpers.buildHeightMap(airCuboid)
 				, stoneAddress, HeightMapHelpers.buildHeightMap(stoneCuboid)
-		), null, Map.of(), Map.of());
+		), Map.of(), Map.of());
 		_Events catcher = new _Events();
-		OneOffRunner.StatePackage end = OneOffRunner.runOneChange(start, catcher, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(place));
+		OneOffRunner.OutputState end = OneOffRunner.runOneChange(start, catcher, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(place));
 		Assert.assertNull(end);
 	}
 
@@ -143,18 +139,16 @@ public class TestOneOffRunner
 		}
 		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(target, null);
 		
-		OneOffRunner.StatePackage start = new OneOffRunner.StatePackage(entity
+		OneOffRunner.InputState start = new OneOffRunner.InputState(entity
 			, Map.of(address, cuboid)
 			, Map.of(address, HeightMapHelpers.buildHeightMap(cuboid))
-			, null
 			, Map.of()
 			, Map.of()
 		);
 		_Events catcher = new _Events();
-		OneOffRunner.StatePackage end = OneOffRunner.runOneChange(start, catcher, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(place));
+		OneOffRunner.OutputState end = OneOffRunner.runOneChange(start, catcher, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(place));
 		
 		Assert.assertEquals(EventRecord.Type.BLOCK_PLACED, catcher.event.type());
-		Assert.assertEquals(DIRT_ITEM.number(), end.world().get(address).getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(0, end.thisEntity().inventory().currentEncumbrance);
 	}
 
@@ -174,15 +168,14 @@ public class TestOneOffRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE_BLOCK);
 		cuboid.setData15(AspectRegistry.BLOCK, entityLocation.getBlockAddress(), ENV.special.AIR.item().number());
 		
-		OneOffRunner.StatePackage start = new OneOffRunner.StatePackage(entity
+		OneOffRunner.InputState start = new OneOffRunner.InputState(entity
 			, Map.of(address, cuboid)
 			, Map.of(address, HeightMapHelpers.buildHeightMap(cuboid))
-			, null
 			, Map.of()
 			, Map.of()
 		);
 		EntitySubActionDropItemsAsPassive drop = new EntitySubActionDropItemsAsPassive(1, true);
-		OneOffRunner.StatePackage end = OneOffRunner.runOneChange(start, null, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(drop));
+		OneOffRunner.OutputState end = OneOffRunner.runOneChange(start, null, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(drop));
 		
 		Entity result = end.thisEntity();
 		Assert.assertEquals(0, result.inventory().currentEncumbrance);
@@ -217,10 +210,9 @@ public class TestOneOffRunner
 			, slot
 		);
 		
-		OneOffRunner.StatePackage start = new OneOffRunner.StatePackage(entity
+		OneOffRunner.InputState start = new OneOffRunner.InputState(entity
 			, Map.of(address, cuboid)
 			, Map.of(address, HeightMapHelpers.buildHeightMap(cuboid))
-			, null
 			, Map.of()
 			, Map.of(near.id(), near
 				, far.id(), far
@@ -245,16 +237,15 @@ public class TestOneOffRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, mutable.newLocation.getBlockLocation().getBlockAddress(), STONE_BLOCK.item().number());
 		
-		OneOffRunner.StatePackage start = new OneOffRunner.StatePackage(entity
+		OneOffRunner.InputState start = new OneOffRunner.InputState(entity
 			, Map.of(address, cuboid)
 			, Map.of(address, HeightMapHelpers.buildHeightMap(cuboid))
-			, null
 			, Map.of()
 			, Map.of()
 		);
 		EntityLocation target = new EntityLocation(1.0f, 2.0f, 2.0f);
 		EntitySubActionPopOutOfBlock<IMutablePlayerEntity> pop = new EntitySubActionPopOutOfBlock<>(target);
-		OneOffRunner.StatePackage end = OneOffRunner.runOneChange(start, null, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(pop));
+		OneOffRunner.OutputState end = OneOffRunner.runOneChange(start, null, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(pop));
 		
 		Entity result = end.thisEntity();
 		Assert.assertEquals(target, result.location());
@@ -277,12 +268,11 @@ public class TestOneOffRunner
 		airCuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), DIRT_ITEM.number());
 		
 		EntityChangeUseSelectedItemOnBlock till = new EntityChangeUseSelectedItemOnBlock(target);
-		OneOffRunner.StatePackage start = new OneOffRunner.StatePackage(entity, Map.of(airAddress, airCuboid
+		OneOffRunner.InputState start = new OneOffRunner.InputState(entity, Map.of(airAddress, airCuboid
 		), Map.of(airAddress, HeightMapHelpers.buildHeightMap(airCuboid)
-		), null, Map.of(), Map.of());
-		OneOffRunner.StatePackage end = OneOffRunner.runOneChange(start, null, MILLIS_PER_TICK, 1_000L, new OneOffSubActionWrapper(till));
+		), Map.of(), Map.of());
+		OneOffRunner.OutputState end = OneOffRunner.runOneChange(start, null, MILLIS_PER_TICK, 1_000L, new OneOffSubActionWrapper(till));
 		
-		Assert.assertEquals(TILLED_SOIL_BLOCK.item().number(), end.world().get(airAddress).getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertTrue(hoe == end.thisEntity().inventory().getNonStackableForKey(1));
 	}
 

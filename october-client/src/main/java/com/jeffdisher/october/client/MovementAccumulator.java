@@ -419,10 +419,9 @@ public class MovementAccumulator
 	// Returns null if there was an error in toRun or _thisEntity, if it was a success but had no impact.
 	private Entity _generateLocalEntity(EntityActionSimpleMove<IMutablePlayerEntity> toRun, long millisToApply, long currentTimeMillis)
 	{
-		OneOffRunner.StatePackage input = new OneOffRunner.StatePackage(_thisEntity
+		OneOffRunner.InputState input = new OneOffRunner.InputState(_thisEntity
 			, _world
 			, _heights
-			, null
 			, _otherEntities
 			, _passives
 		);
@@ -431,7 +430,7 @@ public class MovementAccumulator
 			// server when it determines things like damage, etc) or were world-related and sent at the beginning of the
 			// action tick in the other path.
 		};
-		OneOffRunner.StatePackage output = OneOffRunner.runOneChange(input, eventSink, millisToApply, currentTimeMillis, toRun);
+		OneOffRunner.OutputState output = OneOffRunner.runOneChange(input, eventSink, millisToApply, currentTimeMillis, toRun);
 		Entity toReturn;
 		if (null != output)
 		{
