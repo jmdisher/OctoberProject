@@ -1,0 +1,104 @@
+This is a workload of 20 clients intended for performance analysis and profiling.
+
+Start server:
+
+rm -f world/cuboid_* world/entity_* && \
+java -Xmx256m -jar october-server/target/october-server-0.0-SNAPSHOT-jar-with-dependencies.jar  9999
+
+
+Wait until the server starts and then start the clients:
+
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot000 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot001 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot002 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot003 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot004 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot005 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot006 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot007 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot008 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot009 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot010 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot011 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot012 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot013 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot014 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot015 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot016 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot017 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot018 > /dev/null & \
+java -Xmx32m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=0 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=3 -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot019 > /dev/null & \
+true
+
+
+Wait until 20 clients show up in !list_clients (and ensure that they are loaded - this can take several seconds), then configure them:
+
+!set_mode 1383296247 creative
+!set_mode 1383296246 creative
+!set_mode 1383296245 creative
+!set_mode 1383296244 creative
+!set_mode 1383296243 creative
+!set_mode 1383296242 creative
+!set_mode 1383296241 creative
+!set_mode 1383296240 creative
+!set_mode 1383296239 creative
+!set_mode 1383296238 creative
+!set_mode 1383296216 creative
+!set_mode 1383296215 creative
+!set_mode 1383296214 creative
+!set_mode 1383296213 creative
+!set_mode 1383296212 creative
+!set_mode 1383296211 creative
+!set_mode 1383296210 creative
+!set_mode 1383296209 creative
+!set_mode 1383296208 creative
+!set_mode 1383296207 creative
+
+
+The clients can be teleported at the same time:
+
+!tp 1383296247 0 0 0
+!tp 1383296246 0 10 0
+!tp 1383296245 0 20 0
+!tp 1383296244 0 30 0
+!tp 1383296243 0 40 0
+!tp 1383296242 0 50 0
+!tp 1383296241 0 60 0
+!tp 1383296240 0 70 0
+!tp 1383296239 0 80 0
+!tp 1383296238 0 90 0
+!tp 1383296216 0 100 0
+!tp 1383296215 0 110 0
+!tp 1383296214 0 120 0
+!tp 1383296213 0 130 0
+!tp 1383296212 0 140 0
+!tp 1383296211 0 150 0
+!tp 1383296210 0 160 0
+!tp 1383296209 0 170 0
+!tp 1383296208 0 180 0
+!tp 1383296207 0 190 0
+
+
+A few seconds later, these messages can be sent to start the client movements:
+
+!message 1383296247 BRICK EAST
+!message 1383296246 BRICK EAST
+!message 1383296245 BRICK EAST
+!message 1383296244 BRICK EAST
+!message 1383296243 BRICK EAST
+!message 1383296242 BRICK EAST
+!message 1383296241 BRICK EAST
+!message 1383296240 BRICK EAST
+!message 1383296239 BRICK EAST
+!message 1383296238 BRICK EAST
+!message 1383296216 BRICK EAST
+!message 1383296215 BRICK EAST
+!message 1383296214 BRICK EAST
+!message 1383296213 BRICK EAST
+!message 1383296212 BRICK EAST
+!message 1383296211 BRICK EAST
+!message 1383296210 BRICK EAST
+!message 1383296209 BRICK EAST
+!message 1383296208 BRICK EAST
+!message 1383296207 BRICK EAST
+

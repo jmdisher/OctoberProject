@@ -6,7 +6,6 @@ import java.util.Set;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.client.MovementAccumulator;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.data.ColumnHeightMap;
@@ -27,6 +26,7 @@ import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
+import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -82,9 +82,12 @@ public class AutoWalkingClient
 
 	private static _Packaged _connectAndWaitForCommand(InetSocketAddress serverAddress, String clientName) throws IOException, InterruptedException, ClientProcess.DisconnectException, TabListReader.TabListException
 	{
+		// Since this is used in stress tests, we want to request the maximum cuboid view distance.
+		int cuboidViewDistance = WorldConfig.MAX_CLIENT_VIEW_DISTANCE_MAXIMUM;
+		
 		Environment.createSharedInstance();
 		_Listener listener = new _Listener();
-		ClientProcess client = new ClientProcess(listener, serverAddress.getAddress(), serverAddress.getPort(), clientName, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		ClientProcess client = new ClientProcess(listener, serverAddress.getAddress(), serverAddress.getPort(), clientName, cuboidViewDistance);
 		client.waitForLocalEntity(System.currentTimeMillis());
 		
 		// Wait until we get a command.
