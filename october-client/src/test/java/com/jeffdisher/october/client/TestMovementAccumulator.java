@@ -1252,6 +1252,105 @@ public class TestMovementAccumulator
 		Assert.assertEquals(new EntityLocation(-1.7f, -1.7f, -0.2f), listener.thisEntity.velocity());
 	}
 
+	@Test
+	public void perf_standOnGround() throws Throwable
+	{
+		// We want to show the client-side cost in checking for solid ground when just standing, as this is a hot point in some profiles.
+		boolean infiniteLoopForProfiler = false;
+		boolean longLoopForObjectiveScore = false;
+		
+		// We want to create 8 cuboids so we see how this check spans across them.
+		Block dirtBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
+		Block logBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.log"));
+		Block coalOreBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.coal_ore"));
+		Block ironOreBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.iron_ore"));
+		
+		CuboidData bottomCuboid00 = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		CuboidGenerator.fillPlane(bottomCuboid00, (byte)31, dirtBlock);
+		CuboidGenerator.fillPlane(bottomCuboid00, (byte)29, logBlock);
+		CuboidGenerator.fillPlane(bottomCuboid00, (byte)27, coalOreBlock);
+		CuboidGenerator.fillPlane(bottomCuboid00, (byte)25, ironOreBlock);
+		CuboidData bottomCuboid01 = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 1, -1), STONE);
+		CuboidGenerator.fillPlane(bottomCuboid01, (byte)31, dirtBlock);
+		CuboidGenerator.fillPlane(bottomCuboid01, (byte)29, logBlock);
+		CuboidGenerator.fillPlane(bottomCuboid01, (byte)27, coalOreBlock);
+		CuboidGenerator.fillPlane(bottomCuboid01, (byte)25, ironOreBlock);
+		CuboidData bottomCuboid10 = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, 0, -1), STONE);
+		CuboidGenerator.fillPlane(bottomCuboid10, (byte)31, dirtBlock);
+		CuboidGenerator.fillPlane(bottomCuboid10, (byte)29, logBlock);
+		CuboidGenerator.fillPlane(bottomCuboid10, (byte)27, coalOreBlock);
+		CuboidGenerator.fillPlane(bottomCuboid10, (byte)25, ironOreBlock);
+		CuboidData bottomCuboid11 = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, 1, -1), STONE);
+		CuboidGenerator.fillPlane(bottomCuboid11, (byte)31, dirtBlock);
+		CuboidGenerator.fillPlane(bottomCuboid11, (byte)29, logBlock);
+		CuboidGenerator.fillPlane(bottomCuboid11, (byte)27, coalOreBlock);
+		CuboidGenerator.fillPlane(bottomCuboid11, (byte)25, ironOreBlock);
+		
+		CuboidData topCuboid00 = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidData topCuboid01 = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 1, 0), ENV.special.AIR);
+		CuboidData topCuboid10 = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, 0, 0), ENV.special.AIR);
+		CuboidData topCuboid11 = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, 1, 0), ENV.special.AIR);
+		
+		long millisPerTick = 100L;
+		long currentTimeMillis = 1000L;
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Create the baseline data we need.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = new EntityLocation(31.8f, 31.8f, 0.0f);
+		Entity entity = mutable.freeze();
+		accumulator.setThisEntity(entity);
+		accumulator.setCuboid(bottomCuboid00, HeightMapHelpers.buildHeightMap(bottomCuboid00));
+		accumulator.setCuboid(bottomCuboid01, HeightMapHelpers.buildHeightMap(bottomCuboid01));
+		accumulator.setCuboid(bottomCuboid10, HeightMapHelpers.buildHeightMap(bottomCuboid10));
+		accumulator.setCuboid(bottomCuboid11, HeightMapHelpers.buildHeightMap(bottomCuboid11));
+		accumulator.setCuboid(topCuboid00, HeightMapHelpers.buildHeightMap(topCuboid00));
+		accumulator.setCuboid(topCuboid01, HeightMapHelpers.buildHeightMap(topCuboid01));
+		accumulator.setCuboid(topCuboid10, HeightMapHelpers.buildHeightMap(topCuboid10));
+		accumulator.setCuboid(topCuboid11, HeightMapHelpers.buildHeightMap(topCuboid11));
+		listener.thisEntityDidLoad(entity);
+		accumulator.clearAccumulation();
+		
+		long millisPerMove = 10L;
+		if (infiniteLoopForProfiler)
+		{
+			while(true)
+			{
+				currentTimeMillis += millisPerMove;
+				EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
+				Assert.assertNull(out);
+				accumulator.applyLocalAccumulation();
+				accumulator.clearAccumulation();
+			}
+		}
+		else if (longLoopForObjectiveScore)
+		{
+			int iterationCount = 1_000_000;
+			long startNanos = System.nanoTime();
+			for (int i = 0; i < iterationCount; ++i)
+			{
+				currentTimeMillis += millisPerMove;
+				EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
+				Assert.assertNull(out);
+				accumulator.applyLocalAccumulation();
+				accumulator.clearAccumulation();
+			}
+			long endNanos = System.nanoTime();
+			System.out.println("Nanos per: " + ((endNanos - startNanos) / iterationCount));
+		}
+		else
+		{
+			// We are just using this as a unit test, not a performance measurement, so just verify that it is correct.
+			currentTimeMillis += millisPerMove;
+			EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
+			Assert.assertNull(out);
+			accumulator.clearAccumulation();
+		}
+		
+		Assert.assertEquals(new EntityLocation(31.8f, 31.8f, 0.0f), listener.thisEntity.location());
+	}
+
 
 	private Entity _runFallingTest(long millisPerMove, int iterationCount, CuboidData cuboid, Entity entity)
 	{
