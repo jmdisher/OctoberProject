@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.jeffdisher.october.data.BlockProxy;
@@ -25,7 +26,6 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
-import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
@@ -156,13 +156,6 @@ public class OneOffRunner
 	)
 	{
 		long gameTick = 0L;
-		LazyLocationCache<BlockProxy> cachingLoader = new LazyLocationCache<>((AbsoluteLocation location) -> {
-			IReadOnlyCuboidData cuboid = state.world.get(location.getCuboidAddress());
-			return (null != cuboid)
-				? new BlockProxy(location.getBlockAddress(), cuboid)
-				: null
-			;
-		});
 		int thisEntityId = state.thisEntity().id();
 		TickProcessingContext.IPassiveSearch passiveSearch = new TickProcessingContext.IPassiveSearch() {
 			@Override
@@ -178,7 +171,7 @@ public class OneOffRunner
 			}
 		};
 		TickProcessingContext context = new TickProcessingContext(gameTick
-				, cachingLoader
+				, state.proxyLoader
 				, (Integer entityId) -> (thisEntityId == entityId)
 					? MinimalEntity.fromEntity(state.thisEntity())
 					: MinimalEntity.fromPartialEntity(state.otherEntities.get(entityId))
@@ -209,9 +202,9 @@ public class OneOffRunner
 	 */
 	public static record InputState(Entity thisEntity
 		, Map<CuboidAddress, IReadOnlyCuboidData> world
-		, Map<CuboidAddress, CuboidHeightMap> heights
 		, Map<Integer, PartialEntity> otherEntities
 		, Map<Integer, PartialPassive> passives
+		, Function<AbsoluteLocation, BlockProxy> proxyLoader
 	) {}
 
 	/**

@@ -1,6 +1,9 @@
 package com.jeffdisher.october.client;
 
+import java.util.Arrays;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -9,8 +12,8 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.subactions.EntityChangeUseSelectedItemOnBlock;
 import com.jeffdisher.october.subactions.EntitySubActionDropItemsAsPassive;
@@ -79,9 +82,9 @@ public class TestOneOffRunner
 		
 		OneOffRunner.InputState start = new OneOffRunner.InputState(entity, Map.of(airAddress, airCuboid
 				, stoneAddress, stoneCuboid
-		), Map.of(airAddress, HeightMapHelpers.buildHeightMap(airCuboid)
-				, stoneAddress, HeightMapHelpers.buildHeightMap(stoneCuboid)
-		), Map.of(), Map.of());
+		), Map.of(), Map.of()
+			, _buildProxyLoader(airCuboid, stoneCuboid)
+		);
 		_Events catcher = new _Events();
 		OneOffRunner.OutputState end = OneOffRunner.runOneChange(start, catcher, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(place));
 		
@@ -108,9 +111,9 @@ public class TestOneOffRunner
 		
 		OneOffRunner.InputState start = new OneOffRunner.InputState(entity, Map.of(airAddress, airCuboid
 				, stoneAddress, stoneCuboid
-		), Map.of(airAddress, HeightMapHelpers.buildHeightMap(airCuboid)
-				, stoneAddress, HeightMapHelpers.buildHeightMap(stoneCuboid)
-		), Map.of(), Map.of());
+		), Map.of(), Map.of()
+			, _buildProxyLoader(airCuboid, stoneCuboid)
+		);
 		_Events catcher = new _Events();
 		OneOffRunner.OutputState end = OneOffRunner.runOneChange(start, catcher, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(place));
 		Assert.assertNull(end);
@@ -141,9 +144,9 @@ public class TestOneOffRunner
 		
 		OneOffRunner.InputState start = new OneOffRunner.InputState(entity
 			, Map.of(address, cuboid)
-			, Map.of(address, HeightMapHelpers.buildHeightMap(cuboid))
 			, Map.of()
 			, Map.of()
+			, _buildProxyLoader(cuboid)
 		);
 		_Events catcher = new _Events();
 		OneOffRunner.OutputState end = OneOffRunner.runOneChange(start, catcher, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(place));
@@ -170,9 +173,9 @@ public class TestOneOffRunner
 		
 		OneOffRunner.InputState start = new OneOffRunner.InputState(entity
 			, Map.of(address, cuboid)
-			, Map.of(address, HeightMapHelpers.buildHeightMap(cuboid))
 			, Map.of()
 			, Map.of()
+			, _buildProxyLoader(cuboid)
 		);
 		EntitySubActionDropItemsAsPassive drop = new EntitySubActionDropItemsAsPassive(1, true);
 		OneOffRunner.OutputState end = OneOffRunner.runOneChange(start, null, MILLIS_PER_TICK, 1L, new OneOffSubActionWrapper(drop));
@@ -212,11 +215,11 @@ public class TestOneOffRunner
 		
 		OneOffRunner.InputState start = new OneOffRunner.InputState(entity
 			, Map.of(address, cuboid)
-			, Map.of(address, HeightMapHelpers.buildHeightMap(cuboid))
 			, Map.of()
 			, Map.of(near.id(), near
 				, far.id(), far
 			)
+			, _buildProxyLoader(cuboid)
 		);
 		
 		// Show that this works when in range, but fails when out of range.
@@ -239,9 +242,9 @@ public class TestOneOffRunner
 		
 		OneOffRunner.InputState start = new OneOffRunner.InputState(entity
 			, Map.of(address, cuboid)
-			, Map.of(address, HeightMapHelpers.buildHeightMap(cuboid))
 			, Map.of()
 			, Map.of()
+			, _buildProxyLoader(cuboid)
 		);
 		EntityLocation target = new EntityLocation(1.0f, 2.0f, 2.0f);
 		EntitySubActionPopOutOfBlock<IMutablePlayerEntity> pop = new EntitySubActionPopOutOfBlock<>(target);
@@ -269,11 +272,27 @@ public class TestOneOffRunner
 		
 		EntityChangeUseSelectedItemOnBlock till = new EntityChangeUseSelectedItemOnBlock(target);
 		OneOffRunner.InputState start = new OneOffRunner.InputState(entity, Map.of(airAddress, airCuboid
-		), Map.of(airAddress, HeightMapHelpers.buildHeightMap(airCuboid)
-		), Map.of(), Map.of());
+		), Map.of(), Map.of()
+			, _buildProxyLoader(airCuboid)
+		);
 		OneOffRunner.OutputState end = OneOffRunner.runOneChange(start, null, MILLIS_PER_TICK, 1_000L, new OneOffSubActionWrapper(till));
 		
 		Assert.assertTrue(hoe == end.thisEntity().inventory().getNonStackableForKey(1));
+	}
+
+
+	private static Function<AbsoluteLocation, BlockProxy> _buildProxyLoader(CuboidData... cuboids)
+	{
+		Map<CuboidAddress, CuboidData> map = Arrays.stream(cuboids)
+			.collect(Collectors.toMap((CuboidData cuboid) -> cuboid.getCuboidAddress(), (CuboidData cuboid) -> cuboid))
+		;
+		return (AbsoluteLocation location) -> {
+			CuboidData cuboid = map.get(location.getCuboidAddress());
+			return (null != cuboid)
+				? new BlockProxy(location.getBlockAddress(), cuboid)
+				: null
+			;
+		};
 	}
 
 

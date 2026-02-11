@@ -22,6 +22,7 @@ import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -54,7 +55,6 @@ public class MovementAccumulator
 
 	private Entity _thisEntity;
 	private final Map<CuboidAddress, IReadOnlyCuboidData> _world;
-	private final Map<CuboidAddress, CuboidHeightMap> _heights;
 	private final Map<Integer, PartialEntity> _otherEntities;
 	private final Map<Integer, PartialPassive> _passives;
 	private final Function<AbsoluteLocation, BlockProxy> _proxyLookup;
@@ -81,7 +81,6 @@ public class MovementAccumulator
 		_playerVolume = playerVolume;
 		
 		_world = new HashMap<>();
-		_heights = new HashMap<>();
 		_otherEntities = new HashMap<>();
 		_passives = new HashMap<>();
 		
@@ -301,7 +300,6 @@ public class MovementAccumulator
 	{
 		CuboidAddress address = cuboid.getCuboidAddress();
 		_world.put(address, cuboid);
-		_heights.put(address, heightMap);
 	}
 
 	/**
@@ -312,7 +310,6 @@ public class MovementAccumulator
 	public void removeCuboid(CuboidAddress address)
 	{
 		Assert.assertTrue(null != _world.remove(address));
-		Assert.assertTrue(null != _heights.remove(address));
 	}
 
 	/**
@@ -419,11 +416,18 @@ public class MovementAccumulator
 	// Returns null if there was an error in toRun or _thisEntity, if it was a success but had no impact.
 	private Entity _generateLocalEntity(EntityActionSimpleMove<IMutablePlayerEntity> toRun, long millisToApply, long currentTimeMillis)
 	{
+		LazyLocationCache<BlockProxy> cachingLoader = new LazyLocationCache<>((AbsoluteLocation location) -> {
+			IReadOnlyCuboidData cuboid = _world.get(location.getCuboidAddress());
+			return (null != cuboid)
+				? new BlockProxy(location.getBlockAddress(), cuboid)
+				: null
+			;
+		});
 		OneOffRunner.InputState input = new OneOffRunner.InputState(_thisEntity
 			, _world
-			, _heights
 			, _otherEntities
 			, _passives
+			, cachingLoader
 		);
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
 			// We can probably ignore events in this path since they will either be entity-related (hence sent by the
