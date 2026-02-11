@@ -386,6 +386,7 @@ public class TickRunner
 			, Map.of()
 			, Map.of()
 			, Set.of()
+			, Map.of()
 			
 			, Map.of()
 			
@@ -409,6 +410,7 @@ public class TickRunner
 						, Map.of()
 						, List.of()
 						, Set.of()
+						, Map.of()
 				)
 		);
 		while (null != materials)
@@ -417,12 +419,17 @@ public class TickRunner
 			// Create the BlockProxy loader for the read-only state from the previous tick.
 			final TickMaterials thisTickMaterials = materials;
 			Function<AbsoluteLocation, BlockProxy> loader = (AbsoluteLocation location) -> {
-				CuboidAddress address = location.getCuboidAddress();
-				IReadOnlyCuboidData cuboid = thisTickMaterials.completedCuboids.get(address);
-				return (null != cuboid)
-						? new BlockProxy(location.getBlockAddress(), cuboid)
-						: null
-				;
+				BlockProxy proxy = thisTickMaterials.previousProxyCache.get(location);
+				if (null == proxy)
+				{
+					CuboidAddress address = location.getCuboidAddress();
+					IReadOnlyCuboidData cuboid = thisTickMaterials.completedCuboids.get(address);
+					proxy = (null != cuboid)
+							? new BlockProxy(location.getBlockAddress(), cuboid)
+							: null
+					;
+				}
+				return proxy;
 			};
 			// WARNING:  This block cache is used for everything this thread does and we may want to provide a flushing mechanism.
 			LazyLocationCache<BlockProxy> cachingLoader = new LazyLocationCache<>(loader);
@@ -541,6 +548,7 @@ public class TickRunner
 					, newChangeSink.takeExportedPassiveActions()
 					, events
 					, internallyMarkedAlive
+					, cachingLoader.extractCache()
 				)
 			);
 		}
@@ -617,6 +625,7 @@ public class TickRunner
 					, Map.of()
 					, List.of()
 					, Set.of()
+					, Map.of()
 				);
 				partials.add(spilledPartial);
 			}
@@ -825,6 +834,7 @@ public class TickRunner
 			, Map.of()
 			, List.of()
 			, Set.of()
+			, Map.of()
 		);
 	}
 
@@ -1037,6 +1047,29 @@ public class TickRunner
 					}
 				}
 				
+				// Carry forward the proxy cache from the previous tick unless the corresponding block locations changed or where removed.
+				Set<AbsoluteLocation> changedBlocksInPreviousTick = new HashSet<>();
+				for (List<BlockChangeDescription> list : masterFragment.world().blockChangesByCuboid.values())
+				{
+					for (BlockChangeDescription change : list)
+					{
+						changedBlocksInPreviousTick.add(change.serializedForm().getAbsoluteLocation());
+					}
+				}
+				Map<AbsoluteLocation, BlockProxy> previousProxyCache = masterFragment.populatedProxyCache.entrySet().stream()
+					.filter((Map.Entry<AbsoluteLocation, BlockProxy> ent) -> {
+						AbsoluteLocation location = ent.getKey();
+						boolean shouldDrop = changedBlocksInPreviousTick.contains(location);
+						if (!shouldDrop && (null != cuboidsToDrop))
+						{
+							CuboidAddress cuboidAddress = location.getCuboidAddress();
+							shouldDrop = cuboidsToDrop.contains(cuboidAddress);
+						}
+						return !shouldDrop;
+					})
+					.collect(Collectors.toMap((Map.Entry<AbsoluteLocation, BlockProxy> ent) -> ent.getKey(), (Map.Entry<AbsoluteLocation, BlockProxy> ent) -> ent.getValue()))
+				;
+				
 				// TODO:  We should probably remove this once we are sure we know what is happening and/or find a cheaper way to check this.
 				for (CuboidAddress key : pendingMutations.keySet())
 				{
@@ -1095,6 +1128,7 @@ public class TickRunner
 						, potentialLightChangesByCuboid
 						, potentialLogicChangesByCuboid
 						, cuboidsLoadedThisTick
+						, previousProxyCache
 						
 						// Data only used by this method:
 						, newCommitLevels
@@ -1604,6 +1638,7 @@ public class TickRunner
 		Map<Integer, List<IPassiveAction>> newlyScheduledPassiveActions = new HashMap<>();
 		List<EventRecord> postedEvents = new ArrayList<>();
 		Set<CuboidAddress> internallyMarkedAlive = new HashSet<>();
+		Map<AbsoluteLocation, BlockProxy> populatedProxyCache = new HashMap<>();
 		
 		for (int i = 0; i < partials.length; ++i)
 		{
@@ -1638,6 +1673,7 @@ public class TickRunner
 			newlyScheduledPassiveActions.putAll(fragment.newlyScheduledPassiveActions());
 			postedEvents.addAll(fragment.postedEvents());
 			internallyMarkedAlive.addAll(fragment.internallyMarkedAlive());
+			populatedProxyCache.putAll(fragment.populatedProxyCache());
 			partials[i] = null;
 		}
 		
@@ -1672,6 +1708,7 @@ public class TickRunner
 			, newlyScheduledPassiveActions
 			, postedEvents
 			, internallyMarkedAlive
+			, populatedProxyCache
 		);
 	}
 
@@ -2101,6 +2138,7 @@ public class TickRunner
 			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid
 			// The set of addresses loaded in this tick (they are present in this tick, but for the first time).
 			, Set<CuboidAddress> cuboidsLoadedThisTick
+			, Map<AbsoluteLocation, BlockProxy> previousProxyCache
 			
 			// ----- TickRunner private state attached to the materials below this line -----
 			// The last commit levels of all connected clients (by ID).
@@ -2152,6 +2190,7 @@ public class TickRunner
 			, Map<Integer, List<IPassiveAction>> newlyScheduledPassiveActions
 			, List<EventRecord> postedEvents
 			, Set<CuboidAddress> internallyMarkedAlive
+			, Map<AbsoluteLocation, BlockProxy> populatedProxyCache
 	) {}
 
 	private static record _CreatureGroup(boolean ignored
