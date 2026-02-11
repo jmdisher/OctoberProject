@@ -3655,7 +3655,7 @@ public class TestCommonChanges
 				}
 		);
 		
-		for (MutableBlockProxy proxy : lazyMutableBlockCache.getCachedValues())
+		for (MutableBlockProxy proxy : lazyMutableBlockCache.extractCache().values())
 		{
 			proxy.writeBack(cuboid);
 		}

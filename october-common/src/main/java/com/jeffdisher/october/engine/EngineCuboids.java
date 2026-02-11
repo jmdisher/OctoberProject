@@ -2,6 +2,7 @@ package com.jeffdisher.october.engine;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -164,7 +165,8 @@ public class EngineCuboids
 		);
 		
 		// Return the old instance if nothing changed.
-		List<MutableBlockProxy> proxiesToWrite = lazyMutableBlockCache.getCachedValues().stream().filter(
+		Collection<MutableBlockProxy> cachedMutableProxies = lazyMutableBlockCache.extractCache().values();
+		List<MutableBlockProxy> proxiesToWrite = cachedMutableProxies.stream().filter(
 				(MutableBlockProxy proxy) -> proxy.didChange()
 		).toList();
 		IReadOnlyCuboidData changedCuboidOrNull = null;
@@ -194,7 +196,7 @@ public class EngineCuboids
 		}
 		
 		// Write back any of the updated periodic events.
-		List<MutableBlockProxy> proxiesWithScheduledMutations = lazyMutableBlockCache.getCachedValues().stream().filter(
+		List<MutableBlockProxy> proxiesWithScheduledMutations = cachedMutableProxies.stream().filter(
 				(MutableBlockProxy proxy) -> (proxy.periodicDelayMillis > 0L)
 		).toList();
 		for (MutableBlockProxy proxy : proxiesWithScheduledMutations)
