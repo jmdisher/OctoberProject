@@ -652,7 +652,6 @@ public class TickRunner
 		// Per-cuboid data.
 		Map<CuboidAddress, IReadOnlyCuboidData> fragment = new HashMap<>();
 		Map<CuboidAddress, CuboidHeightMap> fragmentHeights = new HashMap<>();
-		Map<CuboidAddress, CuboidHeightMap> allCuboidHeights = new HashMap<>();
 		Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid = new HashMap<>();
 		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
 		Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyByCuboid = new HashMap<>();
@@ -673,6 +672,7 @@ public class TickRunner
 		// We need to walk the cuboids and collect data from each of them and associated players and creatures.
 		processor.workUnitsProcessed += 1;
 		Set<CuboidAddress> loadedCuboids = materials.completedCuboids.keySet();
+		Map<CuboidAddress, CuboidHeightMap> previousCuboidHeightMaps = new HashMap<>();
 		for (_CuboidWorkUnit subUnit : unit.cuboids)
 		{
 			// This is our element.
@@ -698,15 +698,11 @@ public class TickRunner
 			{
 				fragment.put(key, cuboidResult.changedCuboidOrNull());
 			}
+			previousCuboidHeightMaps.put(key, subUnit.cuboidHeightMap);
 			if (null != cuboidResult.changedHeightMap())
 			{
 				CuboidHeightMap changedHeightMap = cuboidResult.changedHeightMap();
 				fragmentHeights.put(key, changedHeightMap);
-				allCuboidHeights.put(key, changedHeightMap);
-			}
-			else
-			{
-				allCuboidHeights.put(key, subUnit.cuboidHeightMap);
 			}
 			if (null != cuboidResult.changedBlocks())
 			{
@@ -799,7 +795,15 @@ public class TickRunner
 		}
 		
 		// We can now merge the height maps since each _CommonWorkUnit is a full column.
-		Map<CuboidColumnAddress, ColumnHeightMap> columnHeight = HeightMapHelpers.buildColumnMaps(allCuboidHeights);
+		Map<CuboidColumnAddress, ColumnHeightMap> previousColumnHeightMap = (null != unit.columnHeightMap)
+			? Map.of(unit.columnAddress, unit.columnHeightMap)
+			: Map.of()
+		;
+		Map<CuboidColumnAddress, ColumnHeightMap> columnHeight = HeightMapHelpers.rebuildColumnMaps(previousColumnHeightMap
+			, previousCuboidHeightMaps
+			, fragmentHeights
+			, previousCuboidHeightMaps.keySet()
+		);
 		// This should only be for this single column.
 		Assert.assertTrue(1 == columnHeight.size());
 		
