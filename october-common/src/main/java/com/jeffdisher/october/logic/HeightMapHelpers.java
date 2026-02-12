@@ -130,6 +130,19 @@ public class HeightMapHelpers
 		return newMap;
 	}
 
+	public static ColumnHeightMap buildSingleColumn(Map<CuboidAddress, CuboidHeightMap> cuboidHeightMaps)
+	{
+		// We want to sort the CuboidHeightMap, descending by z, so that we can build the column map from the top down.
+		List<Map.Entry<CuboidAddress, CuboidHeightMap>> list = _descendingInColumns(cuboidHeightMaps);
+		
+		ColumnHeightMap.Builder builder = ColumnHeightMap.build();
+		for (Map.Entry<CuboidAddress, CuboidHeightMap> ent : list)
+		{
+			builder.consume(ent.getValue(), ent.getKey());
+		}
+		return builder.freeze();
+	}
+
 
 	private static byte[][] _createUniformHeightMap(byte heightMapValue)
 	{

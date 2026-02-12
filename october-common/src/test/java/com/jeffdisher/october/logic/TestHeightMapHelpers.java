@@ -279,4 +279,34 @@ public class TestHeightMapHelpers
 			// Expected.
 		}
 	}
+
+	@Test
+	public void buildSingleColumn() throws Throwable
+	{
+		// Populate a cuboid with some values and observe the expected height map.
+		CuboidAddress low = CuboidAddress.fromInt(0, 0, -1);
+		CuboidAddress mid = CuboidAddress.fromInt(0, 0, 0);
+		CuboidAddress high = CuboidAddress.fromInt(0, 0, 1);
+		
+		CuboidData bottom = CuboidGenerator.createFilledCuboid(low, ENV.special.AIR);
+		CuboidData centre = CuboidGenerator.createFilledCuboid(mid, STONE);
+		CuboidData top = CuboidGenerator.createFilledCuboid(high, ENV.special.AIR);
+		
+		CuboidHeightMap bottomMap = HeightMapHelpers.buildHeightMap(bottom);
+		CuboidHeightMap centreMap = HeightMapHelpers.buildHeightMap(centre);
+		CuboidHeightMap topMap = HeightMapHelpers.buildHeightMap(top);
+		
+		ColumnHeightMap columnMap = HeightMapHelpers.buildSingleColumn(Map.of(low, bottomMap
+			, mid, centreMap
+			, high, topMap
+		));
+		for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
+		{
+			for (byte x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
+			{
+				int height = columnMap.getHeight(x, y);
+				Assert.assertEquals(31, height);
+			}
+		}
+	}
 }

@@ -672,7 +672,7 @@ public class TickRunner
 		// We need to walk the cuboids and collect data from each of them and associated players and creatures.
 		processor.workUnitsProcessed += 1;
 		Set<CuboidAddress> loadedCuboids = materials.completedCuboids.keySet();
-		Map<CuboidAddress, CuboidHeightMap> previousCuboidHeightMaps = new HashMap<>();
+		Map<CuboidAddress, CuboidHeightMap> existingAndUpdatedCuboidHeightMaps = new HashMap<>();
 		for (_CuboidWorkUnit subUnit : unit.cuboids)
 		{
 			// This is our element.
@@ -698,11 +698,15 @@ public class TickRunner
 			{
 				fragment.put(key, cuboidResult.changedCuboidOrNull());
 			}
-			previousCuboidHeightMaps.put(key, subUnit.cuboidHeightMap);
 			if (null != cuboidResult.changedHeightMap())
 			{
 				CuboidHeightMap changedHeightMap = cuboidResult.changedHeightMap();
 				fragmentHeights.put(key, changedHeightMap);
+				existingAndUpdatedCuboidHeightMaps.put(key, changedHeightMap);
+			}
+			else
+			{
+				existingAndUpdatedCuboidHeightMaps.put(key, subUnit.cuboidHeightMap);
 			}
 			if (null != cuboidResult.changedBlocks())
 			{
@@ -795,21 +799,11 @@ public class TickRunner
 		}
 		
 		// We can now merge the height maps since each _CommonWorkUnit is a full column.
-		Map<CuboidColumnAddress, ColumnHeightMap> previousColumnHeightMap = (null != unit.columnHeightMap)
-			? Map.of(unit.columnAddress, unit.columnHeightMap)
-			: Map.of()
-		;
-		Map<CuboidColumnAddress, ColumnHeightMap> columnHeight = HeightMapHelpers.rebuildColumnMaps(previousColumnHeightMap
-			, previousCuboidHeightMaps
-			, fragmentHeights
-			, previousCuboidHeightMaps.keySet()
-		);
-		// This should only be for this single column.
-		Assert.assertTrue(1 == columnHeight.size());
+		ColumnHeightMap columnHeightMap = HeightMapHelpers.buildSingleColumn(existingAndUpdatedCuboidHeightMaps);
 		
 		_ProcessedFragment world = new _ProcessedFragment(fragment
 			, fragmentHeights
-			, columnHeight
+			, Map.of(unit.columnAddress, columnHeightMap)
 			, notYetReadyMutations
 			, periodicNotReadyByCuboid
 			, blockChangesByCuboid
@@ -1104,7 +1098,6 @@ public class TickRunner
 				EntityCollection entityCollection = EntityCollection.fromMaps(mutableCrowdState, mutableCreatureState);
 				_HighLevelPlan highLevelPlan = _packageHighLevelWorkUnits(mutableWorldState
 					, nextTickMutableHeightMaps
-					, completedHeightMaps
 					, changesToRun
 					, mutableCreatureState
 					, mutablePassiveState
@@ -1858,7 +1851,6 @@ public class TickRunner
 
 	private static _HighLevelPlan _packageHighLevelWorkUnits(Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
 		, Map<CuboidAddress, CuboidHeightMap> cuboidHeightMaps
-		, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
 		, Map<Integer, _InputEntity> entities
 		, Map<Integer, CreatureEntity> completedCreatures
 		, Map<Integer, PassiveEntity> completedPassives
@@ -1989,7 +1981,6 @@ public class TickRunner
 		List<_CommonWorkUnit> result = new ArrayList<>();
 		for (CuboidColumnAddress column : workingWorkList.keySet())
 		{
-			ColumnHeightMap columnHeightMap = completedHeightMaps.get(column);
 			List<_CuboidWorkUnit> list = workingWorkList.get(column);
 			if (null == list)
 			{
@@ -2004,7 +1995,6 @@ public class TickRunner
 				(_CuboidWorkUnit inner) -> 1 + inner.mutations.size() + inner.creatures.size() + inner.entities.size()
 			).sum();
 			_CommonWorkUnit unit = new _CommonWorkUnit(column
-				, columnHeightMap
 				, Collections.unmodifiableList(list)
 				, priorityHint
 			);
@@ -2238,7 +2228,6 @@ public class TickRunner
 	) {}
 
 	private static record _CommonWorkUnit(CuboidColumnAddress columnAddress
-		, ColumnHeightMap columnHeightMap
 		, List<_CuboidWorkUnit> cuboids
 		, int priorityHint
 	) {}
