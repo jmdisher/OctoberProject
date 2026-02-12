@@ -8,6 +8,7 @@ import java.util.Map;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ScheduledMutation;
@@ -49,6 +50,10 @@ public class FlatWorldGenerator implements IWorldGenerator
 	private final boolean _shouldGenerateStructures;
 	private final StructureRegistry _structures;
 
+	// This generator uses 2 base template cuboid types so we pre-generate them to reduce overhead during performance tests.
+	private final IReadOnlyCuboidData _groundCuboid;
+	private final IReadOnlyCuboidData _airCuboid;
+
 	/**
 	 * Creates the world generator, configured with options.
 	 * 
@@ -74,6 +79,17 @@ public class FlatWorldGenerator implements IWorldGenerator
 		_structures.register(structures.distanceTower, PORTAL_SOUTH, FacingDirection.SOUTH);
 		_structures.register(structures.distanceTower, PORTAL_EAST, FacingDirection.EAST);
 		_structures.register(structures.distanceTower, PORTAL_WEST, FacingDirection.WEST);
+		
+		// Pre-generate our template cuboids.
+		CuboidData data = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), _stoneBlock);
+		CuboidGenerator.fillPlane(data, (byte)31, _dirtBlock);
+		CuboidGenerator.fillPlane(data, (byte)29, _logBlock);
+		CuboidGenerator.fillPlane(data, (byte)27, _coalOreBlock);
+		CuboidGenerator.fillPlane(data, (byte)25, _ironOreBlock);
+		data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(6, 6, 31), _waterSourceBlock.item().number());
+		data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(7, 7, 31), _waterSourceBlock.item().number());
+		_groundCuboid = data;
+		_airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), _airBlock);
 	}
 
 	@Override
@@ -83,18 +99,11 @@ public class FlatWorldGenerator implements IWorldGenerator
 		CuboidData data;
 		if (address.z() < (short)0)
 		{
-			data = CuboidGenerator.createFilledCuboid(address, _stoneBlock);
-			CuboidGenerator.fillPlane(data, (byte)31, _dirtBlock);
-			CuboidGenerator.fillPlane(data, (byte)29, _logBlock);
-			CuboidGenerator.fillPlane(data, (byte)27, _coalOreBlock);
-			CuboidGenerator.fillPlane(data, (byte)25, _ironOreBlock);
-			// We want to add a bit of water.
-			data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(6, 6, 31), _waterSourceBlock.item().number());
-			data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(7, 7, 31), _waterSourceBlock.item().number());
+			data = CuboidData.mutableCloneWithAddress(address, _groundCuboid);
 		}
 		else
 		{
-			data = CuboidGenerator.createFilledCuboid(address, _airBlock);
+			data = CuboidData.mutableCloneWithAddress(address, _airCuboid);
 		}
 		
 		// See if this is a cuboid where we want to generate our structure (it is in the 8 cuboids around the origin).

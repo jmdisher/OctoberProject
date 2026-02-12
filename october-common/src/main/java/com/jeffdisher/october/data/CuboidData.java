@@ -25,12 +25,13 @@ public class CuboidData implements IReadOnlyCuboidData
 	public static CuboidData mutableClone(IReadOnlyCuboidData raw)
 	{
 		CuboidData original = (CuboidData)raw;
-		IOctree<?>[] newer = new IOctree[original._data.length];
-		for (int i = 0; i < newer.length; ++i)
-		{
-			newer[i] = _cloneOneOctree(AspectRegistry.ALL_ASPECTS[i], original._data[i]);
-		}
-		return new CuboidData(original._cuboidAddress, newer);
+		return _mutableCloneWithAddress(original._cuboidAddress, original);
+	}
+
+	public static CuboidData mutableCloneWithAddress(CuboidAddress address, IReadOnlyCuboidData raw)
+	{
+		CuboidData original = (CuboidData)raw;
+		return _mutableCloneWithAddress(address, original);
 	}
 
 	public static CuboidData createNew(CuboidAddress cuboidAddress, IOctree<?>[] data)
@@ -54,6 +55,16 @@ public class CuboidData implements IReadOnlyCuboidData
 	{
 		O original = aspect.octreeType().cast(rawOriginal);
 		return aspect.deepMutableClone().apply(original);
+	}
+
+	private static CuboidData _mutableCloneWithAddress(CuboidAddress address, CuboidData original)
+	{
+		IOctree<?>[] newer = new IOctree[original._data.length];
+		for (int i = 0; i < newer.length; ++i)
+		{
+			newer[i] = _cloneOneOctree(AspectRegistry.ALL_ASPECTS[i], original._data[i]);
+		}
+		return new CuboidData(address, newer);
 	}
 
 
