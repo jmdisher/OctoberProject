@@ -3,7 +3,6 @@ package com.jeffdisher.october.logic;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
@@ -13,6 +12,7 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
+import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.Encoding;
 
 
@@ -70,75 +70,31 @@ public class HeightMapHelpers
 	}
 
 	/**
-	 * Similar to buildColumnMaps but avoids redundantly reconstructing those which are unchanged from the previous
-	 * tick.  This allows the copy-on-write semantics of the data model to be used to avoid duplicated work.  It also
-	 * means that the cost of rebuilding height maps in the single-threaded merge phase is based on the number of
-	 * changed cuboids, not the number of loaded cuboids, at the increased cost of slightly more collection management.
+	 * Merges the given CuboidHeightMap instances into a single ColumnHeightMap.
+	 * Note that this asserts that cuboidHeightMaps only applies to a single column and has no duplicated addresses.
 	 * 
-	 * @param previousColumnMaps The column maps from the previous tick.
-	 * @param previousCuboidMaps The cuboid maps from the previous tick (including anything added).
-	 * @param changedCuboidMaps The cuboid maps changed this tick.
-	 * @param allLoadedCuboidAddresses The set of addresses of all loaded cuboids.
-	 * @return
+	 * @param cuboidHeightMaps The CuboidHeightMap instances to merge.
+	 * @return The resultant ColumnHeightMap.
 	 */
-	public static Map<CuboidColumnAddress, ColumnHeightMap> rebuildColumnMaps(Map<CuboidColumnAddress, ColumnHeightMap> previousColumnMaps
-			, Map<CuboidAddress, CuboidHeightMap> previousCuboidMaps
-			, Map<CuboidAddress, CuboidHeightMap> changedCuboidMaps
-			, Set<CuboidAddress> allLoadedCuboidAddresses
-	)
-	{
-		// NOTE:  This just rebuilds these if they are stale but we could incrementally update them, in the future.
-		
-		// Build the changed column maps.
-		// -identify which columns need to be rebuilt
-		Set<CuboidColumnAddress> changedColumns = changedCuboidMaps.keySet().stream()
-				.map((CuboidAddress address) -> address.getColumn())
-				.collect(Collectors.toUnmodifiableSet())
-		;
-		// -add in anything which has been newly loaded and isn't yet merged into a column
-		Set<CuboidColumnAddress> newColumns = previousCuboidMaps.keySet().stream()
-				.map((CuboidAddress address) -> address.getColumn())
-				.filter((CuboidColumnAddress column) -> !previousColumnMaps.containsKey(column))
-				.collect(Collectors.toUnmodifiableSet())
-		;
-		
-		Map<CuboidAddress, CuboidHeightMap> allMapsToConsider = new HashMap<>();
-		// -add in any of the original maps for this column
-		for (Map.Entry<CuboidAddress, CuboidHeightMap> existing : previousCuboidMaps.entrySet())
-		{
-			CuboidAddress key = existing.getKey();
-			CuboidColumnAddress column = key.getColumn();
-			if (changedColumns.contains(column) || newColumns.contains(column))
-			{
-				allMapsToConsider.put(key, existing.getValue());
-			}
-		}
-		// -add the changed cuboids, over-writing any of the previous ones, where colliding
-		allMapsToConsider.putAll(changedCuboidMaps);
-		
-		// Build the new column maps.
-		Map<CuboidColumnAddress, ColumnHeightMap> changedMaps = _buildColumnMaps(allMapsToConsider);
-		
-		// Build the collection to return.
-		// -start with the original map
-		Map<CuboidColumnAddress, ColumnHeightMap> newMap = new HashMap<>(previousColumnMaps);
-		// -remove anything which doesn't refer to a loaded cuboid
-		Set<CuboidColumnAddress> loadedColumns = allLoadedCuboidAddresses.stream().map((CuboidAddress address) -> address.getColumn()).collect(Collectors.toUnmodifiableSet());
-		newMap.keySet().retainAll(loadedColumns);
-		// -add in anything new
-		newMap.putAll(changedMaps);
-		return newMap;
-	}
-
 	public static ColumnHeightMap buildSingleColumn(Map<CuboidAddress, CuboidHeightMap> cuboidHeightMaps)
 	{
 		// We want to sort the CuboidHeightMap, descending by z, so that we can build the column map from the top down.
 		List<Map.Entry<CuboidAddress, CuboidHeightMap>> list = _descendingInColumns(cuboidHeightMaps);
 		
 		ColumnHeightMap.Builder builder = ColumnHeightMap.build();
-		for (Map.Entry<CuboidAddress, CuboidHeightMap> ent : list)
+		if (!list.isEmpty())
 		{
-			builder.consume(ent.getValue(), ent.getKey());
+			CuboidAddress firstAddress = list.get(0).getKey();
+			int requiredX = firstAddress.x();
+			int requiredY = firstAddress.y();
+			for (Map.Entry<CuboidAddress, CuboidHeightMap> ent : list)
+			{
+				CuboidAddress key = ent.getKey();
+				Assert.assertTrue(key.x() == requiredX);
+				Assert.assertTrue(key.y() == requiredY);
+				
+				builder.consume(ent.getValue(), key);
+			}
 		}
 		return builder.freeze();
 	}
