@@ -25,22 +25,14 @@ public class ColumnHeightMap
 	}
 
 	/**
-	 * Creates a new Builder object to create a new ColumnHeightMap instance.
+	 * Creates a new Builder object to create a new ColumnHeightMap instance.  Note that the build can only consume
+	 * CuboidHeightMap instances from the top down (descending along z-axis).
 	 * 
 	 * @return A new Builder instance.
 	 */
 	public static Builder build()
 	{
-		int[][] yMajor = new int[Encoding.CUBOID_EDGE_SIZE][Encoding.CUBOID_EDGE_SIZE];
-		for (int y = 0; y < yMajor.length; ++y)
-		{
-			int[] row = yMajor[y];
-			for (int x = 0; x < row.length; ++x)
-			{
-				row[x] = Integer.MIN_VALUE;
-			}
-		}
-		return new Builder(yMajor);
+		return new Builder();
 	}
 
 
@@ -74,9 +66,22 @@ public class ColumnHeightMap
 	public static class Builder
 	{
 		private final int[][] _mutableYMajorData;
-		private Builder(int[][] yMajor)
+		private int _lowestZ;
+		private int _unknownCount;
+		private Builder()
 		{
+			int[][] yMajor = new int[Encoding.CUBOID_EDGE_SIZE][Encoding.CUBOID_EDGE_SIZE];
+			for (int y = 0; y < yMajor.length; ++y)
+			{
+				int[] row = yMajor[y];
+				for (int x = 0; x < row.length; ++x)
+				{
+					row[x] = Integer.MIN_VALUE;
+				}
+			}
 			_mutableYMajorData = yMajor;
+			_lowestZ = Integer.MAX_VALUE;
+			_unknownCount = Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE;
 		}
 		/**
 		 * Integrates the given cuboid at zBase absolute Z location into the builder's height map.
@@ -88,19 +93,29 @@ public class ColumnHeightMap
 		public Builder consume(CuboidHeightMap cuboid, CuboidAddress address)
 		{
 			int zBase = address.getBase().z();
-			for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
+			Assert.assertTrue(zBase < _lowestZ);
+			if (_unknownCount > 0)
 			{
-				int[] targetRow = _mutableYMajorData[y];
-				for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
+				int changeCount = 0;
+				for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 				{
-					byte incoming = cuboid.getHightestSolidBlock(x, y);
-					int value = (CuboidHeightMap.UNKNOWN_HEIGHT == incoming)
-							? Integer.MIN_VALUE
-							: ((int)incoming + zBase)
-					;
-					int existing = targetRow[x];
-					targetRow[x] = Math.max(existing, value);
+					int[] targetRow = _mutableYMajorData[y];
+					for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
+					{
+						if (Integer.MIN_VALUE == targetRow[x])
+						{
+							byte incoming = cuboid.getHightestSolidBlock(x, y);
+							if (CuboidHeightMap.UNKNOWN_HEIGHT != incoming)
+							{
+								targetRow[x] = (int)incoming + zBase;
+								changeCount += 1;
+							}
+						}
+					}
 				}
+				_lowestZ = zBase;
+				_unknownCount -= changeCount;
+				Assert.assertTrue(_unknownCount >= 0);
 			}
 			return this;
 		}

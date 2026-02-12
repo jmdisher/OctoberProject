@@ -12,6 +12,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
@@ -22,10 +23,12 @@ import com.jeffdisher.october.utils.Encoding;
 public class TestHeightMapHelpers
 {
 	private static Environment ENV;
+	private static Block STONE;
 	@BeforeClass
 	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
+		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -55,7 +58,7 @@ public class TestHeightMapHelpers
 		byte[][] raw = HeightMapHelpers.createUniformHeightMap(value);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		BlockAddress blockAddress = BlockAddress.fromInt(5, 6, 7);
-		cuboid.setData15(AspectRegistry.BLOCK, blockAddress, ENV.items.getItemById("op.stone").number());
+		cuboid.setData15(AspectRegistry.BLOCK, blockAddress, STONE.item().number());
 		HeightMapHelpers.populateHeightMap(raw, cuboid);
 		for (int y = 0; y < raw.length; ++y)
 		{
@@ -80,7 +83,7 @@ public class TestHeightMapHelpers
 	{
 		// Populate a cuboid with some values and observe the expected height map.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		short stoneNumber = ENV.items.getItemById("op.stone").number();
+		short stoneNumber = STONE.item().number();
 		for (byte x = 0; x < 2; ++x)
 		{
 			for (byte y = 0; y < 2; ++y)
@@ -126,7 +129,7 @@ public class TestHeightMapHelpers
 		int highZ = high.getBase().z();
 		CuboidData bottom = CuboidGenerator.createFilledCuboid(low, ENV.special.AIR);
 		CuboidData top = CuboidGenerator.createFilledCuboid(high, ENV.special.AIR);
-		short stoneNumber = ENV.items.getItemById("op.stone").number();
+		short stoneNumber = STONE.item().number();
 		bottom.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 10), stoneNumber);
 		bottom.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(2, 2, 10), stoneNumber);
 		top.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(10, 10, 12), stoneNumber);
@@ -135,9 +138,9 @@ public class TestHeightMapHelpers
 		CuboidHeightMap bottomMap = HeightMapHelpers.buildHeightMap(bottom);
 		CuboidHeightMap topMap = HeightMapHelpers.buildHeightMap(top);
 		ColumnHeightMap column = ColumnHeightMap.build()
-				.consume(bottomMap, low)
-				.consume(topMap, high)
-				.freeze()
+			.consume(topMap, high)
+			.consume(bottomMap, low)
+			.freeze()
 		;
 		Assert.assertEquals(Integer.MIN_VALUE, column.getHeight(3, 3));
 		Assert.assertEquals(lowZ + 10, column.getHeight(1, 1));
@@ -158,7 +161,7 @@ public class TestHeightMapHelpers
 		CuboidData bottom = CuboidGenerator.createFilledCuboid(low, ENV.special.AIR);
 		CuboidData top = CuboidGenerator.createFilledCuboid(high, ENV.special.AIR);
 		CuboidData other = CuboidGenerator.createFilledCuboid(distinct, ENV.special.AIR);
-		short stoneNumber = ENV.items.getItemById("op.stone").number();
+		short stoneNumber = STONE.item().number();
 		bottom.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 10), stoneNumber);
 		bottom.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(2, 2, 10), stoneNumber);
 		top.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(10, 10, 12), stoneNumber);
@@ -189,7 +192,7 @@ public class TestHeightMapHelpers
 	public void rebuildHeightMap() throws Throwable
 	{
 		// Use the height map rebuild helper to handle changes across a few columns.
-		short stoneNumber = ENV.items.getItemById("op.stone").number();
+		short stoneNumber = STONE.item().number();
 		CuboidData x0z0 = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData x0z1 = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 1), ENV.special.AIR);
 		CuboidData x1z0 = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, 0, 0), ENV.special.AIR);
@@ -248,5 +251,32 @@ public class TestHeightMapHelpers
 		);
 		Assert.assertEquals(1, third.size());
 		Assert.assertTrue(second.get(x0z0.getCuboidAddress().getColumn()) == third.get(x0z0.getCuboidAddress().getColumn()));
+	}
+
+	@Test
+	public void assertSortOrder() throws Throwable
+	{
+		// Show that we now fail an assertion if we try to use the ColumnHeightMap.Builder in the wrong sorted order.
+		CuboidAddress low = CuboidAddress.fromInt(0, 0, -1);
+		CuboidAddress high = CuboidAddress.fromInt(0, 0, 1);
+		CuboidData bottom = CuboidGenerator.createFilledCuboid(low, ENV.special.AIR);
+		CuboidData top = CuboidGenerator.createFilledCuboid(high, ENV.special.AIR);
+		
+		CuboidHeightMap bottomMap = HeightMapHelpers.buildHeightMap(bottom);
+		CuboidHeightMap topMap = HeightMapHelpers.buildHeightMap(top);
+		
+		try
+		{
+			ColumnHeightMap.build()
+				.consume(topMap, high)
+				.consume(bottomMap, low)
+				.freeze()
+			;
+			Assert.fail();
+		}
+		catch (AssertionError e)
+		{
+			// Expected.
+		}
 	}
 }

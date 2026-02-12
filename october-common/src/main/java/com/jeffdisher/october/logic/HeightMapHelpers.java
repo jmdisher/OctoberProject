@@ -1,6 +1,7 @@
 package com.jeffdisher.october.logic;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -162,8 +163,9 @@ public class HeightMapHelpers
 
 	private static Map<CuboidColumnAddress, ColumnHeightMap> _buildColumnMaps(Map<CuboidAddress, CuboidHeightMap> perCuboid)
 	{
+		List<Map.Entry<CuboidAddress, CuboidHeightMap>> list = _descendingInColumns(perCuboid);
 		Map<CuboidColumnAddress, ColumnHeightMap.Builder> builders = new HashMap<>();
-		for (Map.Entry<CuboidAddress, CuboidHeightMap> elt : perCuboid.entrySet())
+		for (Map.Entry<CuboidAddress, CuboidHeightMap> elt : list)
 		{
 			CuboidAddress address = elt.getKey();
 			CuboidColumnAddress column = address.getColumn();
@@ -179,5 +181,16 @@ public class HeightMapHelpers
 				(Map.Entry<CuboidColumnAddress, ColumnHeightMap.Builder> elt) -> elt.getKey()
 				, (Map.Entry<CuboidColumnAddress, ColumnHeightMap.Builder> elt) -> elt.getValue().freeze()
 		));
+	}
+
+	private static List<Map.Entry<CuboidAddress, CuboidHeightMap>> _descendingInColumns(Map<CuboidAddress, CuboidHeightMap> cuboidHeightMaps)
+	{
+		List<Map.Entry<CuboidAddress, CuboidHeightMap>> list = cuboidHeightMaps.entrySet().stream()
+			.sorted((Map.Entry<CuboidAddress, CuboidHeightMap> one, Map.Entry<CuboidAddress, CuboidHeightMap> two) -> {
+				return two.getKey().z() - one.getKey().z();
+			})
+			.toList()
+		;
+		return list;
 	}
 }
