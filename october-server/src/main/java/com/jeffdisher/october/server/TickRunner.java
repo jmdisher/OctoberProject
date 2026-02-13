@@ -406,9 +406,9 @@ public class TickRunner
 						, List.of()
 						, List.of()
 						, List.of()
-						, Map.of()
-						, Map.of()
-						, Map.of()
+						, List.of()
+						, List.of()
+						, List.of()
 						, List.of()
 						, Set.of()
 						, Map.of()
@@ -535,41 +535,6 @@ public class TickRunner
 			// Now, loop over the rest of the high-level units.
 			_PartialHandoffData innerResults = _runParallelHighLevelUnits(thisThread, materials, context);
 			
-			// Extract the exported actions from CommonChangeSink and convert them into the right shape.
-			Map<Integer, List<ScheduledChange>> newlyScheduledChanges = new HashMap<>();
-			for (TargetedAction<ScheduledChange> targeted : newChangeSink.takeExportedChanges())
-			{
-				List<ScheduledChange> list = newlyScheduledChanges.get(targeted.targetId());
-				if (null == list)
-				{
-					list = new ArrayList<>();
-					newlyScheduledChanges.put(targeted.targetId(), list);
-				}
-				list.add(targeted.action());
-			}
-			Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> newlyScheduledCreatureChanges = new HashMap<>();
-			for (TargetedAction<IEntityAction<IMutableCreatureEntity>> targeted : newChangeSink.takeExportedCreatureChanges())
-			{
-				List<IEntityAction<IMutableCreatureEntity>> list = newlyScheduledCreatureChanges.get(targeted.targetId());
-				if (null == list)
-				{
-					list = new ArrayList<>();
-					newlyScheduledCreatureChanges.put(targeted.targetId(), list);
-				}
-				list.add(targeted.action());
-			}
-			Map<Integer, List<IPassiveAction>> newlyScheduledPassiveActions = new HashMap<>();
-			for (TargetedAction<IPassiveAction> targeted : newChangeSink.takeExportedPassiveActions())
-			{
-				List<IPassiveAction> list = newlyScheduledPassiveActions.get(targeted.targetId());
-				if (null == list)
-				{
-					list = new ArrayList<>();
-					newlyScheduledPassiveActions.put(targeted.targetId(), list);
-				}
-				list.add(targeted.action());
-			}
-			
 			materials = _mergeTickStateAndWaitForNext(thisThread
 				, materials
 				, new _PartialHandoffData(innerResults.world
@@ -579,9 +544,9 @@ public class TickRunner
 					, spawnedCreatures
 					, spawnedPassives
 					, newMutationSink.takeExportedMutations()
-					, newlyScheduledChanges
-					, newlyScheduledCreatureChanges
-					, newlyScheduledPassiveActions
+					, newChangeSink.takeExportedChanges()
+					, newChangeSink.takeExportedCreatureChanges()
+					, newChangeSink.takeExportedPassiveActions()
 					, events
 					, internallyMarkedAlive
 					, cachingLoader.extractCache()
@@ -656,9 +621,9 @@ public class TickRunner
 					, List.of()
 					, List.of()
 					, List.of()
-					, Map.of()
-					, Map.of()
-					, Map.of()
+					, List.of()
+					, List.of()
+					, List.of()
 					, List.of()
 					, Set.of()
 					, Map.of()
@@ -863,9 +828,9 @@ public class TickRunner
 			, List.of()
 			, List.of()
 			, List.of()
-			, Map.of()
-			, Map.of()
-			, Map.of()
+			, List.of()
+			, List.of()
+			, List.of()
 			, List.of()
 			, Set.of()
 			, Map.of()
@@ -1026,7 +991,7 @@ public class TickRunner
 				
 				// We can also extract any creature changes scheduled in the previous tick (creature actions are not saved in the cuboid so we only have what was scheduled in previous tick).
 				Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> nextCreatureChanges = _scheduleNewCreatureActions(masterFragment);
-				Map<Integer, List<IPassiveAction>> nextPassiveActions = masterFragment.newlyScheduledPassiveActions;
+				Map<Integer, List<IPassiveAction>> nextPassiveActions = _scheduleNewPassiveActions(masterFragment);
 				
 				// Remove anything old.
 				if (null != cuboidsToDrop)
@@ -1251,9 +1216,9 @@ public class TickRunner
 	private static Map<Integer, List<ScheduledChange>> _extractPlayerEntityChanges(_PartialHandoffData masterFragment)
 	{
 		Map<Integer, List<ScheduledChange>> snapshotEntityMutations = new HashMap<>();
-		for (Map.Entry<Integer, List<ScheduledChange>> container : masterFragment.newlyScheduledChanges().entrySet())
+		for (TargetedAction<ScheduledChange> targeted : masterFragment.newlyScheduledChanges())
 		{
-			_scheduleChangesForEntity(snapshotEntityMutations, container.getKey(), container.getValue());
+			_scheduleChangesForEntity(snapshotEntityMutations, targeted.targetId(), targeted.action());
 		}
 		for (Map.Entry<Integer, _OutputEntity> processed : masterFragment.crowd.entityOutput().entrySet())
 		{
@@ -1261,10 +1226,9 @@ public class TickRunner
 			_OutputEntity value = processed.getValue();
 			
 			// We want to schedule anything which wasn't yet ready.
-			List<ScheduledChange> notYetReadyChanges = value.notYetReadyChanges();
-			if (!notYetReadyChanges.isEmpty())
+			for (ScheduledChange change : value.notYetReadyChanges())
 			{
-				_scheduleChangesForEntity(snapshotEntityMutations, key, notYetReadyChanges);
+				_scheduleChangesForEntity(snapshotEntityMutations, key, change);
 			}
 		}
 		return snapshotEntityMutations;
@@ -1291,9 +1255,19 @@ public class TickRunner
 	private static Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> _scheduleNewCreatureActions(_PartialHandoffData masterFragment)
 	{
 		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> nextCreatureChanges = new HashMap<>();
-		for (Map.Entry<Integer, List<IEntityAction<IMutableCreatureEntity>>> container : masterFragment.newlyScheduledCreatureChanges().entrySet())
+		for (TargetedAction<IEntityAction<IMutableCreatureEntity>> targeted : masterFragment.newlyScheduledCreatureChanges())
 		{
-			_scheduleChangesForEntity(nextCreatureChanges, container.getKey(), container.getValue());
+			_scheduleChangesForEntity(nextCreatureChanges, targeted.targetId(), targeted.action());
+		}
+		return nextCreatureChanges;
+	}
+
+	private static Map<Integer, List<IPassiveAction>> _scheduleNewPassiveActions(_PartialHandoffData masterFragment)
+	{
+		Map<Integer, List<IPassiveAction>> nextCreatureChanges = new HashMap<>();
+		for (TargetedAction<IPassiveAction> targeted : masterFragment.newlyScheduledPassiveActions())
+		{
+			_scheduleChangesForEntity(nextCreatureChanges, targeted.targetId(), targeted.action());
 		}
 		return nextCreatureChanges;
 	}
@@ -1453,15 +1427,16 @@ public class TickRunner
 		{
 			// We can't modify the original so use a new container.
 			int id = entry.getKey();
-			_scheduleChangesForEntity(nextTickChanges, id, new LinkedList<>(entry.getValue()));
+			for (ScheduledChange change : entry.getValue())
+			{
+				_scheduleChangesForEntity(nextTickChanges, id, change);
+			}
 		}
 		for (Map.Entry<Integer, EntityActionSimpleMove<IMutablePlayerEntity>> container : newEntityChanges.entrySet())
 		{
 			// These are coming in from outside, so they should be run immediately (no delay for future), after anything already scheduled from the previous tick.
 			ScheduledChange change = new ScheduledChange(container.getValue(), 0L);
-			List<ScheduledChange> mutableQueue = new LinkedList<>();
-			mutableQueue.add(change);
-			_scheduleChangesForEntity(nextTickChanges, container.getKey(), mutableQueue);
+			_scheduleChangesForEntity(nextTickChanges, container.getKey(), change);
 		}
 		if (null != operatorMutations)
 		{
@@ -1610,17 +1585,16 @@ public class TickRunner
 		queue.add(mutation);
 	}
 
-	private static <T> void _scheduleChangesForEntity(Map<Integer, List<T>> nextTickChanges, int entityId, List<T> changes)
+	private static <T> void _scheduleChangesForEntity(Map<Integer, List<T>> nextTickChanges, int entityId, T action)
 	{
 		List<T> queue = nextTickChanges.get(entityId);
 		if (null == queue)
 		{
-			nextTickChanges.put(entityId, changes);
+			// We want to build this as mutable.
+			queue = new LinkedList<>();
+			nextTickChanges.put(entityId, queue);
 		}
-		else
-		{
-			queue.addAll(changes);
-		}
+		queue.add(action);
 	}
 
 	private Snapshot _locked_waitForTickComplete()
@@ -1666,9 +1640,9 @@ public class TickRunner
 		List<CreatureEntity> spawnedCreatures = new ArrayList<>();
 		List<PassiveEntity> spawnedPassives = new ArrayList<>();
 		List<ScheduledMutation> newlyScheduledMutations = new ArrayList<>();
-		Map<Integer, List<ScheduledChange>> newlyScheduledChanges = new HashMap<>();
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> newlyScheduledCreatureChanges = new HashMap<>();
-		Map<Integer, List<IPassiveAction>> newlyScheduledPassiveActions = new HashMap<>();
+		List<TargetedAction<ScheduledChange>> newlyScheduledChanges = new ArrayList<>();
+		List<TargetedAction<IEntityAction<IMutableCreatureEntity>>> newlyScheduledCreatureChanges = new ArrayList<>();
+		List<TargetedAction<IPassiveAction>> newlyScheduledPassiveActions = new ArrayList<>();
 		List<EventRecord> postedEvents = new ArrayList<>();
 		Set<CuboidAddress> internallyMarkedAlive = new HashSet<>();
 		Map<AbsoluteLocation, BlockProxy> populatedProxyCache = new HashMap<>();
@@ -1701,9 +1675,9 @@ public class TickRunner
 			spawnedCreatures.addAll(fragment.spawnedCreatures());
 			spawnedPassives.addAll(fragment.spawnedPassives());
 			newlyScheduledMutations.addAll(fragment.newlyScheduledMutations());
-			newlyScheduledChanges.putAll(fragment.newlyScheduledChanges());
-			newlyScheduledCreatureChanges.putAll(fragment.newlyScheduledCreatureChanges());
-			newlyScheduledPassiveActions.putAll(fragment.newlyScheduledPassiveActions());
+			newlyScheduledChanges.addAll(fragment.newlyScheduledChanges());
+			newlyScheduledCreatureChanges.addAll(fragment.newlyScheduledCreatureChanges());
+			newlyScheduledPassiveActions.addAll(fragment.newlyScheduledPassiveActions());
 			postedEvents.addAll(fragment.postedEvents());
 			internallyMarkedAlive.addAll(fragment.internallyMarkedAlive());
 			populatedProxyCache.putAll(fragment.populatedProxyCache());
@@ -2209,18 +2183,18 @@ public class TickRunner
 	 * A wrapper over the per-thread partial data which we hand-off at synchronization.
 	 */
 	private static record _PartialHandoffData(_ProcessedFragment world
-			, _ProcessedGroup crowd
-			, _CreatureGroup creatures
-			, _PassiveGroup passives
-			, List<CreatureEntity> spawnedCreatures
-			, List<PassiveEntity> spawnedPassives
-			, List<ScheduledMutation> newlyScheduledMutations
-			, Map<Integer, List<ScheduledChange>> newlyScheduledChanges
-			, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> newlyScheduledCreatureChanges
-			, Map<Integer, List<IPassiveAction>> newlyScheduledPassiveActions
-			, List<EventRecord> postedEvents
-			, Set<CuboidAddress> internallyMarkedAlive
-			, Map<AbsoluteLocation, BlockProxy> populatedProxyCache
+		, _ProcessedGroup crowd
+		, _CreatureGroup creatures
+		, _PassiveGroup passives
+		, List<CreatureEntity> spawnedCreatures
+		, List<PassiveEntity> spawnedPassives
+		, List<ScheduledMutation> newlyScheduledMutations
+		, List<TargetedAction<ScheduledChange>> newlyScheduledChanges
+		, List<TargetedAction<IEntityAction<IMutableCreatureEntity>>> newlyScheduledCreatureChanges
+		, List<TargetedAction<IPassiveAction>> newlyScheduledPassiveActions
+		, List<EventRecord> postedEvents
+		, Set<CuboidAddress> internallyMarkedAlive
+		, Map<AbsoluteLocation, BlockProxy> populatedProxyCache
 	) {}
 
 	private static record _CreatureGroup(boolean ignored
