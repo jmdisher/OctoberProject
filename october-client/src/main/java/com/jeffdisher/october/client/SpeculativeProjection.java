@@ -48,6 +48,7 @@ import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveType;
+import com.jeffdisher.october.types.TargetedAction;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
@@ -577,10 +578,15 @@ public class SpeculativeProjection
 				consequences.add(consequence);
 				
 				// Take the results and prepare to run them in the next iteration.
-				List<ScheduledChange> thisEntityChanges = newChangeSink.takeExportedChanges().get(_localEntityId);
-				entityChangesToRun = (null != thisEntityChanges)
-						? _onlyImmediateChanges(thisEntityChanges)
-						: List.of()
+				List<TargetedAction<ScheduledChange>> exportedChanges = newChangeSink.takeExportedChanges();
+				entityChangesToRun = exportedChanges.stream()
+					.filter((TargetedAction<ScheduledChange> targeted) -> {
+						return (_localEntityId == targeted.targetId())
+							&& (0L == targeted.action().millisUntilReady())
+						;
+					})
+					.map((TargetedAction<ScheduledChange> targeted) -> targeted.action().change())
+					.toList()
 				;
 				List<ScheduledMutation> theseBlockChanges = newMutationSink.takeExportedMutations();
 				blockMutationstoRun = (null != theseBlockChanges)
@@ -688,16 +694,6 @@ public class SpeculativeProjection
 			}
 		}
 		return new _ApplicationResult(outputModifiedBlocks, outputPotentialLightChangesByCuboid);
-	}
-
-	private List<IEntityAction<IMutablePlayerEntity>> _onlyImmediateChanges(List<ScheduledChange> thisChanges)
-	{
-		List<IEntityAction<IMutablePlayerEntity>> list = thisChanges.stream().filter(
-				(ScheduledChange change) -> (0L == change.millisUntilReady())
-		).map(
-				(ScheduledChange change) -> change.change()
-		).toList();
-		return list;
 	}
 
 	private List<IMutationBlock> _onlyImmediateMutations(List<ScheduledMutation> mutations)

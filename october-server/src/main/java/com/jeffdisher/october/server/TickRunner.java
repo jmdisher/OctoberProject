@@ -64,6 +64,7 @@ import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
+import com.jeffdisher.october.types.TargetedAction;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
@@ -534,6 +535,41 @@ public class TickRunner
 			// Now, loop over the rest of the high-level units.
 			_PartialHandoffData innerResults = _runParallelHighLevelUnits(thisThread, materials, context);
 			
+			// Extract the exported actions from CommonChangeSink and convert them into the right shape.
+			Map<Integer, List<ScheduledChange>> newlyScheduledChanges = new HashMap<>();
+			for (TargetedAction<ScheduledChange> targeted : newChangeSink.takeExportedChanges())
+			{
+				List<ScheduledChange> list = newlyScheduledChanges.get(targeted.targetId());
+				if (null == list)
+				{
+					list = new ArrayList<>();
+					newlyScheduledChanges.put(targeted.targetId(), list);
+				}
+				list.add(targeted.action());
+			}
+			Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> newlyScheduledCreatureChanges = new HashMap<>();
+			for (TargetedAction<IEntityAction<IMutableCreatureEntity>> targeted : newChangeSink.takeExportedCreatureChanges())
+			{
+				List<IEntityAction<IMutableCreatureEntity>> list = newlyScheduledCreatureChanges.get(targeted.targetId());
+				if (null == list)
+				{
+					list = new ArrayList<>();
+					newlyScheduledCreatureChanges.put(targeted.targetId(), list);
+				}
+				list.add(targeted.action());
+			}
+			Map<Integer, List<IPassiveAction>> newlyScheduledPassiveActions = new HashMap<>();
+			for (TargetedAction<IPassiveAction> targeted : newChangeSink.takeExportedPassiveActions())
+			{
+				List<IPassiveAction> list = newlyScheduledPassiveActions.get(targeted.targetId());
+				if (null == list)
+				{
+					list = new ArrayList<>();
+					newlyScheduledPassiveActions.put(targeted.targetId(), list);
+				}
+				list.add(targeted.action());
+			}
+			
 			materials = _mergeTickStateAndWaitForNext(thisThread
 				, materials
 				, new _PartialHandoffData(innerResults.world
@@ -543,9 +579,9 @@ public class TickRunner
 					, spawnedCreatures
 					, spawnedPassives
 					, newMutationSink.takeExportedMutations()
-					, newChangeSink.takeExportedChanges()
-					, newChangeSink.takeExportedCreatureChanges()
-					, newChangeSink.takeExportedPassiveActions()
+					, newlyScheduledChanges
+					, newlyScheduledCreatureChanges
+					, newlyScheduledPassiveActions
 					, events
 					, internallyMarkedAlive
 					, cachingLoader.extractCache()

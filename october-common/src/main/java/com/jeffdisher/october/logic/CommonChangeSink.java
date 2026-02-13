@@ -1,15 +1,14 @@
 package com.jeffdisher.october.logic;
 
-import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.IPassiveAction;
+import com.jeffdisher.october.types.TargetedAction;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -22,18 +21,18 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 	private final Set<Integer> _loadedEntities;
 	private final Set<Integer> _loadedCreatures;
 	private final Set<Integer> _loadedPassives;
-	private Map<Integer, List<ScheduledChange>> _exportedEntityChanges;
-	private Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> _exportedCreatureChanges;
-	private Map<Integer, List<IPassiveAction>> _exportedPassiveActions;
+	private List<TargetedAction<ScheduledChange>> _exportedEntityChanges;
+	private List<TargetedAction<IEntityAction<IMutableCreatureEntity>>> _exportedCreatureChanges;
+	private List<TargetedAction<IPassiveAction>> _exportedPassiveActions;
 
 	public CommonChangeSink(Set<Integer> loadedEntities, Set<Integer> loadedCreatures, Set<Integer> loadedPassives)
 	{
 		_loadedEntities = loadedEntities;
 		_loadedCreatures = loadedCreatures;
 		_loadedPassives = loadedPassives;
-		_exportedEntityChanges = new HashMap<>();
-		_exportedCreatureChanges = new HashMap<>();
-		_exportedPassiveActions = new HashMap<>();
+		_exportedEntityChanges = new ArrayList<>();
+		_exportedCreatureChanges = new ArrayList<>();
+		_exportedPassiveActions = new ArrayList<>();
 	}
 
 	@Override
@@ -44,8 +43,8 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 		
 		if (_loadedEntities.contains(targetEntityId))
 		{
-			List<ScheduledChange> entityChanges = _getChangeList(targetEntityId);
-			entityChanges.add(new ScheduledChange(change, 0L));
+			TargetedAction<ScheduledChange> targeted = new TargetedAction<>(targetEntityId, new ScheduledChange(change, 0L));
+			_exportedEntityChanges.add(targeted);
 			didSchedule = true;
 		}
 		return didSchedule;
@@ -59,8 +58,8 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 		
 		if (_loadedEntities.contains(targetEntityId))
 		{
-			List<ScheduledChange> entityChanges = _getChangeList(targetEntityId);
-			entityChanges.add(new ScheduledChange(change, millisToDelay));
+			TargetedAction<ScheduledChange> targeted = new TargetedAction<>(targetEntityId, new ScheduledChange(change, millisToDelay));
+			_exportedEntityChanges.add(targeted);
 			didSchedule = true;
 		}
 		return didSchedule;
@@ -74,13 +73,8 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 		
 		if (_loadedCreatures.contains(targetCreatureId))
 		{
-			List<IEntityAction<IMutableCreatureEntity>> list = _exportedCreatureChanges.get(targetCreatureId);
-			if (null == list)
-			{
-				list = new LinkedList<>();
-				_exportedCreatureChanges.put(targetCreatureId, list);
-			}
-			list.add(change);
+			TargetedAction<IEntityAction<IMutableCreatureEntity>> targeted = new TargetedAction<>(targetCreatureId, change);
+			_exportedCreatureChanges.add(targeted);
 			didSchedule = true;
 		}
 		return didSchedule;
@@ -94,13 +88,8 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 		
 		if (_loadedPassives.contains(targetPassiveId))
 		{
-			List<IPassiveAction> list = _exportedPassiveActions.get(targetPassiveId);
-			if (null == list)
-			{
-				list = new LinkedList<>();
-				_exportedPassiveActions.put(targetPassiveId, list);
-			}
-			list.add(action);
+			TargetedAction<IPassiveAction> targeted = new TargetedAction<>(targetPassiveId, action);
+			_exportedPassiveActions.add(targeted);
 			didSchedule = true;
 		}
 		return didSchedule;
@@ -109,9 +98,9 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 	/**
 	 * Removes the collected exported changes.  Note that the receiver can no longer listen to changes after this call.
 	 * 
-	 * @return The mutable change map, now owned by the caller.
+	 * @return The mutable change list, now owned by the caller.
 	 */
-	public final Map<Integer, List<ScheduledChange>> takeExportedChanges()
+	public final List<TargetedAction<ScheduledChange>> takeExportedChanges()
 	{
 		try
 		{
@@ -127,9 +116,9 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 	 * Removes the collected exported creature changes.  Note that the receiver can no longer listen to changes after
 	 * this call.
 	 * 
-	 * @return The mutable change map, now owned by the caller.
+	 * @return The mutable change list, now owned by the caller.
 	 */
-	public final Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> takeExportedCreatureChanges()
+	public final List<TargetedAction<IEntityAction<IMutableCreatureEntity>>> takeExportedCreatureChanges()
 	{
 		try
 		{
@@ -145,9 +134,9 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 	 * Removes the collected exported passive actions.  Note that the receiver can no longer listen to passive actions
 	 * after this call.
 	 * 
-	 * @return The mutable passive action map, now owned by the caller.
+	 * @return The mutable passive action list, now owned by the caller.
 	 */
-	public Map<Integer, List<IPassiveAction>> takeExportedPassiveActions()
+	public List<TargetedAction<IPassiveAction>> takeExportedPassiveActions()
 	{
 		try
 		{
@@ -157,17 +146,5 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 		{
 			_exportedPassiveActions = null;
 		}
-	}
-
-
-	private List<ScheduledChange> _getChangeList(int targetEntityId)
-	{
-		List<ScheduledChange> entityChanges = _exportedEntityChanges.get(targetEntityId);
-		if (null == entityChanges)
-		{
-			entityChanges = new LinkedList<>();
-			_exportedEntityChanges.put(targetEntityId, entityChanges);
-		}
-		return entityChanges;
 	}
 }

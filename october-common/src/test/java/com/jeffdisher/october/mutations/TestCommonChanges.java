@@ -101,6 +101,7 @@ import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
+import com.jeffdisher.october.types.TargetedAction;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
@@ -1395,12 +1396,10 @@ public class TestCommonChanges
 		
 		// Attack and verify that we see damage come through the creature path.
 		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, attacker));
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureChanges = changeSink.takeExportedCreatureChanges();
-		Assert.assertEquals(1, creatureChanges.size());
-		List<IEntityAction<IMutableCreatureEntity>> list = creatureChanges.get(targetId);
-		Assert.assertEquals(2, list.size());
-		Assert.assertTrue(list.get(0) instanceof EntityActionTakeDamageFromEntity);
-		Assert.assertTrue(list.get(1) instanceof EntityActionNudge);
+		List<TargetedAction<IEntityAction<IMutableCreatureEntity>>> creatureChanges = changeSink.takeExportedCreatureChanges();
+		Assert.assertEquals(2, creatureChanges.size());
+		Assert.assertTrue(creatureChanges.get(0).action() instanceof EntityActionTakeDamageFromEntity);
+		Assert.assertTrue(creatureChanges.get(1).action() instanceof EntityActionNudge);
 	}
 
 	@Test
@@ -1455,11 +1454,9 @@ public class TestCommonChanges
 		Assert.assertTrue(new EntityChangeUseSelectedItemOnEntity(targetId).applyChange(context, entity));
 		Entity updatedEntty = entity.freeze();
 		Assert.assertEquals(0, updatedEntty.inventory().currentEncumbrance);
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureChanges = changeSink.takeExportedCreatureChanges();
+		List<TargetedAction<IEntityAction<IMutableCreatureEntity>>> creatureChanges = changeSink.takeExportedCreatureChanges();
 		Assert.assertEquals(1, creatureChanges.size());
-		List<IEntityAction<IMutableCreatureEntity>> list = creatureChanges.get(targetId);
-		Assert.assertEquals(1, list.size());
-		IEntityAction<IMutableCreatureEntity> change = list.get(0);
+		IEntityAction<IMutableCreatureEntity> change = creatureChanges.get(0).action();
 		Assert.assertTrue(change instanceof EntityActionApplyItemToCreature);
 		
 		// Verify that the apply works.
@@ -3479,11 +3476,9 @@ public class TestCommonChanges
 		updatedEntity = entity.freeze();
 		Assert.assertEquals(0, updatedEntity.inventory().currentEncumbrance);
 		
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureChanges = changeSink.takeExportedCreatureChanges();
+		List<TargetedAction<IEntityAction<IMutableCreatureEntity>>> creatureChanges = changeSink.takeExportedCreatureChanges();
 		Assert.assertEquals(1, creatureChanges.size());
-		List<IEntityAction<IMutableCreatureEntity>> list = creatureChanges.get(cowId);
-		Assert.assertEquals(1, list.size());
-		IEntityAction<IMutableCreatureEntity> change = list.get(0);
+		IEntityAction<IMutableCreatureEntity> change = creatureChanges.get(0).action();
 		Assert.assertTrue(change instanceof EntityActionApplyItemToCreature);
 		
 		// Verify that the apply fails since this creature isn't ready.

@@ -1,7 +1,6 @@
 package com.jeffdisher.october.logic;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.junit.Assert;
@@ -14,6 +13,7 @@ import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.PassiveEntity;
+import com.jeffdisher.october.types.TargetedAction;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -38,20 +38,16 @@ public class TestCommonChangeSink
 		Assert.assertFalse(sink.next(2, new EntityActionNudge<>(new EntityLocation(1.0f, 2.0f, 3.0f))));
 		Assert.assertFalse(sink.creature(-1, new EntityActionNudge<>(new EntityLocation(1.0f, 2.0f, 3.0f))));
 		
-		Map<Integer, List<ScheduledChange>> playerChanges = sink.takeExportedChanges();
-		Assert.assertEquals(1, playerChanges.size());
-		List<ScheduledChange> changes = playerChanges.get(1);
-		Assert.assertEquals(2, changes.size());
-		Assert.assertEquals(1000L, changes.get(0).millisUntilReady());
-		Assert.assertEquals(future, changes.get(0).change());
-		Assert.assertEquals(0L, changes.get(1).millisUntilReady());
-		Assert.assertEquals(next, changes.get(1).change());
+		List<TargetedAction<ScheduledChange>> playerChanges = sink.takeExportedChanges();
+		Assert.assertEquals(2, playerChanges.size());
+		Assert.assertEquals(1000L, playerChanges.get(0).action().millisUntilReady());
+		Assert.assertEquals(future, playerChanges.get(0).action().change());
+		Assert.assertEquals(0L, playerChanges.get(1).action().millisUntilReady());
+		Assert.assertEquals(next, playerChanges.get(1).action().change());
 		
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureChanges = sink.takeExportedCreatureChanges();
+		List<TargetedAction<IEntityAction<IMutableCreatureEntity>>> creatureChanges = sink.takeExportedCreatureChanges();
 		Assert.assertEquals(1, creatureChanges.size());
-		List<IEntityAction<IMutableCreatureEntity>> actions = creatureChanges.get(-2);
-		Assert.assertEquals(1, actions.size());
-		Assert.assertEquals(creature, actions.get(0));
+		Assert.assertEquals(creature, creatureChanges.get(0).action());
 	}
 
 	@Test
@@ -69,10 +65,10 @@ public class TestCommonChangeSink
 		Assert.assertFalse(sink.passive(2, two));
 		Assert.assertTrue(sink.passive(3, three));
 		
-		Map<Integer, List<IPassiveAction>> passiveChanges = sink.takeExportedPassiveActions();
+		List<TargetedAction<IPassiveAction>> passiveChanges = sink.takeExportedPassiveActions();
 		Assert.assertEquals(2, passiveChanges.size());
-		Assert.assertEquals(one, passiveChanges.get(1).get(0));
-		Assert.assertEquals(three, passiveChanges.get(3).get(0));
+		Assert.assertEquals(one, passiveChanges.get(0).action());
+		Assert.assertEquals(three, passiveChanges.get(1).action());
 	}
 
 
