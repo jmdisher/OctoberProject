@@ -399,7 +399,7 @@ public class TickRunner
 		);
 		TickMaterials materials = _mergeTickStateAndWaitForNext(thisThread
 				, emptyMaterials
-				, new _PartialHandoffData(new _ProcessedFragment(Map.of(), Map.of(), Map.of(), List.of(), Map.of(), Map.of(), 0)
+				, new _PartialHandoffData(new _ProcessedFragment(List.of(), List.of(), List.of(), 0)
 						, new _ProcessedGroup(0, List.of())
 						, new _CreatureGroup(false, List.of(), List.of())
 						, new _PassiveGroup(false, List.of(), List.of())
@@ -613,7 +613,7 @@ public class TickRunner
 				}
 				_ProcessedGroup spilledGroup = new _ProcessedGroup(0, repackaged);
 				// Just use empty elements except for our spilled group.
-				_PartialHandoffData spilledPartial = new _PartialHandoffData(new _ProcessedFragment(Map.of(), Map.of(), Map.of(), List.of(), Map.of(), Map.of(), 0)
+				_PartialHandoffData spilledPartial = new _PartialHandoffData(new _ProcessedFragment(List.of(), List.of(), List.of(), 0)
 					, spilledGroup
 					, new _CreatureGroup(false, List.of(), List.of())
 					, new _PassiveGroup(false, List.of(), List.of())
@@ -649,12 +649,9 @@ public class TickRunner
 		, _CommonWorkUnit unit
 	)
 	{
-		// Per-cuboid data.
-		Map<CuboidAddress, IReadOnlyCuboidData> fragment = new HashMap<>();
-		Map<CuboidAddress, CuboidHeightMap> fragmentHeights = new HashMap<>();
-		Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid = new HashMap<>();
+		// Collect data for _ProcessedFragment.
+		List<_OutputCuboid> cuboids = new ArrayList<>();
 		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
-		Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyByCuboid = new HashMap<>();
 		int committedMutationCount = 0;
 		
 		// Per-player entity data.
@@ -677,11 +674,14 @@ public class TickRunner
 		{
 			// This is our element.
 			processor.cuboidsProcessed += 1;
-			IReadOnlyCuboidData oldState = subUnit.cuboid;
-			CuboidAddress key = oldState.getCuboidAddress();
+			IReadOnlyCuboidData previousCuboid = subUnit.cuboid;
+			CuboidHeightMap previousHeightMap = subUnit.cuboidHeightMap;
+			CuboidAddress cuboidAddress = previousCuboid.getCuboidAddress();
 			
 			// We can't be told to operate on something which isn't in the state.
-			Assert.assertTrue(null != oldState);
+			Assert.assertTrue(null != previousCuboid);
+			Assert.assertTrue(null != previousHeightMap);
+			
 			long startCuboidNanos = System.nanoTime();
 			EngineCuboids.SingleCuboidResult cuboidResult = EngineCuboids.processOneCuboid(context
 				, loadedCuboids
@@ -691,37 +691,45 @@ public class TickRunner
 				, materials.potentialLightChangesByCuboid
 				, materials.potentialLogicChangesByCuboid
 				, materials.cuboidsLoadedThisTick
-				, key
-				, oldState
+				, cuboidAddress
+				, previousCuboid
 			);
-			if (null != cuboidResult.changedCuboidOrNull())
+			IReadOnlyCuboidData updatedCuboidOrNull = cuboidResult.changedCuboidOrNull();
+			CuboidHeightMap updatedHeightMapOrNull = cuboidResult.changedHeightMap();
+			Map<BlockAddress, Long> periodicNotReadyMutations = (null != cuboidResult.periodicNotReady())
+				? cuboidResult.periodicNotReady()
+				: Map.of()
+			;
+			List<BlockChangeDescription> blockChanges = (null != cuboidResult.changedBlocks())
+				? cuboidResult.changedBlocks()
+				: List.of()
+			;
+			_OutputCuboid outputCuboid = new _OutputCuboid(cuboidAddress
+				, previousCuboid
+				, updatedCuboidOrNull
+				, previousHeightMap
+				, updatedHeightMapOrNull
+				, periodicNotReadyMutations
+				, blockChanges
+			);
+			cuboids.add(outputCuboid);
+			
+			// We need to choose which height map to use for the cuboid in order to build the map for the column.
+			if (null != updatedHeightMapOrNull)
 			{
-				fragment.put(key, cuboidResult.changedCuboidOrNull());
-			}
-			if (null != cuboidResult.changedHeightMap())
-			{
-				CuboidHeightMap changedHeightMap = cuboidResult.changedHeightMap();
-				fragmentHeights.put(key, changedHeightMap);
-				existingAndUpdatedCuboidHeightMaps.put(key, changedHeightMap);
+				existingAndUpdatedCuboidHeightMaps.put(cuboidAddress, updatedHeightMapOrNull);
 			}
 			else
 			{
-				existingAndUpdatedCuboidHeightMaps.put(key, subUnit.cuboidHeightMap);
+				existingAndUpdatedCuboidHeightMaps.put(cuboidAddress, previousHeightMap);
 			}
-			if (null != cuboidResult.changedBlocks())
-			{
-				Assert.assertTrue(!cuboidResult.changedBlocks().isEmpty());
-				blockChangesByCuboid.put(key, cuboidResult.changedBlocks());
-			}
+			
+			// We track the not-yet-ready mutations globally, since they can be scheduled against anything, not just this cuboid.
 			if (null != cuboidResult.notYetReadyMutations())
 			{
 				notYetReadyMutations.addAll(cuboidResult.notYetReadyMutations());
 			}
-			if (null != cuboidResult.periodicNotReady())
-			{
-				Assert.assertTrue(!cuboidResult.periodicNotReady().isEmpty());
-				periodicNotReadyByCuboid.put(key, cuboidResult.periodicNotReady());
-			}
+			
 			long endCuboidNanos = System.nanoTime();
 			processor.cuboidBlockupdatesProcessed += cuboidResult.blockUpdatesProcessed();
 			processor.cuboidMutationsProcessed += cuboidResult.mutationsProcessed();
@@ -800,13 +808,13 @@ public class TickRunner
 		
 		// We can now merge the height maps since each _CommonWorkUnit is a full column.
 		ColumnHeightMap columnHeightMap = HeightMapHelpers.buildSingleColumn(existingAndUpdatedCuboidHeightMaps);
+		_OutputColumnHeight outputColumnHeight = new _OutputColumnHeight(unit.columnAddress
+			, columnHeightMap
+		);
 		
-		_ProcessedFragment world = new _ProcessedFragment(fragment
-			, fragmentHeights
-			, Map.of(unit.columnAddress, columnHeightMap)
+		_ProcessedFragment world = new _ProcessedFragment(cuboids
+			, List.of(outputColumnHeight)
 			, notYetReadyMutations
-			, periodicNotReadyByCuboid
-			, blockChangesByCuboid
 			, committedMutationCount
 		);
 		_ProcessedGroup crowd = new _ProcessedGroup(committedActionCount
@@ -860,9 +868,23 @@ public class TickRunner
 			Map<Integer, CreatureEntity> mutableCreatureState = _extractSnapshotCreatures(startingMaterials, masterFragment);
 			Map<Integer, PassiveEntity> mutablePassiveState = _extractSnapshotPassives(startingMaterials, masterFragment);
 			
+			// TODO:  Can we skip this initialization with startingMaterials and just used processed results (since they also include previous version)?
 			Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState = new HashMap<>(startingMaterials.completedCuboids);
-			mutableWorldState.putAll(masterFragment.world.stateFragment());
-			Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = masterFragment.world.completedHeightMaps;
+			Map<CuboidAddress, CuboidHeightMap> nextTickMutableHeightMaps = new HashMap<>(startingMaterials.cuboidHeightMaps);
+			for (_OutputCuboid cuboid : masterFragment.world.cuboids)
+			{
+				if (null != cuboid.updatedCuboidOrNull)
+				{
+					mutableWorldState.put(cuboid.address, cuboid.updatedCuboidOrNull);
+				}
+				if (null != cuboid.updatedHeightMapOrNull)
+				{
+					nextTickMutableHeightMaps.put(cuboid.address, cuboid.updatedHeightMapOrNull);
+				}
+			}
+			Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = masterFragment.world.columns.stream()
+				.collect(Collectors.toMap((_OutputColumnHeight output) -> output.columnAddress, (_OutputColumnHeight output) -> output.columnHeightMap))
+			;
 			
 			Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = _extractSnapshotBlockMutations(masterFragment);
 			Map<Integer, List<ScheduledChange>> snapshotEntityMutations = _extractPlayerEntityChanges(masterFragment);
@@ -961,8 +983,6 @@ public class TickRunner
 				}
 				
 				// We now update our mutable collections for the materials to use in the next tick.
-				Map<CuboidAddress, CuboidHeightMap> nextTickMutableHeightMaps = new HashMap<>(startingMaterials.cuboidHeightMaps);
-				nextTickMutableHeightMaps.putAll(masterFragment.world.heightFragment());
 				_poopulateWorldWithNewCuboids(mutableWorldState, nextTickMutableHeightMaps, newCuboids);
 				_addCreaturesInNewCuboidsWithMillis(mutableCreatureState, newCuboids);
 				_addPassivesInNewCuboidsWithMillis(mutablePassiveState, newCuboids);
@@ -1047,9 +1067,9 @@ public class TickRunner
 				
 				// Carry forward the proxy cache from the previous tick unless the corresponding block locations changed or where removed.
 				Set<AbsoluteLocation> changedBlocksInPreviousTick = new HashSet<>();
-				for (List<BlockChangeDescription> list : masterFragment.world().blockChangesByCuboid.values())
+				for (_OutputCuboid cuboid : masterFragment.world.cuboids)
 				{
-					for (BlockChangeDescription change : list)
+					for (BlockChangeDescription change : cuboid.blockChanges)
 					{
 						changedBlocksInPreviousTick.add(change.serializedForm().getAbsoluteLocation());
 					}
@@ -1383,8 +1403,15 @@ public class TickRunner
 				}
 			}
 		}
-		// Also add in any periodic mutations.
-		periodicMutations.putAll(masterFragment.world.periodicNotReadyByCuboid());
+		// Also add in any periodic mutations from the previous tick.
+		// TODO:  This is duplicated so it should be coalesced elsewhere.
+		for (_OutputCuboid oneCuboid : masterFragment.world.cuboids)
+		{
+			if (!oneCuboid.periodicNotReadyMutations.isEmpty())
+			{
+				periodicMutations.put(oneCuboid.address, oneCuboid.periodicNotReadyMutations);
+			}
+		}
 		return periodicMutations;
 	}
 
@@ -1492,20 +1519,21 @@ public class TickRunner
 
 	private static Map<CuboidAddress, List<AbsoluteLocation>> _extractBlockUpdateLocations(_PartialHandoffData masterFragment)
 	{
+		// TODO:  This pass is duplicated so we should coalesce this information elsewhere.
 		Map<CuboidAddress, List<AbsoluteLocation>> updatedBlockLocationsByCuboid = new HashMap<>();
-		for (Map.Entry<CuboidAddress, List<BlockChangeDescription>> entry : masterFragment.world.blockChangesByCuboid().entrySet())
+		for (_OutputCuboid oneCuboid : masterFragment.world.cuboids)
 		{
-			List<BlockChangeDescription> list = entry.getValue();
-			
-			// Only store the updated block locations if the block change requires it.
-			List<AbsoluteLocation> locations = list.stream()
-				.filter((BlockChangeDescription description) -> description.requiresUpdateEvent())
-				.map(
-					(BlockChangeDescription update) -> update.serializedForm().getAbsoluteLocation()
-				).toList();
-			if (!locations.isEmpty())
+			if (!oneCuboid.blockChanges.isEmpty())
 			{
-				updatedBlockLocationsByCuboid.put(entry.getKey(), locations);
+				// Only store the updated block locations if the block change requires it.
+				List<AbsoluteLocation> locations = oneCuboid.blockChanges.stream()
+					.filter((BlockChangeDescription description) -> description.requiresUpdateEvent())
+					.map(
+						(BlockChangeDescription update) -> update.serializedForm().getAbsoluteLocation()
+					)
+					.toList()
+				;
+				updatedBlockLocationsByCuboid.put(oneCuboid.address, locations);
 			}
 		}
 		return updatedBlockLocationsByCuboid;
@@ -1513,20 +1541,21 @@ public class TickRunner
 
 	private static Map<CuboidAddress, List<AbsoluteLocation>> _extractPotentialLightChanges(_PartialHandoffData masterFragment)
 	{
+		// TODO:  This pass is duplicated so we should coalesce this information elsewhere.
 		Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = new HashMap<>();
-		for (Map.Entry<CuboidAddress, List<BlockChangeDescription>> entry : masterFragment.world.blockChangesByCuboid().entrySet())
+		for (_OutputCuboid oneCuboid : masterFragment.world.cuboids)
 		{
-			List<BlockChangeDescription> list = entry.getValue();
-			
-			// Store the possible lighting update locations, much in the same style.
-			List<AbsoluteLocation> lightChangeLocations = list.stream()
+			if (!oneCuboid.blockChanges.isEmpty())
+			{
+				// Only store the updated block locations if the block change requires it.
+				List<AbsoluteLocation> lightChangeLocations = oneCuboid.blockChanges.stream()
 					.filter((BlockChangeDescription description) -> description.requiresLightingCheck())
 					.map(
 						(BlockChangeDescription update) -> update.serializedForm().getAbsoluteLocation()
-					).toList();
-			if (!lightChangeLocations.isEmpty())
-			{
-				potentialLightChangesByCuboid.put(entry.getKey(), lightChangeLocations);
+					)
+					.toList()
+				;
+				potentialLightChangesByCuboid.put(oneCuboid.address, lightChangeLocations);
 			}
 		}
 		return potentialLightChangesByCuboid;
@@ -1534,12 +1563,13 @@ public class TickRunner
 
 	private static Map<CuboidAddress, List<AbsoluteLocation>> _extractPotentialLogicChanges(_PartialHandoffData masterFragment)
 	{
+		// TODO:  This pass is duplicated so we should coalesce this information elsewhere.
 		Set<AbsoluteLocation> potentialLogicChangeSet = new HashSet<>();
-		for (List<BlockChangeDescription> list : masterFragment.world.blockChangesByCuboid().values())
+		for (_OutputCuboid oneCuboid : masterFragment.world.cuboids)
 		{
 			// Logic changes are more complicated, as they don't usually change within the block, but adjacent
 			// ones (except for conduit changes) so build the set and then split it by cuboid in a later pass.
-			for (BlockChangeDescription change : list)
+			for (BlockChangeDescription change : oneCuboid.blockChanges)
 			{
 				byte logicBits = change.logicCheckBits();
 				if (0x0 != logicBits)
@@ -1624,12 +1654,9 @@ public class TickRunner
 	private static _PartialHandoffData _mergeAndClearPartialFragments(_PartialHandoffData[] partials)
 	{
 		// EngineCuboids.ProcessedFragment world
-		Map<CuboidAddress, IReadOnlyCuboidData> stateFragment = new HashMap<>();
-		Map<CuboidAddress, CuboidHeightMap> heightFragment = new HashMap<>();
-		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = new HashMap<>();
+		List<_OutputCuboid> cuboids = new ArrayList<>();
+		List<_OutputColumnHeight> columns = new ArrayList<>();
 		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
-		Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyByCuboid = new HashMap<>();
-		Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid = new HashMap<>();
 		int world_committedMutationCount = 0;
 		
 		// EnginePlayers.ProcessedGroup crowd
@@ -1659,12 +1686,9 @@ public class TickRunner
 			_PartialHandoffData fragment = partials[i];
 			
 			// EngineCuboids.ProcessedFragment world
-			stateFragment.putAll(fragment.world().stateFragment());
-			heightFragment.putAll(fragment.world().heightFragment());
-			completedHeightMaps.putAll(fragment.world().completedHeightMaps());
-			notYetReadyMutations.addAll(fragment.world().notYetReadyMutations());
-			periodicNotReadyByCuboid.putAll(fragment.world().periodicNotReadyByCuboid());
-			blockChangesByCuboid.putAll(fragment.world().blockChangesByCuboid());
+			cuboids.addAll(fragment.world.cuboids);
+			columns.addAll(fragment.world.columns);
+			notYetReadyMutations.addAll(fragment.world.notYetReadyMutations);
 			world_committedMutationCount += fragment.world().committedMutationCount();
 			
 			// EnginePlayers.ProcessedGroup crowd
@@ -1691,12 +1715,9 @@ public class TickRunner
 			partials[i] = null;
 		}
 		
-		_ProcessedFragment world = new _ProcessedFragment(stateFragment
-			, heightFragment
-			, completedHeightMaps
+		_ProcessedFragment world = new _ProcessedFragment(cuboids
+			, columns
 			, notYetReadyMutations
-			, periodicNotReadyByCuboid
-			, blockChangesByCuboid
 			, world_committedMutationCount
 		);
 		_ProcessedGroup crowd = new _ProcessedGroup(players_committedMutationCount
@@ -1745,12 +1766,21 @@ public class TickRunner
 	)
 	{
 		Map<CuboidAddress, List<MutationBlockSetBlock>> resultantBlockChangesByCuboid = new HashMap<>();
-		for (Map.Entry<CuboidAddress, List<BlockChangeDescription>> perCuboid : masterFragment.world.blockChangesByCuboid().entrySet())
+		Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyMillisByCuboid = new HashMap<>();
+		for (_OutputCuboid oneCuboid : masterFragment.world.cuboids)
 		{
-			List<MutationBlockSetBlock> list = perCuboid.getValue().stream()
+			if (!oneCuboid.blockChanges.isEmpty())
+			{
+				List<MutationBlockSetBlock> list = oneCuboid.blockChanges.stream()
 					.map((BlockChangeDescription description) -> description.serializedForm())
-					.toList();
-			resultantBlockChangesByCuboid.put(perCuboid.getKey(), list);
+					.toList()
+				;
+				resultantBlockChangesByCuboid.put(oneCuboid.address, list);
+			}
+			if (!oneCuboid.periodicNotReadyMutations.isEmpty())
+			{
+				periodicNotReadyMillisByCuboid.put(oneCuboid.address, oneCuboid.periodicNotReadyMutations);
+			}
 		}
 		Map<CuboidAddress, SnapshotCuboid> cuboids = new HashMap<>();
 		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> ent : mutableWorldState.entrySet())
@@ -1766,7 +1796,7 @@ public class TickRunner
 			{
 				scheduledMutations = List.of();
 			}
-			Map<BlockAddress, Long> periodicMutationMillis = masterFragment.world.periodicNotReadyByCuboid().get(key);
+			Map<BlockAddress, Long> periodicMutationMillis = periodicNotReadyMillisByCuboid.get(key);
 			if (null == periodicMutationMillis)
 			{
 				periodicMutationMillis = Map.of();
@@ -2238,13 +2268,23 @@ public class TickRunner
 		, List<ScheduledChange> notYetReadyUnsortedActions
 	) {}
 
-	private static record _ProcessedFragment(Map<CuboidAddress, IReadOnlyCuboidData> stateFragment
-			, Map<CuboidAddress, CuboidHeightMap> heightFragment
-			, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
-			, List<ScheduledMutation> notYetReadyMutations
-			, Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyByCuboid
-			, Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid
-			, int committedMutationCount
+	private static record _ProcessedFragment(List<_OutputCuboid> cuboids
+		, List<_OutputColumnHeight> columns
+		, List<ScheduledMutation> notYetReadyMutations
+		, int committedMutationCount
+	) {}
+
+	private static record _OutputCuboid(CuboidAddress address
+		, IReadOnlyCuboidData previousCuboid
+		, IReadOnlyCuboidData updatedCuboidOrNull
+		, CuboidHeightMap previousHeightMap
+		, CuboidHeightMap updatedHeightMapOrNull
+		, Map<BlockAddress, Long> periodicNotReadyMutations
+		, List<BlockChangeDescription> blockChanges
+	) {}
+
+	public static record _OutputColumnHeight(CuboidColumnAddress columnAddress
+		, ColumnHeightMap columnHeightMap
 	) {}
 
 	private static record _HighLevelPlan(List<_CommonWorkUnit> common
