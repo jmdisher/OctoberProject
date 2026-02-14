@@ -602,14 +602,13 @@ public class TickRunner
 		// We will have a thread repackage anything which spilled.
 		if (thisThread.handleNextWorkUnit())
 		{
-			if (!highLevel.spilledEntities.isEmpty())
+			if (!highLevel.entitiesInUnloadedCuboids.isEmpty())
 			{
 				List<_OutputEntity> repackaged = new ArrayList<>();
-				for (Map.Entry<Integer, _InputEntity> elt : highLevel.spilledEntities.entrySet())
+				for (_EntityWorkUnit input : highLevel.entitiesInUnloadedCuboids)
 				{
-					_InputEntity input = elt.getValue();
 					// We set this to null output entity since that means it was unchanged.
-					_OutputEntity output = new _OutputEntity(input.entity.id(), input.entity, null, input.scheduledChanges);
+					_OutputEntity output = new _OutputEntity(input.entity.id(), input.entity, null, input.unsortedActions);
 					repackaged.add(output);
 				}
 				_ProcessedGroup spilledGroup = new _ProcessedGroup(0, repackaged);
@@ -733,7 +732,7 @@ public class TickRunner
 			for (_EntityWorkUnit entityUnit : subUnit.entities)
 			{
 				Entity entity = entityUnit.entity;
-				List<ScheduledChange> changes = entityUnit.actions;
+				List<ScheduledChange> changes = entityUnit.unsortedActions;
 				processor.playersProcessed += 1;
 				
 				EnginePlayers.SinglePlayerResult result = EnginePlayers.processOnePlayer(context
@@ -1087,7 +1086,7 @@ public class TickRunner
 				}
 				
 				// Convert this raw next tick action accumulation into the CrowdProcessor input.
-				Map<Integer, _InputEntity> changesToRun = _determineChangesToRun(mutableCrowdState, nextTickChanges);
+				Map<Integer, _EntityWorkUnit> changesToRun = _determineChangesToRun(mutableCrowdState, nextTickChanges);
 				
 				// We want to build the arrangement of blocks modified in the last tick so that block updates can be synthesized.
 				Map<CuboidAddress, List<AbsoluteLocation>> updatedBlockLocationsByCuboid = _extractBlockUpdateLocations( masterFragment);
@@ -1235,7 +1234,7 @@ public class TickRunner
 			int key = value.entityId;
 			
 			// We want to schedule anything which wasn't yet ready.
-			for (ScheduledChange change : value.notYetReadyChanges())
+			for (ScheduledChange change : value.notYetReadyUnsortedActions())
 			{
 				_scheduleChangesForEntity(snapshotEntityMutations, key, change);
 			}
@@ -1466,9 +1465,9 @@ public class TickRunner
 		return nextTickChanges;
 	}
 
-	private static Map<Integer, _InputEntity> _determineChangesToRun(Map<Integer, Entity> mutableCrowdState, Map<Integer, List<ScheduledChange>> nextTickChanges)
+	private static Map<Integer, _EntityWorkUnit> _determineChangesToRun(Map<Integer, Entity> mutableCrowdState, Map<Integer, List<ScheduledChange>> nextTickChanges)
 	{
-		Map<Integer, _InputEntity> changesToRun = new HashMap<>();
+		Map<Integer, _EntityWorkUnit> changesToRun = new HashMap<>();
 		// We shouldn't have put operator changes into this common map.
 		Assert.assertTrue(!nextTickChanges.containsKey(EnginePlayers.OPERATOR_ENTITY_ID));
 		for (Map.Entry<Integer, List<ScheduledChange>> oneEntity : nextTickChanges.entrySet())
@@ -1480,7 +1479,7 @@ public class TickRunner
 				List<ScheduledChange> list = oneEntity.getValue();
 				// If this is in the map, it can't be empty.
 				Assert.assertTrue(!list.isEmpty());
-				_InputEntity input = new _InputEntity(entity, Collections.unmodifiableList(list));
+				_EntityWorkUnit input = new _EntityWorkUnit(entity, Collections.unmodifiableList(list));
 				changesToRun.put(id, input);
 			}
 			else
@@ -1877,7 +1876,7 @@ public class TickRunner
 
 	private static _HighLevelPlan _packageHighLevelWorkUnits(Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
 		, Map<CuboidAddress, CuboidHeightMap> cuboidHeightMaps
-		, Map<Integer, _InputEntity> entities
+		, Map<Integer, _EntityWorkUnit> entities
 		, Map<Integer, CreatureEntity> completedCreatures
 		, Map<Integer, PassiveEntity> completedPassives
 		, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
@@ -1886,14 +1885,14 @@ public class TickRunner
 		, Map<Integer, List<IPassiveAction>> passiveActions
 	)
 	{
-		Map<Integer, _InputEntity> spilledEntities = new HashMap<>();
+		List<_EntityWorkUnit> entitiesInUnloadedCuboids = new ArrayList<>();
 		Map<CuboidAddress, List<_EntityWorkUnit>> workingEntityList = new HashMap<>();
-		for (_InputEntity entity : entities.values())
+		for (_EntityWorkUnit entity : entities.values())
 		{
 			CuboidAddress thisAddress = entity.entity.location().getBlockLocation().getCuboidAddress();
 			if (completedCuboids.containsKey(thisAddress))
 			{
-				List<ScheduledChange> scheduledChanges = entity.scheduledChanges;
+				List<ScheduledChange> scheduledChanges = entity.unsortedActions;
 				if (!workingEntityList.containsKey(thisAddress))
 				{
 					workingEntityList.put(thisAddress, new ArrayList<>());
@@ -1908,7 +1907,7 @@ public class TickRunner
 			{
 				// This cuboid isn't loaded so spill it to the next tick.
 				// This is usually due to load ordering (an entity might be created before its cuboid is loaded - thus dropping the creation of its periodic mutation).
-				spilledEntities.put(entity.entity.id(), entity);
+				entitiesInUnloadedCuboids.add(entity);
 			}
 		}
 		Map<CuboidAddress, List<_CreatureWorkUnit>> workingCreatureList = new HashMap<>();
@@ -2029,7 +2028,7 @@ public class TickRunner
 		// Now sort by priority list (descending on priorityHint).
 		result.sort((_CommonWorkUnit one, _CommonWorkUnit two) -> two.priorityHint - one.priorityHint);
 		return new _HighLevelPlan(Collections.unmodifiableList(result)
-			, Collections.unmodifiableMap(spilledEntities)
+			, Collections.unmodifiableList(entitiesInUnloadedCuboids)
 		);
 	}
 
@@ -2230,18 +2229,13 @@ public class TickRunner
 		, List<_OutputEntity> entityOutput
 	) {}
 
-	// Note that NEITHER of these will be NULL and scheduledChanges MUST not be empty.
-	private static record _InputEntity(Entity entity
-		, List<ScheduledChange> scheduledChanges
-	) {}
-
 	private static record _OutputEntity(int entityId
 		// The entity from the previous tick.
 		, Entity previousEntity
 		// The updated entity from this tick (null if not changed).
 		, Entity updatedEntity
 		// The changes which were not ready to run in this tick (could be empty but never null).
-		, List<ScheduledChange> notYetReadyChanges
+		, List<ScheduledChange> notYetReadyUnsortedActions
 	) {}
 
 	private static record _ProcessedFragment(Map<CuboidAddress, IReadOnlyCuboidData> stateFragment
@@ -2254,7 +2248,8 @@ public class TickRunner
 	) {}
 
 	private static record _HighLevelPlan(List<_CommonWorkUnit> common
-		, Map<Integer, _InputEntity> spilledEntities
+		// When players have joined, but their underlying cuboids haven't yet loaded, we skip processing them.
+		, List<_EntityWorkUnit> entitiesInUnloadedCuboids
 	) {}
 
 	private static record _CommonWorkUnit(CuboidColumnAddress columnAddress
@@ -2272,7 +2267,7 @@ public class TickRunner
 	) {}
 
 	private static record _EntityWorkUnit(Entity entity
-		, List<ScheduledChange> actions
+		, List<ScheduledChange> unsortedActions
 	) {}
 
 	private static record _CreatureWorkUnit(CreatureEntity creature
