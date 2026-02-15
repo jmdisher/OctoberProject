@@ -868,19 +868,30 @@ public class TickRunner
 			Map<Integer, CreatureEntity> mutableCreatureState = _extractSnapshotCreatures(startingMaterials, masterFragment);
 			Map<Integer, PassiveEntity> mutablePassiveState = _extractSnapshotPassives(startingMaterials, masterFragment);
 			
-			// TODO:  Can we skip this initialization with startingMaterials and just used processed results (since they also include previous version)?
-			Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState = new HashMap<>(startingMaterials.completedCuboids);
-			Map<CuboidAddress, CuboidHeightMap> nextTickMutableHeightMaps = new HashMap<>(startingMaterials.cuboidHeightMaps);
+			// Verify that nothing is missing in the output.
+			Assert.assertTrue(masterFragment.world.cuboids.size() == startingMaterials.completedCuboids.size());
+			Assert.assertTrue(masterFragment.world.cuboids.size() == startingMaterials.cuboidHeightMaps.size());
+			Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState = new HashMap<>();
+			Map<CuboidAddress, CuboidHeightMap> nextTickMutableHeightMaps = new HashMap<>();
 			for (_OutputCuboid cuboid : masterFragment.world.cuboids)
 			{
-				if (null != cuboid.updatedCuboidOrNull)
-				{
-					mutableWorldState.put(cuboid.address, cuboid.updatedCuboidOrNull);
-				}
-				if (null != cuboid.updatedHeightMapOrNull)
-				{
-					nextTickMutableHeightMaps.put(cuboid.address, cuboid.updatedHeightMapOrNull);
-				}
+				// Verify that the output maps to the input.
+				Assert.assertTrue(startingMaterials.completedCuboids.containsKey(cuboid.address));
+				Assert.assertTrue(startingMaterials.cuboidHeightMaps.containsKey(cuboid.address));
+				
+				IReadOnlyCuboidData cuboidToStore = (null != cuboid.updatedCuboidOrNull)
+					? cuboid.updatedCuboidOrNull
+					: cuboid.previousCuboid
+				;
+				Object old = mutableWorldState.put(cuboid.address, cuboidToStore);
+				Assert.assertTrue(null == old);
+				
+				CuboidHeightMap heightMapToStore = (null != cuboid.updatedHeightMapOrNull)
+					? cuboid.updatedHeightMapOrNull
+					: cuboid.previousHeightMap
+				;
+				old = nextTickMutableHeightMaps.put(cuboid.address, heightMapToStore);
+				Assert.assertTrue(null == old);
 			}
 			Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = masterFragment.world.columns.stream()
 				.collect(Collectors.toMap((_OutputColumnHeight output) -> output.columnAddress, (_OutputColumnHeight output) -> output.columnHeightMap))
