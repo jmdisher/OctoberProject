@@ -401,8 +401,8 @@ public class TickRunner
 				, emptyMaterials
 				, new _PartialHandoffData(new _ProcessedFragment(List.of(), List.of(), List.of(), 0)
 						, new _ProcessedGroup(0, List.of())
-						, new _CreatureGroup(false, List.of(), List.of())
-						, new _PassiveGroup(false, List.of(), List.of())
+						, new _CreatureGroup(false, List.of())
+						, new _PassiveGroup(false, List.of())
 						, List.of()
 						, List.of()
 						, List.of()
@@ -615,8 +615,8 @@ public class TickRunner
 				// Just use empty elements except for our spilled group.
 				_PartialHandoffData spilledPartial = new _PartialHandoffData(new _ProcessedFragment(List.of(), List.of(), List.of(), 0)
 					, spilledGroup
-					, new _CreatureGroup(false, List.of(), List.of())
-					, new _PassiveGroup(false, List.of(), List.of())
+					, new _CreatureGroup(false, List.of())
+					, new _PassiveGroup(false, List.of())
 					, List.of()
 					, List.of()
 					, List.of()
@@ -659,12 +659,10 @@ public class TickRunner
 		int committedActionCount = 0;
 		
 		// Per-creature entity data.
-		List<CreatureEntity> updatedCreatures = new ArrayList<>();
-		List<Integer> deadCreatureIds = new ArrayList<>();
+		List<_OutputBasic<CreatureEntity>> updatedCreatures = new ArrayList<>();
 		
 		// Per-passive entity data.
-		List<PassiveEntity> updatedPassives = new ArrayList<>();
-		List<Integer> deadPassiveIds = new ArrayList<>();
+		List<_OutputBasic<PassiveEntity>> updatedPassives = new ArrayList<>();
 		
 		// We need to walk the cuboids and collect data from each of them and associated players and creatures.
 		processor.workUnitsProcessed += 1;
@@ -767,15 +765,15 @@ public class TickRunner
 					, creature
 					, changes
 				);
-				if (null == result.updatedEntity())
-				{
-					Integer id = creature.id();
-					deadCreatureIds.add(id);
-				}
-				else if (result.updatedEntity() != creature)
-				{
-					updatedCreatures.add(result.updatedEntity());
-				}
+				
+				boolean didDie = (null == result.updatedEntity());
+				boolean wasUpdated = !didDie && (result.updatedEntity() != creature);
+				_OutputBasic<CreatureEntity> output = new _OutputBasic<>(creature.id()
+					, creature
+					, wasUpdated ? result.updatedEntity() : null
+					, didDie
+				);
+				updatedCreatures.add(output);
 				if (!result.didTakeSpecialAction())
 				{
 					processor.creatureActionsProcessed += 1;
@@ -792,15 +790,15 @@ public class TickRunner
 				processor.passivesProcessed += 1;
 				processor.passiveActionsProcessed += actions.size();
 				PassiveEntity result = EnginePassives.processOneCreature(context, materials.entityCollection, passive, actions);
-				if (null == result)
-				{
-					Integer id = passive.id();
-					deadPassiveIds.add(id);
-				}
-				else if (result != passive)
-				{
-					updatedPassives.add(result);
-				}
+				
+				boolean didDie = (null == result);
+				boolean wasUpdated = !didDie && (result != passive);
+				_OutputBasic<PassiveEntity> output = new _OutputBasic<>(passive.id()
+					, passive
+					, wasUpdated ? result : null
+					, didDie
+				);
+				updatedPassives.add(output);
 			}
 			long endPassiveNanos = System.nanoTime();
 			processor.nanosInEnginePassives += (endPassiveNanos - endCreatureNanos);
@@ -822,11 +820,9 @@ public class TickRunner
 		);
 		_CreatureGroup creatures = new _CreatureGroup(false
 			, updatedCreatures
-			, deadCreatureIds
 		);
 		_PassiveGroup passives = new _PassiveGroup(false
 			, updatedPassives
-			, deadPassiveIds
 		);
 		return new _PartialHandoffData(world
 			, crowd
@@ -900,8 +896,8 @@ public class TickRunner
 			Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = _extractSnapshotBlockMutations(masterFragment);
 			Map<Integer, List<ScheduledChange>> snapshotEntityMutations = _extractPlayerEntityChanges(masterFragment);
 			Set<Integer> updatedEntities = _extractChangedPlayerEntitiesOnly(masterFragment);
-			List<CreatureEntity> updatedCreatures = masterFragment.creatures.updatedCreatures;
-			List<PassiveEntity> updatedPassives = masterFragment.passives.updatedPassives;
+			List<_OutputBasic<CreatureEntity>> creatureOutput = masterFragment.creatures.creatureOutput;
+			List<_OutputBasic<PassiveEntity>> passiveOutput = masterFragment.passives.passiveOutput;
 			
 			// Collect the time stamps for stats.
 			long endMillisPostamble = System.currentTimeMillis();
@@ -923,8 +919,8 @@ public class TickRunner
 				, snapshotBlockMutations
 				, snapshotEntityMutations
 				, updatedEntities
-				, updatedCreatures
-				, updatedPassives
+				, creatureOutput
+				, passiveOutput
 				, _threadStats.clone()
 				, millisTickParallelPhase
 				, millisTickPostamble
@@ -1213,16 +1209,24 @@ public class TickRunner
 
 	private static Map<Integer, CreatureEntity> _extractSnapshotCreatures(TickMaterials startingMaterials, _PartialHandoffData masterFragment)
 	{
+		// TODO:  Change how we populate work items so that we don't need to start with completedCreatures?
 		Map<Integer, CreatureEntity> mutableCreatureState = new HashMap<>(startingMaterials.completedCreatures);
-		for (CreatureEntity updated : masterFragment.creatures.updatedCreatures())
+		for (_OutputBasic<CreatureEntity> value : masterFragment.creatures.creatureOutput())
 		{
-			Object old = mutableCreatureState.put(updated.id(), updated);
-			Assert.assertTrue(null != old);
-		}
-		for (Integer creatureId : masterFragment.creatures.deadCreatureIds())
-		{
-			Object old = mutableCreatureState.remove(creatureId);
-			Assert.assertTrue(null != old);
+			int id = value.id;
+			if (value.didDie)
+			{
+				mutableCreatureState.remove(id);
+			}
+			else
+			{
+				CreatureEntity updated = value.updated;
+				CreatureEntity toSnapshot = (null != updated)
+					? updated
+					: value.previous
+				;
+				mutableCreatureState.put(id, toSnapshot);
+			}
 		}
 		for (CreatureEntity newCreature : masterFragment.spawnedCreatures())
 		{
@@ -1234,16 +1238,24 @@ public class TickRunner
 
 	private static Map<Integer, PassiveEntity> _extractSnapshotPassives(TickMaterials startingMaterials, _PartialHandoffData masterFragment)
 	{
+		// TODO:  Change how we populate work items so that we don't need to start with completedPassives?
 		Map<Integer, PassiveEntity> mutablePassiveState = new HashMap<>(startingMaterials.completedPassives);
-		for (PassiveEntity updated : masterFragment.passives.updatedPassives())
+		for (_OutputBasic<PassiveEntity> value : masterFragment.passives.passiveOutput())
 		{
-			Object old = mutablePassiveState.put(updated.id(), updated);
-			Assert.assertTrue(null != old);
-		}
-		for (Integer creatureId : masterFragment.passives.deadPassiveIds())
-		{
-			Object old = mutablePassiveState.remove(creatureId);
-			Assert.assertTrue(null != old);
+			int id = value.id;
+			if (value.didDie)
+			{
+				mutablePassiveState.remove(id);
+			}
+			else
+			{
+				PassiveEntity updated = value.updated;
+				PassiveEntity toSnapshot = (null != updated)
+					? updated
+					: value.previous
+				;
+				mutablePassiveState.put(id, toSnapshot);
+			}
 		}
 		for (PassiveEntity newPassive : masterFragment.spawnedPassives())
 		{
@@ -1675,12 +1687,10 @@ public class TickRunner
 		List<_OutputEntity> entityOutput = new ArrayList<>();
 		
 		// EngineCreatures.CreatureGroup creatures
-		List<CreatureEntity> updatedCreatures = new ArrayList<>();
-		List<Integer> deadCreatureIds = new ArrayList<>();
+		List<_OutputBasic<CreatureEntity>> creatureOutput = new ArrayList<>();
 		
 		// EnginePassives
-		List<PassiveEntity> updatedPassives = new ArrayList<>();
-		List<Integer> deadPassiveIds = new ArrayList<>();
+		List<_OutputBasic<PassiveEntity>> passiveOutput = new ArrayList<>();
 		
 		List<CreatureEntity> spawnedCreatures = new ArrayList<>();
 		List<PassiveEntity> spawnedPassives = new ArrayList<>();
@@ -1707,12 +1717,10 @@ public class TickRunner
 			entityOutput.addAll(fragment.crowd().entityOutput());
 			
 			// EngineCreatures.CreatureGroup creatures
-			updatedCreatures.addAll(fragment.creatures().updatedCreatures());
-			deadCreatureIds.addAll(fragment.creatures().deadCreatureIds());
+			creatureOutput.addAll(fragment.creatures().creatureOutput());
 			
 			// EnginePassives
-			updatedPassives.addAll(fragment.passives().updatedPassives());
-			deadPassiveIds.addAll(fragment.passives().deadPassiveIds());
+			passiveOutput.addAll(fragment.passives().passiveOutput());
 			
 			spawnedCreatures.addAll(fragment.spawnedCreatures());
 			spawnedPassives.addAll(fragment.spawnedPassives());
@@ -1735,12 +1743,10 @@ public class TickRunner
 			, entityOutput
 		);
 		_CreatureGroup creatures = new _CreatureGroup(false
-			, updatedCreatures
-			, deadCreatureIds
+			, creatureOutput
 		);
 		_PassiveGroup passives = new _PassiveGroup(false
-			, updatedPassives
-			, deadPassiveIds
+			, passiveOutput
 		);
 		return new _PartialHandoffData(world
 			, crowd
@@ -1769,8 +1775,8 @@ public class TickRunner
 		, Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations
 		, Map<Integer, List<ScheduledChange>> snapshotEntityMutations
 		, Set<Integer> updatedEntities
-		, List<CreatureEntity> updatedCreaturesList
-		, List<PassiveEntity> updatedPassivesList
+		, List<_OutputBasic<CreatureEntity>> creatureOutput
+		, List<_OutputBasic<PassiveEntity>> passiveOutput
 		, ProcessorElement.PerThreadStats[] threadStats
 		, long millisTickParallelPhase
 		, long millisTickPostamble
@@ -1847,8 +1853,9 @@ public class TickRunner
 			entities.put(key, snapshot);
 		}
 		Map<Integer, SnapshotCreature> creatures = new HashMap<>();
-		Set<Integer> updatedCreatures = updatedCreaturesList.stream()
-			.map((CreatureEntity creature) -> creature.id())
+		Set<Integer> updatedCreatures = creatureOutput.stream()
+			.filter((_OutputBasic<CreatureEntity> creature) -> (null != creature.updated))
+			.map((_OutputBasic<CreatureEntity> creature) -> creature.updated.id())
 			.collect(Collectors.toSet())
 		;
 		for (Map.Entry<Integer, CreatureEntity>  ent : mutableCreatureState.entrySet())
@@ -1868,8 +1875,9 @@ public class TickRunner
 			creatures.put(key, snapshot);
 		}
 		Map<Integer, SnapshotPassive> passives = new HashMap<>();
-		Set<Integer> updatedPassives = updatedPassivesList.stream()
-			.map((PassiveEntity creature) -> creature.id())
+		Set<Integer> updatedPassives = passiveOutput.stream()
+			.filter((_OutputBasic<PassiveEntity> passive) -> (null != passive.updated))
+			.map((_OutputBasic<PassiveEntity> passive) -> passive.updated.id())
 			.collect(Collectors.toSet())
 		;
 		for (Map.Entry<Integer, PassiveEntity>  ent : mutablePassiveState.entrySet())
@@ -2254,15 +2262,18 @@ public class TickRunner
 	) {}
 
 	private static record _CreatureGroup(boolean ignored
-		// Note that only creatures which have changed will be in this list.
-		, List<CreatureEntity> updatedCreatures
-		, List<Integer> deadCreatureIds
+		, List<_OutputBasic<CreatureEntity>> creatureOutput
 	) {}
 
 	private static record _PassiveGroup(boolean ignored
-		// Note that only passives which have changed will be in this list.
-		, List<PassiveEntity> updatedPassives
-		, List<Integer> deadPassiveIds
+		, List<_OutputBasic<PassiveEntity>> passiveOutput
+	) {}
+
+	private static record _OutputBasic<T>(int id
+		, T previous
+		// The updated will be null if it didn't change or died.
+		, T updated
+		, boolean didDie
 	) {}
 
 	private static record _ProcessedGroup(int committedMutationCount
