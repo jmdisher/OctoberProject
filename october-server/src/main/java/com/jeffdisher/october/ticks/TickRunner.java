@@ -34,7 +34,6 @@ import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.HeightMapHelpers;
-import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.logic.PassiveIdAssigner;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.PropagationHelpers;
@@ -859,44 +858,12 @@ public class TickRunner
 			// We will merge together all the per-thread fragments into one master fragment.
 			TickOutput masterFragment = _mergeAndClearPartialFragments(_partial);
 			
-			Map<Integer, Entity> mutableCrowdState = _extractSnapshotPlayers(masterFragment);
-			Map<Integer, CreatureEntity> mutableCreatureState = _extractSnapshotCreatures(masterFragment);
-			Map<Integer, PassiveEntity> mutablePassiveState = _extractSnapshotPassives(masterFragment);
-			
-			// Verify that nothing is missing in the output.
-			Assert.assertTrue(masterFragment.world().cuboids().size() == startingMaterials.completedCuboids.size());
-			Assert.assertTrue(masterFragment.world().cuboids().size() == startingMaterials.cuboidHeightMaps.size());
-			Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState = new HashMap<>();
-			Map<CuboidAddress, CuboidHeightMap> nextTickMutableHeightMaps = new HashMap<>();
-			for (TickOutput.CuboidOutput cuboid : masterFragment.world().cuboids())
-			{
-				// Verify that the output maps to the input.
-				Assert.assertTrue(startingMaterials.completedCuboids.containsKey(cuboid.address()));
-				Assert.assertTrue(startingMaterials.cuboidHeightMaps.containsKey(cuboid.address()));
-				
-				IReadOnlyCuboidData cuboidToStore = (null != cuboid.updatedCuboidOrNull())
-					? cuboid.updatedCuboidOrNull()
-					: cuboid.previousCuboid()
-				;
-				Object old = mutableWorldState.put(cuboid.address(), cuboidToStore);
-				Assert.assertTrue(null == old);
-				
-				CuboidHeightMap heightMapToStore = (null != cuboid.updatedHeightMapOrNull())
-					? cuboid.updatedHeightMapOrNull()
-					: cuboid.previousHeightMap()
-				;
-				old = nextTickMutableHeightMaps.put(cuboid.address(), heightMapToStore);
-				Assert.assertTrue(null == old);
-			}
-			Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = masterFragment.world().columns().stream()
-				.collect(Collectors.toMap((TickOutput.ColumnHeightOutput output) -> output.columnAddress(), (TickOutput.ColumnHeightOutput output) -> output.columnHeightMap()))
-			;
-			
 			Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = _extractSnapshotBlockMutations(masterFragment);
 			Map<Integer, List<ScheduledChange>> snapshotEntityMutations = _extractPlayerEntityChanges(masterFragment);
 			Set<Integer> updatedEntities = _extractChangedPlayerEntitiesOnly(masterFragment);
 			List<TickOutput.BasicOutput<CreatureEntity>> creatureOutput = masterFragment.creatures().creatureOutput();
 			List<TickOutput.BasicOutput<PassiveEntity>> passiveOutput = masterFragment.passives().passiveOutput();
+			FlatResults flatResults = FlatResults.fromOutput(masterFragment);
 			
 			// Collect the time stamps for stats.
 			long endMillisPostamble = System.currentTimeMillis();
@@ -907,22 +874,25 @@ public class TickRunner
 			
 			// At this point, the tick to advance the world and crowd states has completed so publish the read-only results and wait before we put together the materials for the next tick.
 			// Acknowledge that the tick is completed by creating a snapshot of the state.
+			TickSnapshot.TickStats tickStats = new TickSnapshot.TickStats(_nextTick
+				, startingMaterials.millisInTickPreamble
+				, millisTickParallelPhase
+				, millisTickPostamble
+				, _threadStats.clone()
+				, masterFragment.entities().committedMutationCount()
+				, masterFragment.world().committedMutationCount()
+			);
 			TickSnapshot completedTick = _buildSnapshot(_nextTick
 				, startingMaterials
-				, masterFragment
-				, mutableWorldState
-				, mutableCrowdState
-				, mutableCreatureState
-				, mutablePassiveState
-				, completedHeightMaps
+				, flatResults
 				, snapshotBlockMutations
 				, snapshotEntityMutations
 				, updatedEntities
 				, creatureOutput
 				, passiveOutput
-				, _threadStats.clone()
-				, millisTickParallelPhase
-				, millisTickPostamble
+				, masterFragment.postedEvents()
+				, masterFragment.internallyMarkedAlive()
+				, tickStats
 			);
 			
 			// We want to pass this to a listener before we synchronize to avoid calling out under monitor.
@@ -989,6 +959,12 @@ public class TickRunner
 				}
 				
 				// We now update our mutable collections for the materials to use in the next tick.
+				Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState = new HashMap<>(flatResults.cuboidsByAddress());
+				Map<CuboidAddress, CuboidHeightMap> nextTickMutableHeightMaps = new HashMap<>(flatResults.heightMapsByAddress());
+				Map<Integer, Entity> mutableCrowdState = new HashMap<>(flatResults.entitiesById());
+				Map<Integer, CreatureEntity> mutableCreatureState = new HashMap<>(flatResults.creaturesById());
+				Map<Integer, PassiveEntity> mutablePassiveState = new HashMap<>(flatResults.passivesById());
+				
 				_poopulateWorldWithNewCuboids(mutableWorldState, nextTickMutableHeightMaps, newCuboids);
 				_addCreaturesInNewCuboidsWithMillis(mutableCreatureState, newCuboids);
 				_addPassivesInNewCuboidsWithMillis(mutablePassiveState, newCuboids);
@@ -1114,11 +1090,6 @@ public class TickRunner
 				// Convert this raw next tick action accumulation into the CrowdProcessor input.
 				Map<Integer, TickInput.EntityInput> changesToRun = _determineChangesToRun(mutableCrowdState, nextTickChanges);
 				
-				// We want to build the arrangement of blocks modified in the last tick so that block updates can be synthesized.
-				Map<CuboidAddress, List<AbsoluteLocation>> updatedBlockLocationsByCuboid = _extractBlockUpdateLocations( masterFragment);
-				Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = _extractPotentialLightChanges( masterFragment);
-				Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid = _extractPotentialLogicChanges( masterFragment);
-				
 				// WARNING:  completedHeightMaps does NOT include the new height maps loaded after the previous tick finished!
 				// (this is done to avoid the cost of rebuilding the maps since the column height maps are not guaranteed to be fully accurate)
 				EntityCollection entityCollection = EntityCollection.fromMaps(mutableCrowdState, mutableCreatureState);
@@ -1141,16 +1112,16 @@ public class TickRunner
 				_thisTickMaterials = new TickMaterials(_nextTick
 						, Collections.unmodifiableMap(mutableWorldState)
 						, Collections.unmodifiableMap(nextTickMutableHeightMaps)
-						, completedHeightMaps
+						, flatResults.columnHeightMaps()
 						, Collections.unmodifiableMap(mutableCrowdState)
 						// completedCreatures
 						, Collections.unmodifiableMap(mutableCreatureState)
 						, Collections.unmodifiableMap(mutablePassiveState)
 						
 						, operatorChanges
-						, updatedBlockLocationsByCuboid
-						, potentialLightChangesByCuboid
-						, potentialLogicChangesByCuboid
+						, flatResults.blockUpdatesByCuboid()
+						, flatResults.lightingUpdatesByCuboid()
+						, flatResults.logicUpdatesByCuboid()
 						, cuboidsLoadedThisTick
 						, previousProxyCache
 						
@@ -1177,21 +1148,6 @@ public class TickRunner
 		return _thisTickMaterials;
 	}
 
-	private static Map<Integer, Entity> _extractSnapshotPlayers(TickOutput masterFragment)
-	{
-		Map<Integer, Entity> mutableCrowdState = new HashMap<>();
-		for (TickOutput.EntityOutput value : masterFragment.entities().entityOutput())
-		{
-			Entity updated = value.updatedEntity();
-			Entity toSnapshot = (null != updated)
-				? updated
-				: value.previousEntity()
-			;
-			mutableCrowdState.put(value.entityId(), toSnapshot);
-		}
-		return mutableCrowdState;
-	}
-
 	private static Map<CuboidAddress, List<ScheduledMutation>> _extractSnapshotBlockMutations(TickOutput masterFragment)
 	{
 		Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = new HashMap<>();
@@ -1204,62 +1160,6 @@ public class TickRunner
 			_scheduleMutationForCuboid(snapshotBlockMutations, scheduledMutation);
 		}
 		return snapshotBlockMutations;
-	}
-
-	private static Map<Integer, CreatureEntity> _extractSnapshotCreatures(TickOutput masterFragment)
-	{
-		Map<Integer, CreatureEntity> mutableCreatureState = new HashMap<>();
-		for (TickOutput.BasicOutput<CreatureEntity> value : masterFragment.creatures().creatureOutput())
-		{
-			int id = value.id();
-			if (value.didDie())
-			{
-				mutableCreatureState.remove(id);
-			}
-			else
-			{
-				CreatureEntity updated = value.updated();
-				CreatureEntity toSnapshot = (null != updated)
-					? updated
-					: value.previous()
-				;
-				mutableCreatureState.put(id, toSnapshot);
-			}
-		}
-		for (CreatureEntity newCreature : masterFragment.spawnedCreatures())
-		{
-			Object old = mutableCreatureState.put(newCreature.id(), newCreature);
-			Assert.assertTrue(null == old);
-		}
-		return mutableCreatureState;
-	}
-
-	private static Map<Integer, PassiveEntity> _extractSnapshotPassives(TickOutput masterFragment)
-	{
-		Map<Integer, PassiveEntity> mutablePassiveState = new HashMap<>();
-		for (TickOutput.BasicOutput<PassiveEntity> value : masterFragment.passives().passiveOutput())
-		{
-			int id = value.id();
-			if (value.didDie())
-			{
-				mutablePassiveState.remove(id);
-			}
-			else
-			{
-				PassiveEntity updated = value.updated();
-				PassiveEntity toSnapshot = (null != updated)
-					? updated
-					: value.previous()
-				;
-				mutablePassiveState.put(id, toSnapshot);
-			}
-		}
-		for (PassiveEntity newPassive : masterFragment.spawnedPassives())
-		{
-			Object old = mutablePassiveState.put(newPassive.id(), newPassive);
-			Assert.assertTrue(null == old);
-		}
-		return mutablePassiveState;
 	}
 
 	private static Map<Integer, List<ScheduledChange>> _extractPlayerEntityChanges(TickOutput masterFragment)
@@ -1537,81 +1437,6 @@ public class TickRunner
 		return changesToRun;
 	}
 
-	private static Map<CuboidAddress, List<AbsoluteLocation>> _extractBlockUpdateLocations(TickOutput masterFragment)
-	{
-		// TODO:  This pass is duplicated so we should coalesce this information elsewhere.
-		Map<CuboidAddress, List<AbsoluteLocation>> updatedBlockLocationsByCuboid = new HashMap<>();
-		for (TickOutput.CuboidOutput oneCuboid : masterFragment.world().cuboids())
-		{
-			if (!oneCuboid.blockChanges().isEmpty())
-			{
-				// Only store the updated block locations if the block change requires it.
-				List<AbsoluteLocation> locations = oneCuboid.blockChanges().stream()
-					.filter((BlockChangeDescription description) -> description.requiresUpdateEvent())
-					.map(
-						(BlockChangeDescription update) -> update.serializedForm().getAbsoluteLocation()
-					)
-					.toList()
-				;
-				updatedBlockLocationsByCuboid.put(oneCuboid.address(), locations);
-			}
-		}
-		return updatedBlockLocationsByCuboid;
-	}
-
-	private static Map<CuboidAddress, List<AbsoluteLocation>> _extractPotentialLightChanges(TickOutput masterFragment)
-	{
-		// TODO:  This pass is duplicated so we should coalesce this information elsewhere.
-		Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = new HashMap<>();
-		for (TickOutput.CuboidOutput oneCuboid : masterFragment.world().cuboids())
-		{
-			if (!oneCuboid.blockChanges().isEmpty())
-			{
-				// Only store the updated block locations if the block change requires it.
-				List<AbsoluteLocation> lightChangeLocations = oneCuboid.blockChanges().stream()
-					.filter((BlockChangeDescription description) -> description.requiresLightingCheck())
-					.map(
-						(BlockChangeDescription update) -> update.serializedForm().getAbsoluteLocation()
-					)
-					.toList()
-				;
-				potentialLightChangesByCuboid.put(oneCuboid.address(), lightChangeLocations);
-			}
-		}
-		return potentialLightChangesByCuboid;
-	}
-
-	private static Map<CuboidAddress, List<AbsoluteLocation>> _extractPotentialLogicChanges(TickOutput masterFragment)
-	{
-		// TODO:  This pass is duplicated so we should coalesce this information elsewhere.
-		Set<AbsoluteLocation> potentialLogicChangeSet = new HashSet<>();
-		for (TickOutput.CuboidOutput oneCuboid : masterFragment.world().cuboids())
-		{
-			// Logic changes are more complicated, as they don't usually change within the block, but adjacent
-			// ones (except for conduit changes) so build the set and then split it by cuboid in a later pass.
-			for (BlockChangeDescription change : oneCuboid.blockChanges())
-			{
-				byte logicBits = change.logicCheckBits();
-				if (0x0 != logicBits)
-				{
-					AbsoluteLocation location = change.serializedForm().getAbsoluteLocation();
-					LogicLayerHelpers.populateSetWithPotentialLogicChanges(potentialLogicChangeSet, location, logicBits);
-				}
-			}
-		}
-		Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid = new HashMap<>();
-		for (AbsoluteLocation location : potentialLogicChangeSet)
-		{
-			CuboidAddress cuboid = location.getCuboidAddress();
-			if (!potentialLogicChangesByCuboid.containsKey(cuboid))
-			{
-				potentialLogicChangesByCuboid.put(cuboid, new ArrayList<>());
-			}
-			potentialLogicChangesByCuboid.get(cuboid).add(location);
-		}
-		return potentialLogicChangesByCuboid;
-	}
-
 	private synchronized void _acknowledgeTickCompleteAndWaitForNext(TickSnapshot newSnapshot)
 	{
 		_snapshot = newSnapshot;
@@ -1763,54 +1588,32 @@ public class TickRunner
 
 	private static TickSnapshot _buildSnapshot(long tickNumber
 		, TickMaterials startingMaterials
-		, TickOutput masterFragment
-		, Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState
-		, Map<Integer, Entity> mutableCrowdState
-		, Map<Integer, CreatureEntity> mutableCreatureState
-		, Map<Integer, PassiveEntity> mutablePassiveState
-		, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
+		, FlatResults flatResults
 		, Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations
 		, Map<Integer, List<ScheduledChange>> snapshotEntityMutations
 		, Set<Integer> updatedEntities
 		, List<TickOutput.BasicOutput<CreatureEntity>> creatureOutput
 		, List<TickOutput.BasicOutput<PassiveEntity>> passiveOutput
-		, ProcessorElement.PerThreadStats[] threadStats
-		, long millisTickParallelPhase
-		, long millisTickPostamble
+		, List<EventRecord> postedEvents
+		, Set<CuboidAddress> internallyMarkedAlive
+		, TickSnapshot.TickStats tickStats
 	)
 	{
-		Map<CuboidAddress, List<MutationBlockSetBlock>> resultantBlockChangesByCuboid = new HashMap<>();
-		Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyMillisByCuboid = new HashMap<>();
-		for (TickOutput.CuboidOutput oneCuboid : masterFragment.world().cuboids())
-		{
-			if (!oneCuboid.blockChanges().isEmpty())
-			{
-				List<MutationBlockSetBlock> list = oneCuboid.blockChanges().stream()
-					.map((BlockChangeDescription description) -> description.serializedForm())
-					.toList()
-				;
-				resultantBlockChangesByCuboid.put(oneCuboid.address(), list);
-			}
-			if (!oneCuboid.periodicNotReadyMutations().isEmpty())
-			{
-				periodicNotReadyMillisByCuboid.put(oneCuboid.address(), oneCuboid.periodicNotReadyMutations());
-			}
-		}
 		Map<CuboidAddress, TickSnapshot.SnapshotCuboid> cuboids = new HashMap<>();
-		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> ent : mutableWorldState.entrySet())
+		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> ent : flatResults.cuboidsByAddress().entrySet())
 		{
 			CuboidAddress key = ent.getKey();
 			IReadOnlyCuboidData cuboid = ent.getValue();
 			
 			// The list of block changes will be null if nothing changed but the list of mutations will never be null, although typically empty.
-			List<MutationBlockSetBlock> changedBlocks = resultantBlockChangesByCuboid.get(key);
+			List<MutationBlockSetBlock> changedBlocks = flatResults.resultantBlockChangesByCuboid().get(key);
 			Assert.assertTrue((null == changedBlocks) || !changedBlocks.isEmpty());
 			List<ScheduledMutation> scheduledMutations = snapshotBlockMutations.get(key);
 			if (null == scheduledMutations)
 			{
 				scheduledMutations = List.of();
 			}
-			Map<BlockAddress, Long> periodicMutationMillis = periodicNotReadyMillisByCuboid.get(key);
+			Map<BlockAddress, Long> periodicMutationMillis = flatResults.periodicMutationsByCuboid().get(key);
 			if (null == periodicMutationMillis)
 			{
 				periodicMutationMillis = Map.of();
@@ -1824,7 +1627,7 @@ public class TickRunner
 			cuboids.put(key, snapshot);
 		}
 		Map<Integer, TickSnapshot.SnapshotEntity> entities = new HashMap<>();
-		for (Map.Entry<Integer, Entity> ent : mutableCrowdState.entrySet())
+		for (Map.Entry<Integer, Entity> ent : flatResults.entitiesById().entrySet())
 		{
 			Integer key = ent.getKey();
 			Assert.assertTrue(key > 0);
@@ -1855,7 +1658,7 @@ public class TickRunner
 			.map((TickOutput.BasicOutput<CreatureEntity> creature) -> creature.updated().id())
 			.collect(Collectors.toSet())
 		;
-		for (Map.Entry<Integer, CreatureEntity>  ent : mutableCreatureState.entrySet())
+		for (Map.Entry<Integer, CreatureEntity>  ent : flatResults.creaturesById().entrySet())
 		{
 			Integer key = ent.getKey();
 			Assert.assertTrue(key < 0);
@@ -1877,7 +1680,7 @@ public class TickRunner
 			.map((TickOutput.BasicOutput<PassiveEntity> passive) -> passive.updated().id())
 			.collect(Collectors.toSet())
 		;
-		for (Map.Entry<Integer, PassiveEntity>  ent : mutablePassiveState.entrySet())
+		for (Map.Entry<Integer, PassiveEntity>  ent : flatResults.passivesById().entrySet())
 		{
 			Integer key = ent.getKey();
 			// Passives are expected to have positive IDs.
@@ -1900,22 +1703,12 @@ public class TickRunner
 			, Collections.unmodifiableMap(entities)
 			, Collections.unmodifiableMap(creatures)
 			, Collections.unmodifiableMap(passives)
-			, completedHeightMaps
-			
-			// postedEvents
-			, masterFragment.postedEvents()
-			// internallyMarkedAlive
-			, masterFragment.internallyMarkedAlive()
+			, flatResults.columnHeightMaps()
+			, postedEvents
+			, internallyMarkedAlive
 			
 			// Stats.
-			, new TickSnapshot.TickStats(tickNumber
-				, startingMaterials.millisInTickPreamble
-				, millisTickParallelPhase
-				, millisTickPostamble
-				, threadStats
-				, masterFragment.entities().committedMutationCount()
-				, masterFragment.world().committedMutationCount()
-			)
+			, tickStats
 		);
 		return completedTick;
 	}
