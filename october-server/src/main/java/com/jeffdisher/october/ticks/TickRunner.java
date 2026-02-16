@@ -107,7 +107,7 @@ public class TickRunner
 	
 	// Ivars which are related to the interlock where the threads merge partial results and wait to start again.
 	private TickMaterials _thisTickMaterials;
-	private final _PartialHandoffData[] _partial;
+	private final TickOutput[] _partial;
 	private final ProcessorElement.PerThreadStats[] _threadStats;
 	private long _nextTick;
 	
@@ -145,7 +145,7 @@ public class TickRunner
 		_config = config;
 		
 		_entitySharedAccess = new HashMap<>();
-		_partial = new _PartialHandoffData[threadCount];
+		_partial = new TickOutput[threadCount];
 		_threadStats = new ProcessorElement.PerThreadStats[threadCount];
 		_nextTick = 1L;
 		_sharedDataLock = new ReentrantLock();
@@ -398,10 +398,10 @@ public class TickRunner
 		);
 		TickMaterials materials = _mergeTickStateAndWaitForNext(thisThread
 				, emptyMaterials
-				, new _PartialHandoffData(new _ProcessedFragment(List.of(), List.of(), List.of(), 0)
-						, new _ProcessedGroup(0, List.of())
-						, new _CreatureGroup(false, List.of())
-						, new _PassiveGroup(false, List.of())
+				, new TickOutput(new TickOutput.WorldOutput(List.of(), List.of(), List.of(), 0)
+						, new TickOutput.EntitiesOutput(0, List.of())
+						, new TickOutput.CreaturesOutput(false, List.of())
+						, new TickOutput.PassivesOutput(false, List.of())
 						, List.of()
 						, List.of()
 						, List.of()
@@ -532,14 +532,14 @@ public class TickRunner
 			_runParallelSpecialCases(thisThread, materials, context);
 			
 			// Now, loop over the rest of the high-level units.
-			_PartialHandoffData innerResults = _runParallelHighLevelUnits(thisThread, materials, context);
+			TickOutput innerResults = _runParallelHighLevelUnits(thisThread, materials, context);
 			
 			materials = _mergeTickStateAndWaitForNext(thisThread
 				, materials
-				, new _PartialHandoffData(innerResults.world
-					, innerResults.crowd
-					, innerResults.creatures
-					, innerResults.passives
+				, new TickOutput(innerResults.world()
+					, innerResults.entities()
+					, innerResults.creatures()
+					, innerResults.passives()
 					, spawnedCreatures
 					, spawnedPassives
 					, newMutationSink.takeExportedMutations()
@@ -589,13 +589,13 @@ public class TickRunner
 		}
 	}
 
-	private static _PartialHandoffData _runParallelHighLevelUnits(ProcessorElement thisThread
+	private static TickOutput _runParallelHighLevelUnits(ProcessorElement thisThread
 		, TickMaterials materials
 		, TickProcessingContext context
 	)
 	{
 		// TODO:  Replace this collection technique and return value with something more appropriate as this re-write progresses.
-		List<_PartialHandoffData> partials = new ArrayList<>();
+		List<TickOutput> partials = new ArrayList<>();
 		TickInput highLevel = materials.highLevel;
 		
 		// We will have a thread repackage anything which spilled.
@@ -603,19 +603,19 @@ public class TickRunner
 		{
 			if (!highLevel.entitiesInUnloadedCuboids().isEmpty())
 			{
-				List<_OutputEntity> repackaged = new ArrayList<>();
+				List<TickOutput.EntityOutput> repackaged = new ArrayList<>();
 				for (TickInput.EntityInput input : highLevel.entitiesInUnloadedCuboids())
 				{
 					// We set this to null output entity since that means it was unchanged.
-					_OutputEntity output = new _OutputEntity(input.entity().id(), input.entity(), null, input.unsortedActions());
+					TickOutput.EntityOutput output = new TickOutput.EntityOutput(input.entity().id(), input.entity(), null, input.unsortedActions());
 					repackaged.add(output);
 				}
-				_ProcessedGroup spilledGroup = new _ProcessedGroup(0, repackaged);
+				TickOutput.EntitiesOutput spilledGroup = new TickOutput.EntitiesOutput(0, repackaged);
 				// Just use empty elements except for our spilled group.
-				_PartialHandoffData spilledPartial = new _PartialHandoffData(new _ProcessedFragment(List.of(), List.of(), List.of(), 0)
+				TickOutput spilledPartial = new TickOutput(new TickOutput.WorldOutput(List.of(), List.of(), List.of(), 0)
 					, spilledGroup
-					, new _CreatureGroup(false, List.of())
-					, new _PassiveGroup(false, List.of())
+					, new TickOutput.CreaturesOutput(false, List.of())
+					, new TickOutput.PassivesOutput(false, List.of())
 					, List.of()
 					, List.of()
 					, List.of()
@@ -634,34 +634,34 @@ public class TickRunner
 		{
 			if (thisThread.handleNextWorkUnit())
 			{
-				_PartialHandoffData result = _processWorkUnit(thisThread, materials, context, unit);
+				TickOutput result = _processWorkUnit(thisThread, materials, context, unit);
 				partials.add(result);
 			}
 		}
-		_PartialHandoffData finalResult = _mergeAndClearPartialFragments(partials.toArray((int size) -> new _PartialHandoffData[size]));
+		TickOutput finalResult = _mergeAndClearPartialFragments(partials.toArray((int size) -> new TickOutput[size]));
 		return finalResult;
 	}
 
-	private static _PartialHandoffData _processWorkUnit(ProcessorElement processor
+	private static TickOutput _processWorkUnit(ProcessorElement processor
 		, TickMaterials materials
 		, TickProcessingContext context
 		, TickInput.ColumnInput unit
 	)
 	{
 		// Collect data for _ProcessedFragment.
-		List<_OutputCuboid> cuboids = new ArrayList<>();
+		List<TickOutput.CuboidOutput> cuboids = new ArrayList<>();
 		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
 		int committedMutationCount = 0;
 		
 		// Per-player entity data.
-		List<_OutputEntity> processedEntities = new ArrayList<>();
+		List<TickOutput.EntityOutput> processedEntities = new ArrayList<>();
 		int committedActionCount = 0;
 		
 		// Per-creature entity data.
-		List<_OutputBasic<CreatureEntity>> updatedCreatures = new ArrayList<>();
+		List<TickOutput.BasicOutput<CreatureEntity>> updatedCreatures = new ArrayList<>();
 		
 		// Per-passive entity data.
-		List<_OutputBasic<PassiveEntity>> updatedPassives = new ArrayList<>();
+		List<TickOutput.BasicOutput<PassiveEntity>> updatedPassives = new ArrayList<>();
 		
 		// We need to walk the cuboids and collect data from each of them and associated players and creatures.
 		processor.workUnitsProcessed += 1;
@@ -701,7 +701,7 @@ public class TickRunner
 				? cuboidResult.changedBlocks()
 				: List.of()
 			;
-			_OutputCuboid outputCuboid = new _OutputCuboid(cuboidAddress
+			TickOutput.CuboidOutput outputCuboid = new TickOutput.CuboidOutput(cuboidAddress
 				, previousCuboid
 				, updatedCuboidOrNull
 				, previousHeightMap
@@ -745,7 +745,7 @@ public class TickRunner
 					, entity
 					, changes
 				);
-				processedEntities.add(new _OutputEntity(entity.id(), entity, result.changedEntityOrNull(), result.notYetReadyChanges()));
+				processedEntities.add(new TickOutput.EntityOutput(entity.id(), entity, result.changedEntityOrNull(), result.notYetReadyChanges()));
 				processor.playerActionsProcessed += result.entityChangesProcessed();
 				committedActionCount += result.committedMutationCount();
 			}
@@ -767,7 +767,7 @@ public class TickRunner
 				
 				boolean didDie = (null == result.updatedEntity());
 				boolean wasUpdated = !didDie && (result.updatedEntity() != creature);
-				_OutputBasic<CreatureEntity> output = new _OutputBasic<>(creature.id()
+				TickOutput.BasicOutput<CreatureEntity> output = new TickOutput.BasicOutput<>(creature.id()
 					, creature
 					, wasUpdated ? result.updatedEntity() : null
 					, didDie
@@ -792,7 +792,7 @@ public class TickRunner
 				
 				boolean didDie = (null == result);
 				boolean wasUpdated = !didDie && (result != passive);
-				_OutputBasic<PassiveEntity> output = new _OutputBasic<>(passive.id()
+				TickOutput.BasicOutput<PassiveEntity> output = new TickOutput.BasicOutput<>(passive.id()
 					, passive
 					, wasUpdated ? result : null
 					, didDie
@@ -805,25 +805,25 @@ public class TickRunner
 		
 		// We can now merge the height maps since each _CommonWorkUnit is a full column.
 		ColumnHeightMap columnHeightMap = HeightMapHelpers.buildSingleColumn(existingAndUpdatedCuboidHeightMaps);
-		_OutputColumnHeight outputColumnHeight = new _OutputColumnHeight(unit.columnAddress()
+		TickOutput.ColumnHeightOutput outputColumnHeight = new TickOutput.ColumnHeightOutput(unit.columnAddress()
 			, columnHeightMap
 		);
 		
-		_ProcessedFragment world = new _ProcessedFragment(cuboids
+		TickOutput.WorldOutput world = new TickOutput.WorldOutput(cuboids
 			, List.of(outputColumnHeight)
 			, notYetReadyMutations
 			, committedMutationCount
 		);
-		_ProcessedGroup crowd = new _ProcessedGroup(committedActionCount
+		TickOutput.EntitiesOutput crowd = new TickOutput.EntitiesOutput(committedActionCount
 			, processedEntities
 		);
-		_CreatureGroup creatures = new _CreatureGroup(false
+		TickOutput.CreaturesOutput creatures = new TickOutput.CreaturesOutput(false
 			, updatedCreatures
 		);
-		_PassiveGroup passives = new _PassiveGroup(false
+		TickOutput.PassivesOutput passives = new TickOutput.PassivesOutput(false
 			, updatedPassives
 		);
-		return new _PartialHandoffData(world
+		return new TickOutput(world
 			, crowd
 			, creatures
 			, passives
@@ -841,7 +841,7 @@ public class TickRunner
 
 	private TickMaterials _mergeTickStateAndWaitForNext(ProcessorElement elt
 			, TickMaterials startingMaterials
-			, _PartialHandoffData perThreadData
+			, TickOutput perThreadData
 	)
 	{
 		// Store whatever work we finished from the just-completed tick.
@@ -857,46 +857,46 @@ public class TickRunner
 			long startMillisPostamble = System.currentTimeMillis();
 			
 			// We will merge together all the per-thread fragments into one master fragment.
-			_PartialHandoffData masterFragment = _mergeAndClearPartialFragments(_partial);
+			TickOutput masterFragment = _mergeAndClearPartialFragments(_partial);
 			
 			Map<Integer, Entity> mutableCrowdState = _extractSnapshotPlayers(masterFragment);
 			Map<Integer, CreatureEntity> mutableCreatureState = _extractSnapshotCreatures(masterFragment);
 			Map<Integer, PassiveEntity> mutablePassiveState = _extractSnapshotPassives(masterFragment);
 			
 			// Verify that nothing is missing in the output.
-			Assert.assertTrue(masterFragment.world.cuboids.size() == startingMaterials.completedCuboids.size());
-			Assert.assertTrue(masterFragment.world.cuboids.size() == startingMaterials.cuboidHeightMaps.size());
+			Assert.assertTrue(masterFragment.world().cuboids().size() == startingMaterials.completedCuboids.size());
+			Assert.assertTrue(masterFragment.world().cuboids().size() == startingMaterials.cuboidHeightMaps.size());
 			Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState = new HashMap<>();
 			Map<CuboidAddress, CuboidHeightMap> nextTickMutableHeightMaps = new HashMap<>();
-			for (_OutputCuboid cuboid : masterFragment.world.cuboids)
+			for (TickOutput.CuboidOutput cuboid : masterFragment.world().cuboids())
 			{
 				// Verify that the output maps to the input.
-				Assert.assertTrue(startingMaterials.completedCuboids.containsKey(cuboid.address));
-				Assert.assertTrue(startingMaterials.cuboidHeightMaps.containsKey(cuboid.address));
+				Assert.assertTrue(startingMaterials.completedCuboids.containsKey(cuboid.address()));
+				Assert.assertTrue(startingMaterials.cuboidHeightMaps.containsKey(cuboid.address()));
 				
-				IReadOnlyCuboidData cuboidToStore = (null != cuboid.updatedCuboidOrNull)
-					? cuboid.updatedCuboidOrNull
-					: cuboid.previousCuboid
+				IReadOnlyCuboidData cuboidToStore = (null != cuboid.updatedCuboidOrNull())
+					? cuboid.updatedCuboidOrNull()
+					: cuboid.previousCuboid()
 				;
-				Object old = mutableWorldState.put(cuboid.address, cuboidToStore);
+				Object old = mutableWorldState.put(cuboid.address(), cuboidToStore);
 				Assert.assertTrue(null == old);
 				
-				CuboidHeightMap heightMapToStore = (null != cuboid.updatedHeightMapOrNull)
-					? cuboid.updatedHeightMapOrNull
-					: cuboid.previousHeightMap
+				CuboidHeightMap heightMapToStore = (null != cuboid.updatedHeightMapOrNull())
+					? cuboid.updatedHeightMapOrNull()
+					: cuboid.previousHeightMap()
 				;
-				old = nextTickMutableHeightMaps.put(cuboid.address, heightMapToStore);
+				old = nextTickMutableHeightMaps.put(cuboid.address(), heightMapToStore);
 				Assert.assertTrue(null == old);
 			}
-			Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = masterFragment.world.columns.stream()
-				.collect(Collectors.toMap((_OutputColumnHeight output) -> output.columnAddress, (_OutputColumnHeight output) -> output.columnHeightMap))
+			Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = masterFragment.world().columns().stream()
+				.collect(Collectors.toMap((TickOutput.ColumnHeightOutput output) -> output.columnAddress(), (TickOutput.ColumnHeightOutput output) -> output.columnHeightMap()))
 			;
 			
 			Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = _extractSnapshotBlockMutations(masterFragment);
 			Map<Integer, List<ScheduledChange>> snapshotEntityMutations = _extractPlayerEntityChanges(masterFragment);
 			Set<Integer> updatedEntities = _extractChangedPlayerEntitiesOnly(masterFragment);
-			List<_OutputBasic<CreatureEntity>> creatureOutput = masterFragment.creatures.creatureOutput;
-			List<_OutputBasic<PassiveEntity>> passiveOutput = masterFragment.passives.passiveOutput;
+			List<TickOutput.BasicOutput<CreatureEntity>> creatureOutput = masterFragment.creatures().creatureOutput();
+			List<TickOutput.BasicOutput<PassiveEntity>> passiveOutput = masterFragment.passives().passiveOutput();
 			
 			// Collect the time stamps for stats.
 			long endMillisPostamble = System.currentTimeMillis();
@@ -1073,14 +1073,14 @@ public class TickRunner
 				
 				// Carry forward the proxy cache from the previous tick unless the corresponding block locations changed or where removed.
 				Set<AbsoluteLocation> changedBlocksInPreviousTick = new HashSet<>();
-				for (_OutputCuboid cuboid : masterFragment.world.cuboids)
+				for (TickOutput.CuboidOutput cuboid : masterFragment.world().cuboids())
 				{
-					for (BlockChangeDescription change : cuboid.blockChanges)
+					for (BlockChangeDescription change : cuboid.blockChanges())
 					{
 						changedBlocksInPreviousTick.add(change.serializedForm().getAbsoluteLocation());
 					}
 				}
-				Map<AbsoluteLocation, BlockProxy> previousProxyCache = masterFragment.populatedProxyCache.entrySet().stream()
+				Map<AbsoluteLocation, BlockProxy> previousProxyCache = masterFragment.populatedProxyCache().entrySet().stream()
 					.filter((Map.Entry<AbsoluteLocation, BlockProxy> ent) -> {
 						AbsoluteLocation location = ent.getKey();
 						boolean shouldDrop = changedBlocksInPreviousTick.contains(location);
@@ -1177,51 +1177,51 @@ public class TickRunner
 		return _thisTickMaterials;
 	}
 
-	private static Map<Integer, Entity> _extractSnapshotPlayers(_PartialHandoffData masterFragment)
+	private static Map<Integer, Entity> _extractSnapshotPlayers(TickOutput masterFragment)
 	{
 		Map<Integer, Entity> mutableCrowdState = new HashMap<>();
-		for (_OutputEntity value : masterFragment.crowd.entityOutput())
+		for (TickOutput.EntityOutput value : masterFragment.entities().entityOutput())
 		{
-			Entity updated = value.updatedEntity;
+			Entity updated = value.updatedEntity();
 			Entity toSnapshot = (null != updated)
 				? updated
-				: value.previousEntity
+				: value.previousEntity()
 			;
-			mutableCrowdState.put(toSnapshot.id(), toSnapshot);
+			mutableCrowdState.put(value.entityId(), toSnapshot);
 		}
 		return mutableCrowdState;
 	}
 
-	private static Map<CuboidAddress, List<ScheduledMutation>> _extractSnapshotBlockMutations(_PartialHandoffData masterFragment)
+	private static Map<CuboidAddress, List<ScheduledMutation>> _extractSnapshotBlockMutations(TickOutput masterFragment)
 	{
 		Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = new HashMap<>();
-		for (ScheduledMutation scheduledMutation : masterFragment.newlyScheduledMutations)
+		for (ScheduledMutation scheduledMutation : masterFragment.newlyScheduledMutations())
 		{
 			_scheduleMutationForCuboid(snapshotBlockMutations, scheduledMutation);
 		}
-		for (ScheduledMutation scheduledMutation : masterFragment.world.notYetReadyMutations())
+		for (ScheduledMutation scheduledMutation : masterFragment.world().notYetReadyMutations())
 		{
 			_scheduleMutationForCuboid(snapshotBlockMutations, scheduledMutation);
 		}
 		return snapshotBlockMutations;
 	}
 
-	private static Map<Integer, CreatureEntity> _extractSnapshotCreatures(_PartialHandoffData masterFragment)
+	private static Map<Integer, CreatureEntity> _extractSnapshotCreatures(TickOutput masterFragment)
 	{
 		Map<Integer, CreatureEntity> mutableCreatureState = new HashMap<>();
-		for (_OutputBasic<CreatureEntity> value : masterFragment.creatures.creatureOutput())
+		for (TickOutput.BasicOutput<CreatureEntity> value : masterFragment.creatures().creatureOutput())
 		{
-			int id = value.id;
-			if (value.didDie)
+			int id = value.id();
+			if (value.didDie())
 			{
 				mutableCreatureState.remove(id);
 			}
 			else
 			{
-				CreatureEntity updated = value.updated;
+				CreatureEntity updated = value.updated();
 				CreatureEntity toSnapshot = (null != updated)
 					? updated
-					: value.previous
+					: value.previous()
 				;
 				mutableCreatureState.put(id, toSnapshot);
 			}
@@ -1234,22 +1234,22 @@ public class TickRunner
 		return mutableCreatureState;
 	}
 
-	private static Map<Integer, PassiveEntity> _extractSnapshotPassives(_PartialHandoffData masterFragment)
+	private static Map<Integer, PassiveEntity> _extractSnapshotPassives(TickOutput masterFragment)
 	{
 		Map<Integer, PassiveEntity> mutablePassiveState = new HashMap<>();
-		for (_OutputBasic<PassiveEntity> value : masterFragment.passives.passiveOutput())
+		for (TickOutput.BasicOutput<PassiveEntity> value : masterFragment.passives().passiveOutput())
 		{
-			int id = value.id;
-			if (value.didDie)
+			int id = value.id();
+			if (value.didDie())
 			{
 				mutablePassiveState.remove(id);
 			}
 			else
 			{
-				PassiveEntity updated = value.updated;
+				PassiveEntity updated = value.updated();
 				PassiveEntity toSnapshot = (null != updated)
 					? updated
-					: value.previous
+					: value.previous()
 				;
 				mutablePassiveState.put(id, toSnapshot);
 			}
@@ -1262,16 +1262,16 @@ public class TickRunner
 		return mutablePassiveState;
 	}
 
-	private static Map<Integer, List<ScheduledChange>> _extractPlayerEntityChanges(_PartialHandoffData masterFragment)
+	private static Map<Integer, List<ScheduledChange>> _extractPlayerEntityChanges(TickOutput masterFragment)
 	{
 		Map<Integer, List<ScheduledChange>> snapshotEntityMutations = new HashMap<>();
 		for (TargetedAction<ScheduledChange> targeted : masterFragment.newlyScheduledChanges())
 		{
 			_scheduleChangesForEntity(snapshotEntityMutations, targeted.targetId(), targeted.action());
 		}
-		for (_OutputEntity value : masterFragment.crowd.entityOutput())
+		for (TickOutput.EntityOutput value : masterFragment.entities().entityOutput())
 		{
-			int key = value.entityId;
+			int key = value.entityId();
 			
 			// We want to schedule anything which wasn't yet ready.
 			for (ScheduledChange change : value.notYetReadyUnsortedActions())
@@ -1282,10 +1282,10 @@ public class TickRunner
 		return snapshotEntityMutations;
 	}
 
-	private static Set<Integer> _extractChangedPlayerEntitiesOnly(_PartialHandoffData masterFragment)
+	private static Set<Integer> _extractChangedPlayerEntitiesOnly(TickOutput masterFragment)
 	{
 		Set<Integer> updatedEntities = new HashSet<>();
-		for (_OutputEntity value : masterFragment.crowd.entityOutput())
+		for (TickOutput.EntityOutput value : masterFragment.entities().entityOutput())
 		{
 			Entity updated = value.updatedEntity();
 			
@@ -1299,7 +1299,7 @@ public class TickRunner
 		return updatedEntities;
 	}
 
-	private static Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> _scheduleNewCreatureActions(_PartialHandoffData masterFragment)
+	private static Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> _scheduleNewCreatureActions(TickOutput masterFragment)
 	{
 		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> nextCreatureChanges = new HashMap<>();
 		for (TargetedAction<IEntityAction<IMutableCreatureEntity>> targeted : masterFragment.newlyScheduledCreatureChanges())
@@ -1309,7 +1309,7 @@ public class TickRunner
 		return nextCreatureChanges;
 	}
 
-	private static Map<Integer, List<IPassiveAction>> _scheduleNewPassiveActions(_PartialHandoffData masterFragment)
+	private static Map<Integer, List<IPassiveAction>> _scheduleNewPassiveActions(TickOutput masterFragment)
 	{
 		Map<Integer, List<IPassiveAction>> nextCreatureChanges = new HashMap<>();
 		for (TargetedAction<IPassiveAction> targeted : masterFragment.newlyScheduledPassiveActions())
@@ -1403,7 +1403,7 @@ public class TickRunner
 		return pendingMutations;
 	}
 
-	private static Map<CuboidAddress, Map<BlockAddress, Long>> _extractPeriodicMutationsFromNewCuboids(List<SuspendedCuboid<IReadOnlyCuboidData>> newCuboids, _PartialHandoffData masterFragment)
+	private static Map<CuboidAddress, Map<BlockAddress, Long>> _extractPeriodicMutationsFromNewCuboids(List<SuspendedCuboid<IReadOnlyCuboidData>> newCuboids, TickOutput masterFragment)
 	{
 		Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutations = new HashMap<>();
 		if (null != newCuboids)
@@ -1425,11 +1425,11 @@ public class TickRunner
 		}
 		// Also add in any periodic mutations from the previous tick.
 		// TODO:  This is duplicated so it should be coalesced elsewhere.
-		for (_OutputCuboid oneCuboid : masterFragment.world.cuboids)
+		for (TickOutput.CuboidOutput oneCuboid : masterFragment.world().cuboids())
 		{
-			if (!oneCuboid.periodicNotReadyMutations.isEmpty())
+			if (!oneCuboid.periodicNotReadyMutations().isEmpty())
 			{
-				periodicMutations.put(oneCuboid.address, oneCuboid.periodicNotReadyMutations);
+				periodicMutations.put(oneCuboid.address(), oneCuboid.periodicNotReadyMutations());
 			}
 		}
 		return periodicMutations;
@@ -1537,59 +1537,59 @@ public class TickRunner
 		return changesToRun;
 	}
 
-	private static Map<CuboidAddress, List<AbsoluteLocation>> _extractBlockUpdateLocations(_PartialHandoffData masterFragment)
+	private static Map<CuboidAddress, List<AbsoluteLocation>> _extractBlockUpdateLocations(TickOutput masterFragment)
 	{
 		// TODO:  This pass is duplicated so we should coalesce this information elsewhere.
 		Map<CuboidAddress, List<AbsoluteLocation>> updatedBlockLocationsByCuboid = new HashMap<>();
-		for (_OutputCuboid oneCuboid : masterFragment.world.cuboids)
+		for (TickOutput.CuboidOutput oneCuboid : masterFragment.world().cuboids())
 		{
-			if (!oneCuboid.blockChanges.isEmpty())
+			if (!oneCuboid.blockChanges().isEmpty())
 			{
 				// Only store the updated block locations if the block change requires it.
-				List<AbsoluteLocation> locations = oneCuboid.blockChanges.stream()
+				List<AbsoluteLocation> locations = oneCuboid.blockChanges().stream()
 					.filter((BlockChangeDescription description) -> description.requiresUpdateEvent())
 					.map(
 						(BlockChangeDescription update) -> update.serializedForm().getAbsoluteLocation()
 					)
 					.toList()
 				;
-				updatedBlockLocationsByCuboid.put(oneCuboid.address, locations);
+				updatedBlockLocationsByCuboid.put(oneCuboid.address(), locations);
 			}
 		}
 		return updatedBlockLocationsByCuboid;
 	}
 
-	private static Map<CuboidAddress, List<AbsoluteLocation>> _extractPotentialLightChanges(_PartialHandoffData masterFragment)
+	private static Map<CuboidAddress, List<AbsoluteLocation>> _extractPotentialLightChanges(TickOutput masterFragment)
 	{
 		// TODO:  This pass is duplicated so we should coalesce this information elsewhere.
 		Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = new HashMap<>();
-		for (_OutputCuboid oneCuboid : masterFragment.world.cuboids)
+		for (TickOutput.CuboidOutput oneCuboid : masterFragment.world().cuboids())
 		{
-			if (!oneCuboid.blockChanges.isEmpty())
+			if (!oneCuboid.blockChanges().isEmpty())
 			{
 				// Only store the updated block locations if the block change requires it.
-				List<AbsoluteLocation> lightChangeLocations = oneCuboid.blockChanges.stream()
+				List<AbsoluteLocation> lightChangeLocations = oneCuboid.blockChanges().stream()
 					.filter((BlockChangeDescription description) -> description.requiresLightingCheck())
 					.map(
 						(BlockChangeDescription update) -> update.serializedForm().getAbsoluteLocation()
 					)
 					.toList()
 				;
-				potentialLightChangesByCuboid.put(oneCuboid.address, lightChangeLocations);
+				potentialLightChangesByCuboid.put(oneCuboid.address(), lightChangeLocations);
 			}
 		}
 		return potentialLightChangesByCuboid;
 	}
 
-	private static Map<CuboidAddress, List<AbsoluteLocation>> _extractPotentialLogicChanges(_PartialHandoffData masterFragment)
+	private static Map<CuboidAddress, List<AbsoluteLocation>> _extractPotentialLogicChanges(TickOutput masterFragment)
 	{
 		// TODO:  This pass is duplicated so we should coalesce this information elsewhere.
 		Set<AbsoluteLocation> potentialLogicChangeSet = new HashSet<>();
-		for (_OutputCuboid oneCuboid : masterFragment.world.cuboids)
+		for (TickOutput.CuboidOutput oneCuboid : masterFragment.world().cuboids())
 		{
 			// Logic changes are more complicated, as they don't usually change within the block, but adjacent
 			// ones (except for conduit changes) so build the set and then split it by cuboid in a later pass.
-			for (BlockChangeDescription change : oneCuboid.blockChanges)
+			for (BlockChangeDescription change : oneCuboid.blockChanges())
 			{
 				byte logicBits = change.logicCheckBits();
 				if (0x0 != logicBits)
@@ -1671,23 +1671,23 @@ public class TickRunner
 		return _snapshot;
 	}
 
-	private static _PartialHandoffData _mergeAndClearPartialFragments(_PartialHandoffData[] partials)
+	private static TickOutput _mergeAndClearPartialFragments(TickOutput[] partials)
 	{
 		// EngineCuboids.ProcessedFragment world
-		List<_OutputCuboid> cuboids = new ArrayList<>();
-		List<_OutputColumnHeight> columns = new ArrayList<>();
+		List<TickOutput.CuboidOutput> cuboids = new ArrayList<>();
+		List<TickOutput.ColumnHeightOutput> columns = new ArrayList<>();
 		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
 		int world_committedMutationCount = 0;
 		
 		// EnginePlayers.ProcessedGroup crowd
 		int players_committedMutationCount = 0;
-		List<_OutputEntity> entityOutput = new ArrayList<>();
+		List<TickOutput.EntityOutput> entityOutput = new ArrayList<>();
 		
 		// EngineCreatures.CreatureGroup creatures
-		List<_OutputBasic<CreatureEntity>> creatureOutput = new ArrayList<>();
+		List<TickOutput.BasicOutput<CreatureEntity>> creatureOutput = new ArrayList<>();
 		
 		// EnginePassives
-		List<_OutputBasic<PassiveEntity>> passiveOutput = new ArrayList<>();
+		List<TickOutput.BasicOutput<PassiveEntity>> passiveOutput = new ArrayList<>();
 		
 		List<CreatureEntity> spawnedCreatures = new ArrayList<>();
 		List<PassiveEntity> spawnedPassives = new ArrayList<>();
@@ -1701,17 +1701,17 @@ public class TickRunner
 		
 		for (int i = 0; i < partials.length; ++i)
 		{
-			_PartialHandoffData fragment = partials[i];
+			TickOutput fragment = partials[i];
 			
 			// EngineCuboids.ProcessedFragment world
-			cuboids.addAll(fragment.world.cuboids);
-			columns.addAll(fragment.world.columns);
-			notYetReadyMutations.addAll(fragment.world.notYetReadyMutations);
+			cuboids.addAll(fragment.world().cuboids());
+			columns.addAll(fragment.world().columns());
+			notYetReadyMutations.addAll(fragment.world().notYetReadyMutations());
 			world_committedMutationCount += fragment.world().committedMutationCount();
 			
 			// EnginePlayers.ProcessedGroup crowd
-			players_committedMutationCount += fragment.crowd().committedMutationCount();
-			entityOutput.addAll(fragment.crowd().entityOutput());
+			players_committedMutationCount += fragment.entities().committedMutationCount();
+			entityOutput.addAll(fragment.entities().entityOutput());
 			
 			// EngineCreatures.CreatureGroup creatures
 			creatureOutput.addAll(fragment.creatures().creatureOutput());
@@ -1731,21 +1731,21 @@ public class TickRunner
 			partials[i] = null;
 		}
 		
-		_ProcessedFragment world = new _ProcessedFragment(cuboids
+		TickOutput.WorldOutput world = new TickOutput.WorldOutput(cuboids
 			, columns
 			, notYetReadyMutations
 			, world_committedMutationCount
 		);
-		_ProcessedGroup crowd = new _ProcessedGroup(players_committedMutationCount
+		TickOutput.EntitiesOutput crowd = new TickOutput.EntitiesOutput(players_committedMutationCount
 			, entityOutput
 		);
-		_CreatureGroup creatures = new _CreatureGroup(false
+		TickOutput.CreaturesOutput creatures = new TickOutput.CreaturesOutput(false
 			, creatureOutput
 		);
-		_PassiveGroup passives = new _PassiveGroup(false
+		TickOutput.PassivesOutput passives = new TickOutput.PassivesOutput(false
 			, passiveOutput
 		);
-		return new _PartialHandoffData(world
+		return new TickOutput(world
 			, crowd
 			, creatures
 			, passives
@@ -1763,7 +1763,7 @@ public class TickRunner
 
 	private static TickSnapshot _buildSnapshot(long tickNumber
 		, TickMaterials startingMaterials
-		, _PartialHandoffData masterFragment
+		, TickOutput masterFragment
 		, Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState
 		, Map<Integer, Entity> mutableCrowdState
 		, Map<Integer, CreatureEntity> mutableCreatureState
@@ -1772,8 +1772,8 @@ public class TickRunner
 		, Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations
 		, Map<Integer, List<ScheduledChange>> snapshotEntityMutations
 		, Set<Integer> updatedEntities
-		, List<_OutputBasic<CreatureEntity>> creatureOutput
-		, List<_OutputBasic<PassiveEntity>> passiveOutput
+		, List<TickOutput.BasicOutput<CreatureEntity>> creatureOutput
+		, List<TickOutput.BasicOutput<PassiveEntity>> passiveOutput
 		, ProcessorElement.PerThreadStats[] threadStats
 		, long millisTickParallelPhase
 		, long millisTickPostamble
@@ -1781,19 +1781,19 @@ public class TickRunner
 	{
 		Map<CuboidAddress, List<MutationBlockSetBlock>> resultantBlockChangesByCuboid = new HashMap<>();
 		Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyMillisByCuboid = new HashMap<>();
-		for (_OutputCuboid oneCuboid : masterFragment.world.cuboids)
+		for (TickOutput.CuboidOutput oneCuboid : masterFragment.world().cuboids())
 		{
-			if (!oneCuboid.blockChanges.isEmpty())
+			if (!oneCuboid.blockChanges().isEmpty())
 			{
-				List<MutationBlockSetBlock> list = oneCuboid.blockChanges.stream()
+				List<MutationBlockSetBlock> list = oneCuboid.blockChanges().stream()
 					.map((BlockChangeDescription description) -> description.serializedForm())
 					.toList()
 				;
-				resultantBlockChangesByCuboid.put(oneCuboid.address, list);
+				resultantBlockChangesByCuboid.put(oneCuboid.address(), list);
 			}
-			if (!oneCuboid.periodicNotReadyMutations.isEmpty())
+			if (!oneCuboid.periodicNotReadyMutations().isEmpty())
 			{
-				periodicNotReadyMillisByCuboid.put(oneCuboid.address, oneCuboid.periodicNotReadyMutations);
+				periodicNotReadyMillisByCuboid.put(oneCuboid.address(), oneCuboid.periodicNotReadyMutations());
 			}
 		}
 		Map<CuboidAddress, TickSnapshot.SnapshotCuboid> cuboids = new HashMap<>();
@@ -1851,8 +1851,8 @@ public class TickRunner
 		}
 		Map<Integer, TickSnapshot.SnapshotCreature> creatures = new HashMap<>();
 		Set<Integer> updatedCreatures = creatureOutput.stream()
-			.filter((_OutputBasic<CreatureEntity> creature) -> (null != creature.updated))
-			.map((_OutputBasic<CreatureEntity> creature) -> creature.updated.id())
+			.filter((TickOutput.BasicOutput<CreatureEntity> creature) -> (null != creature.updated()))
+			.map((TickOutput.BasicOutput<CreatureEntity> creature) -> creature.updated().id())
 			.collect(Collectors.toSet())
 		;
 		for (Map.Entry<Integer, CreatureEntity>  ent : mutableCreatureState.entrySet())
@@ -1873,8 +1873,8 @@ public class TickRunner
 		}
 		Map<Integer, TickSnapshot.SnapshotPassive> passives = new HashMap<>();
 		Set<Integer> updatedPassives = passiveOutput.stream()
-			.filter((_OutputBasic<PassiveEntity> passive) -> (null != passive.updated))
-			.map((_OutputBasic<PassiveEntity> passive) -> passive.updated.id())
+			.filter((TickOutput.BasicOutput<PassiveEntity> passive) -> (null != passive.updated()))
+			.map((TickOutput.BasicOutput<PassiveEntity> passive) -> passive.updated().id())
 			.collect(Collectors.toSet())
 		;
 		for (Map.Entry<Integer, PassiveEntity>  ent : mutablePassiveState.entrySet())
@@ -1903,9 +1903,9 @@ public class TickRunner
 			, completedHeightMaps
 			
 			// postedEvents
-			, masterFragment.postedEvents
+			, masterFragment.postedEvents()
 			// internallyMarkedAlive
-			, masterFragment.internallyMarkedAlive
+			, masterFragment.internallyMarkedAlive()
 			
 			// Stats.
 			, new TickSnapshot.TickStats(tickNumber
@@ -1913,8 +1913,8 @@ public class TickRunner
 				, millisTickParallelPhase
 				, millisTickPostamble
 				, threadStats
-				, masterFragment.crowd.committedMutationCount()
-				, masterFragment.world.committedMutationCount()
+				, masterFragment.entities().committedMutationCount()
+				, masterFragment.world().committedMutationCount()
 			)
 		);
 		return completedTick;
@@ -2139,70 +2139,4 @@ public class TickRunner
 	 * A wrapper over the IMutationEntity with associated entity ID.
 	 */
 	private static record _OperatorMutationWrapper(int entityId, IEntityAction<IMutablePlayerEntity> mutation) {}
-
-	/**
-	 * A wrapper over the per-thread partial data which we hand-off at synchronization.
-	 */
-	private static record _PartialHandoffData(_ProcessedFragment world
-		, _ProcessedGroup crowd
-		, _CreatureGroup creatures
-		, _PassiveGroup passives
-		, List<CreatureEntity> spawnedCreatures
-		, List<PassiveEntity> spawnedPassives
-		, List<ScheduledMutation> newlyScheduledMutations
-		, List<TargetedAction<ScheduledChange>> newlyScheduledChanges
-		, List<TargetedAction<IEntityAction<IMutableCreatureEntity>>> newlyScheduledCreatureChanges
-		, List<TargetedAction<IPassiveAction>> newlyScheduledPassiveActions
-		, List<EventRecord> postedEvents
-		, Set<CuboidAddress> internallyMarkedAlive
-		, Map<AbsoluteLocation, BlockProxy> populatedProxyCache
-	) {}
-
-	private static record _CreatureGroup(boolean ignored
-		, List<_OutputBasic<CreatureEntity>> creatureOutput
-	) {}
-
-	private static record _PassiveGroup(boolean ignored
-		, List<_OutputBasic<PassiveEntity>> passiveOutput
-	) {}
-
-	private static record _OutputBasic<T>(int id
-		, T previous
-		// The updated will be null if it didn't change or died.
-		, T updated
-		, boolean didDie
-	) {}
-
-	private static record _ProcessedGroup(int committedMutationCount
-		// This list contains every entity which was found through an _InputEntity, even if there were no changes.
-		, List<_OutputEntity> entityOutput
-	) {}
-
-	private static record _OutputEntity(int entityId
-		// The entity from the previous tick.
-		, Entity previousEntity
-		// The updated entity from this tick (null if not changed).
-		, Entity updatedEntity
-		// The changes which were not ready to run in this tick (could be empty but never null).
-		, List<ScheduledChange> notYetReadyUnsortedActions
-	) {}
-
-	private static record _ProcessedFragment(List<_OutputCuboid> cuboids
-		, List<_OutputColumnHeight> columns
-		, List<ScheduledMutation> notYetReadyMutations
-		, int committedMutationCount
-	) {}
-
-	private static record _OutputCuboid(CuboidAddress address
-		, IReadOnlyCuboidData previousCuboid
-		, IReadOnlyCuboidData updatedCuboidOrNull
-		, CuboidHeightMap previousHeightMap
-		, CuboidHeightMap updatedHeightMapOrNull
-		, Map<BlockAddress, Long> periodicNotReadyMutations
-		, List<BlockChangeDescription> blockChanges
-	) {}
-
-	public static record _OutputColumnHeight(CuboidColumnAddress columnAddress
-		, ColumnHeightMap columnHeightMap
-	) {}
 }
