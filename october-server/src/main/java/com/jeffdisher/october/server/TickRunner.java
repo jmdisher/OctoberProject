@@ -860,9 +860,9 @@ public class TickRunner
 			// We will merge together all the per-thread fragments into one master fragment.
 			_PartialHandoffData masterFragment = _mergeAndClearPartialFragments(_partial);
 			
-			Map<Integer, Entity> mutableCrowdState = _extractSnapshotPlayers(startingMaterials, masterFragment);
-			Map<Integer, CreatureEntity> mutableCreatureState = _extractSnapshotCreatures(startingMaterials, masterFragment);
-			Map<Integer, PassiveEntity> mutablePassiveState = _extractSnapshotPassives(startingMaterials, masterFragment);
+			Map<Integer, Entity> mutableCrowdState = _extractSnapshotPlayers(masterFragment);
+			Map<Integer, CreatureEntity> mutableCreatureState = _extractSnapshotCreatures(masterFragment);
+			Map<Integer, PassiveEntity> mutablePassiveState = _extractSnapshotPassives(masterFragment);
 			
 			// Verify that nothing is missing in the output.
 			Assert.assertTrue(masterFragment.world.cuboids.size() == startingMaterials.completedCuboids.size());
@@ -1178,11 +1178,9 @@ public class TickRunner
 		return _thisTickMaterials;
 	}
 
-	private static Map<Integer, Entity> _extractSnapshotPlayers(TickMaterials startingMaterials, _PartialHandoffData masterFragment)
+	private static Map<Integer, Entity> _extractSnapshotPlayers(_PartialHandoffData masterFragment)
 	{
-		Assert.assertTrue(masterFragment.crowd.entityOutput().size() == startingMaterials.completedEntities.size());
-		// TODO:  Change how we populate work items so that we don't need to start with completedEntities?
-		Map<Integer, Entity> mutableCrowdState = new HashMap<>(startingMaterials.completedEntities);
+		Map<Integer, Entity> mutableCrowdState = new HashMap<>();
 		for (_OutputEntity value : masterFragment.crowd.entityOutput())
 		{
 			Entity updated = value.updatedEntity;
@@ -1209,10 +1207,9 @@ public class TickRunner
 		return snapshotBlockMutations;
 	}
 
-	private static Map<Integer, CreatureEntity> _extractSnapshotCreatures(TickMaterials startingMaterials, _PartialHandoffData masterFragment)
+	private static Map<Integer, CreatureEntity> _extractSnapshotCreatures(_PartialHandoffData masterFragment)
 	{
-		// TODO:  Change how we populate work items so that we don't need to start with completedCreatures?
-		Map<Integer, CreatureEntity> mutableCreatureState = new HashMap<>(startingMaterials.completedCreatures);
+		Map<Integer, CreatureEntity> mutableCreatureState = new HashMap<>();
 		for (_OutputBasic<CreatureEntity> value : masterFragment.creatures.creatureOutput())
 		{
 			int id = value.id;
@@ -1238,10 +1235,9 @@ public class TickRunner
 		return mutableCreatureState;
 	}
 
-	private static Map<Integer, PassiveEntity> _extractSnapshotPassives(TickMaterials startingMaterials, _PartialHandoffData masterFragment)
+	private static Map<Integer, PassiveEntity> _extractSnapshotPassives(_PartialHandoffData masterFragment)
 	{
-		// TODO:  Change how we populate work items so that we don't need to start with completedPassives?
-		Map<Integer, PassiveEntity> mutablePassiveState = new HashMap<>(startingMaterials.completedPassives);
+		Map<Integer, PassiveEntity> mutablePassiveState = new HashMap<>();
 		for (_OutputBasic<PassiveEntity> value : masterFragment.passives.passiveOutput())
 		{
 			int id = value.id;
