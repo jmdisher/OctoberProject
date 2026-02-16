@@ -596,18 +596,18 @@ public class TickRunner
 	{
 		// TODO:  Replace this collection technique and return value with something more appropriate as this re-write progresses.
 		List<_PartialHandoffData> partials = new ArrayList<>();
-		_HighLevelPlan highLevel = materials.highLevel;
+		TickInput highLevel = materials.highLevel;
 		
 		// We will have a thread repackage anything which spilled.
 		if (thisThread.handleNextWorkUnit())
 		{
-			if (!highLevel.entitiesInUnloadedCuboids.isEmpty())
+			if (!highLevel.entitiesInUnloadedCuboids().isEmpty())
 			{
 				List<_OutputEntity> repackaged = new ArrayList<>();
-				for (_EntityWorkUnit input : highLevel.entitiesInUnloadedCuboids)
+				for (TickInput.EntityInput input : highLevel.entitiesInUnloadedCuboids())
 				{
 					// We set this to null output entity since that means it was unchanged.
-					_OutputEntity output = new _OutputEntity(input.entity.id(), input.entity, null, input.unsortedActions);
+					_OutputEntity output = new _OutputEntity(input.entity().id(), input.entity(), null, input.unsortedActions());
 					repackaged.add(output);
 				}
 				_ProcessedGroup spilledGroup = new _ProcessedGroup(0, repackaged);
@@ -630,7 +630,7 @@ public class TickRunner
 			}
 		}
 		
-		for (_CommonWorkUnit unit : highLevel.common)
+		for (TickInput.ColumnInput unit : highLevel.columns())
 		{
 			if (thisThread.handleNextWorkUnit())
 			{
@@ -645,7 +645,7 @@ public class TickRunner
 	private static _PartialHandoffData _processWorkUnit(ProcessorElement processor
 		, TickMaterials materials
 		, TickProcessingContext context
-		, _CommonWorkUnit unit
+		, TickInput.ColumnInput unit
 	)
 	{
 		// Collect data for _ProcessedFragment.
@@ -667,12 +667,12 @@ public class TickRunner
 		processor.workUnitsProcessed += 1;
 		Set<CuboidAddress> loadedCuboids = materials.completedCuboids.keySet();
 		Map<CuboidAddress, CuboidHeightMap> existingAndUpdatedCuboidHeightMaps = new HashMap<>();
-		for (_CuboidWorkUnit subUnit : unit.cuboids)
+		for (TickInput.CuboidInput subUnit : unit.cuboids())
 		{
 			// This is our element.
 			processor.cuboidsProcessed += 1;
-			IReadOnlyCuboidData previousCuboid = subUnit.cuboid;
-			CuboidHeightMap previousHeightMap = subUnit.cuboidHeightMap;
+			IReadOnlyCuboidData previousCuboid = subUnit.cuboid();
+			CuboidHeightMap previousHeightMap = subUnit.cuboidHeightMap();
 			CuboidAddress cuboidAddress = previousCuboid.getCuboidAddress();
 			
 			// We can't be told to operate on something which isn't in the state.
@@ -682,8 +682,8 @@ public class TickRunner
 			long startCuboidNanos = System.nanoTime();
 			EngineCuboids.SingleCuboidResult cuboidResult = EngineCuboids.processOneCuboid(context
 				, loadedCuboids
-				, subUnit.mutations
-				, subUnit.periodicMutationMillis
+				, subUnit.mutations()
+				, subUnit.periodicMutationMillis()
 				, materials.modifiedBlocksByCuboidAddress
 				, materials.potentialLightChangesByCuboid
 				, materials.potentialLogicChangesByCuboid
@@ -734,10 +734,10 @@ public class TickRunner
 			committedMutationCount += cuboidResult.blockUpdatesApplied() + cuboidResult.mutationsApplied();
 			
 			// Process the player entities in this cuboid.
-			for (_EntityWorkUnit entityUnit : subUnit.entities)
+			for (TickInput.EntityInput entityUnit : subUnit.entities())
 			{
-				Entity entity = entityUnit.entity;
-				List<ScheduledChange> changes = entityUnit.unsortedActions;
+				Entity entity = entityUnit.entity();
+				List<ScheduledChange> changes = entityUnit.unsortedActions();
 				processor.playersProcessed += 1;
 				
 				EnginePlayers.SinglePlayerResult result = EnginePlayers.processOnePlayer(context
@@ -753,10 +753,10 @@ public class TickRunner
 			processor.nanosInEnginePlayers += (endPlayerNanos - endCuboidNanos);
 			
 			// Process the creature entities in this cuboid.
-			for (_CreatureWorkUnit creatureUnit : subUnit.creatures)
+			for (TickInput.CreatureInput creatureUnit : subUnit.creatures())
 			{
-				CreatureEntity creature = creatureUnit.creature;
-				List<IEntityAction<IMutableCreatureEntity>> changes = creatureUnit.actions;
+				CreatureEntity creature = creatureUnit.creature();
+				List<IEntityAction<IMutableCreatureEntity>> changes = creatureUnit.actions();
 				processor.creaturesProcessed += 1;
 				processor.creatureActionsProcessed += changes.size();
 				EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
@@ -782,10 +782,10 @@ public class TickRunner
 			processor.nanosInEngineCreatures += (endCreatureNanos - endPlayerNanos);
 			
 			// Process the passive entities in this cuboid.
-			for (_PassiveWorkUnit passiveUnit : subUnit.passives)
+			for (TickInput.PassiveInput passiveUnit : subUnit.passives())
 			{
-				PassiveEntity passive = passiveUnit.passive;
-				List<IPassiveAction> actions = passiveUnit.actions;
+				PassiveEntity passive = passiveUnit.passive();
+				List<IPassiveAction> actions = passiveUnit.actions();
 				processor.passivesProcessed += 1;
 				processor.passiveActionsProcessed += actions.size();
 				PassiveEntity result = EnginePassives.processOneCreature(context, materials.entityCollection, passive, actions);
@@ -805,7 +805,7 @@ public class TickRunner
 		
 		// We can now merge the height maps since each _CommonWorkUnit is a full column.
 		ColumnHeightMap columnHeightMap = HeightMapHelpers.buildSingleColumn(existingAndUpdatedCuboidHeightMaps);
-		_OutputColumnHeight outputColumnHeight = new _OutputColumnHeight(unit.columnAddress
+		_OutputColumnHeight outputColumnHeight = new _OutputColumnHeight(unit.columnAddress()
 			, columnHeightMap
 		);
 		
@@ -1112,7 +1112,7 @@ public class TickRunner
 				}
 				
 				// Convert this raw next tick action accumulation into the CrowdProcessor input.
-				Map<Integer, _EntityWorkUnit> changesToRun = _determineChangesToRun(mutableCrowdState, nextTickChanges);
+				Map<Integer, TickInput.EntityInput> changesToRun = _determineChangesToRun(mutableCrowdState, nextTickChanges);
 				
 				// We want to build the arrangement of blocks modified in the last tick so that block updates can be synthesized.
 				Map<CuboidAddress, List<AbsoluteLocation>> updatedBlockLocationsByCuboid = _extractBlockUpdateLocations( masterFragment);
@@ -1122,7 +1122,7 @@ public class TickRunner
 				// WARNING:  completedHeightMaps does NOT include the new height maps loaded after the previous tick finished!
 				// (this is done to avoid the cost of rebuilding the maps since the column height maps are not guaranteed to be fully accurate)
 				EntityCollection entityCollection = EntityCollection.fromMaps(mutableCrowdState, mutableCreatureState);
-				_HighLevelPlan highLevelPlan = _packageHighLevelWorkUnits(mutableWorldState
+				TickInput highLevelPlan = _packageHighLevelWorkUnits(mutableWorldState
 					, nextTickMutableHeightMaps
 					, mutableCrowdState
 					, changesToRun
@@ -1512,9 +1512,9 @@ public class TickRunner
 		return nextTickChanges;
 	}
 
-	private static Map<Integer, _EntityWorkUnit> _determineChangesToRun(Map<Integer, Entity> mutableCrowdState, Map<Integer, List<ScheduledChange>> nextTickChanges)
+	private static Map<Integer, TickInput.EntityInput> _determineChangesToRun(Map<Integer, Entity> mutableCrowdState, Map<Integer, List<ScheduledChange>> nextTickChanges)
 	{
-		Map<Integer, _EntityWorkUnit> changesToRun = new HashMap<>();
+		Map<Integer, TickInput.EntityInput> changesToRun = new HashMap<>();
 		// We shouldn't have put operator changes into this common map.
 		Assert.assertTrue(!nextTickChanges.containsKey(EnginePlayers.OPERATOR_ENTITY_ID));
 		for (Map.Entry<Integer, List<ScheduledChange>> oneEntity : nextTickChanges.entrySet())
@@ -1526,7 +1526,7 @@ public class TickRunner
 				List<ScheduledChange> list = oneEntity.getValue();
 				// If this is in the map, it can't be empty.
 				Assert.assertTrue(!list.isEmpty());
-				_EntityWorkUnit input = new _EntityWorkUnit(entity, Collections.unmodifiableList(list));
+				TickInput.EntityInput input = new TickInput.EntityInput(entity, Collections.unmodifiableList(list));
 				changesToRun.put(id, input);
 			}
 			else
@@ -1920,10 +1920,10 @@ public class TickRunner
 		return completedTick;
 	}
 
-	private static _HighLevelPlan _packageHighLevelWorkUnits(Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
+	private static TickInput _packageHighLevelWorkUnits(Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
 		, Map<CuboidAddress, CuboidHeightMap> cuboidHeightMaps
 		, Map<Integer, Entity> completedEntities
-		, Map<Integer, _EntityWorkUnit> entitiesWithWork
+		, Map<Integer, TickInput.EntityInput> entitiesWithWork
 		, Map<Integer, CreatureEntity> completedCreatures
 		, Map<Integer, PassiveEntity> completedPassives
 		, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
@@ -1932,15 +1932,15 @@ public class TickRunner
 		, Map<Integer, List<IPassiveAction>> passiveActions
 	)
 	{
-		List<_EntityWorkUnit> entitiesInUnloadedCuboids = new ArrayList<>();
-		Map<CuboidAddress, List<_EntityWorkUnit>> workingEntityList = new HashMap<>();
+		List<TickInput.EntityInput> entitiesInUnloadedCuboids = new ArrayList<>();
+		Map<CuboidAddress, List<TickInput.EntityInput>> workingEntityList = new HashMap<>();
 		for (Entity entity : completedEntities.values())
 		{
 			// We want to see a work unit for every entity, so that the entire system is captured in the plan.
-			_EntityWorkUnit workUnit = entitiesWithWork.get(entity.id());
+			TickInput.EntityInput workUnit = entitiesWithWork.get(entity.id());
 			if (null == workUnit)
 			{
-				workUnit = new _EntityWorkUnit(entity, List.of());
+				workUnit = new TickInput.EntityInput(entity, List.of());
 			}
 			CuboidAddress thisAddress = entity.location().getBlockLocation().getCuboidAddress();
 			if (completedCuboids.containsKey(thisAddress))
@@ -1949,7 +1949,7 @@ public class TickRunner
 				{
 					workingEntityList.put(thisAddress, new ArrayList<>());
 				}
-				List<_EntityWorkUnit> list = workingEntityList.get(thisAddress);
+				List<TickInput.EntityInput> list = workingEntityList.get(thisAddress);
 				list.add(workUnit);
 			}
 			else
@@ -1959,7 +1959,7 @@ public class TickRunner
 				entitiesInUnloadedCuboids.add(workUnit);
 			}
 		}
-		Map<CuboidAddress, List<_CreatureWorkUnit>> workingCreatureList = new HashMap<>();
+		Map<CuboidAddress, List<TickInput.CreatureInput>> workingCreatureList = new HashMap<>();
 		for (CreatureEntity entity : completedCreatures.values())
 		{
 			CuboidAddress thisAddress = entity.location().getBlockLocation().getCuboidAddress();
@@ -1975,13 +1975,13 @@ public class TickRunner
 			{
 				actions = List.of();
 			}
-			_CreatureWorkUnit unit = new _CreatureWorkUnit(entity
+			TickInput.CreatureInput unit = new TickInput.CreatureInput(entity
 				, actions
 			);
-			List<_CreatureWorkUnit> list = workingCreatureList.get(thisAddress);
+			List<TickInput.CreatureInput> list = workingCreatureList.get(thisAddress);
 			list.add(unit);
 		}
-		Map<CuboidAddress, List<_PassiveWorkUnit>> workingPassiveList = new HashMap<>();
+		Map<CuboidAddress, List<TickInput.PassiveInput>> workingPassiveList = new HashMap<>();
 		for (PassiveEntity entity : completedPassives.values())
 		{
 			CuboidAddress thisAddress = entity.location().getBlockLocation().getCuboidAddress();
@@ -1997,14 +1997,14 @@ public class TickRunner
 			{
 				actions = List.of();
 			}
-			_PassiveWorkUnit unit = new _PassiveWorkUnit(entity
+			TickInput.PassiveInput unit = new TickInput.PassiveInput(entity
 				, actions
 			);
-			List<_PassiveWorkUnit> list = workingPassiveList.get(thisAddress);
+			List<TickInput.PassiveInput> list = workingPassiveList.get(thisAddress);
 			list.add(unit);
 		}
 		
-		Map<CuboidColumnAddress, List<_CuboidWorkUnit>> workingWorkList = new HashMap<>();
+		Map<CuboidColumnAddress, List<TickInput.CuboidInput>> workingWorkList = new HashMap<>();
 		for (CuboidAddress address : completedCuboids.keySet())
 		{
 			IReadOnlyCuboidData cuboid = completedCuboids.get(address);
@@ -2019,22 +2019,22 @@ public class TickRunner
 			{
 				periodic = Map.of();
 			}
-			List<_EntityWorkUnit> entityList = workingEntityList.get(address);
+			List<TickInput.EntityInput> entityList = workingEntityList.get(address);
 			if (null == entityList)
 			{
 				entityList = List.of();
 			}
-			List<_CreatureWorkUnit> creatures = workingCreatureList.get(address);
+			List<TickInput.CreatureInput> creatures = workingCreatureList.get(address);
 			if (null == creatures)
 			{
 				creatures = List.of();
 			}
-			List<_PassiveWorkUnit> passives = workingPassiveList.get(address);
+			List<TickInput.PassiveInput> passives = workingPassiveList.get(address);
 			if (null == passives)
 			{
 				passives = List.of();
 			}
-			_CuboidWorkUnit unit = new _CuboidWorkUnit(cuboid
+			TickInput.CuboidInput unit = new TickInput.CuboidInput(cuboid
 				, cuboidHeightMap
 				, Collections.unmodifiableList(mutations)
 				, Collections.unmodifiableMap(periodic)
@@ -2048,14 +2048,14 @@ public class TickRunner
 			{
 				workingWorkList.put(column, new ArrayList<>());
 			}
-			List<_CuboidWorkUnit> list = workingWorkList.get(column);
+			List<TickInput.CuboidInput> list = workingWorkList.get(column);
 			list.add(unit);
 		}
 		
-		List<_CommonWorkUnit> result = new ArrayList<>();
+		List<TickInput.ColumnInput> result = new ArrayList<>();
 		for (CuboidColumnAddress column : workingWorkList.keySet())
 		{
-			List<_CuboidWorkUnit> list = workingWorkList.get(column);
+			List<TickInput.CuboidInput> list = workingWorkList.get(column);
 			if (null == list)
 			{
 				list = List.of();
@@ -2066,17 +2066,17 @@ public class TickRunner
 			// +1 for each creature in the cuboid (since they may have actions or other AI work to do)
 			// +1 for each entity in the cuboid (since there may be actions from players)
 			int priorityHint = list.stream().mapToInt(
-				(_CuboidWorkUnit inner) -> 1 + inner.mutations.size() + inner.creatures.size() + inner.entities.size()
+				(TickInput.CuboidInput inner) -> 1 + inner.mutations().size() + inner.creatures().size() + inner.entities().size()
 			).sum();
-			_CommonWorkUnit unit = new _CommonWorkUnit(column
+			TickInput.ColumnInput unit = new TickInput.ColumnInput(column
 				, Collections.unmodifiableList(list)
 				, priorityHint
 			);
 			result.add(unit);
 		}
 		// Now sort by priority list (descending on priorityHint).
-		result.sort((_CommonWorkUnit one, _CommonWorkUnit two) -> two.priorityHint - one.priorityHint);
-		return new _HighLevelPlan(Collections.unmodifiableList(result)
+		result.sort((TickInput.ColumnInput one, TickInput.ColumnInput two) -> two.priorityHint() - one.priorityHint());
+		return new TickInput(Collections.unmodifiableList(result)
 			, Collections.unmodifiableList(entitiesInUnloadedCuboids)
 		);
 	}
@@ -2111,7 +2111,7 @@ public class TickRunner
 			
 			// Higher-level data associated with the materials.
 			, EntityCollection entityCollection
-			, _HighLevelPlan highLevel
+			, TickInput highLevel
 			
 			// Data related to internal statistics to be passed back at the end of the tick.
 			, long millisInTickPreamble
@@ -2204,36 +2204,5 @@ public class TickRunner
 
 	public static record _OutputColumnHeight(CuboidColumnAddress columnAddress
 		, ColumnHeightMap columnHeightMap
-	) {}
-
-	private static record _HighLevelPlan(List<_CommonWorkUnit> common
-		// When players have joined, but their underlying cuboids haven't yet loaded, we skip processing them.
-		, List<_EntityWorkUnit> entitiesInUnloadedCuboids
-	) {}
-
-	private static record _CommonWorkUnit(CuboidColumnAddress columnAddress
-		, List<_CuboidWorkUnit> cuboids
-		, int priorityHint
-	) {}
-
-	private static record _CuboidWorkUnit(IReadOnlyCuboidData cuboid
-		, CuboidHeightMap cuboidHeightMap
-		, List<ScheduledMutation> mutations
-		, Map<BlockAddress, Long> periodicMutationMillis
-		, List<_EntityWorkUnit> entities
-		, List<_CreatureWorkUnit> creatures
-		, List<_PassiveWorkUnit> passives
-	) {}
-
-	private static record _EntityWorkUnit(Entity entity
-		, List<ScheduledChange> unsortedActions
-	) {}
-
-	private static record _CreatureWorkUnit(CreatureEntity creature
-		, List<IEntityAction<IMutableCreatureEntity>> actions
-	) {}
-
-	private static record _PassiveWorkUnit(PassiveEntity passive
-		, List<IPassiveAction> actions
 	) {}
 }
