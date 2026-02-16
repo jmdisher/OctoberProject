@@ -1125,6 +1125,7 @@ public class TickRunner
 				EntityCollection entityCollection = EntityCollection.fromMaps(mutableCrowdState, mutableCreatureState);
 				_HighLevelPlan highLevelPlan = _packageHighLevelWorkUnits(mutableWorldState
 					, nextTickMutableHeightMaps
+					, mutableCrowdState
 					, changesToRun
 					, mutableCreatureState
 					, mutablePassiveState
@@ -1179,6 +1180,7 @@ public class TickRunner
 
 	private static Map<Integer, Entity> _extractSnapshotPlayers(TickMaterials startingMaterials, _PartialHandoffData masterFragment)
 	{
+		Assert.assertTrue(masterFragment.crowd.entityOutput().size() == startingMaterials.completedEntities.size());
 		// TODO:  Change how we populate work items so that we don't need to start with completedEntities?
 		Map<Integer, Entity> mutableCrowdState = new HashMap<>(startingMaterials.completedEntities);
 		for (_OutputEntity value : masterFragment.crowd.entityOutput())
@@ -1925,7 +1927,8 @@ public class TickRunner
 
 	private static _HighLevelPlan _packageHighLevelWorkUnits(Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
 		, Map<CuboidAddress, CuboidHeightMap> cuboidHeightMaps
-		, Map<Integer, _EntityWorkUnit> entities
+		, Map<Integer, Entity> completedEntities
+		, Map<Integer, _EntityWorkUnit> entitiesWithWork
 		, Map<Integer, CreatureEntity> completedCreatures
 		, Map<Integer, PassiveEntity> completedPassives
 		, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
@@ -1936,27 +1939,29 @@ public class TickRunner
 	{
 		List<_EntityWorkUnit> entitiesInUnloadedCuboids = new ArrayList<>();
 		Map<CuboidAddress, List<_EntityWorkUnit>> workingEntityList = new HashMap<>();
-		for (_EntityWorkUnit entity : entities.values())
+		for (Entity entity : completedEntities.values())
 		{
-			CuboidAddress thisAddress = entity.entity.location().getBlockLocation().getCuboidAddress();
+			// We want to see a work unit for every entity, so that the entire system is captured in the plan.
+			_EntityWorkUnit workUnit = entitiesWithWork.get(entity.id());
+			if (null == workUnit)
+			{
+				workUnit = new _EntityWorkUnit(entity, List.of());
+			}
+			CuboidAddress thisAddress = entity.location().getBlockLocation().getCuboidAddress();
 			if (completedCuboids.containsKey(thisAddress))
 			{
-				List<ScheduledChange> scheduledChanges = entity.unsortedActions;
 				if (!workingEntityList.containsKey(thisAddress))
 				{
 					workingEntityList.put(thisAddress, new ArrayList<>());
 				}
-				_EntityWorkUnit unit = new _EntityWorkUnit(entity.entity
-					, scheduledChanges
-				);
 				List<_EntityWorkUnit> list = workingEntityList.get(thisAddress);
-				list.add(unit);
+				list.add(workUnit);
 			}
 			else
 			{
 				// This cuboid isn't loaded so spill it to the next tick.
 				// This is usually due to load ordering (an entity might be created before its cuboid is loaded - thus dropping the creation of its periodic mutation).
-				entitiesInUnloadedCuboids.add(entity);
+				entitiesInUnloadedCuboids.add(workUnit);
 			}
 		}
 		Map<CuboidAddress, List<_CreatureWorkUnit>> workingCreatureList = new HashMap<>();
