@@ -1,6 +1,5 @@
-package com.jeffdisher.october.server;
+package com.jeffdisher.october.ticks;
 
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -92,11 +91,11 @@ public class TickRunner
 	private final CreatureIdAssigner _idAssigner;
 	private final PassiveIdAssigner _passiveIdAssigner;
 	private final IntUnaryOperator _random;
-	private final Consumer<Snapshot> _tickCompletionListener;
+	private final Consumer<TickSnapshot> _tickCompletionListener;
 	private final WorldConfig _config;
 
 	// Read-only snapshot of the previously-completed tick.
-	private Snapshot _snapshot;
+	private TickSnapshot _snapshot;
 	
 	// Data which is part of "shared state" between external threads and the internal threads.
 	private List<SuspendedCuboid<IReadOnlyCuboidData>> _newCuboids;
@@ -131,7 +130,7 @@ public class TickRunner
 			, CreatureIdAssigner idAssigner
 			, PassiveIdAssigner passiveIdAssigner
 			, IntUnaryOperator randomInt
-			, Consumer<Snapshot> tickCompletionListener
+			, Consumer<TickSnapshot> tickCompletionListener
 			, WorldConfig config
 	)
 	{
@@ -167,28 +166,28 @@ public class TickRunner
 	{
 		Assert.assertTrue(null == _snapshot);
 		// Initial snapshot is tick "0".
-		_snapshot = new Snapshot(0L
-				, Collections.emptyMap()
-				, Collections.emptyMap()
-				, Collections.emptyMap()
-				
-				, Collections.emptyMap()
-				, Collections.emptyMap()
-				
-				// postedEvents
-				, List.of()
-				// internallyMarkedAlive
-				, Set.of()
-				
-				// Information related to tick behaviour and performance statistics.
-				, new TickStats(0L
-						, 0L
-						, 0L
-						, 0L
-						, null
-						, 0
-						, 0
-				)
+		_snapshot = new TickSnapshot(0L
+			, Collections.emptyMap()
+			, Collections.emptyMap()
+			, Collections.emptyMap()
+			
+			, Collections.emptyMap()
+			, Collections.emptyMap()
+			
+			// postedEvents
+			, List.of()
+			// internallyMarkedAlive
+			, Set.of()
+			
+			// Information related to tick behaviour and performance statistics.
+			, new TickSnapshot.TickStats(0L
+				, 0L
+				, 0L
+				, 0L
+				, null
+				, 0
+				, 0
+			)
 		);
 		for (Thread thread : _threads)
 		{
@@ -201,7 +200,7 @@ public class TickRunner
 	 * returning.
 	 * @return Returns the snapshot of the now-completed tick.
 	 */
-	public synchronized Snapshot waitForPreviousTick()
+	public synchronized TickSnapshot waitForPreviousTick()
 	{
 		// We just wait for the previous tick and don't start the next.
 		return _locked_waitForTickComplete();
@@ -212,10 +211,10 @@ public class TickRunner
 	 * Note that this function returns before the next tick completes.
 	 * @return Returns the snapshot of the now-completed tick.
 	 */
-	public synchronized Snapshot startNextTick()
+	public synchronized TickSnapshot startNextTick()
 	{
 		// Wait for the previous tick to complete.
-		Snapshot snapshot = _locked_waitForTickComplete();
+		TickSnapshot snapshot = _locked_waitForTickComplete();
 		// Advance to the next tick.
 		_nextTick += 1;
 		this.notifyAll();
@@ -908,7 +907,7 @@ public class TickRunner
 			
 			// At this point, the tick to advance the world and crowd states has completed so publish the read-only results and wait before we put together the materials for the next tick.
 			// Acknowledge that the tick is completed by creating a snapshot of the state.
-			Snapshot completedTick = _buildSnapshot(_nextTick
+			TickSnapshot completedTick = _buildSnapshot(_nextTick
 				, startingMaterials
 				, masterFragment
 				, mutableWorldState
@@ -1613,11 +1612,11 @@ public class TickRunner
 		return potentialLogicChangesByCuboid;
 	}
 
-	private synchronized void _acknowledgeTickCompleteAndWaitForNext(Snapshot newSnapshot)
+	private synchronized void _acknowledgeTickCompleteAndWaitForNext(TickSnapshot newSnapshot)
 	{
 		_snapshot = newSnapshot;
 		this.notifyAll();
-		while (_snapshot.tickNumber == _nextTick)
+		while (_snapshot.tickNumber() == _nextTick)
 		{
 			try
 			{
@@ -1655,9 +1654,9 @@ public class TickRunner
 		queue.add(action);
 	}
 
-	private Snapshot _locked_waitForTickComplete()
+	private TickSnapshot _locked_waitForTickComplete()
 	{
-		while (_snapshot.tickNumber != _nextTick)
+		while (_snapshot.tickNumber() != _nextTick)
 		{
 			try
 			{
@@ -1762,7 +1761,7 @@ public class TickRunner
 		);
 	}
 
-	private static Snapshot _buildSnapshot(long tickNumber
+	private static TickSnapshot _buildSnapshot(long tickNumber
 		, TickMaterials startingMaterials
 		, _PartialHandoffData masterFragment
 		, Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState
@@ -1797,7 +1796,7 @@ public class TickRunner
 				periodicNotReadyMillisByCuboid.put(oneCuboid.address, oneCuboid.periodicNotReadyMutations);
 			}
 		}
-		Map<CuboidAddress, SnapshotCuboid> cuboids = new HashMap<>();
+		Map<CuboidAddress, TickSnapshot.SnapshotCuboid> cuboids = new HashMap<>();
 		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> ent : mutableWorldState.entrySet())
 		{
 			CuboidAddress key = ent.getKey();
@@ -1816,7 +1815,7 @@ public class TickRunner
 			{
 				periodicMutationMillis = Map.of();
 			}
-			SnapshotCuboid snapshot = new SnapshotCuboid(
+			TickSnapshot.SnapshotCuboid snapshot = new TickSnapshot.SnapshotCuboid(
 					cuboid
 					, changedBlocks
 					, scheduledMutations
@@ -1824,7 +1823,7 @@ public class TickRunner
 			);
 			cuboids.put(key, snapshot);
 		}
-		Map<Integer, SnapshotEntity> entities = new HashMap<>();
+		Map<Integer, TickSnapshot.SnapshotEntity> entities = new HashMap<>();
 		for (Map.Entry<Integer, Entity> ent : mutableCrowdState.entrySet())
 		{
 			Integer key = ent.getKey();
@@ -1842,7 +1841,7 @@ public class TickRunner
 			{
 				scheduledMutations = List.of();
 			}
-			SnapshotEntity snapshot = new SnapshotEntity(
+			TickSnapshot.SnapshotEntity snapshot = new TickSnapshot.SnapshotEntity(
 					completed
 					, previousVersionOrNull
 					, commitLevel
@@ -1850,7 +1849,7 @@ public class TickRunner
 			);
 			entities.put(key, snapshot);
 		}
-		Map<Integer, SnapshotCreature> creatures = new HashMap<>();
+		Map<Integer, TickSnapshot.SnapshotCreature> creatures = new HashMap<>();
 		Set<Integer> updatedCreatures = creatureOutput.stream()
 			.filter((_OutputBasic<CreatureEntity> creature) -> (null != creature.updated))
 			.map((_OutputBasic<CreatureEntity> creature) -> creature.updated.id())
@@ -1866,13 +1865,13 @@ public class TickRunner
 				: null
 			;
 			
-			SnapshotCreature snapshot = new SnapshotCreature(
+			TickSnapshot.SnapshotCreature snapshot = new TickSnapshot.SnapshotCreature(
 				completed
 				, previousVersionOrNull
 			);
 			creatures.put(key, snapshot);
 		}
-		Map<Integer, SnapshotPassive> passives = new HashMap<>();
+		Map<Integer, TickSnapshot.SnapshotPassive> passives = new HashMap<>();
 		Set<Integer> updatedPassives = passiveOutput.stream()
 			.filter((_OutputBasic<PassiveEntity> passive) -> (null != passive.updated))
 			.map((_OutputBasic<PassiveEntity> passive) -> passive.updated.id())
@@ -1889,14 +1888,14 @@ public class TickRunner
 				: null
 			;
 			
-			SnapshotPassive snapshot = new SnapshotPassive(
+			TickSnapshot.SnapshotPassive snapshot = new TickSnapshot.SnapshotPassive(
 				completed
 				, previousVersionOrNull
 			);
 			passives.put(key, snapshot);
 		}
 		
-		Snapshot completedTick = new Snapshot(tickNumber
+		TickSnapshot completedTick = new TickSnapshot(tickNumber
 			, Collections.unmodifiableMap(cuboids)
 			, Collections.unmodifiableMap(entities)
 			, Collections.unmodifiableMap(creatures)
@@ -1909,7 +1908,7 @@ public class TickRunner
 			, masterFragment.internallyMarkedAlive
 			
 			// Stats.
-			, new TickStats(tickNumber
+			, new TickSnapshot.TickStats(tickNumber
 				, startingMaterials.millisInTickPreamble
 				, millisTickParallelPhase
 				, millisTickPostamble
@@ -2080,109 +2079,6 @@ public class TickRunner
 		return new _HighLevelPlan(Collections.unmodifiableList(result)
 			, Collections.unmodifiableList(entitiesInUnloadedCuboids)
 		);
-	}
-
-
-	/**
-	 * The snapshot of immutable state created whenever a tick is completed.
-	 */
-	public static record Snapshot(long tickNumber
-			, Map<CuboidAddress, SnapshotCuboid> cuboids
-			, Map<Integer, SnapshotEntity> entities
-			, Map<Integer, SnapshotCreature> creatures
-			, Map<Integer, SnapshotPassive> passives
-			, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
-			
-			, List<EventRecord> postedEvents
-			, Set<CuboidAddress> internallyMarkedAlive
-			
-			, TickStats stats
-	)
-	{}
-
-	public static record SnapshotCuboid(
-			// Never null.
-			IReadOnlyCuboidData completed
-			// Null if there are no changes or non-empty.
-			, List<MutationBlockSetBlock> blockChanges
-			// Never null but can be empty.
-			, List<ScheduledMutation> scheduledBlockMutations
-			// Never null but can be empty.
-			, Map<BlockAddress, Long> periodicMutationMillis
-	)
-	{}
-
-	public static record SnapshotEntity(
-			// The version of the entity at the end of the tick (never null).
-			Entity completed
-			// The previous version of the entity (null if not changed in this tick).
-			, Entity previousVersion
-			// The last commit level from the connected client.
-			, long commitLevel
-			// Never null but can be empty.
-			, List<ScheduledChange> scheduledMutations
-	)
-	{}
-
-	public static record SnapshotCreature(
-			// Never null.
-			CreatureEntity completed
-			// The previous version of the entity (null if not changed in this tick).
-			, CreatureEntity previousVersion
-	)
-	{}
-
-	public static record SnapshotPassive(
-			// Never null.
-			PassiveEntity completed
-			// The previous version of the entity (null if not changed in this tick).
-			, PassiveEntity previousVersion
-	)
-	{}
-
-	public static record TickStats(long tickNumber
-			, long millisTickPreamble
-			, long millisTickParallelPhase
-			, long millisTickPostamble
-			, ProcessorElement.PerThreadStats[] threadStats
-			, int committedEntityMutationCount
-			, int committedCuboidMutationCount
-	) {
-		public void writeToStream(PrintStream out)
-		{
-			long nanosPerMilli = 1_000_000L;
-			long preamble = this.millisTickPreamble;
-			long parallel = this.millisTickParallelPhase;
-			long postamble = this.millisTickPostamble;
-			long tickTime = preamble + parallel + postamble;
-			out.println("Log for slow (" + tickTime + " ms) tick " + this.tickNumber);
-			out.println("\tPreamble: " + preamble + " ms");
-			out.println("\tParallel: " + parallel + " ms");
-			for (int i = 0; i < this.threadStats.length; ++i)
-			{
-				ProcessorElement.PerThreadStats thread = this.threadStats[i];
-				long millisInEnginePlayers = thread.nanosInEnginePlayers() / nanosPerMilli;
-				long millisInEngineCreatures = thread.nanosInEngineCreatures() / nanosPerMilli;
-				long millisInEnginePassives = thread.nanosInEnginePassives() / nanosPerMilli;
-				long millisInEngineCuboids = thread.nanosInEngineCuboids() / nanosPerMilli;
-				long millisInEngineSpawner = thread.nanosInEngineSpawner() / nanosPerMilli;
-				long millisProcessingOperator = thread.nanosProcessingOperator() / nanosPerMilli;
-				out.printf("\t-Thread %d ran %d work units in %d ms\n", i, thread.workUnitsProcessed(), (millisInEnginePlayers + millisInEngineCreatures + millisInEngineCuboids + millisInEngineSpawner + millisProcessingOperator));
-				out.printf("\t\t=%d ms in EnginePlayer: %d players, %d actions\n", millisInEnginePlayers, thread.playersProcessed(), thread.playerActionsProcessed());
-				out.printf("\t\t=%d ms in EngineCreatures: %d creatures, %d actions\n", millisInEngineCreatures, thread.creaturesProcessed(), thread.creatureActionsProcessed());
-				out.printf("\t\t=%d ms in EnginePassives: %d passives, %d actions\n", millisInEnginePassives, thread.passivesProcessed(), thread.passiveActionsProcessed());
-				out.printf("\t\t=%d ms in EngineCuboids: %d cuboids, %d mutations, %d block updates\n", millisInEngineCuboids, thread.cuboidsProcessed(), thread.cuboidMutationsProcessed(), thread.cuboidBlockupdatesProcessed());
-				if (millisInEngineSpawner > 0L)
-				{
-					out.printf("\t\t=%d ms in EngineSpawner\n", millisInEngineSpawner);
-				}
-				if (millisProcessingOperator > 0L)
-				{
-					out.printf("\t\t=%d ms running operator commands\n", millisProcessingOperator);
-				}
-			}
-			out.println("\tPostamble: " + postamble + " ms");
-		}
 	}
 
 	private static record TickMaterials(long thisGameTick

@@ -22,7 +22,7 @@ import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
 import com.jeffdisher.october.server.MonitoringAgent;
-import com.jeffdisher.october.server.TickRunner;
+import com.jeffdisher.october.ticks.TickSnapshot;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Difficulty;
@@ -175,12 +175,12 @@ public class ConsoleHandler
 			// We will list the clients and their current locations.
 			MonitoringAgent monitoringAgent = state.monitoringAgent;
 			Map<Integer, String> clientIds = monitoringAgent.getClientsCopy();
-			TickRunner.Snapshot snapshot = monitoringAgent.getLastSnapshot();
+			TickSnapshot snapshot = monitoringAgent.getLastSnapshot();
 			out.println("Connected clients (" + clientIds.size() + "):");
 			for (Map.Entry<Integer, String> elt : clientIds.entrySet())
 			{
 				int id = elt.getKey();
-				TickRunner.SnapshotEntity entity = snapshot.entities().get(id);
+				TickSnapshot.SnapshotEntity entity = snapshot.entities().get(id);
 				String location;
 				if (null != entity)
 				{
@@ -197,9 +197,9 @@ public class ConsoleHandler
 		}),
 		LAST_SNAPSHOT((PrintStream out, _ConsoleState state, String[] parameters) -> {
 			MonitoringAgent monitoringAgent = state.monitoringAgent;
-			TickRunner.Snapshot snapshot = monitoringAgent.getLastSnapshot();
+			TickSnapshot snapshot = monitoringAgent.getLastSnapshot();
 			long tickNumber = snapshot.tickNumber();
-			TickRunner.TickStats stats = snapshot.stats();
+			TickSnapshot.TickStats stats = snapshot.stats();
 			long processMillis = stats.millisTickPreamble() + stats.millisTickParallelPhase() + stats.millisTickPostamble();
 			int entityCount = snapshot.entities().size();
 			int cuboidCount = snapshot.cuboids().size();
@@ -474,10 +474,10 @@ public class ConsoleHandler
 				)
 				{
 					MonitoringAgent monitoringAgent = state.monitoringAgent;
-					TickRunner.Snapshot snapshot = monitoringAgent.getLastSnapshot();
+					TickSnapshot snapshot = monitoringAgent.getLastSnapshot();
 					AbsoluteLocation centre = new AbsoluteLocation(x, y, z);
 					Set<IReadOnlyCuboidData> cuboids = snapshot.cuboids().values().stream()
-						.map((TickRunner.SnapshotCuboid cuboid) -> cuboid.completed())
+						.map((TickSnapshot.SnapshotCuboid cuboid) -> cuboid.completed())
 						.collect(Collectors.toSet())
 					;
 					AbsoluteLocation closest = MiscHelpers.findClosestBlock(cuboids, centre, block);

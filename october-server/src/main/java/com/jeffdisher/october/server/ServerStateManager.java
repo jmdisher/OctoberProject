@@ -51,6 +51,7 @@ import com.jeffdisher.october.net.Packet_ServerSendConfigUpdate;
 import com.jeffdisher.october.persistence.PackagedCuboid;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
+import com.jeffdisher.october.ticks.TickSnapshot;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -100,7 +101,7 @@ public class ServerStateManager
 	// The keep-alive counters for loaded cuboids are decremented whenever a tick ends but reset to CUBOID_KEEP_ALIVE_TICKS when referenced in a tick.
 	private Map<CuboidAddress, Integer> _cuboidKeepAlive;
 	
-	// We store the elements we need from the most recent TickRunner.Snapshot locally.
+	// We store the elements we need from the most recent TickSnapshot.Snapshot locally.
 	private long _tickNumber;
 	private Map<CuboidAddress, IReadOnlyCuboidData> _completedCuboids;
 	private Map<CuboidAddress, List<ScheduledMutation>> _scheduledBlockMutations;
@@ -190,67 +191,67 @@ public class ServerStateManager
 		}
 	}
 
-	public TickChanges setupNextTickAfterCompletion(TickRunner.Snapshot snapshot, AbsoluteLocation worldSpawn)
+	public TickChanges setupNextTickAfterCompletion(TickSnapshot snapshot, AbsoluteLocation worldSpawn)
 	{
 		Assert.assertTrue(Thread.currentThread() == _ownerThread);
 		
 		// We will first tear the snapshot apart and cache the relevant parts of it in our state (then base all decisions on the state).
 		_tickNumber = snapshot.tickNumber();
 		_completedCuboids = snapshot.cuboids().entrySet().stream().collect(Collectors.toMap(
-				(Map.Entry<CuboidAddress, TickRunner.SnapshotCuboid> elt) -> elt.getKey()
-				, (Map.Entry<CuboidAddress, TickRunner.SnapshotCuboid> elt) -> elt.getValue().completed()
+				(Map.Entry<CuboidAddress, TickSnapshot.SnapshotCuboid> elt) -> elt.getKey()
+				, (Map.Entry<CuboidAddress, TickSnapshot.SnapshotCuboid> elt) -> elt.getValue().completed()
 		));
 		_completedEntities = snapshot.entities().entrySet().stream().collect(Collectors.toMap(
-				(Map.Entry<Integer, TickRunner.SnapshotEntity> elt) -> elt.getKey()
-				, (Map.Entry<Integer, TickRunner.SnapshotEntity> elt) -> elt.getValue().completed()
+				(Map.Entry<Integer, TickSnapshot.SnapshotEntity> elt) -> elt.getKey()
+				, (Map.Entry<Integer, TickSnapshot.SnapshotEntity> elt) -> elt.getValue().completed()
 		));
 		_previousEntityVersions = snapshot.entities().entrySet().stream().filter(
-				(Map.Entry<Integer, TickRunner.SnapshotEntity> elt) -> (null != elt.getValue().previousVersion())
+				(Map.Entry<Integer, TickSnapshot.SnapshotEntity> elt) -> (null != elt.getValue().previousVersion())
 		).collect(Collectors.toMap(
-				(Map.Entry<Integer, TickRunner.SnapshotEntity> elt) -> elt.getKey()
-				, (Map.Entry<Integer, TickRunner.SnapshotEntity> elt) -> elt.getValue().previousVersion()
+				(Map.Entry<Integer, TickSnapshot.SnapshotEntity> elt) -> elt.getKey()
+				, (Map.Entry<Integer, TickSnapshot.SnapshotEntity> elt) -> elt.getValue().previousVersion()
 		));
 		_commitLevels = snapshot.entities().entrySet().stream().collect(Collectors.toMap(
-				(Map.Entry<Integer, TickRunner.SnapshotEntity> elt) -> elt.getKey()
-				, (Map.Entry<Integer, TickRunner.SnapshotEntity> elt) -> elt.getValue().commitLevel()
+				(Map.Entry<Integer, TickSnapshot.SnapshotEntity> elt) -> elt.getKey()
+				, (Map.Entry<Integer, TickSnapshot.SnapshotEntity> elt) -> elt.getValue().commitLevel()
 		));
 		_completedCreatures = snapshot.creatures().entrySet().stream().collect(Collectors.toMap(
-				(Map.Entry<Integer, TickRunner.SnapshotCreature> elt) -> elt.getKey()
-				, (Map.Entry<Integer, TickRunner.SnapshotCreature> elt) -> elt.getValue().completed()
+				(Map.Entry<Integer, TickSnapshot.SnapshotCreature> elt) -> elt.getKey()
+				, (Map.Entry<Integer, TickSnapshot.SnapshotCreature> elt) -> elt.getValue().completed()
 		));
 		_previousCreatureVersions = snapshot.creatures().entrySet().stream().filter(
-			(Map.Entry<Integer, TickRunner.SnapshotCreature> elt) -> (null != elt.getValue().previousVersion())
+			(Map.Entry<Integer, TickSnapshot.SnapshotCreature> elt) -> (null != elt.getValue().previousVersion())
 		).collect(Collectors.toMap(
-			(Map.Entry<Integer, TickRunner.SnapshotCreature> elt) -> elt.getKey()
-			, (Map.Entry<Integer, TickRunner.SnapshotCreature> elt) -> elt.getValue().previousVersion()
+			(Map.Entry<Integer, TickSnapshot.SnapshotCreature> elt) -> elt.getKey()
+			, (Map.Entry<Integer, TickSnapshot.SnapshotCreature> elt) -> elt.getValue().previousVersion()
 		));
 		_completedPassives = snapshot.passives().entrySet().stream().collect(Collectors.toMap(
-				(Map.Entry<Integer, TickRunner.SnapshotPassive> elt) -> elt.getKey()
-				, (Map.Entry<Integer, TickRunner.SnapshotPassive> elt) -> elt.getValue().completed()
+				(Map.Entry<Integer, TickSnapshot.SnapshotPassive> elt) -> elt.getKey()
+				, (Map.Entry<Integer, TickSnapshot.SnapshotPassive> elt) -> elt.getValue().completed()
 		));
 		_previousPassiveVersions = snapshot.passives().entrySet().stream().filter(
-			(Map.Entry<Integer, TickRunner.SnapshotPassive> elt) -> (null != elt.getValue().previousVersion())
+			(Map.Entry<Integer, TickSnapshot.SnapshotPassive> elt) -> (null != elt.getValue().previousVersion())
 		).collect(Collectors.toMap(
-			(Map.Entry<Integer, TickRunner.SnapshotPassive> elt) -> elt.getKey()
-			, (Map.Entry<Integer, TickRunner.SnapshotPassive> elt) -> elt.getValue().previousVersion()
+			(Map.Entry<Integer, TickSnapshot.SnapshotPassive> elt) -> elt.getKey()
+			, (Map.Entry<Integer, TickSnapshot.SnapshotPassive> elt) -> elt.getValue().previousVersion()
 		));
 		_blockChanges = snapshot.cuboids().entrySet().stream().filter(
-				(Map.Entry<CuboidAddress, TickRunner.SnapshotCuboid> elt) -> (null != elt.getValue().blockChanges())
+				(Map.Entry<CuboidAddress, TickSnapshot.SnapshotCuboid> elt) -> (null != elt.getValue().blockChanges())
 		).collect(Collectors.toMap(
-				(Map.Entry<CuboidAddress, TickRunner.SnapshotCuboid> elt) -> elt.getKey()
-				, (Map.Entry<CuboidAddress, TickRunner.SnapshotCuboid> elt) -> elt.getValue().blockChanges()
+				(Map.Entry<CuboidAddress, TickSnapshot.SnapshotCuboid> elt) -> elt.getKey()
+				, (Map.Entry<CuboidAddress, TickSnapshot.SnapshotCuboid> elt) -> elt.getValue().blockChanges()
 		));
 		_scheduledBlockMutations = snapshot.cuboids().entrySet().stream().collect(Collectors.toMap(
-				(Map.Entry<CuboidAddress, TickRunner.SnapshotCuboid> elt) -> elt.getKey()
-				, (Map.Entry<CuboidAddress, TickRunner.SnapshotCuboid> elt) -> elt.getValue().scheduledBlockMutations()
+				(Map.Entry<CuboidAddress, TickSnapshot.SnapshotCuboid> elt) -> elt.getKey()
+				, (Map.Entry<CuboidAddress, TickSnapshot.SnapshotCuboid> elt) -> elt.getValue().scheduledBlockMutations()
 		));
 		_periodicBlockMutations = snapshot.cuboids().entrySet().stream().collect(Collectors.toMap(
-				(Map.Entry<CuboidAddress, TickRunner.SnapshotCuboid> elt) -> elt.getKey()
-				, (Map.Entry<CuboidAddress, TickRunner.SnapshotCuboid> elt) -> elt.getValue().periodicMutationMillis()
+				(Map.Entry<CuboidAddress, TickSnapshot.SnapshotCuboid> elt) -> elt.getKey()
+				, (Map.Entry<CuboidAddress, TickSnapshot.SnapshotCuboid> elt) -> elt.getValue().periodicMutationMillis()
 		));
 		_scheduledEntityMutations = snapshot.entities().entrySet().stream().collect(Collectors.toMap(
-				(Map.Entry<Integer, TickRunner.SnapshotEntity> elt) -> elt.getKey()
-				, (Map.Entry<Integer, TickRunner.SnapshotEntity> elt) -> elt.getValue().scheduledMutations()
+				(Map.Entry<Integer, TickSnapshot.SnapshotEntity> elt) -> elt.getKey()
+				, (Map.Entry<Integer, TickSnapshot.SnapshotEntity> elt) -> elt.getValue().scheduledMutations()
 		));
 		
 		Set<CuboidAddress> completedCuboidAddresses = _completedCuboids.keySet();
@@ -372,7 +373,7 @@ public class ServerStateManager
 		_handleConnectingClientsForNewEntities(newlyLoadedEntities);
 		
 		// Push any required data into the TickRunner before we kick-off the tick.
-		// We need to run through these to make them the read-only variants for the TickRunner.
+		// We need to run through these to make them the read-only variants for the TickSnapshot.
 		Collection<SuspendedCuboid<IReadOnlyCuboidData>> readOnlyCuboids = newlyLoadedCuboids.stream().map(
 			(SuspendedCuboid<CuboidData> readWrite) -> new SuspendedCuboid<IReadOnlyCuboidData>(readWrite.cuboid()
 				, readWrite.heightMap()
@@ -621,7 +622,7 @@ public class ServerStateManager
 
 	private boolean _drainPacketsIntoRunner(int clientId)
 	{
-		// Consume as many of these mutations as we can fit into the TickRunner.
+		// Consume as many of these mutations as we can fit into the TickSnapshot.
 		PacketFromClient packet = _callouts.network_peekOrRemoveNextPacketFromClient(clientId, null);
 		// We are calling this in response to readability so this cannot be null.
 		Assert.assertTrue(null != packet);

@@ -20,8 +20,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.engine.EnginePlayers;
 import com.jeffdisher.october.server.MonitoringAgent;
-import com.jeffdisher.october.server.TickRunner;
-import com.jeffdisher.october.server.TickRunner.SnapshotCuboid;
+import com.jeffdisher.october.ticks.TickSnapshot;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
@@ -268,7 +267,7 @@ public class TestConsoleHandler
 		PrintStream printer = new PrintStream(out);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		long tickNumber = 50L;
-		monitoringAgent.snapshotPublished(new TickRunner.Snapshot(tickNumber, null, null, null, null, null, null, null, null));
+		monitoringAgent.snapshotPublished(new TickSnapshot(tickNumber, null, null, null, null, null, null, null, null));
 		boolean[] didBroadcast = new boolean[1];
 		monitoringAgent.setOperatorCommandSink(new _TestCommandSink()
 		{
@@ -296,7 +295,7 @@ public class TestConsoleHandler
 		PrintStream printer = new PrintStream(out);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		long tickNumber = 50L;
-		monitoringAgent.snapshotPublished(new TickRunner.Snapshot(tickNumber, null, null, null, null, null, null, null, null));
+		monitoringAgent.snapshotPublished(new TickSnapshot(tickNumber, null, null, null, null, null, null, null, null));
 		boolean[] didBroadcast = new boolean[1];
 		monitoringAgent.setOperatorCommandSink(new _TestCommandSink()
 		{
@@ -326,10 +325,10 @@ public class TestConsoleHandler
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, -1, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 2, 3), ENV.items.getItemById("op.stone").number());
 		
-		Map<CuboidAddress, SnapshotCuboid> map = Map.of(cuboid.getCuboidAddress()
-			, new SnapshotCuboid(cuboid, List.of(), List.of(), Map.of())
+		Map<CuboidAddress, TickSnapshot.SnapshotCuboid> map = Map.of(cuboid.getCuboidAddress()
+			, new TickSnapshot.SnapshotCuboid(cuboid, List.of(), List.of(), Map.of())
 		);
-		monitoringAgent.snapshotPublished(new TickRunner.Snapshot(tickNumber, map, null, null, null, null, null, null, null));
+		monitoringAgent.snapshotPublished(new TickSnapshot(tickNumber, map, null, null, null, null, null, null, null));
 		WorldConfig config = new WorldConfig();
 		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, config);
 		Assert.assertArrayEquals("Block found: AbsoluteLocation[x=1, y=-30, z=3]\nShutting down...\n".getBytes(), out.toByteArray());

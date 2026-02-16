@@ -51,6 +51,7 @@ import com.jeffdisher.october.persistence.PackagedCuboid;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.subactions.MutationEntitySelectItem;
+import com.jeffdisher.october.ticks.TickSnapshot;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -105,7 +106,7 @@ public class TestServerStateManager
 		_Callouts callouts = new _Callouts();
 		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
 		manager.setOwningThread();
-		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		TickSnapshot snapshot = _createEmptySnapshot();
 		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		manager.shutdown();
 		
@@ -125,7 +126,7 @@ public class TestServerStateManager
 		int clientId = 1;
 		String clientName = "client";
 		manager.clientConnected(clientId, clientName, 1);
-		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		TickSnapshot snapshot = _createEmptySnapshot();
 		AbsoluteLocation worldSpawn = new AbsoluteLocation(1000, 1000, 1000);
 		
 		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
@@ -253,7 +254,7 @@ public class TestServerStateManager
 		String clientName = "client";
 		manager.clientConnected(clientId, clientName, 1);
 		boolean[] connectedRef = new boolean[] {true};
-		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		TickSnapshot snapshot = _createEmptySnapshot();
 		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		
 		// We need to setup the callouts to not fully satisfy this.
@@ -291,7 +292,7 @@ public class TestServerStateManager
 		manager.clientConnected(clientId1, clientName1, 1);
 		manager.clientConnected(clientId2, clientName2, 1);
 		
-		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		TickSnapshot snapshot = _createEmptySnapshot();
 		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		
 		callouts.loadedEntities.add(new SuspendedEntity(MutableEntity.createForTest(clientId1).freeze(), List.of()));
@@ -319,7 +320,7 @@ public class TestServerStateManager
 		manager.setOwningThread();
 		int clientId = 1;
 		manager.clientConnected(clientId, "client", 1);
-		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		TickSnapshot snapshot = _createEmptySnapshot();
 		
 		// We need to run a tick so that the client load request is made.
 		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
@@ -336,10 +337,10 @@ public class TestServerStateManager
 		CuboidData farCuboid = CuboidGenerator.createFilledCuboid(far, ENV.special.AIR);
 		snapshot = _modifySnapshot(snapshot
 				, Map.of(
-						near, new TickRunner.SnapshotCuboid(nearCuboid, null, List.of(), Map.of()),
-						far, new TickRunner.SnapshotCuboid(farCuboid, null, List.of(), Map.of())
+						near, new TickSnapshot.SnapshotCuboid(nearCuboid, null, List.of(), Map.of()),
+						far, new TickSnapshot.SnapshotCuboid(farCuboid, null, List.of(), Map.of())
 				)
-				, Map.of(1, new TickRunner.SnapshotEntity(entity, null, 1L, List.of()))
+				, Map.of(1, new TickSnapshot.SnapshotEntity(entity, null, 1L, List.of()))
 				, snapshot.creatures()
 				, snapshot.passives()
 				, Map.of(
@@ -385,9 +386,9 @@ public class TestServerStateManager
 		// Now, proceed with the next updated snapshot.
 		snapshot = _modifySnapshot(snapshot
 				, Map.of(
-						near, new TickRunner.SnapshotCuboid(nearCuboid, null, List.of(), Map.of())
+						near, new TickSnapshot.SnapshotCuboid(nearCuboid, null, List.of(), Map.of())
 				)
-				, Map.of(1, new TickRunner.SnapshotEntity(entity, null, 1L, List.of()))
+				, Map.of(1, new TickSnapshot.SnapshotEntity(entity, null, 1L, List.of()))
 				, snapshot.creatures()
 				, snapshot.passives()
 				, Map.of(
@@ -429,7 +430,7 @@ public class TestServerStateManager
 		manager.clientConnected(clientId1, clientName1, 1);
 		manager.clientConnected(clientId2, clientName2, 1);
 		
-		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		TickSnapshot snapshot = _createEmptySnapshot();
 		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(0, changes.newCuboids().size());
 		Assert.assertEquals(0, changes.cuboidsToUnload().size());
@@ -477,7 +478,7 @@ public class TestServerStateManager
 		snapshot = _modifySnapshot(snapshot
 				, Map.of(
 				)
-				, Map.of(clientId1, new TickRunner.SnapshotEntity(near.freeze(), null, 1L, List.of()), clientId2, new TickRunner.SnapshotEntity(far.freeze(), null, 1L, List.of()))
+				, Map.of(clientId1, new TickSnapshot.SnapshotEntity(near.freeze(), null, 1L, List.of()), clientId2, new TickSnapshot.SnapshotEntity(far.freeze(), null, 1L, List.of()))
 				, snapshot.creatures()
 				, snapshot.passives()
 				, Map.of(
@@ -492,13 +493,13 @@ public class TestServerStateManager
 		
 		snapshot = _modifySnapshot(snapshot
 				, Map.of(
-						nearCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(nearCuboid, null, List.of(), Map.of()),
-						farCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(farCuboid, null, List.of(), Map.of())
+						nearCuboid.getCuboidAddress(), new TickSnapshot.SnapshotCuboid(nearCuboid, null, List.of(), Map.of()),
+						farCuboid.getCuboidAddress(), new TickSnapshot.SnapshotCuboid(farCuboid, null, List.of(), Map.of())
 				)
 				, snapshot.entities()
 				, Map.of(
-						nearCreature.id(), new TickRunner.SnapshotCreature(nearCreature, null),
-						farCreature.id(), new TickRunner.SnapshotCreature(farCreature, null)
+						nearCreature.id(), new TickSnapshot.SnapshotCreature(nearCreature, null),
+						farCreature.id(), new TickSnapshot.SnapshotCreature(farCreature, null)
 				)
 				, snapshot.passives()
 				, HeightMapHelpers.buildColumnMaps(Map.of(
@@ -521,7 +522,7 @@ public class TestServerStateManager
 				, snapshot.cuboids()
 				, snapshot.entities()
 				, Map.of(
-						farCreature.id(), new TickRunner.SnapshotCreature(farCreature, null)
+						farCreature.id(), new TickSnapshot.SnapshotCreature(farCreature, null)
 				)
 				, snapshot.passives()
 				, snapshot.completedHeightMaps()
@@ -549,7 +550,7 @@ public class TestServerStateManager
 		manager.setOwningThread();
 		int clientId = 1;
 		manager.clientConnected(clientId, "client", 1);
-		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		TickSnapshot snapshot = _createEmptySnapshot();
 		AbsoluteLocation worldSpawn = new AbsoluteLocation(1000, 1000, 1000);
 		
 		// We need to run a tick so that the client load request is made.
@@ -580,10 +581,10 @@ public class TestServerStateManager
 		CuboidData twoCuboid = CuboidGenerator.createFilledCuboid(two, ENV.special.AIR);
 		snapshot = _modifySnapshot(snapshot
 				, Map.of(
-						oneCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(oneCuboid, null, List.of(), Map.of()),
-						twoCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(twoCuboid, null, List.of(), Map.of())
+						oneCuboid.getCuboidAddress(), new TickSnapshot.SnapshotCuboid(oneCuboid, null, List.of(), Map.of()),
+						twoCuboid.getCuboidAddress(), new TickSnapshot.SnapshotCuboid(twoCuboid, null, List.of(), Map.of())
 				)
-				, Map.of(clientId, new TickRunner.SnapshotEntity(entity, null, 1L, List.of()))
+				, Map.of(clientId, new TickSnapshot.SnapshotEntity(entity, null, 1L, List.of()))
 				, snapshot.creatures()
 				, snapshot.passives()
 				, Map.of(
@@ -601,7 +602,7 @@ public class TestServerStateManager
 		entity = mutable.freeze();
 		snapshot = _advanceSnapshot(_modifySnapshot(snapshot
 				, snapshot.cuboids()
-				, Map.of(clientId, new TickRunner.SnapshotEntity(entity, null, 1L, List.of()))
+				, Map.of(clientId, new TickSnapshot.SnapshotEntity(entity, null, 1L, List.of()))
 				, snapshot.creatures()
 				, snapshot.passives()
 				, snapshot.completedHeightMaps()
@@ -622,7 +623,7 @@ public class TestServerStateManager
 		manager.setOwningThread();
 		int clientId = 1;
 		manager.clientConnected(clientId, "client", 1);
-		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		TickSnapshot snapshot = _createEmptySnapshot();
 		AbsoluteLocation worldSpawn = new AbsoluteLocation(1000, 1000, 1000);
 		
 		// We need to run a tick so that the client load request is made.
@@ -661,12 +662,12 @@ public class TestServerStateManager
 		CuboidData cuboid3 = CuboidGenerator.createFilledCuboid(plus3, ENV.special.AIR);
 		snapshot = _modifySnapshot(snapshot
 				, Map.of(
-						cuboid0.getCuboidAddress(), new TickRunner.SnapshotCuboid(cuboid0, null, List.of(), Map.of()),
-						cuboid1.getCuboidAddress(), new TickRunner.SnapshotCuboid(cuboid1, null, List.of(), Map.of()),
-						cuboid2.getCuboidAddress(), new TickRunner.SnapshotCuboid(cuboid2, null, List.of(), Map.of()),
-						cuboid3.getCuboidAddress(), new TickRunner.SnapshotCuboid(cuboid3, null, List.of(), Map.of())
+						cuboid0.getCuboidAddress(), new TickSnapshot.SnapshotCuboid(cuboid0, null, List.of(), Map.of()),
+						cuboid1.getCuboidAddress(), new TickSnapshot.SnapshotCuboid(cuboid1, null, List.of(), Map.of()),
+						cuboid2.getCuboidAddress(), new TickSnapshot.SnapshotCuboid(cuboid2, null, List.of(), Map.of()),
+						cuboid3.getCuboidAddress(), new TickSnapshot.SnapshotCuboid(cuboid3, null, List.of(), Map.of())
 				)
-				, Map.of(clientId, new TickRunner.SnapshotEntity(entity, null, 1L, List.of()))
+				, Map.of(clientId, new TickSnapshot.SnapshotEntity(entity, null, 1L, List.of()))
 				, snapshot.creatures()
 				, snapshot.passives()
 				, Map.of(
@@ -723,7 +724,7 @@ public class TestServerStateManager
 		int clientId = 1;
 		int requestedRaduis = 2;
 		manager.clientConnected(clientId, "client", requestedRaduis);
-		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		TickSnapshot snapshot = _createEmptySnapshot();
 		AbsoluteLocation worldSpawn = new AbsoluteLocation(1000, 1000, 1000);
 		
 		// We need to run a tick so that the client load request is made.
@@ -754,7 +755,7 @@ public class TestServerStateManager
 		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
 		manager.setOwningThread();
 		CuboidAddress internalAddress = CuboidAddress.fromInt(-5, 7, 0);
-		TickRunner.Snapshot snapshot = _modifySnapshot(_createEmptySnapshot()
+		TickSnapshot snapshot = _modifySnapshot(_createEmptySnapshot()
 			, Map.of()
 			, Map.of()
 			, Map.of()
@@ -793,7 +794,7 @@ public class TestServerStateManager
 		// Now, just show them loaded.
 		snapshot = _modifySnapshot(snapshot
 			, Map.of(
-				internalAddress, new TickRunner.SnapshotCuboid(cuboid, null, List.of(), Map.of())
+				internalAddress, new TickSnapshot.SnapshotCuboid(cuboid, null, List.of(), Map.of())
 			)
 			, Map.of()
 			, snapshot.creatures()
@@ -848,7 +849,7 @@ public class TestServerStateManager
 		String clientName1 = "client1";
 		manager.clientConnected(clientId1, clientName1, 1);
 		
-		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		TickSnapshot snapshot = _createEmptySnapshot();
 		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(0, changes.newCuboids().size());
 		Assert.assertEquals(0, changes.newEntities().size());
@@ -880,7 +881,7 @@ public class TestServerStateManager
 		snapshot = _modifySnapshot(snapshot
 			, Map.of(
 			)
-			, Map.of(clientId1, new TickRunner.SnapshotEntity(near.freeze(), null, 1L, List.of()))
+			, Map.of(clientId1, new TickSnapshot.SnapshotEntity(near.freeze(), null, 1L, List.of()))
 			, snapshot.creatures()
 			, snapshot.passives()
 			, Map.of(
@@ -892,12 +893,12 @@ public class TestServerStateManager
 		
 		snapshot = _modifySnapshot(snapshot
 			, Map.of(
-				nearCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(nearCuboid, null, List.of(), Map.of())
+				nearCuboid.getCuboidAddress(), new TickSnapshot.SnapshotCuboid(nearCuboid, null, List.of(), Map.of())
 			)
 			, snapshot.entities()
 			, snapshot.creatures()
 			, Map.of(
-				passive.id(), new TickRunner.SnapshotPassive(passive, null)
+				passive.id(), new TickSnapshot.SnapshotPassive(passive, null)
 			)
 			, HeightMapHelpers.buildColumnMaps(Map.of(
 				nearCuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(nearCuboid)
@@ -923,7 +924,7 @@ public class TestServerStateManager
 			, snapshot.entities()
 			, snapshot.creatures()
 			, Map.of(
-				newPassive.id(), new TickRunner.SnapshotPassive(newPassive, passive)
+				newPassive.id(), new TickSnapshot.SnapshotPassive(newPassive, passive)
 			)
 			, snapshot.completedHeightMaps()
 			, Set.of()
@@ -967,7 +968,7 @@ public class TestServerStateManager
 		manager.clientConnected(clientId1, clientName1, 1);
 		
 		// Load the initial player entity so we will send the updates somewhere.
-		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		TickSnapshot snapshot = _createEmptySnapshot();
 		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		MutableEntity near = MutableEntity.createForTest(clientId1);
 		near.setLocation(new EntityLocation(5.0f, 5.0f, 0.0f));
@@ -1005,7 +1006,7 @@ public class TestServerStateManager
 		snapshot = _modifySnapshot(snapshot
 			, Map.of(
 			)
-			, Map.of(clientId1, new TickRunner.SnapshotEntity(near.freeze(), null, 1L, List.of()))
+			, Map.of(clientId1, new TickSnapshot.SnapshotEntity(near.freeze(), null, 1L, List.of()))
 			, snapshot.creatures()
 			, snapshot.passives()
 			, Map.of(
@@ -1020,16 +1021,16 @@ public class TestServerStateManager
 		// We now expect the snapshot to include the cuboid with its creature and passive we just loaded.
 		snapshot = _modifySnapshot(snapshot
 			, Map.of(
-				nearCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(nearCuboid, null, List.of(), Map.of())
+				nearCuboid.getCuboidAddress(), new TickSnapshot.SnapshotCuboid(nearCuboid, null, List.of(), Map.of())
 			)
 			, snapshot.entities()
 			, Map.of(
-				creatureChange.id(), new TickRunner.SnapshotCreature(creatureChange, null)
-				, creatureUnchange.id(), new TickRunner.SnapshotCreature(creatureUnchange, null)
+				creatureChange.id(), new TickSnapshot.SnapshotCreature(creatureChange, null)
+				, creatureUnchange.id(), new TickSnapshot.SnapshotCreature(creatureUnchange, null)
 			)
 			, Map.of(
-				passiveChange.id(), new TickRunner.SnapshotPassive(passiveChange, null)
-				, passiveUnchange.id(), new TickRunner.SnapshotPassive(passiveUnchange, null)
+				passiveChange.id(), new TickSnapshot.SnapshotPassive(passiveChange, null)
+				, passiveUnchange.id(), new TickSnapshot.SnapshotPassive(passiveUnchange, null)
 			)
 			, HeightMapHelpers.buildColumnMaps(Map.of(
 				nearCuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(nearCuboid)
@@ -1065,12 +1066,12 @@ public class TestServerStateManager
 			, snapshot.cuboids()
 			, snapshot.entities()
 			, Map.of(
-				newCreatureChange.id(), new TickRunner.SnapshotCreature(newCreatureChange, creatureChange)
-				, newCreatureUnchange.id(), new TickRunner.SnapshotCreature(newCreatureUnchange, creatureUnchange)
+				newCreatureChange.id(), new TickSnapshot.SnapshotCreature(newCreatureChange, creatureChange)
+				, newCreatureUnchange.id(), new TickSnapshot.SnapshotCreature(newCreatureUnchange, creatureUnchange)
 			)
 			, Map.of(
-				newPassiveChange.id(), new TickRunner.SnapshotPassive(newPassiveChange, passiveChange)
-				, newPassiveUnchange.id(), new TickRunner.SnapshotPassive(newPassiveUnchange, passiveUnchange)
+				newPassiveChange.id(), new TickSnapshot.SnapshotPassive(newPassiveChange, passiveChange)
+				, newPassiveUnchange.id(), new TickSnapshot.SnapshotPassive(newPassiveUnchange, passiveUnchange)
 			)
 			, snapshot.completedHeightMaps()
 			, Set.of()
@@ -1101,7 +1102,7 @@ public class TestServerStateManager
 		manager.clientConnected(clientId1, clientName1, viewDistance);
 		
 		// Load the initial player entity so we will send the updates somewhere.
-		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		TickSnapshot snapshot = _createEmptySnapshot();
 		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		MutableEntity near = MutableEntity.createForTest(clientId1);
 		EntityLocation clientLocation = new EntityLocation(5.0f, 5.0f, 0.0f);
@@ -1134,7 +1135,7 @@ public class TestServerStateManager
 		snapshot = _modifySnapshot(snapshot
 			, Map.of(
 			)
-			, Map.of(clientId1, new TickRunner.SnapshotEntity(near.freeze(), null, 1L, List.of()))
+			, Map.of(clientId1, new TickSnapshot.SnapshotEntity(near.freeze(), null, 1L, List.of()))
 			, snapshot.creatures()
 			, snapshot.passives()
 			, Map.of(
@@ -1159,8 +1160,8 @@ public class TestServerStateManager
 		// We now expect the snapshot to include these 2 cuboids.
 		snapshot = _modifySnapshot(snapshot
 			, Map.of(
-				nearCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(nearCuboid, null, List.of(), Map.of())
-				, farCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(farCuboid, null, List.of(), Map.of())
+				nearCuboid.getCuboidAddress(), new TickSnapshot.SnapshotCuboid(nearCuboid, null, List.of(), Map.of())
+				, farCuboid.getCuboidAddress(), new TickSnapshot.SnapshotCuboid(farCuboid, null, List.of(), Map.of())
 			)
 			, snapshot.entities()
 			, snapshot.creatures()
@@ -1179,9 +1180,9 @@ public class TestServerStateManager
 		// We now expect the snapshot to include all 3 cuboids.
 		snapshot = _modifySnapshot(snapshot
 			, Map.of(
-				nearCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(nearCuboid, null, List.of(), Map.of())
-				, farCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(farCuboid, null, List.of(), Map.of())
-				, farCuboid2.getCuboidAddress(), new TickRunner.SnapshotCuboid(farCuboid2, null, List.of(), Map.of())
+				nearCuboid.getCuboidAddress(), new TickSnapshot.SnapshotCuboid(nearCuboid, null, List.of(), Map.of())
+				, farCuboid.getCuboidAddress(), new TickSnapshot.SnapshotCuboid(farCuboid, null, List.of(), Map.of())
+				, farCuboid2.getCuboidAddress(), new TickSnapshot.SnapshotCuboid(farCuboid2, null, List.of(), Map.of())
 			)
 			, snapshot.entities()
 			, snapshot.creatures()
@@ -1216,7 +1217,7 @@ public class TestServerStateManager
 		manager.clientConnected(clientId1, clientName1, viewDistance);
 		
 		// Load the initial player entity so we will send the updates somewhere.
-		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		TickSnapshot snapshot = _createEmptySnapshot();
 		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		MutableEntity near = MutableEntity.createForTest(clientId1);
 		EntityLocation clientLocation = new EntityLocation(5.0f, 5.0f, 0.0f);
@@ -1265,7 +1266,7 @@ public class TestServerStateManager
 		snapshot = _modifySnapshot(snapshot
 			, Map.of(
 			)
-			, Map.of(clientId1, new TickRunner.SnapshotEntity(near.freeze(), null, 1L, List.of()))
+			, Map.of(clientId1, new TickSnapshot.SnapshotEntity(near.freeze(), null, 1L, List.of()))
 			, snapshot.creatures()
 			, snapshot.passives()
 			, Map.of(
@@ -1280,17 +1281,17 @@ public class TestServerStateManager
 		// We now expect the snapshot to include the cuboid with its creature and passive we just loaded.
 		snapshot = _modifySnapshot(snapshot
 			, Map.of(
-				nearCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(nearCuboid, null, List.of(), Map.of())
-				, farCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(farCuboid, null, List.of(), Map.of())
+				nearCuboid.getCuboidAddress(), new TickSnapshot.SnapshotCuboid(nearCuboid, null, List.of(), Map.of())
+				, farCuboid.getCuboidAddress(), new TickSnapshot.SnapshotCuboid(farCuboid, null, List.of(), Map.of())
 			)
 			, snapshot.entities()
 			, Map.of(
-				creatureNear.id(), new TickRunner.SnapshotCreature(creatureNear, null)
-				, creatureFar.id(), new TickRunner.SnapshotCreature(creatureFar, null)
+				creatureNear.id(), new TickSnapshot.SnapshotCreature(creatureNear, null)
+				, creatureFar.id(), new TickSnapshot.SnapshotCreature(creatureFar, null)
 			)
 			, Map.of(
-				passiveNear.id(), new TickRunner.SnapshotPassive(passiveNear, null)
-				, passiveFar.id(), new TickRunner.SnapshotPassive(passiveFar, null)
+				passiveNear.id(), new TickSnapshot.SnapshotPassive(passiveNear, null)
+				, passiveFar.id(), new TickSnapshot.SnapshotPassive(passiveFar, null)
 			)
 			, HeightMapHelpers.buildColumnMaps(Map.of(
 				nearCuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(nearCuboid)
@@ -1328,7 +1329,7 @@ public class TestServerStateManager
 		manager.clientConnected(clientId1, clientName1, viewDistance);
 		
 		// Load the initial player entity so we will send the updates somewhere.
-		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		TickSnapshot snapshot = _createEmptySnapshot();
 		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		MutableEntity mutable = MutableEntity.createForTest(clientId1);
 		EntityLocation clientLocation = new EntityLocation(5.0f, 5.0f, 0.0f);
@@ -1349,7 +1350,7 @@ public class TestServerStateManager
 		snapshot = _modifySnapshot(snapshot
 			, Map.of(
 			)
-			, Map.of(clientId1, new TickRunner.SnapshotEntity(mutable.freeze(), null, 1L, List.of()))
+			, Map.of(clientId1, new TickSnapshot.SnapshotEntity(mutable.freeze(), null, 1L, List.of()))
 			, snapshot.creatures()
 			, snapshot.passives()
 			, Map.of(
@@ -1362,8 +1363,8 @@ public class TestServerStateManager
 		
 		// Run another snapshot to send the cuboid.
 		snapshot = _modifySnapshot(_advanceSnapshot(snapshot, 1L)
-			, Map.of(cuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(cuboid, null, List.of(), Map.of()))
-			, Map.of(clientId1, new TickRunner.SnapshotEntity(mutable.freeze(), null, 1L, List.of()))
+			, Map.of(cuboid.getCuboidAddress(), new TickSnapshot.SnapshotCuboid(cuboid, null, List.of(), Map.of()))
+			, Map.of(clientId1, new TickSnapshot.SnapshotEntity(mutable.freeze(), null, 1L, List.of()))
 			, snapshot.creatures()
 			, snapshot.passives()
 			, HeightMapHelpers.buildColumnMaps(Map.of(
@@ -1386,7 +1387,7 @@ public class TestServerStateManager
 		EventRecord craftInBlockCompleteEvent = new EventRecord(EventRecord.Type.CRAFT_IN_BLOCK_COMPLETE, EventRecord.Cause.NONE, new AbsoluteLocation(2, 2, 2), 0, 0);
 		EventRecord enchantCompleteEvent = new EventRecord(EventRecord.Type.ENCHANT_COMPLETE, EventRecord.Cause.NONE, new AbsoluteLocation(2, 2, 2), 0, 0);
 		
-		snapshot = new TickRunner.Snapshot(snapshot.tickNumber() + 1L
+		snapshot = new TickSnapshot(snapshot.tickNumber() + 1L
 			, snapshot.cuboids()
 			, snapshot.entities()
 			, snapshot.creatures()
@@ -1432,9 +1433,9 @@ public class TestServerStateManager
 	}
 
 
-	private TickRunner.Snapshot _createEmptySnapshot()
+	private TickSnapshot _createEmptySnapshot()
 	{
-		return new TickRunner.Snapshot(0L
+		return new TickSnapshot(0L
 				, Collections.emptyMap()
 				, Collections.emptyMap()
 				, Collections.emptyMap()
@@ -1447,7 +1448,7 @@ public class TestServerStateManager
 				, Set.of()
 				
 				// Information related to tick behaviour and performance statistics.
-				, new TickRunner.TickStats(0L
+				, new TickSnapshot.TickStats(0L
 						, 0L
 						, 0L
 						, 0L
@@ -1458,17 +1459,17 @@ public class TestServerStateManager
 		);
 	}
 
-	private TickRunner.Snapshot _modifySnapshot(TickRunner.Snapshot snapshot
-			, Map<CuboidAddress, TickRunner.SnapshotCuboid> cuboids
-			, Map<Integer, TickRunner.SnapshotEntity> entities
-			, Map<Integer, TickRunner.SnapshotCreature> completedCreatures
-			, Map<Integer, TickRunner.SnapshotPassive> completedPassives
+	private TickSnapshot _modifySnapshot(TickSnapshot snapshot
+			, Map<CuboidAddress, TickSnapshot.SnapshotCuboid> cuboids
+			, Map<Integer, TickSnapshot.SnapshotEntity> entities
+			, Map<Integer, TickSnapshot.SnapshotCreature> completedCreatures
+			, Map<Integer, TickSnapshot.SnapshotPassive> completedPassives
 			, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
 			, Set<CuboidAddress> internallyMarkedAlive
 	)
 	{
-		TickRunner.TickStats stats = snapshot.stats();
-		return new TickRunner.Snapshot(snapshot.tickNumber()
+		TickSnapshot.TickStats stats = snapshot.stats();
+		return new TickSnapshot(snapshot.tickNumber()
 				, cuboids
 				, entities
 				, completedCreatures
@@ -1483,10 +1484,10 @@ public class TestServerStateManager
 		);
 	}
 
-	private TickRunner.Snapshot _advanceSnapshot(TickRunner.Snapshot snapshot, long count)
+	private TickSnapshot _advanceSnapshot(TickSnapshot snapshot, long count)
 	{
-		TickRunner.TickStats stats = snapshot.stats();
-		return new TickRunner.Snapshot(snapshot.tickNumber() + count
+		TickSnapshot.TickStats stats = snapshot.stats();
+		return new TickSnapshot(snapshot.tickNumber() + count
 				, snapshot.cuboids()
 				, snapshot.entities()
 				, snapshot.creatures()
@@ -1501,15 +1502,15 @@ public class TestServerStateManager
 		);
 	}
 
-	private Map<CuboidAddress, TickRunner.SnapshotCuboid> _convertToCuboidMap(Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboids)
+	private Map<CuboidAddress, TickSnapshot.SnapshotCuboid> _convertToCuboidMap(Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboids)
 	{
-		Map<CuboidAddress, TickRunner.SnapshotCuboid> completedCuboids = new HashMap<>();
+		Map<CuboidAddress, TickSnapshot.SnapshotCuboid> completedCuboids = new HashMap<>();
 		for (SuspendedCuboid<IReadOnlyCuboidData> suspended : cuboids)
 		{
 			IReadOnlyCuboidData cuboid = suspended.cuboid();
 			Assert.assertTrue(suspended.pendingMutations().isEmpty());
 			Assert.assertTrue(suspended.periodicMutationMillis().isEmpty());
-			TickRunner.SnapshotCuboid wrapper = new TickRunner.SnapshotCuboid(cuboid, null, List.of(), Map.of());
+			TickSnapshot.SnapshotCuboid wrapper = new TickSnapshot.SnapshotCuboid(cuboid, null, List.of(), Map.of());
 			completedCuboids.put(cuboid.getCuboidAddress(), wrapper);
 		}
 		return completedCuboids;
@@ -1529,14 +1530,14 @@ public class TestServerStateManager
 		return completedMaps;
 	}
 
-	private Map<Integer, TickRunner.SnapshotEntity> _convertToEntityMap(Collection<SuspendedEntity> entities)
+	private Map<Integer, TickSnapshot.SnapshotEntity> _convertToEntityMap(Collection<SuspendedEntity> entities)
 	{
-		Map<Integer, TickRunner.SnapshotEntity> completedEntities = new HashMap<>();
+		Map<Integer, TickSnapshot.SnapshotEntity> completedEntities = new HashMap<>();
 		for (SuspendedEntity suspended : entities)
 		{
 			Entity entity = suspended.entity();
 			Assert.assertTrue(suspended.changes().isEmpty());
-			TickRunner.SnapshotEntity wrapper = new TickRunner.SnapshotEntity(entity, null, 0L, List.of());
+			TickSnapshot.SnapshotEntity wrapper = new TickSnapshot.SnapshotEntity(entity, null, 0L, List.of());
 			completedEntities.put(entity.id(), wrapper);
 		}
 		return completedEntities;

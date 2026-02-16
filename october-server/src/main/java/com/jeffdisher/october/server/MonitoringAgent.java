@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
+import com.jeffdisher.october.ticks.TickSnapshot;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.utils.Assert;
@@ -21,7 +22,7 @@ public class MonitoringAgent
 	private final Map<Integer, String> _connectedClientIds = new HashMap<>();
 	private final Map<Integer, NetworkLayer.IPeerToken> _connectedClientTokens = new HashMap<>();
 	private volatile NetworkServer<?> _network;
-	private volatile TickRunner.Snapshot _lastSnapshot;
+	private volatile TickSnapshot _lastSnapshot;
 	private volatile OperatorCommandSink _commandSink;
 
 	public void setNetwork(NetworkServer<?> network)
@@ -45,7 +46,7 @@ public class MonitoringAgent
 		_connectedClientTokens.remove(clientId);
 	}
 
-	public void snapshotPublished(TickRunner.Snapshot snapshot)
+	public void snapshotPublished(TickSnapshot snapshot)
 	{
 		_lastSnapshot = snapshot;
 	}
@@ -75,7 +76,7 @@ public class MonitoringAgent
 		return _connectedClientTokens.get(clientId);
 	}
 
-	public TickRunner.Snapshot getLastSnapshot()
+	public TickSnapshot getLastSnapshot()
 	{
 		return _lastSnapshot;
 	}
@@ -101,7 +102,7 @@ public class MonitoringAgent
 		private long _totalTasksRun;
 		
 		private long _totalMillisInTicks;
-		private TickRunner.TickStats _slowestTick;
+		private TickSnapshot.TickStats _slowestTick;
 		private long _slowestTickMillis;
 		private int _ticksRemaining = TICK_SAMPLE_SIZE;
 		
@@ -112,7 +113,7 @@ public class MonitoringAgent
 			_slowestTask = Math.max(_slowestTask, nanosInTask);
 			_totalTasksRun += 1L;
 		}
-		public synchronized boolean shouldRetireAfterTickSample(TickRunner.TickStats stats)
+		public synchronized boolean shouldRetireAfterTickSample(TickSnapshot.TickStats stats)
 		{
 			long totalMillis = stats.millisTickPreamble() + stats.millisTickParallelPhase() + stats.millisTickPostamble();
 			if (totalMillis > _slowestTickMillis)

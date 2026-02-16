@@ -15,6 +15,8 @@ import com.jeffdisher.october.persistence.PackagedCuboid;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
+import com.jeffdisher.october.ticks.TickRunner;
+import com.jeffdisher.october.ticks.TickSnapshot;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -290,10 +292,10 @@ public class ServerRunner
 		}
 	}
 
-	private class TickListener implements Consumer<TickRunner.Snapshot>
+	private class TickListener implements Consumer<TickSnapshot>
 	{
 		@Override
-		public void accept(TickRunner.Snapshot completedSnapshot)
+		public void accept(TickSnapshot completedSnapshot)
 		{
 			// We capture this callback to keep the message queue in-order:  This is the last thing which happens within
 			// the tick so we know that all tick callbacks are completed by the time we execute this message so we can
@@ -325,7 +327,7 @@ public class ServerRunner
 		public void run()
 		{
 			// We schedule this only after receiving a callback that the tick is complete so this should return with the snapshot, immediately, and let the next tick start.
-			TickRunner.Snapshot snapshot = _tickRunner.waitForPreviousTick();
+			TickSnapshot snapshot = _tickRunner.waitForPreviousTick();
 			ServerStateManager.TickChanges nextTickChanges = _stateManager.setupNextTickAfterCompletion(snapshot, _sharedConfig.worldSpawn);
 			
 			_tickRunner.setupChangesForTick(nextTickChanges.newCuboids()
@@ -370,7 +372,7 @@ public class ServerRunner
 			_tickRunner.startNextTick();
 			
 			// Check if this needs to be logged.
-			TickRunner.TickStats stats = snapshot.stats();
+			TickSnapshot.TickStats stats = snapshot.stats();
 			long preamble = stats.millisTickPreamble();
 			long parallel = stats.millisTickParallelPhase();
 			long postamble = stats.millisTickPostamble();

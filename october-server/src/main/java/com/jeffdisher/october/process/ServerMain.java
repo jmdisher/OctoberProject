@@ -9,7 +9,7 @@ import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.server.ServerRunner;
-import com.jeffdisher.october.server.TickRunner;
+import com.jeffdisher.october.ticks.TickSnapshot;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
@@ -75,7 +75,7 @@ public class ServerMain
 				// We returned, so we can stop the ServerProcess.
 				process.stop();
 				// Look at how many ticks were run.
-				TickRunner.Snapshot lastSnapshot = monitoringAgent.getLastSnapshot();
+				TickSnapshot lastSnapshot = monitoringAgent.getLastSnapshot();
 				long ticksRun = (null != lastSnapshot)
 						? lastSnapshot.tickNumber()
 						: 0L
