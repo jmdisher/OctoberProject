@@ -860,16 +860,13 @@ public class TickRunner
 			
 			Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = _extractSnapshotBlockMutations(masterFragment);
 			Map<Integer, List<ScheduledChange>> snapshotEntityMutations = _extractPlayerEntityChanges(masterFragment);
-			Set<Integer> updatedEntities = _extractChangedPlayerEntitiesOnly(masterFragment);
-			List<TickOutput.BasicOutput<CreatureEntity>> creatureOutput = masterFragment.creatures().creatureOutput();
-			List<TickOutput.BasicOutput<PassiveEntity>> passiveOutput = masterFragment.passives().passiveOutput();
 			FlatResults flatResults = FlatResults.fromOutput(masterFragment);
 			
 			// Build the components of the snapshot (as part of the postamble time).
 			Map<CuboidAddress, TickSnapshot.SnapshotCuboid> cuboids = _buildSnapshotCuboids(flatResults, snapshotBlockMutations);
-			Map<Integer, TickSnapshot.SnapshotEntity> entities = _buildSnapshotEntities(startingMaterials, flatResults, snapshotEntityMutations, updatedEntities);
-			Map<Integer, TickSnapshot.SnapshotCreature> creatures = _buildSnapshotCreatures(startingMaterials, flatResults, creatureOutput);
-			Map<Integer, TickSnapshot.SnapshotPassive> passives = _buildSnapshotPassives(startingMaterials, flatResults, passiveOutput);
+			Map<Integer, TickSnapshot.SnapshotEntity> entities = _buildSnapshotEntities(masterFragment, snapshotEntityMutations, startingMaterials.commitLevels);
+			Map<Integer, TickSnapshot.SnapshotCreature> creatures = _buildSnapshotCreatures(masterFragment);
+			Map<Integer, TickSnapshot.SnapshotPassive> passives = _buildSnapshotPassives(masterFragment);
 			
 			// Collect the time stamps for stats.
 			long endMillisPostamble = System.currentTimeMillis();
@@ -1185,23 +1182,6 @@ public class TickRunner
 			}
 		}
 		return snapshotEntityMutations;
-	}
-
-	private static Set<Integer> _extractChangedPlayerEntitiesOnly(TickOutput masterFragment)
-	{
-		Set<Integer> updatedEntities = new HashSet<>();
-		for (TickOutput.EntityOutput value : masterFragment.entities().entityOutput())
-		{
-			Entity updated = value.updatedEntity();
-			
-			// Note that this is documented to be null if nothing changed.
-			if (null != updated)
-			{
-				int key = updated.id();
-				updatedEntities.add(key);
-			}
-		}
-		return updatedEntities;
 	}
 
 	private static Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> _scheduleNewCreatureActions(TickOutput masterFragment)
@@ -1625,26 +1605,34 @@ public class TickRunner
 		return cuboids;
 	}
 
-	private static Map<Integer, TickSnapshot.SnapshotEntity> _buildSnapshotEntities(TickMaterials startingMaterials
-		, FlatResults flatResults
+	private static Map<Integer, TickSnapshot.SnapshotEntity> _buildSnapshotEntities(TickOutput masterFragment
 		, Map<Integer, List<ScheduledChange>> snapshotEntityMutations
-		, Set<Integer> updatedEntities
+		, Map<Integer, Long> commitLevels
 	)
 	{
 		Map<Integer, TickSnapshot.SnapshotEntity> entities = new HashMap<>();
-		for (Map.Entry<Integer, Entity> ent : flatResults.entitiesById().entrySet())
+		for (TickOutput.EntityOutput ent : masterFragment.entities().entityOutput())
 		{
-			Integer key = ent.getKey();
-			Assert.assertTrue(key > 0);
-			Entity completed = ent.getValue();
-			Entity previousVersionOrNull = updatedEntities.contains(key)
-				? startingMaterials.completedEntities.get(key)
-				: null
-			;
-			long commitLevel = startingMaterials.commitLevels.get(key);
+			int id = ent.entityId();
+			Assert.assertTrue(id > 0);
+			Entity completed;
+			Entity previousVersionOrNull;
+			if (null != ent.updatedEntity())
+			{
+				// This means we changed.
+				completed = ent.updatedEntity();
+				previousVersionOrNull = ent.previousEntity();
+			}
+			else
+			{
+				// Unchanged, so return previous.
+				completed = ent.previousEntity();
+				previousVersionOrNull = null;
+			}
+			long commitLevel = commitLevels.get(id);
 			
 			// Get the scheduled mutations (note that this is often null but we don't want to store null).
-			List<ScheduledChange> scheduledMutations = snapshotEntityMutations.get(key);
+			List<ScheduledChange> scheduledMutations = snapshotEntityMutations.get(id);
 			if (null == scheduledMutations)
 			{
 				scheduledMutations = List.of();
@@ -1655,68 +1643,115 @@ public class TickRunner
 					, commitLevel
 					, scheduledMutations
 			);
-			entities.put(key, snapshot);
+			entities.put(id, snapshot);
 		}
 		return entities;
 	}
 
-	private static Map<Integer, TickSnapshot.SnapshotCreature> _buildSnapshotCreatures(TickMaterials startingMaterials
-		, FlatResults flatResults
-		, List<TickOutput.BasicOutput<CreatureEntity>> creatureOutput
-	)
+	private static Map<Integer, TickSnapshot.SnapshotCreature> _buildSnapshotCreatures(TickOutput masterFragment)
 	{
 		Map<Integer, TickSnapshot.SnapshotCreature> creatures = new HashMap<>();
-		Set<Integer> updatedCreatures = creatureOutput.stream()
-			.filter((TickOutput.BasicOutput<CreatureEntity> creature) -> (null != creature.updated()))
-			.map((TickOutput.BasicOutput<CreatureEntity> creature) -> creature.updated().id())
-			.collect(Collectors.toSet())
-		;
-		for (Map.Entry<Integer, CreatureEntity>  ent : flatResults.creaturesById().entrySet())
+		
+		// Carry over whatever is still alive.
+		for (TickOutput.BasicOutput<CreatureEntity> ent : masterFragment.creatures().creatureOutput())
 		{
-			Integer key = ent.getKey();
-			Assert.assertTrue(key < 0);
-			CreatureEntity completed = ent.getValue();
-			CreatureEntity previousVersionOrNull = updatedCreatures.contains(key)
-				? startingMaterials.completedCreatures.get(key)
-				: null
-			;
+			int id = ent.id();
+			Assert.assertTrue(id < 0);
+			
+			if (ent.didDie())
+			{
+				// This died so we don't want to report it in the snapshot.
+			}
+			else
+			{
+				CreatureEntity completed;
+				CreatureEntity previousVersionOrNull;
+				if (null != ent.updated())
+				{
+					// This means we changed.
+					completed = ent.updated();
+					previousVersionOrNull = ent.previous();
+				}
+				else
+				{
+					// Unchanged, so return previous.
+					completed = ent.previous();
+					previousVersionOrNull = null;
+				}
+				
+				TickSnapshot.SnapshotCreature snapshot = new TickSnapshot.SnapshotCreature(
+					completed
+					, previousVersionOrNull
+				);
+				creatures.put(id, snapshot);
+			}
+		}
+		
+		// Include new spawns.
+		for (CreatureEntity newCreature : masterFragment.spawnedCreatures())
+		{
+			int id = newCreature.id();
+			Assert.assertTrue(id < 0);
 			
 			TickSnapshot.SnapshotCreature snapshot = new TickSnapshot.SnapshotCreature(
-				completed
-				, previousVersionOrNull
+				newCreature
+				, null
 			);
-			creatures.put(key, snapshot);
+			creatures.put(id, snapshot);
 		}
 		return creatures;
 	}
 
-	private static Map<Integer, TickSnapshot.SnapshotPassive> _buildSnapshotPassives(TickMaterials startingMaterials
-		, FlatResults flatResults
-		, List<TickOutput.BasicOutput<PassiveEntity>> passiveOutput
-	)
+	private static Map<Integer, TickSnapshot.SnapshotPassive> _buildSnapshotPassives(TickOutput masterFragment)
 	{
 		Map<Integer, TickSnapshot.SnapshotPassive> passives = new HashMap<>();
-		Set<Integer> updatedPassives = passiveOutput.stream()
-			.filter((TickOutput.BasicOutput<PassiveEntity> passive) -> (null != passive.updated()))
-			.map((TickOutput.BasicOutput<PassiveEntity> passive) -> passive.updated().id())
-			.collect(Collectors.toSet())
-		;
-		for (Map.Entry<Integer, PassiveEntity> ent : flatResults.passivesById().entrySet())
+		
+		// Carry over whatever is still alive.
+		for (TickOutput.BasicOutput<PassiveEntity> ent : masterFragment.passives().passiveOutput())
 		{
-			Integer key = ent.getKey();
-			// Passives are expected to have positive IDs.
-			Assert.assertTrue(key > 0);
-			PassiveEntity completed = ent.getValue();
-			PassiveEntity previousVersionOrNull = updatedPassives.contains(key)
-				? startingMaterials.completedPassives.get(key)
-				: null
-			;
+			int id = ent.id();
+			Assert.assertTrue(id > 0);
+			
+			if (ent.didDie())
+			{
+				// This died so we don't want to report it in the snapshot.
+			}
+			else
+			{
+				PassiveEntity completed;
+				PassiveEntity previousVersionOrNull;
+				if (null != ent.updated())
+				{
+					// This means we changed.
+					completed = ent.updated();
+					previousVersionOrNull = ent.previous();
+				}
+				else
+				{
+					// Unchanged, so return previous.
+					completed = ent.previous();
+					previousVersionOrNull = null;
+				}
+				
+				TickSnapshot.SnapshotPassive snapshot = new TickSnapshot.SnapshotPassive(
+					completed
+					, previousVersionOrNull
+				);
+				passives.put(id, snapshot);
+			}
+		}
+		
+		// Include new spawns.
+		for (PassiveEntity newPassive : masterFragment.spawnedPassives())
+		{
+			int id = newPassive.id();
+			Assert.assertTrue(id > 0);
 			
 			TickSnapshot.SnapshotPassive snapshot = new TickSnapshot.SnapshotPassive(
-				completed
-				, previousVersionOrNull
+				newPassive
+				, null
 			);
-			passives.put(key, snapshot);
+			passives.put(id, snapshot);
 		}
 		return passives;
 	}
