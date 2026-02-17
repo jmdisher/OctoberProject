@@ -37,6 +37,7 @@ public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeight
 	, Map<CuboidAddress, List<AbsoluteLocation>> blockUpdatesByCuboid
 	, Map<CuboidAddress, List<AbsoluteLocation>> lightingUpdatesByCuboid
 	, Map<CuboidAddress, List<AbsoluteLocation>> logicUpdatesByCuboid
+	, Set<AbsoluteLocation> allChangedBlockLocations
 	
 	, Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationsByCuboid
 	
@@ -60,6 +61,7 @@ public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeight
 		Map<CuboidAddress, List<MutationBlockSetBlock>> resultantBlockChangesByCuboid = new HashMap<>();
 		Map<CuboidAddress, List<AbsoluteLocation>> blockUpdatesByCuboid = new HashMap<>();
 		Map<CuboidAddress, List<AbsoluteLocation>> lightingUpdatesByCuboid = new HashMap<>();
+		Set<AbsoluteLocation> allChangedBlockLocations = new HashSet<>();
 		Set<AbsoluteLocation> potentialLogicChangeSet = new HashSet<>();
 		
 		Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationsByCuboid = new HashMap<>();
@@ -84,6 +86,7 @@ public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeight
 			{
 				MutationBlockSetBlock blockSetBlock = change.serializedForm();
 				AbsoluteLocation location = blockSetBlock.getAbsoluteLocation();
+				allChangedBlockLocations.add(location);
 				blockChanges.add(blockSetBlock);
 				if (change.requiresUpdateEvent())
 				{
@@ -201,6 +204,7 @@ public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeight
 			, Collections.unmodifiableMap(blockUpdatesByCuboid)
 			, Collections.unmodifiableMap(lightingUpdatesByCuboid)
 			, logicUpdatesByCuboid
+			, Collections.unmodifiableSet(allChangedBlockLocations)
 			
 			, Collections.unmodifiableMap(periodicMutationsByCuboid)
 			

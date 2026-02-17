@@ -850,12 +850,58 @@ public class TickRunner
 			TickOutput masterFragment = _mergeAndClearPartialFragments(_partial);
 			
 			Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = _extractSnapshotBlockMutations(masterFragment);
-			Map<Integer, List<ScheduledChange>> snapshotEntityMutations = _extractPlayerEntityChanges(masterFragment);
 			FlatResults flatResults = FlatResults.fromOutput(masterFragment);
 			
 			// Build the components of the snapshot (as part of the postamble time).
 			Map<CuboidAddress, TickSnapshot.SnapshotCuboid> cuboids = _buildSnapshotCuboids(flatResults, snapshotBlockMutations);
-			Map<Integer, TickSnapshot.SnapshotEntity> entities = _buildSnapshotEntities(masterFragment, snapshotEntityMutations, flatResults.clientCommitLevelsById());
+			
+			Map<Integer, List<ScheduledChange>> snapshotEntityMutations = new HashMap<>();
+			Map<Integer, TickSnapshot.SnapshotEntity> entities = new HashMap<>();
+			for (TargetedAction<ScheduledChange> targeted : masterFragment.newlyScheduledChanges())
+			{
+				_scheduleChangesForEntity(snapshotEntityMutations, targeted.targetId(), targeted.action());
+			}
+			for (TickOutput.EntityOutput ent : masterFragment.entities().entityOutput())
+			{
+				int id = ent.entityId();
+				Assert.assertTrue(id > 0);
+				Entity completed;
+				Entity previousVersionOrNull;
+				if (null != ent.updatedEntity())
+				{
+					// This means we changed.
+					completed = ent.updatedEntity();
+					previousVersionOrNull = ent.previousEntity();
+				}
+				else
+				{
+					// Unchanged, so return previous.
+					completed = ent.previousEntity();
+					previousVersionOrNull = null;
+				}
+				long commitLevel = flatResults.clientCommitLevelsById().get(id);
+				
+				// We want to schedule anything which wasn't yet ready.
+				for (ScheduledChange change : ent.notYetReadyUnsortedActions())
+				{
+					_scheduleChangesForEntity(snapshotEntityMutations, id, change);
+				}
+				
+				// Get the scheduled mutations (note that this is often null but we don't want to store null).
+				List<ScheduledChange> scheduledMutations = snapshotEntityMutations.get(id);
+				if (null == scheduledMutations)
+				{
+					scheduledMutations = List.of();
+				}
+				TickSnapshot.SnapshotEntity snapshot = new TickSnapshot.SnapshotEntity(
+						completed
+						, previousVersionOrNull
+						, commitLevel
+						, scheduledMutations
+				);
+				entities.put(id, snapshot);
+			}
+			
 			Map<Integer, TickSnapshot.SnapshotCreature> creatures = _buildSnapshotCreatures(masterFragment);
 			Map<Integer, TickSnapshot.SnapshotPassive> passives = _buildSnapshotPassives(masterFragment);
 			
@@ -956,34 +1002,130 @@ public class TickRunner
 				Map<Integer, CreatureEntity> mutableCreatureState = new HashMap<>(flatResults.creaturesById());
 				Map<Integer, PassiveEntity> mutablePassiveState = new HashMap<>(flatResults.passivesById());
 				
-				_poopulateWorldWithNewCuboids(mutableWorldState, nextTickMutableHeightMaps, newCuboids);
-				_addCreaturesInNewCuboidsWithMillis(mutableCreatureState, newCuboids);
-				_addPassivesInNewCuboidsWithMillis(mutablePassiveState, newCuboids);
-				Map<CuboidAddress, List<ScheduledMutation>> pendingMutations = _extractPendingMutationsFromNewCuboids(newCuboids, snapshotBlockMutations);
-				Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutations = _extractPeriodicMutationsFromNewCuboids(newCuboids, masterFragment);
-				
-				// Add in anything new.
-				Set<CuboidAddress> cuboidsLoadedThisTick = (null != newCuboids)
-					? newCuboids.stream()
-						.map((SuspendedCuboid<IReadOnlyCuboidData> suspended) -> suspended.cuboid().getCuboidAddress())
-						.collect(Collectors.toSet())
-					: Set.of()
-				;
-				_populateWithNewPlayers(mutableCrowdState, newEntities);
-				for (Map.Entry<Integer, Long> incoming : newCommitLevels.entrySet())
+				// Add any newly-loaded cuboids with their associated creatures and passives.
+				Map<CuboidAddress, List<ScheduledMutation>> pendingMutations = new HashMap<>();
+				Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutations = new HashMap<>(flatResults.periodicMutationsByCuboid());
+				Set<CuboidAddress> cuboidsLoadedThisTick = new HashSet<>();
+				if (null != newCuboids)
 				{
-					mutableCommitLevels.put(incoming.getKey(), incoming.getValue());
+					for (SuspendedCuboid<IReadOnlyCuboidData> suspended : newCuboids)
+					{
+						IReadOnlyCuboidData cuboid = suspended.cuboid();
+						CuboidAddress address = cuboid.getCuboidAddress();
+						
+						cuboidsLoadedThisTick.add(address);
+						
+						Object old = mutableWorldState.put(address, cuboid);
+						Assert.assertTrue(null == old);
+						
+						old = nextTickMutableHeightMaps.put(address, suspended.heightMap());
+						Assert.assertTrue(null == old);
+						
+						// Load any creatures associated with this cuboid.
+						for (CreatureEntity loadedCreature : suspended.creatures())
+						{
+							mutableCreatureState.put(loadedCreature.id(), loadedCreature);
+						}
+						
+						// Load any passives associated with this cuboid.
+						for (PassiveEntity loadedPassive : suspended.passives())
+						{
+							mutablePassiveState.put(loadedPassive.id(), loadedPassive);
+						}
+						
+						// Add any suspended mutations which came with the cuboid.
+						List<ScheduledMutation> pending = suspended.pendingMutations();
+						if (!pending.isEmpty())
+						{
+							old = pendingMutations.put(address, new ArrayList<>(pending));
+							// This must not already be present (this was just created above here).
+							Assert.assertTrue(null == old);
+						}
+						
+						// Add any periodic mutations loaded with the cuboid.
+						Map<BlockAddress, Long> periodic = suspended.periodicMutationMillis();
+						if (!periodic.isEmpty())
+						{
+							old = periodicMutations.put(address, new HashMap<>(periodic));
+							// This must not already be present (this was just created above here).
+							Assert.assertTrue(null == old);
+						}
+					}
 				}
-				Map<Integer, List<ScheduledChange>> nextTickChanges = _combineEntityActions(snapshotEntityMutations, newEntities, newEntityChanges, operatorMutations);
 				
-				// Add any operator actions (in this path, we only select the actions for the operator entity).
-				List<IEntityAction<IMutablePlayerEntity>> operatorChanges = (null != operatorMutations)
-					? operatorMutations.stream()
-						.filter((_OperatorMutationWrapper wrapper) -> (EnginePlayers.OPERATOR_ENTITY_ID == wrapper.entityId))
-						.map((_OperatorMutationWrapper wrapper) -> wrapper.mutation)
-						.toList()
-					: List.of()
-				;
+				// Add any of the mutations scheduled from the last tick.
+				for (List<ScheduledMutation> list : snapshotBlockMutations.values())
+				{
+					for (ScheduledMutation mutation : list)
+					{
+						_scheduleMutationForCuboid(pendingMutations, mutation);
+					}
+				}
+				
+				// Add newly-loaded player entities.
+				Map<Integer, List<ScheduledChange>> nextTickChanges = new HashMap<>();
+				if (null != newEntities)
+				{
+					for (SuspendedEntity suspended : newEntities)
+					{
+						Entity entity = suspended.entity();
+						int id = entity.id();
+						Object old = mutableCrowdState.put(id, entity);
+						// This must not already be present.
+						Assert.assertTrue(null == old);
+						
+						// Add any suspended mutations which came with the entity.
+						List<ScheduledChange> changes = suspended.changes();
+						if (!changes.isEmpty())
+						{
+							old = nextTickChanges.put(id, new ArrayList<>(changes));
+							// This must not already be present (this was just created above here).
+							Assert.assertTrue(null == old);
+						}
+					}
+				}
+				for (Map.Entry<Integer, List<ScheduledChange>> entry : snapshotEntityMutations.entrySet())
+				{
+					// We can't modify the original so use a new container.
+					int id = entry.getKey();
+					for (ScheduledChange change : entry.getValue())
+					{
+						_scheduleChangesForEntity(nextTickChanges, id, change);
+					}
+				}
+				for (Map.Entry<Integer, EntityActionSimpleMove<IMutablePlayerEntity>> container : newEntityChanges.entrySet())
+				{
+					// These are coming in from outside, so they should be run immediately (no delay for future), after anything already scheduled from the previous tick.
+					ScheduledChange change = new ScheduledChange(container.getValue(), 0L);
+					_scheduleChangesForEntity(nextTickChanges, container.getKey(), change);
+				}
+				
+				// If there were any operator mutations, split them between client operator ID and specific entities.
+				List<IEntityAction<IMutablePlayerEntity>> operatorChanges = new ArrayList<>();
+				if (null != operatorMutations)
+				{
+					for (_OperatorMutationWrapper wrapper : operatorMutations)
+					{
+						// If the operator change isn't targeting the operator entity, schedule it on the specific player entity.
+						if (EnginePlayers.OPERATOR_ENTITY_ID == wrapper.entityId)
+						{
+							operatorChanges.add(wrapper.mutation);
+						}
+						else
+						{
+							List<ScheduledChange> mutableChanges = nextTickChanges.get(wrapper.entityId);
+							if (null == mutableChanges)
+							{
+								mutableChanges = new ArrayList<>();
+								nextTickChanges.put(wrapper.entityId, mutableChanges);
+							}
+							mutableChanges.add(new ScheduledChange(wrapper.mutation, 0L));
+						}
+					}
+				}
+				
+				// Update our map of latest client commit levels.
+				mutableCommitLevels.putAll(newCommitLevels);
 				
 				// We can also extract any creature changes scheduled in the previous tick (creature actions are not saved in the cuboid so we only have what was scheduled in previous tick).
 				Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> nextCreatureChanges = _scheduleNewCreatureActions(masterFragment);
@@ -1043,14 +1185,7 @@ public class TickRunner
 				}
 				
 				// Carry forward the proxy cache from the previous tick unless the corresponding block locations changed or where removed.
-				Set<AbsoluteLocation> changedBlocksInPreviousTick = new HashSet<>();
-				for (TickOutput.CuboidOutput cuboid : masterFragment.world().cuboids())
-				{
-					for (BlockChangeDescription change : cuboid.blockChanges())
-					{
-						changedBlocksInPreviousTick.add(change.serializedForm().getAbsoluteLocation());
-					}
-				}
+				Set<AbsoluteLocation> changedBlocksInPreviousTick = flatResults.allChangedBlockLocations();
 				Map<AbsoluteLocation, BlockProxy> previousProxyCache = masterFragment.populatedProxyCache().entrySet().stream()
 					.filter((Map.Entry<AbsoluteLocation, BlockProxy> ent) -> {
 						AbsoluteLocation location = ent.getKey();
@@ -1114,15 +1249,12 @@ public class TickRunner
 						, Collections.unmodifiableMap(mutableCreatureState)
 						, Collections.unmodifiableMap(mutablePassiveState)
 						
-						, operatorChanges
+						, Collections.unmodifiableList(operatorChanges)
 						, flatResults.blockUpdatesByCuboid()
 						, flatResults.lightingUpdatesByCuboid()
 						, flatResults.logicUpdatesByCuboid()
-						, cuboidsLoadedThisTick
+						, Collections.unmodifiableSet(cuboidsLoadedThisTick)
 						, previousProxyCache
-						
-						// Data only used by this method:
-						, newCommitLevels
 						
 						, entityCollection
 						, highLevelPlan
@@ -1158,26 +1290,6 @@ public class TickRunner
 		return snapshotBlockMutations;
 	}
 
-	private static Map<Integer, List<ScheduledChange>> _extractPlayerEntityChanges(TickOutput masterFragment)
-	{
-		Map<Integer, List<ScheduledChange>> snapshotEntityMutations = new HashMap<>();
-		for (TargetedAction<ScheduledChange> targeted : masterFragment.newlyScheduledChanges())
-		{
-			_scheduleChangesForEntity(snapshotEntityMutations, targeted.targetId(), targeted.action());
-		}
-		for (TickOutput.EntityOutput value : masterFragment.entities().entityOutput())
-		{
-			int key = value.entityId();
-			
-			// We want to schedule anything which wasn't yet ready.
-			for (ScheduledChange change : value.notYetReadyUnsortedActions())
-			{
-				_scheduleChangesForEntity(snapshotEntityMutations, key, change);
-			}
-		}
-		return snapshotEntityMutations;
-	}
-
 	private static Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> _scheduleNewCreatureActions(TickOutput masterFragment)
 	{
 		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> nextCreatureChanges = new HashMap<>();
@@ -1196,199 +1308,6 @@ public class TickRunner
 			_scheduleChangesForEntity(nextCreatureChanges, targeted.targetId(), targeted.action());
 		}
 		return nextCreatureChanges;
-	}
-
-	// NOTE:  Modifies out_mutableWorldState and out_nextTickMutableHeightMaps.
-	private static void _poopulateWorldWithNewCuboids(Map<CuboidAddress, IReadOnlyCuboidData> out_mutableWorldState
-		, Map<CuboidAddress, CuboidHeightMap> out_nextTickMutableHeightMaps
-		, List<SuspendedCuboid<IReadOnlyCuboidData>> newCuboids
-	)
-	{
-		if (null != newCuboids)
-		{
-			for (SuspendedCuboid<IReadOnlyCuboidData> suspended : newCuboids)
-			{
-				IReadOnlyCuboidData cuboid = suspended.cuboid();
-				CuboidAddress address = cuboid.getCuboidAddress();
-				Object old = out_mutableWorldState.put(address, cuboid);
-				// This must not already be present.
-				Assert.assertTrue(null == old);
-				old = out_nextTickMutableHeightMaps.put(address, suspended.heightMap());
-				Assert.assertTrue(null == old);
-			}
-		}
-	}
-
-	// NOTE:  Modifies out_mutableCreatureState.
-	private static void _addCreaturesInNewCuboidsWithMillis(Map<Integer, CreatureEntity> out_mutableCreatureState, List<SuspendedCuboid<IReadOnlyCuboidData>> newCuboids)
-	{
-		if (null != newCuboids)
-		{
-			for (SuspendedCuboid<IReadOnlyCuboidData> suspended : newCuboids)
-			{
-				// Load any creatures associated with this cuboid.
-				for (CreatureEntity loadedCreature : suspended.creatures())
-				{
-					out_mutableCreatureState.put(loadedCreature.id(), loadedCreature);
-				}
-			}
-		}
-	}
-
-	// NOTE:  Modifies out_mutablePassiveState.
-	private static void _addPassivesInNewCuboidsWithMillis(Map<Integer, PassiveEntity> out_mutablePassiveState, List<SuspendedCuboid<IReadOnlyCuboidData>> newCuboids)
-	{
-		if (null != newCuboids)
-		{
-			for (SuspendedCuboid<IReadOnlyCuboidData> suspended : newCuboids)
-			{
-				// Load any creatures associated with this cuboid.
-				for (PassiveEntity loadedPassive : suspended.passives())
-				{
-					out_mutablePassiveState.put(loadedPassive.id(), loadedPassive);
-				}
-			}
-		}
-	}
-
-	private static Map<CuboidAddress, List<ScheduledMutation>> _extractPendingMutationsFromNewCuboids(List<SuspendedCuboid<IReadOnlyCuboidData>> newCuboids, Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations)
-	{
-		Map<CuboidAddress, List<ScheduledMutation>> pendingMutations = new HashMap<>();
-		if (null != newCuboids)
-		{
-			for (SuspendedCuboid<IReadOnlyCuboidData> suspended : newCuboids)
-			{
-				IReadOnlyCuboidData cuboid = suspended.cuboid();
-				CuboidAddress address = cuboid.getCuboidAddress();
-				
-				// Add any suspended mutations which came with the cuboid.
-				List<ScheduledMutation> pending = suspended.pendingMutations();
-				if (!pending.isEmpty())
-				{
-					Object old = pendingMutations.put(address, new ArrayList<>(pending));
-					// This must not already be present (this was just created above here).
-					Assert.assertTrue(null == old);
-				}
-			}
-		}
-		// Add any of the mutations scheduled from the last tick.
-		for (List<ScheduledMutation> list : snapshotBlockMutations.values())
-		{
-			for (ScheduledMutation mutation : list)
-			{
-				_scheduleMutationForCuboid(pendingMutations, mutation);
-			}
-		}
-		return pendingMutations;
-	}
-
-	private static Map<CuboidAddress, Map<BlockAddress, Long>> _extractPeriodicMutationsFromNewCuboids(List<SuspendedCuboid<IReadOnlyCuboidData>> newCuboids, TickOutput masterFragment)
-	{
-		Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutations = new HashMap<>();
-		if (null != newCuboids)
-		{
-			for (SuspendedCuboid<IReadOnlyCuboidData> suspended : newCuboids)
-			{
-				IReadOnlyCuboidData cuboid = suspended.cuboid();
-				CuboidAddress address = cuboid.getCuboidAddress();
-				
-				// Add any periodic mutations loaded with the cuboid.
-				Map<BlockAddress, Long> periodic = suspended.periodicMutationMillis();
-				if (!periodic.isEmpty())
-				{
-					Object old = periodicMutations.put(address, new HashMap<>(periodic));
-					// This must not already be present (this was just created above here).
-					Assert.assertTrue(null == old);
-				}
-			}
-		}
-		// Also add in any periodic mutations from the previous tick.
-		// TODO:  This is duplicated so it should be coalesced elsewhere.
-		for (TickOutput.CuboidOutput oneCuboid : masterFragment.world().cuboids())
-		{
-			if (!oneCuboid.periodicNotReadyMutations().isEmpty())
-			{
-				periodicMutations.put(oneCuboid.address(), oneCuboid.periodicNotReadyMutations());
-			}
-		}
-		return periodicMutations;
-	}
-
-	// NOTE:  Modifies out_mutableCrowdState.
-	private static void _populateWithNewPlayers(Map<Integer, Entity> out_mutableCrowdState
-		, List<SuspendedEntity> newEntities
-	)
-	{
-		if (null != newEntities)
-		{
-			for (SuspendedEntity suspended : newEntities)
-			{
-				Entity entity = suspended.entity();
-				int id = entity.id();
-				Object old = out_mutableCrowdState.put(id, entity);
-				// This must not already be present.
-				Assert.assertTrue(null == old);
-			}
-		}
-	}
-
-	private static Map<Integer, List<ScheduledChange>> _combineEntityActions(Map<Integer, List<ScheduledChange>> snapshotEntityMutations
-		, List<SuspendedEntity> newEntities
-		, Map<Integer, EntityActionSimpleMove<IMutablePlayerEntity>> newEntityChanges
-		, List<_OperatorMutationWrapper> operatorMutations
-	)
-	{
-		Map<Integer, List<ScheduledChange>> nextTickChanges = new HashMap<>();
-		if (null != newEntities)
-		{
-			for (SuspendedEntity suspended : newEntities)
-			{
-				Entity entity = suspended.entity();
-				int id = entity.id();
-				
-				// Add any suspended mutations which came with the entity.
-				List<ScheduledChange> changes = suspended.changes();
-				if (!changes.isEmpty())
-				{
-					Object old = nextTickChanges.put(id, new ArrayList<>(changes));
-					// This must not already be present (this was just created above here).
-					Assert.assertTrue(null == old);
-				}
-			}
-		}
-		for (Map.Entry<Integer, List<ScheduledChange>> entry : snapshotEntityMutations.entrySet())
-		{
-			// We can't modify the original so use a new container.
-			int id = entry.getKey();
-			for (ScheduledChange change : entry.getValue())
-			{
-				_scheduleChangesForEntity(nextTickChanges, id, change);
-			}
-		}
-		for (Map.Entry<Integer, EntityActionSimpleMove<IMutablePlayerEntity>> container : newEntityChanges.entrySet())
-		{
-			// These are coming in from outside, so they should be run immediately (no delay for future), after anything already scheduled from the previous tick.
-			ScheduledChange change = new ScheduledChange(container.getValue(), 0L);
-			_scheduleChangesForEntity(nextTickChanges, container.getKey(), change);
-		}
-		if (null != operatorMutations)
-		{
-			for (_OperatorMutationWrapper wrapper : operatorMutations)
-			{
-				// If the operator change isn't targeting the operator entity, schedule it on the specific player entity.
-				if (EnginePlayers.OPERATOR_ENTITY_ID != wrapper.entityId)
-				{
-					List<ScheduledChange> mutableChanges = nextTickChanges.get(wrapper.entityId);
-					if (null == mutableChanges)
-					{
-						mutableChanges = new ArrayList<>();
-						nextTickChanges.put(wrapper.entityId, mutableChanges);
-					}
-					mutableChanges.add(new ScheduledChange(wrapper.mutation, 0L));
-				}
-			}
-		}
-		return nextTickChanges;
 	}
 
 	private static Map<Integer, TickInput.EntityInput> _determineChangesToRun(Map<Integer, Entity> mutableCrowdState
@@ -1604,49 +1523,6 @@ public class TickRunner
 			cuboids.put(key, snapshot);
 		}
 		return cuboids;
-	}
-
-	private static Map<Integer, TickSnapshot.SnapshotEntity> _buildSnapshotEntities(TickOutput masterFragment
-		, Map<Integer, List<ScheduledChange>> snapshotEntityMutations
-		, Map<Integer, Long> commitLevels
-	)
-	{
-		Map<Integer, TickSnapshot.SnapshotEntity> entities = new HashMap<>();
-		for (TickOutput.EntityOutput ent : masterFragment.entities().entityOutput())
-		{
-			int id = ent.entityId();
-			Assert.assertTrue(id > 0);
-			Entity completed;
-			Entity previousVersionOrNull;
-			if (null != ent.updatedEntity())
-			{
-				// This means we changed.
-				completed = ent.updatedEntity();
-				previousVersionOrNull = ent.previousEntity();
-			}
-			else
-			{
-				// Unchanged, so return previous.
-				completed = ent.previousEntity();
-				previousVersionOrNull = null;
-			}
-			long commitLevel = commitLevels.get(id);
-			
-			// Get the scheduled mutations (note that this is often null but we don't want to store null).
-			List<ScheduledChange> scheduledMutations = snapshotEntityMutations.get(id);
-			if (null == scheduledMutations)
-			{
-				scheduledMutations = List.of();
-			}
-			TickSnapshot.SnapshotEntity snapshot = new TickSnapshot.SnapshotEntity(
-					completed
-					, previousVersionOrNull
-					, commitLevel
-					, scheduledMutations
-			);
-			entities.put(id, snapshot);
-		}
-		return entities;
 	}
 
 	private static Map<Integer, TickSnapshot.SnapshotCreature> _buildSnapshotCreatures(TickOutput masterFragment)
@@ -1947,10 +1823,6 @@ public class TickRunner
 			// The set of addresses loaded in this tick (they are present in this tick, but for the first time).
 			, Set<CuboidAddress> cuboidsLoadedThisTick
 			, Map<AbsoluteLocation, BlockProxy> previousProxyCache
-			
-			// ----- TickRunner private state attached to the materials below this line -----
-			// The last commit levels of all connected clients (by ID).
-			, Map<Integer, Long> commitLevels
 			
 			// Higher-level data associated with the materials.
 			, EntityCollection entityCollection
