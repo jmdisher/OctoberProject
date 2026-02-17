@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -14,6 +15,8 @@ import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.BlockChangeDescription;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
+import com.jeffdisher.october.logic.ScheduledChange;
+import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
@@ -21,7 +24,11 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.IEntityAction;
+import com.jeffdisher.october.types.IMutableCreatureEntity;
+import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.PassiveEntity;
+import com.jeffdisher.october.types.TargetedAction;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -39,12 +46,17 @@ public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeight
 	, Map<CuboidAddress, List<AbsoluteLocation>> logicUpdatesByCuboid
 	, Set<AbsoluteLocation> allChangedBlockLocations
 	
+	, Map<CuboidAddress, List<ScheduledMutation>> blockMutationsByCuboid
 	, Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationsByCuboid
 	
 	, Map<Integer, Entity> entitiesById
 	, Map<Integer, Long> clientCommitLevelsById
 	, Map<Integer, CreatureEntity> creaturesById
 	, Map<Integer, PassiveEntity> passivesById
+	
+	, Map<Integer, List<ScheduledChange>> entityActionsById
+	, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureActionsById
+	, Map<Integer, List<IPassiveAction>> passiveActionsById
 )
 {
 	public static FlatResults fromOutput(TickOutput masterFragment)
@@ -124,6 +136,17 @@ public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeight
 			}
 		}
 		
+		// Collect the normal block mutations.
+		Map<CuboidAddress, List<ScheduledMutation>> blockMutationsByCuboid = new HashMap<>();
+		for (ScheduledMutation scheduledMutation : masterFragment.newlyScheduledMutations())
+		{
+			_scheduleMutationForCuboid(blockMutationsByCuboid, scheduledMutation);
+		}
+		for (ScheduledMutation scheduledMutation : masterFragment.world().notYetReadyMutations())
+		{
+			_scheduleMutationForCuboid(blockMutationsByCuboid, scheduledMutation);
+		}
+		
 		// Logic updates require a post-pass, since they actually change adjacent blocks, not themselves.
 		Map<CuboidAddress, List<AbsoluteLocation>> logicUpdatesByCuboid = new HashMap<>();
 		for (AbsoluteLocation location : potentialLogicChangeSet)
@@ -196,6 +219,38 @@ public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeight
 			Assert.assertTrue(null == old);
 		}
 		
+		// Extract all entity actions which weren't yet run or were freshly scheduled.
+		Map<Integer, List<ScheduledChange>> entityActionsById = new HashMap<>();
+		for (TargetedAction<ScheduledChange> targeted : masterFragment.newlyScheduledChanges())
+		{
+			_scheduleChangesForEntity(entityActionsById, targeted.targetId(), targeted.action());
+		}
+		for (TickOutput.EntityOutput ent : masterFragment.entities().entityOutput())
+		{
+			int id = ent.entityId();
+			Assert.assertTrue(id > 0);
+			
+			// We want to schedule anything which wasn't yet ready.
+			for (ScheduledChange change : ent.notYetReadyUnsortedActions())
+			{
+				_scheduleChangesForEntity(entityActionsById, id, change);
+			}
+		}
+		
+		// Extract creature actions which were scheduled.
+		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureActionsById = new HashMap<>();
+		for (TargetedAction<IEntityAction<IMutableCreatureEntity>> targeted : masterFragment.newlyScheduledCreatureChanges())
+		{
+			_scheduleChangesForEntity(creatureActionsById, targeted.targetId(), targeted.action());
+		}
+		
+		// Extract passive actions which were scheduled.
+		Map<Integer, List<IPassiveAction>> passiveActionsById = new HashMap<>();
+		for (TargetedAction<IPassiveAction> targeted : masterFragment.newlyScheduledPassiveActions())
+		{
+			_scheduleChangesForEntity(passiveActionsById, targeted.targetId(), targeted.action());
+		}
+		
 		return new FlatResults(columnHeightMaps
 			
 			, Collections.unmodifiableMap(cuboidsByAddress)
@@ -206,12 +261,42 @@ public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeight
 			, logicUpdatesByCuboid
 			, Collections.unmodifiableSet(allChangedBlockLocations)
 			
+			, Collections.unmodifiableMap(blockMutationsByCuboid)
 			, Collections.unmodifiableMap(periodicMutationsByCuboid)
 			
 			, Collections.unmodifiableMap(entitiesById)
 			, Collections.unmodifiableMap(clientCommitLevelsById)
 			, Collections.unmodifiableMap(creaturesById)
 			, Collections.unmodifiableMap(passivesById)
+			
+			, Collections.unmodifiableMap(entityActionsById)
+			, Collections.unmodifiableMap(creatureActionsById)
+			, Collections.unmodifiableMap(passiveActionsById)
 		);
+	}
+
+
+	private static void _scheduleMutationForCuboid(Map<CuboidAddress, List<ScheduledMutation>> nextTickMutations, ScheduledMutation mutation)
+	{
+		CuboidAddress address = mutation.mutation().getAbsoluteLocation().getCuboidAddress();
+		List<ScheduledMutation> queue = nextTickMutations.get(address);
+		if (null == queue)
+		{
+			queue = new LinkedList<>();
+			nextTickMutations.put(address, queue);
+		}
+		queue.add(mutation);
+	}
+
+	private static <T> void _scheduleChangesForEntity(Map<Integer, List<T>> nextTickChanges, int entityId, T action)
+	{
+		List<T> queue = nextTickChanges.get(entityId);
+		if (null == queue)
+		{
+			// We want to build this as mutable.
+			queue = new LinkedList<>();
+			nextTickChanges.put(entityId, queue);
+		}
+		queue.add(action);
 	}
 }

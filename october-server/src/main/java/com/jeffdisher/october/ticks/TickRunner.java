@@ -849,18 +849,12 @@ public class TickRunner
 			// We will merge together all the per-thread fragments into one master fragment.
 			TickOutput masterFragment = _mergeAndClearPartialFragments(_partial);
 			
-			Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = _extractSnapshotBlockMutations(masterFragment);
 			FlatResults flatResults = FlatResults.fromOutput(masterFragment);
 			
 			// Build the components of the snapshot (as part of the postamble time).
-			Map<CuboidAddress, TickSnapshot.SnapshotCuboid> cuboids = _buildSnapshotCuboids(flatResults, snapshotBlockMutations);
+			Map<CuboidAddress, TickSnapshot.SnapshotCuboid> cuboids = _buildSnapshotCuboids(flatResults);
 			
-			Map<Integer, List<ScheduledChange>> snapshotEntityMutations = new HashMap<>();
 			Map<Integer, TickSnapshot.SnapshotEntity> entities = new HashMap<>();
-			for (TargetedAction<ScheduledChange> targeted : masterFragment.newlyScheduledChanges())
-			{
-				_scheduleChangesForEntity(snapshotEntityMutations, targeted.targetId(), targeted.action());
-			}
 			for (TickOutput.EntityOutput ent : masterFragment.entities().entityOutput())
 			{
 				int id = ent.entityId();
@@ -881,14 +875,8 @@ public class TickRunner
 				}
 				long commitLevel = flatResults.clientCommitLevelsById().get(id);
 				
-				// We want to schedule anything which wasn't yet ready.
-				for (ScheduledChange change : ent.notYetReadyUnsortedActions())
-				{
-					_scheduleChangesForEntity(snapshotEntityMutations, id, change);
-				}
-				
 				// Get the scheduled mutations (note that this is often null but we don't want to store null).
-				List<ScheduledChange> scheduledMutations = snapshotEntityMutations.get(id);
+				List<ScheduledChange> scheduledMutations = flatResults.entityActionsById().get(id);
 				if (null == scheduledMutations)
 				{
 					scheduledMutations = List.of();
@@ -1003,7 +991,7 @@ public class TickRunner
 				Map<Integer, PassiveEntity> mutablePassiveState = new HashMap<>(flatResults.passivesById());
 				
 				// Add any newly-loaded cuboids with their associated creatures and passives.
-				Map<CuboidAddress, List<ScheduledMutation>> pendingMutations = new HashMap<>();
+				Map<CuboidAddress, List<ScheduledMutation>> pendingMutations = new HashMap<>(flatResults.blockMutationsByCuboid());
 				Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutations = new HashMap<>(flatResults.periodicMutationsByCuboid());
 				Set<CuboidAddress> cuboidsLoadedThisTick = new HashSet<>();
 				if (null != newCuboids)
@@ -1053,17 +1041,8 @@ public class TickRunner
 					}
 				}
 				
-				// Add any of the mutations scheduled from the last tick.
-				for (List<ScheduledMutation> list : snapshotBlockMutations.values())
-				{
-					for (ScheduledMutation mutation : list)
-					{
-						_scheduleMutationForCuboid(pendingMutations, mutation);
-					}
-				}
-				
 				// Add newly-loaded player entities.
-				Map<Integer, List<ScheduledChange>> nextTickChanges = new HashMap<>();
+				Map<Integer, List<ScheduledChange>> nextTickChanges = new HashMap<>(flatResults.entityActionsById());
 				if (null != newEntities)
 				{
 					for (SuspendedEntity suspended : newEntities)
@@ -1084,20 +1063,23 @@ public class TickRunner
 						}
 					}
 				}
-				for (Map.Entry<Integer, List<ScheduledChange>> entry : snapshotEntityMutations.entrySet())
-				{
-					// We can't modify the original so use a new container.
-					int id = entry.getKey();
-					for (ScheduledChange change : entry.getValue())
-					{
-						_scheduleChangesForEntity(nextTickChanges, id, change);
-					}
-				}
 				for (Map.Entry<Integer, EntityActionSimpleMove<IMutablePlayerEntity>> container : newEntityChanges.entrySet())
 				{
 					// These are coming in from outside, so they should be run immediately (no delay for future), after anything already scheduled from the previous tick.
+					int id = container.getKey();
 					ScheduledChange change = new ScheduledChange(container.getValue(), 0L);
-					_scheduleChangesForEntity(nextTickChanges, container.getKey(), change);
+					List<ScheduledChange> existing = nextTickChanges.get(id);
+					if (null != existing)
+					{
+						// This is starting as read-only, from the snapshot, so wrap the data.
+						existing = new ArrayList<>(existing);
+					}
+					else
+					{
+						existing = new ArrayList<>();
+					}
+					existing.add(change);
+					nextTickChanges.put(id, existing);
 				}
 				
 				// If there were any operator mutations, split them between client operator ID and specific entities.
@@ -1113,23 +1095,24 @@ public class TickRunner
 						}
 						else
 						{
-							List<ScheduledChange> mutableChanges = nextTickChanges.get(wrapper.entityId);
-							if (null == mutableChanges)
+							List<ScheduledChange> existing = nextTickChanges.get(wrapper.entityId);
+							if (null != existing)
 							{
-								mutableChanges = new ArrayList<>();
-								nextTickChanges.put(wrapper.entityId, mutableChanges);
+								// This is usually read-only, from the snapshot (unless changed above), so wrap the data.
+								existing = new ArrayList<>(existing);
 							}
-							mutableChanges.add(new ScheduledChange(wrapper.mutation, 0L));
+							else
+							{
+								existing = new ArrayList<>();
+							}
+							existing.add(new ScheduledChange(wrapper.mutation, 0L));
+							nextTickChanges.put(wrapper.entityId, existing);
 						}
 					}
 				}
 				
 				// Update our map of latest client commit levels.
 				mutableCommitLevels.putAll(newCommitLevels);
-				
-				// We can also extract any creature changes scheduled in the previous tick (creature actions are not saved in the cuboid so we only have what was scheduled in previous tick).
-				Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> nextCreatureChanges = _scheduleNewCreatureActions(masterFragment);
-				Map<Integer, List<IPassiveAction>> nextPassiveActions = _scheduleNewPassiveActions(masterFragment);
 				
 				// Remove anything old.
 				if (null != cuboidsToDrop)
@@ -1220,6 +1203,10 @@ public class TickRunner
 				// Convert this raw next tick action accumulation into the CrowdProcessor input.
 				Map<Integer, TickInput.EntityInput> changesToRun = _determineChangesToRun(mutableCrowdState, nextTickChanges, mutableCommitLevels);
 				
+				// The corresponding actions for the creatures and passives only originate from inside the tick so just pass those through.
+				Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> nextCreatureChanges = flatResults.creatureActionsById();
+				Map<Integer, List<IPassiveAction>> nextPassiveActions = flatResults.passiveActionsById();
+				
 				// WARNING:  completedHeightMaps does NOT include the new height maps loaded after the previous tick finished!
 				// (this is done to avoid the cost of rebuilding the maps since the column height maps are not guaranteed to be fully accurate)
 				EntityCollection entityCollection = EntityCollection.fromMaps(mutableCrowdState, mutableCreatureState);
@@ -1276,40 +1263,6 @@ public class TickRunner
 		return _thisTickMaterials;
 	}
 
-	private static Map<CuboidAddress, List<ScheduledMutation>> _extractSnapshotBlockMutations(TickOutput masterFragment)
-	{
-		Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = new HashMap<>();
-		for (ScheduledMutation scheduledMutation : masterFragment.newlyScheduledMutations())
-		{
-			_scheduleMutationForCuboid(snapshotBlockMutations, scheduledMutation);
-		}
-		for (ScheduledMutation scheduledMutation : masterFragment.world().notYetReadyMutations())
-		{
-			_scheduleMutationForCuboid(snapshotBlockMutations, scheduledMutation);
-		}
-		return snapshotBlockMutations;
-	}
-
-	private static Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> _scheduleNewCreatureActions(TickOutput masterFragment)
-	{
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> nextCreatureChanges = new HashMap<>();
-		for (TargetedAction<IEntityAction<IMutableCreatureEntity>> targeted : masterFragment.newlyScheduledCreatureChanges())
-		{
-			_scheduleChangesForEntity(nextCreatureChanges, targeted.targetId(), targeted.action());
-		}
-		return nextCreatureChanges;
-	}
-
-	private static Map<Integer, List<IPassiveAction>> _scheduleNewPassiveActions(TickOutput masterFragment)
-	{
-		Map<Integer, List<IPassiveAction>> nextCreatureChanges = new HashMap<>();
-		for (TargetedAction<IPassiveAction> targeted : masterFragment.newlyScheduledPassiveActions())
-		{
-			_scheduleChangesForEntity(nextCreatureChanges, targeted.targetId(), targeted.action());
-		}
-		return nextCreatureChanges;
-	}
-
 	private static Map<Integer, TickInput.EntityInput> _determineChangesToRun(Map<Integer, Entity> mutableCrowdState
 		, Map<Integer, List<ScheduledChange>> nextTickChanges
 		, Map<Integer, Long> clientCommitLevelsById
@@ -1358,30 +1311,6 @@ public class TickRunner
 				throw Assert.unexpected(e);
 			}
 		}
-	}
-
-	private static void _scheduleMutationForCuboid(Map<CuboidAddress, List<ScheduledMutation>> nextTickMutations, ScheduledMutation mutation)
-	{
-		CuboidAddress address = mutation.mutation().getAbsoluteLocation().getCuboidAddress();
-		List<ScheduledMutation> queue = nextTickMutations.get(address);
-		if (null == queue)
-		{
-			queue = new LinkedList<>();
-			nextTickMutations.put(address, queue);
-		}
-		queue.add(mutation);
-	}
-
-	private static <T> void _scheduleChangesForEntity(Map<Integer, List<T>> nextTickChanges, int entityId, T action)
-	{
-		List<T> queue = nextTickChanges.get(entityId);
-		if (null == queue)
-		{
-			// We want to build this as mutable.
-			queue = new LinkedList<>();
-			nextTickChanges.put(entityId, queue);
-		}
-		queue.add(action);
 	}
 
 	private TickSnapshot _locked_waitForTickComplete()
@@ -1492,9 +1421,9 @@ public class TickRunner
 	}
 
 	private static Map<CuboidAddress, TickSnapshot.SnapshotCuboid> _buildSnapshotCuboids(FlatResults flatResults
-		, Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations
 	)
 	{
+		Map<CuboidAddress, List<ScheduledMutation>> blockMutationsByCuboid = flatResults.blockMutationsByCuboid();
 		Map<CuboidAddress, TickSnapshot.SnapshotCuboid> cuboids = new HashMap<>();
 		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> ent : flatResults.cuboidsByAddress().entrySet())
 		{
@@ -1504,7 +1433,7 @@ public class TickRunner
 			// The list of block changes will be null if nothing changed but the list of mutations will never be null, although typically empty.
 			List<MutationBlockSetBlock> changedBlocks = flatResults.resultantBlockChangesByCuboid().get(key);
 			Assert.assertTrue((null == changedBlocks) || !changedBlocks.isEmpty());
-			List<ScheduledMutation> scheduledMutations = snapshotBlockMutations.get(key);
+			List<ScheduledMutation> scheduledMutations = blockMutationsByCuboid.get(key);
 			if (null == scheduledMutations)
 			{
 				scheduledMutations = List.of();
