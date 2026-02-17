@@ -78,6 +78,7 @@ public record TickOutput(WorldOutput world
 		, Entity updatedEntity
 		// The changes which were not ready to run in this tick (could be empty but never null).
 		, List<ScheduledChange> notYetReadyUnsortedActions
+		, long clientCommitLevel
 	) {}
 
 	public static record CuboidOutput(CuboidAddress address

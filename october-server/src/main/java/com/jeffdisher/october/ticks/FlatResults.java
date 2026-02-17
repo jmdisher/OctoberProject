@@ -41,6 +41,7 @@ public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeight
 	, Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationsByCuboid
 	
 	, Map<Integer, Entity> entitiesById
+	, Map<Integer, Long> clientCommitLevelsById
 	, Map<Integer, CreatureEntity> creaturesById
 	, Map<Integer, PassiveEntity> passivesById
 )
@@ -137,8 +138,9 @@ public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeight
 			)
 		;
 		
-		// Collect the entities.
+		// Collect the entities and the client commit levels.
 		Map<Integer, Entity> entitiesById = new HashMap<>();
+		Map<Integer, Long> clientCommitLevelsById = new HashMap<>();
 		for (TickOutput.EntityOutput value : masterFragment.entities().entityOutput())
 		{
 			Entity updated = value.updatedEntity();
@@ -146,7 +148,9 @@ public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeight
 				? updated
 				: value.previousEntity()
 			;
-			entitiesById.put(value.entityId(), toSnapshot);
+			int id = value.entityId();
+			entitiesById.put(id, toSnapshot);
+			clientCommitLevelsById.put(id, value.clientCommitLevel());
 		}
 		
 		// Collect the creatures.
@@ -201,6 +205,7 @@ public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeight
 			, Collections.unmodifiableMap(periodicMutationsByCuboid)
 			
 			, Collections.unmodifiableMap(entitiesById)
+			, Collections.unmodifiableMap(clientCommitLevelsById)
 			, Collections.unmodifiableMap(creaturesById)
 			, Collections.unmodifiableMap(passivesById)
 		);

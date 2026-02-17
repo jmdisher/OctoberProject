@@ -373,30 +373,7 @@ public class TickRunner
 	private void _backgroundThreadMain(ProcessorElement thisThread)
 	{
 		// There is nothing loaded at the start so pass in an empty world and crowd state, as well as no work having been processed.
-		TickMaterials emptyMaterials = new TickMaterials(0L
-			, Map.of()
-			, Map.of()
-			, Map.of()
-			, Map.of()
-			, Map.of()
-			, Map.of()
-			, List.of()
-			, Map.of()
-			, Map.of()
-			, Map.of()
-			, Set.of()
-			, Map.of()
-			
-			, Map.of()
-			
-			, EntityCollection.emptyCollection()
-			, null
-			
-			, 0L
-			, System.currentTimeMillis()
-		);
 		TickMaterials materials = _mergeTickStateAndWaitForNext(thisThread
-				, emptyMaterials
 				, new TickOutput(new TickOutput.WorldOutput(List.of(), List.of(), List.of(), 0)
 						, new TickOutput.EntitiesOutput(0, List.of())
 						, new TickOutput.CreaturesOutput(false, List.of())
@@ -411,6 +388,8 @@ public class TickRunner
 						, Set.of()
 						, Map.of()
 				)
+				, 0L
+				, System.currentTimeMillis()
 		);
 		while (null != materials)
 		{
@@ -534,7 +513,6 @@ public class TickRunner
 			TickOutput innerResults = _runParallelHighLevelUnits(thisThread, materials, context);
 			
 			materials = _mergeTickStateAndWaitForNext(thisThread
-				, materials
 				, new TickOutput(innerResults.world()
 					, innerResults.entities()
 					, innerResults.creatures()
@@ -549,6 +527,8 @@ public class TickRunner
 					, internallyMarkedAlive
 					, cachingLoader.extractCache()
 				)
+				, materials.millisInTickPreamble
+				, materials.timeMillisPreambleEnd
 			);
 		}
 	}
@@ -606,7 +586,12 @@ public class TickRunner
 				for (TickInput.EntityInput input : highLevel.entitiesInUnloadedCuboids())
 				{
 					// We set this to null output entity since that means it was unchanged.
-					TickOutput.EntityOutput output = new TickOutput.EntityOutput(input.entity().id(), input.entity(), null, input.unsortedActions());
+					TickOutput.EntityOutput output = new TickOutput.EntityOutput(input.entity().id()
+						, input.entity()
+						, null
+						, input.unsortedActions()
+						, input.clientCommitLevel()
+					);
 					repackaged.add(output);
 				}
 				TickOutput.EntitiesOutput spilledGroup = new TickOutput.EntitiesOutput(0, repackaged);
@@ -744,7 +729,12 @@ public class TickRunner
 					, entity
 					, changes
 				);
-				processedEntities.add(new TickOutput.EntityOutput(entity.id(), entity, result.changedEntityOrNull(), result.notYetReadyChanges()));
+				processedEntities.add(new TickOutput.EntityOutput(entity.id()
+					, entity
+					, result.changedEntityOrNull()
+					, result.notYetReadyChanges()
+					, entityUnit.clientCommitLevel()
+				));
 				processor.playerActionsProcessed += result.entityChangesProcessed();
 				committedActionCount += result.committedMutationCount();
 			}
@@ -839,8 +829,9 @@ public class TickRunner
 	}
 
 	private TickMaterials _mergeTickStateAndWaitForNext(ProcessorElement elt
-			, TickMaterials startingMaterials
-			, TickOutput perThreadData
+		, TickOutput perThreadData
+		, long previousMillisInPreamble
+		, long previousMillisPreambleEnd
 	)
 	{
 		// Store whatever work we finished from the just-completed tick.
@@ -864,13 +855,13 @@ public class TickRunner
 			
 			// Build the components of the snapshot (as part of the postamble time).
 			Map<CuboidAddress, TickSnapshot.SnapshotCuboid> cuboids = _buildSnapshotCuboids(flatResults, snapshotBlockMutations);
-			Map<Integer, TickSnapshot.SnapshotEntity> entities = _buildSnapshotEntities(masterFragment, snapshotEntityMutations, startingMaterials.commitLevels);
+			Map<Integer, TickSnapshot.SnapshotEntity> entities = _buildSnapshotEntities(masterFragment, snapshotEntityMutations, flatResults.clientCommitLevelsById());
 			Map<Integer, TickSnapshot.SnapshotCreature> creatures = _buildSnapshotCreatures(masterFragment);
 			Map<Integer, TickSnapshot.SnapshotPassive> passives = _buildSnapshotPassives(masterFragment);
 			
 			// Collect the time stamps for stats.
 			long endMillisPostamble = System.currentTimeMillis();
-			long millisTickParallelPhase = (startMillisPostamble - startingMaterials.timeMillisPreambleEnd);
+			long millisTickParallelPhase = (startMillisPostamble - previousMillisPreambleEnd);
 			long millisTickPostamble = (endMillisPostamble - startMillisPostamble);
 			
 			// ***************** Tick ends here *********************
@@ -878,7 +869,7 @@ public class TickRunner
 			// At this point, the tick to advance the world and crowd states has completed so publish the read-only results and wait before we put together the materials for the next tick.
 			// Acknowledge that the tick is completed by creating a snapshot of the state.
 			TickSnapshot.TickStats tickStats = new TickSnapshot.TickStats(_nextTick
-				, startingMaterials.millisInTickPreamble
+				, previousMillisInPreamble
 				, millisTickParallelPhase
 				, millisTickPostamble
 				, _threadStats.clone()
@@ -947,10 +938,7 @@ public class TickRunner
 						else
 						{
 							// There may not be a previous commit level if this was just added.
-							long commitLevel = startingMaterials.commitLevels.containsKey(id)
-									? startingMaterials.commitLevels.get(id)
-									: 0L
-							;
+							long commitLevel = flatResults.clientCommitLevelsById().getOrDefault(id, 0L);
 							newCommitLevels.put(id, commitLevel);
 						}
 					}
@@ -964,6 +952,7 @@ public class TickRunner
 				Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState = new HashMap<>(flatResults.cuboidsByAddress());
 				Map<CuboidAddress, CuboidHeightMap> nextTickMutableHeightMaps = new HashMap<>(flatResults.heightMapsByAddress());
 				Map<Integer, Entity> mutableCrowdState = new HashMap<>(flatResults.entitiesById());
+				Map<Integer, Long> mutableCommitLevels = new HashMap<>(flatResults.clientCommitLevelsById());
 				Map<Integer, CreatureEntity> mutableCreatureState = new HashMap<>(flatResults.creaturesById());
 				Map<Integer, PassiveEntity> mutablePassiveState = new HashMap<>(flatResults.passivesById());
 				
@@ -981,6 +970,10 @@ public class TickRunner
 					: Set.of()
 				;
 				_populateWithNewPlayers(mutableCrowdState, newEntities);
+				for (Map.Entry<Integer, Long> incoming : newCommitLevels.entrySet())
+				{
+					mutableCommitLevels.put(incoming.getKey(), incoming.getValue());
+				}
 				Map<Integer, List<ScheduledChange>> nextTickChanges = _combineEntityActions(snapshotEntityMutations, newEntities, newEntityChanges, operatorMutations);
 				
 				// Add any operator actions (in this path, we only select the actions for the operator entity).
@@ -1090,7 +1083,7 @@ public class TickRunner
 				}
 				
 				// Convert this raw next tick action accumulation into the CrowdProcessor input.
-				Map<Integer, TickInput.EntityInput> changesToRun = _determineChangesToRun(mutableCrowdState, nextTickChanges);
+				Map<Integer, TickInput.EntityInput> changesToRun = _determineChangesToRun(mutableCrowdState, nextTickChanges, mutableCommitLevels);
 				
 				// WARNING:  completedHeightMaps does NOT include the new height maps loaded after the previous tick finished!
 				// (this is done to avoid the cost of rebuilding the maps since the column height maps are not guaranteed to be fully accurate)
@@ -1098,6 +1091,7 @@ public class TickRunner
 				TickInput highLevelPlan = _packageHighLevelWorkUnits(mutableWorldState
 					, nextTickMutableHeightMaps
 					, mutableCrowdState
+					, mutableCommitLevels
 					, changesToRun
 					, mutableCreatureState
 					, mutablePassiveState
@@ -1397,7 +1391,10 @@ public class TickRunner
 		return nextTickChanges;
 	}
 
-	private static Map<Integer, TickInput.EntityInput> _determineChangesToRun(Map<Integer, Entity> mutableCrowdState, Map<Integer, List<ScheduledChange>> nextTickChanges)
+	private static Map<Integer, TickInput.EntityInput> _determineChangesToRun(Map<Integer, Entity> mutableCrowdState
+		, Map<Integer, List<ScheduledChange>> nextTickChanges
+		, Map<Integer, Long> clientCommitLevelsById
+	)
 	{
 		Map<Integer, TickInput.EntityInput> changesToRun = new HashMap<>();
 		// We shouldn't have put operator changes into this common map.
@@ -1411,7 +1408,11 @@ public class TickRunner
 				List<ScheduledChange> list = oneEntity.getValue();
 				// If this is in the map, it can't be empty.
 				Assert.assertTrue(!list.isEmpty());
-				TickInput.EntityInput input = new TickInput.EntityInput(entity, Collections.unmodifiableList(list));
+				long commitLevel = clientCommitLevelsById.get(id);
+				TickInput.EntityInput input = new TickInput.EntityInput(entity
+					, Collections.unmodifiableList(list)
+					, commitLevel
+				);
 				changesToRun.put(id, input);
 			}
 			else
@@ -1759,6 +1760,7 @@ public class TickRunner
 	private static TickInput _packageHighLevelWorkUnits(Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
 		, Map<CuboidAddress, CuboidHeightMap> cuboidHeightMaps
 		, Map<Integer, Entity> completedEntities
+		, Map<Integer, Long> clientCommitLevelsById
 		, Map<Integer, TickInput.EntityInput> entitiesWithWork
 		, Map<Integer, CreatureEntity> completedCreatures
 		, Map<Integer, PassiveEntity> completedPassives
@@ -1773,10 +1775,15 @@ public class TickRunner
 		for (Entity entity : completedEntities.values())
 		{
 			// We want to see a work unit for every entity, so that the entire system is captured in the plan.
-			TickInput.EntityInput workUnit = entitiesWithWork.get(entity.id());
+			int id = entity.id();
+			TickInput.EntityInput workUnit = entitiesWithWork.get(id);
 			if (null == workUnit)
 			{
-				workUnit = new TickInput.EntityInput(entity, List.of());
+				long commitLevel = clientCommitLevelsById.get(id);
+				workUnit = new TickInput.EntityInput(entity
+					, List.of()
+					, commitLevel
+				);
 			}
 			CuboidAddress thisAddress = entity.location().getBlockLocation().getCuboidAddress();
 			if (completedCuboids.containsKey(thisAddress))

@@ -44,6 +44,7 @@ public record TickInput(List<ColumnInput> columns
 
 	public static record EntityInput(Entity entity
 		, List<ScheduledChange> unsortedActions
+		, long clientCommitLevel
 	) {}
 
 	public static record CreatureInput(CreatureEntity creature
