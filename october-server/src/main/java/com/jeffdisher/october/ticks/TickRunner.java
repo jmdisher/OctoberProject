@@ -865,6 +865,12 @@ public class TickRunner
 			List<TickOutput.BasicOutput<PassiveEntity>> passiveOutput = masterFragment.passives().passiveOutput();
 			FlatResults flatResults = FlatResults.fromOutput(masterFragment);
 			
+			// Build the components of the snapshot (as part of the postamble time).
+			Map<CuboidAddress, TickSnapshot.SnapshotCuboid> cuboids = _buildSnapshotCuboids(flatResults, snapshotBlockMutations);
+			Map<Integer, TickSnapshot.SnapshotEntity> entities = _buildSnapshotEntities(startingMaterials, flatResults, snapshotEntityMutations, updatedEntities);
+			Map<Integer, TickSnapshot.SnapshotCreature> creatures = _buildSnapshotCreatures(startingMaterials, flatResults, creatureOutput);
+			Map<Integer, TickSnapshot.SnapshotPassive> passives = _buildSnapshotPassives(startingMaterials, flatResults, passiveOutput);
+			
 			// Collect the time stamps for stats.
 			long endMillisPostamble = System.currentTimeMillis();
 			long millisTickParallelPhase = (startMillisPostamble - startingMaterials.timeMillisPreambleEnd);
@@ -882,14 +888,13 @@ public class TickRunner
 				, masterFragment.entities().committedMutationCount()
 				, masterFragment.world().committedMutationCount()
 			);
-			TickSnapshot completedTick = _buildSnapshot(_nextTick
-				, startingMaterials
-				, flatResults
-				, snapshotBlockMutations
-				, snapshotEntityMutations
-				, updatedEntities
-				, creatureOutput
-				, passiveOutput
+			
+			TickSnapshot completedTick = new TickSnapshot(_nextTick
+				, Collections.unmodifiableMap(cuboids)
+				, Collections.unmodifiableMap(entities)
+				, Collections.unmodifiableMap(creatures)
+				, Collections.unmodifiableMap(passives)
+				, flatResults.columnHeightMaps()
 				, masterFragment.postedEvents()
 				, masterFragment.internallyMarkedAlive()
 				, tickStats
@@ -1586,17 +1591,8 @@ public class TickRunner
 		);
 	}
 
-	private static TickSnapshot _buildSnapshot(long tickNumber
-		, TickMaterials startingMaterials
-		, FlatResults flatResults
+	private static Map<CuboidAddress, TickSnapshot.SnapshotCuboid> _buildSnapshotCuboids(FlatResults flatResults
 		, Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations
-		, Map<Integer, List<ScheduledChange>> snapshotEntityMutations
-		, Set<Integer> updatedEntities
-		, List<TickOutput.BasicOutput<CreatureEntity>> creatureOutput
-		, List<TickOutput.BasicOutput<PassiveEntity>> passiveOutput
-		, List<EventRecord> postedEvents
-		, Set<CuboidAddress> internallyMarkedAlive
-		, TickSnapshot.TickStats tickStats
 	)
 	{
 		Map<CuboidAddress, TickSnapshot.SnapshotCuboid> cuboids = new HashMap<>();
@@ -1626,6 +1622,15 @@ public class TickRunner
 			);
 			cuboids.put(key, snapshot);
 		}
+		return cuboids;
+	}
+
+	private static Map<Integer, TickSnapshot.SnapshotEntity> _buildSnapshotEntities(TickMaterials startingMaterials
+		, FlatResults flatResults
+		, Map<Integer, List<ScheduledChange>> snapshotEntityMutations
+		, Set<Integer> updatedEntities
+	)
+	{
 		Map<Integer, TickSnapshot.SnapshotEntity> entities = new HashMap<>();
 		for (Map.Entry<Integer, Entity> ent : flatResults.entitiesById().entrySet())
 		{
@@ -1652,6 +1657,14 @@ public class TickRunner
 			);
 			entities.put(key, snapshot);
 		}
+		return entities;
+	}
+
+	private static Map<Integer, TickSnapshot.SnapshotCreature> _buildSnapshotCreatures(TickMaterials startingMaterials
+		, FlatResults flatResults
+		, List<TickOutput.BasicOutput<CreatureEntity>> creatureOutput
+	)
+	{
 		Map<Integer, TickSnapshot.SnapshotCreature> creatures = new HashMap<>();
 		Set<Integer> updatedCreatures = creatureOutput.stream()
 			.filter((TickOutput.BasicOutput<CreatureEntity> creature) -> (null != creature.updated()))
@@ -1674,13 +1687,21 @@ public class TickRunner
 			);
 			creatures.put(key, snapshot);
 		}
+		return creatures;
+	}
+
+	private static Map<Integer, TickSnapshot.SnapshotPassive> _buildSnapshotPassives(TickMaterials startingMaterials
+		, FlatResults flatResults
+		, List<TickOutput.BasicOutput<PassiveEntity>> passiveOutput
+	)
+	{
 		Map<Integer, TickSnapshot.SnapshotPassive> passives = new HashMap<>();
 		Set<Integer> updatedPassives = passiveOutput.stream()
 			.filter((TickOutput.BasicOutput<PassiveEntity> passive) -> (null != passive.updated()))
 			.map((TickOutput.BasicOutput<PassiveEntity> passive) -> passive.updated().id())
 			.collect(Collectors.toSet())
 		;
-		for (Map.Entry<Integer, PassiveEntity>  ent : flatResults.passivesById().entrySet())
+		for (Map.Entry<Integer, PassiveEntity> ent : flatResults.passivesById().entrySet())
 		{
 			Integer key = ent.getKey();
 			// Passives are expected to have positive IDs.
@@ -1697,20 +1718,7 @@ public class TickRunner
 			);
 			passives.put(key, snapshot);
 		}
-		
-		TickSnapshot completedTick = new TickSnapshot(tickNumber
-			, Collections.unmodifiableMap(cuboids)
-			, Collections.unmodifiableMap(entities)
-			, Collections.unmodifiableMap(creatures)
-			, Collections.unmodifiableMap(passives)
-			, flatResults.columnHeightMaps()
-			, postedEvents
-			, internallyMarkedAlive
-			
-			// Stats.
-			, tickStats
-		);
-		return completedTick;
+		return passives;
 	}
 
 	private static TickInput _packageHighLevelWorkUnits(Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
