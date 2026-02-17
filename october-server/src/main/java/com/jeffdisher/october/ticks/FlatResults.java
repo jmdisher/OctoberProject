@@ -151,18 +151,15 @@ public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeight
 		Map<CuboidAddress, List<AbsoluteLocation>> logicUpdatesByCuboid = new HashMap<>();
 		for (AbsoluteLocation location : potentialLogicChangeSet)
 		{
-			CuboidAddress cuboid = location.getCuboidAddress();
-			if (!logicUpdatesByCuboid.containsKey(cuboid))
+			CuboidAddress address = location.getCuboidAddress();
+			List<AbsoluteLocation> existing = logicUpdatesByCuboid.get(address);
+			if (null == existing)
 			{
-				logicUpdatesByCuboid.put(cuboid, new ArrayList<>());
+				existing = new ArrayList<>();
+				logicUpdatesByCuboid.put(address, existing);
 			}
-			logicUpdatesByCuboid.get(cuboid).add(location);
+			existing.add(location);
 		}
-		logicUpdatesByCuboid = logicUpdatesByCuboid.entrySet().stream()
-			.collect(Collectors.toMap((Map.Entry<CuboidAddress, List<AbsoluteLocation>> ent) -> ent.getKey()
-				, (Map.Entry<CuboidAddress, List<AbsoluteLocation>> ent) -> Collections.unmodifiableList(ent.getValue()))
-			)
-		;
 		
 		// Collect the entities and the client commit levels.
 		Map<Integer, Entity> entitiesById = new HashMap<>();
@@ -258,10 +255,10 @@ public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeight
 			, Collections.unmodifiableMap(resultantBlockChangesByCuboid)
 			, Collections.unmodifiableMap(blockUpdatesByCuboid)
 			, Collections.unmodifiableMap(lightingUpdatesByCuboid)
-			, logicUpdatesByCuboid
+			, _lockMapOfLists(logicUpdatesByCuboid)
 			, Collections.unmodifiableSet(allChangedBlockLocations)
 			
-			, Collections.unmodifiableMap(blockMutationsByCuboid)
+			, _lockMapOfLists(blockMutationsByCuboid)
 			, Collections.unmodifiableMap(periodicMutationsByCuboid)
 			
 			, Collections.unmodifiableMap(entitiesById)
@@ -269,9 +266,9 @@ public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeight
 			, Collections.unmodifiableMap(creaturesById)
 			, Collections.unmodifiableMap(passivesById)
 			
-			, Collections.unmodifiableMap(entityActionsById)
-			, Collections.unmodifiableMap(creatureActionsById)
-			, Collections.unmodifiableMap(passiveActionsById)
+			, _lockMapOfLists(entityActionsById)
+			, _lockMapOfLists(creatureActionsById)
+			, _lockMapOfLists(passiveActionsById)
 		);
 	}
 
@@ -298,5 +295,14 @@ public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeight
 			nextTickChanges.put(entityId, queue);
 		}
 		queue.add(action);
+	}
+
+	private static <K, L> Map<K, List<L>> _lockMapOfLists(Map<K, List<L>> input)
+	{
+		return input.entrySet().stream()
+			.collect(Collectors.toMap((Map.Entry<K, List<L>> ent) -> ent.getKey()
+				, (Map.Entry<K, List<L>> ent) -> Collections.unmodifiableList(ent.getValue()))
+			)
+		;
 	}
 }
