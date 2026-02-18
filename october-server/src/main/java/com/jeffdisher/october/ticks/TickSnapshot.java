@@ -77,9 +77,9 @@ public record TickSnapshot(long tickNumber
 	{}
 
 	public static record TickStats(long tickNumber
-			, long millisTickPreamble
-			, long millisTickParallelPhase
-			, long millisTickPostamble
+			, long nanosInPreamble
+			, long nanosInParallelPhase
+			, long nanosInPostamble
 			, ProcessorElement.PerThreadStats[] threadStats
 			, int committedEntityMutationCount
 			, int committedCuboidMutationCount
@@ -87,13 +87,13 @@ public record TickSnapshot(long tickNumber
 		public void writeToStream(PrintStream out)
 		{
 			long nanosPerMilli = 1_000_000L;
-			long preamble = this.millisTickPreamble;
-			long parallel = this.millisTickParallelPhase;
-			long postamble = this.millisTickPostamble;
-			long tickTime = preamble + parallel + postamble;
-			out.println("Log for slow (" + tickTime + " ms) tick " + this.tickNumber);
-			out.println("\tPreamble: " + preamble + " ms");
-			out.println("\tParallel: " + parallel + " ms");
+			long millisInPreamble = this.nanosInPreamble / nanosPerMilli;
+			long millisInParallel = this.nanosInParallelPhase / nanosPerMilli;
+			long millisInPostamble = this.nanosInPostamble / nanosPerMilli;
+			long millisInFullCycle = millisInPreamble + millisInParallel + millisInPostamble;
+			out.println("Log for slow (" + millisInFullCycle + " ms) tick " + this.tickNumber);
+			out.println("\tPreamble: " + millisInPreamble + " ms");
+			out.println("\tParallel: " + millisInParallel + " ms");
 			for (int i = 0; i < this.threadStats.length; ++i)
 			{
 				ProcessorElement.PerThreadStats thread = this.threadStats[i];
@@ -117,7 +117,7 @@ public record TickSnapshot(long tickNumber
 					out.printf("\t\t=%d ms running operator commands\n", millisProcessingOperator);
 				}
 			}
-			out.println("\tPostamble: " + postamble + " ms");
+			out.println("\tPostamble: " + millisInPostamble + " ms");
 		}
 	}
 }

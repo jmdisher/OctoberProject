@@ -387,7 +387,7 @@ public class TickRunner
 						, Map.of()
 				)
 				, 0L
-				, System.currentTimeMillis()
+				, System.nanoTime()
 		);
 		while (null != materials)
 		{
@@ -525,8 +525,8 @@ public class TickRunner
 					, internallyMarkedAlive
 					, cachingLoader.extractCache()
 				)
-				, materials.millisInTickPreamble
-				, materials.timeMillisPreambleEnd
+				, materials.nanosInPreamble
+				, materials.nanosAtPreambleEnd
 			);
 		}
 	}
@@ -828,8 +828,8 @@ public class TickRunner
 
 	private TickMaterials _mergeTickStateAndWaitForNext(ProcessorElement elt
 		, TickOutput perThreadData
-		, long previousMillisInPreamble
-		, long previousMillisPreambleEnd
+		, long previousNanosInPreamble
+		, long previousNanosAtPreambleEnd
 	)
 	{
 		// Store whatever work we finished from the just-completed tick.
@@ -842,7 +842,7 @@ public class TickRunner
 		// 3) We need to collect all the actions required for the next frame (this requires pulling data from the interlock).
 		if (elt.synchronizeAndReleaseLast())
 		{
-			long startMillisPostamble = System.currentTimeMillis();
+			long nanosAtPostambleStart = System.nanoTime();
 			
 			// We will merge together all the per-thread fragments into one master fragment.
 			TickOutput masterFragment = _mergeAndClearPartialFragments(_partial);
@@ -892,18 +892,18 @@ public class TickRunner
 			Map<Integer, TickSnapshot.SnapshotPassive> passives = _buildSnapshotPassives(masterFragment);
 			
 			// Collect the time stamps for stats.
-			long endMillisPostamble = System.currentTimeMillis();
-			long millisTickParallelPhase = (startMillisPostamble - previousMillisPreambleEnd);
-			long millisTickPostamble = (endMillisPostamble - startMillisPostamble);
+			long nanosAtPostambleEnd = System.nanoTime();
+			long nanosInParallelPhase = (nanosAtPostambleStart - previousNanosAtPreambleEnd);
+			long nanosInPostamble = (nanosAtPostambleEnd - nanosAtPostambleStart);
 			
 			// ***************** Tick ends here *********************
 			
 			// At this point, the tick to advance the world and crowd states has completed so publish the read-only results and wait before we put together the materials for the next tick.
 			// Acknowledge that the tick is completed by creating a snapshot of the state.
 			TickSnapshot.TickStats tickStats = new TickSnapshot.TickStats(_nextTick
-				, previousMillisInPreamble
-				, millisTickParallelPhase
-				, millisTickPostamble
+				, previousNanosInPreamble
+				, nanosInParallelPhase
+				, nanosInPostamble
 				, _threadStats.clone()
 				, masterFragment.entities().committedMutationCount()
 				, masterFragment.world().committedMutationCount()
@@ -928,11 +928,11 @@ public class TickRunner
 			
 			// ***************** Tick starts here *********************
 			
-			long startMillisPreamble = System.currentTimeMillis();
-			
 			// We woke up so either run the next tick or exit (if the next tick was set negative, it means exit).
 			if (_nextTick > 0)
 			{
+				long nanosAtPreambleStart = System.nanoTime();
+				
 				// Load other cuboids and apply other mutations enqueued since the last tick.
 				List<SuspendedCuboid<IReadOnlyCuboidData>> newCuboids;
 				Set<CuboidAddress> cuboidsToDrop;
@@ -1042,8 +1042,8 @@ public class TickRunner
 				);
 				
 				// Collect the last timing data for this tick preamble.
-				long endMillisPreamble = System.currentTimeMillis();
-				long millisInNextTickPreamble = endMillisPreamble - startMillisPreamble;
+				long nanosAtPreambleEnd = System.nanoTime();
+				long nanosInPreamble = nanosAtPreambleEnd - nanosAtPreambleStart;
 				
 				_thisTickMaterials = new TickMaterials(_nextTick
 					, preTickState.cuboidsByAddress()
@@ -1064,8 +1064,8 @@ public class TickRunner
 					, highLevelPlan
 					
 					// Store the partial tick stats.
-					, millisInNextTickPreamble
-					, endMillisPreamble
+					, nanosInPreamble
+					, nanosAtPreambleEnd
 				);
 			}
 			else
@@ -1546,8 +1546,8 @@ public class TickRunner
 			, TickInput highLevel
 			
 			// Data related to internal statistics to be passed back at the end of the tick.
-			, long millisInTickPreamble
-			, long timeMillisPreambleEnd
+			, long nanosInPreamble
+			, long nanosAtPreambleEnd
 	) {}
 
 	/**

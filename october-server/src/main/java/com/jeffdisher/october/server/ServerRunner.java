@@ -373,11 +373,12 @@ public class ServerRunner
 			
 			// Check if this needs to be logged.
 			TickSnapshot.TickStats stats = snapshot.stats();
-			long preamble = stats.millisTickPreamble();
-			long parallel = stats.millisTickParallelPhase();
-			long postamble = stats.millisTickPostamble();
-			long tickTime = preamble + parallel + postamble;
-			if (tickTime > _millisPerTick)
+			long nanosInPreamble = stats.nanosInPreamble();
+			long nanosInParallel = stats.nanosInParallelPhase();
+			long nanosInPostamble = stats.nanosInPostamble();
+			long nanosFullCycle = nanosInPreamble + nanosInParallel + nanosInPostamble;
+			long millisFullCycle = nanosFullCycle / 1_000_000L;
+			if (millisFullCycle > _millisPerTick)
 			{
 				stats.writeToStream(System.out);
 			}

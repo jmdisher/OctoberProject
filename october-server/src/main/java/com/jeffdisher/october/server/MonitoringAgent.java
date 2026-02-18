@@ -115,13 +115,14 @@ public class MonitoringAgent
 		}
 		public synchronized boolean shouldRetireAfterTickSample(TickSnapshot.TickStats stats)
 		{
-			long totalMillis = stats.millisTickPreamble() + stats.millisTickParallelPhase() + stats.millisTickPostamble();
-			if (totalMillis > _slowestTickMillis)
+			long nanosTotal = stats.nanosInPreamble() + stats.nanosInParallelPhase() + stats.nanosInPostamble();
+			long millisTotal = nanosTotal / 1_000_000L;
+			if (millisTotal > _slowestTickMillis)
 			{
-				_slowestTickMillis = totalMillis;
+				_slowestTickMillis = millisTotal;
 				_slowestTick = stats;
 			}
-			_totalMillisInTicks += totalMillis;
+			_totalMillisInTicks += millisTotal;
 			_ticksRemaining -= 1;
 			boolean shouldRetire = (0 == _ticksRemaining);
 			if (shouldRetire)
