@@ -97,18 +97,25 @@ public class ColumnHeightMap
 			if (_unknownCount > 0)
 			{
 				int changeCount = 0;
+				// WARNING:  We are using unsafe access for performance reasons.
+				byte[][] unsafeYMajor = cuboid.getUnsafeAccess();
 				for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 				{
-					int[] targetRow = _mutableYMajorData[y];
-					for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
+					// If the row is null, we know that it is entirely unknown, so we can skip it.
+					byte[] readingUnsafeRow = unsafeYMajor[y];
+					if (null != readingUnsafeRow)
 					{
-						if (Integer.MIN_VALUE == targetRow[x])
+						int[] targetRow = _mutableYMajorData[y];
+						for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 						{
-							byte incoming = cuboid.getHightestSolidBlock(x, y);
-							if (CuboidHeightMap.UNKNOWN_HEIGHT != incoming)
+							if (Integer.MIN_VALUE == targetRow[x])
 							{
-								targetRow[x] = (int)incoming + zBase;
-								changeCount += 1;
+								byte incoming = readingUnsafeRow[x];
+								if (CuboidHeightMap.UNKNOWN_HEIGHT != incoming)
+								{
+									targetRow[x] = (int)incoming + zBase;
+									changeCount += 1;
+								}
 							}
 						}
 					}

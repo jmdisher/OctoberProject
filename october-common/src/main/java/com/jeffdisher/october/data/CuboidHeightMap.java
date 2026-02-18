@@ -53,4 +53,16 @@ public class CuboidHeightMap
 			: UNKNOWN_HEIGHT
 		;
 	}
+
+	/**
+	 * WARNING:  This is unsafe as it allows direct access to the underlying Y-major map of values.  This means that
+	 * changes to the returned value will change the state of this object.
+	 * USE SPARINGLY AND WITH CAUTION!
+	 * 
+	 * @return The Y-major height map within the receiver (by reference).
+	 */
+	public byte[][] getUnsafeAccess()
+	{
+		return _yMajorMap;
+	}
 }

@@ -100,9 +100,11 @@ public class TestHeightMapHelpers
 		CuboidHeightMap map = HeightMapHelpers.buildHeightMap(cuboid);
 		int airCount = 0;
 		int stoneCount = 0;
-		for (byte x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
+		byte[][] yMajorUnsafe = map.getUnsafeAccess();
+		for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
-			for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
+			byte[] unsafeRow = yMajorUnsafe[y];
+			for (byte x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 			{
 				byte height = map.getHightestSolidBlock(x, y);
 				if (CuboidHeightMap.UNKNOWN_HEIGHT == height)
@@ -113,6 +115,11 @@ public class TestHeightMapHelpers
 				{
 					stoneCount += 1;
 				}
+				byte unsafeHeight = (null != unsafeRow)
+					? unsafeRow[x]
+					: CuboidHeightMap.UNKNOWN_HEIGHT
+				;
+				Assert.assertEquals(height, unsafeHeight);
 			}
 		}
 		Assert.assertEquals(Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - 5, airCount);
