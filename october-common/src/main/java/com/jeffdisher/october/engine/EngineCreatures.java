@@ -9,6 +9,7 @@ import com.jeffdisher.october.logic.DamageHelpers;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.NudgeHelpers;
+import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -133,7 +134,8 @@ public class EngineCreatures
 	{
 		// In this case, we will also check to see if we need to "pop out" of a block.
 		EntitySubActionPopOutOfBlock<IMutableCreatureEntity> subAction = null;
-		EntityLocation popOut = EntityMovementHelpers.popOutLocation(context.previousBlockLookUp, mutable.newLocation, mutable.getType().volume(), EntitySubActionPopOutOfBlock.POP_OUT_MAX_DISTANCE);
+		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
+		EntityLocation popOut = EntityMovementHelpers.popOutLocation(reader, mutable.newLocation, mutable.getType().volume(), EntitySubActionPopOutOfBlock.POP_OUT_MAX_DISTANCE);
 		if (null != popOut)
 		{
 			subAction = new EntitySubActionPopOutOfBlock<>(popOut);

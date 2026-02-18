@@ -3,6 +3,7 @@ package com.jeffdisher.october.actions.passive;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.DamageHelpers;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
+import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.PassiveEntity;
@@ -60,7 +61,8 @@ public class PassiveSynth_ItemSlot
 			EntityLocation preVelocity = EntityMovementHelpers.saturateVectorAddition(startVelocity, envVector);
 			
 			// Check to see if we need to pop-out of a block.
-			EntityLocation popOut = EntityMovementHelpers.popOutLocation(context.previousBlockLookUp, startLocation, volume, POP_OUT_MAX_DISTANCE);
+			ViscosityReader reader = new ViscosityReader(env, context.previousBlockLookUp);
+			EntityLocation popOut = EntityMovementHelpers.popOutLocation(reader, startLocation, volume, POP_OUT_MAX_DISTANCE);
 			if (null != popOut)
 			{
 				startLocation = popOut;
@@ -69,7 +71,7 @@ public class PassiveSynth_ItemSlot
 			
 			// Now apply normal movement.
 			float seconds = (float)context.millisPerTick / EntityMovementHelpers.FLOAT_MILLIS_PER_SECOND;
-			EntityMovementHelpers.HighLevelMovementResult movement = EntityMovementHelpers.commonMovementIdiom(context.previousBlockLookUp
+			EntityMovementHelpers.HighLevelMovementResult movement = EntityMovementHelpers.commonMovementIdiom(reader
 				, startLocation
 				, preVelocity
 				, volume

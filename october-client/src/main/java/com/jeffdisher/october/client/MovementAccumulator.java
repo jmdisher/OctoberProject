@@ -533,7 +533,8 @@ public class MovementAccumulator
 			if (newEntity == _thisEntity)
 			{
 				// This changes nothing, so that either means that there is nothing changing, or that we are stuck in a block (we need to check for collision in either case since both can be true).
-				EntityLocation targetLocation = EntityMovementHelpers.popOutLocation(_proxyLookup, _thisEntity.location(), _playerVolume, EntitySubActionPopOutOfBlock.POP_OUT_MAX_DISTANCE);
+				ViscosityReader reader = new ViscosityReader(_env, _proxyLookup);
+				EntityLocation targetLocation = EntityMovementHelpers.popOutLocation(reader, _thisEntity.location(), _playerVolume, EntitySubActionPopOutOfBlock.POP_OUT_MAX_DISTANCE);
 				if (null != targetLocation)
 				{
 					_subAction = new EntitySubActionPopOutOfBlock<IMutablePlayerEntity>(targetLocation);

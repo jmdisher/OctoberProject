@@ -3269,24 +3269,25 @@ public class TestCommonChanges
 			}, null, null)
 			.finish()
 		;
+		ViscosityReader reader = new ViscosityReader(ENV, context.previousBlockLookUp);
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		EntityVolume volume = mutable.getType().volume();
 		
 		// Show some successful attempts.
 		mutable.newLocation = new EntityLocation(5.3f, 5.8f, 3.4f);
-		EntityLocation down = EntityMovementHelpers.popOutLocation(context.previousBlockLookUp, mutable.newLocation, volume, EntitySubActionPopOutOfBlock.POP_OUT_MAX_DISTANCE);
+		EntityLocation down = EntityMovementHelpers.popOutLocation(reader, mutable.newLocation, volume, EntitySubActionPopOutOfBlock.POP_OUT_MAX_DISTANCE);
 		Assert.assertEquals(new EntityLocation(5.3f, 5.8f, 3.29f), down);
 		Assert.assertTrue(new EntitySubActionPopOutOfBlock<>(down).applyChange(context, mutable));
 		Assert.assertEquals(down, mutable.newLocation);
 		
 		mutable.newLocation = new EntityLocation(5.3f, 5.8f, 4.0f);
-		EntityLocation north = EntityMovementHelpers.popOutLocation(context.previousBlockLookUp, mutable.newLocation, volume, EntitySubActionPopOutOfBlock.POP_OUT_MAX_DISTANCE);
+		EntityLocation north = EntityMovementHelpers.popOutLocation(reader, mutable.newLocation, volume, EntitySubActionPopOutOfBlock.POP_OUT_MAX_DISTANCE);
 		Assert.assertEquals(new EntityLocation(5.3f, 6.0f, 4.0f), north);
 		Assert.assertTrue(new EntitySubActionPopOutOfBlock<>(north).applyChange(context, mutable));
 		Assert.assertEquals(north, mutable.newLocation);
 		
 		mutable.newLocation = new EntityLocation(4.7f, 5.5f, 4.0f);
-		EntityLocation west = EntityMovementHelpers.popOutLocation(context.previousBlockLookUp, mutable.newLocation, volume, EntitySubActionPopOutOfBlock.POP_OUT_MAX_DISTANCE);
+		EntityLocation west = EntityMovementHelpers.popOutLocation(reader, mutable.newLocation, volume, EntitySubActionPopOutOfBlock.POP_OUT_MAX_DISTANCE);
 		Assert.assertEquals(new EntityLocation(4.59f, 5.5f, 4.0f), west);
 		Assert.assertTrue(new EntitySubActionPopOutOfBlock<>(west).applyChange(context, mutable));
 		Assert.assertEquals(west, mutable.newLocation);
@@ -3294,12 +3295,12 @@ public class TestCommonChanges
 		// Show some failed attempts.
 		// -no point.
 		mutable.newLocation = new EntityLocation(6.0f, 6.0f, 6.0f);
-		Assert.assertNull(EntityMovementHelpers.popOutLocation(context.previousBlockLookUp, mutable.newLocation, volume, EntitySubActionPopOutOfBlock.POP_OUT_MAX_DISTANCE));
+		Assert.assertNull(EntityMovementHelpers.popOutLocation(reader, mutable.newLocation, volume, EntitySubActionPopOutOfBlock.POP_OUT_MAX_DISTANCE));
 		Assert.assertFalse(new EntitySubActionPopOutOfBlock<>(new EntityLocation(6.0f, 6.0f, 6.2f)).applyChange(context, mutable));
 		
 		// -still colliding.
 		mutable.newLocation = new EntityLocation(5.5f, 5.5f, 5.5f);
-		Assert.assertNull(EntityMovementHelpers.popOutLocation(context.previousBlockLookUp, mutable.newLocation, volume, EntitySubActionPopOutOfBlock.POP_OUT_MAX_DISTANCE));
+		Assert.assertNull(EntityMovementHelpers.popOutLocation(reader, mutable.newLocation, volume, EntitySubActionPopOutOfBlock.POP_OUT_MAX_DISTANCE));
 		Assert.assertFalse(new EntitySubActionPopOutOfBlock<>(new EntityLocation(5.5f, 5.5f, 5.7f)).applyChange(context, mutable));
 		
 		// -too far.

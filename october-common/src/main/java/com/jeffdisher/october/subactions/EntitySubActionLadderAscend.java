@@ -106,7 +106,8 @@ public class EntitySubActionLadderAscend<T extends IMutableMinimalEntity> implem
 		};
 		boolean isLadder = (null != EntityMovementHelpers.checkTypeIntersection(location, volume, ladderSupplier));
 		
-		_LadderHelper helper = new _LadderHelper(env, previousBlockLookUp);
+		ViscosityReader reader = new ViscosityReader(env, previousBlockLookUp);
+		_LadderHelper helper = new _LadderHelper(reader);
 		EntityMovementHelpers.interactiveEntityMove(location, volume, new EntityLocation(0.0f, 0.0f, ASCEND_PER_TICK), helper);
 		return (isLadder && !location.equals(helper.outputLocation))
 			? helper.outputLocation
@@ -120,9 +121,9 @@ public class EntitySubActionLadderAscend<T extends IMutableMinimalEntity> implem
 		private final ViscosityReader _reader;
 		public EntityLocation outputLocation;
 		
-		public _LadderHelper(Environment env, Function<AbsoluteLocation, BlockProxy> blockLookup)
+		public _LadderHelper(ViscosityReader reader)
 		{
-			_reader = new ViscosityReader(env, blockLookup);
+			_reader = reader;
 		}
 		@Override
 		public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)

@@ -343,7 +343,8 @@ public class CreatureLogic
 		Assert.assertTrue(!existingPlan.isEmpty());
 		
 		boolean fromAbove = false;
-		float viscosity = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp).getViscosityFraction(mutable.newLocation.getBlockLocation(), fromAbove);
+		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
+		float viscosity = reader.getViscosityFraction(mutable.newLocation.getBlockLocation(), fromAbove);
 		boolean isIdleMovement = (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.newTargetEntityId);
 		
 		// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
@@ -353,7 +354,6 @@ public class CreatureLogic
 			// This means we are jumping so choose the next place where we want to go for direction hint.
 			directionHint = existingPlan.get(1);
 		}
-		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
 		EntityActionSimpleMove<IMutableCreatureEntity> actionProduced = CreatureMovementHelpers.prepareForMove(reader, mutable.getLocation(), mutable.getVelocityVector(), mutable.getType(), directionHint, timeLimitMillis, viscosity, isIdleMovement);
 		if (null == actionProduced)
 		{

@@ -178,7 +178,7 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 				intensityVelocityPerSecond /= 2.0f;
 			}
 			
-			EntityMovementHelpers.HighLevelMovementResult result = EntityMovementHelpers.commonMovementIdiom(context.previousBlockLookUp
+			EntityMovementHelpers.HighLevelMovementResult result = EntityMovementHelpers.commonMovementIdiom(reader
 				, startLocation
 				, preVelocity
 				, volume

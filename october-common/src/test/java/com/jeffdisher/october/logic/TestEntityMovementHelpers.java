@@ -150,12 +150,13 @@ public class TestEntityMovementHelpers
 		EntityLocation waterStoneLocation = new EntityLocation(0.0f, 0.0f, -1.0f);
 		EntityLocation airEdgeLocation = new EntityLocation(0.0f, 31.0f, 40.0f);
 		
-		Assert.assertEquals(0.0f, EntityMovementHelpers.maxViscosityInEntityBlocks(airLocation, volume, lookup), 0.01f);
-		Assert.assertEquals(0.5f, EntityMovementHelpers.maxViscosityInEntityBlocks(waterLocation, volume, lookup), 0.01f);
-		Assert.assertEquals(1.0f, EntityMovementHelpers.maxViscosityInEntityBlocks(stoneLocation, volume, lookup), 0.01f);
-		Assert.assertEquals(0.5f, EntityMovementHelpers.maxViscosityInEntityBlocks(airWaterLocation, volume, lookup), 0.01f);
-		Assert.assertEquals(1.0f, EntityMovementHelpers.maxViscosityInEntityBlocks(waterStoneLocation, volume, lookup), 0.01f);
-		Assert.assertEquals(1.0f, EntityMovementHelpers.maxViscosityInEntityBlocks(airEdgeLocation, volume, lookup), 0.01f);
+		ViscosityReader reader = new ViscosityReader(ENV, lookup);
+		Assert.assertEquals(0.0f, EntityMovementHelpers.maxViscosityInEntityBlocks(reader, airLocation, volume), 0.01f);
+		Assert.assertEquals(0.5f, EntityMovementHelpers.maxViscosityInEntityBlocks(reader, waterLocation, volume), 0.01f);
+		Assert.assertEquals(1.0f, EntityMovementHelpers.maxViscosityInEntityBlocks(reader, stoneLocation, volume), 0.01f);
+		Assert.assertEquals(0.5f, EntityMovementHelpers.maxViscosityInEntityBlocks(reader, airWaterLocation, volume), 0.01f);
+		Assert.assertEquals(1.0f, EntityMovementHelpers.maxViscosityInEntityBlocks(reader, waterStoneLocation, volume), 0.01f);
+		Assert.assertEquals(1.0f, EntityMovementHelpers.maxViscosityInEntityBlocks(reader, airEdgeLocation, volume), 0.01f);
 	}
 
 	@Test
@@ -247,7 +248,8 @@ public class TestEntityMovementHelpers
 		float maxVelocityPerSecond = 4.0f;
 		float seconds = 0.1f;
 		
-		EntityMovementHelpers.HighLevelMovementResult result = EntityMovementHelpers.commonMovementIdiom(previousBlockLookUp
+		ViscosityReader reader = new ViscosityReader(ENV, previousBlockLookUp);
+		EntityMovementHelpers.HighLevelMovementResult result = EntityMovementHelpers.commonMovementIdiom(reader
 			, startLocation
 			, startVelocity
 			, volume
@@ -279,7 +281,8 @@ public class TestEntityMovementHelpers
 		float maxVelocityPerSecond = 4.0f;
 		float seconds = 0.1f;
 		
-		EntityMovementHelpers.HighLevelMovementResult result = EntityMovementHelpers.commonMovementIdiom(previousBlockLookUp
+		ViscosityReader reader = new ViscosityReader(ENV, previousBlockLookUp);
+		EntityMovementHelpers.HighLevelMovementResult result = EntityMovementHelpers.commonMovementIdiom(reader
 			, startLocation
 			, startVelocity
 			, volume
@@ -384,6 +387,7 @@ public class TestEntityMovementHelpers
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
 			return new BlockProxy(location.getBlockAddress(), airCuboid);
 		};
+		ViscosityReader reader = new ViscosityReader(ENV, previousBlockLookUp);
 		EntityVolume volume = new EntityVolume(2.2f, 1.7f);
 		float maxVelocityPerSecond = 4.0f;
 		float seconds = 0.05f;
@@ -391,7 +395,7 @@ public class TestEntityMovementHelpers
 		EntityLocation location = new EntityLocation(10.0f, 10.0f, 10.0f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 		
-		EntityMovementHelpers.HighLevelMovementResult result = EntityMovementHelpers.commonMovementIdiom(previousBlockLookUp
+		EntityMovementHelpers.HighLevelMovementResult result = EntityMovementHelpers.commonMovementIdiom(reader
 			, location
 			, velocity
 			, volume
@@ -406,7 +410,7 @@ public class TestEntityMovementHelpers
 		Assert.assertEquals(new EntityLocation(3.8f, 1.0f, -0.49f), velocity);
 		Assert.assertFalse(result.isOnGround());
 		
-		result = EntityMovementHelpers.commonMovementIdiom(previousBlockLookUp
+		result = EntityMovementHelpers.commonMovementIdiom(reader
 			, location
 			, velocity
 			, volume

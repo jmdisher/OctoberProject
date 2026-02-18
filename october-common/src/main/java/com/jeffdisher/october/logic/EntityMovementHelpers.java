@@ -73,15 +73,13 @@ public class EntityMovementHelpers
 	/**
 	 * Looks up the maximum viscosity of any block occupied by the given volume rooted at entityBase.
 	 * 
+	 * @param reader A ViscosityReader to interpret blocks.
 	 * @param entityBase The base south-west-down corner of the space to check.
 	 * @param volume The volume of the space to check.
-	 * @param blockLookup The lookup helper for blocks.
 	 * @return The maximum viscosity of any of the blocks in the requested space.
 	 */
-	public static float maxViscosityInEntityBlocks(EntityLocation entityBase, EntityVolume volume, Function<AbsoluteLocation, BlockProxy> blockLookup)
+	public static float maxViscosityInEntityBlocks(ViscosityReader reader, EntityLocation entityBase, EntityVolume volume)
 	{
-		Environment env = Environment.getShared();
-		ViscosityReader reader = new ViscosityReader(env, blockLookup);
 		IViscosityLookup helper = (AbsoluteLocation location, boolean fromAbove) -> reader.getViscosityFraction(location, fromAbove);
 		
 		// In this case, we are just check where we stand, not falling.
@@ -120,7 +118,7 @@ public class EntityMovementHelpers
 	 * Given a start location and velocity, plus explicit movement on top of that, this helper computes the final
 	 * location and velocity.
 	 * 
-	 * @param previousBlockLookUp Looks up blocks from the previous tick.
+	 * @param reader A ViscosityReader to interpret blocks.
 	 * @param startLocation The starting base location of the entity.
 	 * @param startVelocity The starting velocity of the entity.
 	 * @param volume The volume of the entity.
@@ -130,7 +128,7 @@ public class EntityMovementHelpers
 	 * @param seconds The number of seconds elapsed while the active movement was applied.
 	 * @return The final location and components of velocity.
 	 */
-	public static HighLevelMovementResult commonMovementIdiom(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+	public static HighLevelMovementResult commonMovementIdiom(ViscosityReader reader
 		, EntityLocation startLocation
 		, EntityLocation startVelocity
 		, EntityVolume volume
@@ -140,9 +138,6 @@ public class EntityMovementHelpers
 		, float seconds
 	)
 	{
-		Environment env = Environment.getShared();
-		ViscosityReader reader = new ViscosityReader(env, previousBlockLookUp);
-		
 		// In this case, we are just check where we stand, not falling.
 		IViscosityLookup viscosityLookup = (AbsoluteLocation location, boolean fromAbove) -> reader.getViscosityFraction(location, fromAbove);
 		boolean fromAbove = false;
@@ -166,21 +161,20 @@ public class EntityMovementHelpers
 	 * accounts for the volume of the entity and the given maxPopOutDistance.  Returns null if not needed or if there is
 	 * no valid destination in range.
 	 * 
-	 * @param previousBlockLookUp Looks up BlockProxy instances by location.
+	 * @param reader A ViscosityReader to interpret blocks.
 	 * @param location The base location of the entity being checked.
 	 * @param volume The volume of the entity being checked.
 	 * @param maxPopOutDistance The maximum distance that the entity can move from location to satisfy the request.
 	 * @return The new location of the entity or null if it doesn't need to pop out or can't find a valid destination in
 	 * range.
 	 */
-	public static EntityLocation popOutLocation(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+	public static EntityLocation popOutLocation(ViscosityReader reader
 		, EntityLocation location
 		, EntityVolume volume
 		, float maxPopOutDistance
 	)
 	{
 		EntityLocation poppedLocation = null;
-		ViscosityReader reader = new ViscosityReader(Environment.getShared(), previousBlockLookUp);
 		if (!SpatialHelpers.canExistInLocation(reader, location, volume))
 		{
 			// Find if there is a location in an adjacent block where we could stand.

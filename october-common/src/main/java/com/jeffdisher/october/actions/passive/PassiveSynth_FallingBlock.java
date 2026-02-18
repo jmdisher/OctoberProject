@@ -6,6 +6,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.MutationBlockReplaceDropExisting;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -32,6 +33,7 @@ public class PassiveSynth_FallingBlock
 
 	public static PassiveEntity applyChange(TickProcessingContext context, PassiveEntity entity)
 	{
+		Environment env = Environment.getShared();
 		PassiveType type = entity.type();
 		Assert.assertTrue(PassiveType.FALLING_BLOCK == type);
 		
@@ -48,12 +50,13 @@ public class PassiveSynth_FallingBlock
 			// NOTE:  We may want to change this lookup to return an interface or something more restrictive, in the
 			// future, as creating this empty cuboid is not cheap (not too expensive, though).
 			return (checkLocation.z() > startZ)
-				? new BlockProxy(checkLocation.getBlockAddress(), CuboidGenerator.createFilledCuboid(checkLocation.getCuboidAddress(), Environment.getShared().special.AIR))
+				? new BlockProxy(checkLocation.getBlockAddress(), CuboidGenerator.createFilledCuboid(checkLocation.getCuboidAddress(), env.special.AIR))
 				: context.previousBlockLookUp.apply(checkLocation)
 			;
 		};
 		float seconds = (float)context.millisPerTick / EntityMovementHelpers.FLOAT_MILLIS_PER_SECOND;
-		EntityMovementHelpers.HighLevelMovementResult movement = EntityMovementHelpers.commonMovementIdiom(filterLookup
+		ViscosityReader reader = new ViscosityReader(env, filterLookup);
+		EntityMovementHelpers.HighLevelMovementResult movement = EntityMovementHelpers.commonMovementIdiom(reader
 			, startLocation
 			, startVelocity
 			, volume

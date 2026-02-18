@@ -1,16 +1,13 @@
 package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
-import java.util.function.Function;
 
 import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.EntitySubActionType;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IEntitySubAction;
@@ -32,20 +29,6 @@ public class EntityChangeJump<T extends IMutableMinimalEntity> implements IEntit
 	 */
 	public static final float JUMP_FORCE = -0.6f * EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND;
 	public static final EntitySubActionType TYPE = EntitySubActionType.JUMP;
-
-	public static boolean canJump(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
-			, EntityLocation location
-			, EntityVolume volume
-			, EntityLocation vector
-	)
-	{
-		ViscosityReader reader = new ViscosityReader(Environment.getShared(), previousBlockLookUp);
-		return _canJump(reader
-				, location
-				, volume
-				, vector
-		);
-	}
 
 	public static boolean canJumpWithReader(ViscosityReader reader
 			, EntityLocation location

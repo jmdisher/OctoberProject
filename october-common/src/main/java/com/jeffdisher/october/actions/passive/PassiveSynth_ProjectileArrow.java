@@ -9,6 +9,7 @@ import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.NudgeHelpers;
 import com.jeffdisher.october.logic.RayCastHelpers;
+import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.EntityLocation;
@@ -131,7 +132,8 @@ public class PassiveSynth_ProjectileArrow
 				// We didn't hit a creature so use the more general movement helper to find out where we ended up or if
 				// we hit a solid object (this accounts for the volume so it might be slightly different than the
 				// initial ray-cast).
-				EntityMovementHelpers.HighLevelMovementResult movement = EntityMovementHelpers.commonMovementIdiom(context.previousBlockLookUp
+				ViscosityReader reader = new ViscosityReader(env, context.previousBlockLookUp);
+				EntityMovementHelpers.HighLevelMovementResult movement = EntityMovementHelpers.commonMovementIdiom(reader
 					, startLocation
 					, startVelocity
 					, volume
