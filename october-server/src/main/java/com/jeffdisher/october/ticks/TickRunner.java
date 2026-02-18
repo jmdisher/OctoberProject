@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +15,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
-import java.util.stream.Collectors;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.data.BlockProxy;
@@ -982,108 +980,9 @@ public class TickRunner
 					_sharedDataLock.unlock();
 				}
 				
-				// We now update our mutable collections for the materials to use in the next tick.
-				Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState = new HashMap<>(flatResults.cuboidsByAddress());
-				Map<CuboidAddress, CuboidHeightMap> nextTickMutableHeightMaps = new HashMap<>(flatResults.heightMapsByAddress());
-				Map<Integer, Entity> mutableCrowdState = new HashMap<>(flatResults.entitiesById());
-				Map<Integer, Long> mutableCommitLevels = new HashMap<>(flatResults.clientCommitLevelsById());
-				Map<Integer, CreatureEntity> mutableCreatureState = new HashMap<>(flatResults.creaturesById());
-				Map<Integer, PassiveEntity> mutablePassiveState = new HashMap<>(flatResults.passivesById());
-				
-				// Add any newly-loaded cuboids with their associated creatures and passives.
-				Map<CuboidAddress, List<ScheduledMutation>> pendingMutations = new HashMap<>(flatResults.blockMutationsByCuboid());
-				Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutations = new HashMap<>(flatResults.periodicMutationsByCuboid());
-				Set<CuboidAddress> cuboidsLoadedThisTick = new HashSet<>();
-				if (null != newCuboids)
-				{
-					for (SuspendedCuboid<IReadOnlyCuboidData> suspended : newCuboids)
-					{
-						IReadOnlyCuboidData cuboid = suspended.cuboid();
-						CuboidAddress address = cuboid.getCuboidAddress();
-						
-						cuboidsLoadedThisTick.add(address);
-						
-						Object old = mutableWorldState.put(address, cuboid);
-						Assert.assertTrue(null == old);
-						
-						old = nextTickMutableHeightMaps.put(address, suspended.heightMap());
-						Assert.assertTrue(null == old);
-						
-						// Load any creatures associated with this cuboid.
-						for (CreatureEntity loadedCreature : suspended.creatures())
-						{
-							mutableCreatureState.put(loadedCreature.id(), loadedCreature);
-						}
-						
-						// Load any passives associated with this cuboid.
-						for (PassiveEntity loadedPassive : suspended.passives())
-						{
-							mutablePassiveState.put(loadedPassive.id(), loadedPassive);
-						}
-						
-						// Add any suspended mutations which came with the cuboid.
-						List<ScheduledMutation> pending = suspended.pendingMutations();
-						if (!pending.isEmpty())
-						{
-							old = pendingMutations.put(address, new ArrayList<>(pending));
-							// This must not already be present (this was just created above here).
-							Assert.assertTrue(null == old);
-						}
-						
-						// Add any periodic mutations loaded with the cuboid.
-						Map<BlockAddress, Long> periodic = suspended.periodicMutationMillis();
-						if (!periodic.isEmpty())
-						{
-							old = periodicMutations.put(address, new HashMap<>(periodic));
-							// This must not already be present (this was just created above here).
-							Assert.assertTrue(null == old);
-						}
-					}
-				}
-				
-				// Add newly-loaded player entities.
-				Map<Integer, List<ScheduledChange>> nextTickChanges = new HashMap<>(flatResults.entityActionsById());
-				if (null != newEntities)
-				{
-					for (SuspendedEntity suspended : newEntities)
-					{
-						Entity entity = suspended.entity();
-						int id = entity.id();
-						Object old = mutableCrowdState.put(id, entity);
-						// This must not already be present.
-						Assert.assertTrue(null == old);
-						
-						// Add any suspended mutations which came with the entity.
-						List<ScheduledChange> changes = suspended.changes();
-						if (!changes.isEmpty())
-						{
-							old = nextTickChanges.put(id, new ArrayList<>(changes));
-							// This must not already be present (this was just created above here).
-							Assert.assertTrue(null == old);
-						}
-					}
-				}
-				for (Map.Entry<Integer, EntityActionSimpleMove<IMutablePlayerEntity>> container : newEntityChanges.entrySet())
-				{
-					// These are coming in from outside, so they should be run immediately (no delay for future), after anything already scheduled from the previous tick.
-					int id = container.getKey();
-					ScheduledChange change = new ScheduledChange(container.getValue(), 0L);
-					List<ScheduledChange> existing = nextTickChanges.get(id);
-					if (null != existing)
-					{
-						// This is starting as read-only, from the snapshot, so wrap the data.
-						existing = new ArrayList<>(existing);
-					}
-					else
-					{
-						existing = new ArrayList<>();
-					}
-					existing.add(change);
-					nextTickChanges.put(id, existing);
-				}
-				
 				// If there were any operator mutations, split them between client operator ID and specific entities.
-				List<IEntityAction<IMutablePlayerEntity>> operatorChanges = new ArrayList<>();
+				List<IEntityAction<IMutablePlayerEntity>> operatorActions = new ArrayList<>();
+				Map<Integer, List<ScheduledChange>> entityActionsFromConsole = new HashMap<>();
 				if (null != operatorMutations)
 				{
 					for (_OperatorMutationWrapper wrapper : operatorMutations)
@@ -1091,117 +990,38 @@ public class TickRunner
 						// If the operator change isn't targeting the operator entity, schedule it on the specific player entity.
 						if (EnginePlayers.OPERATOR_ENTITY_ID == wrapper.entityId)
 						{
-							operatorChanges.add(wrapper.mutation);
+							operatorActions.add(wrapper.mutation);
 						}
 						else
 						{
-							List<ScheduledChange> existing = nextTickChanges.get(wrapper.entityId);
-							if (null != existing)
-							{
-								// This is usually read-only, from the snapshot (unless changed above), so wrap the data.
-								existing = new ArrayList<>(existing);
-							}
-							else
+							List<ScheduledChange> existing = entityActionsFromConsole.get(wrapper.entityId);
+							if (null == existing)
 							{
 								existing = new ArrayList<>();
 							}
 							existing.add(new ScheduledChange(wrapper.mutation, 0L));
-							nextTickChanges.put(wrapper.entityId, existing);
+							entityActionsFromConsole.put(wrapper.entityId, existing);
 						}
 					}
 				}
 				
-				// Update our map of latest client commit levels.
-				mutableCommitLevels.putAll(newCommitLevels);
-				
-				// Remove anything old.
-				if (null != cuboidsToDrop)
-				{
-					for (CuboidAddress address : cuboidsToDrop)
-					{
-						Object old = mutableWorldState.remove(address);
-						// This must already be present.
-						Assert.assertTrue(null != old);
-						old = nextTickMutableHeightMaps.remove(address);
-						Assert.assertTrue(null != old);
-						
-						// Remove any creatures in this cuboid.
-						// TODO:  Change this to use some sort of spatial look-up mechanism since this loop is attrocious.
-						Iterator<Map.Entry<Integer, CreatureEntity>> expensive = mutableCreatureState.entrySet().iterator();
-						while (expensive.hasNext())
-						{
-							Map.Entry<Integer, CreatureEntity> one = expensive.next();
-							EntityLocation loc = one.getValue().location();
-							if (loc.getBlockLocation().getCuboidAddress().equals(address))
-							{
-								expensive.remove();
-							}
-						}
-						// Similarly, remove the passives.
-						Iterator<Map.Entry<Integer, PassiveEntity>> expensivePassives = mutablePassiveState.entrySet().iterator();
-						while (expensivePassives.hasNext())
-						{
-							Map.Entry<Integer, PassiveEntity> one = expensivePassives.next();
-							EntityLocation loc = one.getValue().location();
-							if (loc.getBlockLocation().getCuboidAddress().equals(address))
-							{
-								expensivePassives.remove();
-							}
-						}
-						
-						// Remove any of the scheduled operations for this cuboid.
-						pendingMutations.remove(address);
-						periodicMutations.remove(address);
-					}
-				}
-				if (null != removedEntityIds)
-				{
-					for (int entityId : removedEntityIds)
-					{
-						Entity old = mutableCrowdState.remove(entityId);
-						// This must have been present.
-						Assert.assertTrue(null != old);
-						
-						// Remove any of the scheduled operations against this entity.
-						nextTickChanges.remove(entityId);
-					}
-				}
-				
-				// Carry forward the proxy cache from the previous tick unless the corresponding block locations changed or where removed.
-				Set<AbsoluteLocation> changedBlocksInPreviousTick = flatResults.allChangedBlockLocations();
-				Map<AbsoluteLocation, BlockProxy> previousProxyCache = masterFragment.populatedProxyCache().entrySet().stream()
-					.filter((Map.Entry<AbsoluteLocation, BlockProxy> ent) -> {
-						AbsoluteLocation location = ent.getKey();
-						boolean shouldDrop = changedBlocksInPreviousTick.contains(location);
-						if (!shouldDrop && (null != cuboidsToDrop))
-						{
-							CuboidAddress cuboidAddress = location.getCuboidAddress();
-							shouldDrop = cuboidsToDrop.contains(cuboidAddress);
-						}
-						return !shouldDrop;
-					})
-					.collect(Collectors.toMap((Map.Entry<AbsoluteLocation, BlockProxy> ent) -> ent.getKey(), (Map.Entry<AbsoluteLocation, BlockProxy> ent) -> ent.getValue()))
-				;
-				
-				// TODO:  We should probably remove this once we are sure we know what is happening and/or find a cheaper way to check this.
-				for (CuboidAddress key : pendingMutations.keySet())
-				{
-					// Given that these can only be scheduled against loaded cuboids, which can only be explicitly unloaded above, anything remaining must still be present.
-					Assert.assertTrue(mutableWorldState.containsKey(key));
-				}
-				for (CuboidAddress key : periodicMutations.keySet())
-				{
-					// Given that these can only be scheduled against loaded cuboids, which can only be explicitly unloaded above, anything remaining must still be present.
-					Assert.assertTrue(mutableWorldState.containsKey(key));
-				}
-				for (int entityId : nextTickChanges.keySet())
-				{
-					// Given that these can only be scheduled against loaded entities, which can only be explicitly unloaded above, anything remaining must still be present.
-					Assert.assertTrue(mutableCrowdState.containsKey(entityId));
-				}
+				// Combine these inputs on top of the results from the previous tick to produce what we need to run the next tick.
+				PreTickState preTickState = PreTickState.fromChanges(masterFragment
+					, flatResults
+					
+					, newCuboids
+					, cuboidsToDrop
+					
+					, newEntities
+					, newEntityChanges
+					, newCommitLevels
+					, removedEntityIds
+					
+					, entityActionsFromConsole
+				);
 				
 				// Convert this raw next tick action accumulation into the CrowdProcessor input.
-				Map<Integer, TickInput.EntityInput> changesToRun = _determineChangesToRun(mutableCrowdState, nextTickChanges, mutableCommitLevels);
+				Map<Integer, TickInput.EntityInput> changesToRun = _determineChangesToRun(preTickState.entitiesById(), preTickState.entityActionsById(), preTickState.clientCommitLevelsById());
 				
 				// The corresponding actions for the creatures and passives only originate from inside the tick so just pass those through.
 				Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> nextCreatureChanges = flatResults.creatureActionsById();
@@ -1209,16 +1029,16 @@ public class TickRunner
 				
 				// WARNING:  completedHeightMaps does NOT include the new height maps loaded after the previous tick finished!
 				// (this is done to avoid the cost of rebuilding the maps since the column height maps are not guaranteed to be fully accurate)
-				EntityCollection entityCollection = EntityCollection.fromMaps(mutableCrowdState, mutableCreatureState);
-				TickInput highLevelPlan = _packageHighLevelWorkUnits(mutableWorldState
-					, nextTickMutableHeightMaps
-					, mutableCrowdState
-					, mutableCommitLevels
+				EntityCollection entityCollection = EntityCollection.fromMaps(preTickState.entitiesById(), preTickState.creaturesById());
+				TickInput highLevelPlan = _packageHighLevelWorkUnits(preTickState.cuboidsByAddress()
+					, preTickState.heightMapsByAddress()
+					, preTickState.entitiesById()
+					, preTickState.clientCommitLevelsById()
 					, changesToRun
-					, mutableCreatureState
-					, mutablePassiveState
-					, pendingMutations
-					, periodicMutations
+					, preTickState.creaturesById()
+					, preTickState.passivesById()
+					, preTickState.blockMutationsByAddress()
+					, preTickState.periodicMutationsByCuboid()
 					, nextCreatureChanges
 					, nextPassiveActions
 				);
@@ -1228,27 +1048,26 @@ public class TickRunner
 				long millisInNextTickPreamble = endMillisPreamble - startMillisPreamble;
 				
 				_thisTickMaterials = new TickMaterials(_nextTick
-						, Collections.unmodifiableMap(mutableWorldState)
-						, Collections.unmodifiableMap(nextTickMutableHeightMaps)
-						, flatResults.columnHeightMaps()
-						, Collections.unmodifiableMap(mutableCrowdState)
-						// completedCreatures
-						, Collections.unmodifiableMap(mutableCreatureState)
-						, Collections.unmodifiableMap(mutablePassiveState)
-						
-						, Collections.unmodifiableList(operatorChanges)
-						, flatResults.blockUpdatesByCuboid()
-						, flatResults.lightingUpdatesByCuboid()
-						, flatResults.logicUpdatesByCuboid()
-						, Collections.unmodifiableSet(cuboidsLoadedThisTick)
-						, previousProxyCache
-						
-						, entityCollection
-						, highLevelPlan
-						
-						// Store the partial tick stats.
-						, millisInNextTickPreamble
-						, endMillisPreamble
+					, preTickState.cuboidsByAddress()
+					, preTickState.heightMapsByAddress()
+					, flatResults.columnHeightMaps()
+					, preTickState.entitiesById()
+					, preTickState.creaturesById()
+					, preTickState.passivesById()
+					
+					, Collections.unmodifiableList(operatorActions)
+					, flatResults.blockUpdatesByCuboid()
+					, flatResults.lightingUpdatesByCuboid()
+					, flatResults.logicUpdatesByCuboid()
+					, preTickState.cuboidsLoadedThisTick()
+					, preTickState.previousProxyCache()
+					
+					, entityCollection
+					, highLevelPlan
+					
+					// Store the partial tick stats.
+					, millisInNextTickPreamble
+					, endMillisPreamble
 				);
 			}
 			else
