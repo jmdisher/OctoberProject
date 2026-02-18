@@ -286,4 +286,63 @@ public class TestHeightMapHelpers
 			}
 		}
 	}
+
+	@Test
+	public void perf_SingleColumn() throws Throwable
+	{
+		// We want to show the performance of merging multiple sparse cuboids in a single column.
+		boolean longLoopForObjectiveScore = false;
+		
+		CuboidAddress c0 = CuboidAddress.fromInt(0, 0, 0);
+		CuboidAddress c1 = CuboidAddress.fromInt(0, 0, 1);
+		CuboidAddress c2 = CuboidAddress.fromInt(0, 0, 2);
+		CuboidAddress c3 = CuboidAddress.fromInt(0, 0, 3);
+		CuboidAddress c4 = CuboidAddress.fromInt(0, 0, 4);
+		CuboidAddress c5 = CuboidAddress.fromInt(0, 0, 5);
+		
+		short stoneNumber = STONE.item().number();
+		CuboidData d0 = CuboidGenerator.createFilledCuboid(c0, ENV.special.AIR);
+		d0.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 1), stoneNumber);
+		CuboidData d1 = CuboidGenerator.createFilledCuboid(c1, ENV.special.AIR);
+		d1.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(2, 2, 2), stoneNumber);
+		CuboidData d2 = CuboidGenerator.createFilledCuboid(c2, ENV.special.AIR);
+		d2.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(3, 3, 3), stoneNumber);
+		CuboidData d3 = CuboidGenerator.createFilledCuboid(c3, ENV.special.AIR);
+		d3.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(4, 4, 4), stoneNumber);
+		CuboidData d4 = CuboidGenerator.createFilledCuboid(c4, ENV.special.AIR);
+		d4.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 5, 5), stoneNumber);
+		CuboidData d5 = CuboidGenerator.createFilledCuboid(c5, ENV.special.AIR);
+		d5.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(6, 6, 6), stoneNumber);
+		
+		CuboidHeightMap h0 = HeightMapHelpers.buildHeightMap(d0);
+		CuboidHeightMap h1 = HeightMapHelpers.buildHeightMap(d1);
+		CuboidHeightMap h2 = HeightMapHelpers.buildHeightMap(d2);
+		CuboidHeightMap h3 = HeightMapHelpers.buildHeightMap(d3);
+		CuboidHeightMap h4 = HeightMapHelpers.buildHeightMap(d4);
+		CuboidHeightMap h5 = HeightMapHelpers.buildHeightMap(d5);
+		
+		Map<CuboidAddress, CuboidHeightMap> cuboidHeightMaps = Map.of(c0, h0
+			, c1, h1
+			, c2, h2
+			, c3, h3
+			, c4, h4
+			, c5, h5
+		);
+		
+		if (longLoopForObjectiveScore)
+		{
+			int iterationCount = 1_000_000;
+			long startNanos = System.nanoTime();
+			for (int i = 0; i < iterationCount; ++i)
+			{
+				HeightMapHelpers.buildSingleColumn(cuboidHeightMaps);
+			}
+			long endNanos = System.nanoTime();
+			System.out.println("Nanos per: " + ((endNanos - startNanos) / iterationCount));
+		}
+		else
+		{
+			HeightMapHelpers.buildSingleColumn(cuboidHeightMaps);
+		}
+	}
 }

@@ -53,7 +53,7 @@ public class HeightMapHelpers
 	 */
 	public static CuboidHeightMap buildHeightMap(IReadOnlyCuboidData cuboid)
 	{
-		byte[][] rawMap = _createUniformHeightMap(CuboidHeightMap.UNKNOWN_HEIGHT);
+		byte[][] rawMap = new byte[Encoding.CUBOID_EDGE_SIZE][];
 		_populateHeightMap(rawMap, cuboid);
 		return CuboidHeightMap.wrap(rawMap);
 	}
@@ -121,10 +121,21 @@ public class HeightMapHelpers
 			byte highestZ = (byte)(base.z() + size - 1);
 			for (int y = 0; y < size; ++y)
 			{
+				byte[] row = heightMap[baseY + y];
+				if (null == row)
+				{
+					// We need to lazily populate this row since we now know something about it.
+					row = new byte[Encoding.CUBOID_EDGE_SIZE];
+					for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
+					{
+						row[x] = CuboidHeightMap.UNKNOWN_HEIGHT;
+					}
+					heightMap[baseY + y] = row;
+				}
 				for (int x = 0; x < size; ++x)
 				{
-					byte entry = heightMap[baseY + y][baseX + x];
-					heightMap[baseY + y][baseX + x] = (byte)Math.max(entry, highestZ);
+					byte entry = row[baseX + x];
+					row[baseX + x] = (byte)Math.max(entry, highestZ);
 				}
 			}
 		}, (short)0);

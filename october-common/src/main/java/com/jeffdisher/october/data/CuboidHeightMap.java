@@ -16,6 +16,7 @@ public class CuboidHeightMap
 	/**
 	 * Creates an instance wrapping the given raw data.  Note that this is not copied but taken by reference so the
 	 * caller should discard their reference.
+	 * Any of the Y-values left null will be assumed to be an entire X-row of UNKNOWN_HEIGHT.
 	 * 
 	 * @param rawYMajorMap The raw height map data, addressed y-major ([y][x]).
 	 * @return The new instance.
@@ -46,6 +47,10 @@ public class CuboidHeightMap
 		Assert.assertTrue(x < Encoding.CUBOID_EDGE_SIZE);
 		Assert.assertTrue(y >= 0);
 		Assert.assertTrue(y < Encoding.CUBOID_EDGE_SIZE);
-		return _yMajorMap[y][x];
+		byte[] row = _yMajorMap[y];
+		return (null != row)
+			? row[x]
+			: UNKNOWN_HEIGHT
+		;
 	}
 }
