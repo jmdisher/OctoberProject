@@ -40,6 +40,7 @@ public record PreTickState(Map<CuboidAddress, IReadOnlyCuboidData> cuboidsByAddr
 	, Map<CuboidAddress, List<ScheduledMutation>> blockMutationsByAddress
 	, Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationsByCuboid
 	
+	// This map ONLY includes entities with non-empty lists of changes to run.
 	, Map<Integer, List<ScheduledChange>> entityActionsById
 	
 	, Set<CuboidAddress> cuboidsLoadedThisTick

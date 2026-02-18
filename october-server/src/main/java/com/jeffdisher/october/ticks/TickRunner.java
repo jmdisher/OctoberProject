@@ -1021,8 +1021,6 @@ public class TickRunner
 				);
 				
 				// Convert this raw next tick action accumulation into the CrowdProcessor input.
-				Map<Integer, TickInput.EntityInput> changesToRun = _determineChangesToRun(preTickState.entitiesById(), preTickState.entityActionsById(), preTickState.clientCommitLevelsById());
-				
 				// The corresponding actions for the creatures and passives only originate from inside the tick so just pass those through.
 				Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> nextCreatureChanges = flatResults.creatureActionsById();
 				Map<Integer, List<IPassiveAction>> nextPassiveActions = flatResults.passiveActionsById();
@@ -1033,8 +1031,8 @@ public class TickRunner
 				TickInput highLevelPlan = _packageHighLevelWorkUnits(preTickState.cuboidsByAddress()
 					, preTickState.heightMapsByAddress()
 					, preTickState.entitiesById()
+					, preTickState.entityActionsById()
 					, preTickState.clientCommitLevelsById()
-					, changesToRun
 					, preTickState.creaturesById()
 					, preTickState.passivesById()
 					, preTickState.blockMutationsByAddress()
@@ -1080,38 +1078,6 @@ public class TickRunner
 		}
 		
 		return _thisTickMaterials;
-	}
-
-	private static Map<Integer, TickInput.EntityInput> _determineChangesToRun(Map<Integer, Entity> mutableCrowdState
-		, Map<Integer, List<ScheduledChange>> nextTickChanges
-		, Map<Integer, Long> clientCommitLevelsById
-	)
-	{
-		Map<Integer, TickInput.EntityInput> changesToRun = new HashMap<>();
-		// We shouldn't have put operator changes into this common map.
-		Assert.assertTrue(!nextTickChanges.containsKey(EnginePlayers.OPERATOR_ENTITY_ID));
-		for (Map.Entry<Integer, List<ScheduledChange>> oneEntity : nextTickChanges.entrySet())
-		{
-			Integer id = oneEntity.getKey();
-			Entity entity = mutableCrowdState.get(id);
-			if (null != entity)
-			{
-				List<ScheduledChange> list = oneEntity.getValue();
-				// If this is in the map, it can't be empty.
-				Assert.assertTrue(!list.isEmpty());
-				long commitLevel = clientCommitLevelsById.get(id);
-				TickInput.EntityInput input = new TickInput.EntityInput(entity
-					, Collections.unmodifiableList(list)
-					, commitLevel
-				);
-				changesToRun.put(id, input);
-			}
-			else
-			{
-				System.out.println("WARNING: missing entity " + id);
-			}
-		}
-		return changesToRun;
 	}
 
 	private synchronized void _acknowledgeTickCompleteAndWaitForNext(TickSnapshot newSnapshot)
@@ -1384,8 +1350,8 @@ public class TickRunner
 	private static TickInput _packageHighLevelWorkUnits(Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
 		, Map<CuboidAddress, CuboidHeightMap> cuboidHeightMaps
 		, Map<Integer, Entity> completedEntities
+		, Map<Integer, List<ScheduledChange>> nextTickChanges
 		, Map<Integer, Long> clientCommitLevelsById
-		, Map<Integer, TickInput.EntityInput> entitiesWithWork
 		, Map<Integer, CreatureEntity> completedCreatures
 		, Map<Integer, PassiveEntity> completedPassives
 		, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
@@ -1398,25 +1364,27 @@ public class TickRunner
 		Map<CuboidAddress, List<TickInput.EntityInput>> workingEntityList = new HashMap<>();
 		for (Entity entity : completedEntities.values())
 		{
-			// We want to see a work unit for every entity, so that the entire system is captured in the plan.
 			int id = entity.id();
-			TickInput.EntityInput workUnit = entitiesWithWork.get(id);
-			if (null == workUnit)
+			List<ScheduledChange> actions = nextTickChanges.get(id);
+			if (null == actions)
 			{
-				long commitLevel = clientCommitLevelsById.get(id);
-				workUnit = new TickInput.EntityInput(entity
-					, List.of()
-					, commitLevel
-				);
+				actions = List.of();
 			}
+			long commitLevel = clientCommitLevelsById.get(id);
+			TickInput.EntityInput workUnit = new TickInput.EntityInput(entity
+				, actions
+				, commitLevel
+			);
+			
 			CuboidAddress thisAddress = entity.location().getBlockLocation().getCuboidAddress();
 			if (completedCuboids.containsKey(thisAddress))
 			{
-				if (!workingEntityList.containsKey(thisAddress))
-				{
-					workingEntityList.put(thisAddress, new ArrayList<>());
-				}
 				List<TickInput.EntityInput> list = workingEntityList.get(thisAddress);
+				if (null == list)
+				{
+					list = new ArrayList<>();
+					workingEntityList.put(thisAddress, list);
+				}
 				list.add(workUnit);
 			}
 			else
@@ -1426,6 +1394,7 @@ public class TickRunner
 				entitiesInUnloadedCuboids.add(workUnit);
 			}
 		}
+		
 		Map<CuboidAddress, List<TickInput.CreatureInput>> workingCreatureList = new HashMap<>();
 		for (CreatureEntity entity : completedCreatures.values())
 		{
