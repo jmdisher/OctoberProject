@@ -3552,6 +3552,66 @@ public class TestCommonChanges
 		Assert.assertEquals(secondTarget, PropertyHelpers.getLocation(newEntity.newInventory.getNonStackableForKey(1)));
 	}
 
+	@Test
+	public void perf_simpleMove() throws Throwable
+	{
+		// We want to show the performance of using EntityActionSimpleMove on a complex base cuboid.
+		boolean infiniteLoopForProfiler = false;
+		boolean longLoopForObjectiveScore = false;
+		
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidData complexCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		Block dirtBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
+		CuboidGenerator.fillPlane(complexCuboid, (byte)31, dirtBlock);
+		Block logBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.log"));
+		CuboidGenerator.fillPlane(complexCuboid, (byte)29, logBlock);
+		Block coalOreBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.coal_ore"));
+		CuboidGenerator.fillPlane(complexCuboid, (byte)27, coalOreBlock);
+		Block ironOreBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.iron_ore"));
+		CuboidGenerator.fillPlane(complexCuboid, (byte)25, ironOreBlock);
+		Map<CuboidAddress, CuboidData> mappedWorld = Map.of(airCuboid.getCuboidAddress(), airCuboid
+			, complexCuboid.getCuboidAddress(), complexCuboid
+		);
+		
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation location) -> {
+				IReadOnlyCuboidData cuboid = mappedWorld.get(location.getCuboidAddress());
+				return new BlockProxy(location.getBlockAddress(), cuboid);
+			}, null, null)
+			.finish()
+		;
+		
+		int entityId = 1;
+		MutableEntity newEntity = MutableEntity.createForTest(entityId);
+		newEntity.newLocation = new EntityLocation(5.0f, 5.0f, 0.0f);
+		Entity frozen = newEntity.freeze();
+		
+		if (infiniteLoopForProfiler)
+		{
+			while(true)
+			{
+				MutableEntity mutable = MutableEntity.existing(frozen);
+				Assert.assertTrue(new EntityActionSimpleMove<>(0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, mutable));
+			}
+		}
+		else if (longLoopForObjectiveScore)
+		{
+			int iterationCount = 1_000_000;
+			long startNanos = System.nanoTime();
+			for (int i = 0; i < iterationCount; ++i)
+			{
+				MutableEntity mutable = MutableEntity.existing(frozen);
+				Assert.assertTrue(new EntityActionSimpleMove<>(0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, mutable));
+			}
+			long endNanos = System.nanoTime();
+			System.out.println("Nanos per: " + ((endNanos - startNanos) / iterationCount));
+		}
+		else
+		{
+			Assert.assertTrue(new EntityActionSimpleMove<>(0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
+		}
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{
