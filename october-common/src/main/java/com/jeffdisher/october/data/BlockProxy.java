@@ -1,8 +1,5 @@
 package com.jeffdisher.october.data;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
@@ -16,7 +13,6 @@ import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -31,6 +27,38 @@ public class BlockProxy implements IBlockProxy
 				? Inventory.start(size).finish()
 				: null
 		;
+	}
+
+	/**
+	 * Checks if the given address in cuboids one and two have the same aspect values.  Note that this depends on the
+	 * underlying aspect value type implementing .equals(), which most don't, so changes to this type instance will
+	 * cause this to return false.  This shouldn't generally be an issue if they originated from the same base data due
+	 * to the copy-on-write design.
+	 * 
+	 * @param address The address to compare in each cuboid.
+	 * @param one One cuboid.
+	 * @param two The other cuboid.
+	 * @return True if all the aspects match.
+	 */
+	public static boolean doAspectsMatch(BlockAddress address, IReadOnlyCuboidData one, IReadOnlyCuboidData two)
+	{
+		boolean doesMatch = true;
+		if (one != two)
+		{
+			for (Aspect<?, ?> aspect : AspectRegistry.ALL_ASPECTS)
+			{
+				Object d1 = one.getDataSpecial(aspect, address);
+				Object d2 = two.getDataSpecial(aspect, address);
+				// NOTE:  Most actual object types don't implement this .equals() check (Inventory, for example).
+				doesMatch = (d1 == d2) || ((null != d1) && (null != d2) && d1.equals(d2));
+				
+				if (!doesMatch)
+				{
+					break;
+				}
+			}
+		}
+		return doesMatch;
 	}
 
 
@@ -141,73 +169,6 @@ public class BlockProxy implements IBlockProxy
 	public EnchantingOperation getEnchantingOperation()
 	{
 		return _getDataSpecial(AspectRegistry.ENCHANTING);
-	}
-
-	/**
-	 * Checks if the receiver and the given other are backed by the same aspect values.  Note that this depends on the
-	 * underlying aspect value type implementing .equals(), which most don't, so changes to this type instance will
-	 * cause this to return false.  This shouldn't generally be an issue if they originated from the same base data due
-	 * to the copy-on-write design.
-	 * 
-	 * @param other The other proxy.
-	 * @return True if all the aspects match.
-	 */
-	public boolean doAspectsMatch(BlockProxy other)
-	{
-		boolean doesMatch = (_address.equals(other._address) && (_cachedBlock == other._cachedBlock));
-		for (Aspect<?, ?> aspect : AspectRegistry.ALL_ASPECTS)
-		{
-			if (!doesMatch)
-			{
-				break;
-			}
-			if (aspect != AspectRegistry.BLOCK)
-			{
-				Object one = _data.getDataSpecial(aspect, _address);
-				Object two = other._data.getDataSpecial(aspect, other._address);
-				// NOTE:  Most actual object types don't implement this .equals() check (Inventory, for example).
-				doesMatch = (one == two) || ((null != one) && (null != two) && one.equals(two));
-			}
-		}
-		return doesMatch;
-	}
-
-	/**
-	 * Checks if the receiver and the given other are backed by the same aspect values, returning the set which differs.
-	 * Note that this depends on the underlying aspect value type implementing .equals(), which most don't, so changes
-	 * to this type instance will typically end up in the set, no matter what.  This shouldn't generally be an issue if
-	 * they originated from the same base data due to the copy-on-write design.
-	 * NOTE:  The receiver and other MUST have the same block address.
-	 * 
-	 * @param other The other proxy.
-	 * @return The set of mismatched aspects.
-	 */
-	public Set<Aspect<?, ?>> checkMismatchedAspects(BlockProxy other)
-	{
-		// It doesn't make sense to ask for this check if the blocks are in different locations.
-		Assert.assertTrue(_address.equals(other._address));
-		Set<Aspect<?, ?>> set = new HashSet<>();
-		
-		// We check the cached block instead of block aspect for performance reasons.
-		if (_cachedBlock != other._cachedBlock)
-		{
-			set.add(AspectRegistry.BLOCK);
-		}
-		for (Aspect<?, ?> aspect : AspectRegistry.ALL_ASPECTS)
-		{
-			if (aspect != AspectRegistry.BLOCK)
-			{
-				Object one = _data.getDataSpecial(aspect, _address);
-				Object two = other._data.getDataSpecial(aspect, other._address);
-				// NOTE:  Most actual object types don't implement this .equals() check (Inventory, for example).
-				boolean doesMatch = (one == two) || ((null != one) && (null != two) && one.equals(two));
-				if (!doesMatch)
-				{
-					set.add(aspect);
-				}
-			}
-		}
-		return set;
 	}
 
 

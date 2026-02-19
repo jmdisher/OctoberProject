@@ -204,9 +204,7 @@ public class SpeculativeProjection
 			BlockAddress block = location.getBlockAddress();
 			IReadOnlyCuboidData staleCuboid = staleShadowWorld.get(address);
 			IReadOnlyCuboidData shadowCuboid = _shadowState.getCuboid(address);
-			BlockProxy stale = new BlockProxy(block, staleCuboid);
-			BlockProxy shadow = new BlockProxy(block, shadowCuboid);
-			Assert.assertTrue(!stale.doAspectsMatch(shadow));
+			Assert.assertTrue(!BlockProxy.doAspectsMatch(block, staleCuboid, shadowCuboid));
 		}
 		
 		// ***** By this point, the shadow state has been updated so we can rebuild the projected state.
