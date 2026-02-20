@@ -25,7 +25,6 @@ public class CreatureMovementHelpers
 	 * direction of directionHint.  Returns an empty list if the creature is already in directionHint or is aligned on
 	 * that edge of its current block.
 	 * 
-	 * @param supplier Looks up the viscosity of various blocks.
 	 * @param creatureLocation The creature's location.
 	 * @param creatureVelocity The creature's velocity.
 	 * @param creatureType The type of creature.
@@ -35,14 +34,13 @@ public class CreatureMovementHelpers
 	 * @param isIdleMovement True if this movement is just idle and not one with a specific goal.
 	 * @return The next move to make to centre in the block toward directionHint (null if there is no useful action).
 	 */
-	public static EntityActionSimpleMove<IMutableCreatureEntity> prepareForMove(ViscosityReader supplier
-			, EntityLocation creatureLocation
-			, EntityLocation creatureVelocity
-			, EntityType creatureType
-			, AbsoluteLocation directionHint
-			, long timeLimitMillis
-			, float viscosityFraction
-			, boolean isIdleMovement
+	public static EntityActionSimpleMove<IMutableCreatureEntity> prepareForMove(EntityLocation creatureLocation
+		, EntityLocation creatureVelocity
+		, EntityType creatureType
+		, AbsoluteLocation directionHint
+		, long timeLimitMillis
+		, float viscosityFraction
+		, boolean isIdleMovement
 	)
 	{
 		// Find our current location.

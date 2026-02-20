@@ -354,7 +354,7 @@ public class CreatureLogic
 			// This means we are jumping so choose the next place where we want to go for direction hint.
 			directionHint = existingPlan.get(1);
 		}
-		EntityActionSimpleMove<IMutableCreatureEntity> actionProduced = CreatureMovementHelpers.prepareForMove(reader, mutable.getLocation(), mutable.getVelocityVector(), mutable.getType(), directionHint, timeLimitMillis, viscosity, isIdleMovement);
+		EntityActionSimpleMove<IMutableCreatureEntity> actionProduced = CreatureMovementHelpers.prepareForMove(mutable.getLocation(), mutable.getVelocityVector(), mutable.getType(), directionHint, timeLimitMillis, viscosity, isIdleMovement);
 		if (null == actionProduced)
 		{
 			// If we are already in a reasonable location, proceed to move.
