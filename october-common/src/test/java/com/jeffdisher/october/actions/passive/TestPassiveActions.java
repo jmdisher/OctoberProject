@@ -248,7 +248,7 @@ public class TestPassiveActions
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation l) -> {
 				return (l.getCuboidAddress().equals(cuboid.getCuboidAddress()))
-						? new BlockProxy(l.getBlockAddress(), cuboid)
+						? BlockProxy.load(l.getBlockAddress(), cuboid)
 						: null
 				;
 			}, null, null)
@@ -280,7 +280,7 @@ public class TestPassiveActions
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation l) -> {
 				return (l.getCuboidAddress().equals(cuboid.getCuboidAddress()))
-						? new BlockProxy(l.getBlockAddress(), cuboid)
+						? BlockProxy.load(l.getBlockAddress(), cuboid)
 						: null
 				;
 			}, null, null)
@@ -336,7 +336,7 @@ public class TestPassiveActions
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation l) -> {
 				return (l.getCuboidAddress().equals(cuboid.getCuboidAddress()))
-						? new BlockProxy(l.getBlockAddress(), cuboid)
+						? BlockProxy.load(l.getBlockAddress(), cuboid)
 						: null
 				;
 			}, null, null)
@@ -369,7 +369,7 @@ public class TestPassiveActions
 			.millisPerTick(50L)
 			.lookups((AbsoluteLocation location) -> {
 				return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
-					? new BlockProxy(location.getBlockAddress(), cuboid)
+					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
 			}, null, null)
@@ -409,7 +409,7 @@ public class TestPassiveActions
 			.millisPerTick(50L)
 			.lookups((AbsoluteLocation location) -> {
 				return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
-					? new BlockProxy(location.getBlockAddress(), cuboid)
+					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
 			}, null, null)
@@ -437,7 +437,7 @@ public class TestPassiveActions
 			.millisPerTick(50L)
 			.lookups((AbsoluteLocation location) -> {
 				return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
-					? new BlockProxy(location.getBlockAddress(), cuboid)
+					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
 			}, null, null)
@@ -472,7 +472,7 @@ public class TestPassiveActions
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
 				return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
-						? new BlockProxy(location.getBlockAddress(), cuboid)
+						? BlockProxy.load(location.getBlockAddress(), cuboid)
 						: null
 				;
 			}, null, null)

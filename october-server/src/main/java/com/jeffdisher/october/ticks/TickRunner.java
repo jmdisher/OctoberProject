@@ -401,7 +401,7 @@ public class TickRunner
 					CuboidAddress address = location.getCuboidAddress();
 					IReadOnlyCuboidData cuboid = thisTickMaterials.completedCuboids.get(address);
 					proxy = (null != cuboid)
-							? new BlockProxy(location.getBlockAddress(), cuboid)
+							? BlockProxy.load(location.getBlockAddress(), cuboid)
 							: null
 					;
 				}

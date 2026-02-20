@@ -931,7 +931,7 @@ public class TestLightBringer
 		{
 			if (!_cache.containsKey(location))
 			{
-				_cache.put(location, new BlockProxy(location.getBlockAddress(), _cuboid));
+				_cache.put(location, BlockProxy.load(location.getBlockAddress(), _cuboid));
 			}
 			return _cache.get(location);
 		}
@@ -964,7 +964,7 @@ public class TestLightBringer
 				{
 					if (address.equals(cuboid.getCuboidAddress()))
 					{
-						proxy = new BlockProxy(location.getBlockAddress(), cuboid);
+						proxy = BlockProxy.load(location.getBlockAddress(), cuboid);
 						break;
 					}
 				}

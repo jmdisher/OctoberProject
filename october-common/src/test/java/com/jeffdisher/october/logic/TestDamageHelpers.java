@@ -44,7 +44,7 @@ public class TestDamageHelpers
 	{
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
-			return new BlockProxy(location.getBlockAddress(), cuboid);
+			return BlockProxy.load(location.getBlockAddress(), cuboid);
 		};
 		EntityLocation base = new EntityLocation(2.0f, 2.0f, 2.0f);
 		EntityVolume volume = new EntityVolume(1.5f, 1.2f);
@@ -58,7 +58,7 @@ public class TestDamageHelpers
 	{
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
-			return new BlockProxy(location.getBlockAddress(), cuboid);
+			return BlockProxy.load(location.getBlockAddress(), cuboid);
 		};
 		EntityLocation base = new EntityLocation(2.0f, 2.0f, 2.0f);
 		EntityVolume volume = new EntityVolume(1.5f, 1.2f);
@@ -75,7 +75,7 @@ public class TestDamageHelpers
 	{
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
-			return new BlockProxy(location.getBlockAddress(), cuboid);
+			return BlockProxy.load(location.getBlockAddress(), cuboid);
 		};
 		EntityLocation base = new EntityLocation(2.0f, 2.0f, 2.0f);
 		EntityVolume volume = new EntityVolume(1.5f, 1.2f);

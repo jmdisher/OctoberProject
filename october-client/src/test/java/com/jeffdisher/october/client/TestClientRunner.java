@@ -968,7 +968,7 @@ public class TestClientRunner
 		public BlockProxy readBlock(AbsoluteLocation block)
 		{
 			IReadOnlyCuboidData cuboid = this.loadedCuboids.get(block.getCuboidAddress());
-			return new BlockProxy(block.getBlockAddress(), cuboid);
+			return BlockProxy.load(block.getBlockAddress(), cuboid);
 		}
 	}
 

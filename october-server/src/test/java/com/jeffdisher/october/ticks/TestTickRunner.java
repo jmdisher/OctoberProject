@@ -2556,7 +2556,7 @@ public class TestTickRunner
 		if (null != snapData)
 		{
 			BlockAddress blockAddress = location.getBlockAddress();
-			block = new BlockProxy(blockAddress, snapData.completed());
+			block = BlockProxy.load(blockAddress, snapData.completed());
 		}
 		return block;
 	}

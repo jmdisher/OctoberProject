@@ -44,7 +44,7 @@ public class TestGroundCoverHelpers
 		// Check spread targets in a mostly empty cuboid.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
-			return new BlockProxy(location.getBlockAddress(), cuboid);
+			return BlockProxy.load(location.getBlockAddress(), cuboid);
 		};
 		
 		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
@@ -65,7 +65,7 @@ public class TestGroundCoverHelpers
 		// Check that we can change when all conditions are met.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
-			return new BlockProxy(location.getBlockAddress(), cuboid);
+			return BlockProxy.load(location.getBlockAddress(), cuboid);
 		};
 		
 		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
@@ -82,7 +82,7 @@ public class TestGroundCoverHelpers
 		// Check the cases which will cause the change helper to fail.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
-			return new BlockProxy(location.getBlockAddress(), cuboid);
+			return BlockProxy.load(location.getBlockAddress(), cuboid);
 		};
 		
 		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
@@ -110,7 +110,7 @@ public class TestGroundCoverHelpers
 		// Checks that we can find a potential ground cover type only when we see a source.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
-			return new BlockProxy(location.getBlockAddress(), cuboid);
+			return BlockProxy.load(location.getBlockAddress(), cuboid);
 		};
 		
 		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
@@ -138,7 +138,7 @@ public class TestGroundCoverHelpers
 		// Checks the behaviour of the revert check helper.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
-			return new BlockProxy(location.getBlockAddress(), cuboid);
+			return BlockProxy.load(location.getBlockAddress(), cuboid);
 		};
 		
 		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);

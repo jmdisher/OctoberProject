@@ -86,7 +86,7 @@ public class TestHopperHelpers
 		
 		List<IMutationBlock> outMutations = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
+				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? BlockProxy.load(location.getBlockAddress(), cuboid) : null
 					, null
 					, null
 				)
@@ -224,7 +224,7 @@ public class TestHopperHelpers
 			}
 		};
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
+			.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? BlockProxy.load(location.getBlockAddress(), cuboid) : null
 				, null
 				, previousPassiveLookUp
 			)

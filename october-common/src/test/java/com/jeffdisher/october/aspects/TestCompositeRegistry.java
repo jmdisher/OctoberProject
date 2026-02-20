@@ -58,7 +58,7 @@ public class TestCompositeRegistry
 		cuboid.setData15(AspectRegistry.BLOCK, offLamp.getBlockAddress(), VOID_LAMP.item().number());
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
-				return new BlockProxy(location.getBlockAddress(), cuboid);
+				return BlockProxy.load(location.getBlockAddress(), cuboid);
 			}, null, null)
 			.finish()
 		;
@@ -91,7 +91,7 @@ public class TestCompositeRegistry
 		
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
-				return new BlockProxy(location.getBlockAddress(), cuboid);
+				return BlockProxy.load(location.getBlockAddress(), cuboid);
 			}, null, null)
 			.finish()
 		;
@@ -135,7 +135,7 @@ public class TestCompositeRegistry
 		
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
-				return new BlockProxy(location.getBlockAddress(), cuboid);
+				return BlockProxy.load(location.getBlockAddress(), cuboid);
 			}, null, null)
 			.finish()
 		;
@@ -157,7 +157,7 @@ public class TestCompositeRegistry
 		
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
-				return new BlockProxy(location.getBlockAddress(), cuboid);
+				return BlockProxy.load(location.getBlockAddress(), cuboid);
 			}, null, null)
 			.finish()
 		;

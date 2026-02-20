@@ -1512,7 +1512,7 @@ public class TestMovementAccumulator
 				CuboidAddress address = location.getCuboidAddress();
 				IReadOnlyCuboidData cuboid = cuboids.get(address);
 				return (null != cuboid)
-					? new BlockProxy(location.getBlockAddress(), cuboid)
+					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
 			}

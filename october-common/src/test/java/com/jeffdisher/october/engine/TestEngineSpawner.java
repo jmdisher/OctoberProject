@@ -117,7 +117,7 @@ public class TestEngineSpawner
 				.lookups((AbsoluteLocation location) -> {
 						IReadOnlyCuboidData oneCuboid = completedCuboids.get(location.getCuboidAddress());
 						return (null != oneCuboid)
-								? new BlockProxy(location.getBlockAddress(), oneCuboid)
+								? BlockProxy.load(location.getBlockAddress(), oneCuboid)
 								: null
 						;
 					}, null, null)
@@ -272,7 +272,7 @@ public class TestEngineSpawner
 			.lookups((AbsoluteLocation location) -> {
 				IReadOnlyCuboidData cuboid = completedCuboids.get(location.getCuboidAddress());
 				return (null != cuboid)
-					? new BlockProxy(location.getBlockAddress(), cuboid)
+					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
 			}, null, null)
@@ -355,7 +355,7 @@ public class TestEngineSpawner
 				.lookups((AbsoluteLocation location) -> {
 						IReadOnlyCuboidData cuboid = world.get(location.getCuboidAddress());
 						return (null != cuboid)
-								? new BlockProxy(location.getBlockAddress(), cuboid)
+								? BlockProxy.load(location.getBlockAddress(), cuboid)
 								: null
 						;
 					}, null, null)

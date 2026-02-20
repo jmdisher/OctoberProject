@@ -50,7 +50,7 @@ public class PassiveSynth_FallingBlock
 			// NOTE:  We may want to change this lookup to return an interface or something more restrictive, in the
 			// future, as creating this empty cuboid is not cheap (not too expensive, though).
 			return (checkLocation.z() > startZ)
-				? new BlockProxy(checkLocation.getBlockAddress(), CuboidGenerator.createFilledCuboid(checkLocation.getCuboidAddress(), env.special.AIR))
+				? BlockProxy.load(checkLocation.getBlockAddress(), CuboidGenerator.createFilledCuboid(checkLocation.getCuboidAddress(), env.special.AIR))
 				: context.previousBlockLookUp.apply(checkLocation)
 			;
 		};

@@ -342,7 +342,7 @@ public class TestCreatureMovementHelpers
 			.millisPerTick(50L)
 			.lookups((AbsoluteLocation l) -> {
 				return (l.getCuboidAddress().equals(cuboidAddress))
-					? new BlockProxy(l.getBlockAddress(), cuboid)
+					? BlockProxy.load(l.getBlockAddress(), cuboid)
 					: null
 				;
 			}, null, null)
@@ -364,7 +364,7 @@ public class TestCreatureMovementHelpers
 	{
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), block);
 		return new ViscosityReader(ENV, (AbsoluteLocation location) -> {
-			return new BlockProxy(location.getBlockAddress(), cuboid);
+			return BlockProxy.load(location.getBlockAddress(), cuboid);
 		});
 	}
 
@@ -374,8 +374,8 @@ public class TestCreatureMovementHelpers
 		CuboidData low = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), negative);
 		return new ViscosityReader(ENV, (AbsoluteLocation location) -> {
 			return (location.z() >= 0)
-				? new BlockProxy(location.getBlockAddress(), high)
-				: new BlockProxy(location.getBlockAddress(), low)
+				? BlockProxy.load(location.getBlockAddress(), high)
+				: BlockProxy.load(location.getBlockAddress(), low)
 			;
 		});
 	}
@@ -388,8 +388,8 @@ public class TestCreatureMovementHelpers
 			.millisPerTick(millisPerTick)
 			.lookups((AbsoluteLocation location) -> {
 				return (location.getCuboidAddress().z() >= 0)
-					? new BlockProxy(location.getBlockAddress(), airCuboid)
-					: new BlockProxy(location.getBlockAddress(), stoneCuboid)
+					? BlockProxy.load(location.getBlockAddress(), airCuboid)
+					: BlockProxy.load(location.getBlockAddress(), stoneCuboid)
 				;
 			}, null, null)
 			.finish()

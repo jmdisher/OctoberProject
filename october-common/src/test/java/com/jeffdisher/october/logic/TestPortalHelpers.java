@@ -84,7 +84,7 @@ public class TestPortalHelpers
 		
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
-				return new BlockProxy(location.getBlockAddress(), cuboid);
+				return BlockProxy.load(location.getBlockAddress(), cuboid);
 			}, null, null)
 			.finish()
 		;
@@ -109,7 +109,7 @@ public class TestPortalHelpers
 		Set<AbsoluteLocation> futureLocations = new HashSet<>();
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
-				return new BlockProxy(location.getBlockAddress(), cuboid);
+				return BlockProxy.load(location.getBlockAddress(), cuboid);
 			}, null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
@@ -153,7 +153,7 @@ public class TestPortalHelpers
 		Set<AbsoluteLocation> nextLocations = new HashSet<>();
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
-				return new BlockProxy(location.getBlockAddress(), cuboid);
+				return BlockProxy.load(location.getBlockAddress(), cuboid);
 			}, null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
@@ -192,7 +192,7 @@ public class TestPortalHelpers
 		Set<AbsoluteLocation> nextLocations = new HashSet<>();
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
-				return location.getCuboidAddress().equals(cuboidAddress) ? new BlockProxy(location.getBlockAddress(), cuboid) : null;
+				return location.getCuboidAddress().equals(cuboidAddress) ? BlockProxy.load(location.getBlockAddress(), cuboid) : null;
 			}, null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override

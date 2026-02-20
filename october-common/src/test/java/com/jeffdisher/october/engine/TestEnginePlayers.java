@@ -70,7 +70,7 @@ public class TestEnginePlayers
 			.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
 			.lookups((AbsoluteLocation location) -> {
 				return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
-					? new BlockProxy(location.getBlockAddress(), cuboid)
+					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
 			}, null, null)

@@ -50,7 +50,7 @@ public class TestFireHelpers
 		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
-					return new BlockProxy(location.getBlockAddress(), cuboid);
+					return BlockProxy.load(location.getBlockAddress(), cuboid);
 				}, null, null)
 				.finish()
 		;
@@ -67,7 +67,7 @@ public class TestFireHelpers
 		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
-					return new BlockProxy(location.getBlockAddress(), cuboid);
+					return BlockProxy.load(location.getBlockAddress(), cuboid);
 				}, null, null)
 				.finish()
 		;
@@ -84,7 +84,7 @@ public class TestFireHelpers
 		cuboid.setData7(AspectRegistry.FLAGS, centre.getBlockAddress(), FlagsAspect.FLAG_BURNING);
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
-					return new BlockProxy(location.getBlockAddress(), cuboid);
+					return BlockProxy.load(location.getBlockAddress(), cuboid);
 				}, null, null)
 				.finish()
 		;
@@ -106,13 +106,13 @@ public class TestFireHelpers
 		cuboid.setData7(AspectRegistry.FLAGS, alreadyBurning.getBlockAddress(), FlagsAspect.FLAG_BURNING);
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
-					return new BlockProxy(location.getBlockAddress(), cuboid);
+					return BlockProxy.load(location.getBlockAddress(), cuboid);
 				}, null, null)
 				.finish()
 		;
-		Assert.assertTrue(FireHelpers.canIgnite(ENV, context, canStart, new BlockProxy(canStart.getBlockAddress(), cuboid)));
-		Assert.assertFalse(FireHelpers.canIgnite(ENV, context, cannotStart, new BlockProxy(cannotStart.getBlockAddress(), cuboid)));
-		Assert.assertFalse(FireHelpers.canIgnite(ENV, context, alreadyBurning, new BlockProxy(alreadyBurning.getBlockAddress(), cuboid)));
+		Assert.assertTrue(FireHelpers.canIgnite(ENV, context, canStart, BlockProxy.load(canStart.getBlockAddress(), cuboid)));
+		Assert.assertFalse(FireHelpers.canIgnite(ENV, context, cannotStart, BlockProxy.load(cannotStart.getBlockAddress(), cuboid)));
+		Assert.assertFalse(FireHelpers.canIgnite(ENV, context, alreadyBurning, BlockProxy.load(alreadyBurning.getBlockAddress(), cuboid)));
 	}
 
 	@Test
@@ -130,13 +130,13 @@ public class TestFireHelpers
 		cuboid.setData15(AspectRegistry.BLOCK, burnWater.getRelative(0, 0, 1).getBlockAddress(), WATER_SOURCE.item().number());
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
-					return new BlockProxy(location.getBlockAddress(), cuboid);
+					return BlockProxy.load(location.getBlockAddress(), cuboid);
 				}, null, null)
 				.finish()
 		;
-		Assert.assertFalse(FireHelpers.shouldExtinguish(ENV, context, burnNoWater, new BlockProxy(burnNoWater.getBlockAddress(), cuboid)));
-		Assert.assertFalse(FireHelpers.shouldExtinguish(ENV, context, noBurnNoWater, new BlockProxy(noBurnNoWater.getBlockAddress(), cuboid)));
-		Assert.assertFalse(FireHelpers.shouldExtinguish(ENV, context, noBurnWater, new BlockProxy(noBurnWater.getBlockAddress(), cuboid)));
-		Assert.assertTrue(FireHelpers.shouldExtinguish(ENV, context, burnWater, new BlockProxy(burnWater.getBlockAddress(), cuboid)));
+		Assert.assertFalse(FireHelpers.shouldExtinguish(ENV, context, burnNoWater, BlockProxy.load(burnNoWater.getBlockAddress(), cuboid)));
+		Assert.assertFalse(FireHelpers.shouldExtinguish(ENV, context, noBurnNoWater, BlockProxy.load(noBurnNoWater.getBlockAddress(), cuboid)));
+		Assert.assertFalse(FireHelpers.shouldExtinguish(ENV, context, noBurnWater, BlockProxy.load(noBurnWater.getBlockAddress(), cuboid)));
+		Assert.assertTrue(FireHelpers.shouldExtinguish(ENV, context, burnWater, BlockProxy.load(burnWater.getBlockAddress(), cuboid)));
 	}
 }

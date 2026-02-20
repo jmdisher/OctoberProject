@@ -57,7 +57,7 @@ public class TestMultiBlockUtils
 		
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
-					return new BlockProxy(location.getBlockAddress(), cuboid);
+					return BlockProxy.load(location.getBlockAddress(), cuboid);
 				}, null, null)
 				.finish()
 		;
@@ -84,7 +84,7 @@ public class TestMultiBlockUtils
 		
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
-					return new BlockProxy(location.getBlockAddress(), cuboid);
+					return BlockProxy.load(location.getBlockAddress(), cuboid);
 				}, null, null)
 				.finish()
 		;
@@ -130,7 +130,7 @@ public class TestMultiBlockUtils
 				.finish()
 		;
 		
-		MultiBlockUtils.Lookup lookup = new MultiBlockUtils.Lookup(base, new BlockProxy(base.getBlockAddress(), cuboid), ENV.multiBlocks.getExtensions(DOOR, base, direction));
+		MultiBlockUtils.Lookup lookup = new MultiBlockUtils.Lookup(base, BlockProxy.load(base.getBlockAddress(), cuboid), ENV.multiBlocks.getExtensions(DOOR, base, direction));
 		MultiBlockUtils.sendMutationToAll(context, (AbsoluteLocation location) -> {
 			return new MutationBlockReplace(location, STONE, DOOR);
 		}, lookup);
@@ -153,8 +153,8 @@ public class TestMultiBlockUtils
 			cuboid.setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, extension.getBlockAddress(), base);
 		}
 		
-		Assert.assertFalse(MultiBlockUtils.isMultiBlockExtension(ENV, new BlockProxy(base.getBlockAddress(), cuboid)));
-		Assert.assertTrue(MultiBlockUtils.isMultiBlockExtension(ENV, new BlockProxy(base.getRelative(0, 0, 1).getBlockAddress(), cuboid)));
+		Assert.assertFalse(MultiBlockUtils.isMultiBlockExtension(ENV, BlockProxy.load(base.getBlockAddress(), cuboid)));
+		Assert.assertTrue(MultiBlockUtils.isMultiBlockExtension(ENV, BlockProxy.load(base.getRelative(0, 0, 1).getBlockAddress(), cuboid)));
 	}
 
 	@Test
@@ -170,7 +170,7 @@ public class TestMultiBlockUtils
 		Set<AbsoluteLocation> futureLocations = new HashSet<>();
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
-				return new BlockProxy(location.getBlockAddress(), cuboid);
+				return BlockProxy.load(location.getBlockAddress(), cuboid);
 			}, null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
@@ -222,7 +222,7 @@ public class TestMultiBlockUtils
 		Set<AbsoluteLocation> nextLocations = new HashSet<>();
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
-				return new BlockProxy(location.getBlockAddress(), cuboid);
+				return BlockProxy.load(location.getBlockAddress(), cuboid);
 			}, null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override

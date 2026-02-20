@@ -85,7 +85,7 @@ public class TestCreatureLogic
 		{
 			TickProcessingContext context = _createContext((AbsoluteLocation location) -> {
 				return location.getCuboidAddress().equals(cuboidAddress)
-						? new BlockProxy(location.getBlockAddress(), input)
+						? BlockProxy.load(location.getBlockAddress(), input)
 						: null
 				;
 			}, i);
@@ -98,7 +98,7 @@ public class TestCreatureLogic
 		{
 			TickProcessingContext context = _createContext((AbsoluteLocation location) -> {
 				return location.getCuboidAddress().equals(cuboidAddress)
-						? new BlockProxy(location.getBlockAddress(), input)
+						? BlockProxy.load(location.getBlockAddress(), input)
 						: null
 				;
 			}, 24);
@@ -126,7 +126,7 @@ public class TestCreatureLogic
 		{
 			TickProcessingContext context = _createContext((AbsoluteLocation location) -> {
 				return location.getCuboidAddress().equals(cuboidAddress)
-						? new BlockProxy(location.getBlockAddress(), input)
+						? BlockProxy.load(location.getBlockAddress(), input)
 						: null
 				;
 			}, i);
@@ -139,7 +139,7 @@ public class TestCreatureLogic
 		{
 			TickProcessingContext context = _createContext((AbsoluteLocation location) -> {
 				return location.getCuboidAddress().equals(cuboidAddress)
-						? new BlockProxy(location.getBlockAddress(), input)
+						? BlockProxy.load(location.getBlockAddress(), input)
 						: null
 				;
 			}, 13);
@@ -167,7 +167,7 @@ public class TestCreatureLogic
 				.tick((CreatureLogic.MINIMUM_MILLIS_TO_ACTION / 100L) + 1L)
 				.lookups((AbsoluteLocation location) -> {
 					return location.getCuboidAddress().equals(cuboidAddress)
-							? new BlockProxy(location.getBlockAddress(), input)
+							? BlockProxy.load(location.getBlockAddress(), input)
 							: null
 					;
 				}, null, null)
@@ -208,7 +208,7 @@ public class TestCreatureLogic
 		// We should see 0 possible locations.
 		TickProcessingContext context = _createContext((AbsoluteLocation location) -> {
 			return location.getCuboidAddress().equals(cuboidAddress)
-					? new BlockProxy(location.getBlockAddress(), input)
+					? BlockProxy.load(location.getBlockAddress(), input)
 					: null
 			;
 		}, 0);
@@ -247,7 +247,7 @@ public class TestCreatureLogic
 		// We should see them acquire this target.
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
 			return location.getCuboidAddress().equals(cuboidAddress)
-					? new BlockProxy(location.getBlockAddress(), input)
+					? BlockProxy.load(location.getBlockAddress(), input)
 					: null
 			;
 		};
@@ -331,7 +331,7 @@ public class TestCreatureLogic
 		// We will take a special action where nothing should happen.
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
 			return location.getCuboidAddress().equals(cuboidAddress)
-					? new BlockProxy(location.getBlockAddress(), input)
+					? BlockProxy.load(location.getBlockAddress(), input)
 					: null
 			;
 		};
@@ -538,7 +538,7 @@ public class TestCreatureLogic
 		
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
 			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-					? new BlockProxy(blockLocation.getBlockAddress(), input)
+					? BlockProxy.load(blockLocation.getBlockAddress(), input)
 					: null
 			;
 		};
@@ -595,7 +595,7 @@ public class TestCreatureLogic
 		
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
 			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-					? new BlockProxy(blockLocation.getBlockAddress(), input)
+					? BlockProxy.load(blockLocation.getBlockAddress(), input)
 					: null
 			;
 		};
@@ -727,7 +727,7 @@ public class TestCreatureLogic
 		
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
 			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-					? new BlockProxy(blockLocation.getBlockAddress(), input)
+					? BlockProxy.load(blockLocation.getBlockAddress(), input)
 					: null
 			;
 		};
@@ -816,7 +816,7 @@ public class TestCreatureLogic
 		
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
 			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-					? new BlockProxy(blockLocation.getBlockAddress(), input)
+					? BlockProxy.load(blockLocation.getBlockAddress(), input)
 					: null
 			;
 		};
@@ -893,7 +893,7 @@ public class TestCreatureLogic
 		
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
-				return new BlockProxy(location.getBlockAddress(), input);
+				return BlockProxy.load(location.getBlockAddress(), input);
 			}, null, null)
 			.finish()
 		;
@@ -956,7 +956,7 @@ public class TestCreatureLogic
 			})
 			.lookups((AbsoluteLocation location) -> {
 				return location.getCuboidAddress().equals(cuboidAddress)
-					? new BlockProxy(location.getBlockAddress(), input)
+					? BlockProxy.load(location.getBlockAddress(), input)
 					: null
 				;
 			}, (Integer entityId) -> {
@@ -1041,7 +1041,7 @@ public class TestCreatureLogic
 		
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
 			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-				? new BlockProxy(blockLocation.getBlockAddress(), input)
+				? BlockProxy.load(blockLocation.getBlockAddress(), input)
 				: null
 			;
 		};
@@ -1133,7 +1133,7 @@ public class TestCreatureLogic
 		_setLayer(input, (byte)0, "op.stone");
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
 			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-				? new BlockProxy(blockLocation.getBlockAddress(), input)
+				? BlockProxy.load(blockLocation.getBlockAddress(), input)
 				: null
 			;
 		};

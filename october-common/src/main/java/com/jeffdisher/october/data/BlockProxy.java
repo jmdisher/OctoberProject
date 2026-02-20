@@ -17,6 +17,7 @@ import com.jeffdisher.october.types.ItemSlot;
 
 /**
  * A proxy to access immutable block data within a specific cuboid snapshot.
+ * Note that, once constructed, these instances are also immutable so they can be accessed by multiple threads.
  */
 public class BlockProxy implements IBlockProxy
 {
@@ -61,20 +62,48 @@ public class BlockProxy implements IBlockProxy
 		return doesMatch;
 	}
 
+	/**
+	 * Creates a new instance, eagerly loading the block type from the given data.
+	 * 
+	 * @param address The address within the cuboid of this block.
+	 * @param data The cuboid to read from.
+	 * @return The new instance.
+	 */
+	public static BlockProxy load(BlockAddress address, IReadOnlyCuboidData data)
+	{
+		short blockType =  data.getData15(AspectRegistry.BLOCK, address);
+		return new BlockProxy(address, data, blockType);
+	}
+
+	/**
+	/**
+	 * Creates a new instance, using the given block type number as the block type, ignoring the actual block aspect in
+	 * the given data.
+	 * 
+	 * @param address The address within the cuboid of this block.
+	 * @param data The cuboid to read from.
+	 * @param blockType The block type to initialize directly.
+	 * @return The new instance.
+	 */
+	public static BlockProxy init(BlockAddress address, IReadOnlyCuboidData data, short blockType)
+	{
+		return new BlockProxy(address, data, blockType);
+	}
+
 
 	private final Environment _env;
 	private final BlockAddress _address;
 	private final IReadOnlyCuboidData _data;
 	private final Block _cachedBlock;
 
-	public BlockProxy(BlockAddress address, IReadOnlyCuboidData data)
+	private BlockProxy(BlockAddress address, IReadOnlyCuboidData data, short blockType)
 	{
 		_env = Environment.getShared();
 		_address = address;
 		_data = data;
 		
 		// We cache the item since we use it to make some other internal decisions.
-		Item rawItem = _env.items.ITEMS_BY_TYPE[_getData15(AspectRegistry.BLOCK)];
+		Item rawItem = _env.items.ITEMS_BY_TYPE[blockType];
 		_cachedBlock = _env.blocks.fromItem(rawItem);
 	}
 
@@ -171,11 +200,6 @@ public class BlockProxy implements IBlockProxy
 		return _getDataSpecial(AspectRegistry.ENCHANTING);
 	}
 
-
-	private short _getData15(Aspect<Short, ?> type)
-	{
-		return _data.getData15(type, _address);
-	}
 
 	private byte _getData7(Aspect<Byte, ?> type)
 	{

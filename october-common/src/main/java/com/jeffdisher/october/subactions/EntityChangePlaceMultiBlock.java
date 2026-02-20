@@ -169,7 +169,7 @@ public class EntityChangePlaceMultiBlock implements IEntitySubAction<IMutablePla
 			{
 				cuboid = emptyCuboid;
 			}
-			return new BlockProxy(location.getBlockAddress(), cuboid);
+			return BlockProxy.load(location.getBlockAddress(), cuboid);
 		};
 		ViscosityReader reader = new ViscosityReader(env, blockLookup);
 		return SpatialHelpers.canExistInLocation(reader, newEntity.getLocation(), newEntity.getType().volume());

@@ -75,7 +75,7 @@ public class FakeUpdateFactories
 		{
 			IReadOnlyCuboidData data = loadedCuboids.get(location.getCuboidAddress());
 			return (null != data)
-					? new BlockProxy(location.getBlockAddress(), data)
+					? BlockProxy.load(location.getBlockAddress(), data)
 					: null
 			;
 		};

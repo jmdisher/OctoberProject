@@ -88,7 +88,7 @@ public class MutationPlaceSelectedBlock implements IEntitySubAction<IMutablePlay
 			CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(_targetBlock.getCuboidAddress(), env.special.AIR);
 			fakeCuboid.setData15(AspectRegistry.BLOCK, _targetBlock.getBlockAddress(), blockType.item().number());
 			EntityLocation entityLocation = newEntity.getLocation();
-			ViscosityReader reader = new ViscosityReader(env, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid));
+			ViscosityReader reader = new ViscosityReader(env, (AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), fakeCuboid));
 			isLocationNotColliding = SpatialHelpers.canExistInLocation(reader, entityLocation, newEntity.getType().volume());
 		}
 		

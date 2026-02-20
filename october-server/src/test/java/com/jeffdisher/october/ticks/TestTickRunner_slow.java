@@ -161,7 +161,7 @@ public class TestTickRunner_slow
 		Assert.assertEquals(2, snap.stats().committedCuboidMutationCount());
 		// We should see the two calls to accept the items.
 		Assert.assertTrue(snap.cuboids().get(address).scheduledBlockMutations().get(0).mutation() instanceof MutationBlockFurnaceCraft);
-		BlockProxy proxy = new BlockProxy(block, snap.cuboids().get(address).completed());
+		BlockProxy proxy = BlockProxy.load(block, snap.cuboids().get(address).completed());
 		Assert.assertEquals(3, proxy.getInventory().getCount(LOG_ITEM));
 		Assert.assertEquals(2, proxy.getFuel().fuelInventory().getCount(PLANK_ITEM));
 		
@@ -187,7 +187,7 @@ public class TestTickRunner_slow
 			
 			Assert.assertEquals(1, snap.stats().committedCuboidMutationCount());
 			Assert.assertTrue(snap.cuboids().get(address).scheduledBlockMutations().get(0).mutation() instanceof MutationBlockFurnaceCraft);
-			proxy = new BlockProxy(block, snap.cuboids().get(address).completed());
+			proxy = BlockProxy.load(block, snap.cuboids().get(address).completed());
 			Assert.assertEquals(logCount, proxy.getInventory().getCount(LOG_ITEM));
 			Assert.assertEquals(plankCount, proxy.getFuel().fuelInventory().getCount(PLANK_ITEM));
 			if (0 != (i % burnPlankTicks))
@@ -211,7 +211,7 @@ public class TestTickRunner_slow
 		
 		Assert.assertEquals(1, snap.stats().committedCuboidMutationCount());
 		Assert.assertTrue(snap.cuboids().get(address).scheduledBlockMutations().get(0).mutation() instanceof MutationBlockFurnaceCraft);
-		proxy = new BlockProxy(block, snap.cuboids().get(address).completed());
+		proxy = BlockProxy.load(block, snap.cuboids().get(address).completed());
 		Assert.assertEquals(0, proxy.getInventory().getCount(LOG_ITEM));
 		Assert.assertEquals(3, proxy.getInventory().getCount(CHARCOAL_ITEM));
 		Assert.assertEquals(burnedMillis, burnPlankMillis - proxy.getFuel().millisFuelled());
@@ -227,7 +227,7 @@ public class TestTickRunner_slow
 			snap = runner.waitForPreviousTick();
 			
 			Assert.assertEquals(1, snap.stats().committedCuboidMutationCount());
-			proxy = new BlockProxy(block, snap.cuboids().get(address).completed());
+			proxy = BlockProxy.load(block, snap.cuboids().get(address).completed());
 			Assert.assertEquals(burnedMillis, burnPlankMillis - proxy.getFuel().millisFuelled());
 		}
 		Assert.assertEquals(0, proxy.getFuel().millisFuelled());

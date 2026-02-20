@@ -50,7 +50,7 @@ public class TestTickUtils
 		// Show that we take suffocation damage if not in a breathable space at the end of a tick.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
-			return new BlockProxy(location.getBlockAddress(), cuboid);
+			return BlockProxy.load(location.getBlockAddress(), cuboid);
 		};
 		long millisPerTick = 100L;
 		EventRecord[] out_events = new EventRecord[1];
@@ -82,7 +82,7 @@ public class TestTickUtils
 		// Show that we take lava damage at the end of a tick.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), LAVA_SOURCE);
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
-			return new BlockProxy(location.getBlockAddress(), cuboid);
+			return BlockProxy.load(location.getBlockAddress(), cuboid);
 		};
 		long millisPerTick = 100L;
 		EventRecord[] out_events = new EventRecord[1];
@@ -119,7 +119,7 @@ public class TestTickUtils
 		cuboid.setData15(AspectRegistry.BLOCK, platform.getBlockAddress(), log.item().number());
 		cuboid.setData7(AspectRegistry.FLAGS, platform.getBlockAddress(), FlagsAspect.FLAG_BURNING);
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
-			return new BlockProxy(location.getBlockAddress(), cuboid);
+			return BlockProxy.load(location.getBlockAddress(), cuboid);
 		};
 		long millisPerTick = 100L;
 		EventRecord[] out_events = new EventRecord[1];

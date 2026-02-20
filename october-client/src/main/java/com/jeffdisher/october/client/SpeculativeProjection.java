@@ -122,7 +122,7 @@ public class SpeculativeProjection
 			CuboidAddress address = location.getCuboidAddress();
 			IReadOnlyCuboidData cuboid = _projectedState.projectedWorld.get(address);
 			return (null != cuboid)
-					? new BlockProxy(location.getBlockAddress(), cuboid)
+					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 			;
 		};

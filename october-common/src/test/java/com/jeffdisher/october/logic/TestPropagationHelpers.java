@@ -69,7 +69,7 @@ public class TestPropagationHelpers
 					BlockProxy proxy = lazyGlobalCache.get(location);
 					if (null == proxy)
 					{
-						proxy = new BlockProxy(location.getBlockAddress(), cuboid);
+						proxy = BlockProxy.load(location.getBlockAddress(), cuboid);
 						lazyGlobalCache.put(location, proxy);
 					}
 					return proxy;
@@ -144,7 +144,7 @@ public class TestPropagationHelpers
 				BlockProxy proxy = lazyGlobalCache.get(location);
 				if (null == proxy)
 				{
-					proxy = new BlockProxy(location.getBlockAddress(), cuboid);
+					proxy = BlockProxy.load(location.getBlockAddress(), cuboid);
 					lazyGlobalCache.put(location, proxy);
 				}
 				return proxy;
@@ -162,9 +162,9 @@ public class TestPropagationHelpers
 		// We expect to see the 12 update events, since the implementation can only determine that these adjacent values MAY have changed.
 		Assert.assertEquals(12, updateMutations.size());
 		// Since none of these are wires, they shouldn't have logic values.
-		Assert.assertEquals((byte) 0, new BlockProxy(switchOn.getBlockAddress(), cuboid).getLogic());
-		Assert.assertEquals((byte) 0, new BlockProxy(switchOff.getBlockAddress(), cuboid).getLogic());
-		Assert.assertEquals((byte) 0, new BlockProxy(lampOff.getBlockAddress(), cuboid).getLogic());
+		Assert.assertEquals((byte) 0, BlockProxy.load(switchOn.getBlockAddress(), cuboid).getLogic());
+		Assert.assertEquals((byte) 0, BlockProxy.load(switchOff.getBlockAddress(), cuboid).getLogic());
+		Assert.assertEquals((byte) 0, BlockProxy.load(lampOff.getBlockAddress(), cuboid).getLogic());
 	}
 
 	@Test
@@ -218,7 +218,7 @@ public class TestPropagationHelpers
 				BlockProxy proxy = lazyGlobalCache.get(location);
 				if (null == proxy)
 				{
-					proxy = new BlockProxy(location.getBlockAddress(), cuboid);
+					proxy = BlockProxy.load(location.getBlockAddress(), cuboid);
 					lazyGlobalCache.put(location, proxy);
 				}
 				return proxy;
@@ -236,8 +236,8 @@ public class TestPropagationHelpers
 		// We expect to see the 12 update events:  All blocks adjacent to both updates (including the blocks themselves since there is no filtering).
 		Assert.assertEquals(12, updateMutations.size());
 		// The logic value should not be set in the switch, but will be site in the wire.
-		Assert.assertEquals(0, new BlockProxy(switchLocation.getBlockAddress(), cuboid).getLogic());
-		Assert.assertEquals(LogicAspect.MAX_LEVEL, new BlockProxy(wireLocation.getBlockAddress(), cuboid).getLogic());
+		Assert.assertEquals(0, BlockProxy.load(switchLocation.getBlockAddress(), cuboid).getLogic());
+		Assert.assertEquals(LogicAspect.MAX_LEVEL, BlockProxy.load(wireLocation.getBlockAddress(), cuboid).getLogic());
 	}
 
 	@Test
@@ -283,7 +283,7 @@ public class TestPropagationHelpers
 				BlockProxy proxy = lazyGlobalCache.get(location);
 				if (null == proxy)
 				{
-					proxy = new BlockProxy(location.getBlockAddress(), cuboid);
+					proxy = BlockProxy.load(location.getBlockAddress(), cuboid);
 					lazyGlobalCache.put(location, proxy);
 				}
 				return proxy;
@@ -300,9 +300,9 @@ public class TestPropagationHelpers
 		// We expect to see the 12 update events:  All blocks adjacent to both updates (including the blocks themselves since there is no filtering).
 		Assert.assertEquals(12, updateMutations.size());
 		// We expect to see the logic value set in the switch and wire.
-		Assert.assertEquals(LogicAspect.MAX_LEVEL, new BlockProxy(switchLocation.getBlockAddress(), cuboid).getLogic());
-		Assert.assertEquals(0, new BlockProxy(brokenWire.getBlockAddress(), cuboid).getLogic());
-		Assert.assertEquals(0, new BlockProxy(finalWire.getBlockAddress(), cuboid).getLogic());
+		Assert.assertEquals(LogicAspect.MAX_LEVEL, BlockProxy.load(switchLocation.getBlockAddress(), cuboid).getLogic());
+		Assert.assertEquals(0, BlockProxy.load(brokenWire.getBlockAddress(), cuboid).getLogic());
+		Assert.assertEquals(0, BlockProxy.load(finalWire.getBlockAddress(), cuboid).getLogic());
 	}
 
 	@Test
@@ -481,7 +481,7 @@ public class TestPropagationHelpers
 					BlockProxy proxy = lazyGlobalCache.get(location);
 					if (null == proxy)
 					{
-						proxy = new BlockProxy(location.getBlockAddress(), cuboid);
+						proxy = BlockProxy.load(location.getBlockAddress(), cuboid);
 						lazyGlobalCache.put(location, proxy);
 					}
 					return proxy;

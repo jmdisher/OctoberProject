@@ -606,7 +606,7 @@ public class TestCommonChanges
 		
 		List<IMutationBlock> blockHolder = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)
 					, null
 					, null
 				)
@@ -761,12 +761,12 @@ public class TestCommonChanges
 						BlockProxy proxy;
 						if (address.equals(airAddress))
 						{
-							proxy = new BlockProxy(block, airCuboid);
+							proxy = BlockProxy.load(block, airCuboid);
 						}
 						else
 						{
 							Assert.assertTrue(address.equals(stoneAddress));
-							proxy = new BlockProxy(block, stoneCuboid);
+							proxy = BlockProxy.load(block, stoneCuboid);
 						}
 						return proxy;
 					}, null, null)
@@ -1365,7 +1365,7 @@ public class TestCommonChanges
 		
 		// Verify that the charcoal is now only in the entity inventory.
 		Assert.assertEquals(2, newEntity.newInventory.getCount(CHARCOAL_ITEM));
-		BlockProxy proxy = new BlockProxy(furnace.getBlockAddress(), cuboid);
+		BlockProxy proxy = BlockProxy.load(furnace.getBlockAddress(), cuboid);
 		Assert.assertEquals(0, proxy.getInventory().currentEncumbrance);
 		Assert.assertEquals(0, proxy.getFuel().fuelInventory().currentEncumbrance);
 	}
@@ -2196,7 +2196,7 @@ public class TestCommonChanges
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
 					return location.getCuboidAddress().equals(cuboid.getCuboidAddress())
-							? new BlockProxy(location.getBlockAddress(), cuboid)
+							? BlockProxy.load(location.getBlockAddress(), cuboid)
 							: null
 					;
 				}, null, null)
@@ -2685,8 +2685,8 @@ public class TestCommonChanges
 			.millisPerTick(50L)
 			.lookups((AbsoluteLocation location) -> {
 				return location.getCuboidAddress().equals(air.getCuboidAddress())
-					? new BlockProxy(location.getBlockAddress(), air)
-					: new BlockProxy(location.getBlockAddress(), stone)
+					? BlockProxy.load(location.getBlockAddress(), air)
+					: BlockProxy.load(location.getBlockAddress(), stone)
 				;
 			}, null, null)
 			.finish()
@@ -2882,7 +2882,7 @@ public class TestCommonChanges
 		
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(200L)
-			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
+			.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid), null, null)
 			.finish()
 		;
 		
@@ -2911,7 +2911,7 @@ public class TestCommonChanges
 		
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(200L)
-			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
+			.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid), null, null)
 			.finish()
 		;
 		
@@ -2931,7 +2931,7 @@ public class TestCommonChanges
 		cuboid.setData15(AspectRegistry.BLOCK, blockLocation.getBlockAddress(), STONE.item().number());
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
+			.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid), null, null)
 			.finish()
 		;
 		
@@ -2988,7 +2988,7 @@ public class TestCommonChanges
 		
 		TickProcessingContext context = ContextBuilder.build()
 			.millisPerTick(100L)
-			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
+			.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid), null, null)
 			.finish()
 		;
 		
@@ -3007,7 +3007,7 @@ public class TestCommonChanges
 		// Try again with a different tick rate.
 		context = ContextBuilder.build()
 			.millisPerTick(10L)
-			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
+			.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid), null, null)
 			.finish()
 		;
 		
@@ -3025,7 +3025,7 @@ public class TestCommonChanges
 		// Test an error case we noticed with sign handling when clamping.
 		context = ContextBuilder.build()
 			.millisPerTick(50L)
-			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
+			.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid), null, null)
 			.finish()
 		;
 		
@@ -3055,7 +3055,7 @@ public class TestCommonChanges
 				.tick(5L)
 				.lookups((AbsoluteLocation location) -> {
 					CuboidData cuboid = (location.z() >= 0) ? airCuboid : stoneCuboid;
-					return new BlockProxy(location.getBlockAddress(), cuboid);
+					return BlockProxy.load(location.getBlockAddress(), cuboid);
 				}, (Integer id) -> {
 					Assert.assertEquals(targetId, id.intValue());
 					return MinimalEntity.fromCreature(creature);
@@ -3265,7 +3265,7 @@ public class TestCommonChanges
 		cuboid.setData15(AspectRegistry.BLOCK, fixedBlock.getBlockAddress(), STONE.item().number());
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
-				return new BlockProxy(location.getBlockAddress(), cuboid);
+				return BlockProxy.load(location.getBlockAddress(), cuboid);
 			}, null, null)
 			.finish()
 		;
@@ -3576,7 +3576,7 @@ public class TestCommonChanges
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
 				IReadOnlyCuboidData cuboid = mappedWorld.get(location.getCuboidAddress());
-				return new BlockProxy(location.getBlockAddress(), cuboid);
+				return BlockProxy.load(location.getBlockAddress(), cuboid);
 			}, null, null)
 			.finish()
 		;
@@ -3633,7 +3633,7 @@ public class TestCommonChanges
 		CuboidData stone = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
-				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone), null, null)
+				.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), (location.z() >= 0) ? air : stone), null, null)
 				.eventSink(events)
 				.finish()
 		;
@@ -3645,7 +3645,7 @@ public class TestCommonChanges
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
 						return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
-								? new BlockProxy(location.getBlockAddress(), cuboid)
+								? BlockProxy.load(location.getBlockAddress(), cuboid)
 								: null
 						;
 					}, null, null)
@@ -3789,7 +3789,7 @@ public class TestCommonChanges
 		{
 			this.context = ContextBuilder.build()
 					.tick(5L)
-					.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null, null)
+					.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid), null, null)
 					.sinks(allowBlockMutation ? new TickProcessingContext.IMutationSink() {
 							@Override
 							public boolean next(IMutationBlock mutation)

@@ -122,7 +122,7 @@ public class TestEngineCreatures
 		List<PassiveEntity> out_passives = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
-				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid), null, null)
+				.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), fakeCuboid), null, null)
 				.sinks(new IMutationSink() {
 					@Override
 					public boolean next(IMutationBlock mutation)
@@ -739,7 +739,7 @@ public class TestEngineCreatures
 					.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
 					.lookups((AbsoluteLocation location) -> {
 							return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
-								? new BlockProxy(location.getBlockAddress(), cuboid)
+								? BlockProxy.load(location.getBlockAddress(), cuboid)
 								: null
 							;
 						}, (Integer id) -> minimalEntitiesById.get(id), null)
@@ -791,7 +791,7 @@ public class TestEngineCreatures
 					.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
 					.lookups((AbsoluteLocation location) -> {
 							return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
-								? new BlockProxy(location.getBlockAddress(), cuboid)
+								? BlockProxy.load(location.getBlockAddress(), cuboid)
 								: null
 							;
 						}, null, null)
@@ -842,7 +842,7 @@ public class TestEngineCreatures
 				.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
 				.lookups((AbsoluteLocation location) -> {
 						return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
-							? new BlockProxy(location.getBlockAddress(), cuboid)
+							? BlockProxy.load(location.getBlockAddress(), cuboid)
 							: null
 						;
 					}, null, null)
@@ -884,7 +884,7 @@ public class TestEngineCreatures
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups((AbsoluteLocation location) -> {
 				return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
-					? new BlockProxy(location.getBlockAddress(), cuboid)
+					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
 			}, (Integer id) -> {
@@ -935,8 +935,8 @@ public class TestEngineCreatures
 				.tick(NudgeHelpers.CREATURE_NUDGE_TICK_FREQUENCY - Math.abs(cow2.id()))
 				.lookups((AbsoluteLocation location) -> {
 					return ((short)-1 == location.z())
-						? new BlockProxy(location.getBlockAddress(), stoneCuboid)
-						: new BlockProxy(location.getBlockAddress(), airCuboid)
+						? BlockProxy.load(location.getBlockAddress(), stoneCuboid)
+						: BlockProxy.load(location.getBlockAddress(), airCuboid)
 					;
 				} , null, null)
 				.sinks(null, new TickProcessingContext.IChangeSink() {
@@ -1010,7 +1010,7 @@ public class TestEngineCreatures
 			.tick(tickNumber)
 			.lookups((AbsoluteLocation location) -> {
 				return cuboid.getCuboidAddress().equals(location.getCuboidAddress())
-					? new BlockProxy(location.getBlockAddress(), cuboid)
+					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
 			} , null, null)
@@ -1039,7 +1039,7 @@ public class TestEngineCreatures
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
 			.fixedRandom(0)
-			.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), airCuboid), null, null)
+			.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), airCuboid), null, null)
 			.eventSink(events)
 			.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
 				Assert.assertNull(out[0]);
@@ -1096,8 +1096,8 @@ public class TestEngineCreatures
 				.tick((CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick) + 1L)
 				.lookups((AbsoluteLocation location) -> {
 						return ((short)-1 == location.z())
-							? new BlockProxy(location.getBlockAddress(), stoneCuboid)
-							: new BlockProxy(location.getBlockAddress(), airCuboid)
+							? BlockProxy.load(location.getBlockAddress(), stoneCuboid)
+							: BlockProxy.load(location.getBlockAddress(), airCuboid)
 						;
 					} , null, null)
 				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
@@ -1116,7 +1116,7 @@ public class TestEngineCreatures
 				.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
 				.lookups((AbsoluteLocation location) -> {
 					return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
-							? new BlockProxy(location.getBlockAddress(), cuboid)
+							? BlockProxy.load(location.getBlockAddress(), cuboid)
 							: null
 						;
 					} , null, null)

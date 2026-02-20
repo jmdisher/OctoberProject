@@ -137,7 +137,7 @@ public class TestEntityMovementHelpers
 		Function<AbsoluteLocation, BlockProxy> lookup = (AbsoluteLocation location) -> {
 			CuboidData cuboid = map.get(location.getCuboidAddress());
 			return (null != cuboid)
-				? new BlockProxy(location.getBlockAddress(), cuboid)
+				? BlockProxy.load(location.getBlockAddress(), cuboid)
 				: null
 			;
 		};
@@ -213,7 +213,7 @@ public class TestEntityMovementHelpers
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 5, 5), LADDER.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 6, 5), STONE.item().number());
 		Predicate<AbsoluteLocation> lookup = (AbsoluteLocation location) -> {
-			Block block = new BlockProxy(location.getBlockAddress(), cuboid).getBlock();
+			Block block = BlockProxy.load(location.getBlockAddress(), cuboid).getBlock();
 			return ENV.blocks.isLadderType(block);
 		};
 		
@@ -235,8 +235,8 @@ public class TestEntityMovementHelpers
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
 			return location.getCuboidAddress().equals(airCuboid.getCuboidAddress())
-				? new BlockProxy(location.getBlockAddress(), airCuboid)
-				: new BlockProxy(location.getBlockAddress(), stoneCuboid)
+				? BlockProxy.load(location.getBlockAddress(), airCuboid)
+				: BlockProxy.load(location.getBlockAddress(), stoneCuboid)
 			;
 		};
 		
@@ -270,7 +270,7 @@ public class TestEntityMovementHelpers
 		// A basic test of the commonMovementIdiom - falling through air.
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
-			return new BlockProxy(location.getBlockAddress(), airCuboid);
+			return BlockProxy.load(location.getBlockAddress(), airCuboid);
 		};
 		
 		EntityLocation startLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
@@ -385,7 +385,7 @@ public class TestEntityMovementHelpers
 		// that we can't accelerate above terminal velocity and it should be the same, no matter the facing direction.
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
-			return new BlockProxy(location.getBlockAddress(), airCuboid);
+			return BlockProxy.load(location.getBlockAddress(), airCuboid);
 		};
 		ViscosityReader reader = new ViscosityReader(ENV, previousBlockLookUp);
 		EntityVolume volume = new EntityVolume(2.2f, 1.7f);
@@ -438,7 +438,7 @@ public class TestEntityMovementHelpers
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 1, 0), waterWeak.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 0, 0), waterWeak.item().number());
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
-			return new BlockProxy(location.getBlockAddress(), cuboid);
+			return BlockProxy.load(location.getBlockAddress(), cuboid);
 		};
 		EntityVolume volume = new EntityVolume(2.2f, 1.7f);
 		

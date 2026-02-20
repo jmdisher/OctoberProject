@@ -167,7 +167,7 @@ public class TestEnginePassives
 			.tick(1L)
 			.lookups((AbsoluteLocation lookupLocation) -> {
 				Assert.assertEquals(airCuboid.getCuboidAddress(), lookupLocation.getCuboidAddress());
-				return new BlockProxy(lookupLocation.getBlockAddress(), airCuboid);
+				return BlockProxy.load(lookupLocation.getBlockAddress(), airCuboid);
 			} , null, null)
 			.sinks(null, sink)
 			.eventSink((EventRecord event) -> {
@@ -312,7 +312,7 @@ public class TestEnginePassives
 			}, null)
 			.lookups((AbsoluteLocation location) -> {
 				return cuboid.getCuboidAddress().equals(location.getCuboidAddress())
-					? new BlockProxy(location.getBlockAddress(), cuboid)
+					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
 			} , null, null)
@@ -386,7 +386,7 @@ public class TestEnginePassives
 			}, null)
 			.lookups((AbsoluteLocation location) -> {
 				return cuboid.getCuboidAddress().equals(location.getCuboidAddress())
-					? new BlockProxy(location.getBlockAddress(), cuboid)
+					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
 			} , null, null)
@@ -432,7 +432,7 @@ public class TestEnginePassives
 			.tick(tickNumber)
 			.lookups((AbsoluteLocation location) -> {
 				return cuboid.getCuboidAddress().equals(location.getCuboidAddress())
-					? new BlockProxy(location.getBlockAddress(), cuboid)
+					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
 			} , null, null)
@@ -468,7 +468,7 @@ public class TestEnginePassives
 			.tick(tickNumber)
 			.lookups((AbsoluteLocation location) -> {
 				return cuboid.getCuboidAddress().equals(location.getCuboidAddress())
-					? new BlockProxy(location.getBlockAddress(), cuboid)
+					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
 			} , null, null)
@@ -610,8 +610,8 @@ public class TestEnginePassives
 			.sinks(null, changeSink)
 			.lookups((AbsoluteLocation location) -> {
 				return ((short)-1 == location.z())
-					? new BlockProxy(location.getBlockAddress(), stoneCuboid)
-					: new BlockProxy(location.getBlockAddress(), airCuboid)
+					? BlockProxy.load(location.getBlockAddress(), stoneCuboid)
+					: BlockProxy.load(location.getBlockAddress(), airCuboid)
 				;
 			} , null, null)
 			.passive(spawner)

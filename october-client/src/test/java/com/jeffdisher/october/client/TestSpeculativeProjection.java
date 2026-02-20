@@ -1320,7 +1320,7 @@ public class TestSpeculativeProjection
 		
 		// Check the block and all of its aspects.
 		Block craftingTable = ENV.blocks.fromItem(ENV.items.getItemById("op.crafting_table"));
-		BlockProxy proxy = new BlockProxy(blockLocation, listener.lastData);
+		BlockProxy proxy = BlockProxy.load(blockLocation, listener.lastData);
 		Assert.assertEquals(craftingTable, proxy.getBlock());
 		Assert.assertEquals(2, proxy.getInventory().getCount(STONE_ITEM));
 		Assert.assertEquals(1000L, proxy.getCrafting().completedMillis());
@@ -1330,7 +1330,7 @@ public class TestSpeculativeProjection
 		craft = new EntityChangeCraftInBlock(location, null);
 		long commit4 = _wrapAndApply(projector, entity, currentTimeMillis, craft);
 		Assert.assertEquals(4L, commit4);
-		proxy = new BlockProxy(blockLocation, listener.lastData);
+		proxy = BlockProxy.load(blockLocation, listener.lastData);
 		Assert.assertEquals(craftingTable, proxy.getBlock());
 		Assert.assertEquals(1, proxy.getInventory().getCount(STONE_ITEM));
 		Assert.assertEquals(1, proxy.getInventory().getCount(STONE_BRICK_ITEM));
@@ -1345,7 +1345,7 @@ public class TestSpeculativeProjection
 			long nextCommit = _wrapAndApply(projector, entity, currentTimeMillis, breaking);
 			Assert.assertEquals(5L + i, nextCommit);
 		}
-		proxy = new BlockProxy(blockLocation, listener.lastData);
+		proxy = BlockProxy.load(blockLocation, listener.lastData);
 		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
 		// Note that the table inventory will spawn as passives, which aren't synthesized in the projection (remove this when empty inventories are completely removed).
 		Assert.assertEquals(-1, listener.lastHeightMap.getHeight(1, 1));
@@ -1462,7 +1462,7 @@ public class TestSpeculativeProjection
 		
 		// Check the block and all of its aspects.
 		Block furnace = ENV.blocks.fromItem(FURNACE_ITEM);
-		BlockProxy proxy = new BlockProxy(blockLocation, listener.lastData);
+		BlockProxy proxy = BlockProxy.load(blockLocation, listener.lastData);
 		Assert.assertEquals(furnace, proxy.getBlock());
 		Assert.assertEquals(1, proxy.getInventory().getCount(STONE_ITEM));
 		Assert.assertEquals(1, proxy.getFuel().fuelInventory().getCount(PLANK_ITEM));
@@ -1478,7 +1478,7 @@ public class TestSpeculativeProjection
 			Assert.assertEquals(nextCommit, commit4);
 			nextCommit += 1L;
 		}
-		proxy = new BlockProxy(blockLocation, listener.lastData);
+		proxy = BlockProxy.load(blockLocation, listener.lastData);
 		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
 		// Note that the furnace's various inventories will spawn as passives, which aren't synthesized in the projection (remove this when empty inventories are completely removed).
 		

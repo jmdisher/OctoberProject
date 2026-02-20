@@ -96,7 +96,7 @@ public class MovementAccumulator
 				IReadOnlyCuboidData cuboid = _world.get(location.getCuboidAddress());
 				if (null != cuboid)
 				{
-					proxy = new BlockProxy(location.getBlockAddress(), cuboid);
+					proxy = BlockProxy.load(location.getBlockAddress(), cuboid);
 					_proxyCache.put(location, proxy);
 				}
 			}
