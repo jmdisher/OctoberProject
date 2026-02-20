@@ -15,6 +15,15 @@ public interface IReadOnlyCuboidData
 	<T> T getDataSpecial(Aspect<T, ?> type, BlockAddress address);
 
 	/**
+	 * Reads several 15-bit shorts at the same time.
+	 * 
+	 * @param type The aspect to read.
+	 * @param addresses The list of addresses to read (must contain at least 1 element).
+	 * @return An array containing every requested short address value, in the same order requested.
+	 */
+	short[] batchReadData15(Aspect<Short, ?> type, BlockAddress[] addresses);
+
+	/**
 	 * Walks the tree used to represent the associated aspect, issuing callbacks for every data entry found (in no
 	 * particular order), so long as it isn't valueToSkip.
 	 * 

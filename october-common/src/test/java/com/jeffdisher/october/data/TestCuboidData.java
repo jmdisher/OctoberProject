@@ -249,4 +249,36 @@ public class TestCuboidData
 		Assert.assertEquals(stack, output.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, testAddress1).stack);
 		Assert.assertEquals(nonStack, output.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, testAddress2).nonStackable);
 	}
+
+	@Test
+	public void batchRead()
+	{
+		BlockAddress stone1 = BlockAddress.fromInt(1, 2, 3);
+		BlockAddress stone2 = BlockAddress.fromInt(4, 5, 6);
+		BlockAddress stone3 = BlockAddress.fromInt(7, 8, 9);
+		BlockAddress stone4 = BlockAddress.fromInt(10, 11, 12);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		short stoneNumber = STONE_ITEM.number();
+		input.setData15(AspectRegistry.BLOCK, stone1, stoneNumber);
+		input.setData15(AspectRegistry.BLOCK, stone2, stoneNumber);
+		input.setData15(AspectRegistry.BLOCK, stone3, stoneNumber);
+		input.setData15(AspectRegistry.BLOCK, stone4, stoneNumber);
+		
+		BlockAddress air = BlockAddress.fromInt(10, 9, 8);
+		short[] numbers = input.batchReadData15(AspectRegistry.BLOCK, new BlockAddress[] {
+			stone1,
+			stone4,
+			stone3,
+			stone2,
+			air,
+		});
+		Assert.assertArrayEquals(new short[] {
+			stoneNumber,
+			stoneNumber,
+			stoneNumber,
+			stoneNumber,
+			0,
+		}, numbers);
+	}
 }

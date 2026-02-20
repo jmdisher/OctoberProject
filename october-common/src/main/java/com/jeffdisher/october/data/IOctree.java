@@ -29,6 +29,16 @@ public interface IOctree<T>
 	void setData(BlockAddress address, T value);
 
 	/**
+	 * Fetches the data elements referenced in the given addresses array, and fills them into arrayType, in-order.
+	 * NOTE:  arrayType is down-cast into the appropriate type in the implementation so care must be used to avoid cast
+	 * failures.
+	 * 
+	 * @param arrayType The array to populate with results (is down-cast in implementation).
+	 * @param addresses The list of addresses to fetch.
+	 */
+	void readBatch(Object arrayType, BlockAddress[] addresses);
+
+	/**
 	 * Walks the tree, issuing callbacks for every data entry found (in no particular order), so long as it isn't
 	 * valueToSkip.
 	 * 

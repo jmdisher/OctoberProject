@@ -378,6 +378,33 @@ public class OctreeShort implements IOctree<Short>
 	}
 
 	@Override
+	public void readBatch(Object arrayType, BlockAddress[] addresses)
+	{
+		short[] outData = (short[]) arrayType;
+		if (null != _topLevelTrees)
+		{
+			for (int i = 0; i < addresses.length; ++i)
+			{
+				BlockAddress address = addresses[i];
+				byte x = address.x();
+				byte y = address.y();
+				byte z = address.z();
+				byte[] data = _topLevelTrees[_getTopLevelIndex(x, y, z)];
+				// Half of 32 (the base size) is 16.
+				byte half = 16;
+				outData[i] = _findValue(ByteBuffer.wrap(data), (byte)(x & ~half), (byte)(y & ~half), (byte)(z & ~half), (byte)(half >> 1));
+			}
+		}
+		else
+		{
+			for (int i = 0; i < addresses.length; ++i)
+			{
+				outData[i] = _inlineCompact;
+			}
+		}
+	}
+
+	@Override
 	public void walkData(IWalkerCallback<Short> callback, Short valueToSkip)
 	{
 		short skip = valueToSkip.shortValue();

@@ -123,6 +123,18 @@ public class CuboidData implements IReadOnlyCuboidData
 	}
 
 	@Override
+	public short[] batchReadData15(Aspect<Short, ?> type, BlockAddress[] addresses)
+	{
+		// We require that at least one address be requested.
+		Assert.assertTrue(addresses.length > 0);
+		
+		IOctree<Short> tree = type.octreeType().cast(_data[type.index()]);
+		short[] data = new short[addresses.length];
+		tree.readBatch(data, addresses);
+		return data;
+	}
+
+	@Override
 	public <T> void walkData(Aspect<T, ?> type, IOctree.IWalkerCallback<T> callback, T valueToSkip)
 	{
 		IOctree<T> tree = type.octreeType().cast(_data[type.index()]);

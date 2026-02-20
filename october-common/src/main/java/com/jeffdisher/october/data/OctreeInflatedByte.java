@@ -158,6 +158,13 @@ public class OctreeInflatedByte implements IOctree<Byte>
 	}
 
 	@Override
+	public void readBatch(Object arrayType, BlockAddress[] addresses)
+	{
+		// We don't use this.
+		throw Assert.unreachable();
+	}
+
+	@Override
 	public void walkData(IWalkerCallback<Byte> callback, Byte valueToSkip)
 	{
 		byte skip = valueToSkip.byteValue();
