@@ -2,7 +2,6 @@ package com.jeffdisher.october.client;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
-import java.util.function.Function;
 
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -39,7 +38,7 @@ public class FakeUpdateFactories
 		TickProcessingContext context = _createFakeContext(Map.of(mutableData.getCuboidAddress(), mutableData));
 		
 		AbsoluteLocation location = mutation.getAbsoluteLocation();
-		BlockProxy proxy = context.previousBlockLookUp.apply(location);
+		BlockProxy proxy = context.previousBlockLookUp.readBlock(location);
 		Assert.assertTrue(null != proxy);
 		
 		MutableBlockProxy mutable = new MutableBlockProxy(location, mutableData);
@@ -71,13 +70,16 @@ public class FakeUpdateFactories
 
 	private static TickProcessingContext _createFakeContext(Map<CuboidAddress, IReadOnlyCuboidData> loadedCuboids)
 	{
-		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) ->
-		{
-			IReadOnlyCuboidData data = loadedCuboids.get(location.getCuboidAddress());
-			return (null != data)
-					? BlockProxy.load(location.getBlockAddress(), data)
-					: null
-			;
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = new TickProcessingContext.IBlockFetcher() {
+			@Override
+			public BlockProxy readBlock(AbsoluteLocation location)
+			{
+				IReadOnlyCuboidData data = loadedCuboids.get(location.getCuboidAddress());
+				return (null != data)
+						? BlockProxy.load(location.getBlockAddress(), data)
+						: null
+				;
+			}
 		};
 		
 		// We will just fake up the tick context to be benign (since the speculative projection will drop any new mutations) and only fail when it can't know the answer.

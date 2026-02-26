@@ -81,7 +81,7 @@ public class PassiveSynth_ProjectileArrow
 				, startLocation.z() + vector.z()
 			);
 			RayCastHelpers.RayBlock solidCollision = RayCastHelpers.findFirstCollision(startLocation, endOfRay, (AbsoluteLocation location) -> {
-				BlockProxy proxy = context.previousBlockLookUp.apply(location);
+				BlockProxy proxy = context.previousBlockLookUp.readBlock(location);
 				boolean shouldStop;
 				if (null != proxy)
 				{

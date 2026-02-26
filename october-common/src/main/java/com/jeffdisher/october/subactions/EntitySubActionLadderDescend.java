@@ -1,7 +1,6 @@
 package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import com.jeffdisher.october.aspects.Environment;
@@ -29,7 +28,7 @@ public class EntitySubActionLadderDescend<T extends IMutableMinimalEntity> imple
 	public static final float DESCEND_PER_TICK = -0.1f;
 	public static final EntitySubActionType TYPE = EntitySubActionType.LADDER_DESCEND;
 
-	public static boolean canDescend(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+	public static boolean canDescend(TickProcessingContext.IBlockFetcher previousBlockLookUp
 			, EntityLocation location
 			, EntityVolume volume
 	)
@@ -88,7 +87,7 @@ public class EntitySubActionLadderDescend<T extends IMutableMinimalEntity> imple
 	}
 
 
-	private static EntityLocation _possibleDescendTarget(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+	private static EntityLocation _possibleDescendTarget(TickProcessingContext.IBlockFetcher previousBlockLookUp
 			, EntityLocation location
 			, EntityVolume volume
 	)
@@ -96,7 +95,7 @@ public class EntitySubActionLadderDescend<T extends IMutableMinimalEntity> imple
 		// We want to see if we are standing in or on a ladder and if we could move down.
 		Environment env = Environment.getShared();
 		Predicate<AbsoluteLocation> ladderSupplier = (AbsoluteLocation loc) -> {
-			BlockProxy proxy = previousBlockLookUp.apply(loc);
+			BlockProxy proxy = previousBlockLookUp.readBlock(loc);
 			boolean ladder = false;
 			if (null != proxy)
 			{

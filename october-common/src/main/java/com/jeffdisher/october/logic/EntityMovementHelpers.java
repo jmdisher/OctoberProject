@@ -1,6 +1,5 @@
 package com.jeffdisher.october.logic;
 
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import com.jeffdisher.october.aspects.Environment;
@@ -9,6 +8,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -266,7 +266,7 @@ public class EntityMovementHelpers
 	 * @return The velocity vector applied by the environment.
 	 */
 	public static EntityLocation getEnvironmentalVector(Environment env
-		, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+		, TickProcessingContext.IBlockFetcher previousBlockLookUp
 		, EntityLocation base
 		, EntityVolume volume
 	)
@@ -280,7 +280,7 @@ public class EntityMovementHelpers
 		boolean shouldCompute = false;
 		for (AbsoluteLocation location : iterator)
 		{
-			BlockProxy proxy = previousBlockLookUp.apply(location);
+			BlockProxy proxy = previousBlockLookUp.readBlock(location);
 			if (null != proxy)
 			{
 				int strength = env.liquids.getFlowStrength(proxy.getBlock());
@@ -584,9 +584,9 @@ public class EntityMovementHelpers
 		return new EntityLocation(visX, visY, visZ);
 	}
 
-	private static float _accumulateFlow(Environment env, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp, AbsoluteLocation relative, int testAgainst)
+	private static float _accumulateFlow(Environment env, TickProcessingContext.IBlockFetcher previousBlockLookUp, AbsoluteLocation relative, int testAgainst)
 	{
-		BlockProxy proxy = previousBlockLookUp.apply(relative);
+		BlockProxy proxy = previousBlockLookUp.readBlock(relative);
 		int flow = (null != proxy)
 			? env.liquids.getFlowStrength(proxy.getBlock())
 			: LiquidRegistry.FLOW_NONE

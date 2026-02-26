@@ -819,7 +819,7 @@ public class CreatureLogic
 				// Make sure that we can see them.
 				Environment env = Environment.getShared();
 				RayCastHelpers.RayBlock solidCollision = RayCastHelpers.findFirstCollision(sourceEye, targetCentre, (AbsoluteLocation location) -> {
-					BlockProxy proxy = context.previousBlockLookUp.apply(location);
+					BlockProxy proxy = context.previousBlockLookUp.readBlock(location);
 					boolean shouldStop;
 					if (null != proxy)
 					{
@@ -1002,7 +1002,7 @@ public class CreatureLogic
 	private static class _LookupHelper implements Function<AbsoluteLocation, PathFinder.BlockKind>
 	{
 		private final BlockAspect _blocks;
-		private final Function<AbsoluteLocation, BlockProxy> _previousBlockLookUp;
+		private final TickProcessingContext.IBlockFetcher _previousBlockLookUp;
 		private final int _width;
 		private final int _height;
 		
@@ -1040,7 +1040,7 @@ public class CreatureLogic
 		}
 		private PathFinder.BlockKind _singleBlock(AbsoluteLocation location)
 		{
-			BlockProxy proxy = _previousBlockLookUp.apply(location);
+			BlockProxy proxy = _previousBlockLookUp.readBlock(location);
 			PathFinder.BlockKind kind;
 			if (null == proxy)
 			{

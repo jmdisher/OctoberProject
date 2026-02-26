@@ -72,7 +72,7 @@ public class MutationEntityPushItems implements IEntitySubAction<IMutablePlayerE
 		Assert.assertTrue((null != stackable) != (null != nonStackable));
 		
 		// We want to make sure that this is a block which can accept items (currently just air).
-		BlockProxy block = context.previousBlockLookUp.apply(_blockLocation);
+		BlockProxy block = context.previousBlockLookUp.readBlock(_blockLocation);
 		boolean canTransfer;
 		Inventory inv;
 		Item type;

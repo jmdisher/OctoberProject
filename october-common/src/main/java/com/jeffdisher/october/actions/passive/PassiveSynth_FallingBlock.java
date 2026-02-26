@@ -1,7 +1,5 @@
 package com.jeffdisher.october.actions.passive;
 
-import java.util.function.Function;
-
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
@@ -45,14 +43,17 @@ public class PassiveSynth_FallingBlock
 		// Now apply normal movement.
 		// NOTE:  We don't want to collide with anything "above" the block's current location (once it fell through a block, we will assume that it has left that block).
 		int startZ = startLocation.getBlockLocation().z();
-		Function<AbsoluteLocation, BlockProxy> filterLookup = (AbsoluteLocation checkLocation) ->
-		{
-			// NOTE:  We may want to change this lookup to return an interface or something more restrictive, in the
-			// future, as creating this empty cuboid is not cheap (not too expensive, though).
-			return (checkLocation.z() > startZ)
-				? BlockProxy.load(checkLocation.getBlockAddress(), CuboidGenerator.createFilledCuboid(checkLocation.getCuboidAddress(), env.special.AIR))
-				: context.previousBlockLookUp.apply(checkLocation)
-			;
+		TickProcessingContext.IBlockFetcher filterLookup = new TickProcessingContext.IBlockFetcher() {
+			@Override
+			public BlockProxy readBlock(AbsoluteLocation location)
+			{
+				// NOTE:  We may want to change this lookup to return an interface or something more restrictive, in the
+				// future, as creating this empty cuboid is not cheap (not too expensive, though).
+				return (location.z() > startZ)
+					? BlockProxy.load(location.getBlockAddress(), CuboidGenerator.createFilledCuboid(location.getCuboidAddress(), env.special.AIR))
+					: context.previousBlockLookUp.readBlock(location)
+				;
+			}
 		};
 		float seconds = (float)context.millisPerTick / EntityMovementHelpers.FLOAT_MILLIS_PER_SECOND;
 		ViscosityReader reader = new ViscosityReader(env, filterLookup);

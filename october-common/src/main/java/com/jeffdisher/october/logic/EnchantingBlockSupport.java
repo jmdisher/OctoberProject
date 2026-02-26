@@ -304,7 +304,7 @@ public class EnchantingBlockSupport
 			// Fetch these and sort them.
 			List<Item> unsorted = pedestalLocations.stream().map((AbsoluteLocation one) -> {
 				// We know that we can load the proxies since CompositeHelpers decided these are valid.
-				ItemSlot slot = context.previousBlockLookUp.apply(one).getSpecialSlot();
+				ItemSlot slot = context.previousBlockLookUp.readBlock(one).getSpecialSlot();
 				Item type = null;
 				if (null != slot)
 				{

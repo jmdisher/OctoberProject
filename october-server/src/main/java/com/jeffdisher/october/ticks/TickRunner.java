@@ -409,6 +409,14 @@ public class TickRunner
 			};
 			// WARNING:  This block cache is used for everything this thread does and we may want to provide a flushing mechanism.
 			LazyLocationCache<BlockProxy> cachingLoader = new LazyLocationCache<>(loader);
+			TickProcessingContext.IBlockFetcher previousBlockLookUp = new TickProcessingContext.IBlockFetcher() {
+				@Override
+				public BlockProxy readBlock(AbsoluteLocation location)
+				{
+					return cachingLoader.apply(location);
+				}
+			};
+			
 			CommonMutationSink newMutationSink = new CommonMutationSink(materials.completedCuboids.keySet());
 			CommonChangeSink newChangeSink = new CommonChangeSink(materials.completedEntities.keySet(), materials.completedCreatures.keySet(), materials.completedPassives.keySet());
 			List<EventRecord> events = new ArrayList<>();
@@ -464,7 +472,7 @@ public class TickRunner
 			};
 			Set<CuboidAddress> internallyMarkedAlive = new HashSet<>();
 			TickProcessingContext context = new TickProcessingContext(materials.thisGameTick
-					, cachingLoader
+					, previousBlockLookUp
 					, (Integer entityId) -> (entityId > 0)
 						? MinimalEntity.fromEntity(thisTickMaterials.completedEntities.get(entityId))
 						: MinimalEntity.fromCreature(thisTickMaterials.completedCreatures.get(entityId))

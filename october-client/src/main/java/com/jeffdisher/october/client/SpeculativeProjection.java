@@ -732,7 +732,14 @@ public class SpeculativeProjection
 			, long currentTickTimeMillis 
 	)
 	{
-		LazyLocationCache<BlockProxy> cachingLoader = new LazyLocationCache<>(this.projectionBlockLoader);
+		LazyLocationCache<BlockProxy> lazyCache = new LazyLocationCache<>(this.projectionBlockLoader);
+		TickProcessingContext.IBlockFetcher cachingLoader = new TickProcessingContext.IBlockFetcher() {
+			@Override
+			public BlockProxy readBlock(AbsoluteLocation location)
+			{
+				return lazyCache.apply(location);
+			}
+		};
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
 			if (shouldSendEvents)
 			{

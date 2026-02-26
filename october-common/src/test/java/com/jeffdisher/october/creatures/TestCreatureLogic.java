@@ -245,12 +245,12 @@ public class TestCreatureLogic
 		_setLayer(input, (byte)0, "op.stone");
 		
 		// We should see them acquire this target.
-		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 			return location.getCuboidAddress().equals(cuboidAddress)
 					? BlockProxy.load(location.getBlockAddress(), input)
 					: null
 			;
-		};
+		});
 		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> {
 			MinimalEntity min;
 			switch (id)
@@ -329,12 +329,12 @@ public class TestCreatureLogic
 		CreatureEntity cow = _updateKeepAlive(CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), 0L), startMillis);
 		
 		// We will take a special action where nothing should happen.
-		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 			return location.getCuboidAddress().equals(cuboidAddress)
 					? BlockProxy.load(location.getBlockAddress(), input)
 					: null
 			;
-		};
+		});
 		// (we won't expose any of the entities since we don't expect targeting).
 		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> null;
 		TickProcessingContext context = ContextBuilder.build()
@@ -536,12 +536,12 @@ public class TestCreatureLogic
 		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
 		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, 0L);
 		
-		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 			return blockLocation.getCuboidAddress().equals(cuboidAddress)
 					? BlockProxy.load(blockLocation.getBlockAddress(), input)
 					: null
 			;
-		};
+		});
 		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> {
 			MinimalEntity min;
 			switch (id)
@@ -593,12 +593,12 @@ public class TestCreatureLogic
 		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
 		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, 0L);
 		
-		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 			return blockLocation.getCuboidAddress().equals(cuboidAddress)
 					? BlockProxy.load(blockLocation.getBlockAddress(), input)
 					: null
 			;
-		};
+		});
 		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> {
 			MinimalEntity min;
 			switch (id)
@@ -725,12 +725,12 @@ public class TestCreatureLogic
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, cowLocation, 0L);
 		MutableCreature mutableCow = MutableCreature.existing(cow);
 		
-		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 			return blockLocation.getCuboidAddress().equals(cuboidAddress)
 					? BlockProxy.load(blockLocation.getBlockAddress(), input)
 					: null
 			;
-		};
+		});
 		Map<Integer, MinimalEntity> entities = new HashMap<>();
 		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> entities.get(id);
 		TickProcessingContext context = ContextBuilder.build()
@@ -814,12 +814,12 @@ public class TestCreatureLogic
 		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, 0L);
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
 		
-		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 			return blockLocation.getCuboidAddress().equals(cuboidAddress)
 					? BlockProxy.load(blockLocation.getBlockAddress(), input)
 					: null
 			;
-		};
+		});
 		Map<Integer, MinimalEntity> entities = new HashMap<>();
 		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> entities.get(id);
 		boolean[] out = new boolean[1];
@@ -1039,12 +1039,12 @@ public class TestCreatureLogic
 		EntityLocation skeletonLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
 		CreatureEntity skeleton = CreatureEntity.create(assigner.next(), skeletonType, skeletonLocation, 0L);
 		
-		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 			return blockLocation.getCuboidAddress().equals(cuboidAddress)
 				? BlockProxy.load(blockLocation.getBlockAddress(), input)
 				: null
 			;
-		};
+		});
 		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> {
 			MinimalEntity min;
 			switch (id)
@@ -1131,12 +1131,12 @@ public class TestCreatureLogic
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		_setLayer(input, (byte)0, "op.stone");
-		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 			return blockLocation.getCuboidAddress().equals(cuboidAddress)
 				? BlockProxy.load(blockLocation.getBlockAddress(), input)
 				: null
 			;
-		};
+		});
 		
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		EntityLocation calfLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
@@ -1214,8 +1214,9 @@ public class TestCreatureLogic
 	}
 
 
-	private static TickProcessingContext _createContext(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp, int random)
+	private static TickProcessingContext _createContext(Function<AbsoluteLocation, BlockProxy> function, int random)
 	{
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher(function);
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups(previousBlockLookUp, null, null)
 				.fixedRandom(random)

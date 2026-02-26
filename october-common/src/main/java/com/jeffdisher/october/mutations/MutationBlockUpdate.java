@@ -73,7 +73,7 @@ public class MutationBlockUpdate implements IMutationBlock
 		{
 			// Make sure that this block can be supported by the one under it.
 			AbsoluteLocation belowBlockLocation = _blockLocation.getRelative(0, 0, -1);
-			BlockProxy belowBlock = context.previousBlockLookUp.apply(belowBlockLocation);
+			BlockProxy belowBlock = context.previousBlockLookUp.readBlock(belowBlockLocation);
 			Block emptyBlock = env.special.AIR;
 			Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, emptyBlock);
 			

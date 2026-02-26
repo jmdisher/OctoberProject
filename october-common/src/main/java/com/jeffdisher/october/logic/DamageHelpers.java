@@ -1,7 +1,5 @@
 package com.jeffdisher.october.logic;
 
-import java.util.function.Function;
-
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
@@ -71,21 +69,21 @@ public class DamageHelpers
 	 * @param volume The total volume of the region to check.
 	 * @return The maximum damage of any blocks in this region (0 if none do damage).
 	 */
-	public static int findEnvironmentalDamageInVolume(Environment env, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp, EntityLocation base, EntityVolume volume)
+	public static int findEnvironmentalDamageInVolume(Environment env, TickProcessingContext.IBlockFetcher previousBlockLookUp, EntityLocation base, EntityVolume volume)
 	{
 		// We want to check if this is a block which can do direct harm or if it is on top of a burning block (since
 		// those still do damage).
 		int maxDamage = 0;
 		for (AbsoluteLocation location : new VolumeIterator(base, volume))
 		{
-			BlockProxy thisBlock = previousBlockLookUp.apply(location);
+			BlockProxy thisBlock = previousBlockLookUp.readBlock(location);
 			int blockDamage = (null != thisBlock)
 				? env.blocks.getBlockDamage(thisBlock.getBlock())
 				: 0
 			;
 			if (0 == blockDamage)
 			{
-				BlockProxy belowBlock = previousBlockLookUp.apply(location.getRelative(0, 0, -1));
+				BlockProxy belowBlock = previousBlockLookUp.readBlock(location.getRelative(0, 0, -1));
 				boolean isBurning = ((null != belowBlock) && FlagsAspect.isSet(belowBlock.getFlags(), FlagsAspect.FLAG_BURNING));
 				blockDamage = isBurning
 					? MiscConstants.FIRE_DAMAGE_PER_SECOND

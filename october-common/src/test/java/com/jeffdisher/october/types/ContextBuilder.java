@@ -38,9 +38,20 @@ public class ContextBuilder
 		return builder;
 	}
 
+	public static TickProcessingContext.IBlockFetcher buildFetcher(Function<AbsoluteLocation, BlockProxy> function)
+	{
+		return new TickProcessingContext.IBlockFetcher() {
+			@Override
+			public BlockProxy readBlock(AbsoluteLocation location)
+			{
+				return function.apply(location);
+			}
+		};
+	}
+
 
 	public long currentTick;
-	public Function<AbsoluteLocation, BlockProxy> previousBlockLookUp;
+	public TickProcessingContext.IBlockFetcher previousBlockLookUp;
 	public Function<Integer, MinimalEntity> previousEntityLookUp;
 	public TickProcessingContext.IPassiveSearch previousPassiveLookUp;
 	public IByteLookup<AbsoluteLocation> skyLight;
@@ -72,7 +83,7 @@ public class ContextBuilder
 		return this;
 	}
 
-	public ContextBuilder lookups(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+	public ContextBuilder lookups(TickProcessingContext.IBlockFetcher previousBlockLookUp
 		, Function<Integer, MinimalEntity> previousEntityLookUp
 		, TickProcessingContext.IPassiveSearch previousPassiveLookUp
 	)

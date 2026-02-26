@@ -60,7 +60,7 @@ public class EntityChangeCraftInBlock implements IEntitySubAction<IMutablePlayer
 		float distance = SpatialHelpers.distanceFromMutableEyeToBlockSurface(newEntity, _targetBlock);
 		boolean isLocationClose = (distance <= MiscConstants.REACH_BLOCK);
 		// Note that the cuboid could theoretically not be loaded (although this shouldn't happen in normal clients).
-		BlockProxy proxy = context.previousBlockLookUp.apply(_targetBlock);
+		BlockProxy proxy = context.previousBlockLookUp.readBlock(_targetBlock);
 		boolean isCraftingTable = (null != proxy) && (env.stations.getManualMultiplier(proxy.getBlock()) > 0);
 		
 		boolean didApply = false;

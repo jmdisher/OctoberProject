@@ -252,7 +252,7 @@ public class CompositeRegistry
 			// Note that we need to correct this for orientation.
 			AbsoluteLocation rotated = orientation.rotateAboutZ(target);
 			AbsoluteLocation relative = base.getRelative(rotated.x(), rotated.y(), rotated.z());
-			BlockProxy targetProxy = context.previousBlockLookUp.apply(relative);
+			BlockProxy targetProxy = context.previousBlockLookUp.readBlock(relative);
 			if (null == targetProxy)
 			{
 				// Request that this is loaded since remove portals are sometimes checked.

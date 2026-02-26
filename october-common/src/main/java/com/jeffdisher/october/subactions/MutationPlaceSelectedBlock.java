@@ -62,7 +62,7 @@ public class MutationPlaceSelectedBlock implements IEntitySubAction<IMutablePlay
 		// -is there a selected item?
 		// -is this target location close by?
 		// -is the target location not colliding with the entity, itself?
-		boolean isTargetAir = env.blocks.canBeReplaced(context.previousBlockLookUp.apply(_targetBlock).getBlock());
+		boolean isTargetAir = env.blocks.canBeReplaced(context.previousBlockLookUp.readBlock(_targetBlock).getBlock());
 		
 		int selectedKey = newEntity.getSelectedKey();
 		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
@@ -96,7 +96,7 @@ public class MutationPlaceSelectedBlock implements IEntitySubAction<IMutablePlay
 		boolean blockIsSupported = false;
 		if (null != blockType)
 		{
-			blockIsSupported = env.blocks.canExistOnBlock(blockType, context.previousBlockLookUp.apply(_targetBlock.getRelative(0, 0, -1)).getBlock());
+			blockIsSupported = env.blocks.canExistOnBlock(blockType, context.previousBlockLookUp.readBlock(_targetBlock.getRelative(0, 0, -1)).getBlock());
 		}
 		
 		if (isTargetAir && isItemSelected && isLocationClose && isLocationNotColliding && blockIsSupported)

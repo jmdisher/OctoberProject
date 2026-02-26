@@ -2,12 +2,12 @@ package com.jeffdisher.october.logic;
 
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -26,7 +26,7 @@ public class GroundCoverHelpers
 	 * @param sourceBlock The type of ground cover to spread.
 	 * @return The list of possible spread locations (might be empty but never null).
 	 */
-	public static List<AbsoluteLocation> findSpreadNeighbours(Environment env, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp, AbsoluteLocation source, Block sourceBlock)
+	public static List<AbsoluteLocation> findSpreadNeighbours(Environment env, TickProcessingContext.IBlockFetcher previousBlockLookUp, AbsoluteLocation source, Block sourceBlock)
 	{
 		Block target = env.groundCover.getSpreadToTypeForGroundCover(sourceBlock);
 		
@@ -37,7 +37,7 @@ public class GroundCoverHelpers
 			List<AbsoluteLocation> toCheck = _getSymmetricSearchList(source);
 			
 			neighbours = toCheck.stream().filter((AbsoluteLocation check) -> {
-				BlockProxy proxy = previousBlockLookUp.apply(check);
+				BlockProxy proxy = previousBlockLookUp.readBlock(check);
 				boolean canSpread = false;
 				if (null != proxy)
 				{
@@ -65,7 +65,7 @@ public class GroundCoverHelpers
 	 * @param proxy The block proxy.
 	 * @return True if this can be ignited.
 	 */
-	public static boolean canChangeToGroundCover(Environment env, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp, AbsoluteLocation check, Block existingBlock, Block groundCoverType)
+	public static boolean canChangeToGroundCover(Environment env, TickProcessingContext.IBlockFetcher previousBlockLookUp, AbsoluteLocation check, Block existingBlock, Block groundCoverType)
 	{
 		boolean canChange = false;
 		
@@ -73,7 +73,7 @@ public class GroundCoverHelpers
 		if (existingBlock == env.groundCover.getSpreadToTypeForGroundCover(groundCoverType))
 		{
 			// Check the block above, since that will influence our decision.
-			BlockProxy blockAbove = previousBlockLookUp.apply(check.getRelative(0, 0, 1));
+			BlockProxy blockAbove = previousBlockLookUp.readBlock(check.getRelative(0, 0, 1));
 			if ((null != blockAbove) && env.groundCover.canGroundCoverExistUnder(groundCoverType, blockAbove.getBlock()))
 			{
 				// Make sure that there is a valid source, that we are a valid target for this, and that the block above doesn't prevent it.
@@ -81,7 +81,7 @@ public class GroundCoverHelpers
 				
 				// Make sure that any of the source blocks are the right type.
 				canChange = toCheck.stream().anyMatch((AbsoluteLocation location) -> {
-					BlockProxy proxy = previousBlockLookUp.apply(location);
+					BlockProxy proxy = previousBlockLookUp.readBlock(location);
 					return ((null != proxy) && (groundCoverType == proxy.getBlock()));
 				});
 			}
@@ -101,7 +101,7 @@ public class GroundCoverHelpers
 	 * @param existingBlock The current block current.
 	 * @return The ground cover block type this could become, or null if there isn't one.
 	 */
-	public static Block findPotentialGroundCoverType(Environment env, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp, AbsoluteLocation check, Block existingBlock)
+	public static Block findPotentialGroundCoverType(Environment env, TickProcessingContext.IBlockFetcher previousBlockLookUp, AbsoluteLocation check, Block existingBlock)
 	{
 		Block blockToSpread = null;
 		
@@ -110,7 +110,7 @@ public class GroundCoverHelpers
 		if (null != possibleGroundCoverTypes)
 		{
 			// Make sure that we can read the block type above (since we are checking under it).
-			BlockProxy blockAbove = previousBlockLookUp.apply(check.getRelative(0, 0, 1));
+			BlockProxy blockAbove = previousBlockLookUp.readBlock(check.getRelative(0, 0, 1));
 			
 			if (null != blockAbove)
 			{
@@ -121,7 +121,7 @@ public class GroundCoverHelpers
 				
 				// TODO:  We currently just find the first match but we will need a prioritization for this, in the future.
 				blockToSpread = toCheck.stream().map((AbsoluteLocation location) -> {
-					BlockProxy proxy = previousBlockLookUp.apply(location);
+					BlockProxy proxy = previousBlockLookUp.readBlock(location);
 					Block suggestion = null;
 					if (null != proxy)
 					{
@@ -154,12 +154,12 @@ public class GroundCoverHelpers
 	 * @param existingBlock The current block type in check location.
 	 * @return The block to revert to or null if this should be left unchanged.
 	 */
-	public static Block checkRevertGroundCover(Environment env, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp, AbsoluteLocation check, Block existingBlock)
+	public static Block checkRevertGroundCover(Environment env, TickProcessingContext.IBlockFetcher previousBlockLookUp, AbsoluteLocation check, Block existingBlock)
 	{
 		Block possibleBlock = env.groundCover.getRevertTypeForGroundCover(existingBlock);
 		// We expect that this will only be called with a ground cover block type.
 		Assert.assertTrue(null != possibleBlock);
-		BlockProxy proxy = previousBlockLookUp.apply(check.getRelative(0, 0, 1));
+		BlockProxy proxy = previousBlockLookUp.readBlock(check.getRelative(0, 0, 1));
 		return ((null != proxy) && !env.groundCover.canGroundCoverExistUnder(existingBlock, proxy.getBlock()))
 				? possibleBlock
 				: null

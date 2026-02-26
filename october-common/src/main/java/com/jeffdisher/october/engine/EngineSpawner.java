@@ -168,12 +168,12 @@ public class EngineSpawner
 			AbsoluteLocation blockUnderLocation = checkSpawningLocation.getRelative(0, 0, -1);
 			
 			// Make sure that this is an air block.
-			BlockProxy thisBlock = context.previousBlockLookUp.apply(checkSpawningLocation);
+			BlockProxy thisBlock = context.previousBlockLookUp.readBlock(checkSpawningLocation);
 			boolean isAirBlock = (env.special.AIR == thisBlock.getBlock());
 			if (isAirBlock)
 			{
 				// See if we are spawning on a solid block.
-				BlockProxy base = context.previousBlockLookUp.apply(blockUnderLocation);
+				BlockProxy base = context.previousBlockLookUp.readBlock(blockUnderLocation);
 				boolean isBaseSolid = (null != base)
 						? env.blocks.isSolid(base.getBlock(), FlagsAspect.isSet(base.getFlags(), FlagsAspect.FLAG_ACTIVE))
 						: false

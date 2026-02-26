@@ -116,7 +116,7 @@ public class MutationBlockPhase2Multi implements IMutationBlock
 
 	private static boolean _doesMatch(TickProcessingContext context, AbsoluteLocation location, Block block)
 	{
-		BlockProxy proxy = context.previousBlockLookUp.apply(location);
+		BlockProxy proxy = context.previousBlockLookUp.readBlock(location);
 		return (null != proxy)
 				? proxy.getBlock().equals(block)
 				: false

@@ -1,7 +1,6 @@
 package com.jeffdisher.october.logic;
 
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.junit.AfterClass;
@@ -16,9 +15,11 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 
@@ -134,13 +135,13 @@ public class TestEntityMovementHelpers
 			, middleCuboid.getCuboidAddress(), middleCuboid
 			, bottomCuboid.getCuboidAddress(), bottomCuboid
 		);
-		Function<AbsoluteLocation, BlockProxy> lookup = (AbsoluteLocation location) -> {
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 			CuboidData cuboid = map.get(location.getCuboidAddress());
 			return (null != cuboid)
 				? BlockProxy.load(location.getBlockAddress(), cuboid)
 				: null
 			;
-		};
+		});
 		
 		EntityVolume volume = new EntityVolume(2.2f, 1.7f);
 		EntityLocation airLocation = new EntityLocation(0.0f, 0.0f, 40.0f);
@@ -150,7 +151,7 @@ public class TestEntityMovementHelpers
 		EntityLocation waterStoneLocation = new EntityLocation(0.0f, 0.0f, -1.0f);
 		EntityLocation airEdgeLocation = new EntityLocation(0.0f, 31.0f, 40.0f);
 		
-		ViscosityReader reader = new ViscosityReader(ENV, lookup);
+		ViscosityReader reader = new ViscosityReader(ENV, previousBlockLookUp);
 		Assert.assertEquals(0.0f, EntityMovementHelpers.maxViscosityInEntityBlocks(reader, airLocation, volume), 0.01f);
 		Assert.assertEquals(0.5f, EntityMovementHelpers.maxViscosityInEntityBlocks(reader, waterLocation, volume), 0.01f);
 		Assert.assertEquals(1.0f, EntityMovementHelpers.maxViscosityInEntityBlocks(reader, stoneLocation, volume), 0.01f);
@@ -233,12 +234,12 @@ public class TestEntityMovementHelpers
 		// A basic test of the commonMovementIdiom - walking on the ground.
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
-		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 			return location.getCuboidAddress().equals(airCuboid.getCuboidAddress())
 				? BlockProxy.load(location.getBlockAddress(), airCuboid)
 				: BlockProxy.load(location.getBlockAddress(), stoneCuboid)
 			;
-		};
+		});
 		
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		EntityLocation startVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
@@ -269,9 +270,9 @@ public class TestEntityMovementHelpers
 	{
 		// A basic test of the commonMovementIdiom - falling through air.
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 			return BlockProxy.load(location.getBlockAddress(), airCuboid);
-		};
+		});
 		
 		EntityLocation startLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
 		EntityLocation startVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
@@ -384,9 +385,9 @@ public class TestEntityMovementHelpers
 		// Test how we coast diagonally through the air with commonMovementIdiom when at terminal velocity.  We expect
 		// that we can't accelerate above terminal velocity and it should be the same, no matter the facing direction.
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 			return BlockProxy.load(location.getBlockAddress(), airCuboid);
-		};
+		});
 		ViscosityReader reader = new ViscosityReader(ENV, previousBlockLookUp);
 		EntityVolume volume = new EntityVolume(2.2f, 1.7f);
 		float maxVelocityPerSecond = 4.0f;
@@ -437,9 +438,9 @@ public class TestEntityMovementHelpers
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0), waterStrong.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 1, 0), waterWeak.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 0, 0), waterWeak.item().number());
-		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		};
+		});
 		EntityVolume volume = new EntityVolume(2.2f, 1.7f);
 		
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), EntityMovementHelpers.getEnvironmentalVector(ENV, previousBlockLookUp, new EntityLocation(1.6f, 2.1f, 3.0f), volume));

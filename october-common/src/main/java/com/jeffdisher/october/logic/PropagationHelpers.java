@@ -20,6 +20,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.IByteLookup;
+import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.Encoding;
 
@@ -53,9 +54,9 @@ public class PropagationHelpers
 	 * loaded, but will otherwise show values from the previous tick).
 	 */
 	public static void processPreviousTickLightUpdates(CuboidAddress targetAddress
-			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
-			, Function<AbsoluteLocation, MutableBlockProxy> lazyLocalCache
-			, Function<AbsoluteLocation, BlockProxy> lazyGlobalCache
+		, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
+		, Function<AbsoluteLocation, MutableBlockProxy> lazyLocalCache
+		, TickProcessingContext.IBlockFetcher lazyGlobalCache
 	)
 	{
 		// This for actual lighting updates so we map the interface directly to normal lighting values.
@@ -69,7 +70,7 @@ public class PropagationHelpers
 			@Override
 			public byte getLightForLocation(AbsoluteLocation location)
 			{
-				BlockProxy proxy = lazyGlobalCache.apply(location);
+				BlockProxy proxy = lazyGlobalCache.readBlock(location);
 				return (null != proxy)
 						? proxy.getLight()
 						: IByteLookup.NOT_FOUND
@@ -78,7 +79,7 @@ public class PropagationHelpers
 			@Override
 			public byte getLightOrZero(AbsoluteLocation location)
 			{
-				BlockProxy proxy = lazyGlobalCache.apply(location);
+				BlockProxy proxy = lazyGlobalCache.readBlock(location);
 				return (null != proxy)
 						? proxy.getLight()
 						: 0
@@ -114,10 +115,10 @@ public class PropagationHelpers
 	}
 
 	public static void processPreviousTickLogicUpdates(Consumer<IMutationBlock> updateMutations
-			, CuboidAddress targetAddress
-			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid
-			, Function<AbsoluteLocation, MutableBlockProxy> lazyLocalCache
-			, Function<AbsoluteLocation, BlockProxy> lazyGlobalCache
+		, CuboidAddress targetAddress
+		, Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid
+		, Function<AbsoluteLocation, MutableBlockProxy> lazyLocalCache
+		, TickProcessingContext.IBlockFetcher lazyGlobalCache
 	)
 	{
 		// The logic works like lighting so we will use the generic facility by interpreting light as logic.
@@ -131,7 +132,7 @@ public class PropagationHelpers
 			@Override
 			public byte getLightForLocation(AbsoluteLocation location)
 			{
-				BlockProxy proxy = lazyGlobalCache.apply(location);
+				BlockProxy proxy = lazyGlobalCache.readBlock(location);
 				return (null != proxy)
 						? proxy.getLogic()
 						: IByteLookup.NOT_FOUND
@@ -140,7 +141,7 @@ public class PropagationHelpers
 			@Override
 			public byte getLightOrZero(AbsoluteLocation location)
 			{
-				BlockProxy proxy = lazyGlobalCache.apply(location);
+				BlockProxy proxy = lazyGlobalCache.readBlock(location);
 				return (null != proxy)
 						? proxy.getLogic()
 						: 0
@@ -266,11 +267,11 @@ public class PropagationHelpers
 
 
 	private static Set<AbsoluteLocation> _runCommonFlood(Environment env
-			, _ILightAccess accessor
-			, CuboidAddress targetAddress
-			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
-			, Function<AbsoluteLocation, MutableBlockProxy> lazyLocalCache
-			, Function<AbsoluteLocation, BlockProxy> lazyGlobalCache
+		, _ILightAccess accessor
+		, CuboidAddress targetAddress
+		, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
+		, Function<AbsoluteLocation, MutableBlockProxy> lazyLocalCache
+		, TickProcessingContext.IBlockFetcher lazyGlobalCache
 	)
 	{
 		// This requires that we check all possible lighting updates in this cuboid and surrounding ones and
@@ -361,7 +362,7 @@ public class PropagationHelpers
 				public byte getOpacity(AbsoluteLocation location)
 				{
 					Assert.assertTrue(_inRange(location));
-					BlockProxy proxy = lazyGlobalCache.apply(location);
+					BlockProxy proxy = lazyGlobalCache.readBlock(location);
 					return (null != proxy)
 							? accessor.getOpacityForBlock(proxy.getBlock())
 							: IByteLookup.NOT_FOUND
@@ -371,7 +372,7 @@ public class PropagationHelpers
 				public byte getLightSource(AbsoluteLocation location)
 				{
 					Assert.assertTrue(_inRange(location));
-					BlockProxy proxy = lazyGlobalCache.apply(location);
+					BlockProxy proxy = lazyGlobalCache.readBlock(location);
 					return (null != proxy)
 							? accessor.getEmissionForBlock(location, proxy.getBlock())
 							: IByteLookup.NOT_FOUND
@@ -404,15 +405,15 @@ public class PropagationHelpers
 	}
 
 	private static void _getAndSplitLightUpdates(_ILightAccess accessor
-			, _IByteWriter writer
-			, List<LightBringer.Light> lightsToAdd
-			, List<LightBringer.Light> lightsToRemove
-			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
-			, Function<AbsoluteLocation, BlockProxy> proxyLookup
-			, CuboidAddress targetAddress
-			, int xOffset
-			, int yOffset
-			, int zOffset
+		, _IByteWriter writer
+		, List<LightBringer.Light> lightsToAdd
+		, List<LightBringer.Light> lightsToRemove
+		, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
+		, TickProcessingContext.IBlockFetcher proxyLookup
+		, CuboidAddress targetAddress
+		, int xOffset
+		, int yOffset
+		, int zOffset
 	)
 	{
 		List<AbsoluteLocation> cuboidLights = potentialLightChangesByCuboid.get(targetAddress.getRelative(xOffset, yOffset, zOffset));
@@ -424,7 +425,7 @@ public class PropagationHelpers
 				if (distanceToCuboid < accessor.getMaxLight())
 				{
 					// Read the block proxy to see if this if this something which is inconsistent with its emission or surrounding blocks and opacity.
-					BlockProxy proxy = proxyLookup.apply(location);
+					BlockProxy proxy = proxyLookup.readBlock(location);
 					// Note that this could have been unloaded if this is the edge of a cuboid which is unloaded in this tick (mostly just seen in SpeculativeProjection).
 					if (null != proxy)
 					{

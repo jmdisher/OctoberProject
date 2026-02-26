@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.Environment;
@@ -59,7 +58,7 @@ public class MovementAccumulator
 	private final Map<Integer, PartialEntity> _otherEntities;
 	private final Map<Integer, PartialPassive> _passives;
 	private final Map<AbsoluteLocation, BlockProxy> _proxyCache;
-	private final Function<AbsoluteLocation, BlockProxy> _proxyLookup;
+	private final TickProcessingContext.IBlockFetcher _proxyLookup;
 	private final ViscosityReader _reader;
 
 	private long _accumulationMillis;
@@ -89,18 +88,22 @@ public class MovementAccumulator
 		_discardAccumulation(currentTimeMillis);
 		
 		_proxyCache = new HashMap<>();
-		_proxyLookup = (AbsoluteLocation location) -> {
-			BlockProxy proxy = _proxyCache.get(location);
-			if (null == proxy)
+		_proxyLookup = new TickProcessingContext.IBlockFetcher() {
+			@Override
+			public BlockProxy readBlock(AbsoluteLocation location)
 			{
-				IReadOnlyCuboidData cuboid = _world.get(location.getCuboidAddress());
-				if (null != cuboid)
+				BlockProxy proxy = _proxyCache.get(location);
+				if (null == proxy)
 				{
-					proxy = BlockProxy.load(location.getBlockAddress(), cuboid);
-					_proxyCache.put(location, proxy);
+					IReadOnlyCuboidData cuboid = _world.get(location.getCuboidAddress());
+					if (null != cuboid)
+					{
+						proxy = BlockProxy.load(location.getBlockAddress(), cuboid);
+						_proxyCache.put(location, proxy);
+					}
 				}
+				return proxy;
 			}
-			return proxy;
 		};
 		_reader = new ViscosityReader(_env, _proxyLookup);
 	}

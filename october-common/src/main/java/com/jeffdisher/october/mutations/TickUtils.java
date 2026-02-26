@@ -158,6 +158,6 @@ public class TickUtils
 				, (int)Math.floor(footLocation.y() + halfWidth)
 				, (int)Math.floor(footLocation.z() + volume.height())
 		);
-		return context.previousBlockLookUp.apply(headLocation);
+		return context.previousBlockLookUp.readBlock(headLocation);
 	}
 }

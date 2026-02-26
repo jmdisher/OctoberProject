@@ -126,7 +126,7 @@ public class PlantHelpers
 	private static void _tryScheduleBlockOverwrite(Environment env, TickProcessingContext context, AbsoluteLocation topLocation, Block blockType, int x, int y, int z)
 	{
 		AbsoluteLocation location = topLocation.getRelative(x, y, z);
-		BlockProxy proxy = context.previousBlockLookUp.apply(location);
+		BlockProxy proxy = context.previousBlockLookUp.readBlock(location);
 		if (null != proxy)
 		{
 			Block block = proxy.getBlock();

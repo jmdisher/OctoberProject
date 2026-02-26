@@ -43,7 +43,7 @@ public class EntityChangeSetDayAndSpawn implements IEntitySubAction<IMutablePlay
 	{
 		// Make sure that the target is a bed.
 		Environment env = Environment.getShared();
-		boolean isBed = (env.special.blockBed == context.previousBlockLookUp.apply(_bedLocation).getBlock());
+		boolean isBed = (env.special.blockBed == context.previousBlockLookUp.readBlock(_bedLocation).getBlock());
 		
 		boolean isInRange = false;
 		if (isBed)

@@ -69,7 +69,7 @@ public class EntityChangeSetBlockLogicState implements IEntitySubAction<IMutable
 		// Make sure that this is in range.
 		float distance = SpatialHelpers.distanceFromMutableEyeToBlockSurface(newEntity, _targetBlock);
 		boolean isLocationClose = (distance <= MiscConstants.REACH_BLOCK);
-		BlockProxy previous = context.previousBlockLookUp.apply(_targetBlock);
+		BlockProxy previous = context.previousBlockLookUp.readBlock(_targetBlock);
 		
 		boolean didApply = false;
 		if (isLocationClose && (null != previous))

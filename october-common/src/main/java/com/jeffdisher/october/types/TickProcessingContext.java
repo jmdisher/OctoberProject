@@ -22,9 +22,8 @@ public class TickProcessingContext
 
 	/**
 	 * The view of the entire world, as of the beginning of this tick.
-	 * Returns null if the requested block isn't in a loaded cuboid.
 	 */
-	public final Function<AbsoluteLocation, BlockProxy> previousBlockLookUp;
+	public final IBlockFetcher previousBlockLookUp;
 
 	/**
 	 * The view of the entire entity crowd, as of the beginning of this tick.  This will look up either entities or
@@ -101,7 +100,7 @@ public class TickProcessingContext
 	public final long currentTickTimeMillis;
 
 	public TickProcessingContext(long currentTick
-			, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+			, IBlockFetcher previousBlockLookUp
 			, Function<Integer, MinimalEntity> previousEntityLookUp
 			, IPassiveSearch previousPassiveLookUp
 			, IByteLookup<AbsoluteLocation> skyLight
@@ -259,5 +258,19 @@ public class TickProcessingContext
 		 * @return The passives in this region (empty list if none found).
 		 */
 		PartialPassive[] findPassiveItemSlotsInRegion(EntityLocation base, EntityLocation edge);
+	}
+
+	/**
+	 * The interface used to fetch BlockProxy instances over the results of the previous tick for specific locations.
+	 */
+	public static interface IBlockFetcher
+	{
+		/**
+		 * Reads a single BlockProxy for the state after the previous tick.
+		 * 
+		 * @param location The location to read.
+		 * @return The BlockProxy or null if this location was not present in the previous tick snapshot.
+		 */
+		BlockProxy readBlock(AbsoluteLocation location);
 	}
 }

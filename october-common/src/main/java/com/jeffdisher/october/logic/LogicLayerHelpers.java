@@ -1,7 +1,6 @@
 package com.jeffdisher.october.logic;
 
 import java.util.Set;
-import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
@@ -10,6 +9,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FacingDirection;
+import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
@@ -39,7 +39,7 @@ public class LogicLayerHelpers
 	 * @param type The type of block being placed.
 	 * @return True if the active flag should be set when placing the block.
 	 */
-	public static boolean shouldSetActive(Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, FacingDirection outputDirection, Block type)
+	public static boolean shouldSetActive(Environment env, TickProcessingContext.IBlockFetcher proxyLookup, AbsoluteLocation location, FacingDirection outputDirection, Block type)
 	{
 		// Only sinks can be set to active during placement (sources can be changed to active by a user).
 		boolean isActive = false;
@@ -66,7 +66,7 @@ public class LogicLayerHelpers
 	 * @param location The location where the block is being placed.
 	 * @return True if at least one adjacent block conducts a high logic signal into location.
 	 */
-	public static boolean isBlockReceivingHighSignal(Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location)
+	public static boolean isBlockReceivingHighSignal(Environment env, TickProcessingContext.IBlockFetcher proxyLookup, AbsoluteLocation location)
 	{
 		return _isBlockReceivingHighSignal(env, proxyLookup, location);
 	}
@@ -79,7 +79,7 @@ public class LogicLayerHelpers
 	 * @param location The location where the block is being placed.
 	 * @return True if at least one of the adjacent blocks is a source outputting directly into location.
 	 */
-	public static boolean isBlockReceivingSourceSignal(Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location)
+	public static boolean isBlockReceivingSourceSignal(Environment env, TickProcessingContext.IBlockFetcher proxyLookup, AbsoluteLocation location)
 	{
 		// A block receives a high signal if there is a >0 signal in an adjacent conduit or an adjacent block is actively outputting a signal into this block.
 		return false
@@ -141,13 +141,13 @@ public class LogicLayerHelpers
 	 * @param checkLocation The source block where the logic is entering.
 	 * @return True if a high value enters eventualTarget from checkLocation.
 	 */
-	public static boolean isEmittedLogicValueHigh(Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation eventualTarget, AbsoluteLocation checkLocation)
+	public static boolean isEmittedLogicValueHigh(Environment env, TickProcessingContext.IBlockFetcher proxyLookup, AbsoluteLocation eventualTarget, AbsoluteLocation checkLocation)
 	{
 		return _getEmittedLogicValue(env, proxyLookup, false, eventualTarget, checkLocation);
 	}
 
 
-	private static boolean _isBlockReceivingHighSignal(Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location)
+	private static boolean _isBlockReceivingHighSignal(Environment env, TickProcessingContext.IBlockFetcher proxyLookup, AbsoluteLocation location)
 	{
 		// A block receives a high signal if there is a >0 signal in an adjacent conduit or an adjacent block is actively outputting a signal into this block.
 		return false
@@ -160,12 +160,12 @@ public class LogicLayerHelpers
 		;
 	}
 
-	private static boolean _getEmittedLogicValue(Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, boolean sourceOnly, AbsoluteLocation eventualTarget, AbsoluteLocation checkLocation)
+	private static boolean _getEmittedLogicValue(Environment env, TickProcessingContext.IBlockFetcher proxyLookup, boolean sourceOnly, AbsoluteLocation eventualTarget, AbsoluteLocation checkLocation)
 	{
 		boolean isValueHigh = false;
 		
 		// First, check that we can load the proxy (might be in a different cuboid which isn't loaded).
-		BlockProxy proxy = proxyLookup.apply(checkLocation);
+		BlockProxy proxy = proxyLookup.readBlock(checkLocation);
 		if (null != proxy)
 		{
 			// Check the type:  If a conduit, just check the logic value.

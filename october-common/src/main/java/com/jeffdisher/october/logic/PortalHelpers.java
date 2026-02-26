@@ -45,7 +45,7 @@ public class PortalHelpers
 	public static void handlePortalSurface(Environment env, TickProcessingContext context, AbsoluteLocation keystoneLocation, IMutableBlockProxy keystoneProxy)
 	{
 		AbsoluteLocation surfaceRootLocation = keystoneLocation.getRelative(0, 0, 1);
-		BlockProxy rootProxy = context.previousBlockLookUp.apply(surfaceRootLocation);
+		BlockProxy rootProxy = context.previousBlockLookUp.readBlock(surfaceRootLocation);
 		
 		if (null != rootProxy)
 		{

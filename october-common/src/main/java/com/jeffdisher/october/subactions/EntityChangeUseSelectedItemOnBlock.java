@@ -153,7 +153,7 @@ public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMut
 					: null
 		;
 		boolean isFertilizer = (env.special.itemFertilizer == type);
-		BlockProxy proxy = context.previousBlockLookUp.apply(_target);
+		BlockProxy proxy = context.previousBlockLookUp.readBlock(_target);
 		Block block = (null != proxy) ? proxy.getBlock() : null;
 		boolean isGrowable = (env.plants.growthDivisor(block) > 0);
 		

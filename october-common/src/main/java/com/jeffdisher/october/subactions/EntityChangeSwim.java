@@ -1,7 +1,6 @@
 package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
-import java.util.function.Function;
 
 import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.aspects.Environment;
@@ -9,7 +8,6 @@ import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
@@ -32,7 +30,7 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IEntit
 	public static final float SWIM_FORCE = -0.6f * EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND;
 	public static final EntitySubActionType TYPE = EntitySubActionType.SWIM;
 
-	public static boolean canSwim(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+	public static boolean canSwim(TickProcessingContext.IBlockFetcher previousBlockLookUp
 			, EntityLocation location
 			, EntityLocation vector
 	)
@@ -103,7 +101,7 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IEntit
 	}
 
 
-	private static boolean _canSwim(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+	private static boolean _canSwim(TickProcessingContext.IBlockFetcher previousBlockLookUp
 			, EntityLocation location
 			, EntityLocation vector
 	)
@@ -112,7 +110,7 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IEntit
 		// As long as we are sinking down in a swimmable block type, we will say that we can swim.
 		if (vector.z() <= 0.0f)
 		{
-			BlockProxy footBlock = previousBlockLookUp.apply(location.getBlockLocation());
+			BlockProxy footBlock = previousBlockLookUp.readBlock(location.getBlockLocation());
 			Environment env = Environment.getShared();
 			boolean isActive = FlagsAspect.isSet(footBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
 			canSwim = env.blocks.canSwimInBlock(footBlock.getBlock(), isActive);

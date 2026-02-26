@@ -60,7 +60,7 @@ public class MutationEntityRequestItemPickUp implements IEntitySubAction<IMutabl
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		// See what this is, in the block's inventory, to make sure that we aren't trying to over-fetch.
-		BlockProxy target = context.previousBlockLookUp.apply(_blockLocation);
+		BlockProxy target = context.previousBlockLookUp.readBlock(_blockLocation);
 		Inventory inv = _getInventory(target);
 		
 		// We also want to make sure that this is in range.

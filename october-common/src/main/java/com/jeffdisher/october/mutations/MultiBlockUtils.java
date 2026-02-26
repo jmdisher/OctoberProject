@@ -100,11 +100,11 @@ public class MultiBlockUtils
 			// We check the millis per tick since we require a delay (that is, NOT in the client's projection).
 			if (context.millisPerTick > 0L)
 			{
-				MutationBlockPhase2Multi phase2 = new MutationBlockPhase2Multi(rootLocation, rootLocation, orientation, blockType, context.previousBlockLookUp.apply(rootLocation).getBlock());
+				MutationBlockPhase2Multi phase2 = new MutationBlockPhase2Multi(rootLocation, rootLocation, orientation, blockType, context.previousBlockLookUp.readBlock(rootLocation).getBlock());
 				context.mutationSink.future(phase2, context.millisPerTick);
 				for (AbsoluteLocation location : extensions)
 				{
-					phase2 = new MutationBlockPhase2Multi(location, rootLocation, orientation, blockType, context.previousBlockLookUp.apply(location).getBlock());
+					phase2 = new MutationBlockPhase2Multi(location, rootLocation, orientation, blockType, context.previousBlockLookUp.readBlock(location).getBlock());
 					context.mutationSink.future(phase2, context.millisPerTick);
 				}
 			}
@@ -140,7 +140,7 @@ public class MultiBlockUtils
 	{
 		// In this helper, we want to verify that all relevant proxies are loaded (only more than 1 if multi-block).
 		Lookup lookup = null;
-		BlockProxy outerProxy = context.previousBlockLookUp.apply(target);
+		BlockProxy outerProxy = context.previousBlockLookUp.readBlock(target);
 		if (null != outerProxy)
 		{
 			// Find out if this is a multi-block.
@@ -154,14 +154,14 @@ public class MultiBlockUtils
 					// We are the root.
 					root = target;
 				}
-				BlockProxy rootProxy = context.previousBlockLookUp.apply(root);
+				BlockProxy rootProxy = context.previousBlockLookUp.readBlock(root);
 				if (null != rootProxy)
 				{
 					boolean isLoaded = true;
 					List<AbsoluteLocation> extensions = env.multiBlocks.getExtensions(block, root, rootProxy.getOrientation());
 					for (AbsoluteLocation extension : extensions)
 					{
-						if (null == context.previousBlockLookUp.apply(extension))
+						if (null == context.previousBlockLookUp.readBlock(extension))
 						{
 							isLoaded = false;
 							break;
@@ -197,10 +197,10 @@ public class MultiBlockUtils
 
 	private static boolean _canBlocksBeReplaced(Environment env, TickProcessingContext context, AbsoluteLocation root, List<AbsoluteLocation> extensions)
 	{
-		boolean canBeReplaced = env.blocks.canBeReplaced(context.previousBlockLookUp.apply(root).getBlock());
+		boolean canBeReplaced = env.blocks.canBeReplaced(context.previousBlockLookUp.readBlock(root).getBlock());
 		for (AbsoluteLocation location : extensions)
 		{
-			BlockProxy one = context.previousBlockLookUp.apply(location);
+			BlockProxy one = context.previousBlockLookUp.readBlock(location);
 			canBeReplaced &= (null != one) && env.blocks.canBeReplaced(one.getBlock());
 		}
 		return canBeReplaced;

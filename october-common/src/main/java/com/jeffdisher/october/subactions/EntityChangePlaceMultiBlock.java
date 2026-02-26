@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
@@ -163,13 +162,17 @@ public class EntityChangePlaceMultiBlock implements IEntitySubAction<IMutablePla
 			cuboid.setData15(AspectRegistry.BLOCK, location.getBlockAddress(), blockNumber);
 		}
 		
-		Function<AbsoluteLocation, BlockProxy> blockLookup = (AbsoluteLocation location) -> {
-			CuboidData cuboid = map.get(location.getCuboidAddress());
-			if (null == cuboid)
+		TickProcessingContext.IBlockFetcher blockLookup = new TickProcessingContext.IBlockFetcher() {
+			@Override
+			public BlockProxy readBlock(AbsoluteLocation location)
 			{
-				cuboid = emptyCuboid;
+				CuboidData cuboid = map.get(location.getCuboidAddress());
+				if (null == cuboid)
+				{
+					cuboid = emptyCuboid;
+				}
+				return BlockProxy.load(location.getBlockAddress(), cuboid);
 			}
-			return BlockProxy.load(location.getBlockAddress(), cuboid);
 		};
 		ViscosityReader reader = new ViscosityReader(env, blockLookup);
 		return SpatialHelpers.canExistInLocation(reader, newEntity.getLocation(), newEntity.getType().volume());

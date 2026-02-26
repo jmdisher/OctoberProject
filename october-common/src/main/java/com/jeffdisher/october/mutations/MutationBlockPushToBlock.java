@@ -102,7 +102,7 @@ public class MutationBlockPushToBlock implements IMutationBlock
 			if (toFetch > 0)
 			{
 				// Make sure that the target block has the correct inventory type and capacity.
-				BlockProxy targetProxy = context.previousBlockLookUp.apply(_receiverBlockLocation);
+				BlockProxy targetProxy = context.previousBlockLookUp.readBlock(_receiverBlockLocation);
 				boolean canTransfer = false;
 				if (null != targetProxy)
 				{

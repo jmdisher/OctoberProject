@@ -58,7 +58,7 @@ public class EntitySubActionRequestSwapSpecialSlot implements IEntitySubAction<I
 		boolean isInRange = (distance <= MiscConstants.REACH_BLOCK);
 		
 		// Check that the target block has a special slot.
-		BlockProxy proxy = context.previousBlockLookUp.apply(_blockLocation);
+		BlockProxy proxy = context.previousBlockLookUp.readBlock(_blockLocation);
 		boolean didApply = false;
 		if (isInRange && (null != proxy) && env.specialSlot.hasSpecialSlot(proxy.getBlock()))
 		{

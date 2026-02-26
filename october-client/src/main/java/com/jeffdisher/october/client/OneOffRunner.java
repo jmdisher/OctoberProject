@@ -6,10 +6,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.engine.EnginePlayers;
@@ -20,7 +18,6 @@ import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -204,7 +201,7 @@ public class OneOffRunner
 		, Map<CuboidAddress, IReadOnlyCuboidData> world
 		, Map<Integer, PartialEntity> otherEntities
 		, Map<Integer, PartialPassive> passives
-		, Function<AbsoluteLocation, BlockProxy> proxyLoader
+		, TickProcessingContext.IBlockFetcher proxyLoader
 	) {}
 
 	/**

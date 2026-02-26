@@ -77,7 +77,7 @@ public class MutationBlockReplaceDropExisting implements IMutationBlock
 			if (env.blocks.hasGravity(_newType))
 			{
 				// If we think that this should fall, schedule the apply gravity mutation.
-				BlockProxy belowBlock = context.previousBlockLookUp.apply(_location.getRelative(0, 0, -1));
+				BlockProxy belowBlock = context.previousBlockLookUp.readBlock(_location.getRelative(0, 0, -1));
 				if (null != belowBlock)
 				{
 					boolean belowActive = FlagsAspect.isSet(belowBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);

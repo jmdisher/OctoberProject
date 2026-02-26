@@ -1,7 +1,5 @@
 package com.jeffdisher.october.mutations;
 
-import java.util.function.Function;
-
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -49,9 +47,9 @@ public class TestTickUtils
 	{
 		// Show that we take suffocation damage if not in a breathable space at the end of a tick.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
-		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		};
+		});
 		long millisPerTick = 100L;
 		EventRecord[] out_events = new EventRecord[1];
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
@@ -81,9 +79,9 @@ public class TestTickUtils
 	{
 		// Show that we take lava damage at the end of a tick.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), LAVA_SOURCE);
-		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		};
+		});
 		long millisPerTick = 100L;
 		EventRecord[] out_events = new EventRecord[1];
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
@@ -118,9 +116,9 @@ public class TestTickUtils
 		AbsoluteLocation platform = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
 		cuboid.setData15(AspectRegistry.BLOCK, platform.getBlockAddress(), log.item().number());
 		cuboid.setData7(AspectRegistry.FLAGS, platform.getBlockAddress(), FlagsAspect.FLAG_BURNING);
-		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		};
+		});
 		long millisPerTick = 100L;
 		EventRecord[] out_events = new EventRecord[1];
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {

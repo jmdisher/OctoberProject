@@ -45,7 +45,7 @@ public class FireHelpers
 		);
 		
 		return toCheck.stream().filter((AbsoluteLocation check) -> {
-			BlockProxy proxy = context.previousBlockLookUp.apply(check);
+			BlockProxy proxy = context.previousBlockLookUp.readBlock(check);
 			boolean isFlammable = false;
 			if (null != proxy)
 			{
@@ -90,7 +90,7 @@ public class FireHelpers
 	{
 		Block block = proxy.getBlock();
 		byte flags = proxy.getFlags();
-		BlockProxy blockAbove = context.previousBlockLookUp.apply(check.getRelative(0, 0, 1));
+		BlockProxy blockAbove = context.previousBlockLookUp.readBlock(check.getRelative(0, 0, 1));
 		
 		// There are 4 cases here:
 		// 1) Is a flammable block.
@@ -117,7 +117,7 @@ public class FireHelpers
 	public static boolean shouldExtinguish(Environment env, TickProcessingContext context, AbsoluteLocation check, IBlockProxy proxy)
 	{
 		byte flags = proxy.getFlags();
-		BlockProxy blockAbove = context.previousBlockLookUp.apply(check.getRelative(0, 0, 1));
+		BlockProxy blockAbove = context.previousBlockLookUp.readBlock(check.getRelative(0, 0, 1));
 		return FlagsAspect.isSet(flags, FlagsAspect.FLAG_BURNING)
 				&& ((null != blockAbove) && env.blocks.doesStopFire(blockAbove.getBlock()))
 		;
@@ -144,7 +144,7 @@ public class FireHelpers
 		);
 		
 		return toCheck.stream().anyMatch((AbsoluteLocation location) -> {
-			BlockProxy proxy = context.previousBlockLookUp.apply(location);
+			BlockProxy proxy = context.previousBlockLookUp.readBlock(location);
 			boolean isFireSource = false;
 			if (null != proxy)
 			{

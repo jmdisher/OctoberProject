@@ -42,8 +42,8 @@ public class HopperHelpers
 		{
 			// Note that it is possible that the source or sink will not be loaded.
 			AbsoluteLocation sourceLocation = hopperLocation.getRelative(0, 0, 1);
-			IBlockProxy sourceBlock = context.previousBlockLookUp.apply(sourceLocation);
-			IBlockProxy sinkBlock = context.previousBlockLookUp.apply(sinkLocation);
+			IBlockProxy sourceBlock = context.previousBlockLookUp.readBlock(sourceLocation);
+			IBlockProxy sinkBlock = context.previousBlockLookUp.readBlock(sinkLocation);
 			
 			// We want to check that these blocks have the appropriate inventories.
 			Inventory sourceInventory = null;

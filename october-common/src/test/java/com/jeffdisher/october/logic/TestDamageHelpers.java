@@ -1,7 +1,5 @@
 package com.jeffdisher.october.logic;
 
-import java.util.function.Function;
-
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -15,9 +13,11 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 
@@ -43,9 +43,9 @@ public class TestDamageHelpers
 	public void noEnvironmentDamage()
 	{
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		};
+		});
 		EntityLocation base = new EntityLocation(2.0f, 2.0f, 2.0f);
 		EntityVolume volume = new EntityVolume(1.5f, 1.2f);
 		
@@ -57,9 +57,9 @@ public class TestDamageHelpers
 	public void fireDamage()
 	{
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		};
+		});
 		EntityLocation base = new EntityLocation(2.0f, 2.0f, 2.0f);
 		EntityVolume volume = new EntityVolume(1.5f, 1.2f);
 		AbsoluteLocation log = base.getBlockLocation().getRelative(0, 0, -1);
@@ -74,9 +74,9 @@ public class TestDamageHelpers
 	public void fireAndLavaDamage()
 	{
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		};
+		});
 		EntityLocation base = new EntityLocation(2.0f, 2.0f, 2.0f);
 		EntityVolume volume = new EntityVolume(1.5f, 1.2f);
 		AbsoluteLocation log = base.getBlockLocation().getRelative(0, 0, -1);

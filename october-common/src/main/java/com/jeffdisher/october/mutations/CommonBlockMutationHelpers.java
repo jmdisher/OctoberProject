@@ -85,7 +85,7 @@ public class CommonBlockMutationHelpers
 		{
 			// See if the block we are changing needs a special logic mode.
 			boolean shouldSetHigh = LogicLayerHelpers.shouldSetActive(env, context.previousBlockLookUp, location, outputDirection, blockType);
-			BlockProxy belowBlock = context.previousBlockLookUp.apply(location.getRelative(0, 0, -1));
+			BlockProxy belowBlock = context.previousBlockLookUp.readBlock(location.getRelative(0, 0, -1));
 			
 			// Make sure that this block can be supported by the one under it.
 			// Note that multi-blocks only honour their support block for their root.
@@ -335,7 +335,7 @@ public class CommonBlockMutationHelpers
 
 	private static Block _getBlockOrNull(TickProcessingContext context, AbsoluteLocation location)
 	{
-		BlockProxy proxy = context.previousBlockLookUp.apply(location);
+		BlockProxy proxy = context.previousBlockLookUp.readBlock(location);
 		return (null != proxy)
 				? proxy.getBlock()
 				: null

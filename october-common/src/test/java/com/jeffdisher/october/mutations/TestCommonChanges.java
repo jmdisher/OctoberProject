@@ -3707,7 +3707,7 @@ public class TestCommonChanges
 					return lazyMutableBlockCache.apply(location);
 				}
 				, (AbsoluteLocation location) -> {
-					return holder.context.previousBlockLookUp.apply(location);
+					return holder.context.previousBlockLookUp.readBlock(location);
 				}
 		);
 		

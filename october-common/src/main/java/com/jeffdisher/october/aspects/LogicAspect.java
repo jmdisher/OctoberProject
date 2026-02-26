@@ -4,16 +4,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
 import com.jeffdisher.october.config.IValueTransformer;
 import com.jeffdisher.october.config.SimpleTabListCallbacks;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.config.TabListReader.TabListException;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FacingDirection;
+import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
@@ -272,6 +271,6 @@ public class LogicAspect
 		 * @param outputDirection The output direction of the block.
 		 * @return True if it would receive a high signal here.
 		 */
-		public boolean shouldStoreHighSignal(Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, FacingDirection outputDirection);
+		public boolean shouldStoreHighSignal(Environment env, TickProcessingContext.IBlockFetcher proxyLookup, AbsoluteLocation location, FacingDirection outputDirection);
 	}
 }

@@ -14,6 +14,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
@@ -22,6 +23,7 @@ import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 
@@ -50,7 +52,7 @@ public class TestSpatialHelpers
 		// Just ask if they can exist when only air is present.
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid);
+		TickProcessingContext.IBlockFetcher blockTypeReader = ContextBuilder.buildFetcher((AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid));
 		ViscosityReader reader = new ViscosityReader(ENV, blockTypeReader);
 		boolean canExist = SpatialHelpers.canExistInLocation(reader, location, VOLUME);
 		Assert.assertTrue(canExist);
@@ -62,7 +64,7 @@ public class TestSpatialHelpers
 		// Just ask if they can exist when only stone is present.
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
-		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid);
+		TickProcessingContext.IBlockFetcher blockTypeReader = ContextBuilder.buildFetcher((AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid));
 		ViscosityReader reader = new ViscosityReader(ENV, blockTypeReader);
 		boolean canExist = SpatialHelpers.canExistInLocation(reader, location, VOLUME);
 		Assert.assertFalse(canExist);
@@ -74,7 +76,7 @@ public class TestSpatialHelpers
 		// Just ask if they can stand when only air is present (as this doesn't check the blocks they occupy).
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid);
+		TickProcessingContext.IBlockFetcher blockTypeReader = ContextBuilder.buildFetcher((AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid));
 		ViscosityReader reader = new ViscosityReader(ENV, blockTypeReader);
 		boolean isStanding = SpatialHelpers.isStandingOnGround(reader, location, VOLUME);
 		Assert.assertFalse(isStanding);
@@ -86,7 +88,7 @@ public class TestSpatialHelpers
 		// Just ask if they can stand when only stone is present (as this doesn't check the blocks they occupy).
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
-		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid);
+		TickProcessingContext.IBlockFetcher blockTypeReader = ContextBuilder.buildFetcher((AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid));
 		ViscosityReader reader = new ViscosityReader(ENV, blockTypeReader);
 		boolean isStanding = SpatialHelpers.isStandingOnGround(reader, location, VOLUME);
 		Assert.assertTrue(isStanding);
@@ -98,7 +100,7 @@ public class TestSpatialHelpers
 		// Ask if they are touching the ceiling when clearly not.
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid);
+		TickProcessingContext.IBlockFetcher blockTypeReader = ContextBuilder.buildFetcher((AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid));
 		ViscosityReader reader = new ViscosityReader(ENV, blockTypeReader);
 		boolean isTouching = SpatialHelpers.isTouchingCeiling(reader, location, VOLUME);
 		Assert.assertFalse(isTouching);
@@ -110,7 +112,7 @@ public class TestSpatialHelpers
 		// Ask if they are touching the ceiling when they are right against it.
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.2f);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
-		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid);
+		TickProcessingContext.IBlockFetcher blockTypeReader = ContextBuilder.buildFetcher((AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid));
 		ViscosityReader reader = new ViscosityReader(ENV, blockTypeReader);
 		boolean isTouching = SpatialHelpers.isTouchingCeiling(reader, location, VOLUME);
 		Assert.assertTrue(isTouching);
@@ -186,7 +188,7 @@ public class TestSpatialHelpers
 	{
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> {
+		TickProcessingContext.IBlockFetcher blockTypeReader = ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
 			BlockProxy proxy;
 			if (((1 == l.x()) && (1 == l.y())) || (l.z() >= 2))
 			{
@@ -197,7 +199,7 @@ public class TestSpatialHelpers
 				proxy = BlockProxy.load(l.getBlockAddress(), stoneCuboid);
 			}
 			return proxy;
-		};
+		});
 		ViscosityReader reader = new ViscosityReader(ENV, blockTypeReader);
 		
 		EntityLocation onLedge = new EntityLocation(1.6f, 1.6f, 2.0f);
@@ -219,7 +221,7 @@ public class TestSpatialHelpers
 		// Show how these helpers respond when we are stuck in a block.
 		EntityLocation location = new EntityLocation(5.1f, -6.4f, 7.2f);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, -1, 0), STONE);
-		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid);
+		TickProcessingContext.IBlockFetcher blockTypeReader = ContextBuilder.buildFetcher((AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid));
 		ViscosityReader reader = new ViscosityReader(ENV, blockTypeReader);
 		
 		// We are considered standing on ground, since we can't move down.
@@ -345,11 +347,19 @@ public class TestSpatialHelpers
 		if (useBlockCache)
 		{
 			LazyLocationCache<BlockProxy> cachingLoader = new LazyLocationCache<>(blockTypeReader);
-			reader = new ViscosityReader(ENV, cachingLoader);
+			TickProcessingContext.IBlockFetcher blockFetcher = new TickProcessingContext.IBlockFetcher() {
+				@Override
+				public BlockProxy readBlock(AbsoluteLocation location)
+				{
+					return cachingLoader.apply(location);
+				}
+			};
+			reader = new ViscosityReader(ENV, blockFetcher);
 		}
 		else
 		{
-			reader = new ViscosityReader(ENV, blockTypeReader);
+			TickProcessingContext.IBlockFetcher blockFetcher = ContextBuilder.buildFetcher(blockTypeReader);
+			reader = new ViscosityReader(ENV, blockFetcher);
 		}
 		
 		// Do the appropriate run type.

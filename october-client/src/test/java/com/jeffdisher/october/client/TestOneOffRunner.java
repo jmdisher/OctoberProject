@@ -2,7 +2,6 @@ package com.jeffdisher.october.client;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.junit.AfterClass;
@@ -281,17 +280,21 @@ public class TestOneOffRunner
 	}
 
 
-	private static Function<AbsoluteLocation, BlockProxy> _buildProxyLoader(CuboidData... cuboids)
+	private static TickProcessingContext.IBlockFetcher _buildProxyLoader(CuboidData... cuboids)
 	{
 		Map<CuboidAddress, CuboidData> map = Arrays.stream(cuboids)
 			.collect(Collectors.toMap((CuboidData cuboid) -> cuboid.getCuboidAddress(), (CuboidData cuboid) -> cuboid))
 		;
-		return (AbsoluteLocation location) -> {
-			CuboidData cuboid = map.get(location.getCuboidAddress());
-			return (null != cuboid)
-				? BlockProxy.load(location.getBlockAddress(), cuboid)
-				: null
-			;
+		return new TickProcessingContext.IBlockFetcher() {
+			@Override
+			public BlockProxy readBlock(AbsoluteLocation location)
+			{
+				CuboidData cuboid = map.get(location.getCuboidAddress());
+				return (null != cuboid)
+					? BlockProxy.load(location.getBlockAddress(), cuboid)
+					: null
+				;
+			}
 		};
 	}
 

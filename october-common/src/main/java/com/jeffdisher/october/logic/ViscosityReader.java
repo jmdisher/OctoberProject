@@ -1,11 +1,10 @@
 package com.jeffdisher.october.logic;
 
-import java.util.function.Function;
-
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
@@ -15,9 +14,9 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 public class ViscosityReader
 {
 	private final Environment _env;
-	private final Function<AbsoluteLocation, BlockProxy> _blockLookup;
+	private final TickProcessingContext.IBlockFetcher _blockLookup;
 
-	public ViscosityReader(Environment env, Function<AbsoluteLocation, BlockProxy> blockLookup)
+	public ViscosityReader(Environment env, TickProcessingContext.IBlockFetcher blockLookup)
 	{
 		_env = env;
 		_blockLookup = blockLookup;
@@ -36,7 +35,7 @@ public class ViscosityReader
 
 	private float _getViscosity(AbsoluteLocation location, boolean fromAbove)
 	{
-		BlockProxy proxy = _blockLookup.apply(location);
+		BlockProxy proxy = _blockLookup.readBlock(location);
 		float viscosity;
 		if (null != proxy)
 		{

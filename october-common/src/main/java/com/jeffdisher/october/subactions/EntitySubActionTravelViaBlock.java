@@ -1,7 +1,6 @@
 package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import com.jeffdisher.october.aspects.Environment;
@@ -41,14 +40,14 @@ public class EntitySubActionTravelViaBlock implements IEntitySubAction<IMutableP
 	 * @return A valid portal surface or null if not intersecting with one.
 	 */
 	public static AbsoluteLocation getValidPortalSurface(Environment env
-		, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+		, TickProcessingContext.IBlockFetcher previousBlockLookUp
 		, EntityLocation location
 		, EntityVolume volume
 	)
 	{
 		// See if we are intersecting with a portal surface.
 		Predicate<AbsoluteLocation> supplier = (AbsoluteLocation loc) -> {
-			BlockProxy proxy = previousBlockLookUp.apply(loc);
+			BlockProxy proxy = previousBlockLookUp.readBlock(loc);
 			return (null != proxy) && (env.special.blockPortalSurface == proxy.getBlock());
 		};
 		return EntityMovementHelpers.checkTypeIntersection(location, volume, supplier);
@@ -142,7 +141,7 @@ public class EntitySubActionTravelViaBlock implements IEntitySubAction<IMutableP
 	private static EntityLocation _getTargetLocation(TickProcessingContext context, AbsoluteLocation portalSurfaceLocation)
 	{
 		EntityLocation newLocation = null;
-		BlockProxy surfaceProxy = context.previousBlockLookUp.apply(portalSurfaceLocation);
+		BlockProxy surfaceProxy = context.previousBlockLookUp.readBlock(portalSurfaceLocation);
 		Environment env = Environment.getShared();
 		if ((null != surfaceProxy) && (env.special.blockPortalSurface == surfaceProxy.getBlock()))
 		{
@@ -152,7 +151,7 @@ public class EntitySubActionTravelViaBlock implements IEntitySubAction<IMutableP
 				rootLocation = portalSurfaceLocation;
 			}
 			AbsoluteLocation keystoneLocation = rootLocation.getRelative(0, 0, -1);
-			BlockProxy target = context.previousBlockLookUp.apply(keystoneLocation);
+			BlockProxy target = context.previousBlockLookUp.readBlock(keystoneLocation);
 			if ((null != target) && (env.special.blockPortalKeystone == target.getBlock()))
 			{
 				ItemSlot slot = target.getSpecialSlot();

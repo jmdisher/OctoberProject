@@ -61,7 +61,7 @@ public class MutationBlockApplyGravity implements IMutationBlock
 		{
 			// See if this needs to break and turn into a falling block.
 			AbsoluteLocation belowBlockLocation = _blockLocation.getRelative(0, 0, -1);
-			BlockProxy belowBlock = context.previousBlockLookUp.apply(belowBlockLocation);
+			BlockProxy belowBlock = context.previousBlockLookUp.readBlock(belowBlockLocation);
 			if (null != belowBlock)
 			{
 				boolean belowActive = FlagsAspect.isSet(belowBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
