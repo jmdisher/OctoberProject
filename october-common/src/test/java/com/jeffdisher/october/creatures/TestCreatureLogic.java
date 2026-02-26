@@ -1181,6 +1181,38 @@ public class TestCreatureLogic
 		Assert.assertTrue(output.extendedData() instanceof CreatureExtendedData.BabyData);
 	}
 
+	@Test
+	public void standingInViscosityChange()
+	{
+		// Show that we correctly plan the next action when partially standing in a block which changes viscosity.
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		_setLayer(input, (byte)0, "op.stone");
+		AbsoluteLocation waterLocation = new AbsoluteLocation(5, 4, 1);
+		short waterSourceNumber = ENV.items.getItemById("op.water_source").number();
+		input.setData15(AspectRegistry.BLOCK, waterLocation.getBlockAddress(), waterSourceNumber);
+		
+		EntityLocation startLocation = new EntityLocation(4.7f, 4.99f, 1.0f);
+		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, 0L);
+		MutableCreature mutable = MutableCreature.existing(cow);
+		mutable.newMovementPlan = List.of(new AbsoluteLocation(4, 5, 1));
+		
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups((AbsoluteLocation location) -> {
+				return BlockProxy.load(location.getBlockAddress(), input);
+			}, null, null)
+			.finish()
+		;
+		
+		// Make sure that the movement is correct.
+		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
+		Assert.assertEquals("SimpleMove(WALKING), by 0.00, 0.04, Sub: null", change.toString());
+		Assert.assertTrue(change.applyChange(context, mutable));
+		Assert.assertEquals(new EntityLocation(4.7f, 5.01f, 1.0f), mutable.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutable.newVelocity);
+	}
+
 
 	private static TickProcessingContext _createContext(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp, int random)
 	{
