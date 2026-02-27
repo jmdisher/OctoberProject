@@ -22,6 +22,7 @@ import com.jeffdisher.october.logic.PathFinder;
 import com.jeffdisher.october.logic.RayCastHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
+import com.jeffdisher.october.logic.VolumeIterator;
 import com.jeffdisher.october.subactions.EntitySubActionReleaseWeapon;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -1003,37 +1004,34 @@ public class CreatureLogic
 	{
 		private final BlockAspect _blocks;
 		private final TickProcessingContext.IBlockFetcher _previousBlockLookUp;
-		private final int _width;
-		private final int _height;
+		private final EntityVolume _volume;
 		
 		public _LookupHelper(TickProcessingContext context, EntityVolume volume)
 		{
 			_blocks = Environment.getShared().blocks;
 			_previousBlockLookUp = context.previousBlockLookUp;
-			_width = (int)Math.ceil(volume.width());
-			_height = (int)Math.ceil(volume.height());
+			_volume = volume;
 		}
 		@Override
 		public PathFinder.BlockKind apply(AbsoluteLocation location)
 		{
+			// We default to assuming that the path is walkable, unless we find anything more interesting.
 			PathFinder.BlockKind kind = PathFinder.BlockKind.WALKABLE;
-			for (int z = 0; z < _height; ++z)
+			
+			VolumeIterator iterator = new VolumeIterator(location.toEntityLocation(), _volume);
+			for (AbsoluteLocation loc : iterator)
 			{
-				for (int y = 0; y < _width; ++y)
+				PathFinder.BlockKind sub = _singleBlock(loc);
+				if (PathFinder.BlockKind.SOLID == sub)
 				{
-					for (int x = 0; x < _width; ++x)
-					{
-						PathFinder.BlockKind sub = _singleBlock(location.getRelative(x, y, z));
-						if (PathFinder.BlockKind.SOLID == sub)
-						{
-							kind = sub;
-							break;
-						}
-						else if (PathFinder.BlockKind.WALKABLE == kind)
-						{
-							kind = sub;
-						}
-					}
+					// We saturate to solid so break if we hit this.
+					kind = sub;
+					break;
+				}
+				else if (PathFinder.BlockKind.WALKABLE == kind)
+				{
+					// If we are still walkable, switch to whatever this is.
+					kind = sub;
 				}
 			}
 			return kind;
