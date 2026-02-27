@@ -1,6 +1,8 @@
 package com.jeffdisher.october.logic;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
@@ -13,6 +15,37 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class VolumeIterator implements Iterable<AbsoluteLocation>
 {
+	/**
+	 * A helper to immediately return all the locations that an instance would have returned via its iterator.
+	 * 
+	 * @param base The base (west, south, bottom) corner of the volume to walk.
+	 * @param volume The volume to walk.
+	 * @return The list of locations inside this volume.
+	 */
+	public static List<AbsoluteLocation> getAllInVolume(EntityLocation base, EntityVolume volume)
+	{
+		EntityLocation entityEdge = new EntityLocation(base.x() + volume.width()
+			, base.y() + volume.width()
+			, base.z() + volume.height()
+		);
+		AbsoluteLocation start = base.getBlockLocation();
+		AbsoluteLocation end = entityEdge.getBlockLocation();
+		
+		List<AbsoluteLocation> all = new ArrayList<>();
+		for (int z = start.z(); z <= end.z(); ++z)
+		{
+			for (int y = start.y(); y <= end.y(); ++y)
+			{
+				for (int x = start.x(); x <= end.x(); ++x)
+				{
+					all.add(new AbsoluteLocation(x, y, z));
+				}
+			}
+		}
+		return all;
+	}
+
+
 	private final AbsoluteLocation _start;
 	private final AbsoluteLocation _end;
 
