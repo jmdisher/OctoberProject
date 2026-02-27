@@ -1,5 +1,8 @@
 package com.jeffdisher.october.types;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -45,6 +48,19 @@ public class ContextBuilder
 			public BlockProxy readBlock(AbsoluteLocation location)
 			{
 				return function.apply(location);
+			}
+			public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
+			{
+				Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
+				for (AbsoluteLocation location : locations)
+				{
+					BlockProxy proxy = function.apply(location);
+					if (null != proxy)
+					{
+						completed.put(location, proxy);
+					}
+				}
+				return completed;
 			}
 		};
 	}

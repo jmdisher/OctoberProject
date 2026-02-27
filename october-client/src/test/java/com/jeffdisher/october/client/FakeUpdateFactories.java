@@ -1,6 +1,8 @@
 package com.jeffdisher.october.client;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 import com.jeffdisher.october.data.BlockProxy;
@@ -74,10 +76,28 @@ public class FakeUpdateFactories
 			@Override
 			public BlockProxy readBlock(AbsoluteLocation location)
 			{
+				return _readBlock(location);
+			}
+			@Override
+			public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
+			{
+				Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
+				for (AbsoluteLocation location : locations)
+				{
+					BlockProxy proxy = _readBlock(location);
+					if (null != proxy)
+					{
+						completed.put(location, proxy);
+					}
+				}
+				return completed;
+			}
+			private BlockProxy _readBlock(AbsoluteLocation location)
+			{
 				IReadOnlyCuboidData data = loadedCuboids.get(location.getCuboidAddress());
 				return (null != data)
-						? BlockProxy.load(location.getBlockAddress(), data)
-						: null
+					? BlockProxy.load(location.getBlockAddress(), data)
+					: null
 				;
 			}
 		};

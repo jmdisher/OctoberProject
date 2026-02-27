@@ -1,6 +1,7 @@
 package com.jeffdisher.october.client;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -1507,8 +1508,28 @@ public class TestMovementAccumulator
 		{
 			cuboids.put(cuboid.getCuboidAddress(), cuboid);
 		}
-		return new TickProcessingContext(1L
-			, (AbsoluteLocation location) -> {
+		TickProcessingContext.IBlockFetcher blockFetcher = new TickProcessingContext.IBlockFetcher() {
+			@Override
+			public BlockProxy readBlock(AbsoluteLocation location)
+			{
+				return _readBlock(location);
+			}
+			@Override
+			public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
+			{
+				Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
+				for (AbsoluteLocation location : locations)
+				{
+					BlockProxy proxy = _readBlock(location);
+					if (null != proxy)
+					{
+						completed.put(location, proxy);
+					}
+				}
+				return completed;
+			}
+			private BlockProxy _readBlock(AbsoluteLocation location)
+			{
 				CuboidAddress address = location.getCuboidAddress();
 				IReadOnlyCuboidData cuboid = cuboids.get(address);
 				return (null != cuboid)
@@ -1516,6 +1537,9 @@ public class TestMovementAccumulator
 					: null
 				;
 			}
+		};
+		return new TickProcessingContext(1L
+			, blockFetcher
 			, null
 			, null
 			, null

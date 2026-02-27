@@ -1,6 +1,7 @@
 package com.jeffdisher.october.logic;
 
 import java.util.List;
+import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
@@ -43,21 +44,23 @@ public class FireHelpers
 				, source.getRelative(0, -1, 0)
 				, source.getRelative(0, -1, 1)
 		);
+		Map<AbsoluteLocation, BlockProxy> proxies = context.previousBlockLookUp.readBlockBatch(toCheck);
 		
-		return toCheck.stream().filter((AbsoluteLocation check) -> {
-			BlockProxy proxy = context.previousBlockLookUp.readBlock(check);
-			boolean isFlammable = false;
-			if (null != proxy)
-			{
+		return proxies.entrySet().stream()
+			.filter((Map.Entry<AbsoluteLocation, BlockProxy> ent) -> {
+				boolean isFlammable = false;
+				BlockProxy proxy = ent.getValue();
 				Block block = proxy.getBlock();
 				if (env.blocks.isFlammable(block))
 				{
 					boolean isBurning = FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_BURNING);
 					isFlammable = !isBurning;
 				}
-			}
-			return isFlammable;
-		}).toList();
+				return isFlammable;
+			})
+			.map((Map.Entry<AbsoluteLocation, BlockProxy> ent) -> ent.getKey())
+			.toList()
+		;
 	}
 
 	/**
@@ -142,19 +145,21 @@ public class FireHelpers
 				, check.getRelative(0, 1, 0)
 				, check.getRelative(0, 1, -1)
 		);
+		Map<AbsoluteLocation, BlockProxy> proxies = context.previousBlockLookUp.readBlockBatch(toCheck);
 		
-		return toCheck.stream().anyMatch((AbsoluteLocation location) -> {
-			BlockProxy proxy = context.previousBlockLookUp.readBlock(location);
-			boolean isFireSource = false;
-			if (null != proxy)
-			{
-				Block block = proxy.getBlock();
-				if (env.blocks.isFireSource(block) || FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_BURNING))
+		return proxies.values().stream()
+			.anyMatch((BlockProxy proxy) -> {
+				boolean isFireSource = false;
+				if (null != proxy)
 				{
-					isFireSource = true;
+					Block block = proxy.getBlock();
+					if (env.blocks.isFireSource(block) || FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_BURNING))
+					{
+						isFireSource = true;
+					}
 				}
-			}
-			return isFireSource;
-		});
+				return isFireSource;
+			})
+		;
 	}
 }

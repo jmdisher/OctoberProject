@@ -1,5 +1,10 @@
 package com.jeffdisher.october.logic;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
@@ -74,16 +79,24 @@ public class DamageHelpers
 		// We want to check if this is a block which can do direct harm or if it is on top of a burning block (since
 		// those still do damage).
 		int maxDamage = 0;
-		for (AbsoluteLocation location : new VolumeIterator(base, volume))
+		List<AbsoluteLocation> interior = VolumeIterator.getAllInVolume(base, volume);
+		Set<AbsoluteLocation> blocksToCheck = new HashSet<>(interior);
+		for (AbsoluteLocation location : interior)
 		{
-			BlockProxy thisBlock = previousBlockLookUp.readBlock(location);
+			blocksToCheck.add(location.getRelative(0, 0, -1));
+		}
+		
+		Map<AbsoluteLocation, BlockProxy> proxies = previousBlockLookUp.readBlockBatch(blocksToCheck);
+		for (AbsoluteLocation location : interior)
+		{
+			BlockProxy thisBlock = proxies.get(location);
 			int blockDamage = (null != thisBlock)
 				? env.blocks.getBlockDamage(thisBlock.getBlock())
 				: 0
 			;
 			if (0 == blockDamage)
 			{
-				BlockProxy belowBlock = previousBlockLookUp.readBlock(location.getRelative(0, 0, -1));
+				BlockProxy belowBlock = proxies.get(location.getRelative(0, 0, -1));
 				boolean isBurning = ((null != belowBlock) && FlagsAspect.isSet(belowBlock.getFlags(), FlagsAspect.FLAG_BURNING));
 				blockDamage = isBurning
 					? MiscConstants.FIRE_DAMAGE_PER_SECOND

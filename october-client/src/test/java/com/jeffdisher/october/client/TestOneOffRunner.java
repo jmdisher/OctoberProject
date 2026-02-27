@@ -1,6 +1,8 @@
 package com.jeffdisher.october.client;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -288,6 +290,24 @@ public class TestOneOffRunner
 		return new TickProcessingContext.IBlockFetcher() {
 			@Override
 			public BlockProxy readBlock(AbsoluteLocation location)
+			{
+				return _readBlock(location);
+			}
+			@Override
+			public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
+			{
+				Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
+				for (AbsoluteLocation location : locations)
+				{
+					BlockProxy proxy = _readBlock(location);
+					if (null != proxy)
+					{
+						completed.put(location, proxy);
+					}
+				}
+				return completed;
+			}
+			private BlockProxy _readBlock(AbsoluteLocation location)
 			{
 				CuboidData cuboid = map.get(location.getCuboidAddress());
 				return (null != cuboid)

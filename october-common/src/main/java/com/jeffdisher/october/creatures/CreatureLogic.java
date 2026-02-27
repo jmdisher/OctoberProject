@@ -1018,10 +1018,11 @@ public class CreatureLogic
 			// We default to assuming that the path is walkable, unless we find anything more interesting.
 			PathFinder.BlockKind kind = PathFinder.BlockKind.WALKABLE;
 			
-			VolumeIterator iterator = new VolumeIterator(location.toEntityLocation(), _volume);
-			for (AbsoluteLocation loc : iterator)
+			List<AbsoluteLocation> interior = VolumeIterator.getAllInVolume(location.toEntityLocation(), _volume);
+			Map<AbsoluteLocation, BlockProxy> proxies = _previousBlockLookUp.readBlockBatch(interior);
+			for (AbsoluteLocation loc : interior)
 			{
-				PathFinder.BlockKind sub = _singleBlock(loc);
+				PathFinder.BlockKind sub = _singleBlock(proxies.get(loc));
 				if (PathFinder.BlockKind.SOLID == sub)
 				{
 					// We saturate to solid so break if we hit this.
@@ -1036,9 +1037,8 @@ public class CreatureLogic
 			}
 			return kind;
 		}
-		private PathFinder.BlockKind _singleBlock(AbsoluteLocation location)
+		private PathFinder.BlockKind _singleBlock(BlockProxy proxy)
 		{
-			BlockProxy proxy = _previousBlockLookUp.readBlock(location);
 			PathFinder.BlockKind kind;
 			if (null == proxy)
 			{

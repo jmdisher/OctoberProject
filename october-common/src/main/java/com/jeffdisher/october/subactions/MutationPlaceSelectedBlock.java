@@ -1,6 +1,9 @@
 package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
@@ -88,7 +91,25 @@ public class MutationPlaceSelectedBlock implements IEntitySubAction<IMutablePlay
 			CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(_targetBlock.getCuboidAddress(), env.special.AIR);
 			fakeCuboid.setData15(AspectRegistry.BLOCK, _targetBlock.getBlockAddress(), blockType.item().number());
 			EntityLocation entityLocation = newEntity.getLocation();
-			ViscosityReader reader = new ViscosityReader(env, (AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), fakeCuboid));
+			TickProcessingContext.IBlockFetcher blockLookup = new TickProcessingContext.IBlockFetcher() {
+				@Override
+				public BlockProxy readBlock(AbsoluteLocation location)
+				{
+					return BlockProxy.load(location.getBlockAddress(), fakeCuboid);
+				}
+				@Override
+				public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
+				{
+					Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
+					for (AbsoluteLocation location : locations)
+					{
+						BlockProxy proxy = BlockProxy.load(location.getBlockAddress(), fakeCuboid);
+						completed.put(location, proxy);
+					}
+					return completed;
+				}
+			};
+			ViscosityReader reader = new ViscosityReader(env, blockLookup);
 			isLocationNotColliding = SpatialHelpers.canExistInLocation(reader, entityLocation, newEntity.getType().volume());
 		}
 		

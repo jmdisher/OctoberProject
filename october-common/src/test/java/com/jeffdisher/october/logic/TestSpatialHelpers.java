@@ -1,5 +1,6 @@
 package com.jeffdisher.october.logic;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -352,6 +353,20 @@ public class TestSpatialHelpers
 				public BlockProxy readBlock(AbsoluteLocation location)
 				{
 					return cachingLoader.apply(location);
+				}
+				@Override
+				public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
+				{
+					Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
+					for (AbsoluteLocation location : locations)
+					{
+						BlockProxy proxy = cachingLoader.apply(location);
+						if (null != proxy)
+						{
+							completed.put(location, proxy);
+						}
+					}
+					return completed;
 				}
 			};
 			reader = new ViscosityReader(ENV, blockFetcher);

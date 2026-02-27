@@ -1,5 +1,7 @@
 package com.jeffdisher.october.types;
 
+import java.util.Collection;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
@@ -272,5 +274,14 @@ public class TickProcessingContext
 		 * @return The BlockProxy or null if this location was not present in the previous tick snapshot.
 		 */
 		BlockProxy readBlock(AbsoluteLocation location);
+		/**
+		 * Reads a collection of BlockProxy instances for the state after the previous tick.  This is more efficient
+		 * than making individual calls when many blocks from the same cuboid are being requested.
+		 * Note that any cuboids which are not loaded will NOT be in the output map.
+		 * 
+		 * @param locations The locations to read.
+		 * @return A map of BlockProxy instances (missing any not present in the previous tick snapshot).
+		 */
+		Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations);
 	}
 }

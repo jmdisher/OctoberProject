@@ -245,6 +245,16 @@ public class CompositeRegistry
 	private boolean _matchBlockTypes(TickProcessingContext context, FacingDirection orientation, AbsoluteLocation base, Map<AbsoluteLocation, Block> relatives)
 	{
 		boolean isValid = true;
+		List<AbsoluteLocation> toCheck = relatives.keySet().stream()
+			.map((AbsoluteLocation target) -> {
+				// Note that we need to correct this for orientation.
+				AbsoluteLocation rotated = orientation.rotateAboutZ(target);
+				AbsoluteLocation relative = base.getRelative(rotated.x(), rotated.y(), rotated.z());
+				return relative;
+			})
+			.toList()
+		;
+		Map<AbsoluteLocation, BlockProxy> proxies = context.previousBlockLookUp.readBlockBatch(toCheck);
 		for (Map.Entry<AbsoluteLocation, Block> ent : relatives.entrySet())
 		{
 			AbsoluteLocation target = ent.getKey();
@@ -252,7 +262,7 @@ public class CompositeRegistry
 			// Note that we need to correct this for orientation.
 			AbsoluteLocation rotated = orientation.rotateAboutZ(target);
 			AbsoluteLocation relative = base.getRelative(rotated.x(), rotated.y(), rotated.z());
-			BlockProxy targetProxy = context.previousBlockLookUp.readBlock(relative);
+			BlockProxy targetProxy = proxies.get(relative);
 			if (null == targetProxy)
 			{
 				// Request that this is loaded since remove portals are sometimes checked.

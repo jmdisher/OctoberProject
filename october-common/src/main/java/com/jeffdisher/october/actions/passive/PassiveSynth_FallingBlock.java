@@ -1,13 +1,19 @@
 package com.jeffdisher.october.actions.passive;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.MutationBlockReplaceDropExisting;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.PassiveEntity;
@@ -53,6 +59,28 @@ public class PassiveSynth_FallingBlock
 					? BlockProxy.load(location.getBlockAddress(), CuboidGenerator.createFilledCuboid(location.getCuboidAddress(), env.special.AIR))
 					: context.previousBlockLookUp.readBlock(location)
 				;
+			}
+			@Override
+			public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
+			{
+				// NOTE:  We may want to change this lookup to return an interface or something more restrictive, in the
+				// future, as creating this empty cuboid is not cheap (not too expensive, though).
+				// We just use a fake address since it doesn't actually matter.
+				CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, -1, -1), env.special.AIR);
+				
+				Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
+				for (AbsoluteLocation location : locations)
+				{
+					BlockProxy proxy = (location.z() > startZ)
+						? BlockProxy.load(location.getBlockAddress(), cuboid)
+						: context.previousBlockLookUp.readBlock(location)
+					;
+					if (null != proxy)
+					{
+						completed.put(location, proxy);
+					}
+				}
+				return completed;
 			}
 		};
 		float seconds = (float)context.millisPerTick / EntityMovementHelpers.FLOAT_MILLIS_PER_SECOND;

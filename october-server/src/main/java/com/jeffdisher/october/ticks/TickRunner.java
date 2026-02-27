@@ -415,6 +415,21 @@ public class TickRunner
 				{
 					return cachingLoader.apply(location);
 				}
+				@Override
+				public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
+				{
+					// TODO:  Make this call a batching mechanism in the lower level.
+					Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
+					for (AbsoluteLocation location : locations)
+					{
+						BlockProxy proxy = cachingLoader.apply(location);
+						if (null != proxy)
+						{
+							completed.put(location, proxy);
+						}
+					}
+					return completed;
+				}
 			};
 			
 			CommonMutationSink newMutationSink = new CommonMutationSink(materials.completedCuboids.keySet());

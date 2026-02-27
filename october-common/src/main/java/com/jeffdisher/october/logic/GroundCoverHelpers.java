@@ -1,6 +1,7 @@
 package com.jeffdisher.october.logic;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.jeffdisher.october.aspects.Environment;
@@ -35,17 +36,22 @@ public class GroundCoverHelpers
 		if (null != target)
 		{
 			List<AbsoluteLocation> toCheck = _getSymmetricSearchList(source);
+			Map<AbsoluteLocation, BlockProxy> proxies = previousBlockLookUp.readBlockBatch(toCheck);
 			
-			neighbours = toCheck.stream().filter((AbsoluteLocation check) -> {
-				BlockProxy proxy = previousBlockLookUp.readBlock(check);
-				boolean canSpread = false;
-				if (null != proxy)
-				{
-					Block block = proxy.getBlock();
-					canSpread = (target == block);
-				}
-				return canSpread;
-			}).toList();
+			neighbours = proxies.entrySet().stream()
+				.filter((Map.Entry<AbsoluteLocation, BlockProxy> elt) -> {
+					BlockProxy proxy = elt.getValue();
+					boolean canSpread = false;
+					if (null != proxy)
+					{
+						Block block = proxy.getBlock();
+						canSpread = (target == block);
+					}
+					return canSpread;
+				})
+				.map((Map.Entry<AbsoluteLocation, BlockProxy> elt) -> elt.getKey())
+				.toList()
+			;
 		}
 		else
 		{
@@ -78,10 +84,10 @@ public class GroundCoverHelpers
 			{
 				// Make sure that there is a valid source, that we are a valid target for this, and that the block above doesn't prevent it.
 				List<AbsoluteLocation> toCheck = _getSymmetricSearchList(check);
+				Map<AbsoluteLocation, BlockProxy> proxies = previousBlockLookUp.readBlockBatch(toCheck);
 				
 				// Make sure that any of the source blocks are the right type.
-				canChange = toCheck.stream().anyMatch((AbsoluteLocation location) -> {
-					BlockProxy proxy = previousBlockLookUp.readBlock(location);
+				canChange = proxies.values().stream().anyMatch((BlockProxy proxy) -> {
 					return ((null != proxy) && (groundCoverType == proxy.getBlock()));
 				});
 			}
@@ -118,13 +124,12 @@ public class GroundCoverHelpers
 				
 				// Check all the locations where ground cover could be.
 				List<AbsoluteLocation> toCheck = _getSymmetricSearchList(check);
+				Map<AbsoluteLocation, BlockProxy> proxies = previousBlockLookUp.readBlockBatch(toCheck);
 				
 				// TODO:  We currently just find the first match but we will need a prioritization for this, in the future.
-				blockToSpread = toCheck.stream().map((AbsoluteLocation location) -> {
-					BlockProxy proxy = previousBlockLookUp.readBlock(location);
-					Block suggestion = null;
-					if (null != proxy)
-					{
+				blockToSpread = proxies.values().stream()
+					.map((BlockProxy proxy) -> {
+						Block suggestion = null;
 						Block block = proxy.getBlock();
 						if (possibleGroundCoverTypes.contains(block))
 						{
@@ -133,11 +138,10 @@ public class GroundCoverHelpers
 								suggestion = block;
 							}
 						}
-					}
-					return suggestion;
-				})
-						.filter((Block block) -> (null != block))
-						.findFirst().orElse(null)
+						return suggestion;
+					})
+					.filter((Block block) -> (null != block))
+					.findFirst().orElse(null)
 				;
 			}
 		}

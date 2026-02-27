@@ -1,6 +1,7 @@
 package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -165,6 +166,21 @@ public class EntityChangePlaceMultiBlock implements IEntitySubAction<IMutablePla
 		TickProcessingContext.IBlockFetcher blockLookup = new TickProcessingContext.IBlockFetcher() {
 			@Override
 			public BlockProxy readBlock(AbsoluteLocation location)
+			{
+				return _readBlock(location);
+			}
+			@Override
+			public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
+			{
+				Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
+				for (AbsoluteLocation location : locations)
+				{
+					BlockProxy proxy = _readBlock(location);
+					completed.put(location, proxy);
+				}
+				return completed;
+			}
+			private BlockProxy _readBlock(AbsoluteLocation location)
 			{
 				CuboidData cuboid = map.get(location.getCuboidAddress());
 				if (null == cuboid)

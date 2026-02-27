@@ -1,5 +1,7 @@
 package com.jeffdisher.october.logic;
 
+import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 import com.jeffdisher.october.aspects.Environment;
@@ -273,25 +275,34 @@ public class EntityMovementHelpers
 	{
 		// WARNING:  This algorithm is pretty expensive (5x lookups per intersected block) so we might want to re-think
 		// this in the future (potentially even storing this flow adjacency as an aspect).
-		VolumeIterator iterator = new VolumeIterator(base, volume);
+		List<AbsoluteLocation> interior = VolumeIterator.getAllInVolume(base, volume);
+		Map<AbsoluteLocation, BlockProxy> proxies = previousBlockLookUp.readBlockBatch(interior);
 		float x = 0.0f;
 		float y = 0.0f;
 		float z = 0.0f;
 		boolean shouldCompute = false;
-		for (AbsoluteLocation location : iterator)
+		for (AbsoluteLocation location : interior)
 		{
-			BlockProxy proxy = previousBlockLookUp.readBlock(location);
+			BlockProxy proxy = proxies.get(location);
 			if (null != proxy)
 			{
 				int strength = env.liquids.getFlowStrength(proxy.getBlock());
 				if ((LiquidRegistry.FLOW_WEAK == strength) || (LiquidRegistry.FLOW_STRONG == strength))
 				{
 					// This has a liquid so see if an adjacent block is "flowing in" to it.
-					z += -1.0f * _accumulateFlow(env, previousBlockLookUp, location.getRelative(0, 0, 1), strength);
-					y += -1.0f * _accumulateFlow(env, previousBlockLookUp, location.getRelative(0, 1, 0), strength);
-					y += 1.0f * _accumulateFlow(env, previousBlockLookUp, location.getRelative(0, -1, 0), strength);
-					x += -1.0f * _accumulateFlow(env, previousBlockLookUp, location.getRelative(1, 0, 0), strength);
-					x += 1.0f * _accumulateFlow(env, previousBlockLookUp, location.getRelative(-1, 0, 0), strength);
+					List<AbsoluteLocation> toCheck = List.of(
+						location.getRelative(0, 0, 1)
+						, location.getRelative(0, 1, 0)
+						, location.getRelative(0, -1, 0)
+						, location.getRelative(1, 0, 0)
+						, location.getRelative(-1, 0, 0)
+					);
+					Map<AbsoluteLocation, BlockProxy> inLoop = previousBlockLookUp.readBlockBatch(toCheck);
+					z += -1.0f * _accumulateFlow(env, inLoop.get(toCheck.get(0)), strength);
+					y += -1.0f * _accumulateFlow(env, inLoop.get(toCheck.get(1)), strength);
+					y += 1.0f * _accumulateFlow(env, inLoop.get(toCheck.get(2)), strength);
+					x += -1.0f * _accumulateFlow(env, inLoop.get(toCheck.get(3)), strength);
+					x += 1.0f * _accumulateFlow(env, inLoop.get(toCheck.get(4)), strength);
 					shouldCompute = true;
 				}
 			}
@@ -584,9 +595,8 @@ public class EntityMovementHelpers
 		return new EntityLocation(visX, visY, visZ);
 	}
 
-	private static float _accumulateFlow(Environment env, TickProcessingContext.IBlockFetcher previousBlockLookUp, AbsoluteLocation relative, int testAgainst)
+	private static float _accumulateFlow(Environment env, BlockProxy proxy, int testAgainst)
 	{
-		BlockProxy proxy = previousBlockLookUp.readBlock(relative);
 		int flow = (null != proxy)
 			? env.liquids.getFlowStrength(proxy.getBlock())
 			: LiquidRegistry.FLOW_NONE

@@ -1,5 +1,7 @@
 package com.jeffdisher.october.logic;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.jeffdisher.october.aspects.Environment;
@@ -82,13 +84,14 @@ public class LogicLayerHelpers
 	public static boolean isBlockReceivingSourceSignal(Environment env, TickProcessingContext.IBlockFetcher proxyLookup, AbsoluteLocation location)
 	{
 		// A block receives a high signal if there is a >0 signal in an adjacent conduit or an adjacent block is actively outputting a signal into this block.
+		Map<AbsoluteLocation, BlockProxy> proxies = _getPreloadedAdjacentBlocks(proxyLookup, location);
 		return false
-				|| _getEmittedLogicValue(env, proxyLookup, true, location, location.getRelative(0, 0, -1))
-				|| _getEmittedLogicValue(env, proxyLookup, true, location, location.getRelative(0, 0,  1))
-				|| _getEmittedLogicValue(env, proxyLookup, true, location, location.getRelative(0, -1, 0))
-				|| _getEmittedLogicValue(env, proxyLookup, true, location, location.getRelative(0,  1, 0))
-				|| _getEmittedLogicValue(env, proxyLookup, true, location, location.getRelative(-1, 0, 0))
-				|| _getEmittedLogicValue(env, proxyLookup, true, location, location.getRelative( 1, 0, 0))
+				|| _getEmittedLogicValue(env, proxies, true, location, location.getRelative(0, 0, -1))
+				|| _getEmittedLogicValue(env, proxies, true, location, location.getRelative(0, 0,  1))
+				|| _getEmittedLogicValue(env, proxies, true, location, location.getRelative(0, -1, 0))
+				|| _getEmittedLogicValue(env, proxies, true, location, location.getRelative(0,  1, 0))
+				|| _getEmittedLogicValue(env, proxies, true, location, location.getRelative(-1, 0, 0))
+				|| _getEmittedLogicValue(env, proxies, true, location, location.getRelative( 1, 0, 0))
 		;
 	}
 
@@ -143,29 +146,39 @@ public class LogicLayerHelpers
 	 */
 	public static boolean isEmittedLogicValueHigh(Environment env, TickProcessingContext.IBlockFetcher proxyLookup, AbsoluteLocation eventualTarget, AbsoluteLocation checkLocation)
 	{
-		return _getEmittedLogicValue(env, proxyLookup, false, eventualTarget, checkLocation);
+		BlockProxy proxy = proxyLookup.readBlock(checkLocation);
+		return (null != proxy)
+			? _getEmittedLogicValue(env, Map.of(checkLocation, proxy), false, eventualTarget, checkLocation)
+			: false
+		;
 	}
 
 
 	private static boolean _isBlockReceivingHighSignal(Environment env, TickProcessingContext.IBlockFetcher proxyLookup, AbsoluteLocation location)
 	{
 		// A block receives a high signal if there is a >0 signal in an adjacent conduit or an adjacent block is actively outputting a signal into this block.
+		Map<AbsoluteLocation, BlockProxy> proxies = _getPreloadedAdjacentBlocks(proxyLookup, location);
 		return false
-				|| _getEmittedLogicValue(env, proxyLookup, false, location, location.getRelative(0, 0, -1))
-				|| _getEmittedLogicValue(env, proxyLookup, false, location, location.getRelative(0, 0,  1))
-				|| _getEmittedLogicValue(env, proxyLookup, false, location, location.getRelative(0, -1, 0))
-				|| _getEmittedLogicValue(env, proxyLookup, false, location, location.getRelative(0,  1, 0))
-				|| _getEmittedLogicValue(env, proxyLookup, false, location, location.getRelative(-1, 0, 0))
-				|| _getEmittedLogicValue(env, proxyLookup, false, location, location.getRelative( 1, 0, 0))
+				|| _getEmittedLogicValue(env, proxies, false, location, location.getRelative(0, 0, -1))
+				|| _getEmittedLogicValue(env, proxies, false, location, location.getRelative(0, 0,  1))
+				|| _getEmittedLogicValue(env, proxies, false, location, location.getRelative(0, -1, 0))
+				|| _getEmittedLogicValue(env, proxies, false, location, location.getRelative(0,  1, 0))
+				|| _getEmittedLogicValue(env, proxies, false, location, location.getRelative(-1, 0, 0))
+				|| _getEmittedLogicValue(env, proxies, false, location, location.getRelative( 1, 0, 0))
 		;
 	}
 
-	private static boolean _getEmittedLogicValue(Environment env, TickProcessingContext.IBlockFetcher proxyLookup, boolean sourceOnly, AbsoluteLocation eventualTarget, AbsoluteLocation checkLocation)
+	private static boolean _getEmittedLogicValue(Environment env
+		, Map<AbsoluteLocation, BlockProxy> proxies
+		, boolean sourceOnly
+		, AbsoluteLocation eventualTarget
+		, AbsoluteLocation checkLocation
+	)
 	{
 		boolean isValueHigh = false;
 		
 		// First, check that we can load the proxy (might be in a different cuboid which isn't loaded).
-		BlockProxy proxy = proxyLookup.readBlock(checkLocation);
+		BlockProxy proxy = proxies.get(checkLocation);
 		if (null != proxy)
 		{
 			// Check the type:  If a conduit, just check the logic value.
@@ -195,5 +208,18 @@ public class LogicLayerHelpers
 			}
 		}
 		return isValueHigh;
+	}
+
+	private static Map<AbsoluteLocation, BlockProxy> _getPreloadedAdjacentBlocks(TickProcessingContext.IBlockFetcher proxyLookup, AbsoluteLocation location)
+	{
+		List<AbsoluteLocation> toCheck = List.of(
+			location.getRelative(0, 0, -1)
+			, location.getRelative(0, 0, 1)
+			, location.getRelative(0, -1, 0)
+			, location.getRelative(0, 1, 0)
+			, location.getRelative(-1, 0, 0)
+			, location.getRelative(1, 0, 0)
+		);
+		return proxyLookup.readBlockBatch(toCheck);
 	}
 }

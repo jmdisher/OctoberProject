@@ -1,6 +1,7 @@
 package com.jeffdisher.october.client;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -738,6 +739,21 @@ public class SpeculativeProjection
 			public BlockProxy readBlock(AbsoluteLocation location)
 			{
 				return lazyCache.apply(location);
+			}
+			@Override
+			public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
+			{
+				// TODO:  Make this call a batching mechanism in the lower level.
+				Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
+				for (AbsoluteLocation location : locations)
+				{
+					BlockProxy proxy = lazyCache.apply(location);
+					if (null != proxy)
+					{
+						completed.put(location, proxy);
+					}
+				}
+				return completed;
 			}
 		};
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {

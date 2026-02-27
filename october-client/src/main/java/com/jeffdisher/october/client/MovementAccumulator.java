@@ -1,5 +1,6 @@
 package com.jeffdisher.october.client;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -91,6 +92,25 @@ public class MovementAccumulator
 		_proxyLookup = new TickProcessingContext.IBlockFetcher() {
 			@Override
 			public BlockProxy readBlock(AbsoluteLocation location)
+			{
+				return _readOneBlock(location);
+			}
+			@Override
+			public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
+			{
+				// TODO:  Make this call a batching mechanism in the lower level.
+				Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
+				for (AbsoluteLocation location : locations)
+				{
+					BlockProxy proxy = _readOneBlock(location);
+					if (null != proxy)
+					{
+						completed.put(location, proxy);
+					}
+				}
+				return completed;
+			}
+			private BlockProxy _readOneBlock(AbsoluteLocation location)
 			{
 				BlockProxy proxy = _proxyCache.get(location);
 				if (null == proxy)
