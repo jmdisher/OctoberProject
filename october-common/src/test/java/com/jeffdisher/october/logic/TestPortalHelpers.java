@@ -83,9 +83,9 @@ public class TestPortalHelpers
 		cuboid.setData15(AspectRegistry.BLOCK, surfaceBase.getBlockAddress(), PORTAL_SURFACE.item().number());
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return BlockProxy.load(location.getBlockAddress(), cuboid);
-			}, null, null)
+			}), null, null)
 			.finish()
 		;
 		
@@ -108,9 +108,9 @@ public class TestPortalHelpers
 		Set<AbsoluteLocation> nextLocations = new HashSet<>();
 		Set<AbsoluteLocation> futureLocations = new HashSet<>();
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return BlockProxy.load(location.getBlockAddress(), cuboid);
-			}, null, null)
+			}), null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)
@@ -152,9 +152,9 @@ public class TestPortalHelpers
 		
 		Set<AbsoluteLocation> nextLocations = new HashSet<>();
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return BlockProxy.load(location.getBlockAddress(), cuboid);
-			}, null, null)
+			}), null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)
@@ -191,9 +191,9 @@ public class TestPortalHelpers
 		
 		Set<AbsoluteLocation> nextLocations = new HashSet<>();
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return location.getCuboidAddress().equals(cuboidAddress) ? BlockProxy.load(location.getBlockAddress(), cuboid) : null;
-			}, null, null)
+			}), null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)

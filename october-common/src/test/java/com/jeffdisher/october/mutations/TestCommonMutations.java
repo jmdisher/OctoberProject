@@ -98,12 +98,12 @@ public class TestCommonMutations
 		_Events events = new _Events();
 		List<PassiveEntity> out_passives = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation location) -> {
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 						return cuboidAddress.equals(location.getCuboidAddress())
 								? BlockProxy.load(location.getBlockAddress(), cuboid)
 								: null
 						;
-					}, null, null)
+					}), null, null)
 				.eventSink(events)
 				.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
 					long lastAliveMillis = 1000L;
@@ -257,7 +257,7 @@ public class TestCommonMutations
 		List<IMutationBlock> out_mutation = new ArrayList<>();
 		List<PassiveEntity> out_passives = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid), null, null)
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
 						public boolean next(IMutationBlock mutation)
@@ -354,7 +354,7 @@ public class TestCommonMutations
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? BlockProxy.load(location.getBlockAddress(), cuboid) : null, null, null)
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? BlockProxy.load(location.getBlockAddress(), cuboid) : null), null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
 						public boolean next(IMutationBlock mutation)
@@ -406,7 +406,7 @@ public class TestCommonMutations
 		
 		IMutationBlock[] outMutation = new IMutationBlock[1];
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? BlockProxy.load(location.getBlockAddress(), cuboid) : null, null, null)
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? BlockProxy.load(location.getBlockAddress(), cuboid) : null), null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
 						public boolean next(IMutationBlock mutation)
@@ -474,9 +474,9 @@ public class TestCommonMutations
 		
 		// First, we want to make sure that the wheat fails to grow due to darkness.
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation blockLocation) -> {
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 						return BlockProxy.load(blockLocation.getBlockAddress(), cuboid);
-					}, null, null)
+					}), null, null)
 				.skyLight((AbsoluteLocation blockLocation) -> (byte)0)
 				.sinks(new TickProcessingContext.IMutationSink() {
 							@Override
@@ -528,9 +528,9 @@ public class TestCommonMutations
 		
 		// First, we want to make sure that the wheat fails to grow due to darkness.
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation blockLocation) -> {
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 						return BlockProxy.load(blockLocation.getBlockAddress(), cuboid);
-					}, null, null)
+					}), null, null)
 				.skyLight((AbsoluteLocation blockLocation) -> (byte)0)
 				.fixedRandom(1)
 				.finish()
@@ -573,9 +573,9 @@ public class TestCommonMutations
 		
 		// First, we want to make sure that the wheat fails to grow due to darkness.
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation blockLocation) -> {
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 						return BlockProxy.load(blockLocation.getBlockAddress(), cuboid);
-					}, null, null)
+					}), null, null)
 				.skyLight((AbsoluteLocation blockLocation) -> (byte)0)
 				.fixedRandom(1)
 				.finish()
@@ -602,7 +602,7 @@ public class TestCommonMutations
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress(), inv);
 		MutationBlockFurnaceCraft[] holder = new MutationBlockFurnaceCraft[1];
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid), null, null)
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
 						public boolean next(IMutationBlock mutation)
@@ -672,9 +672,9 @@ public class TestCommonMutations
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(1L)
 				.millisPerTick(20L)
-				.lookups((AbsoluteLocation location) -> {
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 					return BlockProxy.load(location.getBlockAddress(), cuboid);
-				}, null, null)
+				}), null, null)
 				.eventSink(new _Events())
 				.finish();
 		
@@ -690,9 +690,9 @@ public class TestCommonMutations
 		context = ContextBuilder.build()
 				.tick(50L)
 				.millisPerTick(20L)
-				.lookups((AbsoluteLocation location) -> {
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 					return BlockProxy.load(location.getBlockAddress(), cuboid);
-				}, null, null)
+				}), null, null)
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 					@Override
 					public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
@@ -785,9 +785,9 @@ public class TestCommonMutations
 		// First, we want to make sure that the wheat fails to grow due to darkness.
 		IMutationBlock[] out_mutation = new IMutationBlock[1];
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation blockLocation) -> {
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 						return BlockProxy.load(blockLocation.getBlockAddress(), cuboid);
-					}, null, null)
+					}), null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 					@Override
 					public boolean next(IMutationBlock mutation)
@@ -838,7 +838,7 @@ public class TestCommonMutations
 		List<PassiveEntity> out_passives = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
 				.fixedRandom(0)
-				.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid), null, null)
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
 						public boolean next(IMutationBlock mutation)
@@ -918,9 +918,9 @@ public class TestCommonMutations
 		MutationBlockStartFire[] out_startFire = new MutationBlockStartFire[1];
 		MutationBlockBurnDown[] out_burnDown = new MutationBlockBurnDown[1];
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation location) -> {
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 					return BlockProxy.load(location.getBlockAddress(), cuboid);
-				}, null, null)
+				}), null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 					@Override
 					public boolean next(IMutationBlock mutation)
@@ -1016,9 +1016,9 @@ public class TestCommonMutations
 		
 		// Create the context we want to use.
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation location) -> {
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 					return BlockProxy.load(location.getBlockAddress(), cuboid);
-				}, null, null)
+				}), null, null)
 				.finish()
 		;
 		
@@ -1086,7 +1086,7 @@ public class TestCommonMutations
 		// Create the context.
 		List<IMutationBlock> out_mutations = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid), null, null)
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 					@Override
 					public boolean next(IMutationBlock mutation)
@@ -1158,7 +1158,7 @@ public class TestCommonMutations
 		
 		MutationBlockGrowGroundCover[] out_mutations = new MutationBlockGrowGroundCover[1];
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid), null, null)
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 					@Override
 					public boolean next(IMutationBlock mutation)
@@ -1255,9 +1255,9 @@ public class TestCommonMutations
 		
 		// Just run the operation, basically.
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation blockLocation) -> {
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 						return BlockProxy.load(blockLocation.getBlockAddress(), cuboid);
-					}, null, null)
+					}), null, null)
 				.finish()
 		;
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
@@ -1284,9 +1284,9 @@ public class TestCommonMutations
 		
 		List<PassiveEntity> out_passives = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation blockLocation) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 				return BlockProxy.load(blockLocation.getBlockAddress(), cuboid);
-			}, null, null)
+			}), null, null)
 			.eventSink(new TickProcessingContext.IEventSink() {
 				@Override
 				public void post(EventRecord event)
@@ -1334,9 +1334,9 @@ public class TestCommonMutations
 		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), pedestalBlock.item().number());
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation blockLocation) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 				return BlockProxy.load(blockLocation.getBlockAddress(), cuboid);
-			}, null, null)
+			}), null, null)
 			.finish()
 		;
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
@@ -1377,9 +1377,9 @@ public class TestCommonMutations
 		}
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation blockLocation) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 				return BlockProxy.load(blockLocation.getBlockAddress(), cuboid);
-			}, null, null)
+			}), null, null)
 			.eventSink(new TickProcessingContext.IEventSink() {
 				@Override
 				public void post(EventRecord event)
@@ -1446,9 +1446,9 @@ public class TestCommonMutations
 		
 		Set<AbsoluteLocation> replaceLocations = new HashSet<>();
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation blockLocation) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 				return BlockProxy.load(blockLocation.getBlockAddress(), cuboid);
-			}, null, null)
+			}), null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)
@@ -1514,9 +1514,9 @@ public class TestCommonMutations
 		cuboid.setData15(AspectRegistry.BLOCK, keystoneLocation.getBlockAddress(), portalBlock.item().number());
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation blockLocation) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 				return BlockProxy.load(blockLocation.getBlockAddress(), cuboid);
-			}, null, null)
+			}), null, null)
 			.finish()
 		;
 		
@@ -1570,9 +1570,9 @@ public class TestCommonMutations
 		Set<AbsoluteLocation> nextLocations = new HashSet<>();
 		Set<AbsoluteLocation> futureLocations = new HashSet<>();
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation blockLocation) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 				return BlockProxy.load(blockLocation.getBlockAddress(), cuboid);
-			}, null, null)
+			}), null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)
@@ -1680,9 +1680,9 @@ public class TestCommonMutations
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation blockLocation) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 				return BlockProxy.load(blockLocation.getBlockAddress(), cuboid);
-			}, null, null)
+			}), null, null)
 			.finish()
 		;
 		
@@ -1713,7 +1713,7 @@ public class TestCommonMutations
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), STONE);
 		PassiveEntity[] out_passive = new PassiveEntity[1];
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid), null, null)
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
 			.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
 				Assert.assertNull(out_passive[0]);
 				out_passive[0] = new PassiveEntity(1
@@ -1756,13 +1756,13 @@ public class TestCommonMutations
 		stoneCuboid.setData15(AspectRegistry.BLOCK, plantLocation.getBlockAddress(), wheat.item().number());
 		List<PassiveEntity> out_passive = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				CuboidData cuboid = airCuboid.getCuboidAddress().equals(location.getCuboidAddress())
 					? airCuboid
 					: stoneCuboid
 				;
 				return BlockProxy.load(location.getBlockAddress(), cuboid);
-			}, null, null)
+			}), null, null)
 			.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
 				PassiveEntity passive = new PassiveEntity(1
 					, type
@@ -1831,7 +1831,7 @@ public class TestCommonMutations
 		MutationBlockApplyGravity[] out_mutation = new MutationBlockApplyGravity[1];
 		PassiveEntity[] out_passive = new PassiveEntity[1];
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid), null, null)
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)
@@ -1897,7 +1897,7 @@ public class TestCommonMutations
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
 		MutationBlockApplyGravity[] out_mutation = new MutationBlockApplyGravity[1];
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid), null, null)
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)
@@ -1973,7 +1973,7 @@ public class TestCommonMutations
 		List<IMutationBlock> futureOut = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(200L)
-			.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid), null, null)
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)
@@ -2097,7 +2097,7 @@ public class TestCommonMutations
 		PassiveEntity[] out = new PassiveEntity[1];
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(200L)
-			.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid), null, null)
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)
@@ -2195,7 +2195,7 @@ public class TestCommonMutations
 		EntityActionStoreToInventory[] out_change = new EntityActionStoreToInventory[1];
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(200L)
-			.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid), null, null)
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
 			.sinks(null, new TickProcessingContext.IChangeSink() {
 				@Override
 				public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
@@ -2277,9 +2277,9 @@ public class TestCommonMutations
 		public TickProcessingContext createBoundContext(CuboidData cuboid)
 		{
 			return ContextBuilder.build()
-					.lookups((AbsoluteLocation blockLocation) -> {
+					.lookups(ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 							return BlockProxy.load(blockLocation.getBlockAddress(), cuboid);
-						}, null, null)
+						}), null, null)
 					.sinks(new TickProcessingContext.IMutationSink() {
 							@Override
 							public boolean next(IMutationBlock mutation)

@@ -23,6 +23,7 @@ import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
@@ -65,7 +66,7 @@ public class TestPropagationHelpers
 					}
 					return proxy;
 				}
-				, (AbsoluteLocation location) -> {
+				, ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 					BlockProxy proxy = lazyGlobalCache.get(location);
 					if (null == proxy)
 					{
@@ -73,7 +74,7 @@ public class TestPropagationHelpers
 						lazyGlobalCache.put(location, proxy);
 					}
 					return proxy;
-				}
+				})
 		);
 		
 		// Check the updated proxies for light levels.
@@ -140,7 +141,7 @@ public class TestPropagationHelpers
 				}
 				return proxy;
 			}
-			, (AbsoluteLocation location) -> {
+			, ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				BlockProxy proxy = lazyGlobalCache.get(location);
 				if (null == proxy)
 				{
@@ -148,7 +149,7 @@ public class TestPropagationHelpers
 					lazyGlobalCache.put(location, proxy);
 				}
 				return proxy;
-			}
+			})
 		);
 		
 		// Verify we only tried looking at these 12 blocks but didn't change anything (no wires).
@@ -214,7 +215,7 @@ public class TestPropagationHelpers
 				}
 				return proxy;
 			}
-			, (AbsoluteLocation location) -> {
+			, ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				BlockProxy proxy = lazyGlobalCache.get(location);
 				if (null == proxy)
 				{
@@ -222,7 +223,7 @@ public class TestPropagationHelpers
 					lazyGlobalCache.put(location, proxy);
 				}
 				return proxy;
-			}
+			})
 		);
 		
 		// We only expect the write-back for the wire to actually change anything.
@@ -279,7 +280,7 @@ public class TestPropagationHelpers
 				}
 				return proxy;
 			}
-			, (AbsoluteLocation location) -> {
+			, ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				BlockProxy proxy = lazyGlobalCache.get(location);
 				if (null == proxy)
 				{
@@ -287,7 +288,7 @@ public class TestPropagationHelpers
 					lazyGlobalCache.put(location, proxy);
 				}
 				return proxy;
-			}
+			})
 		);
 		
 		// Write-back the proxy changes - for the logic write-backs.
@@ -477,7 +478,7 @@ public class TestPropagationHelpers
 					}
 					return proxy;
 				}
-				, (AbsoluteLocation location) -> {
+				, ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 					BlockProxy proxy = lazyGlobalCache.get(location);
 					if (null == proxy)
 					{
@@ -485,7 +486,7 @@ public class TestPropagationHelpers
 						lazyGlobalCache.put(location, proxy);
 					}
 					return proxy;
-				}
+				})
 		);
 		
 		// See that these have changed to all be dark.

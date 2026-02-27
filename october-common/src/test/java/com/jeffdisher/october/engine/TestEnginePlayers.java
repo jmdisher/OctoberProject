@@ -68,12 +68,12 @@ public class TestEnginePlayers
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
 					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
-			}, null, null)
+			}), null, null)
 			.eventSink(events)
 			.finish()
 		;

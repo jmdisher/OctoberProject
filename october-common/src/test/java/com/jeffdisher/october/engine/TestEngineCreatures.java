@@ -122,7 +122,7 @@ public class TestEngineCreatures
 		List<PassiveEntity> out_passives = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
-				.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), fakeCuboid), null, null)
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), fakeCuboid)), null, null)
 				.sinks(new IMutationSink() {
 					@Override
 					public boolean next(IMutationBlock mutation)
@@ -737,12 +737,12 @@ public class TestEngineCreatures
 			);
 			TickProcessingContext context = ContextBuilder.build()
 					.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
-					.lookups((AbsoluteLocation location) -> {
+					.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 							return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
 								? BlockProxy.load(location.getBlockAddress(), cuboid)
 								: null
 							;
-						}, (Integer id) -> minimalEntitiesById.get(id), null)
+						}), (Integer id) -> minimalEntitiesById.get(id), null)
 					// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 					.fixedRandom(1)
 					.finish()
@@ -789,12 +789,12 @@ public class TestEngineCreatures
 		{
 			TickProcessingContext context = ContextBuilder.build()
 					.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
-					.lookups((AbsoluteLocation location) -> {
+					.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 							return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
 								? BlockProxy.load(location.getBlockAddress(), cuboid)
 								: null
 							;
-						}, null, null)
+						}), null, null)
 					// We return a fixed "0" for the random generator to make sure that we select a reasonable plan for all tests.
 					.fixedRandom(0)
 					.finish()
@@ -840,12 +840,12 @@ public class TestEngineCreatures
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
-				.lookups((AbsoluteLocation location) -> {
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 						return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
 							? BlockProxy.load(location.getBlockAddress(), cuboid)
 							: null
 						;
-					}, null, null)
+					}), null, null)
 				.eventSink(events)
 				.finish()
 		;
@@ -882,12 +882,12 @@ public class TestEngineCreatures
 		
 		Entity[] indirect = new Entity[] { target };
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
 					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
-			}, (Integer id) -> {
+			}), (Integer id) -> {
 				return MinimalEntity.fromEntity(indirect[0]);
 			}, null)
 			.finish()
@@ -933,12 +933,12 @@ public class TestEngineCreatures
 		Object[] out = new Object[1];
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(NudgeHelpers.CREATURE_NUDGE_TICK_FREQUENCY - Math.abs(cow2.id()))
-				.lookups((AbsoluteLocation location) -> {
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 					return ((short)-1 == location.z())
 						? BlockProxy.load(location.getBlockAddress(), stoneCuboid)
 						: BlockProxy.load(location.getBlockAddress(), airCuboid)
 					;
-				} , null, null)
+				}), null, null)
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 					@Override
 					public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
@@ -1008,12 +1008,12 @@ public class TestEngineCreatures
 		long tickNumber = 1L;
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(tickNumber)
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return cuboid.getCuboidAddress().equals(location.getCuboidAddress())
 					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
-			} , null, null)
+			}), null, null)
 			.finish()
 		;
 		EntityCollection entityCollection = EntityCollection.emptyCollection();
@@ -1039,7 +1039,7 @@ public class TestEngineCreatures
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
 			.fixedRandom(0)
-			.lookups((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), airCuboid), null, null)
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), airCuboid)), null, null)
 			.eventSink(events)
 			.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
 				Assert.assertNull(out[0]);
@@ -1094,12 +1094,12 @@ public class TestEngineCreatures
 		config.difficulty = difficulty;
 		TickProcessingContext context = ContextBuilder.build()
 				.tick((CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick) + 1L)
-				.lookups((AbsoluteLocation location) -> {
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 						return ((short)-1 == location.z())
 							? BlockProxy.load(location.getBlockAddress(), stoneCuboid)
 							: BlockProxy.load(location.getBlockAddress(), airCuboid)
 						;
-					} , null, null)
+					}), null, null)
 				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 				.fixedRandom(1)
 				.eventSink(events)
@@ -1114,12 +1114,12 @@ public class TestEngineCreatures
 		long millisPerTick = 100L;
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
-				.lookups((AbsoluteLocation location) -> {
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 					return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
 							? BlockProxy.load(location.getBlockAddress(), cuboid)
 							: null
 						;
-					} , null, null)
+					}), null, null)
 				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 				.fixedRandom(1)
 				.finish()

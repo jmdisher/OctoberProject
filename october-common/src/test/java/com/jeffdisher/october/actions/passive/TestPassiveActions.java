@@ -246,12 +246,12 @@ public class TestPassiveActions
 		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(), Map.of(creature.id(), creature));
 		_CreatureArrowCatcher catcher = new _CreatureArrowCatcher(creature.id());
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation l) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
 				return (l.getCuboidAddress().equals(cuboid.getCuboidAddress()))
 						? BlockProxy.load(l.getBlockAddress(), cuboid)
 						: null
 				;
-			}, null, null)
+			}), null, null)
 			.sinks(null, catcher)
 			.tick(1L)
 			.finish()
@@ -278,12 +278,12 @@ public class TestPassiveActions
 		cuboid.setData15(AspectRegistry.BLOCK, location.getBlockLocation().getRelative(1, 0, 0).getBlockAddress(), STONE_ITEM.number());
 		PassiveEntity[] out = new PassiveEntity[1];
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation l) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
 				return (l.getCuboidAddress().equals(cuboid.getCuboidAddress()))
 						? BlockProxy.load(l.getBlockAddress(), cuboid)
 						: null
 				;
-			}, null, null)
+			}), null, null)
 			.passive((PassiveType type, EntityLocation l, EntityLocation v, Object extendedData) -> {
 				Assert.assertNull(out[0]);
 				out[0] = new PassiveEntity(2
@@ -334,12 +334,12 @@ public class TestPassiveActions
 		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(), Map.of(creature.id(), creature));
 		_CreatureArrowCatcher catcher = new _CreatureArrowCatcher(creature.id());
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation l) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
 				return (l.getCuboidAddress().equals(cuboid.getCuboidAddress()))
 						? BlockProxy.load(l.getBlockAddress(), cuboid)
 						: null
 				;
-			}, null, null)
+			}), null, null)
 			.sinks(null, catcher)
 			.tick(1L)
 			.fixedRandom(0)
@@ -367,12 +367,12 @@ public class TestPassiveActions
 		PassiveEntity[] out = new PassiveEntity[1];
 		TickProcessingContext context = ContextBuilder.build()
 			.millisPerTick(50L)
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
 					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
-			}, null, null)
+			}), null, null)
 			.passive((PassiveType type, EntityLocation l, EntityLocation v, Object extendedData) -> {
 				Assert.assertNull(out[0]);
 				out[0] = new PassiveEntity(2
@@ -407,12 +407,12 @@ public class TestPassiveActions
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(startLocation.getBlockLocation().getCuboidAddress(), waterSource);
 		TickProcessingContext context = ContextBuilder.build()
 			.millisPerTick(50L)
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
 					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
-			}, null, null)
+			}), null, null)
 			.finish()
 		;
 		
@@ -435,12 +435,12 @@ public class TestPassiveActions
 		PassiveEntity[] out = new PassiveEntity[1];
 		TickProcessingContext context = ContextBuilder.build()
 			.millisPerTick(50L)
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
 					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
-			}, null, null)
+			}), null, null)
 			.passive((PassiveType type, EntityLocation l, EntityLocation v, Object extendedData) -> {
 				Assert.assertNull(out[0]);
 				out[0] = new PassiveEntity(2
@@ -470,12 +470,12 @@ public class TestPassiveActions
 	private static TickProcessingContext _createSingleCuboidContext(CuboidData cuboid, long tickNumber)
 	{
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
 						? BlockProxy.load(location.getBlockAddress(), cuboid)
 						: null
 				;
-			}, null, null)
+			}), null, null)
 			.tick(tickNumber)
 			.finish()
 		;

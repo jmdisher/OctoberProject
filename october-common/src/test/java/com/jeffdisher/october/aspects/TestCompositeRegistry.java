@@ -57,9 +57,9 @@ public class TestCompositeRegistry
 		cuboid.setData15(AspectRegistry.BLOCK, onLamp.getRelative(0, 0, -1).getBlockAddress(), VOID_STONE.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, offLamp.getBlockAddress(), VOID_LAMP.item().number());
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return BlockProxy.load(location.getBlockAddress(), cuboid);
-			}, null, null)
+			}), null, null)
 			.finish()
 		;
 		MutableBlockProxy onProxy = new MutableBlockProxy(onLamp, cuboid);
@@ -90,9 +90,9 @@ public class TestCompositeRegistry
 		}
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return BlockProxy.load(location.getBlockAddress(), cuboid);
-			}, null, null)
+			}), null, null)
 			.finish()
 		;
 		MutableBlockProxy onProxy = new MutableBlockProxy(centre, cuboid);
@@ -134,9 +134,9 @@ public class TestCompositeRegistry
 		}
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return BlockProxy.load(location.getBlockAddress(), cuboid);
-			}, null, null)
+			}), null, null)
 			.finish()
 		;
 		MutableBlockProxy onProxy = new MutableBlockProxy(centre, cuboid);
@@ -156,9 +156,9 @@ public class TestCompositeRegistry
 		cuboid.setData15(AspectRegistry.BLOCK, centre.getBlockAddress(), ENCHATING_TABLE.item().number());
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return BlockProxy.load(location.getBlockAddress(), cuboid);
-			}, null, null)
+			}), null, null)
 			.finish()
 		;
 		

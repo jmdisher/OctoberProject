@@ -114,13 +114,13 @@ public class TestEngineSpawner
 		WorldConfig config = new WorldConfig();
 		config.difficulty = Difficulty.PEACEFUL;
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation location) -> {
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 						IReadOnlyCuboidData oneCuboid = completedCuboids.get(location.getCuboidAddress());
 						return (null != oneCuboid)
 								? BlockProxy.load(location.getBlockAddress(), oneCuboid)
 								: null
 						;
-					}, null, null)
+					}), null, null)
 				.boundedRandom(randomValue)
 				.config(config)
 				.finish()
@@ -269,13 +269,13 @@ public class TestEngineSpawner
 		};
 		ContextBuilder builder = ContextBuilder.build()
 			.tick(gameTick)
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				IReadOnlyCuboidData cuboid = completedCuboids.get(location.getCuboidAddress());
 				return (null != cuboid)
 					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
-			}, null, null)
+			}), null, null)
 			.spawner(spawner)
 		;
 		
@@ -352,13 +352,13 @@ public class TestEngineSpawner
 		};
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(gameTick)
-				.lookups((AbsoluteLocation location) -> {
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 						IReadOnlyCuboidData cuboid = world.get(location.getCuboidAddress());
 						return (null != cuboid)
 								? BlockProxy.load(location.getBlockAddress(), cuboid)
 								: null
 						;
-					}, null, null)
+					}), null, null)
 				.spawner(spawner)
 				.boundedRandom(randomValue)
 				.finish()

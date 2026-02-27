@@ -391,10 +391,10 @@ public class TestEnchantingBlockSupport
 		};
 		EventRecord[] out_events = new EventRecord[1];
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation blockLocation) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 				Assert.assertEquals(cuboid.getCuboidAddress(), blockLocation.getCuboidAddress());
 				return BlockProxy.load(blockLocation.getBlockAddress(), cuboid);
-			}, null, null)
+			}), null, null)
 			.passive(spawner)
 			.eventSink((EventRecord event) -> {
 				Assert.assertNull(out_events[0]);
@@ -470,7 +470,7 @@ public class TestEnchantingBlockSupport
 	{
 		WorldConfig config = new WorldConfig();
 		return new TickProcessingContext(1L
-			, (AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)
+			, ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid))
 			, null
 			, null
 			, null

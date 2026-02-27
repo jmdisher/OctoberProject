@@ -165,12 +165,12 @@ public class TestCreatureLogic
 		// Even though this is only the idle timeout, we will see a plan made and that it ends above water.
 		TickProcessingContext context = ContextBuilder.build()
 				.tick((CreatureLogic.MINIMUM_MILLIS_TO_ACTION / 100L) + 1L)
-				.lookups((AbsoluteLocation location) -> {
+				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 					return location.getCuboidAddress().equals(cuboidAddress)
 							? BlockProxy.load(location.getBlockAddress(), input)
 							: null
 					;
-				}, null, null)
+				}), null, null)
 				.fixedRandom(0)
 				.finish()
 		;
@@ -892,9 +892,9 @@ public class TestCreatureLogic
 		mutable.newMovementPlan = List.of(waterLocation.getRelative(0, 0, 1), waterLocation.getRelative(-1, 0, 1));
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return BlockProxy.load(location.getBlockAddress(), input);
-			}, null, null)
+			}), null, null)
 			.finish()
 		;
 		
@@ -954,12 +954,12 @@ public class TestCreatureLogic
 					throw new AssertionError();
 				}
 			})
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return location.getCuboidAddress().equals(cuboidAddress)
 					? BlockProxy.load(location.getBlockAddress(), input)
 					: null
 				;
-			}, (Integer entityId) -> {
+			}), (Integer entityId) -> {
 				return creatures.containsKey(entityId)
 					? MinimalEntity.fromCreature(creatures.get(entityId))
 					: null
@@ -1199,9 +1199,9 @@ public class TestCreatureLogic
 		mutable.newMovementPlan = List.of(new AbsoluteLocation(4, 5, 1));
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return BlockProxy.load(location.getBlockAddress(), input);
-			}, null, null)
+			}), null, null)
 			.finish()
 		;
 		

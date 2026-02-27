@@ -334,12 +334,12 @@ public class TestCreatureMovementHelpers
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, WATER_SOURCE);
 		TickProcessingContext context = ContextBuilder.build()
 			.millisPerTick(50L)
-			.lookups((AbsoluteLocation l) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
 				return (l.getCuboidAddress().equals(cuboidAddress))
 					? BlockProxy.load(l.getBlockAddress(), cuboid)
 					: null
 				;
-			}, null, null)
+			}), null, null)
 			.finish()
 		;
 		boolean didApply = change.applyChange(context, mutable);
@@ -357,21 +357,21 @@ public class TestCreatureMovementHelpers
 	private static ViscosityReader _getFixedBlockReader(Block block)
 	{
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), block);
-		return new ViscosityReader(ENV, (AbsoluteLocation location) -> {
+		return new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		});
+		}));
 	}
 
 	private static ViscosityReader _getSplitBlockReader(Block positive, Block negative)
 	{
 		CuboidData high = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), positive);
 		CuboidData low = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), negative);
-		return new ViscosityReader(ENV, (AbsoluteLocation location) -> {
+		return new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 			return (location.z() >= 0)
 				? BlockProxy.load(location.getBlockAddress(), high)
 				: BlockProxy.load(location.getBlockAddress(), low)
 			;
-		});
+		}));
 	}
 
 	private static TickProcessingContext _buildLayeredContext(long millisPerTick)
@@ -380,12 +380,12 @@ public class TestCreatureMovementHelpers
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		TickProcessingContext context = ContextBuilder.build()
 			.millisPerTick(millisPerTick)
-			.lookups((AbsoluteLocation location) -> {
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return (location.getCuboidAddress().z() >= 0)
 					? BlockProxy.load(location.getBlockAddress(), airCuboid)
 					: BlockProxy.load(location.getBlockAddress(), stoneCuboid)
 				;
-			}, null, null)
+			}), null, null)
 			.finish()
 		;
 		return context;
