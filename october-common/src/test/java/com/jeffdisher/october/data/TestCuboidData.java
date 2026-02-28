@@ -1,6 +1,9 @@
 package com.jeffdisher.october.data;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -268,17 +271,60 @@ public class TestCuboidData
 		BlockAddress air = BlockAddress.fromInt(10, 9, 8);
 		short[] numbers = input.batchReadData15(AspectRegistry.BLOCK, new BlockAddress[] {
 			stone1,
-			stone4,
-			stone3,
 			stone2,
+			stone3,
 			air,
+			stone4,
 		});
 		Assert.assertArrayEquals(new short[] {
 			stoneNumber,
 			stoneNumber,
 			stoneNumber,
-			stoneNumber,
 			0,
+			stoneNumber,
 		}, numbers);
+	}
+
+	@Test
+	public void sortAddresses()
+	{
+		List<BlockAddress> list = new ArrayList<>();
+		BlockAddress address1 = BlockAddress.fromInt(1, 1, 1);
+		BlockAddress address2 = BlockAddress.fromInt(1, 2, 3);
+		BlockAddress address3 = BlockAddress.fromInt(2, 2, 2);
+		BlockAddress address4 = BlockAddress.fromInt(4, 5, 6);
+		BlockAddress address5 = BlockAddress.fromInt(7, 8, 9);
+		BlockAddress address6 = BlockAddress.fromInt(10, 11, 12);
+		
+		Assert.assertEquals(7, IReadOnlyCuboidData.getBatchSortOrder(address1));
+		Assert.assertEquals(29, IReadOnlyCuboidData.getBatchSortOrder(address2));
+		Assert.assertEquals(56, IReadOnlyCuboidData.getBatchSortOrder(address3));
+		Assert.assertEquals(458, IReadOnlyCuboidData.getBatchSortOrder(address4));
+		Assert.assertEquals(1829, IReadOnlyCuboidData.getBatchSortOrder(address5));
+		Assert.assertEquals(3698, IReadOnlyCuboidData.getBatchSortOrder(address6));
+		
+		list.add(address2);
+		list.add(address1);
+		list.add(address3);
+		list.add(address4);
+		list.add(address5);
+		list.add(address1);
+		list.add(address6);
+		list.add(address3);
+		list.add(address4);
+		
+		// Note that duplicates aren't allowed when making a batch read so this is just to show how the sorting works.
+		BlockAddress[] sorted = list.toArray((int size) -> new BlockAddress[size]);
+		Arrays.sort(sorted, new IReadOnlyCuboidData.BlockAddressBatchComparator());
+		Assert.assertEquals(9, sorted.length);
+		Assert.assertEquals(address1, sorted[0]);
+		Assert.assertEquals(address1, sorted[1]);
+		Assert.assertEquals(address2, sorted[2]);
+		Assert.assertEquals(address3, sorted[3]);
+		Assert.assertEquals(address3, sorted[4]);
+		Assert.assertEquals(address4, sorted[5]);
+		Assert.assertEquals(address4, sorted[6]);
+		Assert.assertEquals(address5, sorted[7]);
+		Assert.assertEquals(address6, sorted[8]);
 	}
 }

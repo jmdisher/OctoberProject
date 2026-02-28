@@ -383,6 +383,15 @@ public class OctreeShort implements IOctree<Short>
 		short[] outData = (short[]) arrayType;
 		if (null != _topLevelTrees)
 		{
+			// We will assert that the inputs are in sorted order and without duplicates (the algorithm assumes this is true).
+			int lastSort = -1;
+			for (BlockAddress address : addresses)
+			{
+				int thisSort = IReadOnlyCuboidData.getBatchSortOrder(address);
+				Assert.assertTrue(thisSort > lastSort);
+				lastSort = thisSort;
+			}
+			
 			for (int i = 0; i < addresses.length; ++i)
 			{
 				BlockAddress address = addresses[i];
