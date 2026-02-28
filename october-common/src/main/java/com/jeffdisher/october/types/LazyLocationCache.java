@@ -27,6 +27,37 @@ public class LazyLocationCache<T> implements Function<AbsoluteLocation, T>
 		_isValid = true;
 	}
 
+	/**
+	 * Checks if this location is already known to the receiver, either as a hit or a miss.
+	 * 
+	 * @param location The location to check.
+	 * @return True if this location is in the cache or recorded as a miss.
+	 */
+	public boolean contains(AbsoluteLocation location)
+	{
+		return _cache.containsKey(location) || _misses.contains(location);
+	}
+
+	/**
+	 * Explicitly adds an element to the cache or miss tracker from outside.
+	 * 
+	 * @param location The location to set.
+	 * @param elt Added to the cache or set as a miss, if null.
+	 */
+	public void add(AbsoluteLocation location, T elt)
+	{
+		Assert.assertTrue(_isValid);
+		
+		if (null != elt)
+		{
+			_cache.put(location, elt);
+		}
+		else
+		{
+			_misses.add(location);
+		}
+	}
+
 	@Override
 	public T apply(AbsoluteLocation location)
 	{
