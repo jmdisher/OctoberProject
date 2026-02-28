@@ -1,6 +1,7 @@
 package com.jeffdisher.october.data;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -100,6 +101,27 @@ public class TestOctreeBlock
 		}
 		endStore = System.currentTimeMillis();
 		System.out.println("Load total took " + (endStore -startStore) + " millis");
+		
+		// Check the cost of the batch read.
+		BlockAddress[] array = new BlockAddress[32 * 32 * 32];
+		int index = 0;
+		for (byte x = 0; x < 32; ++x)
+		{
+			for (byte y = 0; y < 32; ++y)
+			{
+				for (byte z = 0; z < 32; ++z)
+				{
+					array[index] = BlockAddress.fromInt(x, y, z);
+					index += 1;
+				}
+			}
+		}
+		Arrays.sort(array, new IReadOnlyCuboidData.BlockAddressBatchComparator());
+		short[] shorts = new short[32 * 32 * 32];
+		startStore = System.currentTimeMillis();
+		verify.readBatch(shorts, array);
+		endStore = System.currentTimeMillis();
+		System.out.println("Full batch load total took " + (endStore -startStore) + " millis");
 		
 		// Clear all the bytes.
 		startStore = System.currentTimeMillis();

@@ -392,16 +392,25 @@ public class OctreeShort implements IOctree<Short>
 				lastSort = thisSort;
 			}
 			
-			for (int i = 0; i < addresses.length; ++i)
+			_BatchState state = new _BatchState(addresses, outData);
+			while (state.hasWork())
 			{
-				BlockAddress address = addresses[i];
+				BlockAddress address = state.currentInput();
 				byte x = address.x();
 				byte y = address.y();
 				byte z = address.z();
-				byte[] data = _topLevelTrees[_getTopLevelIndex(x, y, z)];
-				// Half of 32 (the base size) is 16.
+				int treeIndex = _getTopLevelIndex(x, y, z);
+				
+				byte[] data = _topLevelTrees[treeIndex];
 				byte half = 16;
-				outData[i] = _findValue(ByteBuffer.wrap(data), (byte)(x & ~half), (byte)(y & ~half), (byte)(z & ~half), (byte)(half >> 1));
+				_level(ByteBuffer.wrap(data)
+					, state
+					, treeIndex
+					, (byte)(x & half)
+					, (byte)(y & half)
+					, (byte)(z & half)
+					, half
+				);
 			}
 		}
 		else
@@ -689,6 +698,116 @@ public class OctreeShort implements IOctree<Short>
 		}
 	}
 
+	private static void _level(ByteBuffer buffer
+		, _BatchState state
+		, int treeIndex
+		, byte baseX
+		, byte baseY
+		, byte baseZ
+		, byte size
+	)
+	{
+		short oldValue = _loadHeader(buffer);
+		byte edgeX = (byte)(baseX + size);
+		byte edgeY = (byte)(baseY + size);
+		byte edgeZ = (byte)(baseZ + size);
+		int treesSkippedInLevel = 0;
+		
+		boolean continueLoop = true;
+		while (continueLoop)
+		{
+			if (state.hasWork())
+			{
+				BlockAddress blockAddress = state.currentInput();
+				int newTreeIndex = _getTopLevelIndex(blockAddress.x(), blockAddress.y(), blockAddress.z());
+				if (newTreeIndex == treeIndex)
+				{
+					// We are continuing in this tree so see if it is the current sub-tree.
+					byte thisX = blockAddress.x();
+					byte thisY = blockAddress.y();
+					byte thisZ = blockAddress.z();
+					if ((thisX >= baseX) && (thisX < edgeX) && (thisY >= baseY) && (thisY < edgeY) && (thisZ >= baseZ) && (thisZ < edgeZ))
+					{
+						if (oldValue >= 0)
+						{
+							// This is the entire sub-tree so just return it.
+							state.completeAndAdvance(oldValue);
+							treesSkippedInLevel = 8;
+						}
+						else if (size > 1)
+						{
+							// Otherwise, we need to dig into the 8 sub-trees.
+							// Due to the way the octree is represented, we must walk all subtrees "before" the one where we are finding the element.
+							// The order of the sub-trees is a 3-level nested loop:  x is outer-most, y is middle, and z is inner-most.
+							byte half = (byte)(size >> 1);
+							int targetX = ((thisX - baseX) < half) ? 0 : 1;
+							int targetY = ((thisY - baseY) < half) ? 0 : 1;
+							int targetZ = ((thisZ - baseZ) < half) ? 0 : 1;
+							int treesToSkipAtThisLevel = (targetX * 4) + (targetY * 2) + targetZ;
+							
+							int subTreesToPass = treesToSkipAtThisLevel - treesSkippedInLevel;
+							Assert.assertTrue(subTreesToPass >= 0);
+							while (subTreesToPass > 0)
+							{
+								short oneCheck = _loadHeader(buffer);
+								subTreesToPass -= 1;
+								if (oneCheck < 0)
+								{
+									// This is a subtree marker so 8 more reads.
+									subTreesToPass += 8;
+								}
+							}
+							treesSkippedInLevel = treesToSkipAtThisLevel;
+							
+							_level(buffer
+								, state
+								, treeIndex
+								, (byte)(baseX + (thisX & half))
+								, (byte)(baseY + (thisY & half))
+								, (byte)(baseZ + (thisZ & half))
+								, half
+							);
+							treesSkippedInLevel += 1;
+						}
+						else
+						{
+							// This means that we fell off the tree, somehow, which would be a static error.
+							throw Assert.unreachable();
+						}
+					}
+					else
+					{
+						// This is in another sub-tree so we are done with this one.
+						continueLoop = false;
+						
+						// Skip past the rest of the sub-trees at this level since we will be resuming after them.
+						int subTreesToPass = 8 - treesSkippedInLevel;
+						while (subTreesToPass > 0)
+						{
+							short oneCheck = _loadHeader(buffer);
+							subTreesToPass -= 1;
+							if (oneCheck < 0)
+							{
+								// This is a subtree marker so 8 more reads.
+								subTreesToPass += 8;
+							}
+						}
+					}
+				}
+				else
+				{
+					// We can just bail out since we will be resuming on another buffer.
+					continueLoop = false;
+				}
+			}
+			else
+			{
+				// We can just bail out since we are completely done.
+				continueLoop = false;
+			}
+		}
+	}
+
 
 	private static class ShortWriter
 	{
@@ -723,6 +842,35 @@ public class OctreeShort implements IOctree<Short>
 			byte[] data = new byte[_builder.remaining()];
 			_builder.get(data);
 			return data;
+		}
+	}
+
+	private static class _BatchState
+	{
+		public BlockAddress[] inputArray;
+		public short[] resultArray;
+		public int currentIndex;
+		public _BatchState(BlockAddress[] inputArray, short[] resultArray)
+		{
+			this.inputArray = inputArray;
+			this.resultArray = resultArray;
+			this.currentIndex = 0;
+		}
+		public boolean hasWork()
+		{
+			return this.currentIndex < this.inputArray.length;
+		}
+		public BlockAddress currentInput()
+		{
+			return (this.currentIndex < this.inputArray.length)
+				? this.inputArray[this.currentIndex]
+				: null
+			;
+		}
+		public void completeAndAdvance(short output)
+		{
+			this.resultArray[this.currentIndex] = output;
+			this.currentIndex += 1;
 		}
 	}
 }
