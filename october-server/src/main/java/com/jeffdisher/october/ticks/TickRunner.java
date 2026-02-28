@@ -1,6 +1,7 @@
 package com.jeffdisher.october.ticks;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -17,6 +18,7 @@ import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidHeightMap;
@@ -418,14 +420,75 @@ public class TickRunner
 				@Override
 				public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
 				{
-					// TODO:  Make this call a batching mechanism in the lower level.
+					// We will filter by what is currently in cache, splitting the rest by cuboid for batching.
 					Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
+					Map<CuboidAddress, List<BlockAddress>> toBatch = new HashMap<>();
+					IReadOnlyCuboidData.BlockAddressBatchComparator comparator = new IReadOnlyCuboidData.BlockAddressBatchComparator();
+					
 					for (AbsoluteLocation location : locations)
 					{
-						BlockProxy proxy = cachingLoader.apply(location);
-						if (null != proxy)
+						if (cachingLoader.contains(location))
 						{
-							completed.put(location, proxy);
+							BlockProxy proxy = cachingLoader.apply(location);
+							if (null != proxy)
+							{
+								completed.put(location, proxy);
+							}
+						}
+						else
+						{
+							CuboidAddress cuboidAddress = location.getCuboidAddress();
+							if (thisTickMaterials.completedCuboids.containsKey(cuboidAddress))
+							{
+								List<BlockAddress> batch = toBatch.get(cuboidAddress);
+								if (null == batch)
+								{
+									batch = new ArrayList<>();
+									toBatch.put(cuboidAddress, batch);
+								}
+								batch.add(location.getBlockAddress());
+							}
+							else
+							{
+								// This isn't loaded so just fast-fail (no nulls stored in the returned map).
+								cachingLoader.add(location, null);
+							}
+						}
+					}
+					
+					// For the batches, we use the basic case for single-elements but the batch interface for multiple.
+					for (Map.Entry<CuboidAddress, List<BlockAddress>> req : toBatch.entrySet())
+					{
+						CuboidAddress cuboidAddress = req.getKey();
+						AbsoluteLocation base = cuboidAddress.getBase();
+						List<BlockAddress> list = req.getValue();
+						
+						if (1 == list.size())
+						{
+							AbsoluteLocation location = base.relativeForBlock(list.get(0));
+							BlockProxy proxy = cachingLoader.apply(location);
+							if (null != proxy)
+							{
+								completed.put(location, proxy);
+							}
+						}
+						else
+						{
+							BlockAddress[] array = list.toArray((int size) -> new BlockAddress[size]);
+							Arrays.sort(array, comparator);
+							
+							IReadOnlyCuboidData cuboid = thisTickMaterials.completedCuboids.get(cuboidAddress);
+							short[] blocks = cuboid.batchReadData15(AspectRegistry.BLOCK, array);
+							
+							for (int i = 0; i < array.length; ++i)
+							{
+								BlockAddress address = array[i];
+								short type = blocks[i];
+								BlockProxy proxy = BlockProxy.init(address, cuboid, type);
+								AbsoluteLocation location = base.relativeForBlock(address);
+								completed.put(location, proxy);
+								cachingLoader.add(location, proxy);
+							}
 						}
 					}
 					return completed;
