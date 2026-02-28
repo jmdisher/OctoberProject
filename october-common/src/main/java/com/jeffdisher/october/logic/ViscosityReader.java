@@ -24,17 +24,6 @@ public class ViscosityReader
 
 	public float getViscosityFraction(AbsoluteLocation location, boolean fromAbove)
 	{
-		return _getViscosity(location, fromAbove);
-	}
-
-	public float getInverseViscosity(AbsoluteLocation location, boolean fromAbove)
-	{
-		return 1.0f - _getViscosity(location, fromAbove);
-	}
-
-
-	private float _getViscosity(AbsoluteLocation location, boolean fromAbove)
-	{
 		BlockProxy proxy = _blockLookup.readBlock(location);
 		float viscosity;
 		if (null != proxy)
