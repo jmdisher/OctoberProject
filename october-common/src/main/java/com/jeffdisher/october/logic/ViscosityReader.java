@@ -1,9 +1,14 @@
 package com.jeffdisher.october.logic;
 
+import java.util.List;
+import java.util.Map;
+
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -22,19 +27,25 @@ public class ViscosityReader
 		_blockLookup = blockLookup;
 	}
 
-	public float getViscosityFraction(AbsoluteLocation location, boolean fromAbove)
+	public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
 	{
-		BlockProxy proxy = _blockLookup.readBlock(location);
+		List<AbsoluteLocation> locations = VolumeIterator.getAllInVolume(base, volume);
+		Map<AbsoluteLocation, BlockProxy> map = _blockLookup.readBlockBatch(locations);
+		
 		float viscosity;
-		if (null != proxy)
+		if (map.size() < locations.size())
 		{
-			// Find the viscosity based on block type.
-			viscosity = _env.blocks.getViscosityFraction(proxy.getBlock(), FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE), fromAbove);
+			// We were missing something so just default to saying full viscosity.
+			viscosity = 1.0f;
 		}
 		else
 		{
-			// This is missing so we will just treat it as a solid block.
-			viscosity = 1.0f;
+			viscosity = 0.0f;
+			for (BlockProxy proxy : map.values())
+			{
+				float one = _env.blocks.getViscosityFraction(proxy.getBlock(), FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE), fromAbove);
+				viscosity = Math.max(one, viscosity);
+			}
 		}
 		return viscosity;
 	}

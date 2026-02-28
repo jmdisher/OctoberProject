@@ -1,5 +1,6 @@
 package com.jeffdisher.october.logic;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
@@ -59,15 +60,23 @@ public class TestEntityMovementHelpers
 				Assert.assertTrue(cancelZ);
 			}
 			@Override
-			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
+			public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
 			{
-				int x = location.x();
-				int y = location.y();
-				int z = location.z();
-				return (((1 == x) || (2 == x))
+				List<AbsoluteLocation> locations = VolumeIterator.getAllInVolume(base, volume);
+				
+				float accumulated = 0.0f;
+				for (AbsoluteLocation location : locations)
+				{
+					int x = location.x();
+					int y = location.y();
+					int z = location.z();
+					float one = (((1 == x) || (2 == x))
 						&& ((1 == y) || (2 == y))
 						&& ((1 == z) || (2 == z))
-				) ? 0.0f : 1.0f;
+					) ? 0.0f : 1.0f;
+					accumulated = Math.max(accumulated, one);
+				}
+				return accumulated;
 			}
 		});
 	}
@@ -88,15 +97,23 @@ public class TestEntityMovementHelpers
 				Assert.assertTrue(cancelZ);
 			}
 			@Override
-			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
+			public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
 			{
-				int x = location.x();
-				int y = location.y();
-				int z = location.z();
-				return (((1 == x) || (2 == x))
+				List<AbsoluteLocation> locations = VolumeIterator.getAllInVolume(base, volume);
+				
+				float accumulated = 0.0f;
+				for (AbsoluteLocation location : locations)
+				{
+					int x = location.x();
+					int y = location.y();
+					int z = location.z();
+					float one = (((1 == x) || (2 == x))
 						&& ((1 == y) || (2 == y))
 						&& ((1 == z) || (2 == z))
-				) ? 0.0f : 1.0f;
+					) ? 0.0f : 1.0f;
+					accumulated = Math.max(accumulated, one);
+				}
+				return accumulated;
 			}
 		});
 	}
@@ -117,7 +134,7 @@ public class TestEntityMovementHelpers
 				Assert.assertFalse(cancelZ);
 			}
 			@Override
-			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
+			public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
 			{
 				return 0.0f;
 			}
@@ -176,7 +193,7 @@ public class TestEntityMovementHelpers
 				Assert.assertTrue(cancelZ);
 			}
 			@Override
-			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
+			public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
 			{
 				return 1.0f;
 			}
@@ -199,7 +216,7 @@ public class TestEntityMovementHelpers
 				Assert.assertTrue(cancelZ);
 			}
 			@Override
-			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
+			public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
 			{
 				return fromAbove ? 1.0f : 0.0f;
 			}
@@ -316,9 +333,11 @@ public class TestEntityMovementHelpers
 				Assert.assertFalse(cancelZ);
 			}
 			@Override
-			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
+			public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
 			{
-				return block.equals(location)
+				List<AbsoluteLocation> locations = VolumeIterator.getAllInVolume(base, volume);
+				
+				return locations.contains(block)
 					? 1.0f
 					: 0.0f
 				;
@@ -344,7 +363,7 @@ public class TestEntityMovementHelpers
 				Assert.assertFalse(cancelZ);
 			}
 			@Override
-			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
+			public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
 			{
 				return 0.0f;
 			}
@@ -369,12 +388,20 @@ public class TestEntityMovementHelpers
 				Assert.assertTrue(cancelZ);
 			}
 			@Override
-			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
+			public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
 			{
-				return 0 == location.z()
-					? 1.0f
-					: 0.0f
-				;
+				List<AbsoluteLocation> locations = VolumeIterator.getAllInVolume(base, volume);
+				
+				float accumulated = 0.0f;
+				for (AbsoluteLocation location : locations)
+				{
+					float one = (0 == location.z())
+						? 1.0f
+						: 0.0f
+					;
+					accumulated = Math.max(accumulated, one);
+				}
+				return accumulated;
 			}
 		});
 	}

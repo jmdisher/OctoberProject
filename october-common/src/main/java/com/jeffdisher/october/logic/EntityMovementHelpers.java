@@ -82,11 +82,9 @@ public class EntityMovementHelpers
 	 */
 	public static float maxViscosityInEntityBlocks(ViscosityReader reader, EntityLocation entityBase, EntityVolume volume)
 	{
-		IViscosityLookup helper = (AbsoluteLocation location, boolean fromAbove) -> reader.getViscosityFraction(location, fromAbove);
-		
 		// In this case, we are just check where we stand, not falling.
 		boolean fromAbove = false;
-		return _maxViscosityInEntityBlocks(entityBase, volume, helper, fromAbove);
+		return reader.getMaxViscosityInVolume(entityBase, volume, fromAbove);
 	}
 
 	/**
@@ -141,9 +139,8 @@ public class EntityMovementHelpers
 	)
 	{
 		// In this case, we are just check where we stand, not falling.
-		IViscosityLookup viscosityLookup = (AbsoluteLocation location, boolean fromAbove) -> reader.getViscosityFraction(location, fromAbove);
 		boolean fromAbove = false;
-		float startViscosity = _maxViscosityInEntityBlocks(startLocation, volume, viscosityLookup, fromAbove);
+		float startViscosity = reader.getMaxViscosityInVolume(startLocation, volume, fromAbove);
 		EntityLocation effectiveVelocity = _adjustVelocityForMovement(startVelocity, activeXMovement, activeYMovement, maxVelocityPerSecond, seconds, startViscosity);
 		
 		// Derive the effective movement vector for this action.
@@ -344,22 +341,9 @@ public class EntityMovementHelpers
 
 	private static boolean _canOccupyLocation(EntityLocation movingStart, EntityVolume volume, IViscosityLookup helper, boolean fromAbove)
 	{
-		float maxViscosity = _maxViscosityInEntityBlocks(movingStart, volume, helper, fromAbove);
+		float maxViscosity = helper.getMaxViscosityInVolume(movingStart, volume, fromAbove);
 		boolean canOccupy = (maxViscosity < 1.0f);
 		return canOccupy;
-	}
-
-	private static float _maxViscosityInEntityBlocks(EntityLocation entityBase, EntityVolume volume, IViscosityLookup helper, boolean fromAbove)
-	{
-		VolumeIterator iterator = new VolumeIterator(entityBase, volume);
-		
-		float maxViscosity = 0.0f;
-		for (AbsoluteLocation loc : iterator)
-		{
-			float viscosity = helper.getViscosityForBlockAtLocation(loc, fromAbove);
-			maxViscosity = Math.max(maxViscosity, viscosity);
-		}
-		return maxViscosity;
 	}
 
 	private static void _interactiveEntityMoveNotStuck(EntityLocation start, EntityVolume volume, EntityLocation vectorToMove, IInteractiveHelper helper, boolean failZ)
@@ -622,15 +606,16 @@ public class EntityMovementHelpers
 	public static interface IViscosityLookup
 	{
 		/**
-		 * Gets the viscosity of the block in the given location as a fraction (0.0f is no resistance while 1.0f is
+		 * Gets the maximum viscosity of all blocks in the volume rooted at base (0.0f is no resistance while 1.0f is
 		 * fully solid).
 		 * 
-		 * @param location The location to check.
+		 * @param base The base of the region to check.
+		 * @param volume The volume of the region to check.
 		 * @param fromAbove True if we are asking for viscosity while falling into the block, false for other
 		 * collisions.
 		 * @return The viscosity fraction (1.0f being solid).
 		 */
-		public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove);
+		public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove);
 	}
 
 	/**
@@ -639,16 +624,6 @@ public class EntityMovementHelpers
 	 */
 	public static interface IInteractiveHelper extends IViscosityLookup
 	{
-		/**
-		 * Gets the viscosity of the block in the given location as a fraction (0.0f is no resistance while 1.0f is
-		 * fully solid).
-		 * 
-		 * @param location The location to check.
-		 * @param fromAbove True if we are asking for viscosity while falling into the block, false for other
-		 * collisions.
-		 * @return The viscosity fraction (1.0f being solid).
-		 */
-		public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove);
 		/**
 		 * The call issued by the interactive call to return all results instead of returning some kind of tuple.
 		 * 
@@ -709,9 +684,9 @@ public class EntityMovementHelpers
 			this.result = new HighLevelMovementResult(finalLocation, velocity, isOnGround, didCollide);
 		}
 		@Override
-		public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
+		public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
 		{
-			return _reader.getViscosityFraction(location, fromAbove);
+			return _reader.getMaxViscosityInVolume(base, volume, fromAbove);
 		}
 	}
 }

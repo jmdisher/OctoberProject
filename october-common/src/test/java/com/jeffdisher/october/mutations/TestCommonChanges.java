@@ -3722,7 +3722,7 @@ public class TestCommonChanges
 		EntityLocation startLocation = mutableEntity.getLocation();
 		ViscosityReader reader = new ViscosityReader(ENV, context.previousBlockLookUp);
 		boolean fromAbove = false;
-		float inverseViscosity = 1.0f - reader.getViscosityFraction(startLocation.getBlockLocation(), fromAbove);
+		float inverseViscosity = 1.0f - reader.getMaxViscosityInVolume(startLocation, new EntityVolume(0.1f, 0.1f), fromAbove);
 		long millis = context.millisPerTick;
 		EntityLocation startVelocity = mutableEntity.getVelocityVector();
 		float newZ = _zVelocityAfterGravity(startVelocity.z(), inverseViscosity, millis);
@@ -3747,9 +3747,9 @@ public class TestCommonChanges
 				);
 			}
 			@Override
-			public float getViscosityForBlockAtLocation(AbsoluteLocation location, boolean fromAbove)
+			public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
 			{
-				return reader.getViscosityFraction(location, fromAbove);
+				return reader.getMaxViscosityInVolume(base, volume, fromAbove);
 			}
 		});
 		

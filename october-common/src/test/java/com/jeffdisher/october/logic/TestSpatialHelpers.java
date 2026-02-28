@@ -2,6 +2,7 @@ package com.jeffdisher.october.logic;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -422,18 +423,23 @@ public class TestSpatialHelpers
 			Assert.assertEquals(_isOnGround, cancelZ);
 		}
 		@Override
-		public float getViscosityForBlockAtLocation(AbsoluteLocation l, boolean fromAbove)
+		public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
 		{
-			float viscosity;
-			if (((1 == l.x()) && (1 == l.y())) || (l.z() >= 2))
+			List<AbsoluteLocation> locations = VolumeIterator.getAllInVolume(base, volume);
+			
+			float accumulated = 0.0f;
+			for (AbsoluteLocation l : locations)
 			{
-				viscosity = 0.0f;
+				if (((1 == l.x()) && (1 == l.y())) || (l.z() >= 2))
+				{
+					// This is just 0.0f.
+				}
+				else
+				{
+					accumulated = Math.max(accumulated, 1.0f);
+				}
 			}
-			else
-			{
-				viscosity = 1.0f;
-			}
-			return viscosity;
+			return accumulated;
 		}
 	}
 }
