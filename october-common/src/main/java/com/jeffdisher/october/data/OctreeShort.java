@@ -67,16 +67,7 @@ public class OctreeShort implements IOctree<Short>
 			// We aren't interested in what is in these trees, we just need to step over them so we can compute how many
 			// to pass and walk over them.
 			int subTreesToPass = (targetX * 4) + (targetY * 2) + targetZ;
-			while (subTreesToPass > 0)
-			{
-				short oneCheck = _loadHeader(buffer);
-				subTreesToPass -= 1;
-				if (oneCheck < 0)
-				{
-					// This is a subtree marker so 8 more reads.
-					subTreesToPass += 8;
-				}
-			}
+			_skipSubTrees(buffer, subTreesToPass);
 			
 			value = _findValue(buffer, (byte)(x & ~half), (byte)(y & ~half), (byte)(z & ~half), (byte)(half >> 1));
 		}
@@ -403,7 +394,7 @@ public class OctreeShort implements IOctree<Short>
 				
 				byte[] data = _topLevelTrees[treeIndex];
 				byte half = 16;
-				_level(ByteBuffer.wrap(data)
+				_readBatchInSubtreeLevel(ByteBuffer.wrap(data)
 					, state
 					, treeIndex
 					, (byte)(x & half)
@@ -698,7 +689,7 @@ public class OctreeShort implements IOctree<Short>
 		}
 	}
 
-	private static void _level(ByteBuffer buffer
+	private static void _readBatchInSubtreeLevel(ByteBuffer buffer
 		, _BatchState state
 		, int treeIndex
 		, byte baseX
@@ -719,91 +710,85 @@ public class OctreeShort implements IOctree<Short>
 			if (state.hasWork())
 			{
 				BlockAddress blockAddress = state.currentInput();
-				int newTreeIndex = _getTopLevelIndex(blockAddress.x(), blockAddress.y(), blockAddress.z());
-				if (newTreeIndex == treeIndex)
+				byte thisX = blockAddress.x();
+				byte thisY = blockAddress.y();
+				byte thisZ = blockAddress.z();
+				
+				// First, see if we should continue at this level.
+				if ((thisX >= baseX) && (thisX < edgeX) && (thisY >= baseY) && (thisY < edgeY) && (thisZ >= baseZ) && (thisZ < edgeZ))
 				{
-					// We are continuing in this tree so see if it is the current sub-tree.
-					byte thisX = blockAddress.x();
-					byte thisY = blockAddress.y();
-					byte thisZ = blockAddress.z();
-					if ((thisX >= baseX) && (thisX < edgeX) && (thisY >= baseY) && (thisY < edgeY) && (thisZ >= baseZ) && (thisZ < edgeZ))
+					if (oldValue >= 0)
 					{
-						if (oldValue >= 0)
-						{
-							// This is the entire sub-tree so just return it.
-							state.completeAndAdvance(oldValue);
-							treesSkippedInLevel = 8;
-						}
-						else if (size > 1)
-						{
-							// Otherwise, we need to dig into the 8 sub-trees.
-							// Due to the way the octree is represented, we must walk all subtrees "before" the one where we are finding the element.
-							// The order of the sub-trees is a 3-level nested loop:  x is outer-most, y is middle, and z is inner-most.
-							byte half = (byte)(size >> 1);
-							int targetX = ((thisX - baseX) < half) ? 0 : 1;
-							int targetY = ((thisY - baseY) < half) ? 0 : 1;
-							int targetZ = ((thisZ - baseZ) < half) ? 0 : 1;
-							int treesToSkipAtThisLevel = (targetX * 4) + (targetY * 2) + targetZ;
-							
-							int subTreesToPass = treesToSkipAtThisLevel - treesSkippedInLevel;
-							Assert.assertTrue(subTreesToPass >= 0);
-							while (subTreesToPass > 0)
-							{
-								short oneCheck = _loadHeader(buffer);
-								subTreesToPass -= 1;
-								if (oneCheck < 0)
-								{
-									// This is a subtree marker so 8 more reads.
-									subTreesToPass += 8;
-								}
-							}
-							treesSkippedInLevel = treesToSkipAtThisLevel;
-							
-							_level(buffer
-								, state
-								, treeIndex
-								, (byte)(baseX + (thisX & half))
-								, (byte)(baseY + (thisY & half))
-								, (byte)(baseZ + (thisZ & half))
-								, half
-							);
-							treesSkippedInLevel += 1;
-						}
-						else
-						{
-							// This means that we fell off the tree, somehow, which would be a static error.
-							throw Assert.unreachable();
-						}
+						// This is the entire sub-tree so just return it.
+						state.completeAndAdvance(oldValue);
+						treesSkippedInLevel = 8;
+					}
+					else if (size > 1)
+					{
+						// Otherwise, we need to dig into the 8 sub-trees.
+						// Due to the way the octree is represented, we must walk all subtrees "before" the one where we are finding the element.
+						// The order of the sub-trees is a 3-level nested loop:  x is outer-most, y is middle, and z is inner-most.
+						byte half = (byte)(size >> 1);
+						int targetX = ((thisX - baseX) < half) ? 0 : 1;
+						int targetY = ((thisY - baseY) < half) ? 0 : 1;
+						int targetZ = ((thisZ - baseZ) < half) ? 0 : 1;
+						int treesToSkipAtThisLevel = (targetX * 4) + (targetY * 2) + targetZ;
+						
+						int subTreesToPass = treesToSkipAtThisLevel - treesSkippedInLevel;
+						Assert.assertTrue(subTreesToPass >= 0);
+						_skipSubTrees(buffer, subTreesToPass);
+						
+						_readBatchInSubtreeLevel(buffer
+							, state
+							, treeIndex
+							, (byte)(baseX + (thisX & half))
+							, (byte)(baseY + (thisY & half))
+							, (byte)(baseZ + (thisZ & half))
+							, half
+						);
+						
+						// Account for us skipping up to this subtree and then reading the subtree.
+						treesSkippedInLevel = treesToSkipAtThisLevel + 1;
 					}
 					else
 					{
-						// This is in another sub-tree so we are done with this one.
-						continueLoop = false;
-						
-						// Skip past the rest of the sub-trees at this level since we will be resuming after them.
-						int subTreesToPass = 8 - treesSkippedInLevel;
-						while (subTreesToPass > 0)
-						{
-							short oneCheck = _loadHeader(buffer);
-							subTreesToPass -= 1;
-							if (oneCheck < 0)
-							{
-								// This is a subtree marker so 8 more reads.
-								subTreesToPass += 8;
-							}
-						}
+						// This means that we fell off the tree, somehow, which would be a static error.
+						throw Assert.unreachable();
 					}
 				}
 				else
 				{
-					// We can just bail out since we will be resuming on another buffer.
+					// This is in another sub-tree so we are done with this one.
 					continueLoop = false;
+					
+					// See if we are doing to entirely different buffer or if we need to skip to a later point in the current one (returning to another level).
+					int newTreeIndex = _getTopLevelIndex(thisX, thisY, thisZ);
+					if (newTreeIndex == treeIndex)
+					{
+						// Skip past the rest of the sub-trees at this level since we will be resuming after them.
+						int subTreesToPass = 8 - treesSkippedInLevel;
+						_skipSubTrees(buffer, subTreesToPass);
+					}
 				}
 			}
 			else
 			{
 				// We can just bail out since we are completely done.
 				continueLoop = false;
+			}
+		}
+	}
+
+	private static void _skipSubTrees(ByteBuffer buffer, int subTreesToPass)
+	{
+		while (subTreesToPass > 0)
+		{
+			short oneCheck = _loadHeader(buffer);
+			subTreesToPass -= 1;
+			if (oneCheck < 0)
+			{
+				// This is a subtree marker so 8 more reads.
+				subTreesToPass += 8;
 			}
 		}
 	}
@@ -862,10 +847,8 @@ public class OctreeShort implements IOctree<Short>
 		}
 		public BlockAddress currentInput()
 		{
-			return (this.currentIndex < this.inputArray.length)
-				? this.inputArray[this.currentIndex]
-				: null
-			;
+			// NOTE:  This implementation assumes it is only called if hasWork() is true.
+			return this.inputArray[this.currentIndex];
 		}
 		public void completeAndAdvance(short output)
 		{
