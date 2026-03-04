@@ -1,7 +1,6 @@
 package com.jeffdisher.october.ticks;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,11 +13,9 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
-import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidHeightMap;
@@ -57,7 +54,6 @@ import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.IPassiveAction;
-import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
@@ -396,104 +392,8 @@ public class TickRunner
 			// Run the tick.
 			// Create the BlockProxy loader for the read-only state from the previous tick.
 			final TickMaterials thisTickMaterials = materials;
-			Function<AbsoluteLocation, BlockProxy> loader = (AbsoluteLocation location) -> {
-				BlockProxy proxy = thisTickMaterials.previousProxyCache.get(location);
-				if (null == proxy)
-				{
-					CuboidAddress address = location.getCuboidAddress();
-					IReadOnlyCuboidData cuboid = thisTickMaterials.completedCuboids.get(address);
-					proxy = (null != cuboid)
-							? BlockProxy.load(location.getBlockAddress(), cuboid)
-							: null
-					;
-				}
-				return proxy;
-			};
 			// WARNING:  This block cache is used for everything this thread does and we may want to provide a flushing mechanism.
-			LazyLocationCache<BlockProxy> cachingLoader = new LazyLocationCache<>(loader);
-			TickProcessingContext.IBlockFetcher previousBlockLookUp = new TickProcessingContext.IBlockFetcher() {
-				@Override
-				public BlockProxy readBlock(AbsoluteLocation location)
-				{
-					return cachingLoader.apply(location);
-				}
-				@Override
-				public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
-				{
-					// We will filter by what is currently in cache, splitting the rest by cuboid for batching.
-					Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
-					Map<CuboidAddress, List<BlockAddress>> toBatch = new HashMap<>();
-					IReadOnlyCuboidData.BlockAddressBatchComparator comparator = new IReadOnlyCuboidData.BlockAddressBatchComparator();
-					
-					for (AbsoluteLocation location : locations)
-					{
-						if (cachingLoader.contains(location))
-						{
-							BlockProxy proxy = cachingLoader.apply(location);
-							if (null != proxy)
-							{
-								completed.put(location, proxy);
-							}
-						}
-						else
-						{
-							CuboidAddress cuboidAddress = location.getCuboidAddress();
-							if (thisTickMaterials.completedCuboids.containsKey(cuboidAddress))
-							{
-								List<BlockAddress> batch = toBatch.get(cuboidAddress);
-								if (null == batch)
-								{
-									batch = new ArrayList<>();
-									toBatch.put(cuboidAddress, batch);
-								}
-								batch.add(location.getBlockAddress());
-							}
-							else
-							{
-								// This isn't loaded so just fast-fail (no nulls stored in the returned map).
-								cachingLoader.add(location, null);
-							}
-						}
-					}
-					
-					// For the batches, we use the basic case for single-elements but the batch interface for multiple.
-					for (Map.Entry<CuboidAddress, List<BlockAddress>> req : toBatch.entrySet())
-					{
-						CuboidAddress cuboidAddress = req.getKey();
-						AbsoluteLocation base = cuboidAddress.getBase();
-						List<BlockAddress> list = req.getValue();
-						
-						if (1 == list.size())
-						{
-							AbsoluteLocation location = base.relativeForBlock(list.get(0));
-							BlockProxy proxy = cachingLoader.apply(location);
-							if (null != proxy)
-							{
-								completed.put(location, proxy);
-							}
-						}
-						else
-						{
-							BlockAddress[] array = list.toArray((int size) -> new BlockAddress[size]);
-							Arrays.sort(array, comparator);
-							
-							IReadOnlyCuboidData cuboid = thisTickMaterials.completedCuboids.get(cuboidAddress);
-							short[] blocks = cuboid.batchReadData15(AspectRegistry.BLOCK, array);
-							
-							for (int i = 0; i < array.length; ++i)
-							{
-								BlockAddress address = array[i];
-								short type = blocks[i];
-								BlockProxy proxy = BlockProxy.init(address, cuboid, type);
-								AbsoluteLocation location = base.relativeForBlock(address);
-								completed.put(location, proxy);
-								cachingLoader.add(location, proxy);
-							}
-						}
-					}
-					return completed;
-				}
-			};
+			BlockFetcher previousBlockLookUp = new BlockFetcher(materials.previousProxyCache, materials.completedCuboids);
 			
 			CommonMutationSink newMutationSink = new CommonMutationSink(materials.completedCuboids.keySet());
 			CommonChangeSink newChangeSink = new CommonChangeSink(materials.completedEntities.keySet(), materials.completedCreatures.keySet(), materials.completedPassives.keySet());
@@ -609,7 +509,7 @@ public class TickRunner
 					, newChangeSink.takeExportedPassiveActions()
 					, events
 					, internallyMarkedAlive
-					, cachingLoader.extractCache()
+					, previousBlockLookUp.extractCache()
 				)
 				, materials.nanosInPreamble
 				, materials.nanosAtPreambleEnd
