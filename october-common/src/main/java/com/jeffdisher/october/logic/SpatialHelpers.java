@@ -31,7 +31,9 @@ public class SpatialHelpers
 	 */
 	public static boolean canExistInLocation(ViscosityReader reader, EntityLocation targetLocation, EntityVolume volume)
 	{
-		return _canExistInLocation(reader, targetLocation, volume);
+		// Just check for solid viscosity in this space.
+		float viscosity = reader.getMaxViscosityInVolume(targetLocation, volume, false);
+		return (viscosity < 1.0f);
 	}
 
 	/**
@@ -318,14 +320,6 @@ public class SpatialHelpers
 		return (coord == (float)Math.round(coord));
 	}
 
-	private static boolean _canExistInLocation(ViscosityReader reader, EntityLocation targetLocation, EntityVolume volume)
-	{
-		// We will just use the EntityMovementHelpers for this, seeing if we collide with anything while not moving.
-		_CollisionHelper helper = new _CollisionHelper(reader);
-		EntityMovementHelpers.interactiveEntityMove(targetLocation, volume, new EntityLocation(0.0f, 0.0f, 0.0f), helper);
-		return !helper.isStuckInBlock;
-	}
-
 	private static boolean _isStandingOnGround(ViscosityReader reader, EntityLocation location, EntityVolume volume)
 	{
 		// We will just use the EntityMovementHelpers for this, showing what happens with a fall.
@@ -402,7 +396,6 @@ public class SpatialHelpers
 	{
 		private final ViscosityReader _reader;
 		public EntityLocation finalLocation;
-		public boolean isStuckInBlock;
 		public _CollisionHelper(ViscosityReader reader)
 		{
 			_reader = reader;
@@ -416,7 +409,6 @@ public class SpatialHelpers
 		public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
 		{
 			this.finalLocation = finalLocation;
-			this.isStuckInBlock = cancelX && cancelY && cancelZ;
 		}
 	}
 }
