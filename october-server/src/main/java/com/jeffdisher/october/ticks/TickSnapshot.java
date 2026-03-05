@@ -78,8 +78,14 @@ public record TickSnapshot(long tickNumber
 
 	public static record TickStats(long tickNumber
 			, long nanosInPreamble
+			, long nanosInPreambleIncoming
+			, long nanosInPreamblePreTick
+			, long nanosInPreamblePackage
 			, long nanosInParallelPhase
 			, long nanosInPostamble
+			, long nanosInPostambleMerge
+			, long nanosInPostambleFlatten
+			, long nanosInPostambleSnapshot
 			, ProcessorElement.PerThreadStats[] threadStats
 			, int committedEntityMutationCount
 			, int committedCuboidMutationCount
@@ -88,22 +94,31 @@ public record TickSnapshot(long tickNumber
 		{
 			long nanosPerMilli = 1_000_000L;
 			long millisInPreamble = this.nanosInPreamble / nanosPerMilli;
+			long millisInPreambleIncoming = this.nanosInPreambleIncoming / nanosPerMilli;
+			long millisInPreamblePreTick = this.nanosInPreamblePreTick / nanosPerMilli;
+			long millisInPreamblePackage = this.nanosInPreamblePackage / nanosPerMilli;
 			long millisInParallel = this.nanosInParallelPhase / nanosPerMilli;
 			long millisInPostamble = this.nanosInPostamble / nanosPerMilli;
 			long millisInFullCycle = millisInPreamble + millisInParallel + millisInPostamble;
 			out.println("Log for slow (" + millisInFullCycle + " ms) tick " + this.tickNumber);
-			out.println("\tPreamble: " + millisInPreamble + " ms");
+			out.printf("\tPreamble: %d ms (incoming %d, pre-tick %d, package %d)\n"
+				, millisInPreamble
+				, millisInPreambleIncoming
+				, millisInPreamblePreTick
+				, millisInPreamblePackage
+			);
 			out.println("\tParallel: " + millisInParallel + " ms");
 			for (int i = 0; i < this.threadStats.length; ++i)
 			{
 				ProcessorElement.PerThreadStats thread = this.threadStats[i];
+				long millisInParallelPhase = thread.nanosInParallelPhase() / nanosPerMilli;
 				long millisInEnginePlayers = thread.nanosInEnginePlayers() / nanosPerMilli;
 				long millisInEngineCreatures = thread.nanosInEngineCreatures() / nanosPerMilli;
 				long millisInEnginePassives = thread.nanosInEnginePassives() / nanosPerMilli;
 				long millisInEngineCuboids = thread.nanosInEngineCuboids() / nanosPerMilli;
 				long millisInEngineSpawner = thread.nanosInEngineSpawner() / nanosPerMilli;
 				long millisProcessingOperator = thread.nanosProcessingOperator() / nanosPerMilli;
-				out.printf("\t-Thread %d ran %d work units in %d ms\n", i, thread.workUnitsProcessed(), (millisInEnginePlayers + millisInEngineCreatures + millisInEngineCuboids + millisInEngineSpawner + millisProcessingOperator));
+				out.printf("\t-Thread %d ran %d work units in %d ms\n", i, thread.workUnitsProcessed(), millisInParallelPhase);
 				out.printf("\t\t=%d ms in EnginePlayer: %d players, %d actions\n", millisInEnginePlayers, thread.playersProcessed(), thread.playerActionsProcessed());
 				out.printf("\t\t=%d ms in EngineCreatures: %d creatures, %d actions\n", millisInEngineCreatures, thread.creaturesProcessed(), thread.creatureActionsProcessed());
 				out.printf("\t\t=%d ms in EnginePassives: %d passives, %d actions\n", millisInEnginePassives, thread.passivesProcessed(), thread.passiveActionsProcessed());
@@ -117,7 +132,15 @@ public record TickSnapshot(long tickNumber
 					out.printf("\t\t=%d ms running operator commands\n", millisProcessingOperator);
 				}
 			}
-			out.println("\tPostamble: " + millisInPostamble + " ms");
+			long millisInPostambleMerge = this.nanosInPostambleMerge / nanosPerMilli;
+			long millisInPostambleFlatten = this.nanosInPostambleFlatten / nanosPerMilli;
+			long millisInPostambleSnapshot = this.nanosInPostambleSnapshot / nanosPerMilli;
+			out.printf("\tPostamble: %d ms (merge %d, flatten %d, snapshot %d)\n"
+				, millisInPostamble
+				, millisInPostambleMerge
+				, millisInPostambleFlatten
+				, millisInPostambleSnapshot
+			);
 		}
 	}
 }

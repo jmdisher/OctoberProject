@@ -1449,12 +1449,18 @@ public class TestServerStateManager
 				
 				// Information related to tick behaviour and performance statistics.
 				, new TickSnapshot.TickStats(0L
-						, 0L
-						, 0L
-						, 0L
-						, null
-						, 0
-						, 0
+					, 0L
+					, 0L
+					, 0L
+					, 0L
+					, 0L
+					, 0L
+					, 0L
+					, 0L
+					, 0L
+					, null
+					, 0
+					, 0
 				)
 		);
 	}

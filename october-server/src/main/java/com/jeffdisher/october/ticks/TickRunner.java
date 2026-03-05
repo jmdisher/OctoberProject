@@ -179,6 +179,12 @@ public class TickRunner
 				, 0L
 				, 0L
 				, 0L
+				, 0L
+				, 0L
+				, 0L
+				, 0L
+				, 0L
+				, 0L
 				, null
 				, 0
 				, 0
@@ -385,6 +391,9 @@ public class TickRunner
 						, Map.of()
 				)
 				, 0L
+				, 0L
+				, 0L
+				, 0L
 				, System.nanoTime()
 		);
 		while (null != materials)
@@ -512,6 +521,9 @@ public class TickRunner
 					, previousBlockLookUp.extractCache()
 				)
 				, materials.nanosInPreamble
+				, materials.nanosInPreambleIncoming
+				, materials.nanosInPreamblePreTick
+				, materials.nanosInPreamblePackage
 				, materials.nanosAtPreambleEnd
 			);
 		}
@@ -815,6 +827,9 @@ public class TickRunner
 	private TickMaterials _mergeTickStateAndWaitForNext(ProcessorElement elt
 		, TickOutput perThreadData
 		, long previousNanosInPreamble
+		, long previousNanosInPreambleIncoming
+		, long previousNanosInPreamblePreTick
+		, long previousNanosInPreamblePackage
 		, long previousNanosAtPreambleEnd
 	)
 	{
@@ -832,8 +847,10 @@ public class TickRunner
 			
 			// We will merge together all the per-thread fragments into one master fragment.
 			TickOutput masterFragment = _mergeAndClearPartialFragments(_partial);
+			long nanosAfterPostambleMerge = System.nanoTime();
 			
 			FlatResults flatResults = FlatResults.fromOutput(masterFragment);
+			long nanosAfterPostambleFlatten = System.nanoTime();
 			
 			// Build the components of the snapshot (as part of the postamble time).
 			Map<CuboidAddress, TickSnapshot.SnapshotCuboid> cuboids = _buildSnapshotCuboids(flatResults);
@@ -881,6 +898,9 @@ public class TickRunner
 			long nanosAtPostambleEnd = System.nanoTime();
 			long nanosInParallelPhase = (nanosAtPostambleStart - previousNanosAtPreambleEnd);
 			long nanosInPostamble = (nanosAtPostambleEnd - nanosAtPostambleStart);
+			long nanosInPostambleMerge = (nanosAfterPostambleMerge - nanosAtPostambleStart);
+			long nanosInPostambleFlatten = (nanosAfterPostambleFlatten - nanosAfterPostambleMerge);
+			long nanosInPostambleSnapshot = (nanosAtPostambleEnd - nanosAfterPostambleFlatten);
 			
 			// ***************** Tick ends here *********************
 			
@@ -888,8 +908,14 @@ public class TickRunner
 			// Acknowledge that the tick is completed by creating a snapshot of the state.
 			TickSnapshot.TickStats tickStats = new TickSnapshot.TickStats(_nextTick
 				, previousNanosInPreamble
+				, previousNanosInPreambleIncoming
+				, previousNanosInPreamblePreTick
+				, previousNanosInPreamblePackage
 				, nanosInParallelPhase
 				, nanosInPostamble
+				, nanosInPostambleMerge
+				, nanosInPostambleFlatten
+				, nanosInPostambleSnapshot
 				, _threadStats.clone()
 				, masterFragment.entities().committedMutationCount()
 				, masterFragment.world().committedMutationCount()
@@ -990,6 +1016,7 @@ public class TickRunner
 						}
 					}
 				}
+				long nanosAfterPreambleIncoming = System.nanoTime();
 				
 				// Combine these inputs on top of the results from the previous tick to produce what we need to run the next tick.
 				PreTickState preTickState = PreTickState.fromChanges(masterFragment
@@ -1010,6 +1037,7 @@ public class TickRunner
 				// The corresponding actions for the creatures and passives only originate from inside the tick so just pass those through.
 				Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> nextCreatureChanges = flatResults.creatureActionsById();
 				Map<Integer, List<IPassiveAction>> nextPassiveActions = flatResults.passiveActionsById();
+				long nanosAfterPreamblePreTick = System.nanoTime();
 				
 				// WARNING:  completedHeightMaps does NOT include the new height maps loaded after the previous tick finished!
 				// (this is done to avoid the cost of rebuilding the maps since the column height maps are not guaranteed to be fully accurate)
@@ -1026,10 +1054,14 @@ public class TickRunner
 					, nextCreatureChanges
 					, nextPassiveActions
 				);
+				long nanosAfterPreamblePackage = System.nanoTime();
 				
 				// Collect the last timing data for this tick preamble.
 				long nanosAtPreambleEnd = System.nanoTime();
 				long nanosInPreamble = nanosAtPreambleEnd - nanosAtPreambleStart;
+				long nanosInPreambleIncoming = nanosAfterPreambleIncoming - nanosAtPreambleStart;
+				long nanosInPreamblePreTick = nanosAfterPreamblePreTick - nanosAfterPreambleIncoming;
+				long nanosInPreamblePackage = nanosAfterPreamblePackage - nanosAfterPreamblePreTick;
 				
 				_thisTickMaterials = new TickMaterials(_nextTick
 					, preTickState.cuboidsByAddress()
@@ -1051,6 +1083,9 @@ public class TickRunner
 					
 					// Store the partial tick stats.
 					, nanosInPreamble
+					, nanosInPreambleIncoming
+					, nanosInPreamblePreTick
+					, nanosInPreamblePackage
 					, nanosAtPreambleEnd
 				);
 			}
@@ -1533,6 +1568,9 @@ public class TickRunner
 			
 			// Data related to internal statistics to be passed back at the end of the tick.
 			, long nanosInPreamble
+			, long nanosInPreambleIncoming
+			, long nanosInPreamblePreTick
+			, long nanosInPreamblePackage
 			, long nanosAtPreambleEnd
 	) {}
 

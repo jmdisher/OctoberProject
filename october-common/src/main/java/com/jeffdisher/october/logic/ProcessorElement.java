@@ -13,6 +13,7 @@ public class ProcessorElement
 	private int _lastWorkUnit;
 	// The next unit is the same as last unit if we don't know our next unit.
 	private int _nextWorkUnit;
+	private long _startParallelNanos;
 
 	// Public variables related to per-thread tick execution statistics.
 	public int playersProcessed;
@@ -59,6 +60,10 @@ public class ProcessorElement
 			// Everyone has synchronized so we can reset the atomic here.
 			_sharedUnitCounter.set(0);
 		}
+		else
+		{
+			_startParallelNanos = System.nanoTime();
+		}
 		// Every thread breaks out of this when fully synchronized so we can reset the local counter.
 		_lastWorkUnit = -1;
 		_nextWorkUnit = _lastWorkUnit;
@@ -68,6 +73,7 @@ public class ProcessorElement
 	public void releaseWaitingThreads()
 	{
 		_sync.releaseWaitingThreads();
+		_startParallelNanos = System.nanoTime();
 	}
 
 	public boolean handleNextWorkUnit()
@@ -84,7 +90,11 @@ public class ProcessorElement
 
 	public PerThreadStats consumeAndResetStats()
 	{
-		PerThreadStats stats = new PerThreadStats(this.playersProcessed
+		long endParallelNanos = System.nanoTime();
+		long nanosInParallelPhase = endParallelNanos - _startParallelNanos;
+		PerThreadStats stats = new PerThreadStats(nanosInParallelPhase
+			
+			, this.playersProcessed
 			, this.playerActionsProcessed
 			, this.nanosInEnginePlayers
 			
@@ -133,7 +143,9 @@ public class ProcessorElement
 	/**
 	 * The statistics of what a specific thread does during the parallel tick phase.
 	 */
-	public static record PerThreadStats(int playersProcessed
+	public static record PerThreadStats(long nanosInParallelPhase
+		
+		, int playersProcessed
 		, int playerActionsProcessed
 		, long nanosInEnginePlayers
 		
