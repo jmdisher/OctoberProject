@@ -152,9 +152,7 @@ public class FlatWorldGenerator implements IWorldGenerator
 		List<PassiveEntity> passives = List.of();
 		
 		// Create the height map.
-		byte[][] rawHeight = HeightMapHelpers.createUniformHeightMap(CuboidHeightMap.UNKNOWN_HEIGHT);
-		HeightMapHelpers.populateHeightMap(rawHeight, data);
-		CuboidHeightMap heightMap = CuboidHeightMap.wrap(rawHeight);
+		CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(data);
 		return new SuspendedCuboid<CuboidData>(data
 				, heightMap
 				, entities

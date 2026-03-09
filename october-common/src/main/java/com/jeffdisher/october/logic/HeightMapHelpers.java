@@ -23,29 +23,6 @@ import com.jeffdisher.october.utils.Encoding;
 public class HeightMapHelpers
 {
 	/**
-	 * Creates a raw cuboid height map with a single value for every entry.
-	 * 
-	 * @param heightMapValue The value to store in every entry.
-	 * @return The raw y-major height map.
-	 */
-	public static byte[][] createUniformHeightMap(byte heightMapValue)
-	{
-		return _createUniformHeightMap(heightMapValue);
-	}
-
-	/**
-	 * Updates a given heightMap by applying the heights within cuboid such that every entry in the heightMap will be
-	 * the max of its original value and this new value.
-	 * 
-	 * @param heightMap The height map to read and write.
-	 * @param cuboid The cuboid data to read.
-	 */
-	public static void populateHeightMap(byte[][] heightMap, IReadOnlyCuboidData cuboid)
-	{
-		_populateHeightMap(heightMap, cuboid);
-	}
-
-	/**
 	 * Builds a CuboidHeightMap object from the block data in the given cuboid.
 	 * 
 	 * @param cuboid The cuboid data to read.
@@ -99,19 +76,6 @@ public class HeightMapHelpers
 		return builder.freeze();
 	}
 
-
-	private static byte[][] _createUniformHeightMap(byte heightMapValue)
-	{
-		byte[][] rawHeight = new byte[Encoding.CUBOID_EDGE_SIZE][Encoding.CUBOID_EDGE_SIZE];
-		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
-		{
-			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
-			{
-				rawHeight[y][x] = heightMapValue;
-			}
-		}
-		return rawHeight;
-	}
 
 	private static void _populateHeightMap(byte[][] heightMap, IReadOnlyCuboidData cuboid)
 	{

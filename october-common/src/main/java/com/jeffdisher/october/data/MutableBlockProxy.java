@@ -29,7 +29,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 {
 	private final Environment _env;
 	public final AbsoluteLocation absoluteLocation;
-	private final BlockAddress _address;
+	public final BlockAddress blockAddress;
 	private final IReadOnlyCuboidData _data;
 
 	// We cache any writes so that they are just flushed at the end.
@@ -47,7 +47,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	{
 		_env = Environment.getShared();
 		this.absoluteLocation = absoluteLocation;
-		_address = absoluteLocation.getBlockAddress();
+		this.blockAddress = absoluteLocation.getBlockAddress();
 		_data = data;
 		
 		_write7 = new byte[AspectRegistry.ALL_ASPECTS.length];
@@ -361,7 +361,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 			// Check what was modified.
 			if (_write7 == _writes[i])
 			{
-				byte original = _data.getData7(_aspectAsType(Byte.class, AspectRegistry.ALL_ASPECTS[i]), _address);
+				byte original = _data.getData7(_aspectAsType(Byte.class, AspectRegistry.ALL_ASPECTS[i]), this.blockAddress);
 				if (original == _write7[i])
 				{
 					// A change was reverted.
@@ -374,7 +374,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 			}
 			else if (_write15 == _writes[i])
 			{
-				short original = _data.getData15(_aspectAsType(Short.class, AspectRegistry.ALL_ASPECTS[i]), _address);
+				short original = _data.getData15(_aspectAsType(Short.class, AspectRegistry.ALL_ASPECTS[i]), this.blockAddress);
 				if (original == _write15[i])
 				{
 					// A change was reverted.
@@ -387,7 +387,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 			}
 			else if (_writeObject == _writes[i])
 			{
-				Object original = _data.getDataSpecial(AspectRegistry.ALL_ASPECTS[i], _address);
+				Object original = _data.getDataSpecial(AspectRegistry.ALL_ASPECTS[i], this.blockAddress);
 				if (original == _writeObject[i])
 				{
 					// A change was reverted.
@@ -441,11 +441,11 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		boolean flagChange = (null != _writes[AspectRegistry.FLAGS.index()]);
 		if (blockChange || flagChange)
 		{
-			short original = _data.getData15(AspectRegistry.BLOCK, _address);
+			short original = _data.getData15(AspectRegistry.BLOCK, this.blockAddress);
 			Item rawItem = _env.items.ITEMS_BY_TYPE[original];
 			Block originalBlock = _env.blocks.fromItem(rawItem);
-			byte oldFlags = _data.getData7(AspectRegistry.FLAGS, _address);
-			boolean wasActive = FlagsAspect.isSet(_data.getData7(AspectRegistry.FLAGS, _address), FlagsAspect.FLAG_ACTIVE);
+			byte oldFlags = _data.getData7(AspectRegistry.FLAGS, this.blockAddress);
+			boolean wasActive = FlagsAspect.isSet(_data.getData7(AspectRegistry.FLAGS, this.blockAddress), FlagsAspect.FLAG_ACTIVE);
 			byte originalEmission = _env.lighting.getLightEmission(originalBlock, wasActive);
 			
 			byte newFlags = (null != _writes[AspectRegistry.FLAGS.index()])
@@ -481,7 +481,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		boolean flagChange = (null != _writes[AspectRegistry.FLAGS.index()]);
 		if (blockChange || flagChange)
 		{
-			short original = _data.getData15(AspectRegistry.BLOCK, _address);
+			short original = _data.getData15(AspectRegistry.BLOCK, this.blockAddress);
 			Item rawItem = _env.items.ITEMS_BY_TYPE[original];
 			Block originalBlock = _env.blocks.fromItem(rawItem);
 			
@@ -501,7 +501,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 			// block type changed or the flag changed.
 			if (_env.logic.isSource(originalBlock))
 			{
-				FacingDirection direction = FacingDirection.byteToDirection(_data.getData7(AspectRegistry.ORIENTATION, _address));
+				FacingDirection direction = FacingDirection.byteToDirection(_data.getData7(AspectRegistry.ORIENTATION, this.blockAddress));
 				changeBits = _populateBitsForSource(originalBlock, direction, changeBits);
 			}
 			if (_env.logic.isSource(_cachedBlock))
@@ -527,15 +527,15 @@ public class MutableBlockProxy implements IMutableBlockProxy
 			// Write this back if modified.
 			if (_write7 == _writes[i])
 			{
-				newData.setData7(_aspectAsType(Byte.class, AspectRegistry.ALL_ASPECTS[i]), _address, _write7[i]);
+				newData.setData7(_aspectAsType(Byte.class, AspectRegistry.ALL_ASPECTS[i]), this.blockAddress, _write7[i]);
 			}
 			else if (_write15 == _writes[i])
 			{
-				newData.setData15(_aspectAsType(Short.class, AspectRegistry.ALL_ASPECTS[i]), _address, _write15[i]);
+				newData.setData15(_aspectAsType(Short.class, AspectRegistry.ALL_ASPECTS[i]), this.blockAddress, _write15[i]);
 			}
 			else if (_writeObject == _writes[i])
 			{
-				_writeAsType(newData, AspectRegistry.ALL_ASPECTS[i], _address, _writeObject[i]);
+				_writeAsType(newData, AspectRegistry.ALL_ASPECTS[i], this.blockAddress, _writeObject[i]);
 			}
 			else
 			{
@@ -550,8 +550,8 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	{
 		int index = type.index();
 		return (null != _writes[index])
-				? _write7[index]
-				: _data.getData7(type, _address)
+			? _write7[index]
+			: _data.getData7(type, this.blockAddress)
 		;
 	}
 
@@ -565,8 +565,8 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	{
 		int index = type.index();
 		return (null != _writes[index])
-				? _write15[index]
-				: _data.getData15(type, _address)
+			? _write15[index]
+			: _data.getData15(type, this.blockAddress)
 		;
 	}
 
@@ -580,8 +580,8 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	{
 		int index = type.index();
 		return (null != _writes[index])
-				? type.type().cast(_writeObject[index])
-				: _data.getDataSpecial(type, _address)
+			? type.type().cast(_writeObject[index])
+			: _data.getDataSpecial(type, this.blockAddress)
 		;
 	}
 

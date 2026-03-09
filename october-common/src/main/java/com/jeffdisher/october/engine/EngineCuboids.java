@@ -201,7 +201,7 @@ public class EngineCuboids
 		).toList();
 		for (MutableBlockProxy proxy : proxiesWithScheduledMutations)
 		{
-			BlockAddress block = proxy.absoluteLocation.getBlockAddress();
+			BlockAddress block = proxy.blockAddress;
 			long existing = periodicNotReady.containsKey(block)
 					? periodicNotReady.get(block)
 					: Long.MAX_VALUE

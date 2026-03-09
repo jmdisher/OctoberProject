@@ -37,48 +37,6 @@ public class TestHeightMapHelpers
 	}
 
 	@Test
-	public void createUniformMap() throws Throwable
-	{
-		byte value = 5;
-		byte[][] raw = HeightMapHelpers.createUniformHeightMap(value);
-		for (byte[] row : raw)
-		{
-			for (byte one : row)
-			{
-				Assert.assertEquals(value, one);
-			}
-		}
-	}
-
-	@Test
-	public void populateHeightMap() throws Throwable
-	{
-		// We will create a map which technically has the wrong values just to show the missing elements aren't updated.
-		byte value = 5;
-		byte[][] raw = HeightMapHelpers.createUniformHeightMap(value);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		BlockAddress blockAddress = BlockAddress.fromInt(5, 6, 7);
-		cuboid.setData15(AspectRegistry.BLOCK, blockAddress, STONE.item().number());
-		HeightMapHelpers.populateHeightMap(raw, cuboid);
-		for (int y = 0; y < raw.length; ++y)
-		{
-			byte[] row = raw[y];
-			for (int x = 0; x < row.length; ++x)
-			{
-				byte one = row[x];
-				if ((5 == x) && (6 == y))
-				{
-					Assert.assertEquals(7, one);
-				}
-				else
-				{
-					Assert.assertEquals(value, one);
-				}
-			}
-		}
-	}
-
-	@Test
 	public void buildHeightMap() throws Throwable
 	{
 		// Populate a cuboid with some values and observe the expected height map.
