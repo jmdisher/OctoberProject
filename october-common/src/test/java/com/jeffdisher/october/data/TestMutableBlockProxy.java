@@ -195,6 +195,9 @@ public class TestMutableBlockProxy
 		
 		CuboidData updated = CuboidData.mutableClone(input);
 		Assert.assertTrue(proxy.didChange());
+		Assert.assertTrue(proxy.didChangeAspect(AspectRegistry.BLOCK));
+		Assert.assertTrue(proxy.didChangeAspect(AspectRegistry.SPECIAL_ITEM_SLOT));
+		Assert.assertFalse(proxy.didChangeAspect(AspectRegistry.INVENTORY));
 		proxy.writeBack(updated);
 		Assert.assertEquals(stack, updated.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, address).stack);
 		
@@ -203,6 +206,9 @@ public class TestMutableBlockProxy
 		
 		updated = CuboidData.mutableClone(updated);
 		Assert.assertTrue(proxy.didChange());
+		Assert.assertTrue(proxy.didChangeAspect(AspectRegistry.BLOCK));
+		Assert.assertTrue(proxy.didChangeAspect(AspectRegistry.SPECIAL_ITEM_SLOT));
+		Assert.assertFalse(proxy.didChangeAspect(AspectRegistry.INVENTORY));
 		proxy.writeBack(updated);
 		Assert.assertEquals(null, updated.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, address));
 	}

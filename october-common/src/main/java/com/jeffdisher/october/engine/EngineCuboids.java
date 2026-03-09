@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -179,21 +180,32 @@ public class EngineCuboids
 			// Something changed so we will write-back the updated cuboid and list of block state changes.
 			ByteBuffer scratchBuffer = ByteBuffer.allocate(PacketCodec.MAX_PACKET_BYTES - PacketCodec.HEADER_BYTES);
 			List<BlockChangeDescription> updateMutations = new ArrayList<>();
+			boolean shouldUpdateHeights = false;
 			// At least something changed so create a new clone and write-back into it.
 			CuboidData mutable = CuboidData.mutableClone(oldState);
+			
 			for (MutableBlockProxy proxy : proxiesToWrite)
 			{
 				proxy.writeBack(mutable);
 				
 				// Since this one changed, we also want to send the set block mutation.
 				updateMutations.add(BlockChangeDescription.extractFromProxy(scratchBuffer, proxy));
+				
+				// We need to record what kind of impact this could have on the height map.
+				if (proxy.didChangeAspect(AspectRegistry.BLOCK))
+				{
+					shouldUpdateHeights = true;
+				}
 			}
 			changedCuboidOrNull = mutable;
 			
 			// Update the map by looking at what changed.
 			if (null != oldHeights)
 			{
-				changedHeightMap = HeightMapHelpers.buildHeightMap(mutable);
+				if (shouldUpdateHeights)
+				{
+					changedHeightMap = HeightMapHelpers.buildHeightMap(mutable);
+				}
 			}
 			
 			// Add the change descriptions for this cuboid.
@@ -380,6 +392,7 @@ public class EngineCuboids
 
 
 	public static record SingleCuboidResult(IReadOnlyCuboidData changedCuboidOrNull
+		// Note that the height map is null if it didn't change.
 		, CuboidHeightMap changedHeightMap
 		, List<BlockChangeDescription> changedBlocks
 		, Map<BlockAddress, Long> periodicNotReady

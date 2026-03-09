@@ -17,6 +17,7 @@ import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ScheduledMutation;
+import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -121,6 +122,50 @@ public class TestEngineCuboids
 		CuboidHeightMap newMap = result.changedHeightMap();
 		
 		Assert.assertEquals(STONE.item().number(), newCuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertNull(newMap);
+	}
+
+	@Test
+	public void updateBlockNoHeightChange()
+	{
+		// Change a block but not in a way which would change its height map and verify it is the same instance.
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		AbsoluteLocation target = new AbsoluteLocation(14, 15, 16);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), STONE.item().number());
+		CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
+		
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
+				return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
+					? BlockProxy.load(location.getBlockAddress(), cuboid)
+					: null
+				;
+			}), null, null)
+			.eventSink((EventRecord event) -> {})
+			.finish()
+		;
+		
+		int damage = 100;
+		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, damage, 0);
+		
+		EngineCuboids.SingleCuboidResult result = EngineCuboids.processOneCuboid(context
+			, Set.of(address)
+			, List.of(new ScheduledMutation(mutation, 0L))
+			, Map.of()
+			, Map.of()
+			, Map.of()
+			, Map.of()
+			, Set.of()
+			, address
+			, cuboid
+			, heightMap
+		);
+		IReadOnlyCuboidData newCuboid = result.changedCuboidOrNull();
+		CuboidHeightMap newMap = result.changedHeightMap();
+		
+		Assert.assertEquals(STONE.item().number(), newCuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(damage, newCuboid.getDataSpecial(AspectRegistry.DAMAGE, target.getBlockAddress()).intValue());
 		Assert.assertNull(newMap);
 	}
 }

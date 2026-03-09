@@ -545,6 +545,19 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		}
 	}
 
+	/**
+	 * Checks if the receiver has a pending write for the given aspect.  Note that didChange() should be called first,
+	 * to make sure that any redundant writes are reverted as this helper is read-only and will not change receiver
+	 * state.
+	 * 
+	 * @param type The aspect to check.
+	 * @return True if there is a pending write for that aspect.
+	 */
+	public boolean didChangeAspect(Aspect<?, ?> type)
+	{
+		return (null != _writes[type.index()]);
+	}
+
 
 	private byte _getData7(Aspect<Byte, ?> type)
 	{
