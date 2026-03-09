@@ -1,5 +1,6 @@
 package com.jeffdisher.october.logic;
 
+import java.util.List;
 import java.util.Map;
 
 import org.junit.AfterClass;
@@ -24,11 +25,13 @@ public class TestHeightMapHelpers
 {
 	private static Environment ENV;
 	private static Block STONE;
+	private static Block DIRT;
 	@BeforeClass
 	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		DIRT = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -250,6 +253,46 @@ public class TestHeightMapHelpers
 				Assert.assertEquals(31, height);
 			}
 		}
+	}
+
+	@Test
+	public void updateHeightMap() throws Throwable
+	{
+		// Build a height map with some interesting features and show how a complex update works.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		short airNumber = ENV.special.AIR.item().number();
+		short stoneNumber = STONE.item().number();
+		short dirtNumber = DIRT.item().number();
+		BlockAddress ba1_1_10 = BlockAddress.fromInt(1, 1, 10);
+		BlockAddress ba1_1_1 = BlockAddress.fromInt(1, 1, 1);
+		BlockAddress ba2_2_3 = BlockAddress.fromInt(2, 2, 3);
+		BlockAddress ba10_10_12 = BlockAddress.fromInt(10, 10, 12);
+		BlockAddress ba10_10_17 = BlockAddress.fromInt(10, 10, 17);
+		BlockAddress ba20_20_0 = BlockAddress.fromInt(20, 20, 0);
+		cuboid.setData15(AspectRegistry.BLOCK, ba1_1_10, stoneNumber);
+		cuboid.setData15(AspectRegistry.BLOCK, ba2_2_3, stoneNumber);
+		cuboid.setData15(AspectRegistry.BLOCK, ba10_10_12, stoneNumber);
+		cuboid.setData15(AspectRegistry.BLOCK, ba10_10_17, stoneNumber);
+		
+		CuboidHeightMap map = HeightMapHelpers.buildHeightMap(cuboid);
+		
+		List<BlockAddress> blocksChangedToAir = List.of(ba1_1_10, ba2_2_3, ba10_10_12);
+		for (BlockAddress address : blocksChangedToAir)
+		{
+			cuboid.setData15(AspectRegistry.BLOCK, address, airNumber);
+		}
+		List<BlockAddress> blocksChangedToNotAir = List.of(ba1_1_1, ba10_10_17, ba20_20_0);
+		for (BlockAddress address : blocksChangedToNotAir)
+		{
+			cuboid.setData15(AspectRegistry.BLOCK, address, dirtNumber);
+		}
+		map = HeightMapHelpers.updateHeightMap(map, cuboid, blocksChangedToAir, blocksChangedToNotAir);
+		
+		Assert.assertEquals(ba1_1_1.z(), map.getHightestSolidBlock(ba1_1_1.x(), ba1_1_1.y()));
+		Assert.assertEquals(CuboidHeightMap.UNKNOWN_HEIGHT, map.getHightestSolidBlock(ba2_2_3.x(), ba2_2_3.y()));
+		Assert.assertEquals(ba10_10_17.z(), map.getHightestSolidBlock(ba10_10_17.x(), ba10_10_17.y()));
+		Assert.assertEquals(ba20_20_0.z(), map.getHightestSolidBlock(ba20_20_0.x(), ba20_20_0.y()));
+		Assert.assertEquals(CuboidHeightMap.UNKNOWN_HEIGHT, map.getHightestSolidBlock(30, 30));
 	}
 
 	@Test

@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -24,6 +25,7 @@ import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.mutations.MutationBlockUpdate;
 import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.LazyLocationCache;
@@ -180,7 +182,9 @@ public class EngineCuboids
 			// Something changed so we will write-back the updated cuboid and list of block state changes.
 			ByteBuffer scratchBuffer = ByteBuffer.allocate(PacketCodec.MAX_PACKET_BYTES - PacketCodec.HEADER_BYTES);
 			List<BlockChangeDescription> updateMutations = new ArrayList<>();
-			boolean shouldUpdateHeights = false;
+			Block airBlock = Environment.getShared().special.AIR;
+			List<BlockAddress> blocksChangedToAir = new ArrayList<>();
+			List<BlockAddress> blocksChangedToNotAir = new ArrayList<>();
 			// At least something changed so create a new clone and write-back into it.
 			CuboidData mutable = CuboidData.mutableClone(oldState);
 			
@@ -194,7 +198,15 @@ public class EngineCuboids
 				// We need to record what kind of impact this could have on the height map.
 				if (proxy.didChangeAspect(AspectRegistry.BLOCK))
 				{
-					shouldUpdateHeights = true;
+					BlockAddress address = proxy.blockAddress;
+					if (proxy.getBlock() == airBlock)
+					{
+						blocksChangedToAir.add(address);
+					}
+					else
+					{
+						blocksChangedToNotAir.add(address);
+					}
 				}
 			}
 			changedCuboidOrNull = mutable;
@@ -202,9 +214,11 @@ public class EngineCuboids
 			// Update the map by looking at what changed.
 			if (null != oldHeights)
 			{
-				if (shouldUpdateHeights)
+				CuboidHeightMap newHeightMap = HeightMapHelpers.updateHeightMap(oldHeights, mutable, blocksChangedToAir, blocksChangedToNotAir);
+				// This helper returns the original instance if unchanged, but we want to return null, here.
+				if (oldHeights != newHeightMap)
 				{
-					changedHeightMap = HeightMapHelpers.buildHeightMap(mutable);
+					changedHeightMap = newHeightMap;
 				}
 			}
 			
