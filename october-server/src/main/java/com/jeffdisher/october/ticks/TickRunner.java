@@ -670,6 +670,7 @@ public class TickRunner
 				, materials.cuboidsLoadedThisTick
 				, cuboidAddress
 				, previousCuboid
+				, previousHeightMap
 			);
 			IReadOnlyCuboidData updatedCuboidOrNull = cuboidResult.changedCuboidOrNull();
 			CuboidHeightMap updatedHeightMapOrNull = cuboidResult.changedHeightMap();

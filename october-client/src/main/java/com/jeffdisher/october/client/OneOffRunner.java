@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.engine.EnginePlayers;
 import com.jeffdisher.october.engine.EngineCuboids;
@@ -84,7 +83,6 @@ public class OneOffRunner
 		
 		// Run follow-ups against blocks.
 		Map<CuboidAddress, IReadOnlyCuboidData> changedCuboids = Map.of();
-		Map<CuboidAddress, CuboidHeightMap> heightFragment = Map.of();
 		Map<CuboidAddress, List<BlockChangeDescription>> optionalBlockChanges = Map.of();
 		if (wasSuccess && !immediateMutations.isEmpty())
 		{
@@ -102,7 +100,6 @@ public class OneOffRunner
 			CommonChangeSink innerChangeSink = new CommonChangeSink(allPlayerIds, allCreatureIds, allPassiveIds);
 			TickProcessingContext innerContext = _createContext(state, new CommonMutationSink(loadedCuboids), innerChangeSink, eventSink, millisPerTick, currentTickTimeMillis);
 			changedCuboids = new HashMap<>();
-			heightFragment = new HashMap<>();
 			optionalBlockChanges = new HashMap<>();
 			for (Map.Entry<CuboidAddress, List<ScheduledMutation>> mut : splitMutations.entrySet())
 			{
@@ -118,14 +115,11 @@ public class OneOffRunner
 					, Set.of()
 					, key
 					, state.world.get(key)
+					, null
 				);
 				if (null != result.changedCuboidOrNull())
 				{
 					changedCuboids.put(key, result.changedCuboidOrNull());
-				}
-				if (null != result.changedHeightMap())
-				{
-					heightFragment.put(key, result.changedHeightMap());
 				}
 				if ((null != result.changedBlocks()) && !result.changedBlocks().isEmpty())
 				{

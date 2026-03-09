@@ -645,6 +645,7 @@ public class SpeculativeProjection
 				, Set.of()
 				, key
 				, _projectedState.projectedWorld.get(key)
+				, _projectedState.projectedHeightMap.get(key)
 			);
 			if (null != result.changedCuboidOrNull())
 			{

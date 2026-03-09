@@ -55,6 +55,7 @@ public class EngineCuboids
 	 * @param cuboidsLoadedThisTick The set of cuboids which were loaded this tick (for update even synthesis).
 	 * @param key The address of the cuboid being processed.
 	 * @param oldState The read-only input state of the cuboid to be processed.
+	 * @param oldHeights The previous height map for the cuboid (null if height map updates should be skipped).
 	 * @return The results of running these mutations and periodic events on this cuboid.
 	 */
 	public static SingleCuboidResult processOneCuboid(TickProcessingContext context
@@ -67,6 +68,7 @@ public class EngineCuboids
 		, Set<CuboidAddress> cuboidsLoadedThisTick
 		, CuboidAddress key
 		, IReadOnlyCuboidData oldState
+		, CuboidHeightMap oldHeights
 	)
 	{
 		long millisSinceLastTick = context.millisPerTick;
@@ -188,8 +190,11 @@ public class EngineCuboids
 			}
 			changedCuboidOrNull = mutable;
 			
-			// For now, we will regenerate the maps in this case but we may want to update more precisely.
-			changedHeightMap = HeightMapHelpers.buildHeightMap(mutable);
+			// Update the map by looking at what changed.
+			if (null != oldHeights)
+			{
+				changedHeightMap = HeightMapHelpers.buildHeightMap(mutable);
+			}
 			
 			// Add the change descriptions for this cuboid.
 			changedBlocks = updateMutations;
