@@ -14,7 +14,6 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.HeightMapHelpers;
@@ -61,7 +60,7 @@ public class TestClientChangeNotifier
 		int[] count = new int[1];
 		_Listener listener = new _Listener() {
 			@Override
-			public void cuboidDidChange(IReadOnlyCuboidData cuboid, CuboidHeightMap cuboidHeightMap, ColumnHeightMap columnHeightMap, Set<BlockAddress> changedBlocks, Set<Aspect<?, ?>> changedAspects)
+			public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap columnHeightMap, Set<BlockAddress> changedBlocks, Set<Aspect<?, ?>> changedAspects)
 			{
 				Assert.assertEquals(1, changedBlocks.size());
 				Assert.assertEquals(location.getBlockAddress(), changedBlocks.iterator().next());
@@ -93,7 +92,7 @@ public class TestClientChangeNotifier
 		int[] count = new int[1];
 		_Listener listener = new _Listener() {
 			@Override
-			public void cuboidDidChange(IReadOnlyCuboidData cuboid, CuboidHeightMap cuboidHeightMap, ColumnHeightMap columnHeightMap, Set<BlockAddress> changedBlocks, Set<Aspect<?, ?>> changedAspects)
+			public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap columnHeightMap, Set<BlockAddress> changedBlocks, Set<Aspect<?, ?>> changedAspects)
 			{
 				Assert.assertEquals(1, changedBlocks.size());
 				Assert.assertEquals(location.getBlockAddress(), changedBlocks.iterator().next());
@@ -137,7 +136,7 @@ public class TestClientChangeNotifier
 		int[] count = new int[1];
 		_Listener listener = new _Listener() {
 			@Override
-			public void cuboidDidChange(IReadOnlyCuboidData cuboid, CuboidHeightMap cuboidHeightMap, ColumnHeightMap columnHeightMap, Set<BlockAddress> changedBlocks, Set<Aspect<?, ?>> changedAspects)
+			public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap columnHeightMap, Set<BlockAddress> changedBlocks, Set<Aspect<?, ?>> changedAspects)
 			{
 				Assert.assertEquals(1, changedBlocks.size());
 				Assert.assertEquals(1, changedAspects.size());
@@ -195,7 +194,7 @@ public class TestClientChangeNotifier
 		int[] count = new int[1];
 		_Listener listener = new _Listener() {
 			@Override
-			public void cuboidDidChange(IReadOnlyCuboidData cuboid, CuboidHeightMap cuboidHeightMap, ColumnHeightMap columnHeightMap, Set<BlockAddress> changedBlocks, Set<Aspect<?, ?>> changedAspects)
+			public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap columnHeightMap, Set<BlockAddress> changedBlocks, Set<Aspect<?, ?>> changedAspects)
 			{
 				// This is the only case where no changed blocks will be reported - lighting change somewhere in the cuboid.
 				Assert.assertEquals(0, changedBlocks.size());
@@ -225,7 +224,7 @@ public class TestClientChangeNotifier
 	private static abstract class _Listener implements IProjectionListener
 	{
 		@Override
-		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, CuboidHeightMap cuboidHeightMap, ColumnHeightMap columnHeightMap)
+		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap columnHeightMap)
 		{
 			throw new AssertionError("Not in test");
 		}

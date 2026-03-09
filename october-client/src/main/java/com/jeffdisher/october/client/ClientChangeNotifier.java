@@ -160,10 +160,9 @@ public class ClientChangeNotifier
 				IReadOnlyCuboidData data = elt.getValue();
 				Set<BlockAddress> blocksChanged = changedBlocks.get(address);
 				listener.cuboidDidChange(data
-						, currentProjectedState.projectedHeightMap.get(address)
-						, allHeightMaps.get(address.getColumn())
-						, blocksChanged
-						, aspects
+					, allHeightMaps.get(address.getColumn())
+					, blocksChanged
+					, aspects
 				);
 			}
 		}
@@ -249,10 +248,9 @@ public class ClientChangeNotifier
 				changedInCuboid.add(AspectRegistry.LIGHT);
 			}
 			listener.cuboidDidChange(data
-					, currentProjectedState.projectedHeightMap.get(address)
-					, allHeightMaps.get(address.getColumn())
-					, blocksChanged
-					, changedInCuboid
+				, allHeightMaps.get(address.getColumn())
+				, blocksChanged
+				, changedInCuboid
 			);
 		}
 		// Unsafe lighting changes not already reported must also be reported.
@@ -261,10 +259,9 @@ public class ClientChangeNotifier
 			if (!cuboidsToReport.containsKey(lightChanges))
 			{
 				listener.cuboidDidChange(currentProjectedState.projectedWorld.get(lightChanges)
-						, currentProjectedState.projectedHeightMap.get(lightChanges)
-						, allHeightMaps.get(lightChanges.getColumn())
-						, Set.of()
-						, Set.of(AspectRegistry.LIGHT)
+					, allHeightMaps.get(lightChanges.getColumn())
+					, Set.of()
+					, Set.of(AspectRegistry.LIGHT)
 				);
 			}
 		}

@@ -387,7 +387,7 @@ public class SpeculativeProjection
 		for (IReadOnlyCuboidData cuboid : addedCuboids)
 		{
 			CuboidAddress address = cuboid.getCuboidAddress();
-			_listener.cuboidDidLoad(cuboid, _projectedState.projectedHeightMap.get(address), columnHeightMaps.get(address.getColumn()));
+			_listener.cuboidDidLoad(cuboid, columnHeightMaps.get(address.getColumn()));
 		}
 		
 		// Use the common path to describe what was changed.

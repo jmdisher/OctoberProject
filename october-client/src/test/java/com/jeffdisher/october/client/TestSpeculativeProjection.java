@@ -24,7 +24,6 @@ import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.OrientationHelpers;
@@ -3438,7 +3437,7 @@ public class TestSpeculativeProjection
 		public List<EventRecord> events = new ArrayList<>();
 		
 		@Override
-		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, CuboidHeightMap cuboidHeightMap, ColumnHeightMap columnHeightMap)
+		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap columnHeightMap)
 		{
 			this.loadCount += 1;
 			this.lastData = cuboid;
@@ -3446,10 +3445,9 @@ public class TestSpeculativeProjection
 		}
 		@Override
 		public void cuboidDidChange(IReadOnlyCuboidData cuboid
-				, CuboidHeightMap cuboidHeightMap
-				, ColumnHeightMap columnHeightMap
-				, Set<BlockAddress> changedBlocks
-				, Set<Aspect<?, ?>> changedAspects
+			, ColumnHeightMap columnHeightMap
+			, Set<BlockAddress> changedBlocks
+			, Set<Aspect<?, ?>> changedAspects
 		)
 		{
 			// Note that the changed blocks can be empty but only if the changed aspects are NOT light.

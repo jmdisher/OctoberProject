@@ -16,7 +16,6 @@ import com.jeffdisher.october.client.MovementAccumulator;
 import com.jeffdisher.october.client.TimeRunnerList;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.net.CuboidCodec;
 import com.jeffdisher.october.net.NetworkClient;
@@ -596,16 +595,15 @@ public class ClientProcess
 	private class _ProjectionListener implements IProjectionListener
 	{
 		@Override
-		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, CuboidHeightMap cuboidHeightMap, ColumnHeightMap columnHeightMap)
+		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap columnHeightMap)
 		{
 			_listener.cuboidDidLoad(cuboid, columnHeightMap);
 		}
 		@Override
 		public void cuboidDidChange(IReadOnlyCuboidData cuboid
-				, CuboidHeightMap cuboidHeightMap
-				, ColumnHeightMap columnHeightMap
-				, Set<BlockAddress> changedBlocks
-				, Set<Aspect<?, ?>> changedAspects
+			, ColumnHeightMap columnHeightMap
+			, Set<BlockAddress> changedBlocks
+			, Set<Aspect<?, ?>> changedAspects
 		)
 		{
 			_listener.cuboidDidChange(cuboid, columnHeightMap, changedBlocks, changedAspects);

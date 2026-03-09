@@ -451,8 +451,8 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(cuboid, Set.of());
 		accumulator.setCuboid(blockingCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
-		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
-		listener.cuboidDidLoad(blockingCuboid, blockingMap, columnMap);
+		listener.cuboidDidLoad(cuboid, columnMap);
+		listener.cuboidDidLoad(blockingCuboid, columnMap);
 		accumulator.clearAccumulation();
 		
 		// Place a block and verify that the output information is correct for local accumulation.
@@ -594,8 +594,8 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(cuboid, Set.of());
 		accumulator.setCuboid(blockingCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
-		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
-		listener.cuboidDidLoad(blockingCuboid, blockingMap, columnMap);
+		listener.cuboidDidLoad(cuboid, columnMap);
+		listener.cuboidDidLoad(blockingCuboid, columnMap);
 		accumulator.clearAccumulation();
 		
 		// Enqueue a craft operation and run a standing iteration to see that it does set the local crafting operation but that the following tick, without continuing, abandons it.
@@ -641,7 +641,7 @@ public class TestMovementAccumulator
 		accumulator.setThisEntity(entity);
 		accumulator.setCuboid(cuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
-		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
+		listener.cuboidDidLoad(cuboid, columnMap);
 		accumulator.clearAccumulation();
 		
 		// Enqueue a craft operation and run a standing iteration to see that it does set the local crafting operation but that the following tick, without continuing, abandons it.
@@ -819,7 +819,7 @@ public class TestMovementAccumulator
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation();
 		accumulator.setCuboid(cuboid, Set.of());
-		listener.cuboidDidLoad(cuboid, cuboidHeightMap, columnHeightMap);
+		listener.cuboidDidLoad(cuboid, columnHeightMap);
 		
 		// Enqueue and then stand around for a bit (enough that we will properly collide with the ground).
 		currentTimeMillis += 25L;
@@ -948,7 +948,7 @@ public class TestMovementAccumulator
 		accumulator.setThisEntity(entity);
 		accumulator.setCuboid(cuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
-		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
+		listener.cuboidDidLoad(cuboid, columnMap);
 		accumulator.clearAccumulation();
 		
 		// Enqueue an action which we know will fail and observe that the top-level is still produced and passes.
@@ -1028,8 +1028,8 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(cuboid, Set.of());
 		accumulator.setCuboid(blockingCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
-		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
-		listener.cuboidDidLoad(blockingCuboid, blockingMap, columnMap);
+		listener.cuboidDidLoad(cuboid, columnMap);
+		listener.cuboidDidLoad(blockingCuboid, columnMap);
 		accumulator.clearAccumulation();
 		
 		// Enqueue a craft operation and run a standing iteration.
@@ -1081,8 +1081,8 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(cuboid, Set.of());
 		accumulator.setCuboid(blockingCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
-		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
-		listener.cuboidDidLoad(blockingCuboid, blockingMap, columnMap);
+		listener.cuboidDidLoad(cuboid, columnMap);
+		listener.cuboidDidLoad(blockingCuboid, columnMap);
 		accumulator.clearAccumulation();
 		
 		// Try to craft something in the table, where normal validation that the sub-task is value will fail witout any accumulation.
@@ -1496,7 +1496,7 @@ public class TestMovementAccumulator
 			ColumnHeightMap columnHeightMap = HeightMapHelpers.buildColumnMaps(Map.of(address, cuboidHeightMap)).get(address.getColumn());
 			accumulator.setCuboid(lazyMutable, Set.of());
 			// To keep things simple for these tests, we assume only block aspect changes.
-			listener.cuboidDidChange(lazyMutable, cuboidHeightMap, columnHeightMap, changedBlocks, Set.of(AspectRegistry.BLOCK));
+			listener.cuboidDidChange(lazyMutable, columnHeightMap, changedBlocks, Set.of(AspectRegistry.BLOCK));
 		}
 		return entity;
 	}
@@ -1582,7 +1582,7 @@ public class TestMovementAccumulator
 		public int cuboidChangeCount = 0;
 		public List<EventRecord> events = new ArrayList<>();
 		@Override
-		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, CuboidHeightMap cuboidHeightMap, ColumnHeightMap columnHeightMap)
+		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap columnHeightMap)
 		{
 			CuboidAddress cuboidAddress = cuboid.getCuboidAddress();
 			Assert.assertFalse(this.loadedCuboids.containsKey(cuboidAddress));
@@ -1591,10 +1591,9 @@ public class TestMovementAccumulator
 		}
 		@Override
 		public void cuboidDidChange(IReadOnlyCuboidData cuboid
-				, CuboidHeightMap cuboidHeightMap
-				, ColumnHeightMap columnHeightMap
-				, Set<BlockAddress> changedBlocks
-				, Set<Aspect<?, ?>> changedAspects
+			, ColumnHeightMap columnHeightMap
+			, Set<BlockAddress> changedBlocks
+			, Set<Aspect<?, ?>> changedAspects
 		)
 		{
 			CuboidAddress cuboidAddress = cuboid.getCuboidAddress();
