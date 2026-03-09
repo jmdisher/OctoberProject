@@ -282,17 +282,17 @@ public class ClientRunner
 			_removedCuboids.add(address);
 		}
 		@Override
-		public void receivedEntityUpdate(int entityId, EntityUpdatePerField update)
+		public void receivedEntityUpdate(EntityUpdatePerField update)
 		{
 			// Currently (and probably forever), the only full entity on the client is the user, themselves.
 			Assert.assertTrue(null == _entityUpdate);
 			_entityUpdate = update;
 		}
 		@Override
-		public void receivedPartialEntityUpdate(int entityId, PartialEntityUpdate update)
+		public void receivedPartialEntityUpdate(PartialEntityUpdate update)
 		{
 			// We expect to only receive at most 1 update for each entity, per tick.
-			Object old = _partialEntityUpdates.put(entityId, update);
+			Object old = _partialEntityUpdates.put(update.getEntityId(), update);
 			Assert.assertTrue(null == old);
 		}
 		@Override

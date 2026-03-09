@@ -65,6 +65,14 @@ public class PartialEntityUpdate
 	}
 
 	/**
+	 * @return The ID of the entity to update.
+	 */
+	public int getEntityId()
+	{
+		return _entity.id();
+	}
+
+	/**
 	 * Applies the receiver to the given newEntity.
 	 * 
 	 * @param newEntity The partial entity which should be updated by the receiver.

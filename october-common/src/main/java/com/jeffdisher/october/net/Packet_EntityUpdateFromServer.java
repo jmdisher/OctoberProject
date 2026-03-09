@@ -3,12 +3,10 @@ package com.jeffdisher.october.net;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
-import com.jeffdisher.october.utils.Assert;
-
 
 /**
- * Contains a MutationEntitySetEntity instance.
- * This is coming from the server so it includes the associated entity ID.
+ * Contains a EntityUpdatePerField instance.
+ * Note that this only targets the client's entity, directly, so the entity ID would be redundant.
  */
 public class Packet_EntityUpdateFromServer extends PacketFromServer
 {
@@ -17,28 +15,23 @@ public class Packet_EntityUpdateFromServer extends PacketFromServer
 	public static void register(Function<ByteBuffer, Packet>[] opcodeTable)
 	{
 		opcodeTable[TYPE.ordinal()] = (ByteBuffer buffer) -> {
-			int entityId = buffer.getInt();
-			Assert.assertTrue(entityId > 0);
 			EntityUpdatePerField update = EntityUpdatePerField.deserializeFromNetworkBuffer(buffer);
-			return new Packet_EntityUpdateFromServer(entityId, update);
+			return new Packet_EntityUpdateFromServer(update);
 		};
 	}
 
 
-	public final int entityId;
 	public final EntityUpdatePerField update;
 
-	public Packet_EntityUpdateFromServer(int id, EntityUpdatePerField update)
+	public Packet_EntityUpdateFromServer(EntityUpdatePerField update)
 	{
 		super(TYPE);
-		this.entityId = id;
 		this.update = update;
 	}
 
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		buffer.putInt(this.entityId);
 		this.update.serializeToNetworkBuffer(buffer);
 	}
 }

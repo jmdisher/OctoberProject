@@ -201,7 +201,7 @@ public class TestClientRunner
 		Assert.assertEquals(1L, network.commitLevel);
 		
 		// The would normally send a setBlock but we will just echo the normal mutation, to keep this simple.
-		network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.thisEntity, network.toSend));
+		network.client.receivedEntityUpdate(FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.thisEntity, network.toSend));
 		network.client.receivedEndOfTick(3L, 1L);
 		runnerList.runFullQueue(currentTimeMillis);
 		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(changeLocation, (short)100, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
@@ -224,7 +224,7 @@ public class TestClientRunner
 		runnerList.runFullQueue(currentTimeMillis);
 		Assert.assertTrue(network.toSend instanceof EntityActionSimpleMove<IMutablePlayerEntity>);
 		Assert.assertEquals(2L, network.commitLevel);
-		network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.thisEntity, network.toSend));
+		network.client.receivedEntityUpdate(FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.thisEntity, network.toSend));
 		network.client.receivedEndOfTick(6L, 2L);
 		runnerList.runFullQueue(currentTimeMillis);
 		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(changeLocation, (short)100, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
@@ -480,7 +480,7 @@ public class TestClientRunner
 			afterMove = projection.thisEntity.location();
 			if (null != network.toSend)
 			{
-				network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.thisEntity, network.toSend));
+				network.client.receivedEntityUpdate(FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.thisEntity, network.toSend));
 				latestCommitIncluded += 1L;
 			}
 			network.toSend = null;
@@ -648,7 +648,7 @@ public class TestClientRunner
 		Assert.assertTrue(1L == network.commitLevel);
 		
 		// They would normally send a setBlock but we will just echo the normal mutation, to keep this simple.
-		network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.thisEntity, network.toSend));
+		network.client.receivedEntityUpdate(FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.thisEntity, network.toSend));
 		network.client.receivedEndOfTick(3L, 1L);
 		runnerList.runFullQueue(currentTimeMillis);
 		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalRepair(changeLocation, (short)100)));
@@ -760,7 +760,7 @@ public class TestClientRunner
 			// Grab this entity and apply server change.
 			Entity temp = projection.thisEntity;
 			tick += 1L;
-			network.client.receivedEntityUpdate(clientId, EntityUpdatePerField.update(temp, serverEntity));
+			network.client.receivedEntityUpdate(EntityUpdatePerField.update(temp, serverEntity));
 			network.client.receivedEndOfTick(tick, serverCommit);
 			runnerList.runFullQueue(currentTimeMillis);
 			serverEntity = temp;
@@ -825,7 +825,7 @@ public class TestClientRunner
 		
 		// Apply the change from the server and make sure that this is still showing as completed.
 		EntityUpdatePerField update = EntityUpdatePerField.update(after, projection.thisEntity);
-		network.client.receivedEntityUpdate(clientId, update);
+		network.client.receivedEntityUpdate(update);
 		network.client.receivedEndOfTick(tick, serverCommit);
 		runnerList.runFullQueue(currentTimeMillis);
 		Assert.assertNull(projection.thisEntity.ephemeralShared().localCraftOperation());

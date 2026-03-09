@@ -128,21 +128,19 @@ public interface IClientAdapter
 		void removeCuboid(CuboidAddress address);
 		
 		/**
-		 * Called when an incremental entity update is received from the server.  Note that these are to update the
-		 * state of existing Entity objects on the client.
+		 * Called when an incremental entity update is received from the server.  Note that this is only called to
+		 * update the state of this client's own Entity.
 		 * 
-		 * @param entityId The entity to which the change should be applied.
 		 * @param update The entity update.
 		 */
-		void receivedEntityUpdate(int entityId, EntityUpdatePerField update);
+		void receivedEntityUpdate(EntityUpdatePerField update);
 		/**
 		 * Called when an incremental partial entity update is received from the server.  Note that these are to update
 		 * the state of existing PartialEntity objects on the client.
 		 * 
-		 * @param entityId The entity to which the change should be applied.
 		 * @param update The entity update.
 		 */
-		void receivedPartialEntityUpdate(int entityId, PartialEntityUpdate update);
+		void receivedPartialEntityUpdate(PartialEntityUpdate update);
 		/**
 		 * Called when a block state update is received from the server.
 		 * 

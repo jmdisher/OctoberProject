@@ -468,12 +468,12 @@ public class ClientProcess
 			else if (packet instanceof Packet_EntityUpdateFromServer)
 			{
 				Packet_EntityUpdateFromServer safe = (Packet_EntityUpdateFromServer) packet;
-				_messagesToClientRunner.receivedEntityUpdate(safe.entityId, safe.update);
+				_messagesToClientRunner.receivedEntityUpdate(safe.update);
 			}
 			else if (packet instanceof Packet_PartialEntityUpdateFromServer)
 			{
 				Packet_PartialEntityUpdateFromServer safe = (Packet_PartialEntityUpdateFromServer) packet;
-				_messagesToClientRunner.receivedPartialEntityUpdate(safe.entityId, safe.update);
+				_messagesToClientRunner.receivedPartialEntityUpdate(safe.update);
 			}
 			else if (packet instanceof Packet_BlockStateUpdate)
 			{

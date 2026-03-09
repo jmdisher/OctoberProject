@@ -786,14 +786,14 @@ public class ServerStateManager
 						{
 							// The client has the full entity so send it.
 							EntityUpdatePerField update = EntityUpdatePerField.update(previousEntityVersion, entity);
-							Packet_EntityUpdateFromServer packet = new Packet_EntityUpdateFromServer(entityId, update);
+							Packet_EntityUpdateFromServer packet = new Packet_EntityUpdateFromServer(update);
 							buffer.writePacket(packet);
 						}
 						else if (PartialEntityUpdate.canDescribeChange(previousEntityVersion, entity))
 						{
 							// The client will have a partial so just send that.
 							PartialEntityUpdate update = new PartialEntityUpdate(PartialEntity.fromEntity(entity));
-							Packet_PartialEntityUpdateFromServer packet = new Packet_PartialEntityUpdateFromServer(entityId, update);
+							Packet_PartialEntityUpdateFromServer packet = new Packet_PartialEntityUpdateFromServer(update);
 							buffer.writePacket(packet);
 						}
 					}
@@ -847,7 +847,7 @@ public class ServerStateManager
 					{
 						// Creatures are always partial.
 						PartialEntityUpdate update = new PartialEntityUpdate(PartialEntity.fromCreature(entity));
-						Packet_PartialEntityUpdateFromServer packet = new Packet_PartialEntityUpdateFromServer(entityId, update);
+						Packet_PartialEntityUpdateFromServer packet = new Packet_PartialEntityUpdateFromServer(update);
 						buffer.writePacket(packet);
 					}
 				}

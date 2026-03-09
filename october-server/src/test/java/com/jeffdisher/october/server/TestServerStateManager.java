@@ -1735,7 +1735,7 @@ public class TestServerStateManager
 			else if (packet instanceof Packet_PartialEntityUpdateFromServer)
 			{
 				Packet_PartialEntityUpdateFromServer safe = (Packet_PartialEntityUpdateFromServer)packet;
-				PartialEntity original = this.partialEntitiesPerClient.get(clientId).get(safe.entityId);
+				PartialEntity original = this.partialEntitiesPerClient.get(clientId).get(safe.update.getEntityId());
 				MutablePartialEntity mutable = MutablePartialEntity.existing(original);
 				safe.update.applyToEntity(mutable);
 				PartialEntity updated = mutable.freeze();
