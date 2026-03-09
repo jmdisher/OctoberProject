@@ -72,6 +72,7 @@ import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
+import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
@@ -3170,6 +3171,204 @@ public class TestSpeculativeProjection
 		Assert.assertEquals((byte)100, listener.thisEntityState.health());
 		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 4.98f), listener.thisEntityState.location());
 		Assert.assertEquals(0, listener.events.size());
+	}
+
+	@Test
+	public void perf_changesFromServer()
+	{
+		// Flood the SpeculativeProjection with lots of updates so that the overhead of what it does with them can be measured.
+		boolean infiniteLoopForProfiler = false;
+		boolean longLoopForObjectiveScore = false;
+		
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		mutable.newLocation = new EntityLocation(2.0f, 2.0f, 0.0f);
+		Entity entity1 = mutable.freeze();
+		projector.setThisEntity(entity1);
+		mutable.newLocation = new EntityLocation(2.2f, 2.2f, 0.0f);
+		Entity entity0 = mutable.freeze();
+		
+		CreatureEntity creature1 = CreatureEntity.create(-1, ORC, new EntityLocation(5.0f, 5.0f, 0.0f), 0L);
+		CreatureEntity creature0 = CreatureEntity.create(-1, ORC, new EntityLocation(5.2f, 5.2f, 0.0f), 0L);
+		
+		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		ItemSlot slot = ItemSlot.fromStack(new Items(STONE_ITEM, 5));
+		PassiveEntity passive1 = new PassiveEntity(1
+			, PassiveType.ITEM_SLOT
+			, new EntityLocation(10.0f, 10.0f, 10.0f)
+			, velocity
+			, slot
+			, 1000L
+		);
+		PassiveEntity passive0 = new PassiveEntity(1
+			, PassiveType.ITEM_SLOT
+			, new EntityLocation(10.0f, 10.0f, 9.0f)
+			, velocity
+			, slot
+			, 1000L
+		);
+		
+		// Put this initial data in.
+		long tickNumber = 1L;
+		projector.applyChangesForServerTick(tickNumber
+			, List.of(PartialEntity.fromCreature(creature1))
+			, List.of(PartialPassive.fromPassive(passive1))
+			, List.of(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR)
+				, CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE))
+			, null
+			, Map.of()
+			, Map.of()
+			, List.of()
+			, List.of()
+			, List.of()
+			, List.of()
+			, List.of()
+			, 0L
+			, 1L
+		);
+		
+		// To keep this simple, we will alternate between 2 states in the performance loop.
+		EntityUpdatePerField thisEntityUpdate0 = EntityUpdatePerField.update(entity1, entity0);
+		EntityUpdatePerField thisEntityUpdate1 = EntityUpdatePerField.update(entity0, entity1);
+		PartialEntityUpdate partialEntityUpdate0 = new PartialEntityUpdate(PartialEntity.fromCreature(creature0));
+		PartialEntityUpdate partialEntityUpdate1 = new PartialEntityUpdate(PartialEntity.fromCreature(creature1));
+		PassiveUpdate partialPassiveUpdate0 = new PassiveUpdate(passive0.location(), passive0.velocity());
+		PassiveUpdate partialPassiveUpdate1 = new PassiveUpdate(passive1.location(), passive1.velocity());
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		MutableBlockProxy proxy = new MutableBlockProxy(new AbsoluteLocation(20, 21, 22), cuboid);
+		proxy.setBlockAndClear(STONE);
+		Assert.assertTrue(proxy.didChange());
+		MutationBlockSetBlock cuboidUpdate0 = MutationBlockSetBlock.extractFromProxy(ByteBuffer.allocate(1024), proxy);
+		proxy.writeBack(cuboid);
+		proxy = new MutableBlockProxy(new AbsoluteLocation(20, 21, 22), cuboid);
+		proxy.setBlockAndClear(ENV.special.AIR);
+		Assert.assertTrue(proxy.didChange());
+		MutationBlockSetBlock cuboidUpdate1 = MutationBlockSetBlock.extractFromProxy(ByteBuffer.allocate(1024), proxy);
+		
+		if (infiniteLoopForProfiler)
+		{
+			while(true)
+			{
+				tickNumber += 1;
+				projector.applyChangesForServerTick(tickNumber
+					, List.of()
+					, List.of()
+					, List.of()
+					, thisEntityUpdate0
+					, Map.of(-1, partialEntityUpdate0)
+					, Map.of(1, partialPassiveUpdate0)
+					, List.of(cuboidUpdate0)
+					, List.of()
+					, List.of()
+					, List.of()
+					, List.of()
+					, 0L
+					, 1L
+				);
+				
+				tickNumber += 1;
+				projector.applyChangesForServerTick(tickNumber
+					, List.of()
+					, List.of()
+					, List.of()
+					, thisEntityUpdate1
+					, Map.of(-1, partialEntityUpdate1)
+					, Map.of(1, partialPassiveUpdate1)
+					, List.of(cuboidUpdate1)
+					, List.of()
+					, List.of()
+					, List.of()
+					, List.of()
+					, 0L
+					, 1L
+				);
+			}
+		}
+		else if (longLoopForObjectiveScore)
+		{
+			int iterationCount = 1_000_000;
+			long startNanos = System.nanoTime();
+			for (int i = 0; i < iterationCount; ++i)
+			{
+				tickNumber += 1;
+				projector.applyChangesForServerTick(tickNumber
+					, List.of()
+					, List.of()
+					, List.of()
+					, thisEntityUpdate0
+					, Map.of(-1, partialEntityUpdate0)
+					, Map.of(1, partialPassiveUpdate0)
+					, List.of(cuboidUpdate0)
+					, List.of()
+					, List.of()
+					, List.of()
+					, List.of()
+					, 0L
+					, 1L
+				);
+				
+				tickNumber += 1;
+				projector.applyChangesForServerTick(tickNumber
+					, List.of()
+					, List.of()
+					, List.of()
+					, thisEntityUpdate1
+					, Map.of(-1, partialEntityUpdate1)
+					, Map.of(1, partialPassiveUpdate1)
+					, List.of(cuboidUpdate1)
+					, List.of()
+					, List.of()
+					, List.of()
+					, List.of()
+					, 0L
+					, 1L
+				);
+			}
+			long endNanos = System.nanoTime();
+			System.out.println("Nanos per: " + ((endNanos - startNanos) / iterationCount));
+		}
+		else
+		{
+			tickNumber += 1;
+			projector.applyChangesForServerTick(tickNumber
+				, List.of()
+				, List.of()
+				, List.of()
+				, thisEntityUpdate0
+				, Map.of(-1, partialEntityUpdate0)
+				, Map.of(1, partialPassiveUpdate0)
+				, List.of(cuboidUpdate0)
+				, List.of()
+				, List.of()
+				, List.of()
+				, List.of()
+				, 0L
+				, 1L
+			);
+			Assert.assertEquals(2, listener.entityChangeCount);
+			Assert.assertEquals(1, listener.changeCount);
+			
+			tickNumber += 1;
+			projector.applyChangesForServerTick(tickNumber
+				, List.of()
+				, List.of()
+				, List.of()
+				, thisEntityUpdate1
+				, Map.of(-1, partialEntityUpdate1)
+				, Map.of(1, partialPassiveUpdate1)
+				, List.of(cuboidUpdate1)
+				, List.of()
+				, List.of()
+				, List.of()
+				, List.of()
+				, 0L
+				, 1L
+			);
+			Assert.assertEquals(4, listener.entityChangeCount);
+			Assert.assertEquals(2, listener.changeCount);
+		}
 	}
 
 
