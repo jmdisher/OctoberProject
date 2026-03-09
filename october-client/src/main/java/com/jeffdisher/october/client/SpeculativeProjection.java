@@ -94,11 +94,6 @@ public class SpeculativeProjection
 
 	private final ShadowState _shadowState;
 	private ProjectedState _projectedState;
-	/**
-	 * The block loader is exposed publicly since it is often used by clients to view the world.  Note that this always
-	 * points to current _projectedWorld, symbolically.
-	 */
-	public final Function<AbsoluteLocation, BlockProxy> projectionBlockLoader;
 	
 	private final List<_LocalActionWrapper> _speculativeChanges;
 	private final List<_LocalCallConsequences> _followUpTicks;
@@ -119,14 +114,6 @@ public class SpeculativeProjection
 		_serverMillisPerTick = serverMillisPerTick;
 		
 		_shadowState = new ShadowState();
-		this.projectionBlockLoader = (AbsoluteLocation location) -> {
-			CuboidAddress address = location.getCuboidAddress();
-			IReadOnlyCuboidData cuboid = _projectedState.projectedWorld.get(address);
-			return (null != cuboid)
-					? BlockProxy.load(location.getBlockAddress(), cuboid)
-					: null
-			;
-		};
 		
 		_speculativeChanges = new ArrayList<>();
 		_followUpTicks = new ArrayList<>();
@@ -733,7 +720,15 @@ public class SpeculativeProjection
 			, long currentTickTimeMillis 
 	)
 	{
-		LazyLocationCache<BlockProxy> lazyCache = new LazyLocationCache<>(this.projectionBlockLoader);
+		Function<AbsoluteLocation, BlockProxy> projectionBlockLoader = (AbsoluteLocation location) -> {
+			CuboidAddress address = location.getCuboidAddress();
+			IReadOnlyCuboidData cuboid = _projectedState.projectedWorld.get(address);
+			return (null != cuboid)
+					? BlockProxy.load(location.getBlockAddress(), cuboid)
+					: null
+			;
+		};
+		LazyLocationCache<BlockProxy> lazyCache = new LazyLocationCache<>(projectionBlockLoader);
 		TickProcessingContext.IBlockFetcher cachingLoader = new TickProcessingContext.IBlockFetcher() {
 			@Override
 			public BlockProxy readBlock(AbsoluteLocation location)
@@ -743,7 +738,7 @@ public class SpeculativeProjection
 			@Override
 			public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
 			{
-				// TODO:  Make this call a batching mechanism in the lower level.
+				// It isn't clear if we need to use the underlying batching mechanism for this class so just use the lazyCache, for now.
 				Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
 				for (AbsoluteLocation location : locations)
 				{
