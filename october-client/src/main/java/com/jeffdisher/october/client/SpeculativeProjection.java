@@ -155,8 +155,8 @@ public class SpeculativeProjection
 	 * @param addedPassives The list of passives which were added in this tick.
 	 * @param addedCuboids The list of cuboids which were loaded in this tick.
 	 * @param thisEntityUpdate The update made to this entity which committed in this tick.
-	 * @param partialEntityUpdates The map of per-entity state updates which committed in this tick.
-	 * @param partialPassiveUpdates The map of per-passive state update lists which committed in this tick.
+	 * @param partialEntityUpdates The list of per-entity state updates which committed in this tick.
+	 * @param partialPassiveUpdates The list of per-passive state update lists which committed in this tick.
 	 * @param cuboidUpdates The list of cuboid updates which committed in this tick.
 	 * @param removedEntities The list of entities which were removed in this tick.
 	 * @param removedPassives The list of passives which were removed in this tick.
@@ -173,8 +173,8 @@ public class SpeculativeProjection
 			, List<IReadOnlyCuboidData> addedCuboids
 			
 			, EntityUpdatePerField thisEntityUpdate
-			, Map<Integer, PartialEntityUpdate> partialEntityUpdates
-			, Map<Integer, PassiveUpdate> partialPassiveUpdates
+			, List<PartialEntityUpdate> partialEntityUpdates
+			, List<PassiveUpdate> partialPassiveUpdates
 			, List<MutationBlockSetBlock> cuboidUpdates
 			
 			, List<Integer> removedEntities

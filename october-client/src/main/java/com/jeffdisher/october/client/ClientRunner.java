@@ -1,9 +1,7 @@
 package com.jeffdisher.october.client;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
@@ -207,8 +205,8 @@ public class ClientRunner
 		private List<IReadOnlyCuboidData> _addedCuboids = new ArrayList<>();
 		
 		private EntityUpdatePerField _entityUpdate = null;
-		private Map<Integer, PartialEntityUpdate> _partialEntityUpdates = new HashMap<>();
-		private Map<Integer, PassiveUpdate> _passiveEntityUpdates = new HashMap<>();
+		private List<PartialEntityUpdate> _partialEntityUpdates = new ArrayList<>();
+		private List<PassiveUpdate> _passiveEntityUpdates = new ArrayList<>();
 		private List<MutationBlockSetBlock> _cuboidUpdates = new ArrayList<>();
 		
 		private List<Integer> _removedEntities = new ArrayList<>();
@@ -263,8 +261,8 @@ public class ClientRunner
 		@Override
 		public void receivedPassiveUpdate(int entityId, EntityLocation location, EntityLocation velocity)
 		{
-			PassiveUpdate update = new PassiveUpdate(location, velocity);
-			_passiveEntityUpdates.put(entityId, update);
+			PassiveUpdate update = new PassiveUpdate(entityId, location, velocity);
+			_passiveEntityUpdates.add(update);
 		}
 		@Override
 		public void removePassive(int entityId)
@@ -291,9 +289,7 @@ public class ClientRunner
 		@Override
 		public void receivedPartialEntityUpdate(PartialEntityUpdate update)
 		{
-			// We expect to only receive at most 1 update for each entity, per tick.
-			Object old = _partialEntityUpdates.put(update.getEntityId(), update);
-			Assert.assertTrue(null == old);
+			_partialEntityUpdates.add(update);
 		}
 		@Override
 		public void receivedBlockUpdate(MutationBlockSetBlock stateUpdate)
@@ -326,9 +322,9 @@ public class ClientRunner
 			_addedCuboids.clear();
 			EntityUpdatePerField entityChange = _entityUpdate;
 			_entityUpdate = null;
-			Map<Integer, PartialEntityUpdate> partialEntityChanges = new HashMap<>(_partialEntityUpdates);
+			List<PartialEntityUpdate> partialEntityChanges = new ArrayList<>(_partialEntityUpdates);
 			_partialEntityUpdates.clear();
-			Map<Integer, PassiveUpdate> partialPassiveUpdates = new HashMap<>(_passiveEntityUpdates);
+			List<PassiveUpdate> partialPassiveUpdates = new ArrayList<>(_passiveEntityUpdates);
 			_passiveEntityUpdates.clear();
 			List<MutationBlockSetBlock> cuboidUpdates = new ArrayList<>(_cuboidUpdates);
 			_cuboidUpdates.clear();

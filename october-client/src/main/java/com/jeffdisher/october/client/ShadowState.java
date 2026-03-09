@@ -76,8 +76,8 @@ public class ShadowState
 			, List<IReadOnlyCuboidData> addedCuboids
 			
 			, EntityUpdatePerField thisEntityUpdate
-			, Map<Integer, PartialEntityUpdate> partialEntityUpdates
-			, Map<Integer, PassiveUpdate> partialPassiveUpdates
+			, List<PartialEntityUpdate> partialEntityUpdates
+			, List<PassiveUpdate> partialPassiveUpdates
 			, List<MutationBlockSetBlock> cuboidUpdates
 			
 			, List<Integer> removedEntities
@@ -169,8 +169,8 @@ public class ShadowState
 	}
 
 	private _UpdateTuple _applyUpdatesToShadowState(EntityUpdatePerField thisEntityUpdate
-			, Map<Integer, PartialEntityUpdate> partialEntityUpdates
-			, Map<Integer, PassiveUpdate> partialPassiveUpdates
+			, List<PartialEntityUpdate> partialEntityUpdates
+			, List<PassiveUpdate> partialPassiveUpdates
 			, Map<AbsoluteLocation, MutationBlockSetBlock> updatesToApply
 	)
 	{
@@ -213,13 +213,12 @@ public class ShadowState
 		return updatedShadowEntity;
 	}
 
-	private Map<Integer, PartialEntity> _applyPartialEntityUpdatesToShadowState(Map<Integer, PartialEntityUpdate> partialEntityUpdates)
+	private Map<Integer, PartialEntity> _applyPartialEntityUpdatesToShadowState(List<PartialEntityUpdate> partialEntityUpdates)
 	{
 		Map<Integer, PartialEntity> entitiesChangedInTick = new HashMap<>();
-		for (Map.Entry<Integer, PartialEntityUpdate> elt : partialEntityUpdates.entrySet())
+		for (PartialEntityUpdate update : partialEntityUpdates)
 		{
-			int entityId = elt.getKey();
-			PartialEntityUpdate update = elt.getValue();
+			int entityId = update.getEntityId();
 			
 			PartialEntity partialEntityToChange = _shadowCrowd.get(entityId);
 			// These must already exist if they are being updated.
@@ -235,13 +234,12 @@ public class ShadowState
 		return entitiesChangedInTick;
 	}
 
-	private Map<Integer, PartialPassive> _applyPassiveEntityUpdatesToShadowState(Map<Integer, PassiveUpdate> partialPassiveUpdates)
+	private Map<Integer, PartialPassive> _applyPassiveEntityUpdatesToShadowState(List<PassiveUpdate> partialPassiveUpdates)
 	{
 		Map<Integer, PartialPassive> passivesChangedInTick = new HashMap<>();
-		for (Map.Entry<Integer, PassiveUpdate> elt : partialPassiveUpdates.entrySet())
+		for (PassiveUpdate update : partialPassiveUpdates)
 		{
-			int entityId = elt.getKey();
-			PassiveUpdate update = elt.getValue();
+			int entityId = update.passiveEntityId();
 			PartialPassive passiveToChange = _shadowPassives.get(entityId);
 			// These must already exist if they are being updated.
 			Assert.assertTrue(null != passiveToChange);
