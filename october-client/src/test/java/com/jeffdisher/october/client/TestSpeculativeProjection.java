@@ -3209,13 +3209,25 @@ public class TestSpeculativeProjection
 			, 1000L
 		);
 		
+		// We want to create a large number of cuboids to stress how the client behaves in large view distance scenarios (where 11x11x11 cuboids are common).
+		List<IReadOnlyCuboidData> addedCuboids = new ArrayList<>();
+		for (int z = -5; z <= 5; ++z)
+		{
+			Block solid = (z >= 0) ? ENV.special.AIR : STONE;
+			for (int y = -5; y <= 5; ++y)
+			{
+				for (int x = -5; x <= 5; ++x)
+				{
+					addedCuboids.add(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(x, y, z), solid));
+				}
+			}
+		}
 		// Put this initial data in.
 		long tickNumber = 1L;
 		projector.applyChangesForServerTick(tickNumber
 			, List.of(PartialEntity.fromCreature(creature1))
 			, List.of(PartialPassive.fromPassive(passive1))
-			, List.of(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR)
-				, CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE))
+			, addedCuboids
 			, null
 			, List.of()
 			, List.of()
