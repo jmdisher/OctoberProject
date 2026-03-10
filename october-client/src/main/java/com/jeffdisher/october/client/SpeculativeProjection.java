@@ -35,7 +35,6 @@ import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.net.EntityUpdatePerField;
 import com.jeffdisher.october.net.PartialEntityUpdate;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
@@ -174,26 +173,11 @@ public class SpeculativeProjection
 			, long currentTimeMillis
 	)
 	{
-		// We will take a snapshot of the previous shadowWorld so we can use it to describe what is changing in the authoritative set.
-		Map<CuboidAddress, IReadOnlyCuboidData> staleShadowWorld = _shadowState.getCopyOfWorld();
-		
 		// Before applying the updates, add the new data.
 		ShadowState.ApplicationSummary summary = _shadowState.absorbAuthoritativeChanges(addedEntities, addedPassives, addedCuboids
 				, thisEntityUpdate, partialEntityUpdates, partialPassiveUpdates, cuboidUpdates
 				, removedEntities, removedPassives, removedCuboids
 		);
-		
-		// Verify that all state changes to the shadow data actually did something (since this would be a needless change we should prune, otherwise).
-		// In the future, we may want to remove this since it is a non-trivial check.
-		for (MutationBlockSetBlock update : cuboidUpdates)
-		{
-			AbsoluteLocation location = update.getAbsoluteLocation();
-			CuboidAddress address = location.getCuboidAddress();
-			BlockAddress block = location.getBlockAddress();
-			IReadOnlyCuboidData staleCuboid = staleShadowWorld.get(address);
-			IReadOnlyCuboidData shadowCuboid = _shadowState.getCuboid(address);
-			Assert.assertTrue(!BlockProxy.doAspectsMatch(block, staleCuboid, shadowCuboid));
-		}
 		
 		// ***** By this point, the shadow state has been updated so we can rebuild the projected state.
 		

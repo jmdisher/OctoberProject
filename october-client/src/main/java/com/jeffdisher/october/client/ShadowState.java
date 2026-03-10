@@ -63,16 +63,6 @@ public class ShadowState
 		return _thisShadowEntity;
 	}
 
-	public Map<CuboidAddress, IReadOnlyCuboidData> getCopyOfWorld()
-	{
-		return new HashMap<>(_shadowWorld);
-	}
-
-	public IReadOnlyCuboidData getCuboid(CuboidAddress address)
-	{
-		return _shadowWorld.get(address);
-	}
-
 	public ApplicationSummary absorbAuthoritativeChanges(List<PartialEntity> addedEntities
 			, List<PartialPassive> addedPassives
 			, List<IReadOnlyCuboidData> addedCuboids
