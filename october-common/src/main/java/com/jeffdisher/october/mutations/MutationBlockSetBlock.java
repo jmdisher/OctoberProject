@@ -147,12 +147,16 @@ public class MutationBlockSetBlock
 
 	/**
 	 * Applies the change to the given target.
+	 * This returns the BLOCK value just as a convenience for some client-side use-cases and may be realized in a
+	 * different way, in the future.
 	 * 
 	 * @param target The cuboid to modify by writing the receiver's changes.
+	 * @return The BLOCK aspect short value, or -1 if not set.
 	 */
 	@SuppressWarnings("unchecked")
-	public void applyState(CuboidData target)
+	public short applyState(CuboidData target)
 	{
+		short blockValue = -1;
 		ByteBuffer buffer = ByteBuffer.wrap(_rawData);
 		BlockAddress location = _location.getBlockAddress();
 		// We only store the data which actually changed so loop until the buffer segment is empty, checking for indices (byte).
@@ -167,6 +171,10 @@ public class MutationBlockSetBlock
 			{
 				short value = buffer.getShort();
 				target.setData15((Aspect<Short, ?>) type, location, value);
+				if (AspectRegistry.BLOCK == type)
+				{
+					blockValue = value;
+				}
 			}
 			else if (Byte.class == type.type())
 			{
@@ -178,6 +186,7 @@ public class MutationBlockSetBlock
 				_readAndStore(target, location, type, buffer);
 			}
 		}
+		return blockValue;
 	}
 
 	/**

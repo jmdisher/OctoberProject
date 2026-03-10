@@ -16,6 +16,7 @@ import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.net.EntityUpdatePerField;
 import com.jeffdisher.october.net.PartialEntityUpdate;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.MutableEntity;
@@ -275,13 +276,25 @@ public class ShadowState
 			IReadOnlyCuboidData readOnly = _shadowWorld.get(address);
 			CuboidData mutableCuboid = CuboidData.mutableClone(readOnly);
 			
+			// Apply the changes and determine what is required to update the height map.
+			List<BlockAddress> blocksChangedToAir = new ArrayList<>();
+			List<BlockAddress> blocksChangedToNotAir = new ArrayList<>();
 			for (MutationBlockSetBlock update : entry.getValue())
 			{
-				update.applyState(mutableCuboid);
+				short blockValueSet = update.applyState(mutableCuboid);
+				if (0 == blockValueSet)
+				{
+					blocksChangedToAir.add(update.getAbsoluteLocation().getBlockAddress());
+				}
+				else if (blockValueSet > 0)
+				{
+					blocksChangedToNotAir.add(update.getAbsoluteLocation().getBlockAddress());
+				}
 			}
 			
 			// We can now update the height map.
-			CuboidHeightMap newHeightMap = HeightMapHelpers.buildHeightMap(mutableCuboid);
+			CuboidHeightMap oldHeightMap = _shadowHeightMap.get(address);
+			CuboidHeightMap newHeightMap = HeightMapHelpers.updateHeightMap(oldHeightMap, mutableCuboid, blocksChangedToAir, blocksChangedToNotAir);
 			
 			// Save these out-params.
 			out_updatedCuboids.put(address, mutableCuboid);
