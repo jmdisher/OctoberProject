@@ -67,18 +67,20 @@ public interface IReadOnlyCuboidData
 		byte y = blockAddress.y();
 		byte z = blockAddress.z();
 		
+		// Each of these fields has a range of [0..31] so the highest bit is 16.
 		int value = 0;
-		for (int mask = 0x100; mask > 0; mask >>= 1)
+		for (int mask = 16; mask > 0; mask >>= 1)
 		{
-			int xBit = (0 != (x & mask)) ? 1 : 0;
-			int yBit = (0 != (y & mask)) ? 1 : 0;
+			int xBit = (0 != (x & mask)) ? 4 : 0;
+			int yBit = (0 != (y & mask)) ? 2 : 0;
 			int zBit = (0 != (z & mask)) ? 1 : 0;
 			
 			// Shift over the previous iteration and add in our bits for X, Y, Z (in that order).
-			value <<= 3;
-			value |= (xBit << 2);
-			value |= (yBit << 1);
-			value |= zBit;
+			value = (value << 3)
+				| xBit
+				| yBit
+				| zBit
+			;
 		}
 		return value;
 	}
