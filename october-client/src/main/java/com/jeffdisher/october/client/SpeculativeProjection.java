@@ -127,7 +127,11 @@ public class SpeculativeProjection
 	 */
 	public void setThisEntity(Entity thisEntity)
 	{
+		// Set the initial shadow state.
 		_shadowState.setThisEntity(thisEntity);
+		
+		// Also, notify the listener that this initial local entity state loaded.
+		_listener.thisEntityDidLoad(thisEntity);
 	}
 
 	/**
@@ -196,7 +200,6 @@ public class SpeculativeProjection
 		}
 		
 		// Rebuild our projection from these collections.
-		boolean isFirstRun = (null == _projectedState);
 		Map<AbsoluteLocation, MutationBlockSetBlock> previousProjectedChanges;
 		Set<CuboidAddress> previousProjectedUnsafeLight;
 		Entity previousLocalEntity;
@@ -341,12 +344,6 @@ public class SpeculativeProjection
 		Map<CuboidColumnAddress, ColumnHeightMap> columnHeightMaps = _projectedState.buildColumnMaps(columnsToGenerate);
 		
 		// Notify the listener of what was added.
-		if (isFirstRun)
-		{
-			// This is the first load so nothing should have changed.
-			Assert.assertTrue(_shadowState.getThisEntity() == _projectedState.projectedLocalEntity);
-			_listener.thisEntityDidLoad(_shadowState.getThisEntity());
-		}
 		for (PartialEntity entity : addedEntities)
 		{
 			_listener.otherEntityDidLoad(entity);
