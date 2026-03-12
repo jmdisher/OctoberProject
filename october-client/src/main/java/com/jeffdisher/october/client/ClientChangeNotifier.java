@@ -27,14 +27,16 @@ public class ClientChangeNotifier
 	 * Processes incoming changes from the server and converts those into calls out to the listener.
 	 * 
 	 * @param listener The listener which will receive the callbacks.
-	 * @param currentProjectedState The projected state created from the updated shadow state with any remaining local
+	 * @param lookups Access to look up cuboids and column height maps.
+	 * @param previousNotication The data describing the last notification we sent, to avoid duplication.
 	 * changes applied on top.  This call will read and write projectedBlockChanges.
 	 * @param incomingChangesFromServer Authoritative changes which have come in from the server.
 	 * @param localChangesApplied The union of all local-only changes which have been applied to the projected state.
 	 * @param knownHeightMaps The current height maps from the updated projected state.
 	 */
 	public static void notifyCuboidChangesFromServer(IProjectionListener listener
-			, ProjectedState currentProjectedState
+			, ILookup lookups
+			, PreviousNotificationDetails previousNotication
 			, Map<AbsoluteLocation, MutationBlockSetBlock> incomingChangesFromServer
 			, Map<AbsoluteLocation, MutationBlockSetBlock> localChangesApplied
 			, Map<CuboidColumnAddress, ColumnHeightMap> knownHeightMaps
@@ -45,8 +47,8 @@ public class ClientChangeNotifier
 		Map<CuboidAddress, Set<Aspect<?, ?>>> changedAspects = new HashMap<>();
 		
 		// This call rebuilds the projected changes but we want to store the old version to know what changed.
-		Map<AbsoluteLocation, MutationBlockSetBlock> previousProjectedChanges = currentProjectedState.projectedBlockChanges;
-		currentProjectedState.projectedBlockChanges = new HashMap<>();
+		Map<AbsoluteLocation, MutationBlockSetBlock> previousProjectedChanges = previousNotication.clearPreviousMap();
+		Map<AbsoluteLocation, MutationBlockSetBlock> newChanges = new HashMap<>();
 		
 		// First thing, we will merge the incoming changes from the server and remaining local changes into the projected state (as this is what will be considered "previous" in the next call).
 		for (Map.Entry<AbsoluteLocation, MutationBlockSetBlock> fromServer : incomingChangesFromServer.entrySet())
@@ -65,22 +67,22 @@ public class ClientChangeNotifier
 				// Just use this change.
 				change = value;
 			}
-			currentProjectedState.projectedBlockChanges.put(key, change);
+			newChanges.put(key, change);
 		}
 		
 		// Add in any local changes we didn't merge in above.
 		for (Map.Entry<AbsoluteLocation, MutationBlockSetBlock> local : localChangesApplied.entrySet())
 		{
 			AbsoluteLocation key = local.getKey();
-			if (!currentProjectedState.projectedBlockChanges.containsKey(key))
+			if (!newChanges.containsKey(key))
 			{
 				MutationBlockSetBlock value = local.getValue();
-				currentProjectedState.projectedBlockChanges.put(key, value);
+				newChanges.put(key, value);
 			}
 		}
 		
 		// We will report anything which has new changes since last report.
-		for (Map.Entry<AbsoluteLocation, MutationBlockSetBlock> change : currentProjectedState.projectedBlockChanges.entrySet())
+		for (Map.Entry<AbsoluteLocation, MutationBlockSetBlock> change : newChanges.entrySet())
 		{
 			AbsoluteLocation key = change.getKey();
 			MutationBlockSetBlock current = change.getValue();
@@ -90,14 +92,14 @@ public class ClientChangeNotifier
 				MutationBlockSetBlock previous = previousProjectedChanges.get(key);
 				if (!current.doesDataMatch(previous))
 				{
-					_updateCollectionsWithChange(cuboidsToReport, changedBlocks, changedAspects, currentProjectedState, key, current, previous);
+					_updateCollectionsWithChange(cuboidsToReport, changedBlocks, changedAspects, lookups, key, current, previous);
 				}
 			}
 			else
 			{
 				// This is a new change so just report it.
 				MutationBlockSetBlock empty = new MutationBlockSetBlock(key, new byte[0]);
-				_updateCollectionsWithChange(cuboidsToReport, changedBlocks, changedAspects, currentProjectedState, key, current, empty);
+				_updateCollectionsWithChange(cuboidsToReport, changedBlocks, changedAspects, lookups, key, current, empty);
 			}
 		}
 		
@@ -105,13 +107,13 @@ public class ClientChangeNotifier
 		for (Map.Entry<AbsoluteLocation, MutationBlockSetBlock> previous : previousProjectedChanges.entrySet())
 		{
 			AbsoluteLocation key = previous.getKey();
-			if (!currentProjectedState.projectedBlockChanges.containsKey(key))
+			if (!newChanges.containsKey(key))
 			{
 				// This is a retired case so check it.
 				// Note that we do NOT add this to projectedBlockChanges.
 				MutationBlockSetBlock current = previous.getValue();
 				CuboidAddress address = key.getCuboidAddress();
-				IReadOnlyCuboidData cuboid = currentProjectedState.projectedWorld.get(address);
+				IReadOnlyCuboidData cuboid = lookups.getLatestCuboid(address);
 				Set<Aspect<?, ?>> changes = current.changedAspectsVersusCuboid(cuboid);
 				if (!changes.isEmpty())
 				{
@@ -133,6 +135,7 @@ public class ClientChangeNotifier
 				}
 			}
 		}
+		previousNotication.storePreviousMap(newChanges);
 		
 		// Generate any of the missing columns.
 		Set<CuboidColumnAddress> missingColumns = cuboidsToReport.keySet().stream()
@@ -140,16 +143,17 @@ public class ClientChangeNotifier
 				.filter((CuboidColumnAddress column) -> !knownHeightMaps.containsKey(column))
 				.collect(Collectors.toUnmodifiableSet())
 		;
-		Map<CuboidColumnAddress, ColumnHeightMap> addedHeightMaps = currentProjectedState.buildColumnMaps(missingColumns);
+		Map<CuboidColumnAddress, ColumnHeightMap> addedHeightMaps = lookups.generateAllHeightMaps(missingColumns);
 		Map<CuboidColumnAddress, ColumnHeightMap> allHeightMaps = new HashMap<>();
 		allHeightMaps.putAll(knownHeightMaps);
 		allHeightMaps.putAll(addedHeightMaps);
 		
+		Set<CuboidAddress> unsafeLighting = previousNotication.clearUnsafeLighting();
 		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> elt : cuboidsToReport.entrySet())
 		{
 			CuboidAddress address = elt.getKey();
 			Set<Aspect<?, ?>> aspects = changedAspects.get(address);
-			if (currentProjectedState.projectedUnsafeLight.contains(address))
+			if (unsafeLighting.contains(address))
 			{
 				// We already reported a light change for this so remove that.
 				aspects = new HashSet<>(aspects);
@@ -166,6 +170,7 @@ public class ClientChangeNotifier
 				);
 			}
 		}
+		previousNotication.storeUnsafeLighting(unsafeLighting);
 	}
 
 	/**
@@ -173,12 +178,14 @@ public class ClientChangeNotifier
 	 * listener.
 	 * 
 	 * @param listener The listener which will receive the callbacks.
-	 * @param currentProjectedState The projected state updated with most recent local changes.
+	 * @param lookups Access to look up cuboids and column height maps.
+	 * @param previousNotication The data describing the last notification we sent, to avoid duplication.
 	 * @param localChangesApplied The union of all local-only changes which have been applied to the projected state.
 	 * @param lightingOptChanges The set of cuboids using unsafe lighting optimization, instead of normal change reporting.
 	 */
 	public static void notifyCuboidChangesFromLocal(IProjectionListener listener
-			, ProjectedState currentProjectedState
+			, ILookup lookups
+			, PreviousNotificationDetails previousNotication
 			, Map<AbsoluteLocation, MutationBlockSetBlock> localChangesApplied
 			, Set<CuboidAddress> lightingOptChanges
 	)
@@ -188,32 +195,33 @@ public class ClientChangeNotifier
 		Map<CuboidAddress, Set<Aspect<?, ?>>> changedAspects = new HashMap<>();
 		
 		// This call rebuilds the projected lighting changes but we want to store the old version to know what changed.
-		Set<CuboidAddress> previouslightingOptChanges = currentProjectedState.projectedUnsafeLight;
-		currentProjectedState.projectedUnsafeLight = new HashSet<>();
+		Set<CuboidAddress> previouslightingOptChanges = previousNotication.clearUnsafeLighting();
 		
 		// Merge the new changes into the existing changes we have reported, collecting data to notify on anything new or expanded.
+		Map<AbsoluteLocation, MutationBlockSetBlock> existingProjectedChanges = previousNotication.clearPreviousMap();
 		for (Map.Entry<AbsoluteLocation, MutationBlockSetBlock> local : localChangesApplied.entrySet())
 		{
 			AbsoluteLocation key = local.getKey();
 			MutationBlockSetBlock value = local.getValue();
-			if (currentProjectedState.projectedBlockChanges.containsKey(key))
+			if (existingProjectedChanges.containsKey(key))
 			{
 				// See if this needs to be expanded to account for new changes.
-				MutationBlockSetBlock previous = currentProjectedState.projectedBlockChanges.get(key);
+				MutationBlockSetBlock previous = existingProjectedChanges.get(key);
 				if (!value.doesDataMatch(previous))
 				{
-					_updateCollectionsWithChange(cuboidsToReport, changedBlocks, changedAspects, currentProjectedState, key, value, previous);
-					currentProjectedState.projectedBlockChanges.put(key, value);
+					_updateCollectionsWithChange(cuboidsToReport, changedBlocks, changedAspects, lookups, key, value, previous);
+					existingProjectedChanges.put(key, value);
 				}
 			}
 			else
 			{
 				// We can just inject this change, directly.
 				MutationBlockSetBlock empty = new MutationBlockSetBlock(key, new byte[0]);
-				_updateCollectionsWithChange(cuboidsToReport, changedBlocks, changedAspects, currentProjectedState, key, value, empty);
-				currentProjectedState.projectedBlockChanges.put(key, value);
+				_updateCollectionsWithChange(cuboidsToReport, changedBlocks, changedAspects, lookups, key, value, empty);
+				existingProjectedChanges.put(key, value);
 			}
 		}
+		previousNotication.storePreviousMap(existingProjectedChanges);
 		
 		// Generate any of the missing columns.
 		Set<CuboidColumnAddress> missingColumns = cuboidsToReport.keySet().stream()
@@ -229,7 +237,7 @@ public class ClientChangeNotifier
 				.toList()
 			);
 		}
-		Map<CuboidColumnAddress, ColumnHeightMap> addedHeightMaps = currentProjectedState.buildColumnMaps(missingColumns);
+		Map<CuboidColumnAddress, ColumnHeightMap> addedHeightMaps = lookups.generateAllHeightMaps(missingColumns);
 		Map<CuboidColumnAddress, ColumnHeightMap> allHeightMaps = new HashMap<>();
 		allHeightMaps.putAll(addedHeightMaps);
 		
@@ -258,21 +266,21 @@ public class ClientChangeNotifier
 		{
 			if (!cuboidsToReport.containsKey(lightChanges))
 			{
-				listener.cuboidDidChange(currentProjectedState.projectedWorld.get(lightChanges)
+				listener.cuboidDidChange(lookups.getLatestCuboid(lightChanges)
 					, allHeightMaps.get(lightChanges.getColumn())
 					, Set.of()
 					, Set.of(AspectRegistry.LIGHT)
 				);
 			}
 		}
-		currentProjectedState.projectedUnsafeLight = lightingOptChanges;
+		previousNotication.storeUnsafeLighting(lightingOptChanges);
 	}
 
 
 	private static void _updateCollectionsWithChange(Map<CuboidAddress, IReadOnlyCuboidData> cuboidsToReport
 			, Map<CuboidAddress, Set<BlockAddress>> changedBlocks
 			, Map<CuboidAddress, Set<Aspect<?, ?>>> changedAspects
-			, ProjectedState currentProjectedState
+			, ILookup lookups
 			, AbsoluteLocation location
 			, MutationBlockSetBlock current
 			, MutationBlockSetBlock previous
@@ -295,8 +303,15 @@ public class ClientChangeNotifier
 			changedBlocks.get(address).add(location.getBlockAddress());
 			if (!cuboidsToReport.containsKey(address))
 			{
-				cuboidsToReport.put(address, currentProjectedState.projectedWorld.get(address));
+				cuboidsToReport.put(address, lookups.getLatestCuboid(address));
 			}
 		}
+	}
+
+
+	public static interface ILookup
+	{
+		IReadOnlyCuboidData getLatestCuboid(CuboidAddress address);
+		Map<CuboidColumnAddress, ColumnHeightMap> generateAllHeightMaps(Set<CuboidColumnAddress> columns);
 	}
 }

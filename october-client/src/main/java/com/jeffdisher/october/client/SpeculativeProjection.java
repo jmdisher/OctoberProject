@@ -93,7 +93,8 @@ public class SpeculativeProjection
 
 	private final ShadowState _shadowState;
 	private ProjectedState _projectedState;
-	
+	private final PreviousNotificationDetails _previousNotificationDetails;
+
 	private final List<_LocalActionWrapper> _speculativeChanges;
 	private final List<_LocalCallConsequences> _followUpTicks;
 	private long _nextLocalCommitNumber;
@@ -113,6 +114,7 @@ public class SpeculativeProjection
 		_serverMillisPerTick = serverMillisPerTick;
 		
 		_shadowState = new ShadowState();
+		_previousNotificationDetails = new PreviousNotificationDetails();
 		
 		_speculativeChanges = new ArrayList<>();
 		_followUpTicks = new ArrayList<>();
@@ -200,17 +202,14 @@ public class SpeculativeProjection
 		}
 		
 		// Rebuild our projection from these collections.
-		Map<AbsoluteLocation, MutationBlockSetBlock> previousProjectedChanges;
-		Set<CuboidAddress> previousProjectedUnsafeLight;
 		Entity previousLocalEntity;
 		if (null != _projectedState)
 		{
-			previousProjectedChanges = _projectedState.projectedBlockChanges;
-			previousProjectedUnsafeLight = _projectedState.projectedUnsafeLight;
 			previousLocalEntity = _projectedState.projectedLocalEntity;
 			// If any cuboids were removed, strip any updates from the previous block changes so we don't try to reverse-verify them.
 			if (!removedCuboids.isEmpty())
 			{
+				Map<AbsoluteLocation, MutationBlockSetBlock> previousProjectedChanges = _previousNotificationDetails.clearPreviousMap();
 				Set<CuboidAddress> removed = Set.copyOf(removedCuboids);
 				Iterator<AbsoluteLocation> iter = previousProjectedChanges.keySet().iterator();
 				while (iter.hasNext())
@@ -220,15 +219,14 @@ public class SpeculativeProjection
 						iter.remove();
 					}
 				}
+				_previousNotificationDetails.storePreviousMap(previousProjectedChanges);
 			}
 		}
 		else
 		{
-			previousProjectedChanges = Map.of();
-			previousProjectedUnsafeLight = Set.of();
 			previousLocalEntity = null;
 		}
-		_projectedState = _shadowState.buildProjectedState(previousProjectedChanges, previousProjectedUnsafeLight);
+		_projectedState = _shadowState.buildProjectedState();
 		
 		// Step forward the follow-ups before we add to them when processing speculative changes.
 		if (_followUpTicks.size() > 0)
@@ -361,8 +359,10 @@ public class SpeculativeProjection
 		// Use the common path to describe what was changed.
 		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedState.projectedLocalEntity)) ? _projectedState.projectedLocalEntity : null;
 		Assert.assertTrue(!summary.partialEntitiesChanged().contains(_localEntityId));
+		ClientChangeNotifier.ILookup lookup = _buildNotifierLookup();
 		ClientChangeNotifier.notifyCuboidChangesFromServer(_listener
-			, _projectedState
+			, lookup
+			, _previousNotificationDetails
 			, summary.changedBlocks()
 			, speculativeModificationsForNotification
 			, columnHeightMaps
@@ -424,10 +424,12 @@ public class SpeculativeProjection
 			
 			// Notify the listener of what changed.
 			Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedState.projectedLocalEntity)) ? _projectedState.projectedLocalEntity : null;
+			ClientChangeNotifier.ILookup lookup = _buildNotifierLookup();
 			ClientChangeNotifier.notifyCuboidChangesFromLocal(_listener
-					, _projectedState
-					, modifiedBlocks
-					, lightOpt
+				, lookup
+				, _previousNotificationDetails
+				, modifiedBlocks
+				, lightOpt
 			);
 			_notifyEntityChanges(changedLocalEntity, Set.of(), Set.of());
 		}
@@ -902,6 +904,23 @@ public class SpeculativeProjection
 			isLocalEvent = false;
 		}
 		return isLocalEvent;
+	}
+
+	private ClientChangeNotifier.ILookup _buildNotifierLookup()
+	{
+		ClientChangeNotifier.ILookup lookup = new ClientChangeNotifier.ILookup() {
+			@Override
+			public IReadOnlyCuboidData getLatestCuboid(CuboidAddress address)
+			{
+				return _projectedState.projectedWorld.get(address);
+			}
+			@Override
+			public Map<CuboidColumnAddress, ColumnHeightMap> generateAllHeightMaps(Set<CuboidColumnAddress> columns)
+			{
+				return _projectedState.buildColumnMaps(columns);
+			}
+		};
+		return lookup;
 	}
 
 
