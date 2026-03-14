@@ -3,6 +3,7 @@ package com.jeffdisher.october.client;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -14,6 +15,7 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.HeightMapHelpers;
@@ -70,10 +72,10 @@ public class TestClientChangeNotifier
 				count[0] += 1;
 			}
 		};
-		ProjectedState state = new ProjectedState(null, Map.of(address, projected), Map.of(address, HeightMapHelpers.buildHeightMap(projected)));
+		_Lookup lookup = new _Lookup(Map.of(address, projected), Map.of(address, HeightMapHelpers.buildHeightMap(projected)));
 		PreviousNotificationDetails previousNotificationDetails = new PreviousNotificationDetails();
 		ClientChangeNotifier.notifyCuboidChangesFromLocal(listener
-			, new _Lookup(state)
+			, lookup
 			, previousNotificationDetails
 			, Map.of(location, setBlock)
 			, Set.of()
@@ -82,7 +84,7 @@ public class TestClientChangeNotifier
 		
 		// A redundant change should not send any callbacks.
 		ClientChangeNotifier.notifyCuboidChangesFromLocal(listener
-			, new _Lookup(state)
+			, lookup
 			, previousNotificationDetails
 			, Map.of(location, setBlock)
 			, Set.of()
@@ -119,10 +121,10 @@ public class TestClientChangeNotifier
 		setBlock.applyState(changed);
 		// We build the projected state from this shadow and re-apply local changes (none)
 		CuboidData projected = CuboidData.mutableClone(changed);
-		ProjectedState state = new ProjectedState(null, Map.of(address, projected), Map.of(address, HeightMapHelpers.buildHeightMap(projected)));
+		_Lookup lookup = new _Lookup(Map.of(address, projected), Map.of(address, HeightMapHelpers.buildHeightMap(projected)));
 		PreviousNotificationDetails previousNotificationDetails = new PreviousNotificationDetails();
 		ClientChangeNotifier.notifyCuboidChangesFromServer(listener
-			, new _Lookup(state)
+			, lookup
 			, previousNotificationDetails
 			, Map.of(location, setBlock)
 			, Map.of()
@@ -180,13 +182,12 @@ public class TestClientChangeNotifier
 		// We build the projected state from this shadow and re-apply local changes (none)
 		CuboidData projected0 = CuboidData.mutableClone(changed0);
 		CuboidData projected1 = CuboidData.mutableClone(changed1);
-		ProjectedState state = new ProjectedState(null
-			, Map.of(address0, projected0, address1, projected1)
+		_Lookup lookup = new _Lookup(Map.of(address0, projected0, address1, projected1)
 			, Map.of(address0, HeightMapHelpers.buildHeightMap(projected0), address1, HeightMapHelpers.buildHeightMap(projected1))
 		);
 		PreviousNotificationDetails previousNotificationDetails = new PreviousNotificationDetails();
 		ClientChangeNotifier.notifyCuboidChangesFromServer(listener
-			, new _Lookup(state)
+			, lookup
 			, previousNotificationDetails
 			, Map.of(location0, setBlock0, location1, setBlock1)
 			, Map.of()
@@ -213,10 +214,10 @@ public class TestClientChangeNotifier
 				count[0] += 1;
 			}
 		};
-		ProjectedState state = new ProjectedState(null, Map.of(address, projected), Map.of(address, HeightMapHelpers.buildHeightMap(projected)));
+		_Lookup lookup = new _Lookup(Map.of(address, projected), Map.of(address, HeightMapHelpers.buildHeightMap(projected)));
 		PreviousNotificationDetails previousNotificationDetails = new PreviousNotificationDetails();
 		ClientChangeNotifier.notifyCuboidChangesFromLocal(listener
-			, new _Lookup(state)
+			, lookup
 			, previousNotificationDetails
 			, Map.of()
 			, Set.of(address)
@@ -225,7 +226,7 @@ public class TestClientChangeNotifier
 		
 		// A redundant change should not send any callbacks.
 		ClientChangeNotifier.notifyCuboidChangesFromLocal(listener
-			, new _Lookup(state)
+			, lookup
 			, previousNotificationDetails
 			, Map.of()
 			, Set.of(address)
@@ -300,20 +301,29 @@ public class TestClientChangeNotifier
 
 	private static class _Lookup implements ClientChangeNotifier.ILookup
 	{
-		private final ProjectedState _projectedState;
-		public _Lookup(ProjectedState projectedState)
+		private final Map<CuboidAddress, IReadOnlyCuboidData> _projectedWorld;
+		private final Map<CuboidAddress, CuboidHeightMap> _projectedHeightMap;
+		public _Lookup(Map<CuboidAddress, IReadOnlyCuboidData> projectedWorld
+			, Map<CuboidAddress, CuboidHeightMap> projectedHeightMap
+		)
 		{
-			_projectedState = projectedState;
+			_projectedWorld = projectedWorld;
+			_projectedHeightMap = projectedHeightMap;
 		}
 		@Override
 		public IReadOnlyCuboidData getLatestCuboid(CuboidAddress address)
 		{
-			return _projectedState.projectedWorld.get(address);
+			return _projectedWorld.get(address);
 		}
 		@Override
 		public Map<CuboidColumnAddress, ColumnHeightMap> generateAllHeightMaps(Set<CuboidColumnAddress> columns)
 		{
-			return _projectedState.buildColumnMaps(columns);
+			Map<CuboidAddress, CuboidHeightMap> mapsToCoalesce = _projectedHeightMap.entrySet().stream()
+				.filter((Map.Entry<CuboidAddress, CuboidHeightMap> entry) -> columns.contains(entry.getKey().getColumn()))
+				.collect(Collectors.toMap((Map.Entry<CuboidAddress, CuboidHeightMap> entry) -> entry.getKey(), (Map.Entry<CuboidAddress, CuboidHeightMap> entry) -> entry.getValue()))
+			;
+			Map<CuboidColumnAddress, ColumnHeightMap> columnHeightMaps = HeightMapHelpers.buildColumnMaps(mapsToCoalesce);
+			return columnHeightMaps;
 		}
 	}
 }
