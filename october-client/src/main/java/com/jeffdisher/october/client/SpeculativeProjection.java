@@ -184,6 +184,13 @@ public class SpeculativeProjection
 				, thisEntityUpdate, partialEntityUpdates, partialPassiveUpdates, cuboidUpdates
 				, removedEntities, removedPassives, removedCuboids
 		);
+		List<PartialEntity> updatedEntities = summary.partialEntitiesChanged();
+		List<PartialPassive> updatedPassives = summary.passiveEntitiesChanged();
+		
+		// Collect the updates for merging with local updates to determine what notifications need to be sent while minimizing duplication.
+		Map<AbsoluteLocation, MutationBlockSetBlock> updatesToExport = cuboidUpdates.stream()
+			.collect(Collectors.toMap((MutationBlockSetBlock input) -> input.getAbsoluteLocation(), (MutationBlockSetBlock input) -> input))
+		;
 		
 		// ***** By this point, the shadow state has been updated so we can rebuild the projected state.
 		
@@ -259,6 +266,7 @@ public class SpeculativeProjection
 		
 		// Merge the speculative changes which are still not committed.
 		Iterator<_LocalActionWrapper> previous = _speculativeChanges.iterator();
+		Set<CuboidAddress> allCuboidAddresses = _projectedState.projectedWorld.keySet();
 		while (previous.hasNext())
 		{
 			_LocalActionWrapper wrapper = previous.next();
@@ -269,7 +277,7 @@ public class SpeculativeProjection
 			// Only consider this if it is more recent than the level we are applying.
 			if (wrapper.commitNumber > latestLocalCommitIncluded)
 			{
-				CommonMutationSink ignoredMutationSink = new CommonMutationSink(_projectedState.projectedWorld.keySet());
+				CommonMutationSink ignoredMutationSink = new CommonMutationSink(allCuboidAddresses);
 				CommonChangeSink ingoredChangeSink = new CommonChangeSink(allPlayerIds, allCreatureIds, passiveIds);
 				TickProcessingContext context = _createContext(gameTick
 					, ignoredMutationSink
@@ -357,17 +365,19 @@ public class SpeculativeProjection
 		}
 		
 		// Use the common path to describe what was changed.
-		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedState.projectedLocalEntity)) ? _projectedState.projectedLocalEntity : null;
-		Assert.assertTrue(!summary.partialEntitiesChanged().contains(_localEntityId));
+		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedState.projectedLocalEntity))
+			? _projectedState.projectedLocalEntity
+			: null
+		;
 		ClientChangeNotifier.ILookup lookup = _buildNotifierLookup();
 		ClientChangeNotifier.notifyCuboidChangesFromServer(_listener
 			, lookup
 			, _previousNotificationDetails
-			, summary.changedBlocks()
+			, updatesToExport
 			, speculativeModificationsForNotification
 			, columnHeightMaps
 		);
-		_notifyEntityChanges(changedLocalEntity, summary.partialEntitiesChanged(), summary.passiveEntitiesChanged());
+		_notifyEntityChanges(changedLocalEntity, updatedEntities, updatedPassives);
 		
 		// Notify the listeners of what was removed.
 		for (Integer id : removedEntities)
@@ -423,7 +433,10 @@ public class SpeculativeProjection
 			}
 			
 			// Notify the listener of what changed.
-			Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedState.projectedLocalEntity)) ? _projectedState.projectedLocalEntity : null;
+			Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedState.projectedLocalEntity))
+				? _projectedState.projectedLocalEntity
+				: null
+			;
 			ClientChangeNotifier.ILookup lookup = _buildNotifierLookup();
 			ClientChangeNotifier.notifyCuboidChangesFromLocal(_listener
 				, lookup
@@ -431,7 +444,7 @@ public class SpeculativeProjection
 				, modifiedBlocks
 				, lightOpt
 			);
-			_notifyEntityChanges(changedLocalEntity, Set.of(), Set.of());
+			_notifyEntityChanges(changedLocalEntity, List.of(), List.of());
 		}
 		else
 		{
@@ -445,21 +458,21 @@ public class SpeculativeProjection
 
 
 	private void _notifyEntityChanges(Entity updatedLocalEntity
-			, Set<Integer> otherEntityIds
-			, Set<Integer> changedPassiveIds
+		, List<PartialEntity> updatedEntities
+		, List<PartialPassive> updatedPassives
 	)
 	{
 		if (null != updatedLocalEntity)
 		{
 			_listener.thisEntityDidChange(updatedLocalEntity);
 		}
-		for (Integer entityId : otherEntityIds)
+		for (PartialEntity entity : updatedEntities)
 		{
-			_listener.otherEntityDidChange(_shadowState.getEntity(entityId));
+			_listener.otherEntityDidChange(entity);
 		}
-		for (Integer entityId : changedPassiveIds)
+		for (PartialPassive passive : updatedPassives)
 		{
-			_listener.passiveEntityDidChange(_shadowState.getPassive(entityId));
+			_listener.passiveEntityDidChange(passive);
 		}
 	}
 
@@ -485,10 +498,11 @@ public class SpeculativeProjection
 		Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = Map.of();
 		Set<CuboidAddress> accumulatedLightingChangeCuboids = new HashSet<>();
 		boolean didFirstPass = true;
+		Set<CuboidAddress> allCuboidAddresses = _projectedState.projectedWorld.keySet();
 		for (int i = 0; (i <= MAX_FOLLOW_UP_TICKS) && didFirstPass && (!entityChangesToRun.isEmpty() || !blockMutationstoRun.isEmpty() || !potentialLightChangesByCuboid.isEmpty()); ++i)
 		{
 			// Create the context and mutation sinks for this invocation.
-			CommonMutationSink newMutationSink = new CommonMutationSink(_projectedState.projectedWorld.keySet());
+			CommonMutationSink newMutationSink = new CommonMutationSink(allCuboidAddresses);
 			CommonChangeSink newChangeSink = new CommonChangeSink(allPlayerIds, allCreatureIds, passiveIds);
 			TickProcessingContext context = _createContext(gameTick
 					, newMutationSink
@@ -499,13 +513,15 @@ public class SpeculativeProjection
 			);
 			
 			// Run these changes and mutations, collecting the resultant output from them.
-			Entity[] entityResult = _runChangesOnEntity(context, _localEntityId, _projectedState.projectedLocalEntity, entityChangesToRun);
+			Entity localEntity = _projectedState.projectedLocalEntity;
+			Entity[] entityResult = _runChangesOnEntity(context, _localEntityId, localEntity, entityChangesToRun);
 			// This returns non-null on success but the container may be empty if the entity didn't change.
 			EntityUpdatePerField update = null;
 			if ((null != entityResult) && (null != entityResult[0]))
 			{
-				update = EntityUpdatePerField.update(_projectedState.projectedLocalEntity, entityResult[0]);
-				_projectedState.projectedLocalEntity = entityResult[0];
+				Entity newEntity = entityResult[0];
+				update = EntityUpdatePerField.update(localEntity, newEntity);
+				_projectedState.projectedLocalEntity = newEntity;
 			}
 			// On the first invocation, we MUST pass in order to apply the rest of the sequence.
 			if (0 == i)
@@ -532,7 +548,8 @@ public class SpeculativeProjection
 						// See if we need to extract the lighting.
 						if (!lightingOpt.containsKey(address))
 						{
-							OctreeInflatedByte unsafeLighting = CuboidUnsafe.getAspectUnsafe(_projectedState.projectedWorld.get(address), AspectRegistry.LIGHT);
+							IReadOnlyCuboidData projectedCuboid = _projectedState.projectedWorld.get(address);
+							OctreeInflatedByte unsafeLighting = CuboidUnsafe.getAspectUnsafe(projectedCuboid, AspectRegistry.LIGHT);
 							lightingOpt.put(address, unsafeLighting);
 						}
 					}
@@ -600,7 +617,8 @@ public class SpeculativeProjection
 	)
 	{
 		// We want to combine our mutations into the right map but we will also add in the potential light changes since they might grow the map (with empty mutations).
-		Map<CuboidAddress, List<ScheduledMutation>> innerMutations = _createMutationMap(blockMutations, _projectedState.projectedWorld.keySet());
+		Set<CuboidAddress> allCuboidAddresses = _projectedState.projectedWorld.keySet();
+		Map<CuboidAddress, List<ScheduledMutation>> innerMutations = _createMutationMap(blockMutations, allCuboidAddresses);
 		for (CuboidAddress lighting : potentialLightChangesByCuboid.keySet())
 		{
 			if (!innerMutations.containsKey(lighting))
@@ -617,9 +635,11 @@ public class SpeculativeProjection
 		for (Map.Entry<CuboidAddress, List<ScheduledMutation>> mut : innerMutations.entrySet())
 		{
 			CuboidAddress key = mut.getKey();
+			IReadOnlyCuboidData projectedCuboid = _projectedState.projectedWorld.get(key);
+			CuboidHeightMap projectedHeightMap = _projectedState.projectedHeightMap.get(key);
 			List<ScheduledMutation> list = mut.getValue();
 			EngineCuboids.SingleCuboidResult result = EngineCuboids.processOneCuboid(context
-				, _projectedState.projectedWorld.keySet()
+				, allCuboidAddresses
 				, list
 				, Map.of()
 				, Map.of()
@@ -627,8 +647,8 @@ public class SpeculativeProjection
 				, Map.of()
 				, Set.of()
 				, key
-				, _projectedState.projectedWorld.get(key)
-				, _projectedState.projectedHeightMap.get(key)
+				, projectedCuboid
+				, projectedHeightMap
 			);
 			if (null != result.changedCuboidOrNull())
 			{
@@ -840,10 +860,10 @@ public class SpeculativeProjection
 				AbsoluteLocation location = modifiedBlock.getKey();
 				CuboidAddress address = location.getCuboidAddress();
 				CuboidData cuboid = scratchMap.get(address);
+				IReadOnlyCuboidData readOnly = _projectedState.projectedWorld.get(address);
 				
-				if ((null == cuboid) && _projectedState.projectedWorld.containsKey(address))
+				if ((null == cuboid) && (null != readOnly))
 				{
-					IReadOnlyCuboidData readOnly = _projectedState.projectedWorld.get(address);
 					cuboid = CuboidData.mutableClone(readOnly);
 					scratchMap.put(address, cuboid);
 				}

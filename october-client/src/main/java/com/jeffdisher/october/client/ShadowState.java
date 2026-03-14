@@ -106,11 +106,7 @@ public class ShadowState
 		_shadowWorld.keySet().removeAll(removedCuboids);
 		_shadowHeightMap.keySet().removeAll(removedCuboids);
 		
-		// Collect the updates for merging with local updates to determine what notifications need to be sent while minimizing duplication.
-		Map<AbsoluteLocation, MutationBlockSetBlock> updatesToExport = cuboidUpdates.stream()
-			.collect(Collectors.toMap((MutationBlockSetBlock input) -> input.getAbsoluteLocation(), (MutationBlockSetBlock input) -> input))
-		;
-		return new ApplicationSummary(shadowUpdates.entitiesChangedInTick.keySet(), shadowUpdates.passivesChangedInTick.keySet(), updatesToExport);
+		return new ApplicationSummary(List.copyOf(shadowUpdates.entitiesChangedInTick.values()), List.copyOf(shadowUpdates.passivesChangedInTick.values()));
 	}
 
 	public ProjectedState buildProjectedState()
@@ -293,9 +289,8 @@ public class ShadowState
 	}
 
 
-	public static record ApplicationSummary(Set<Integer> partialEntitiesChanged
-			, Set<Integer> passiveEntitiesChanged
-			, Map<AbsoluteLocation, MutationBlockSetBlock> changedBlocks
+	public static record ApplicationSummary(List<PartialEntity> partialEntitiesChanged
+		, List<PartialPassive> passiveEntitiesChanged
 	) {}
 
 	private static record _UpdateTuple(Entity updatedShadowEntity
