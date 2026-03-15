@@ -96,10 +96,17 @@ public class ClientProcess
 	 */
 	public ClientProcess(IListener listener, InetAddress address, int port, String clientName, int cuboidViewDistance) throws IOException
 	{
+		// Set purely-internal state first, since ClientRunner calls back from its constructor and NetworkClient calls back in a background thread.
 		this.serverState = new ServerState();
 		
 		_listener = listener;
 		_pendingCallbacks = new TimeRunnerList();
+		
+		_networkBufferLock = new ReentrantLock();
+		_networkReady = false;
+		_outgoing = new LinkedList<>();
+		
+		// Now, initialize the special cases which call back into this.
 		_clientRunner = new ClientRunner(new _NetworkAdapter()
 			, new _ProjectionListener()
 			, new _RunnerListener()
@@ -110,10 +117,6 @@ public class ClientProcess
 		
 		// Create the connection (note that this will return when the connection is accepted but the handshake completes in the background).
 		_client = new NetworkClient(new _NetworkClientListener(), address, port, clientName, cuboidViewDistance);
-		
-		_networkBufferLock = new ReentrantLock();
-		_networkReady = false;
-		_outgoing = new LinkedList<>();
 	}
 
 	/**
