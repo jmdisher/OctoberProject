@@ -134,7 +134,7 @@ public class CreatureLogic
 		if (null != mutable.newMovementPlan)
 		{
 			// If we have a movement plan, we want to try to advance it and then produce the next action.
-			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getType().volume());
+			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), mutable.getType().volume());
 			_advanceMovementPlan(blockKindLookup, mutable);
 			// We never want to leave an empty movement plan so we expect that has been addressed before we got here.
 			Assert.assertTrue((null == mutable.newMovementPlan) || !mutable.newMovementPlan.isEmpty());
@@ -241,7 +241,7 @@ public class CreatureLogic
 			else if (null == mutable.newMovementPlan)
 			{
 				// We have no plan so make a new one.
-				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getType().volume());
+				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), mutable.getType().volume());
 				_makeMovementPlan(context, blockKindLookup, entityCollection, mutable);
 			}
 			
@@ -277,7 +277,7 @@ public class CreatureLogic
 	 */
 	public static List<AbsoluteLocation> test_findPathToRandomSpot(TickProcessingContext context, EntityLocation location, EntityType type)
 	{
-		Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, type.volume());
+		Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, location.getOffsetIntoBlock(), type.volume());
 		return _findPathToRandomSpot(context
 				, blockKindLookup
 				, location
@@ -621,7 +621,7 @@ public class CreatureLogic
 				// They moved by at least a block so update their location and build a new path.
 				mutable.newTargetPreviousLocation = newLocation;
 				EntityVolume volume = mutable.getType().volume();
-				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, volume);
+				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), volume);
 				mutable.setMovementPlan(PathFinder.findPathWithLimit(blockKindLookup, mutable.getLocation(), targetLocation, pathDistance));
 			}
 		}
@@ -1009,12 +1009,14 @@ public class CreatureLogic
 	{
 		private final BlockAspect _blocks;
 		private final TickProcessingContext.IBlockFetcher _previousBlockLookUp;
+		private final EntityLocation _offsetBias;
 		private final EntityVolume _volume;
 		
-		public _LookupHelper(TickProcessingContext context, EntityVolume volume)
+		public _LookupHelper(TickProcessingContext context, EntityLocation offsetBias, EntityVolume volume)
 		{
 			_blocks = Environment.getShared().blocks;
 			_previousBlockLookUp = context.previousBlockLookUp;
+			_offsetBias = offsetBias;
 			_volume = volume;
 		}
 		@Override
@@ -1023,7 +1025,13 @@ public class CreatureLogic
 			// We default to assuming that the path is walkable, unless we find anything more interesting.
 			PathFinder.BlockKind kind = PathFinder.BlockKind.WALKABLE;
 			
-			List<AbsoluteLocation> interior = VolumeIterator.getAllInVolume(location.toEntityLocation(), _volume);
+			// We will apply the offset bias since this entity might be straddling blocks in a way which spills across more than usual.
+			EntityLocation blockBase = location.toEntityLocation();
+			EntityLocation adjustedBase = new EntityLocation(blockBase.x() + _offsetBias.x()
+				, blockBase.y() + _offsetBias.y()
+				, blockBase.z() + _offsetBias.z()
+			);
+			List<AbsoluteLocation> interior = VolumeIterator.getAllInVolume(adjustedBase, _volume);
 			Map<AbsoluteLocation, BlockProxy> proxies = _previousBlockLookUp.readBlockBatch(interior);
 			for (AbsoluteLocation loc : interior)
 			{

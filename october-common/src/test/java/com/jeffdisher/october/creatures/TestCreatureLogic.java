@@ -1243,6 +1243,36 @@ public class TestCreatureLogic
 		Assert.assertNull(mutable.getMovementPlan());
 	}
 
+	@Test
+	public void partialUnload()
+	{
+		// Show that we correctly handle the case where we have a plan to follow but a cuboid the entity stradles has unloaded.
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		_setLayer(input, (byte)0, "op.stone");
+		
+		EntityLocation startLocation = new EntityLocation(30.9f, 0.0f, 1.0f);
+		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, 0L);
+		MutableCreature mutable = MutableCreature.existing(cow);
+		mutable.newMovementPlan = List.of(new AbsoluteLocation(30, 0, 1), new AbsoluteLocation(30, 1, 1));
+		
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
+				return cuboidAddress.equals(location.getCuboidAddress())
+					? BlockProxy.load(location.getBlockAddress(), input)
+					: null
+				;
+			}), null, null)
+			.finish()
+		;
+		
+		// We should detect that we are intersecting with a solid block, clear our plan, and take no action.
+		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
+		Assert.assertNull(change);
+		Assert.assertNull(mutable.getMovementPlan());
+	}
+
 
 	private static TickProcessingContext _createContext(Function<AbsoluteLocation, BlockProxy> function, int random)
 	{
