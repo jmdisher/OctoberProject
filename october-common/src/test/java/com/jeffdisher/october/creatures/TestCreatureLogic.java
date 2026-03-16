@@ -1213,6 +1213,36 @@ public class TestCreatureLogic
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutable.newVelocity);
 	}
 
+	@Test
+	public void suddenlyInSolidBlock()
+	{
+		// Show that we correctly handle the case where we have a plan but are suddenly in a solid block (like sand falling or a player placing a block at a racy time).
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		_setLayer(input, (byte)0, "op.stone");
+		AbsoluteLocation blockLocation = new AbsoluteLocation(2, 3, 1);
+		short blockNumber = ENV.items.getItemById("op.stone").number();
+		input.setData15(AspectRegistry.BLOCK, blockLocation.getBlockAddress(), blockNumber);
+		
+		EntityLocation startLocation = new EntityLocation(2.79f, 3.01f, 1.0f);
+		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, 0L);
+		MutableCreature mutable = MutableCreature.existing(cow);
+		mutable.newMovementPlan = List.of(new AbsoluteLocation(2, 3, 1), new AbsoluteLocation(3, 3, 1));
+		
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
+				return BlockProxy.load(location.getBlockAddress(), input);
+			}), null, null)
+			.finish()
+		;
+		
+		// We should detect that we are intersecting with a solid block, clear our plan, and take no action.
+		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
+		Assert.assertNull(change);
+		Assert.assertNull(mutable.getMovementPlan());
+	}
+
 
 	private static TickProcessingContext _createContext(Function<AbsoluteLocation, BlockProxy> function, int random)
 	{

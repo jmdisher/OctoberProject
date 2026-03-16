@@ -479,10 +479,16 @@ public class CreatureLogic
 		AbsoluteLocation thisStep = existingPlan.get(0);
 		EntityLocation entityLocation = mutable.getLocation();
 		AbsoluteLocation currentLocation = entityLocation.getBlockLocation();
+		PathFinder.BlockKind currentKind = blockKindLookup.apply(currentLocation);
 		
 		List<AbsoluteLocation> updatedPlan;
-		// First, check to see if we are already in our next location.
-		if (currentLocation.equals(thisStep))
+		// First, check to see if we are already in our next location, but also make sure that where we currently stand is ok.
+		if (PathFinder.BlockKind.SOLID == currentKind)
+		{
+			// This typically happens if a block drops on us or if a block was placed on us due to a race condition.
+			updatedPlan = null;
+		}
+		else if (currentLocation.equals(thisStep))
 		{
 			// If we are, that means that we can remove this from the path and plan to move to the next step.
 			if (existingPlan.size() > 1)
@@ -506,9 +512,8 @@ public class CreatureLogic
 			if (isAdjacent)
 			{
 				// Just make sure we can move in both of these.
-				PathFinder.BlockKind currentKind = blockKindLookup.apply(currentLocation);
 				PathFinder.BlockKind nextKind = blockKindLookup.apply(thisStep);
-				if ((PathFinder.BlockKind.SOLID == currentKind) || (PathFinder.BlockKind.SOLID == nextKind))
+				if (PathFinder.BlockKind.SOLID == nextKind)
 				{
 					// Something is blocked so clear the plan.
 					updatedPlan = null;
