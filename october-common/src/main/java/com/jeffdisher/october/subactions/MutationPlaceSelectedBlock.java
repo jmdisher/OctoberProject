@@ -65,7 +65,11 @@ public class MutationPlaceSelectedBlock implements IEntitySubAction<IMutablePlay
 		// -is there a selected item?
 		// -is this target location close by?
 		// -is the target location not colliding with the entity, itself?
-		boolean isTargetAir = env.blocks.canBeReplaced(context.previousBlockLookUp.readBlock(_targetBlock).getBlock());
+		BlockProxy targetProxy = context.previousBlockLookUp.readBlock(_targetBlock);
+		boolean canBlockBeReplaced = (null != targetProxy)
+			? env.blocks.canBeReplaced(targetProxy.getBlock())
+			: false
+		;
 		
 		int selectedKey = newEntity.getSelectedKey();
 		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
@@ -117,10 +121,14 @@ public class MutationPlaceSelectedBlock implements IEntitySubAction<IMutablePlay
 		boolean blockIsSupported = false;
 		if (null != blockType)
 		{
-			blockIsSupported = env.blocks.canExistOnBlock(blockType, context.previousBlockLookUp.readBlock(_targetBlock.getRelative(0, 0, -1)).getBlock());
+			BlockProxy belowProxy = context.previousBlockLookUp.readBlock(_targetBlock.getRelative(0, 0, -1));
+			blockIsSupported = (null != belowProxy)
+				? env.blocks.canExistOnBlock(blockType, belowProxy.getBlock())
+				: false
+			;
 		}
 		
-		if (isTargetAir && isItemSelected && isLocationClose && isLocationNotColliding && blockIsSupported)
+		if (canBlockBeReplaced && isItemSelected && isLocationClose && isLocationNotColliding && blockIsSupported)
 		{
 			// Decide if this block type needs special orientation considerations.
 			FacingDirection outputDirection = env.orientations.getDirectionIfApplicableToSingle(blockType, _targetBlock, _blockOutput);

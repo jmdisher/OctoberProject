@@ -3669,6 +3669,39 @@ public class TestCommonChanges
 		}
 	}
 
+	@Test
+	public void placeBlockInMissingCuboid() throws Throwable
+	{
+		// This is kind of a contrived case (only noticed in headless clients) but should be fixed - the MutationPlaceSelectedBlock should fail gracefully if the target block isn't loaded.
+		int entityId = 1;
+		MutableEntity newEntity = MutableEntity.createForTest(entityId);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
+		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups(new TickProcessingContext.IBlockFetcher() {
+				@Override
+				public BlockProxy readBlock(AbsoluteLocation location)
+				{
+					return null;
+				}
+				@Override
+				public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
+				{
+					return Map.of();
+				}
+			}, null, null)
+			.finish()
+		;
+		
+		// Move the target location away and show that this fails and has no impact.
+		AbsoluteLocation target = new AbsoluteLocation(100, 100, 10);
+		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(target, target);
+		Assert.assertFalse(place.applyChange(context, newEntity));
+		Assert.assertEquals(1, newEntity.freeze().inventory().getCount(LOG_ITEM));
+		Assert.assertEquals(1, newEntity.getSelectedKey());
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{
