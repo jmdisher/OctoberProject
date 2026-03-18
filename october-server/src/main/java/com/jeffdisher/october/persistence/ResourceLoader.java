@@ -2,15 +2,16 @@ package com.jeffdisher.october.persistence;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -136,6 +137,11 @@ public class ResourceLoader
 	private final Thread _background;
 	private final ByteBuffer _backround_serializationBuffer;
 
+	// These collections contain the serialized versions of the cuboids and entities which are considered live within the
+	// system (not yet retired by a call to writeBackToDiskAndRetire) and used to avoid redundant write-back to disk.
+	private final Map<CuboidAddress, byte[]> _background_serializedCuboidBuffer;
+	private final Map<Integer, byte[]> _background_serializedEntityBuffer;
+
 	// We directly expose the ID assigner since it is designed to be shared and is atomic.
 	public final CreatureIdAssigner creatureIdAssigner;
 	public final PassiveIdAssigner passiveIdAssigner;
@@ -166,6 +172,8 @@ public class ResourceLoader
 			_background_main();
 		}, "Cuboid Loader");
 		_backround_serializationBuffer = ByteBuffer.allocate(SERIALIZATION_BUFFER_SIZE_BYTES);
+		_background_serializedCuboidBuffer = new HashMap<>();
+		_background_serializedEntityBuffer = new HashMap<>();
 		this.creatureIdAssigner = new CreatureIdAssigner();
 		this.passiveIdAssigner = new PassiveIdAssigner();
 		
@@ -188,6 +196,10 @@ public class ResourceLoader
 			// We don't use interruption.
 			throw Assert.unexpected(e);
 		}
+		
+		// Once everything is done, we expect those internal caches to be empty (otherwise, something is leaking).
+		Assert.assertTrue(_background_serializedCuboidBuffer.isEmpty());
+		Assert.assertTrue(_background_serializedEntityBuffer.isEmpty());
 	}
 
 	/**
@@ -259,6 +271,11 @@ public class ResourceLoader
 						{
 							data = _cuboidGenerator.generateCuboid(this.creatureIdAssigner, address, currentGameMillis);
 						}
+						if (null != data)
+						{
+							// If we just generated this for the first time, make an empty entry in the buffer to force write-back on next write attempt.
+							_background_serializedCuboidBuffer.put(address, new byte[0]);
+						}
 					}
 					// If we found anything, return it.
 					if (null != data)
@@ -281,6 +298,12 @@ public class ResourceLoader
 					{
 						// Note that the entity generator is always present.
 						data = _buildDefaultEntity(id, _config.worldSpawn.toEntityLocation(), (WorldConfig.DefaultPlayerMode.CREATIVE == _config.defaultPlayerMode));
+						
+						if (null != data)
+						{
+							// If we just generated this for the first time, make an empty entry in the buffer to force write-back on next write attempt.
+							_background_serializedEntityBuffer.put(id, new byte[0]);
+						}
 					}
 					
 					// Return the result.
@@ -313,7 +336,8 @@ public class ResourceLoader
 
 	/**
 	 * Requests that the given collection of cuboids and entities be written back to disk.  This call will return
-	 * immediately while the write-back will complete asynchronously.
+	 * immediately while the write-back will complete asynchronously.  After this call, the cuboids and entities are
+	 * considered "retired" and are purged from internal caches.
 	 * Note that at least one of these collections must contain something.
 	 * 
 	 * @param cuboids The cuboids (and any suspended mutations) to write.
@@ -321,18 +345,18 @@ public class ResourceLoader
 	 * @param gameTimeMillis The millisecond time of the last-completed tick (used for storing "time remaining" in some
 	 * counters, etc).
 	 */
-	public void writeBackToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities, long gameTimeMillis)
+	public void writeBackToDiskAndRetire(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities, long gameTimeMillis)
 	{
 		// This one should only be called if there are some to write.
 		Assert.assertTrue(!cuboids.isEmpty() || !entities.isEmpty());
 		_queue.enqueue(() -> {
 			for (PackagedCuboid cuboid : cuboids)
 			{
-				_background_writeCuboidToDisk(cuboid, gameTimeMillis);
+				_background_writeCuboidToDisk(cuboid, gameTimeMillis, false);
 			}
 			for (SuspendedEntity entity : entities)
 			{
-				_background_writeEntityToDisk(entity);
+				_background_writeEntityToDisk(entity, false);
 			}
 		});
 	}
@@ -347,11 +371,11 @@ public class ResourceLoader
 			_queue.enqueue(() -> {
 				for (PackagedCuboid cuboid : cuboids)
 				{
-					_background_writeCuboidToDisk(cuboid, gameTimeMillis);
+					_background_writeCuboidToDisk(cuboid, gameTimeMillis, true);
 				}
 				for (SuspendedEntity entity : entities)
 				{
-					_background_writeEntityToDisk(entity);
+					_background_writeEntityToDisk(entity, true);
 				}
 				_isAttemptedWritePending = false;
 			});
@@ -462,13 +486,10 @@ public class ResourceLoader
 	{
 		// These data files are relatively small so we can just read this in, completely.
 		SuspendedCuboid<CuboidData> result;
-		try (
-				RandomAccessFile aFile = new RandomAccessFile(_getCuboidFile(address), "r");
-				FileChannel inChannel = aFile.getChannel();
-		)
+		try
 		{
-			MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
-			buffer.load();
+			byte[] rawData = Files.readAllBytes(_getCuboidFile(address));
+			ByteBuffer buffer = ByteBuffer.wrap(rawData);
 			
 			// Verify the version is one we can understand.
 			int version = buffer.getInt();
@@ -806,8 +827,11 @@ public class ResourceLoader
 			}
 			
 			result = dataReader.get();
+			
+			// We got this far so store the raw data for later comparisons on write-back.
+			_background_serializedCuboidBuffer.put(address, rawData);
 		}
-		catch (FileNotFoundException e)
+		catch (NoSuchFileException e)
 		{
 			// This is ok and means we should return null.
 			result = null;
@@ -1063,7 +1087,7 @@ public class ResourceLoader
 		return suspended;
 	}
 
-	private Map<BlockAddress, Long> _background_readPeriodic(MappedByteBuffer buffer)
+	private Map<BlockAddress, Long> _background_readPeriodic(ByteBuffer buffer)
 	{
 		Map<BlockAddress, Long> periodicMutations = new HashMap<>();
 		
@@ -1083,7 +1107,7 @@ public class ResourceLoader
 		return periodicMutations;
 	}
 
-	private void _background_writeCuboidToDisk(PackagedCuboid data, long gameTimeMillis)
+	private void _background_writeCuboidToDisk(PackagedCuboid data, long gameTimeMillis, boolean maintainCache)
 	{
 		// Serialize the entire cuboid into memory and write it out.
 		// Data goes in the following order:
@@ -1146,48 +1170,58 @@ public class ResourceLoader
 		
 		// We are done the write so flip the buffer and write it out.
 		_backround_serializationBuffer.flip();
+		byte[] serializedBytes = new byte[_backround_serializationBuffer.remaining()];
+		_backround_serializationBuffer.get(serializedBytes);
+		Assert.assertTrue(!_backround_serializationBuffer.hasRemaining());
+		_backround_serializationBuffer.clear();
 		
-		try (
-				
-				RandomAccessFile aFile = new RandomAccessFile(_getCuboidFile(cuboid.getCuboidAddress()), "rw");
-				FileChannel outChannel = aFile.getChannel();
-		)
+		CuboidAddress address = cuboid.getCuboidAddress();
+		byte[] originalBytes = _background_serializedCuboidBuffer.get(address);
+		Assert.assertTrue(null != originalBytes);
+		
+		if (!Arrays.equals(originalBytes, serializedBytes))
 		{
-			int written = outChannel.write(_backround_serializationBuffer);
-			// In case we are over-writting an existing file, be sure to truncate it.
-			outChannel.truncate((long)written);
+			try
+			{
+				Files.write(_getCuboidFile(address), serializedBytes, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+			}
+			catch (NoSuchFileException e)
+			{
+				throw Assert.unexpected(e);
+			}
+			catch (IOException e)
+			{
+				throw Assert.unexpected(e);
+			}
 			
-			// We expect that this wrote fully.
-			Assert.assertTrue(!_backround_serializationBuffer.hasRemaining());
-			_backround_serializationBuffer.clear();
+			// Now that we are done, update the cuboid buffer.
+			if (maintainCache)
+			{
+				_background_serializedCuboidBuffer.put(address, serializedBytes);
+			}
 		}
-		catch (FileNotFoundException e)
+		
+		// If we should clear the cache, do that whether we updated or not.
+		if (!maintainCache)
 		{
-			throw Assert.unexpected(e);
-		}
-		catch (IOException e)
-		{
-			throw Assert.unexpected(e);
+			_background_serializedCuboidBuffer.remove(address);
 		}
 	}
 
-	private File _getCuboidFile(CuboidAddress address)
+	private Path _getCuboidFile(CuboidAddress address)
 	{
 		String fileName = "cuboid_" + address.x() + "_" + address.y() + "_" + address.z() + ".cuboid";
-		return new File(_saveDirectory, fileName);
+		return new File(_saveDirectory, fileName).toPath();
 	}
 
 	private SuspendedEntity _background_readEntityFromDisk(int id, long currentGameMillis)
 	{
 		// These data files are relatively small so we can just read this in, completely.
 		SuspendedEntity result;
-		try (
-				RandomAccessFile aFile = new RandomAccessFile(_getEntityFile(id), "r");
-				FileChannel inChannel = aFile.getChannel();
-		)
+		try
 		{
-			MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
-			buffer.load();
+			byte[] rawData = Files.readAllBytes(_getEntityFile(id));
+			ByteBuffer buffer = ByteBuffer.wrap(rawData);
 			
 			// Verify the version is one we can understand.
 			int version = buffer.getInt();
@@ -1255,8 +1289,11 @@ public class ResourceLoader
 			}
 			
 			result = dataReader.get();
+			
+			// We got this far so store the raw data for later comparisons on write-back.
+			_background_serializedEntityBuffer.put(id, rawData);
 		}
-		catch (FileNotFoundException e)
+		catch (NoSuchFileException e)
 		{
 			// This is ok and means we should return null.
 			result = null;
@@ -1282,7 +1319,7 @@ public class ResourceLoader
 		return suspended;
 	}
 
-	private void _background_writeEntityToDisk(SuspendedEntity suspended)
+	private void _background_writeEntityToDisk(SuspendedEntity suspended, boolean maintainCache)
 	{
 		// Serialize the entire entity into memory and write it out.
 		Assert.assertTrue(0 == _backround_serializationBuffer.position());
@@ -1307,34 +1344,48 @@ public class ResourceLoader
 		}
 		_backround_serializationBuffer.flip();
 		
-		try (
-				
-				RandomAccessFile aFile = new RandomAccessFile(_getEntityFile(entity.id()), "rw");
-				FileChannel outChannel = aFile.getChannel();
-		)
+		byte[] serializedBytes = new byte[_backround_serializationBuffer.remaining()];
+		_backround_serializationBuffer.get(serializedBytes);
+		Assert.assertTrue(!_backround_serializationBuffer.hasRemaining());
+		_backround_serializationBuffer.clear();
+		
+		int entityId = entity.id();
+		byte[] originalBytes = _background_serializedEntityBuffer.get(entityId);
+		Assert.assertTrue(null != originalBytes);
+		
+		if (!Arrays.equals(originalBytes, serializedBytes))
 		{
-			int written = outChannel.write(_backround_serializationBuffer);
-			// In case we are over-writing an existing file, be sure to truncate it.
-			outChannel.truncate((long)written);
+			try
+			{
+				Files.write(_getEntityFile(entityId), serializedBytes, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+			}
+			catch (NoSuchFileException e)
+			{
+				throw Assert.unexpected(e);
+			}
+			catch (IOException e)
+			{
+				throw Assert.unexpected(e);
+			}
 			
-			// We expect that this wrote fully.
-			Assert.assertTrue(!_backround_serializationBuffer.hasRemaining());
-			_backround_serializationBuffer.clear();
+			// Now that we are done, update the entity buffer.
+			if (maintainCache)
+			{
+				_background_serializedEntityBuffer.put(entityId, serializedBytes);
+			}
 		}
-		catch (FileNotFoundException e)
+		
+		// If we should clear the cache, do that whether we updated or not.
+		if (!maintainCache)
 		{
-			throw Assert.unexpected(e);
-		}
-		catch (IOException e)
-		{
-			throw Assert.unexpected(e);
+			_background_serializedEntityBuffer.remove(entityId);
 		}
 	}
 
-	private File _getEntityFile(int id)
+	private Path _getEntityFile(int id)
 	{
 		String fileName = "entity_" + id + ".entity";
-		return new File(_saveDirectory, fileName);
+		return new File(_saveDirectory, fileName).toPath();
 	}
 
 	private static SuspendedEntity _buildDefaultEntity(int id, EntityLocation spawn, boolean isCreative)

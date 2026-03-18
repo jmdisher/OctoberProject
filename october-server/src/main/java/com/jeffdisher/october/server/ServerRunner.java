@@ -421,7 +421,7 @@ public class ServerRunner
 		@Override
 		public void resources_writeToDisk(Collection<PackagedCuboid> cuboids,Collection<SuspendedEntity> entities, long gameTimeMillis)
 		{
-			_loader.writeBackToDisk(cuboids, entities, gameTimeMillis);
+			_loader.writeBackToDiskAndRetire(cuboids, entities, gameTimeMillis);
 		}
 		@Override
 		public void resources_tryWriteToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities, long gameTimeMillis)
