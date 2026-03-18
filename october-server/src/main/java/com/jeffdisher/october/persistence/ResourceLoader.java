@@ -74,54 +74,6 @@ import com.jeffdisher.october.worldgen.IWorldGenerator;
  */
 public class ResourceLoader
 {
-	/**
-	 * Version 0 was used in v1.0-pre4 and earlier, no longer supported (pre-releases have no migration support).
-	 * Version 1 was used in v1.0.1 and earlier, and is supported.
-	 * Version 2 was used in v1.1 and earlier, and is supported (3 only adds data, not changing data).
-	 * Version 3 was used in v1.2.1 and earlier, and is supported (4 only adds data, not changing data).
-	 * Version 4 was used in v1.3 and earlier, and is supported (5 only adds and deprecates data).
-	 * Version 5 was used in v1.5 and earlier, and is supported.
-	 * Version 6 was used in v1.6 and earlier, and is supported (7 only adds data).
-	 * Version 7 was used in v1.7 and earlier, and is supported.
-	 * Version 8 was used in v1.8 and earlier, and is supported.
-	 * Version 9 was used in v1.9 and earlier, and is supported.
-	 * Version 10 was used in v1.10 and earlier, and is supported.
-	 */
-	public static final int VERSION_CUBOID_V1 = 1;
-	public static final int VERSION_CUBOID_V2 = 2;
-	public static final int VERSION_CUBOID_V3 = 3;
-	public static final int VERSION_CUBOID_V4 = 4;
-	public static final int VERSION_CUBOID_V5 = 5;
-	public static final int VERSION_CUBOID_V6 = 6;
-	public static final int VERSION_CUBOID_V7 = 7;
-	public static final int VERSION_CUBOID_V8 = 8;
-	public static final int VERSION_CUBOID_V9 = 9;
-	public static final int VERSION_CUBOID_V10 = 10;
-	public static final int VERSION_CUBOID = 11;
-	/**
-	 * Version 0 was used in v1.0-pre6 and earlier, no longer supported (pre-releases have no migration support).
-	 * Version 1 was used in v1.0.1 and earlier, and is supported.
-	 * Version 2 was used in v1.1 and earlier, and is supported (3 only adds data, not changing data).
-	 * Version 3 was used in v1.2.1 and earlier, and is supported (4 only adds data, not changing data).
-	 * Version 4 was used in v1.3 and earlier, and is supported (5 only adds and deprecates data).
-	 * Version 5 was used in v1.5 and earlier, and is supported (6 only adds and deprecates data).
-	 * Version 6 was used in v1.6 and earlier, and is supported (7 only adds data).
-	 * Version 7 was used in v1.7 and earlier, and is supported.
-	 * Version 8 was used in v1.8 and earlier, and is supported.
-	 * Version 9 was used in v1.9 and earlier, and is supported.
-	 * Version 10 was used in v1.10 and earlier, and is supported.
-	 */
-	public static final int VERSION_ENTITY_V1 = 1;
-	public static final int VERSION_ENTITY_V2 = 2;
-	public static final int VERSION_ENTITY_V3 = 3;
-	public static final int VERSION_ENTITY_V4 = 4;
-	public static final int VERSION_ENTITY_V5 = 5;
-	public static final int VERSION_ENTITY_V6 = 6;
-	public static final int VERSION_ENTITY_V7 = 7;
-	public static final int VERSION_ENTITY_V8 = 8;
-	public static final int VERSION_ENTITY_V9 = 9;
-	public static final int VERSION_ENTITY_V10 = 10;
-	public static final int VERSION_ENTITY = 11;
 	public static final int SERIALIZATION_BUFFER_SIZE_BYTES = 1024 * 1024;
 
 	// Defaults for entity creation.
@@ -496,8 +448,8 @@ public class ResourceLoader
 			
 			// We want to create the decoder context here since we have version data.
 			Environment env = Environment.getShared();
-			boolean usePreV8NonStackableDecoding = (version <= VERSION_CUBOID_V7);
-			boolean usePreV11DamageDecoding = (version <= VERSION_CUBOID_V10);
+			boolean usePreV8NonStackableDecoding = (version <= StorageVersions.V7);
+			boolean usePreV11DamageDecoding = (version <= StorageVersions.V10);
 			DeserializationContext context = new DeserializationContext(env
 				, buffer
 				, currentGameMillis
@@ -506,7 +458,7 @@ public class ResourceLoader
 			);
 			
 			Supplier<SuspendedCuboid<CuboidData>> dataReader;
-			if ((VERSION_CUBOID == version)
+			if ((StorageVersions.CURRENT == version)
 			)
 			{
 				// Version 11 added a new aspect so we need to read the cuboid differently.
@@ -538,8 +490,8 @@ public class ResourceLoader
 					);
 				};
 			}
-			else if ((VERSION_CUBOID_V9 == version)
-				|| (VERSION_CUBOID_V10 == version)
+			else if ((StorageVersions.V9 == version)
+				|| (StorageVersions.V10 == version)
 			)
 			{
 				// Version 10 didn't change anything, just added to it, so we can read with the same logic.
@@ -571,7 +523,7 @@ public class ResourceLoader
 					);
 				};
 			}
-			else if (VERSION_CUBOID_V8 == version)
+			else if (StorageVersions.V8 == version)
 			{
 				dataReader = () -> {
 					CuboidData cuboid = _background_readCuboidPre11(address, context);
@@ -605,7 +557,7 @@ public class ResourceLoader
 					);
 				};
 			}
-			else if (VERSION_CUBOID_V7 == version)
+			else if (StorageVersions.V7 == version)
 			{
 				dataReader = () -> {
 					CuboidData cuboid = _background_readCuboidPre8(address, context);
@@ -639,7 +591,7 @@ public class ResourceLoader
 					);
 				};
 			}
-			else if (VERSION_CUBOID_V6 == version)
+			else if (StorageVersions.V6 == version)
 			{
 				// V6 just adds data so this is to avoid going backward.
 				dataReader = () -> {
@@ -674,7 +626,7 @@ public class ResourceLoader
 					);
 				};
 			}
-			else if (VERSION_CUBOID_V5 == version)
+			else if (StorageVersions.V5 == version)
 			{
 				// V5 requires that the logic aspect be cleared and all switches be turned off.
 				dataReader = () -> {
@@ -709,7 +661,7 @@ public class ResourceLoader
 					);
 				};
 			}
-			else if (VERSION_CUBOID_V4 == version)
+			else if (StorageVersions.V4 == version)
 			{
 				// V4 needs to re-write for orientation aspects.
 				dataReader = () -> {
@@ -744,7 +696,7 @@ public class ResourceLoader
 					);
 				};
 			}
-			else if ((VERSION_CUBOID_V2 == version) || (VERSION_CUBOID_V3 == version))
+			else if ((StorageVersions.V2 == version) || (StorageVersions.V3 == version))
 			{
 				// V2 is a subset of V3 so do nothing special - just stops old versions from being broken.
 				dataReader = () -> {
@@ -779,7 +731,7 @@ public class ResourceLoader
 					);
 				};
 			}
-			else if (VERSION_CUBOID_V1 == version)
+			else if (StorageVersions.V1 == version)
 			{
 				// The V1 entity is has less data.
 				dataReader = () -> {
@@ -1120,7 +1072,7 @@ public class ResourceLoader
 		Assert.assertTrue(0 == _backround_serializationBuffer.position());
 		
 		// 1) Write the version header.
-		_backround_serializationBuffer.putInt(VERSION_CUBOID);
+		_backround_serializationBuffer.putInt(StorageVersions.CURRENT);
 		
 		// 2) Write the raw cuboid data.
 		IReadOnlyCuboidData cuboid = data.cuboid();
@@ -1228,7 +1180,7 @@ public class ResourceLoader
 			
 			// We want to create the decoder context here since we have version data.
 			Environment env = Environment.getShared();
-			boolean usePreV8NonStackableDecoding = (version <= VERSION_ENTITY_V7);
+			boolean usePreV8NonStackableDecoding = (version <= StorageVersions.V7);
 			boolean usePreV11DamageDecoding = false;
 			DeserializationContext context = new DeserializationContext(env
 				, buffer
@@ -1238,8 +1190,8 @@ public class ResourceLoader
 			);
 			
 			Supplier<SuspendedEntity> dataReader;
-			if ((VERSION_ENTITY == version)
-				|| (VERSION_ENTITY_V10 == version)
+			if ((StorageVersions.CURRENT == version)
+				|| (StorageVersions.V10 == version)
 			)
 			{
 				// Do nothing special - just stops old versions from being broken.
@@ -1251,14 +1203,14 @@ public class ResourceLoader
 					return new SuspendedEntity(entity, suspended);
 				};
 			}
-			else if ((VERSION_ENTITY_V2 == version)
-					|| (VERSION_ENTITY_V3 == version)
-					|| (VERSION_ENTITY_V4 == version)
-					|| (VERSION_ENTITY_V5 == version)
-					|| (VERSION_ENTITY_V6 == version)
-					|| (VERSION_ENTITY_V7 == version)
-					|| (VERSION_ENTITY_V8 == version)
-					|| (VERSION_ENTITY_V9 == version)
+			else if ((StorageVersions.V2 == version)
+					|| (StorageVersions.V3 == version)
+					|| (StorageVersions.V4 == version)
+					|| (StorageVersions.V5 == version)
+					|| (StorageVersions.V6 == version)
+					|| (StorageVersions.V7 == version)
+					|| (StorageVersions.V8 == version)
+					|| (StorageVersions.V9 == version)
 			)
 			{
 				// These versions used a different on-disk entity shape.
@@ -1270,7 +1222,7 @@ public class ResourceLoader
 					return new SuspendedEntity(entity, suspended);
 				};
 			}
-			else if (VERSION_ENTITY_V1 == version)
+			else if (StorageVersions.V1 == version)
 			{
 				// The V1 entity is has less data.
 				dataReader = () -> {
@@ -1325,7 +1277,7 @@ public class ResourceLoader
 		Assert.assertTrue(0 == _backround_serializationBuffer.position());
 		
 		// Write the version header.
-		_backround_serializationBuffer.putInt(VERSION_ENTITY);
+		_backround_serializationBuffer.putInt(StorageVersions.CURRENT);
 		
 		Entity entity = suspended.entity();
 		List<ScheduledChange> changes = suspended.changes();

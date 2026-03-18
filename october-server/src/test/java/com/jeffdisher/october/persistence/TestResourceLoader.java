@@ -705,7 +705,7 @@ public class TestResourceLoader
 		
 		// Serialize to buffer.
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		buffer.putInt(ResourceLoader.VERSION_CUBOID_V1);
+		buffer.putInt(StorageVersions.V1);
 		
 		// We want to manually write the cuboid in V1 shape.
 		Assert.assertNull(blockData.serializeResumable(null, buffer, (IObjectCodec<Short>) AspectRegistry.ALL_ASPECTS[0].codec()));
