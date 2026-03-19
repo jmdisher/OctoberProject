@@ -152,6 +152,29 @@ public class CuboidCluster
 		return shouldKeepLoaded;
 	}
 
+	/**
+	 * Used in some tests in order to retire an entry which was referenced by reading, but returned null.  This is not
+	 * used in normal runs but is used by tests which do not have a world generator.
+	 * 
+	 * @param address The cuboid address (assumed to be in this cluster).
+	 * @return True if the receiver must still be kept in memory (at least one of the data elements is still referenced).
+	 */
+	public boolean dropForTesting(CuboidAddress address)
+	{
+		int index = _getIndexIntoCluster(address);
+		
+		// This must not be null since it was read or initialized.
+		Assert.assertTrue(null != _rawCuboidData[index]);
+		Assert.assertTrue(_isReferenced[index]);
+		
+		_rawCuboidData[index] = null;
+		_isReferenced[index] = false;
+		_refCount -= 1;
+		
+		boolean shouldKeepLoaded = (_refCount > 0);
+		return shouldKeepLoaded;
+	}
+
 
 	private static int _getIndexIntoCluster(CuboidAddress address)
 	{

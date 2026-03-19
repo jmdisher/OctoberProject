@@ -113,6 +113,25 @@ public class CuboidClusterManager
 	}
 
 	/**
+	 * Used in some tests in order to retire an entry which was referenced by reading, but returned null.  This is not
+	 * used in normal runs but is used by tests which do not have a world generator.
+	 * 
+	 * @param address The cuboid address.
+	 */
+	public void dropForTesting(CuboidAddress address)
+	{
+		_CuboidFile file = _CuboidFile.fromAddress(address);
+		CuboidCluster cluster = _clusters.get(file);
+		Assert.assertTrue(null != cluster);
+		
+		boolean shouldKeepLoaded = cluster.dropForTesting(address);
+		if (!shouldKeepLoaded)
+		{
+			_clusters.remove(file);
+		}
+	}
+
+	/**
 	 * Verifies that there are no leaked references to any clusters known to the system.
 	 */
 	public void shutdown()
@@ -138,8 +157,8 @@ public class CuboidClusterManager
 		int y = (address.y() >> CuboidCluster.SHIFT_ADDRESS_CLUSTER) & MASK_ADDRESS_DIRECTORY;
 		int z = (address.z() >> CuboidCluster.SHIFT_ADDRESS_CLUSTER) & MASK_ADDRESS_DIRECTORY;
 		
-		String directoryName = String.format("cluster_%d_%d_%d.c4", x, y, z);
-		return new File(cuboidDirectory, directoryName);
+		String fileName = String.format("cluster_%d_%d_%d.c4", x, y, z);
+		return new File(cuboidDirectory, fileName);
 	}
 
 

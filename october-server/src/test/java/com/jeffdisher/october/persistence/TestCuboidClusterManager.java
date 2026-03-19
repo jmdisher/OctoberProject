@@ -136,4 +136,64 @@ public class TestCuboidClusterManager
 		manager.shutdown();
 		Assert.assertEquals(headerSize + cuboid0.length, Files.size(cluster0.toPath()));
 	}
+
+	@Test
+	public void dropCuboidForTesting() throws Throwable
+	{
+		File topLevel = DIRECTORY.newFolder();
+		CuboidClusterManager manager = new CuboidClusterManager(topLevel);
+		
+		CuboidAddress address0 = CuboidAddress.fromInt(0, 0, 0);
+		byte[] cuboid0 = manager.readCuboid(address0);
+		Assert.assertNull(cuboid0);
+		manager.dropForTesting(address0);
+		
+		manager.shutdown();
+		
+		// This should have an empty directory.
+		File dir0 = new File(topLevel, "region_0_0_0.cd8");
+		Assert.assertTrue(dir0.isDirectory());
+		Assert.assertEquals(0, dir0.listFiles().length);
+	}
+
+	@Test
+	public void wideSwath() throws Throwable
+	{
+		File topLevel = DIRECTORY.newFolder();
+		CuboidClusterManager manager = new CuboidClusterManager(topLevel);
+		
+		byte[] data = new byte[1];
+		for (int i = -32; i < 32; ++i)
+		{
+			CuboidAddress address = CuboidAddress.fromInt(i, i, i);
+			byte[] cuboid = manager.readCuboid(address);
+			Assert.assertNull(cuboid);
+			manager.writeCuboid(address, data, false);
+			
+			// Verify that the corresponding directory and file exist.
+			int dirX = address.x() >> (CuboidClusterManager.SHIFT_ADDRESS_DIRECTORY + CuboidCluster.SHIFT_ADDRESS_CLUSTER);
+			int dirY = address.y() >> (CuboidClusterManager.SHIFT_ADDRESS_DIRECTORY + CuboidCluster.SHIFT_ADDRESS_CLUSTER);
+			int dirZ = address.z() >> (CuboidClusterManager.SHIFT_ADDRESS_DIRECTORY + CuboidCluster.SHIFT_ADDRESS_CLUSTER);
+			
+			int fileX = (address.x() >> CuboidCluster.SHIFT_ADDRESS_CLUSTER) & CuboidClusterManager.MASK_ADDRESS_DIRECTORY;
+			int fileY = (address.y() >> CuboidCluster.SHIFT_ADDRESS_CLUSTER) & CuboidClusterManager.MASK_ADDRESS_DIRECTORY;
+			int fileZ = (address.z() >> CuboidCluster.SHIFT_ADDRESS_CLUSTER) & CuboidClusterManager.MASK_ADDRESS_DIRECTORY;
+			
+			String directoryName = String.format("region_%d_%d_%d.cd8", dirX, dirY, dirZ);
+			File dir = new File(topLevel, directoryName);
+			Assert.assertTrue(dir.isDirectory());
+			String fileName = String.format("cluster_%d_%d_%d.c4", fileX, fileY, fileZ);
+			File file = new File(dir, fileName);
+			Assert.assertTrue(file.isFile());
+		}
+		
+		manager.shutdown();
+		
+		// Verify shape assumptions:  Each cluster is 4 cuboids across and each region is 8 clusters across so 64 cuboids will cover 2 regions.
+		File dirN = new File(topLevel, "region_-1_-1_-1.cd8");
+		File dir0 = new File(topLevel, "region_0_0_0.cd8");
+		Assert.assertEquals(2, topLevel.listFiles().length);
+		Assert.assertEquals(8, dirN.listFiles().length);
+		Assert.assertEquals(8, dir0.listFiles().length);
+	}
 }
