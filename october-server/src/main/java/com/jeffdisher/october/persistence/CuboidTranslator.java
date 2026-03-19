@@ -39,16 +39,30 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CuboidTranslator
 {
+	/**
+	 * Translates the Cuboid data of version in inBuffer to the latest version in outBuffer.  Note that the version
+	 * header is NOT expected in the inBuffer and will NOT be written tot he outBuffer.
+	 * 
+	 * @param outBuffer The destination where the updated version will be written.
+	 * @param inBuffer The source where the old version will be read.
+	 * @param version The version of the inBuffer data.
+	 */
 	public static void changeToLatestVersion(ByteBuffer outBuffer
 		, ByteBuffer inBuffer
 		, int version
-		, long currentGameMillis
-		, CuboidAddress address
 	)
 	{
 		// We are only reading these to re-write them so we can use local ID assigners (since the IDs are ephemeral - hence why an assigner is needed).
 		CreatureIdAssigner creatureIdAssigner = new CreatureIdAssigner();
 		PassiveIdAssigner passiveIdAssigner = new PassiveIdAssigner();
+		
+		// The game time also doesn't matter so long as is the same for both reading and writing.
+		long currentGameMillis = 0L;
+		
+		// The CuboidAddress is also not part of the serialized shape, just the in-memory shape and is used to give
+		// global locations to things like passives and creatures, so that can be anything non-null.
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		
 		PackagedCuboid packaged = _readLegacyCuboid(inBuffer
 			, version
 			, currentGameMillis

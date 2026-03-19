@@ -434,7 +434,7 @@ public class ResourceLoader
 				
 				// We will use the serialization buffer.
 				_backround_serializationBuffer.putInt(StorageVersions.CURRENT);
-				CuboidTranslator.changeToLatestVersion(_backround_serializationBuffer, buffer, version, currentGameMillis, address);
+				CuboidTranslator.changeToLatestVersion(_backround_serializationBuffer, buffer, version);
 				
 				// Note that we could make CuboidTranslator return the parsed object, but this allows us to verify we didn't break anything in serialization.
 				_backround_serializationBuffer.flip();
