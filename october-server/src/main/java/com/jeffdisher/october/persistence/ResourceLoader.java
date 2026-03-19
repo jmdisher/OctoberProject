@@ -14,54 +14,35 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 import com.jeffdisher.october.actions.EntityActionPeriodic;
-import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.config.FlatTabListCallbacks;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.data.IOctree;
-import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.PassiveIdAssigner;
 import com.jeffdisher.october.logic.ScheduledChange;
-import com.jeffdisher.october.logic.ScheduledMutation;
-import com.jeffdisher.october.mutations.IMutationBlock;
-import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.net.EntityActionCodec;
-import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV1;
-import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV8;
 import com.jeffdisher.october.persistence.legacy.LegacyEntityV1;
-import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.Block;
-import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.BodyPart;
-import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
-import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
-import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
-import com.jeffdisher.october.types.PassiveEntity;
-import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.MessageQueue;
@@ -446,339 +427,37 @@ public class ResourceLoader
 			// Verify the version is one we can understand.
 			int version = buffer.getInt();
 			
-			// We want to create the decoder context here since we have version data.
-			Environment env = Environment.getShared();
-			boolean usePreV8NonStackableDecoding = (version <= StorageVersions.V7);
-			boolean usePreV11DamageDecoding = (version <= StorageVersions.V10);
-			DeserializationContext context = new DeserializationContext(env
-				, buffer
+			if (StorageVersions.CURRENT != version)
+			{
+				// We need to re-write this and re-write it before returning it.
+				Assert.assertTrue(0 == _backround_serializationBuffer.position());
+				
+				// We will use the serialization buffer.
+				_backround_serializationBuffer.putInt(StorageVersions.CURRENT);
+				CuboidTranslator.changeToLatestVersion(_backround_serializationBuffer, buffer, version, currentGameMillis, address);
+				
+				// Note that we could make CuboidTranslator return the parsed object, but this allows us to verify we didn't break anything in serialization.
+				_backround_serializationBuffer.flip();
+				byte[] serializedBytes = new byte[_backround_serializationBuffer.remaining()];
+				_backround_serializationBuffer.get(serializedBytes);
+				Assert.assertTrue(!_backround_serializationBuffer.hasRemaining());
+				_backround_serializationBuffer.clear();
+				
+				// Save this out.
+				_background_writeCuboidBytesToFile(address, serializedBytes);
+				
+				// Update our local variables to this new content and proceed with the common path.
+				rawData = serializedBytes;
+				buffer = ByteBuffer.wrap(rawData);
+				version = buffer.getInt();
+			}
+			
+			result = CuboidCodec.deserializeCuboidWithoutVersionHeader(buffer
+				, address
 				, currentGameMillis
-				, usePreV8NonStackableDecoding
-				, usePreV11DamageDecoding
+				, this.creatureIdAssigner
+				, this.passiveIdAssigner
 			);
-			
-			Supplier<SuspendedCuboid<CuboidData>> dataReader;
-			if ((StorageVersions.CURRENT == version)
-			)
-			{
-				// Version 11 added a new aspect so we need to read the cuboid differently.
-				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboid(address, context);
-					
-					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreatures(context);
-					
-					// Now, load any suspended mutations.
-					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
-					// ... and any periodic mutations.
-					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
-					
-					// Passives are stored much like creatures.
-					List<PassiveEntity> passives = _background_readPassives(context);
-					
-					// This should be fully read.
-					Assert.assertTrue(!buffer.hasRemaining());
-					
-					// The height map is ephemeral so it is built here.  Note that building this might be somewhat expensive.
-					CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
-					return new SuspendedCuboid<>(cuboid
-							, heightMap
-							, creatures
-							, pendingMutations
-							, periodicMutations
-							, passives
-					);
-				};
-			}
-			else if ((StorageVersions.V9 == version)
-				|| (StorageVersions.V10 == version)
-			)
-			{
-				// Version 10 didn't change anything, just added to it, so we can read with the same logic.
-				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboidPre11(address, context);
-					
-					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreatures(context);
-					
-					// Now, load any suspended mutations.
-					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
-					// ... and any periodic mutations.
-					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
-					
-					// Passives are stored much like creatures.
-					List<PassiveEntity> passives = _background_readPassives(context);
-					
-					// This should be fully read.
-					Assert.assertTrue(!buffer.hasRemaining());
-					
-					// The height map is ephemeral so it is built here.  Note that building this might be somewhat expensive.
-					CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
-					return new SuspendedCuboid<>(cuboid
-							, heightMap
-							, creatures
-							, pendingMutations
-							, periodicMutations
-							, passives
-					);
-				};
-			}
-			else if (StorageVersions.V8 == version)
-			{
-				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboidPre11(address, context);
-					
-					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreaturesV8(context);
-					
-					// Now, load any suspended mutations.
-					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
-					// ... and any periodic mutations.
-					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
-					
-					// Passives added in V9, extracted from empty item inventory slots.
-					List<PassiveEntity> convertedPassives = _convertCuboidPre9(env, currentGameMillis, cuboid, address.getBase());
-					List<PassiveEntity> passives = (null != convertedPassives)
-						? convertedPassives
-						: List.of()
-					;
-					
-					// This should be fully read.
-					Assert.assertTrue(!buffer.hasRemaining());
-					
-					// The height map is ephemeral so it is built here.  Note that building this might be somewhat expensive.
-					CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
-					return new SuspendedCuboid<>(cuboid
-							, heightMap
-							, creatures
-							, pendingMutations
-							, periodicMutations
-							, passives
-					);
-				};
-			}
-			else if (StorageVersions.V7 == version)
-			{
-				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboidPre8(address, context);
-					
-					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreaturesV8(context);
-					
-					// Now, load any suspended mutations.
-					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
-					// ... and any periodic mutations.
-					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
-					
-					// Passives added in V9, extracted from empty item inventory slots.
-					List<PassiveEntity> convertedPassives = _convertCuboidPre9(env, currentGameMillis, cuboid, address.getBase());
-					List<PassiveEntity> passives = (null != convertedPassives)
-						? convertedPassives
-						: List.of()
-					;
-					
-					// This should be fully read.
-					Assert.assertTrue(!buffer.hasRemaining());
-					
-					// The height map is ephemeral so it is built here.  Note that building this might be somewhat expensive.
-					CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
-					return new SuspendedCuboid<>(cuboid
-							, heightMap
-							, creatures
-							, pendingMutations
-							, periodicMutations
-							, passives
-					);
-				};
-			}
-			else if (StorageVersions.V6 == version)
-			{
-				// V6 just adds data so this is to avoid going backward.
-				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboidPre8(address, context);
-					
-					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreaturesV8(context);
-					
-					// Now, load any suspended mutations.
-					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
-					// ... and any periodic mutations.
-					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
-					
-					// Passives added in V9, extracted from empty item inventory slots.
-					List<PassiveEntity> convertedPassives = _convertCuboidPre9(env, currentGameMillis, cuboid, address.getBase());
-					List<PassiveEntity> passives = (null != convertedPassives)
-						? convertedPassives
-						: List.of()
-					;
-					
-					// This should be fully read.
-					Assert.assertTrue(!buffer.hasRemaining());
-					
-					// The height map is ephemeral so it is built here.  Note that building this might be somewhat expensive.
-					CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
-					return new SuspendedCuboid<>(cuboid
-							, heightMap
-							, creatures
-							, pendingMutations
-							, periodicMutations
-							, passives
-					);
-				};
-			}
-			else if (StorageVersions.V5 == version)
-			{
-				// V5 requires that the logic aspect be cleared and all switches be turned off.
-				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboidV5(address, context);
-					
-					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreaturesV8(context);
-					
-					// Now, load any suspended mutations.
-					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
-					// ... and any periodic mutations.
-					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
-					
-					// Passives added in V9, extracted from empty item inventory slots.
-					List<PassiveEntity> convertedPassives = _convertCuboidPre9(env, currentGameMillis, cuboid, address.getBase());
-					List<PassiveEntity> passives = (null != convertedPassives)
-						? convertedPassives
-						: List.of()
-					;
-					
-					// This should be fully read.
-					Assert.assertTrue(!buffer.hasRemaining());
-					
-					// The height map is ephemeral so it is built here.  Note that building this might be somewhat expensive.
-					CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
-					return new SuspendedCuboid<>(cuboid
-							, heightMap
-							, creatures
-							, pendingMutations
-							, periodicMutations
-							, passives
-					);
-				};
-			}
-			else if (StorageVersions.V4 == version)
-			{
-				// V4 needs to re-write for orientation aspects.
-				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboidPre5(address, context);
-					
-					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreaturesV8(context);
-					
-					// Now, load any suspended mutations.
-					List<ScheduledMutation> pendingMutations = _background_readMutations(context);
-					// ... and any periodic mutations.
-					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
-					
-					// Passives added in V9, extracted from empty item inventory slots.
-					List<PassiveEntity> convertedPassives = _convertCuboidPre9(env, currentGameMillis, cuboid, address.getBase());
-					List<PassiveEntity> passives = (null != convertedPassives)
-						? convertedPassives
-						: List.of()
-					;
-					
-					// This should be fully read.
-					Assert.assertTrue(!buffer.hasRemaining());
-					
-					// The height map is ephemeral so it is built here.  Note that building this might be somewhat expensive.
-					CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
-					return new SuspendedCuboid<>(cuboid
-							, heightMap
-							, creatures
-							, pendingMutations
-							, periodicMutations
-							, passives
-					);
-				};
-			}
-			else if ((StorageVersions.V2 == version) || (StorageVersions.V3 == version))
-			{
-				// V2 is a subset of V3 so do nothing special - just stops old versions from being broken.
-				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboidPre5(address, context);
-					
-					// Load any creatures associated with the cuboid.
-					List<CreatureEntity> creatures = _background_readCreaturesV8(context);
-					
-					// Now, load any suspended mutations.
-					List<ScheduledMutation> pendingMutations = new ArrayList<>();
-					Map<BlockAddress, Long> periodicMutations = new HashMap<>();
-					_background_splitMutations(pendingMutations, periodicMutations, context);
-					
-					// Passives added in V9, extracted from empty item inventory slots.
-					List<PassiveEntity> convertedPassives = _convertCuboidPre9(env, currentGameMillis, cuboid, address.getBase());
-					List<PassiveEntity> passives = (null != convertedPassives)
-						? convertedPassives
-						: List.of()
-					;
-					
-					// This should be fully read.
-					Assert.assertTrue(!buffer.hasRemaining());
-					
-					// The height map is ephemeral so it is built here.  Note that building this might be somewhat expensive.
-					CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
-					return new SuspendedCuboid<>(cuboid
-							, heightMap
-							, creatures
-							, pendingMutations
-							, periodicMutations
-							, passives
-					);
-				};
-			}
-			else if (StorageVersions.V1 == version)
-			{
-				// The V1 entity is has less data.
-				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboidPre5(address, context);
-					
-					// Load any creatures associated with the cuboid.
-					int creatureCount = buffer.getInt();
-					List<CreatureEntity> creatures = new ArrayList<>();
-					for (int i = 0; i < creatureCount; ++i)
-					{
-						LegacyCreatureEntityV1 legacy = LegacyCreatureEntityV1.load(this.creatureIdAssigner.next(), buffer);
-						CreatureEntity entity = legacy.toEntity(currentGameMillis);
-						creatures.add(entity);
-					}
-					
-					// Now, load any suspended mutations.
-					List<ScheduledMutation> pendingMutations = new ArrayList<>();
-					Map<BlockAddress, Long> periodicMutations = new HashMap<>();
-					_background_splitMutations(pendingMutations, periodicMutations, context);
-					
-					// Passives added in V9, extracted from empty item inventory slots.
-					List<PassiveEntity> convertedPassives = _convertCuboidPre9(env, currentGameMillis, cuboid, address.getBase());
-					List<PassiveEntity> passives = (null != convertedPassives)
-						? convertedPassives
-						: List.of()
-					;
-					
-					// This should be fully read.
-					Assert.assertTrue(!buffer.hasRemaining());
-					
-					// The height map is ephemeral so it is built here.  Note that building this might be somewhat expensive.
-					CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
-					return new SuspendedCuboid<>(cuboid
-							, heightMap
-							, creatures
-							, pendingMutations
-							, periodicMutations
-							, passives
-					);
-				};
-			}
-			else
-			{
-				throw new RuntimeException("UNSUPPORTED ENTITY STORAGE VERSION:  " + version);
-			}
-			
-			result = dataReader.get();
 			
 			// We got this far so store the raw data for later comparisons on write-back.
 			_background_serializedCuboidBuffer.put(address, rawData);
@@ -795,330 +474,14 @@ public class ResourceLoader
 		return result;
 	}
 
-	private CuboidData _background_readCuboid(CuboidAddress address, DeserializationContext context)
-	{
-		CuboidData cuboid = CuboidData.createEmpty(address);
-		cuboid.deserializeSomeAspectsFully(context, AspectRegistry.ALL_ASPECTS.length);
-		return cuboid;
-	}
-
-	private CuboidData _background_readCuboidPre11(CuboidAddress address, DeserializationContext context)
-	{
-		// Prior to version 11, only aspects up to and including SPECIAL_ITEM_SLOT were included.
-		int aspectCount = 11;
-		
-		CuboidData cuboid = CuboidData.createEmpty(address);
-		cuboid.deserializeSomeAspectsFully(context, aspectCount);
-		return cuboid;
-	}
-
-	private CuboidData _background_readCuboidPre8(CuboidAddress address, DeserializationContext context)
-	{
-		// Prior to version 8, only aspects up to and including MULTI_BLOCK_ROOT were included.
-		int aspectCount = 10;
-		
-		CuboidData cuboid = CuboidData.createEmpty(address);
-		cuboid.deserializeSomeAspectsFully(context, aspectCount);
-		return cuboid;
-	}
-
-	private CuboidData _background_readCuboidPre5(CuboidAddress address, DeserializationContext context)
-	{
-		CuboidData cuboid = CuboidData.createEmpty(address);
-		
-		// Prior to version 5, only the aspects up to and including LOGIC were included.
-		int aspectCount = 7;
-		cuboid.deserializeSomeAspectsFully(context, aspectCount);
-		
-		// This is now a V5 cuboid so convert it to V6.
-		_background_convertCuboid_V5toV6(cuboid);
-		return cuboid;
-	}
-
-	private CuboidData _background_readCuboidV5(CuboidAddress address, DeserializationContext context)
-	{
-		// Start by just loaded the data, normally.
-		CuboidData cuboid = CuboidData.createEmpty(address);
-		cuboid.deserializeSomeAspectsFully(context, AspectRegistry.ALL_ASPECTS.length);
-		
-		_background_convertCuboid_V5toV6(cuboid);
-		
-		return cuboid;
-	}
-
-	public void _background_convertCuboid_V5toV6(CuboidData cuboid)
-	{
-		// Version 6 changed the definition of the LOGIC layer which requires that it be cleared and all switches and lamps set to "off".
-		IOctree<?>[] rawOctrees = cuboid.unsafeDataAccess();
-		rawOctrees[AspectRegistry.LOGIC.index()] = AspectRegistry.LOGIC.emptyTreeSupplier().get();
-		
-		Environment env = Environment.getShared();
-		short switchOffNumber = env.items.getItemById("op.switch").number();
-		short switchOnNumber = env.items.getItemById("DEPRECATED.op.switch_on").number();
-		short lampOffNumber = env.items.getItemById("op.lamp").number();
-		short lampOnNumber = env.items.getItemById("DEPRECATED.op.lamp_on").number();
-		short gateNumber = env.items.getItemById("op.gate").number();
-		short doorOpenNumber = env.items.getItemById("DEPRECATED.op.door_open").number();
-		short doubleDoorNumber = env.items.getItemById("op.double_door_base").number();
-		short doubleDoorOpenNumber = env.items.getItemById("DEPRECATED.op.double_door_open_base").number();
-		short hopperDownNumber = env.items.getItemById("op.hopper").number();
-		short hopperNorthNumber = env.items.getItemById("DEPRECATED.op.hopper_north").number();
-		short hopperSouthNumber = env.items.getItemById("DEPRECATED.op.hopper_south").number();
-		short hopperEastNumber = env.items.getItemById("DEPRECATED.op.hopper_east").number();
-		short hopperWestNumber = env.items.getItemById("DEPRECATED.op.hopper_west").number();
-		Set<BlockAddress> switches = new HashSet<>();
-		Set<BlockAddress> lamps = new HashSet<>();
-		Set<BlockAddress> doors = new HashSet<>();
-		Set<BlockAddress> doubleDoors = new HashSet<>();
-		Map<BlockAddress, FacingDirection> hoppers = new HashMap<>();
-		cuboid.walkData(AspectRegistry.BLOCK, new IOctree.IWalkerCallback<>(){
-			@Override
-			public void visit(BlockAddress base, byte size, Short value)
-			{
-				if ((switchOnNumber == value)
-						|| (lampOnNumber == value)
-						|| (doorOpenNumber == value)
-						|| (doubleDoorOpenNumber == value)
-						|| (hopperDownNumber == value)
-						|| (hopperNorthNumber == value)
-						|| (hopperSouthNumber == value)
-						|| (hopperEastNumber == value)
-						|| (hopperWestNumber == value)
-				)
-				{
-					for (byte z = 0; z < size; ++z)
-					{
-						for (byte y = 0; y < size; ++y)
-						{
-							for (byte x = 0; x < size; ++x)
-							{
-								BlockAddress target = base.getRelative(x, y, z);
-								if (switchOnNumber == value)
-								{
-									switches.add(target);
-								}
-								else if (lampOnNumber == value)
-								{
-									lamps.add(target);
-								}
-								else if (doorOpenNumber == value)
-								{
-									doors.add(target);
-								}
-								else if (doubleDoorOpenNumber == value)
-								{
-									doubleDoors.add(target);
-								}
-								else if (hopperDownNumber == value)
-								{
-									hoppers.put(target, FacingDirection.DOWN);
-								}
-								else if (hopperNorthNumber == value)
-								{
-									hoppers.put(target, FacingDirection.NORTH);
-								}
-								else if (hopperSouthNumber == value)
-								{
-									hoppers.put(target, FacingDirection.SOUTH);
-								}
-								else if (hopperEastNumber == value)
-								{
-									hoppers.put(target, FacingDirection.EAST);
-								}
-								else if (hopperWestNumber == value)
-								{
-									hoppers.put(target, FacingDirection.WEST);
-								}
-								else
-								{
-									// Missing case.
-									throw Assert.unreachable();
-								}
-							}
-						}
-					}
-				}
-			}
-		}, env.special.AIR.item().number());
-		for (BlockAddress block : switches)
-		{
-			cuboid.setData15(AspectRegistry.BLOCK, block, switchOffNumber);
-		}
-		for (BlockAddress block : lamps)
-		{
-			cuboid.setData15(AspectRegistry.BLOCK, block, lampOffNumber);
-		}
-		for (BlockAddress block : doors)
-		{
-			cuboid.setData15(AspectRegistry.BLOCK, block, gateNumber);
-		}
-		for (BlockAddress block : doubleDoors)
-		{
-			cuboid.setData15(AspectRegistry.BLOCK, block, doubleDoorNumber);
-		}
-		for (Map.Entry<BlockAddress, FacingDirection> elt : hoppers.entrySet())
-		{
-			BlockAddress address = elt.getKey();
-			cuboid.setData15(AspectRegistry.BLOCK, address, hopperDownNumber);
-			cuboid.setData7(AspectRegistry.ORIENTATION, address, FacingDirection.directionToByte(elt.getValue()));
-		}
-	}
-
-	private List<CreatureEntity> _background_readCreatures(DeserializationContext context)
-	{
-		ByteBuffer buffer = context.buffer();
-		int creatureCount = buffer.getInt();
-		List<CreatureEntity> creatures = new ArrayList<>();
-		for (int i = 0; i < creatureCount; ++i)
-		{
-			CreatureEntity entity = CodecHelpers.readCreatureEntity(this.creatureIdAssigner.next(), buffer, context.currentGameMillis());
-			creatures.add(entity);
-		}
-		return creatures;
-	}
-
-	private List<CreatureEntity> _background_readCreaturesV8(DeserializationContext context)
-	{
-		ByteBuffer buffer = context.buffer();
-		int creatureCount = buffer.getInt();
-		List<CreatureEntity> creatures = new ArrayList<>();
-		for (int i = 0; i < creatureCount; ++i)
-		{
-			LegacyCreatureEntityV8 legacy = LegacyCreatureEntityV8.load(this.creatureIdAssigner.next(), buffer);
-			CreatureEntity entity = legacy.toEntity(context.currentGameMillis());
-			creatures.add(entity);
-		}
-		return creatures;
-	}
-
-	private List<PassiveEntity> _background_readPassives(DeserializationContext context)
-	{
-		ByteBuffer buffer = context.buffer();
-		int passiveCount = buffer.getInt();
-		List<PassiveEntity> passives = new ArrayList<>();
-		for (int i = 0; i < passiveCount; ++i)
-		{
-			PassiveEntity entity = CodecHelpers.readPassiveEntity(this.passiveIdAssigner.next(), context);
-			passives.add(entity);
-		}
-		return passives;
-	}
-
-	private void _background_splitMutations(List<ScheduledMutation> out_pendingMutations
-			, Map<BlockAddress, Long> out_periodicMutations
-			, DeserializationContext context
-	)
-	{
-		for (ScheduledMutation scheduledMutation : _background_readMutations(context))
-		{
-			IMutationBlock mutation = scheduledMutation.mutation();
-			if (mutation instanceof MutationBlockPeriodic)
-			{
-				BlockAddress block = mutation.getAbsoluteLocation().getBlockAddress();
-				out_periodicMutations.put(block, scheduledMutation.millisUntilReady());
-			}
-			else
-			{
-				out_pendingMutations.add(scheduledMutation);
-			}
-		}
-	}
-
-	private List<ScheduledMutation> _background_readMutations(DeserializationContext context)
-	{
-		ByteBuffer buffer = context.buffer();
-		int mutationCount = buffer.getInt();
-		List<ScheduledMutation> suspended = new ArrayList<>();
-		for (int i = 0; i < mutationCount; ++i)
-		{
-			// Read the parts of the suspended data.
-			long millisUntilReady = buffer.getLong();
-			IMutationBlock mutation = MutationBlockCodec.parseAndSeekContext(context);
-			suspended.add(new ScheduledMutation(mutation, millisUntilReady));
-		}
-		return suspended;
-	}
-
-	private Map<BlockAddress, Long> _background_readPeriodic(ByteBuffer buffer)
-	{
-		Map<BlockAddress, Long> periodicMutations = new HashMap<>();
-		
-		int mutationCount = buffer.getInt();
-		for (int i = 0; i < mutationCount; ++i)
-		{
-			// Read the location.
-			byte x = buffer.get();
-			byte y = buffer.get();
-			byte z = buffer.get();
-			BlockAddress block = new BlockAddress(x, y, z);
-			
-			// Read the millis until ready.
-			long millis = buffer.getLong();
-			periodicMutations.put(block, millis);
-		}
-		return periodicMutations;
-	}
-
 	private void _background_writeCuboidToDisk(PackagedCuboid data, long gameTimeMillis, boolean maintainCache)
 	{
 		// Serialize the entire cuboid into memory and write it out.
-		// Data goes in the following order:
-		// 1) version header
-		// 2) cuboid data
-		// 3) creatures
-		// 4) suspended mutations
-		// 5) periodic mutations
-		// 6) passives
+		// We write the version header here but the CuboidCodec does the rest of the serialization.
 		Assert.assertTrue(0 == _backround_serializationBuffer.position());
-		
-		// 1) Write the version header.
 		_backround_serializationBuffer.putInt(StorageVersions.CURRENT);
 		
-		// 2) Write the raw cuboid data.
-		IReadOnlyCuboidData cuboid = data.cuboid();
-		Object state = cuboid.serializeResumable(null, _backround_serializationBuffer);
-		// We currently assume that we just do the write in a single call.
-		Assert.assertTrue(null == state);
-		
-		// 3) Write the creatures.
-		List<CreatureEntity> entities = data.creatures();
-		_backround_serializationBuffer.putInt(entities.size());
-		for (CreatureEntity entity : entities)
-		{
-			CodecHelpers.writeCreatureEntity(_backround_serializationBuffer, entity, gameTimeMillis);
-		}
-		
-		// 4) Write suspended mutations.
-		List<ScheduledMutation> mutationsToWrite = data.pendingMutations().stream().filter((ScheduledMutation scheduled) -> scheduled.mutation().canSaveToDisk()).toList();
-		_backround_serializationBuffer.putInt(mutationsToWrite.size());
-		for (ScheduledMutation scheduled : mutationsToWrite)
-		{
-			// Write the parts of the data.
-			_backround_serializationBuffer.putLong(scheduled.millisUntilReady());
-			MutationBlockCodec.serializeToBuffer(_backround_serializationBuffer, scheduled.mutation());
-		}
-		
-		// 5) Write periodic mutations.
-		Map<BlockAddress, Long> periodic = data.periodicMutationMillis();
-		_backround_serializationBuffer.putInt(periodic.size());
-		for (Map.Entry<BlockAddress, Long> elt : periodic.entrySet())
-		{
-			BlockAddress block = elt.getKey();
-			long millisUntilReady = elt.getValue();
-			
-			_backround_serializationBuffer.put(block.x());
-			_backround_serializationBuffer.put(block.y());
-			_backround_serializationBuffer.put(block.z());
-			_backround_serializationBuffer.putLong(millisUntilReady);
-		}
-		
-		// 6) Write passive entities.
-		List<PassiveEntity> passives = data.passives();
-		_backround_serializationBuffer.putInt(passives.size());
-		for (PassiveEntity passive : passives)
-		{
-			CodecHelpers.writePassiveEntity(_backround_serializationBuffer, passive);
-		}
+		CuboidCodec.serializeCuboidWithoutVersionHeader(_backround_serializationBuffer, data, gameTimeMillis);
 		
 		// We are done the write so flip the buffer and write it out.
 		_backround_serializationBuffer.flip();
@@ -1127,24 +490,13 @@ public class ResourceLoader
 		Assert.assertTrue(!_backround_serializationBuffer.hasRemaining());
 		_backround_serializationBuffer.clear();
 		
-		CuboidAddress address = cuboid.getCuboidAddress();
+		CuboidAddress address = data.cuboid().getCuboidAddress();
 		byte[] originalBytes = _background_serializedCuboidBuffer.get(address);
 		Assert.assertTrue(null != originalBytes);
 		
 		if (!Arrays.equals(originalBytes, serializedBytes))
 		{
-			try
-			{
-				Files.write(_getCuboidFile(address), serializedBytes, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
-			}
-			catch (NoSuchFileException e)
-			{
-				throw Assert.unexpected(e);
-			}
-			catch (IOException e)
-			{
-				throw Assert.unexpected(e);
-			}
+			_background_writeCuboidBytesToFile(address, serializedBytes);
 			
 			// Now that we are done, update the cuboid buffer.
 			if (maintainCache)
@@ -1356,52 +708,6 @@ public class ResourceLoader
 		return new File(saveDirectory, fileName);
 	}
 
-	// NOTE:  This will modify input and return the extracted passives or null, if there weren't any and input was unchanged.
-	private List<PassiveEntity> _convertCuboidPre9(Environment env, long currentGameMillis, CuboidData input, AbsoluteLocation baseLocation)
-	{
-		List<BlockAddress> toClear = new ArrayList<>();
-		List<PassiveEntity> passives = new ArrayList<>();
-		input.walkData(AspectRegistry.INVENTORY, new IOctree.IWalkerCallback<Inventory>() {
-			@Override
-			public void visit(BlockAddress base, byte size, Inventory value)
-			{
-				short blockNumber = input.getData15(AspectRegistry.BLOCK, base);
-				Block block = env.blocks.fromItem(env.items.ITEMS_BY_TYPE[blockNumber]);
-				int inventorySize = env.stations.getNormalInventorySize(block);
-				if (0 == inventorySize)
-				{
-					// This must be an empty inventory so convert its contents to passives.
-					PassiveType type = PassiveType.ITEM_SLOT;
-					EntityLocation passiveLocation = baseLocation.relativeForBlock(base).toEntityLocation();
-					EntityLocation passiveVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
-					for (Integer key : value.sortedKeys())
-					{
-						ItemSlot slot = value.getSlotForKey(key);
-						PassiveEntity passive = new PassiveEntity(ResourceLoader.this.passiveIdAssigner.next()
-							, type
-							, passiveLocation
-							, passiveVelocity
-							, slot
-							, currentGameMillis
-						);
-						passives.add(passive);
-					}
-					toClear.add(base);
-				}
-			}
-		}, null);
-		
-		// Clear out these inventory slots.
-		for (BlockAddress address : toClear)
-		{
-			input.setDataSpecial(AspectRegistry.INVENTORY, address, null);
-		}
-		return passives.isEmpty()
-			? null
-			: passives
-		;
-	}
-
 	private static Entity _readEntityPre10(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
@@ -1450,5 +756,21 @@ public class ResourceLoader
 			, Entity.EMPTY_SHARED
 			, Entity.EMPTY_LOCAL
 		);
+	}
+
+	private void _background_writeCuboidBytesToFile(CuboidAddress address, byte[] serializedBytes)
+	{
+		try
+		{
+			Files.write(_getCuboidFile(address), serializedBytes, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+		}
+		catch (NoSuchFileException e)
+		{
+			throw Assert.unexpected(e);
+		}
+		catch (IOException e)
+		{
+			throw Assert.unexpected(e);
+		}
 	}
 }
