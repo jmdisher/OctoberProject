@@ -222,9 +222,29 @@ public class StorageModelMigration
 				}
 				else if (name.startsWith(PREFIX_ENTITY))
 				{
+					// We want to take this opportunity to convert the data to the new shape, since we are touching it.
+					ByteBuffer inBuffer = ByteBuffer.wrap(buffer);
+					int version = inBuffer.getInt();
+					
+					// We expect to parse into an empty buffer and should fully drain the input buffer.
+					Assert.assertTrue(0 == scratchBuffer.position());
+					// (unlike cuboids, entities still store version numbers inline)
+					scratchBuffer.putInt(StorageVersions.CURRENT);
+					EntityTranslator.changeToLatestVersion(scratchBuffer
+						, inBuffer
+						, version
+					);
+					Assert.assertTrue(0 == inBuffer.remaining());
+					
+					// Copy out this data and write it to disk (this copy is arguably redundant but keeps the shape the same as cuboids).
+					byte[] updatedData = new byte[scratchBuffer.position()];
+					scratchBuffer.flip();
+					scratchBuffer.get(updatedData);
+					scratchBuffer.clear();
+					
 					// Write this as a file in the new entity directory.
 					File newFile = new File(entityDirectory, name);
-					Files.write(newFile.toPath(), buffer, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+					Files.write(newFile.toPath(), updatedData, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
 				}
 				else
 				{
