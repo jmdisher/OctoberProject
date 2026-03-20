@@ -96,7 +96,33 @@ public class CuboidTranslator
 		);
 		
 		PackagedCuboid packaged;
-		if ((StorageVersions.V9 == version)
+		if (StorageVersions.V11 == version)
+		{
+			// Version 11 is the same as version 12, except it is packaged in the cuboid cluster directories, not flat files.
+			CuboidData cuboid = CuboidCodec.readCuboid(address, context);
+			
+			// Load any creatures associated with the cuboid.
+			List<CreatureEntity> creatures = CuboidCodec.readCreatures(context, creatureIdAssigner);
+			
+			// Now, load any suspended mutations.
+			List<ScheduledMutation> pendingMutations = CuboidCodec.readMutations(context);
+			// ... and any periodic mutations.
+			Map<BlockAddress, Long> periodicMutations = CuboidCodec.readPeriodic(inBuffer);
+			
+			// Passives are stored much like creatures.
+			List<PassiveEntity> passives = CuboidCodec.readPassives(context, passiveIdAssigner);
+			
+			// This should be fully read (might remove this check if buffer usage changes).
+			Assert.assertTrue(!inBuffer.hasRemaining());
+			
+			packaged = new PackagedCuboid(cuboid
+				, creatures
+				, pendingMutations
+				, periodicMutations
+				, passives
+			);
+		}
+		else if ((StorageVersions.V9 == version)
 			|| (StorageVersions.V10 == version)
 		)
 		{

@@ -154,6 +154,11 @@ public class CuboidCodec
 		return _readPeriodic(buffer);
 	}
 
+	public static CuboidData readCuboid(CuboidAddress address, DeserializationContext context)
+	{
+		return _readCuboid(address, context);
+	}
+
 
 	private static CuboidData _readCuboid(CuboidAddress address, DeserializationContext context)
 	{

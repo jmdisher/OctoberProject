@@ -62,7 +62,9 @@ public class ResourceLoader
 	public static final EntityLocation ENTITY_DEFAULT_LOCATION = new EntityLocation(0.0f, 0.0f, 0.0f);
 	public static final float ENTITY_DEFAULT_BLOCKS_PER_TICK_SPEED = 0.5f;
 
-	private final File _saveDirectory;
+	private final File _configFile;
+	private final File _entityDirectory;
+	private final CuboidClusterManager _cuboidClusterManager;
 	private final IWorldGenerator _cuboidGenerator;
 	private final WorldConfig _config;
 	private final Map<CuboidAddress, CuboidData> _preLoaded;
@@ -70,9 +72,8 @@ public class ResourceLoader
 	private final Thread _background;
 	private final ByteBuffer _backround_serializationBuffer;
 
-	// These collections contain the serialized versions of the cuboids and entities which are considered live within the
-	// system (not yet retired by a call to writeBackToDiskAndRetire) and used to avoid redundant write-back to disk.
-	private final Map<CuboidAddress, byte[]> _background_serializedCuboidBuffer;
+	// This collection contains the serialized versions entities which are considered live within the system (not yet
+	// retired by a call to writeBackToDiskAndRetire) and used to avoid redundant write-back to disk.
 	private final Map<Integer, byte[]> _background_serializedEntityBuffer;
 
 	// We directly expose the ID assigner since it is designed to be shared and is atomic.
@@ -96,7 +97,25 @@ public class ResourceLoader
 		// The save directory must exist as a directory before we get here.
 		Assert.assertTrue(saveDirectory.isDirectory());
 		
-		_saveDirectory = saveDirectory;
+		_configFile = _getConfigFile(saveDirectory);
+		_entityDirectory = new File(saveDirectory, "entities");
+		if (!_entityDirectory.exists())
+		{
+			boolean didCreate = _entityDirectory.mkdir();
+			Assert.assertTrue(didCreate);
+		}
+		File cuboidDirectory = new File(saveDirectory, "cuboids");
+		if (!cuboidDirectory.exists())
+		{
+			boolean didCreate = cuboidDirectory.mkdir();
+			Assert.assertTrue(didCreate);
+		}
+		_cuboidClusterManager = new CuboidClusterManager(cuboidDirectory);
+		_backround_serializationBuffer = ByteBuffer.allocate(SERIALIZATION_BUFFER_SIZE_BYTES);
+		if (StorageModelMigration.requiresMigration(saveDirectory))
+		{
+			StorageModelMigration.migrateStorage(saveDirectory, _entityDirectory, _cuboidClusterManager, _backround_serializationBuffer);
+		}
 		_cuboidGenerator = cuboidGenerator;
 		_config = config;
 		_preLoaded = new HashMap<>();
@@ -104,8 +123,6 @@ public class ResourceLoader
 		_background = new Thread(() -> {
 			_background_main();
 		}, "Cuboid Loader");
-		_backround_serializationBuffer = ByteBuffer.allocate(SERIALIZATION_BUFFER_SIZE_BYTES);
-		_background_serializedCuboidBuffer = new HashMap<>();
 		_background_serializedEntityBuffer = new HashMap<>();
 		this.creatureIdAssigner = new CreatureIdAssigner();
 		this.passiveIdAssigner = new PassiveIdAssigner();
@@ -131,8 +148,8 @@ public class ResourceLoader
 		}
 		
 		// Once everything is done, we expect those internal caches to be empty (otherwise, something is leaking).
-		Assert.assertTrue(_background_serializedCuboidBuffer.isEmpty());
 		Assert.assertTrue(_background_serializedEntityBuffer.isEmpty());
+		_cuboidClusterManager.shutdown();
 	}
 
 	/**
@@ -204,10 +221,10 @@ public class ResourceLoader
 						{
 							data = _cuboidGenerator.generateCuboid(this.creatureIdAssigner, address, currentGameMillis);
 						}
-						if (null != data)
+						if (null == data)
 						{
-							// If we just generated this for the first time, make an empty entry in the buffer to force write-back on next write attempt.
-							_background_serializedCuboidBuffer.put(address, new byte[0]);
+							// This only happens in tests but we want to tell the cluster manager to drop this.
+							_cuboidClusterManager.dropForTesting(address);
 						}
 					}
 					// If we found anything, return it.
@@ -357,9 +374,8 @@ public class ResourceLoader
 	 */
 	public void storeWorldConfig(WorldConfig config) throws IOException
 	{
-		File configFile = _getConfigFile(_saveDirectory);
 		Map<String, String> options = config.getRawOptions();
-		try (FileOutputStream stream = new FileOutputStream(configFile))
+		try (FileOutputStream stream = new FileOutputStream(_configFile))
 		{
 			stream.write("# World config for an OctoberProject world.  This uses the tablist format and errors will cause start-up failures.\n\n".getBytes(StandardCharsets.UTF_8));
 			for (Map.Entry<String, String> elt : options.entrySet())
@@ -421,36 +437,14 @@ public class ResourceLoader
 		SuspendedCuboid<CuboidData> result;
 		try
 		{
-			byte[] rawData = Files.readAllBytes(_getCuboidFile(address));
+			byte[] rawData = _cuboidClusterManager.readCuboid(address);
+			if (null == rawData)
+			{
+				throw new NoSuchFileException("Address missing: " + address);
+			}
 			ByteBuffer buffer = ByteBuffer.wrap(rawData);
 			
-			// Verify the version is one we can understand.
-			int version = buffer.getInt();
-			
-			if (StorageVersions.CURRENT != version)
-			{
-				// We need to re-write this and re-write it before returning it.
-				Assert.assertTrue(0 == _backround_serializationBuffer.position());
-				
-				// We will use the serialization buffer.
-				_backround_serializationBuffer.putInt(StorageVersions.CURRENT);
-				CuboidTranslator.changeToLatestVersion(_backround_serializationBuffer, buffer, version);
-				
-				// Note that we could make CuboidTranslator return the parsed object, but this allows us to verify we didn't break anything in serialization.
-				_backround_serializationBuffer.flip();
-				byte[] serializedBytes = new byte[_backround_serializationBuffer.remaining()];
-				_backround_serializationBuffer.get(serializedBytes);
-				Assert.assertTrue(!_backround_serializationBuffer.hasRemaining());
-				_backround_serializationBuffer.clear();
-				
-				// Save this out.
-				_background_writeCuboidBytesToFile(address, serializedBytes);
-				
-				// Update our local variables to this new content and proceed with the common path.
-				rawData = serializedBytes;
-				buffer = ByteBuffer.wrap(rawData);
-				version = buffer.getInt();
-			}
+			// Note that the CuboidClusterManager is responsible for updating when the version changes so we always see the most up-to-date version of data at this level.
 			
 			result = CuboidCodec.deserializeCuboidWithoutVersionHeader(buffer
 				, address
@@ -458,9 +452,6 @@ public class ResourceLoader
 				, this.creatureIdAssigner
 				, this.passiveIdAssigner
 			);
-			
-			// We got this far so store the raw data for later comparisons on write-back.
-			_background_serializedCuboidBuffer.put(address, rawData);
 		}
 		catch (NoSuchFileException e)
 		{
@@ -477,9 +468,8 @@ public class ResourceLoader
 	private void _background_writeCuboidToDisk(PackagedCuboid data, long gameTimeMillis, boolean maintainCache)
 	{
 		// Serialize the entire cuboid into memory and write it out.
-		// We write the version header here but the CuboidCodec does the rest of the serialization.
+		// Note that the version header is managed by the CuboidClusterManager.
 		Assert.assertTrue(0 == _backround_serializationBuffer.position());
-		_backround_serializationBuffer.putInt(StorageVersions.CURRENT);
 		
 		CuboidCodec.serializeCuboidWithoutVersionHeader(_backround_serializationBuffer, data, gameTimeMillis);
 		
@@ -491,31 +481,14 @@ public class ResourceLoader
 		_backround_serializationBuffer.clear();
 		
 		CuboidAddress address = data.cuboid().getCuboidAddress();
-		byte[] originalBytes = _background_serializedCuboidBuffer.get(address);
-		Assert.assertTrue(null != originalBytes);
-		
-		if (!Arrays.equals(originalBytes, serializedBytes))
+		try
 		{
-			_background_writeCuboidBytesToFile(address, serializedBytes);
-			
-			// Now that we are done, update the cuboid buffer.
-			if (maintainCache)
-			{
-				_background_serializedCuboidBuffer.put(address, serializedBytes);
-			}
+			_cuboidClusterManager.writeCuboid(address, serializedBytes, maintainCache);
 		}
-		
-		// If we should clear the cache, do that whether we updated or not.
-		if (!maintainCache)
+		catch (IOException e)
 		{
-			_background_serializedCuboidBuffer.remove(address);
+			throw Assert.unexpected(e);
 		}
-	}
-
-	private Path _getCuboidFile(CuboidAddress address)
-	{
-		String fileName = "cuboid_" + address.x() + "_" + address.y() + "_" + address.z() + ".cuboid";
-		return new File(_saveDirectory, fileName).toPath();
 	}
 
 	private SuspendedEntity _background_readEntityFromDisk(int id, long currentGameMillis)
@@ -543,6 +516,7 @@ public class ResourceLoader
 			
 			Supplier<SuspendedEntity> dataReader;
 			if ((StorageVersions.CURRENT == version)
+				|| (StorageVersions.V11 == version)
 				|| (StorageVersions.V10 == version)
 			)
 			{
@@ -689,7 +663,7 @@ public class ResourceLoader
 	private Path _getEntityFile(int id)
 	{
 		String fileName = "entity_" + id + ".entity";
-		return new File(_saveDirectory, fileName).toPath();
+		return new File(_entityDirectory, fileName).toPath();
 	}
 
 	private static SuspendedEntity _buildDefaultEntity(int id, EntityLocation spawn, boolean isCreative)
@@ -756,21 +730,5 @@ public class ResourceLoader
 			, Entity.EMPTY_SHARED
 			, Entity.EMPTY_LOCAL
 		);
-	}
-
-	private void _background_writeCuboidBytesToFile(CuboidAddress address, byte[] serializedBytes)
-	{
-		try
-		{
-			Files.write(_getCuboidFile(address), serializedBytes, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
-		}
-		catch (NoSuchFileException e)
-		{
-			throw Assert.unexpected(e);
-		}
-		catch (IOException e)
-		{
-			throw Assert.unexpected(e);
-		}
 	}
 }

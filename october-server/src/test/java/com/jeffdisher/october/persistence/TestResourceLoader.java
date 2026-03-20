@@ -126,7 +126,7 @@ public class TestResourceLoader
 		for (int i = 0; (null == results) && (i < 10); ++i)
 		{
 			Thread.sleep(10L);
-			results = _loadSimpleCuboids(loader, List.of(address));
+			results = _loadSimpleCuboids(loader, List.of());
 		}
 		Assert.assertEquals(1, results.size());
 		
@@ -189,8 +189,8 @@ public class TestResourceLoader
 		loader.shutdown();
 		
 		// Make sure that we see this written back.
-		String fileName = "cuboid_" + airAddress.x() + "_" + airAddress.y() + "_" + airAddress.z() + ".cuboid";
-		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
+		File cuboidFile = _getCuboidClusterFile(worldDirectory, airAddress);
+		Assert.assertTrue(cuboidFile.isFile());
 		
 		// Now, create a new loader to verify that we can read this.
 		loader = new ResourceLoader(worldDirectory, null, null);
@@ -231,10 +231,11 @@ public class TestResourceLoader
 		loader.shutdown();
 		
 		// Make sure that we see this written back.
+		File entitiesDirectory = new File(worldDirectory, "entities");
 		String fileName = "entity_" + original.id() + ".entity";
-		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
+		Assert.assertTrue(new File(entitiesDirectory, fileName).isFile());
 		String otherName = "entity_" + other.id() + ".entity";
-		Assert.assertTrue(new File(worldDirectory, otherName).isFile());
+		Assert.assertTrue(new File(entitiesDirectory, otherName).isFile());
 		
 		// Now, create a new loader to verify that we can read this.
 		loader = new ResourceLoader(worldDirectory, null, null);
@@ -274,8 +275,8 @@ public class TestResourceLoader
 		loader.shutdown();
 		
 		// Make sure that we see this written back.
-		String fileName = "cuboid_" + airAddress.x() + "_" + airAddress.y() + "_" + airAddress.z() + ".cuboid";
-		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
+		File cuboidFile = _getCuboidClusterFile(worldDirectory, airAddress);
+		Assert.assertTrue(cuboidFile.isFile());
 		
 		// Now, create a new loader to verify that we can read this.
 		loader = new ResourceLoader(worldDirectory, null, null);
@@ -324,7 +325,8 @@ public class TestResourceLoader
 		
 		// Make sure that we see this written back.
 		String fileName = "entity_" + entityId + ".entity";
-		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
+		File entitiesDirectory = new File(worldDirectory, "entities");
+		Assert.assertTrue(new File(entitiesDirectory, fileName).isFile());
 		
 		// Now, create a new loader to verify that we can read this.
 		loader = new ResourceLoader(worldDirectory, null, null);
@@ -364,10 +366,10 @@ public class TestResourceLoader
 		loader.shutdown();
 		
 		// Make sure that we see this written back.
-		File cuboidFile = new File(worldDirectory, "cuboid_" + airAddress.x() + "_" + airAddress.y() + "_" + airAddress.z() + ".cuboid");
+		File cuboidFile = _getCuboidClusterFile(worldDirectory, airAddress);
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 77 bytes.
-		Assert.assertEquals(77L, cuboidFile.length());
+		// Experimentally, we know that this is 65 * 4 + 73 bytes.
+		Assert.assertEquals(Integer.BYTES + 64 * Integer.BYTES + 73L, cuboidFile.length());
 		
 		// Now, create a new loader, load, and resave this.
 		loader = new ResourceLoader(worldDirectory, null, null);
@@ -381,8 +383,8 @@ public class TestResourceLoader
 		
 		// Verify that the file has been truncated.
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 54 bytes.
-		Assert.assertEquals(54L, cuboidFile.length());
+		// Experimentally, we know that this is 65 * 4 + 50 bytes.
+		Assert.assertEquals(Integer.BYTES + 64 * Integer.BYTES + 50L, cuboidFile.length());
 		
 		// Load it again and verify that the mutation is missing and we parsed without issue.
 		loader = new ResourceLoader(worldDirectory, null, null);
@@ -1261,10 +1263,10 @@ public class TestResourceLoader
 		List<PackagedCuboid> packagedList = List.of(new PackagedCuboid(suspended.cuboid(), suspended.creatures(), suspended.pendingMutations(), suspended.periodicMutationMillis(), suspended.passives()));
 		loader.tryWriteBackToDisk(packagedList, resultEntities, 1000L);
 		
-		String cuboidFileName = "cuboid_" + airAddress.x() + "_" + airAddress.y() + "_" + airAddress.z() + ".cuboid";
 		String entityFileName = "entity_" + entityId + ".entity";
-		File cuboidFile = new File(worldDirectory, cuboidFileName);
-		File entityFile = new File(worldDirectory, entityFileName);
+		File cuboidFile = _getCuboidClusterFile(worldDirectory, airAddress);
+		File entitiesDirectory = new File(worldDirectory, "entities");
+		File entityFile = new File(entitiesDirectory, entityFileName);
 		boolean cuboidWritten = false;
 		boolean entityWritten = false;
 		for (int i = 0; (!cuboidWritten || !entityWritten) && (i < 10); ++i)
@@ -1283,6 +1285,69 @@ public class TestResourceLoader
 		loader.shutdown();
 		Assert.assertFalse(cuboidFile.isFile());
 		Assert.assertFalse(entityFile.isFile());
+	}
+
+	@Test
+	public void dataV8AndV10Migration() throws Throwable
+	{
+		// Show that we automatically migrate old data into the new shape.
+		File worldDirectory = DIRECTORY.newFolder();
+		
+		byte[] v8CuboidData = new byte[] { 0, 0, 0, 8, -128, 0, 0, 0, 0, 1, 12, -64, 0, 0, 0, 50, 2, 0, 0, 0, 1, 0, 1, 0, 0, 0, 2, 0, 0, 0, 2, 0, 28, 1, 0, 0, 0, 1, -12, -128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 64, -96, 0, 0, 64, -96, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 100, 3, 65, 112, 0, 0, 65, 112, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 60, 100, 0, 0, 0, 0, 0, 0, 0, 0 };
+		byte[] v10CuboidData = new byte[] { 0, 0, 0, 10, -128, 0, 0, 0, 0, 0, -128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+		byte[] v8EntityData = new byte[] { 0, 0, 0, 8, 0, 0, 0, 1, 0, 65, -56, 0, 0, 65, -56, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -56, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 100, 100, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+		
+		CuboidAddress v8Address = CuboidAddress.fromInt(1, 2, -1);
+		CuboidAddress v10Address = CuboidAddress.fromInt(1, 2, -2);
+		int entityId = 1;
+		String cuboidV8File = "cuboid_" + v8Address.x() + "_" + v8Address.y() + "_" + v8Address.z() + ".cuboid";
+		String cuboidV10File = "cuboid_" + v10Address.x() + "_" + v10Address.y() + "_" + v10Address.z() + ".cuboid";
+		String entityFile = "entity_" + entityId + ".entity";
+		
+		// Write the pre-serialized data.
+		_storePerSerialized(worldDirectory, cuboidV8File, v8CuboidData);
+		_storePerSerialized(worldDirectory, cuboidV10File, v10CuboidData);
+		_storePerSerialized(worldDirectory, entityFile, v8EntityData);
+		
+		// This is written in the old format so it should 
+		
+		ResourceLoader loader = new ResourceLoader(worldDirectory, null, new WorldConfig());
+		List<SuspendedCuboid<CuboidData>> cuboidResults = new ArrayList<>();
+		List<SuspendedEntity> entityResults = new ArrayList<>();
+		loader.getResultsAndRequestBackgroundLoad(cuboidResults, entityResults, List.of(v8Address, v10Address), List.of(entityId), 0L);
+		
+		// We loop for 500 ms but this conversion takes time so this could be flaky.
+		for (int i = 0; (i < 10) && (cuboidResults.size() < 2) && (entityResults.size() < 1); ++i)
+		{
+			Thread.sleep(50L);
+			loader.getResultsAndRequestBackgroundLoad(cuboidResults, entityResults, List.of(), List.of(), 0L);
+		}
+		Assert.assertEquals(2, cuboidResults.size());
+		Assert.assertEquals(1, entityResults.size());
+		
+		// Just make sure that this data is sane as as expected (from a bunch of TestResourceLoader tests).
+		SuspendedCuboid<CuboidData> cuboid0 = cuboidResults.get(0);
+		SuspendedCuboid<CuboidData> cuboid1 = cuboidResults.get(1);
+		SuspendedEntity entity0 = entityResults.get(0);
+		Assert.assertEquals(2, cuboid0.creatures().size());
+		Assert.assertEquals(2, cuboid0.passives().size());
+		Assert.assertEquals(0, cuboid1.creatures().size());
+		Assert.assertEquals(0, cuboid1.passives().size());
+		Assert.assertEquals(new EntityLocation(25.0f, 25.0f, 0.0f), entity0.entity().location());
+		
+		// Verify the final shape after the conversion.
+		File entityDirectory = new File(worldDirectory, "entities");
+		File cuboidDirectory = new File(worldDirectory, "cuboids");
+		Assert.assertEquals(3, worldDirectory.listFiles().length);
+		Assert.assertEquals(1, entityDirectory.listFiles().length);
+		Assert.assertEquals(1, cuboidDirectory.listFiles().length);
+		Assert.assertTrue(new File(worldDirectory, "BACKUP_pre12.zip").isFile());
+		Assert.assertTrue(new File(entityDirectory, "entity_1.entity").isFile());
+		
+		File regionDirectory = new File(cuboidDirectory, "region_0_0_-1.cd8");
+		Assert.assertTrue(regionDirectory.isDirectory());
+		Assert.assertEquals(1, regionDirectory.listFiles().length);
+		Assert.assertTrue(new File(regionDirectory, "cluster_0_0_7.c4").isFile());
 	}
 
 
@@ -1365,5 +1430,24 @@ public class TestResourceLoader
 			Assert.assertEquals(preSerialized.length, written);
 		}
 		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
+	}
+
+	private static File _getCuboidClusterFile(File root, CuboidAddress address)
+	{
+		File cuboidRoot = new File(root, "cuboids");
+		
+		// These are copied from logic in CuboidClusterManager.
+		int dirX = address.x() >> (CuboidClusterManager.SHIFT_ADDRESS_DIRECTORY + CuboidCluster.SHIFT_ADDRESS_CLUSTER);
+		int dirY = address.y() >> (CuboidClusterManager.SHIFT_ADDRESS_DIRECTORY + CuboidCluster.SHIFT_ADDRESS_CLUSTER);
+		int dirZ = address.z() >> (CuboidClusterManager.SHIFT_ADDRESS_DIRECTORY + CuboidCluster.SHIFT_ADDRESS_CLUSTER);
+		String directoryName = String.format("region_%d_%d_%d.cd8", dirX, dirY, dirZ);
+		File directory = new File(cuboidRoot, directoryName);
+		
+		int fileX = (address.x() >> CuboidCluster.SHIFT_ADDRESS_CLUSTER) & CuboidClusterManager.MASK_ADDRESS_DIRECTORY;
+		int fileY = (address.y() >> CuboidCluster.SHIFT_ADDRESS_CLUSTER) & CuboidClusterManager.MASK_ADDRESS_DIRECTORY;
+		int fileZ = (address.z() >> CuboidCluster.SHIFT_ADDRESS_CLUSTER) & CuboidClusterManager.MASK_ADDRESS_DIRECTORY;
+		
+		String fileName = String.format("cluster_%d_%d_%d.c4", fileX, fileY, fileZ);
+		return new File(directory, fileName);
 	}
 }
