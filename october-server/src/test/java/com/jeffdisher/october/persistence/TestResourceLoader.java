@@ -19,7 +19,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.jeffdisher.october.actions.Deprecated_EntityAction;
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
@@ -665,10 +664,10 @@ public class TestResourceLoader
 		Assert.assertEquals(BodyPart.values().length, entity.armourSlots().length);
 		Assert.assertNull(entity.ephemeralShared().localCraftOperation());
 		Assert.assertEquals((byte)0, entity.yaw());
+		
+		// We no longer end up seeing deprecated actions when deserializing legacy entity formats so this list should be empty.
 		List<ScheduledChange> changes = results.get(0).changes();
-		Assert.assertEquals(1, changes.size());
-		// This is a deprecated movement so just make sure that we loaded it.
-		Assert.assertTrue(changes.get(0).change() instanceof Deprecated_EntityAction);
+		Assert.assertEquals(0, changes.size());
 		
 		loader.writeBackToDiskAndRetire(List.of(), results, 0L);
 		loader.shutdown();

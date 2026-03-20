@@ -17,32 +17,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Supplier;
 
 import com.jeffdisher.october.actions.EntityActionPeriodic;
-import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.config.FlatTabListCallbacks;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.PassiveIdAssigner;
 import com.jeffdisher.october.logic.ScheduledChange;
-import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.net.EntityActionCodec;
-import com.jeffdisher.october.persistence.legacy.LegacyEntityV1;
-import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.CuboidAddress;
-import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
-import com.jeffdisher.october.types.IEntityAction;
-import com.jeffdisher.october.types.IMutablePlayerEntity;
-import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.MutableEntity;
-import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.MessageQueue;
@@ -503,70 +491,32 @@ public class ResourceLoader
 			// Verify the version is one we can understand.
 			int version = buffer.getInt();
 			
-			// We want to create the decoder context here since we have version data.
-			Environment env = Environment.getShared();
-			boolean usePreV8NonStackableDecoding = (version <= StorageVersions.V7);
-			boolean usePreV11DamageDecoding = false;
-			DeserializationContext context = new DeserializationContext(env
-				, buffer
-				, currentGameMillis
-				, usePreV8NonStackableDecoding
-				, usePreV11DamageDecoding
-			);
-			
-			Supplier<SuspendedEntity> dataReader;
-			if ((StorageVersions.CURRENT == version)
-				|| (StorageVersions.V11 == version)
-				|| (StorageVersions.V10 == version)
-			)
+			if (StorageVersions.CURRENT != version)
 			{
-				// Do nothing special - just stops old versions from being broken.
-				dataReader = () -> {
-					Entity entity = CodecHelpers.readEntityDisk(context);
-					
-					// Now, load any suspended changes.
-					List<ScheduledChange> suspended = _background_readSuspendedMutations(context);
-					return new SuspendedEntity(entity, suspended);
-				};
-			}
-			else if ((StorageVersions.V2 == version)
-					|| (StorageVersions.V3 == version)
-					|| (StorageVersions.V4 == version)
-					|| (StorageVersions.V5 == version)
-					|| (StorageVersions.V6 == version)
-					|| (StorageVersions.V7 == version)
-					|| (StorageVersions.V8 == version)
-					|| (StorageVersions.V9 == version)
-			)
-			{
-				// These versions used a different on-disk entity shape.
-				dataReader = () -> {
-					Entity entity = _readEntityPre10(context);
-					
-					// Now, load any suspended changes.
-					List<ScheduledChange> suspended = _background_readSuspendedMutations(context);
-					return new SuspendedEntity(entity, suspended);
-				};
-			}
-			else if (StorageVersions.V1 == version)
-			{
-				// The V1 entity is has less data.
-				dataReader = () -> {
-					// Read the legacy data.
-					LegacyEntityV1 legacy = LegacyEntityV1.load(context);
-					Entity entity = legacy.toEntity();
-					
-					// Now, load any suspended changes.
-					List<ScheduledChange> suspended = _background_readSuspendedMutations(context);
-					return new SuspendedEntity(entity, suspended);
-				};
-			}
-			else
-			{
-				throw new RuntimeException("UNSUPPORTED ENTITY STORAGE VERSION:  " + version);
+				// We need to re-write this and re-write it before returning it.
+				Assert.assertTrue(0 == _backround_serializationBuffer.position());
+				
+				// We will use the serialization buffer.
+				_backround_serializationBuffer.putInt(StorageVersions.CURRENT);
+				EntityTranslator.changeToLatestVersion(_backround_serializationBuffer, buffer, version);
+				
+				// Note that we could make EntityTranslator return the parsed object, but this allows us to verify we didn't break anything in serialization.
+				_backround_serializationBuffer.flip();
+				byte[] serializedBytes = new byte[_backround_serializationBuffer.remaining()];
+				_backround_serializationBuffer.get(serializedBytes);
+				Assert.assertTrue(!_backround_serializationBuffer.hasRemaining());
+				_backround_serializationBuffer.clear();
+				
+				// Save this out.
+				_background_writeEntityBytesToFile(id, serializedBytes);
+				
+				// Update our local variables to this new content and proceed with the common path.
+				rawData = serializedBytes;
+				buffer = ByteBuffer.wrap(rawData);
+				version = buffer.getInt();
 			}
 			
-			result = dataReader.get();
+			result = EntityCodec.deserializeEntityWithoutVersionHeader(buffer, currentGameMillis);
 			
 			// We got this far so store the raw data for later comparisons on write-back.
 			_background_serializedEntityBuffer.put(id, rawData);
@@ -583,20 +533,6 @@ public class ResourceLoader
 		return result;
 	}
 
-	private List<ScheduledChange> _background_readSuspendedMutations(DeserializationContext context)
-	{
-		ByteBuffer buffer = context.buffer();
-		List<ScheduledChange> suspended = new ArrayList<>();
-		while (buffer.hasRemaining())
-		{
-			// Read the parts of the suspended data.
-			long millisUntilReady = buffer.getLong();
-			IEntityAction<IMutablePlayerEntity> change = EntityActionCodec.parseAndSeekContext(context);
-			suspended.add(new ScheduledChange(change, millisUntilReady));
-		}
-		return suspended;
-	}
-
 	private void _background_writeEntityToDisk(SuspendedEntity suspended, boolean maintainCache)
 	{
 		// Serialize the entire entity into memory and write it out.
@@ -605,21 +541,7 @@ public class ResourceLoader
 		// Write the version header.
 		_backround_serializationBuffer.putInt(StorageVersions.CURRENT);
 		
-		Entity entity = suspended.entity();
-		List<ScheduledChange> changes = suspended.changes();
-		CodecHelpers.writeEntityDisk(_backround_serializationBuffer, entity);
-		
-		// We now write any suspended changes.
-		for (ScheduledChange scheduled : changes)
-		{
-			// Check that this kind of change can be stored to disk (some have ephemeral references and should be dropped).
-			if (scheduled.change().canSaveToDisk())
-			{
-				// Write the parts of the data.
-				_backround_serializationBuffer.putLong(scheduled.millisUntilReady());
-				EntityActionCodec.serializeToBuffer(_backround_serializationBuffer, scheduled.change());
-			}
-		}
+		EntityCodec.serializeEntityWithoutVersionHeader(_backround_serializationBuffer, suspended);
 		_backround_serializationBuffer.flip();
 		
 		byte[] serializedBytes = new byte[_backround_serializationBuffer.remaining()];
@@ -627,24 +549,13 @@ public class ResourceLoader
 		Assert.assertTrue(!_backround_serializationBuffer.hasRemaining());
 		_backround_serializationBuffer.clear();
 		
-		int entityId = entity.id();
+		int entityId = suspended.entity().id();
 		byte[] originalBytes = _background_serializedEntityBuffer.get(entityId);
 		Assert.assertTrue(null != originalBytes);
 		
 		if (!Arrays.equals(originalBytes, serializedBytes))
 		{
-			try
-			{
-				Files.write(_getEntityFile(entityId), serializedBytes, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
-			}
-			catch (NoSuchFileException e)
-			{
-				throw Assert.unexpected(e);
-			}
-			catch (IOException e)
-			{
-				throw Assert.unexpected(e);
-			}
+			_background_writeEntityBytesToFile(entityId, serializedBytes);
 			
 			// Now that we are done, update the entity buffer.
 			if (maintainCache)
@@ -682,53 +593,19 @@ public class ResourceLoader
 		return new File(saveDirectory, fileName);
 	}
 
-	private static Entity _readEntityPre10(DeserializationContext context)
+	private void _background_writeEntityBytesToFile(int entityId, byte[] serializedBytes) throws AssertionError
 	{
-		ByteBuffer buffer = context.buffer();
-		int id = buffer.getInt();
-		boolean isCreativeMode = CodecHelpers.readBoolean(buffer);
-		EntityLocation location = CodecHelpers.readEntityLocation(buffer);
-		EntityLocation velocity = CodecHelpers.readEntityLocation(buffer);
-		byte yaw = buffer.get();
-		byte pitch = buffer.get();
-		Inventory inventory = CodecHelpers.readInventory(context);
-		int[] hotbar = new int[Entity.HOTBAR_SIZE];
-		for (int i = 0; i < hotbar.length; ++i)
+		try
 		{
-			hotbar[i] = buffer.getInt();
+			Files.write(_getEntityFile(entityId), serializedBytes, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
 		}
-		int hotbarIndex = buffer.getInt();
-		NonStackableItem[] armour = new NonStackableItem[BodyPart.values().length];
-		for (int i = 0; i < armour.length; ++i)
+		catch (NoSuchFileException e)
 		{
-			armour[i] = CodecHelpers.readNonStackableItem(context);
+			throw Assert.unexpected(e);
 		}
-		// We ignore localCraftOperation as it is now ephemeral.
-		CodecHelpers.readCraftOperation(buffer);
-		byte health = buffer.get();
-		byte food = buffer.get();
-		byte breath = buffer.get();
-		// We ignore int energyDeficit as it is now ephemeral.
-		buffer.getInt();
-		EntityLocation spawn = CodecHelpers.readEntityLocation(buffer);
-		
-		return new Entity(id
-			, isCreativeMode
-			, location
-			, velocity
-			, yaw
-			, pitch
-			, inventory
-			, hotbar
-			, hotbarIndex
-			, armour
-			, health
-			, food
-			, breath
-			, spawn
-			
-			, Entity.EMPTY_SHARED
-			, Entity.EMPTY_LOCAL
-		);
+		catch (IOException e)
+		{
+			throw Assert.unexpected(e);
+		}
 	}
 }
