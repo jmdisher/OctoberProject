@@ -102,7 +102,31 @@ public class ResourceLoader
 		_backround_serializationBuffer = ByteBuffer.allocate(SERIALIZATION_BUFFER_SIZE_BYTES);
 		if (StorageModelMigration.requiresMigration(saveDirectory))
 		{
-			StorageModelMigration.migrateStorage(saveDirectory, _entityDirectory, _cuboidClusterManager, _backround_serializationBuffer);
+			System.out.println("Beginning storage migration...");
+			StorageModelMigration.migrateStorage(saveDirectory
+				, _entityDirectory
+				, _cuboidClusterManager
+				, _backround_serializationBuffer
+				, new StorageModelMigration.IProgress() {
+					int _previousReport = -1;
+					@Override
+					public void itemCompleted(String activity, int completedCount, int totalCount)
+					{
+						int thisCount = (100 * completedCount / totalCount);
+						if (thisCount > _previousReport)
+						{
+							System.out.printf("%s %d%% (%d / %d)\n", activity, thisCount, completedCount, totalCount);
+							_previousReport = thisCount;
+						}
+						if (completedCount == totalCount)
+						{
+							// Changing modes so reset.
+							_previousReport = -1;
+						}
+					}
+				}
+			);
+			System.out.println("Storage migration completed!");
 		}
 		_cuboidGenerator = cuboidGenerator;
 		_config = config;

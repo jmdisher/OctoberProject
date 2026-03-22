@@ -70,11 +70,13 @@ public class StorageModelMigration
 	 * @param cuboidClusterManager The directory where the cluster manager should base its region directories (must
 	 * exist).
 	 * @param scratchBuffer A scratch buffer to use during the transformation (must be clear).
+	 * @param progress The progress tracker.
 	 */
 	public static void migrateStorage(File oldRoot
 		, File entityDirectory
 		, CuboidClusterManager cuboidClusterManager
 		, ByteBuffer scratchBuffer
+		, IProgress progress
 	)
 	{
 		File backupZipFile = new File(oldRoot, BACKUP_FILE_NAME);
@@ -85,11 +87,11 @@ public class StorageModelMigration
 		// Step 4.
 		if (!skipBackupCreation)
 		{
-			_populateZipFromScratch(oldRoot, backupZipFile);
+			_populateZipFromScratch(oldRoot, backupZipFile, progress);
 		}
 		
 		// Step 5.
-		_readAndUpdateFromZip(backupZipFile, cuboidClusterManager, entityDirectory, scratchBuffer);
+		_readAndUpdateFromZip(backupZipFile, cuboidClusterManager, entityDirectory, scratchBuffer, progress);
 		
 		// Step 6.
 		_deleteOldFiles(oldRoot);
@@ -122,7 +124,7 @@ public class StorageModelMigration
 		return isComplete;
 	}
 
-	private static void _populateZipFromScratch(File oldRoot, File backupZipFile)
+	private static void _populateZipFromScratch(File oldRoot, File backupZipFile, IProgress progress)
 	{
 		if (backupZipFile.exists())
 		{
@@ -133,7 +135,9 @@ public class StorageModelMigration
 			ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(backupZipFile));
 		)
 		{
-			for (File sub : oldRoot.listFiles())
+			File[] oldList = oldRoot.listFiles();
+			int doneCount = 0;
+			for (File sub : oldList)
 			{
 				String name = sub.getName();
 				if (name.startsWith(PREFIX_CUBOID) || name.startsWith(PREFIX_ENTITY))
@@ -148,6 +152,8 @@ public class StorageModelMigration
 					zipOut.write(buffer);
 					zipOut.closeEntry();
 				}
+				doneCount += 1;
+				progress.itemCompleted("Backup", doneCount, oldList.length);
 			}
 		}
 		catch (FileNotFoundException e)
@@ -166,6 +172,7 @@ public class StorageModelMigration
 		, CuboidClusterManager cuboidClusterManager
 		, File entityDirectory
 		, ByteBuffer scratchBuffer
+		, IProgress progress
 	)
 	{
 		// Note that we need to use ZipFile as ZipInputStream doesn't give us correct sizes, even though we set them, inline, when creating the file, above.
@@ -173,6 +180,8 @@ public class StorageModelMigration
 			ZipFile zipFile = new ZipFile(backupZipFile);
 		)
 		{
+			int doneCount = 0;
+			int entryCount = zipFile.size();
 			Enumeration<? extends ZipEntry> enumer = zipFile.entries();
 			while (enumer.hasMoreElements())
 			{
@@ -251,6 +260,9 @@ public class StorageModelMigration
 					// The only other thing here is the DONE.
 					Assert.assertTrue(name.equals(DONE_ENTRY_NAME));
 				}
+				
+				doneCount += 1;
+				progress.itemCompleted("Extract", doneCount, entryCount);
 			}
 		}
 		catch (FileNotFoundException e)
@@ -287,5 +299,21 @@ public class StorageModelMigration
 				Assert.assertTrue(didDelete);
 			}
 		}
+	}
+
+
+	/**
+	 * Used to monitor the progress of the storage migration, since it often takes a long time.
+	 */
+	public static interface IProgress
+	{
+		/**
+		 * A callback issued for every individual item processed in each stage of the migration.
+		 * 
+		 * @param activity The human-readable name of the stage (currently "Backup" or "Extract").
+		 * @param completedCount The number of items completed in this stage (even if they didn't require any action).
+		 * @param totalCount The total number of items included in this stage.
+		 */
+		void itemCompleted(String activity, int completedCount, int totalCount);
 	}
 }

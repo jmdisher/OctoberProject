@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -65,8 +67,31 @@ public class TestStorageModelMigration
 		cuboidDirectory.mkdir();
 		CuboidClusterManager manager = new CuboidClusterManager(cuboidDirectory);
 		ByteBuffer scratchBuffer = ByteBuffer.allocate(1024 * 1024);
-		StorageModelMigration.migrateStorage(worldDirectory, entityDirectory, manager, scratchBuffer);
+		Map<String, Integer> phaseCounters = new HashMap<>();
+		Map<String, Integer> phaseTotals = new HashMap<>();
+		StorageModelMigration.migrateStorage(worldDirectory
+			, entityDirectory
+			, manager
+			, scratchBuffer
+			, (String activity, int completedCount, int totalCount) -> {
+				int old = phaseCounters.getOrDefault(activity, 0);
+				Assert.assertEquals(old + 1, completedCount);
+				phaseCounters.put(activity, completedCount);
+				if (completedCount == totalCount)
+				{
+					phaseTotals.put(activity, completedCount);
+				}
+			}
+		);
 		Assert.assertFalse(StorageModelMigration.requiresMigration(worldDirectory));
+		
+		// Verify counters.
+		Assert.assertEquals(2, phaseCounters.size());
+		Assert.assertEquals(6, phaseCounters.get("Backup").intValue());
+		Assert.assertEquals(3, phaseCounters.get("Extract").intValue());
+		Assert.assertEquals(2, phaseTotals.size());
+		Assert.assertEquals(6, phaseTotals.get("Backup").intValue());
+		Assert.assertEquals(3, phaseTotals.get("Extract").intValue());
 		
 		// Verify the final shape after the conversion.
 		Assert.assertEquals(3, worldDirectory.listFiles().length);
