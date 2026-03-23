@@ -2,10 +2,8 @@ package com.jeffdisher.october.logic;
 
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
-import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
 
 
@@ -105,95 +103,49 @@ public class SpatialHelpers
 	/**
 	 * Finds the location of the entity's eyes.  This is the centre of their model, near the top.
 	 * 
-	 * @param entity The entity.
+	 * @param entityLocation The base location of the entity.
+	 * @param volume The total volume of the entity.
 	 * @return The location where their eyes are.
 	 */
-	public static EntityLocation getEyeLocation(IMutableMinimalEntity entity)
+	public static EntityLocation getEyeLocation(EntityLocation entityLocation, EntityVolume volume)
 	{
-		return _getEyeLocation(entity.getLocation(), entity.getType());
+		// The location is the bottom-south-west corner so we want to offset by half their width and most of their height.
+		// We will say that their eyes are 90% of the way up their body from their feet.
+		float entityEyeHeightMultiplier = 0.9f;
+		
+		float widthOffset = volume.width() / 2.0f;
+		float heightOffset = volume.height() * entityEyeHeightMultiplier;
+		return new EntityLocation(entityLocation.x() + widthOffset, entityLocation.y() + widthOffset, entityLocation.z() + heightOffset);
 	}
 
 	/**
-	 * Finds the distance from the eye of the given eyeEntity to the bounding box of the given targetEntity.
+	 * Finds the distance from a start location to the bounding box of the given targetEntity.
 	 * 
-	 * @param eyeEntity The entity whose eye we are looking through.
+	 * @param start The start location from which to measure.
 	 * @param targetEntity The entity we are targeting.
 	 * @return The diagonal distance from the eye to the target's bounding-box.
 	 */
-	public static float distanceFromMutableEyeToEntitySurface(IMutableMinimalEntity eyeEntity, MinimalEntity targetEntity)
+	public static float distanceFromLocationToEntitySurface(EntityLocation start, MinimalEntity targetEntity)
 	{
-		EntityLocation eye = _getEyeLocation(eyeEntity.getLocation(), eyeEntity.getType());
 		EntityLocation target = targetEntity.location();
 		EntityVolume targetVolume = targetEntity.type().volume();
 		
-		return _distanceToTarget(eye, target, targetVolume);
+		return _distanceToTarget(start, target, targetVolume);
 	}
 
 	/**
-	 * Finds the distance from the eye of a player with base at eyeEntityBase to the bounding box of the given
-	 * targetEntity.
+	 * Finds the distance from a start location to the nearest edge of the given block.
 	 * 
-	 * @param eyeEntityBase The base of the player whose eye we are looking through.
-	 * @param playerType The type to use when finding the eye of the player.
-	 * @param targetEntity The entity we are targeting.
-	 * @return The diagonal distance from the eye to the target's bounding-box.
-	 */
-	public static float distanceFromPlayerEyeToEntitySurface(EntityLocation eyeEntityBase, EntityType playerType, MinimalEntity targetEntity)
-	{
-		EntityLocation eye = _getEyeLocation(eyeEntityBase, playerType);
-		EntityLocation target = targetEntity.location();
-		EntityVolume targetVolume = targetEntity.type().volume();
-		
-		return _distanceToTarget(eye, target, targetVolume);
-	}
-
-	/**
-	 * Finds the distance from the eye of a player with base at eyeEntityBase to the bounding box of the given target.
-	 * 
-	 * @param eyeEntityBase The base of the player whose eye we are looking through.
-	 * @param playerType The type to use when finding the eye of the player.
-	 * @param targetBase The base of the target volume to check.
-	 * @param targetVolume The target volume size.
-	 * @return The diagonal distance from the eye to the target's bounding-box.
-	 */
-	public static float distanceFromPlayerEyeToVolume(EntityLocation eyeEntityBase, EntityType playerType, EntityLocation targetBase, EntityVolume targetVolume)
-	{
-		EntityLocation eye = _getEyeLocation(eyeEntityBase, playerType);
-		
-		return _distanceToTarget(eye, targetBase, targetVolume);
-	}
-
-	/**
-	 * Finds the distance from the eye of the given eyeEntity to the nearest edge of the given block.
-	 * 
-	 * @param eyeEntity The entity whose eye we are looking through.
+	 * @param start The start location from which to measure.
 	 * @param block The block we are targeting.
 	 * @return The diagonal distance from the eye to the nearest edge of the given block.
 	 */
-	public static float distanceFromMutableEyeToBlockSurface(IMutablePlayerEntity eyeEntity, AbsoluteLocation block)
+	public static float distanceFromLocationToBlockSurface(EntityLocation start, AbsoluteLocation block)
 	{
-		EntityLocation eye = _getEyeLocation(eyeEntity.getLocation(), eyeEntity.getType());
 		EntityLocation target = block.toEntityLocation();
 		EntityVolume cubeVolume = new EntityVolume(1.0f, 1.0f);
 		
-		return _distanceToTarget(eye, target, cubeVolume);
-	}
-
-	/**
-	 * Finds the distance from the eye of a player with base at eyeEntityBase to the nearest edge of the given block.
-	 * 
-	 * @param eyeEntityBase The base of the player whose eye we are looking through.
-	 * @param playerType The type to use when finding the eye of the player.
-	 * @param block The block we are targeting.
-	 * @return The diagonal distance from the eye to the nearest edge of the given block.
-	 */
-	public static float distanceFromPlayerEyeToBlockSurface(EntityLocation eyeEntityBase, EntityType playerType, AbsoluteLocation block)
-	{
-		EntityLocation eye = _getEyeLocation(eyeEntityBase, playerType);
-		EntityLocation target = block.toEntityLocation();
-		EntityVolume cubeVolume = new EntityVolume(1.0f, 1.0f);
-		
-		return _distanceToTarget(eye, target, cubeVolume);
+		return _distanceToTarget(start, target, cubeVolume);
 	}
 
 	/**
@@ -336,18 +288,6 @@ public class SpatialHelpers
 		// (we want the block under our centre).
 		float widthOffset = volume.width() / 2.0f;
 		return new EntityLocation(entityLocation.x() + widthOffset, entityLocation.y() + widthOffset, entityLocation.z());
-	}
-
-	private static EntityLocation _getEyeLocation(EntityLocation entityLocation, EntityType type)
-	{
-		// The location is the bottom-south-west corner so we want to offset by half their width and most of their height.
-		// We will say that their eyes are 90% of the way up their body from their feet.
-		float entityEyeHeightMultiplier = 0.9f;
-		EntityVolume volume = type.volume();
-		
-		float widthOffset = volume.width() / 2.0f;
-		float heightOffset = volume.height() * entityEyeHeightMultiplier;
-		return new EntityLocation(entityLocation.x() + widthOffset, entityLocation.y() + widthOffset, entityLocation.z() + heightOffset);
 	}
 
 	private static float _distanceToTarget(EntityLocation eye, EntityLocation target, EntityVolume targetVolume)

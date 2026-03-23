@@ -85,7 +85,8 @@ public class MutationPlaceSelectedBlock implements IEntitySubAction<IMutablePlay
 		boolean isItemSelected = (null != blockType);
 		
 		// Find the distance from the eye to the target.
-		float distance = SpatialHelpers.distanceFromMutableEyeToBlockSurface(newEntity, _targetBlock);
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+		float distance = SpatialHelpers.distanceFromLocationToBlockSurface(sourceEyeLocation, _targetBlock);
 		boolean isLocationClose = (distance <= MiscConstants.REACH_BLOCK);
 		
 		// (to check for collision, we will ask about a world where only this block isn't air).

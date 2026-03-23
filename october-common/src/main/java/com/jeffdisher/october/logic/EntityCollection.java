@@ -291,7 +291,8 @@ public class EntityCollection
 	private static <T> boolean _checkInstance(IMutableMinimalEntity source, MinimalEntity dest, float maxRange, Consumer<T> consumer, T arg)
 	{
 		boolean isInRange = false;
-		if (SpatialHelpers.distanceFromMutableEyeToEntitySurface(source, dest) <= maxRange)
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(source.getLocation(), source.getType().volume());
+		if (SpatialHelpers.distanceFromLocationToEntitySurface(sourceEyeLocation, dest) <= maxRange)
 		{
 			consumer.accept(arg);
 			isInRange = true;

@@ -19,6 +19,7 @@ import com.jeffdisher.october.properties.PropertyType;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -95,7 +96,8 @@ public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMut
 		boolean isReady = ((newEntity.getLastSpecialActionMillis() + COOLDOWN_MILLIS) <= context.currentTickTimeMillis);
 		
 		// We also want to make sure that this is in range.
-		float distance = SpatialHelpers.distanceFromMutableEyeToBlockSurface(newEntity, _target);
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+		float distance = SpatialHelpers.distanceFromLocationToBlockSurface(sourceEyeLocation, _target);
 		boolean isInRange = (distance <= MiscConstants.REACH_BLOCK);
 		
 		boolean didApply = false;

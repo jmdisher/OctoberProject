@@ -8,6 +8,7 @@ import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
@@ -72,11 +73,17 @@ public class EntityChangeUseSelectedItemOnEntity implements IEntitySubAction<IMu
 		
 		// We also want to make sure that this is in range.
 		MinimalEntity target = context.previousEntityLookUp.apply(_entityId);
-		float distance = (null != target)
-				? SpatialHelpers.distanceFromMutableEyeToEntitySurface(newEntity, target)
-				: Float.MAX_VALUE
-		;
-		boolean isInRange = (distance <= MiscConstants.REACH_ENTITY);
+		boolean isInRange;
+		if (null != target)
+		{
+			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+			float distance = SpatialHelpers.distanceFromLocationToEntitySurface(sourceEyeLocation, target);
+			isInRange = (distance <= MiscConstants.REACH_ENTITY);
+		}
+		else
+		{
+			isInRange = false;
+		}
 		
 		// Get the current selected item.
 		int selectedKey = newEntity.getSelectedKey();

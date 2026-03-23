@@ -12,6 +12,7 @@ import com.jeffdisher.october.mutations.MutationBlockIncrementalRepair;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -53,7 +54,8 @@ public class EntityChangeIncrementalBlockRepair implements IEntitySubAction<IMut
 		boolean isHandEmpty = (Entity.NO_SELECTION == newEntity.getSelectedKey());
 		
 		// Find the distance from the eye to the target.
-		float distance = SpatialHelpers.distanceFromMutableEyeToBlockSurface(newEntity, _targetBlock);
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+		float distance = SpatialHelpers.distanceFromLocationToBlockSurface(sourceEyeLocation, _targetBlock);
 		boolean isReachable = (distance <= MiscConstants.REACH_BLOCK);
 		
 		// Note that the cuboid could theoretically not be loaded (although this shouldn't happen in normal clients).

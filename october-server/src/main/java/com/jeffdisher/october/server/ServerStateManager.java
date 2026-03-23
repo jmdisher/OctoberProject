@@ -761,11 +761,12 @@ public class ServerStateManager
 	{
 		// Note that this is similar to _sendNewAndUpdatedCreatures but duplicated to avoid spreading logic with extra levels of indirection.
 		EntityType playerType  = Environment.getShared().creatures.PLAYER;
+		EntityLocation playerEyeLocation = SpatialHelpers.getEyeLocation(state.location, playerType.volume());
 		for (Map.Entry<Integer, Entity> entry : _completedEntities.entrySet())
 		{
 			int entityId = entry.getKey();
 			Entity entity = entry.getValue();
-			float distance = SpatialHelpers.distanceFromPlayerEyeToEntitySurface(state.location, playerType, MinimalEntity.fromEntity(entity));
+			float distance = SpatialHelpers.distanceFromLocationToEntitySurface(playerEyeLocation, MinimalEntity.fromEntity(entity));
 			if (state.knownEntities.contains(entityId))
 			{
 				// See if they are too far away.
@@ -824,11 +825,12 @@ public class ServerStateManager
 	{
 		// Note that this is similar to _sendNewAndUpdatedEntities but duplicated to avoid spreading logic with extra levels of indirection.
 		EntityType playerType  = Environment.getShared().creatures.PLAYER;
+		EntityLocation playerEyeLocation = SpatialHelpers.getEyeLocation(state.location, playerType.volume());
 		for (Map.Entry<Integer, CreatureEntity> entry : _completedCreatures.entrySet())
 		{
 			int entityId = entry.getKey();
 			CreatureEntity entity = entry.getValue();
-			float distance = SpatialHelpers.distanceFromPlayerEyeToEntitySurface(state.location, playerType, MinimalEntity.fromCreature(entity));
+			float distance = SpatialHelpers.distanceFromLocationToEntitySurface(playerEyeLocation, MinimalEntity.fromCreature(entity));
 			if (state.knownEntities.contains(entityId))
 			{
 				// See if they are too far away.
@@ -868,11 +870,12 @@ public class ServerStateManager
 	{
 		// Note that this is similar to _sendNewAndUpdatedCreatures but duplicated to avoid spreading logic with extra levels of indirection.
 		EntityType playerType  = Environment.getShared().creatures.PLAYER;
+		EntityLocation playerEyeLocation = SpatialHelpers.getEyeLocation(state.location, playerType.volume());
 		for (Map.Entry<Integer, PassiveEntity> entry : _completedPassives.entrySet())
 		{
 			int entityId = entry.getKey();
 			PassiveEntity passive = entry.getValue();
-			float distance = SpatialHelpers.distanceFromPlayerEyeToVolume(state.location, playerType, passive.location(), passive.type().volume());
+			float distance = SpatialHelpers.distanceFromLocationToVolume(playerEyeLocation, passive.location(), passive.type().volume());
 			if (state.knownPassives.contains(entityId))
 			{
 				// See if they are too far away.

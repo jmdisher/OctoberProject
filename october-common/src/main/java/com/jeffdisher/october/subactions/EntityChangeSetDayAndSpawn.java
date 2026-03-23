@@ -9,6 +9,7 @@ import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -49,7 +50,8 @@ public class EntityChangeSetDayAndSpawn implements IEntitySubAction<IMutablePlay
 		if (isBed)
 		{
 			// Find the distance from the eye to the bed.
-			float distance = SpatialHelpers.distanceFromMutableEyeToBlockSurface(newEntity, _bedLocation);
+			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+			float distance = SpatialHelpers.distanceFromLocationToBlockSurface(sourceEyeLocation, _bedLocation);
 			isInRange = (distance <= MiscConstants.REACH_BLOCK);
 		}
 		

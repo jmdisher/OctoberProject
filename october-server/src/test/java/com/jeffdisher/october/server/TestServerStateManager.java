@@ -1432,6 +1432,135 @@ public class TestServerStateManager
 		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 	}
 
+	@Test
+	public void perf_creatureAndPassiveUpdates()
+	{
+		boolean infiniteLoopForProfiler = false;
+		boolean longLoopForObjectiveScore = false;
+		
+		// We want to show the performance cost of sending creature and passives updates when there are many of them (and only a few changing).
+		_Callouts callouts = new _Callouts();
+		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
+		manager.setOwningThread();
+		Map<Integer, TickSnapshot.SnapshotEntity> entities = new HashMap<>();
+		for (int clientId = 1; clientId <= 40; ++clientId)
+		{
+			Entity entity = MutableEntity.createForTest(clientId).freeze();
+			String clientName = "client" + clientId;
+			manager.clientConnected(clientId, clientName, 1);
+			entities.put(clientId, new TickSnapshot.SnapshotEntity(entity, null, 1L, List.of()));
+			callouts.loadedEntities.add(new SuspendedEntity(entity, List.of()));
+		}
+		
+		// Create the basic snapshots we will use for the calls.
+		TickSnapshot emptySnapshot = _createEmptySnapshot();
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(Map.of(
+			cuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(cuboid)
+		));
+		callouts.loadedCuboids.add(new SuspendedCuboid<>(cuboid
+			, HeightMapHelpers.buildHeightMap(cuboid)
+			, List.of()
+			, List.of()
+			, Map.of()
+			, List.of()
+		));
+		Item stoneItem = ENV.items.getItemById("op.stone");
+		Items stack = new Items(stoneItem, 3);
+		ItemSlot slot = ItemSlot.fromStack(stack);
+		manager.setupNextTickAfterCompletion(emptySnapshot, new AbsoluteLocation(0, 0, 0));
+		
+		Map<CuboidAddress, TickSnapshot.SnapshotCuboid> cuboids = Map.of(cuboid.getCuboidAddress(), new TickSnapshot.SnapshotCuboid(cuboid, null, List.of(), Map.of()));
+		Map<Integer, TickSnapshot.SnapshotCreature> completedCreatures0 = new HashMap<>();
+		Map<Integer, TickSnapshot.SnapshotPassive> completedPassives0 = new HashMap<>();
+		Map<Integer, TickSnapshot.SnapshotCreature> completedCreatures1 = new HashMap<>();
+		Map<Integer, TickSnapshot.SnapshotPassive> completedPassives1 = new HashMap<>();
+		Set<CuboidAddress> internallyMarkedAlive = Set.of(cuboid.getCuboidAddress());
+		for (int creatureId = -1; creatureId > -1000; --creatureId)
+		{
+			EntityLocation location0 = new EntityLocation(5.0f, 5.0f, 0.0f);
+			EntityLocation location1 = new EntityLocation(4.0f, 4.0f, 0.0f);
+			EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+			
+			CreatureEntity creature0 = new CreatureEntity(creatureId, COW, location0, velocity, (byte)0, (byte)0, (byte)1, (byte)100
+				, COW.extendedCodec().buildDefault(0L)
+				, CreatureEntity.createEmptyEphemeral(0L))
+			;
+			CreatureEntity creature1 = new CreatureEntity(creatureId, COW, location1, velocity, (byte)0, (byte)0, (byte)1, (byte)100
+				, COW.extendedCodec().buildDefault(0L)
+				, CreatureEntity.createEmptyEphemeral(0L))
+			;
+			completedCreatures0.put(creatureId, new TickSnapshot.SnapshotCreature(creature0, null));
+			completedCreatures1.put(creatureId, new TickSnapshot.SnapshotCreature(creature1, null));
+			
+			int passiveId = -1 * creatureId;
+			PassiveEntity passive0 = new PassiveEntity(passiveId, PassiveType.ITEM_SLOT, location0, velocity, slot, 1000L);
+			PassiveEntity passive1 = new PassiveEntity(passiveId, PassiveType.ITEM_SLOT, location1, velocity, slot, 1000L);
+			completedPassives0.put(passiveId, new TickSnapshot.SnapshotPassive(passive0, null));
+			completedPassives1.put(passiveId, new TickSnapshot.SnapshotPassive(passive1, null));
+		}
+		TickSnapshot snapshot0 = _modifySnapshot(emptySnapshot
+			, cuboids
+			, entities
+			, completedCreatures0
+			, completedPassives0
+			, completedHeightMaps
+			, internallyMarkedAlive
+		);
+		TickSnapshot snapshot1 = _modifySnapshot(emptySnapshot
+			, cuboids
+			, entities
+			, completedCreatures1
+			, completedPassives1
+			, completedHeightMaps
+			, internallyMarkedAlive
+		);
+		manager.setupNextTickAfterCompletion(snapshot0, new AbsoluteLocation(0, 0, 0));
+		callouts.cuboidsToTryWrite.clear();
+		callouts.entitiesToTryWrite.clear();
+		manager.setupNextTickAfterCompletion(snapshot1, new AbsoluteLocation(0, 0, 0));
+		callouts.cuboidsToTryWrite.clear();
+		callouts.entitiesToTryWrite.clear();
+		
+		if (infiniteLoopForProfiler)
+		{
+			while (true)
+			{
+				manager.setupNextTickAfterCompletion(snapshot0, new AbsoluteLocation(0, 0, 0));
+				callouts.cuboidsToTryWrite.clear();
+				callouts.entitiesToTryWrite.clear();
+				manager.setupNextTickAfterCompletion(snapshot1, new AbsoluteLocation(0, 0, 0));
+				callouts.cuboidsToTryWrite.clear();
+				callouts.entitiesToTryWrite.clear();
+			}
+		}
+		else if (longLoopForObjectiveScore)
+		{
+			int iterationCount = 1_000;
+			long startNanos = System.nanoTime();
+			for (int i = 0; i < iterationCount; ++i)
+			{
+				manager.setupNextTickAfterCompletion(snapshot0, new AbsoluteLocation(0, 0, 0));
+				callouts.cuboidsToTryWrite.clear();
+				callouts.entitiesToTryWrite.clear();
+				manager.setupNextTickAfterCompletion(snapshot1, new AbsoluteLocation(0, 0, 0));
+				callouts.cuboidsToTryWrite.clear();
+				callouts.entitiesToTryWrite.clear();
+			}
+			long endNanos = System.nanoTime();
+			System.out.println("Nanos per: " + ((endNanos - startNanos) / iterationCount));
+		}
+		else
+		{
+			manager.setupNextTickAfterCompletion(snapshot0, new AbsoluteLocation(0, 0, 0));
+			callouts.cuboidsToTryWrite.clear();
+			callouts.entitiesToTryWrite.clear();
+			manager.setupNextTickAfterCompletion(snapshot1, new AbsoluteLocation(0, 0, 0));
+			callouts.cuboidsToTryWrite.clear();
+			callouts.entitiesToTryWrite.clear();
+		}
+	}
+
 
 	private TickSnapshot _createEmptySnapshot()
 	{

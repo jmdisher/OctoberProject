@@ -12,6 +12,7 @@ import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.CommonEntityMutationHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.BodyPart;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutableInventory;
@@ -61,7 +62,8 @@ public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayer
 		if (isReady && (null != targetEntity))
 		{
 			// Find the distance from the eye to the target.
-			float distance = SpatialHelpers.distanceFromMutableEyeToEntitySurface(newEntity, targetEntity);
+			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+			float distance = SpatialHelpers.distanceFromLocationToEntitySurface(sourceEyeLocation, targetEntity);
 			isInRange = (distance <= MiscConstants.REACH_ENTITY);
 		}
 		else

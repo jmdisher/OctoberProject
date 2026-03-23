@@ -20,6 +20,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
@@ -73,7 +74,8 @@ public class EntityChangePlaceMultiBlock implements IEntitySubAction<IMutablePla
 		// -are the target locations not colliding with the entity, itself?
 		
 		// Find the distance from the eye to the target.
-		float distance = SpatialHelpers.distanceFromMutableEyeToBlockSurface(newEntity, _targetBlock);
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+		float distance = SpatialHelpers.distanceFromLocationToBlockSurface(sourceEyeLocation, _targetBlock);
 		boolean isLocationClose = (distance <= MiscConstants.REACH_BLOCK);
 		
 		int selectedKey = newEntity.getSelectedKey();

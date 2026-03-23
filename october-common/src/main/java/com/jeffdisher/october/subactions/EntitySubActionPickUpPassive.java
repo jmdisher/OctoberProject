@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.actions.passive.PassiveActionPickUp;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
@@ -47,10 +48,22 @@ public class EntitySubActionPickUpPassive implements IEntitySubAction<IMutablePl
 		// Verify that this passive exists, is within range, and we have space for at least something from it.
 		boolean didApply = false;
 		PartialPassive passive = context.previousPassiveLookUp.getById(_passiveId);
+		
+		boolean isInRange;
 		if ((null != passive)
 			&& (PassiveType.ITEM_SLOT == passive.type())
-			&& (SpatialHelpers.distanceFromPlayerEyeToVolume(newEntity.getLocation(), newEntity.getType(), passive.location(), passive.type().volume()) <= PICKUP_DISTANCE)
 		)
+		{
+			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, passive.location(), passive.type().volume());
+			isInRange = (distance <= PICKUP_DISTANCE);
+		}
+		else
+		{
+			isInRange = false;
+		}
+		
+		if (isInRange)
 		{
 			ItemSlot contents = (ItemSlot) passive.extendedData();
 			Item type = (null != contents.stack)

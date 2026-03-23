@@ -13,6 +13,7 @@ import com.jeffdisher.october.mutations.MutationBlockSetLogicState;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -67,7 +68,8 @@ public class EntityChangeSetBlockLogicState implements IEntitySubAction<IMutable
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		// Make sure that this is in range.
-		float distance = SpatialHelpers.distanceFromMutableEyeToBlockSurface(newEntity, _targetBlock);
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+		float distance = SpatialHelpers.distanceFromLocationToBlockSurface(sourceEyeLocation, _targetBlock);
 		boolean isLocationClose = (distance <= MiscConstants.REACH_BLOCK);
 		BlockProxy previous = context.previousBlockLookUp.readBlock(_targetBlock);
 		

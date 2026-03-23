@@ -12,6 +12,7 @@ import com.jeffdisher.october.mutations.MultiBlockUtils;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -51,7 +52,8 @@ public class EntityChangeIncrementalBlockBreak implements IEntitySubAction<IMuta
 		// We will just check that the block is in range and isn't air (we won't worry about whether or not it is breakable).
 		
 		// Find the distance from the eye to the target.
-		float distance = SpatialHelpers.distanceFromMutableEyeToBlockSurface(newEntity, _targetBlock);
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+		float distance = SpatialHelpers.distanceFromLocationToBlockSurface(sourceEyeLocation, _targetBlock);
 		boolean isLocationClose = (distance <= MiscConstants.REACH_BLOCK);
 		
 		MultiBlockUtils.Lookup lookup = isLocationClose

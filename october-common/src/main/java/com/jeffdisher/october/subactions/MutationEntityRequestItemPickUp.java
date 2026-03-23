@@ -9,6 +9,7 @@ import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
@@ -64,7 +65,8 @@ public class MutationEntityRequestItemPickUp implements IEntitySubAction<IMutabl
 		Inventory inv = _getInventory(target);
 		
 		// We also want to make sure that this is in range.
-		float distance = SpatialHelpers.distanceFromMutableEyeToBlockSurface(newEntity, _blockLocation);
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+		float distance = SpatialHelpers.distanceFromLocationToBlockSurface(sourceEyeLocation, _blockLocation);
 		boolean isInRange = (distance <= MiscConstants.REACH_BLOCK);
 		
 		boolean didApply = false;

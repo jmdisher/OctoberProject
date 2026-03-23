@@ -10,6 +10,7 @@ import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.mutations.MutationBlockSwapSpecialSlot;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -54,7 +55,8 @@ public class EntitySubActionRequestSwapSpecialSlot implements IEntitySubAction<I
 	{
 		Environment env = Environment.getShared();
 		
-		float distance = SpatialHelpers.distanceFromMutableEyeToBlockSurface(newEntity, _blockLocation);
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+		float distance = SpatialHelpers.distanceFromLocationToBlockSurface(sourceEyeLocation, _blockLocation);
 		boolean isInRange = (distance <= MiscConstants.REACH_BLOCK);
 		
 		// Check that the target block has a special slot.

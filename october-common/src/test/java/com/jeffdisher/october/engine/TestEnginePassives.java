@@ -529,7 +529,7 @@ public class TestEnginePassives
 		// Show that the arrow does not collide with its shooter, in all 4 cardinal directions.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		Entity entity = mutable.freeze();
-		EntityLocation eyeLocation = SpatialHelpers.getEyeLocation(mutable);
+		EntityLocation eyeLocation = SpatialHelpers.getEyeLocation(entity.location(), ENV.creatures.PLAYER.volume());
 		PassiveEntity north = new PassiveEntity(1
 			, PassiveType.PROJECTILE_ARROW
 			, eyeLocation
