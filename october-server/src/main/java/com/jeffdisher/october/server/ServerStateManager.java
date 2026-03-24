@@ -59,9 +59,9 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
-import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
@@ -761,12 +761,14 @@ public class ServerStateManager
 	{
 		// Note that this is similar to _sendNewAndUpdatedCreatures but duplicated to avoid spreading logic with extra levels of indirection.
 		EntityType playerType  = Environment.getShared().creatures.PLAYER;
-		EntityLocation playerEyeLocation = SpatialHelpers.getEyeLocation(state.location, playerType.volume());
+		EntityVolume entityVolume = playerType.volume();
+		EntityLocation playerEyeLocation = SpatialHelpers.getEyeLocation(state.location, entityVolume);
 		for (Map.Entry<Integer, Entity> entry : _completedEntities.entrySet())
 		{
 			int entityId = entry.getKey();
 			Entity entity = entry.getValue();
-			float distance = SpatialHelpers.distanceFromLocationToEntitySurface(playerEyeLocation, MinimalEntity.fromEntity(entity));
+			EntityLocation entityBase = entity.location();
+			float distance = SpatialHelpers.distanceFromLocationToVolume(playerEyeLocation, entityBase, entityVolume);
 			if (state.knownEntities.contains(entityId))
 			{
 				// See if they are too far away.
@@ -830,7 +832,9 @@ public class ServerStateManager
 		{
 			int entityId = entry.getKey();
 			CreatureEntity entity = entry.getValue();
-			float distance = SpatialHelpers.distanceFromLocationToEntitySurface(playerEyeLocation, MinimalEntity.fromCreature(entity));
+			EntityLocation entityBase = entity.location();
+			EntityVolume entityVolume = entity.type().volume();
+			float distance = SpatialHelpers.distanceFromLocationToVolume(playerEyeLocation, entityBase, entityVolume);
 			if (state.knownEntities.contains(entityId))
 			{
 				// See if they are too far away.

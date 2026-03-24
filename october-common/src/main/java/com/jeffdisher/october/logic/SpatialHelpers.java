@@ -4,7 +4,6 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
-import com.jeffdisher.october.types.MinimalEntity;
 
 
 /**
@@ -116,21 +115,6 @@ public class SpatialHelpers
 		float widthOffset = volume.width() / 2.0f;
 		float heightOffset = volume.height() * entityEyeHeightMultiplier;
 		return new EntityLocation(entityLocation.x() + widthOffset, entityLocation.y() + widthOffset, entityLocation.z() + heightOffset);
-	}
-
-	/**
-	 * Finds the distance from a start location to the bounding box of the given targetEntity.
-	 * 
-	 * @param start The start location from which to measure.
-	 * @param targetEntity The entity we are targeting.
-	 * @return The diagonal distance from the eye to the target's bounding-box.
-	 */
-	public static float distanceFromLocationToEntitySurface(EntityLocation start, MinimalEntity targetEntity)
-	{
-		EntityLocation target = targetEntity.location();
-		EntityVolume targetVolume = targetEntity.type().volume();
-		
-		return _distanceToTarget(start, target, targetVolume);
 	}
 
 	/**

@@ -73,15 +73,18 @@ public class EntityChangeUseSelectedItemOnEntity implements IEntitySubAction<IMu
 		
 		// We also want to make sure that this is in range.
 		MinimalEntity target = context.previousEntityLookUp.apply(_entityId);
+		EntityType entityType;
 		boolean isInRange;
 		if (null != target)
 		{
 			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
-			float distance = SpatialHelpers.distanceFromLocationToEntitySurface(sourceEyeLocation, target);
+			entityType = target.type();
+			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, target.location(), entityType.volume());
 			isInRange = (distance <= MiscConstants.REACH_ENTITY);
 		}
 		else
 		{
+			entityType = null;
 			isInRange = false;
 		}
 		
@@ -91,9 +94,6 @@ public class EntityChangeUseSelectedItemOnEntity implements IEntitySubAction<IMu
 		// (we currently only handle the wheat type so just check for stackable)
 		Items selectedStack = (Entity.NO_SELECTION != selectedKey) ? mutableInventory.getStackForKey(selectedKey) : null;
 		Item itemType = (null != selectedStack) ? selectedStack.type() : null;
-		
-		// See if the target entity exists and is of the correct type.
-		EntityType entityType = (null != target) ? target.type() : null;
 		
 		boolean didApply = false;
 		if (isReady && isInRange && (itemType == entityType.breedingItem()))

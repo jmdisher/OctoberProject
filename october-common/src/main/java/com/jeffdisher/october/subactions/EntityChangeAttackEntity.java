@@ -13,6 +13,7 @@ import com.jeffdisher.october.mutations.CommonEntityMutationHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutableInventory;
@@ -58,18 +59,24 @@ public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayer
 		
 		// Check that the target is in range.  We will use block breaking distance.
 		boolean isInRange;
+		EntityLocation targetBase;
+		EntityVolume targetVolume;
 		MinimalEntity targetEntity = context.previousEntityLookUp.apply(_targetEntityId);
 		if (isReady && (null != targetEntity))
 		{
 			// Find the distance from the eye to the target.
 			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
-			float distance = SpatialHelpers.distanceFromLocationToEntitySurface(sourceEyeLocation, targetEntity);
+			targetBase = targetEntity.location();
+			targetVolume = targetEntity.type().volume();
+			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, targetBase, targetVolume);
 			isInRange = (distance <= MiscConstants.REACH_ENTITY);
 		}
 		else
 		{
 			// Not loaded or not ready to strike.
 			isInRange = false;
+			targetBase = null;
+			targetVolume = null;
 		}
 		if (isInRange)
 		{
@@ -109,8 +116,8 @@ public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayer
 				, _targetEntityId
 				, newEntity.getLocation()
 				, newEntity.getType().volume()
-				, targetEntity.location()
-				, targetEntity.type().volume()
+				, targetBase
+				, targetVolume
 			);
 			
 			CommonEntityMutationHelpers.decrementToolDurability(env, context, newEntity, mutableInventory, selectedKey, nonStack);

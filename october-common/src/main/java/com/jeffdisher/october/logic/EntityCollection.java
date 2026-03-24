@@ -11,7 +11,6 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
-import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -121,10 +120,14 @@ public class EntityCollection
 	public int walkPlayersInViewDistance(IMutableMinimalEntity searchingCreature, Consumer<Entity> consumer)
 	{
 		int found = 0;
-		float maxRange = searchingCreature.getType().viewDistance();
+		EntityType creatureType = searchingCreature.getType();
+		float maxRange = creatureType.viewDistance();
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(searchingCreature.getLocation(), creatureType.volume());
+		EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
 		for (Entity player : _players.values())
 		{
-			boolean isInRange = _checkInstance(searchingCreature, MinimalEntity.fromEntity(player), maxRange, consumer, player);
+			EntityLocation playerBase = player.location();
+			boolean isInRange = _checkInstance(sourceEyeLocation, playerBase, playerVolume, maxRange, consumer, player);
 			if (isInRange)
 			{
 				found += 1;
@@ -144,10 +147,14 @@ public class EntityCollection
 	public int walkCreaturesInViewDistance(IMutableMinimalEntity searchingCreature, Consumer<CreatureEntity> consumer)
 	{
 		int found = 0;
-		float maxRange = searchingCreature.getType().viewDistance();
+		EntityType creatureType = searchingCreature.getType();
+		float maxRange = creatureType.viewDistance();
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(searchingCreature.getLocation(), creatureType.volume());
 		for (CreatureEntity creature : _creatures.values())
 		{
-			boolean isInRange = _checkInstance(searchingCreature, MinimalEntity.fromCreature(creature), maxRange, consumer, creature);
+			EntityLocation targetBase = creature.location();
+			EntityVolume targetVolume = creature.type().volume();
+			boolean isInRange = _checkInstance(sourceEyeLocation, targetBase, targetVolume, maxRange, consumer, creature);
 			if (isInRange)
 			{
 				found += 1;
@@ -288,11 +295,10 @@ public class EntityCollection
 	}
 
 
-	private static <T> boolean _checkInstance(IMutableMinimalEntity source, MinimalEntity dest, float maxRange, Consumer<T> consumer, T arg)
+	private static <T> boolean _checkInstance(EntityLocation sourceEyeLocation, EntityLocation destBase, EntityVolume destVolume, float maxRange, Consumer<T> consumer, T arg)
 	{
 		boolean isInRange = false;
-		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(source.getLocation(), source.getType().volume());
-		if (SpatialHelpers.distanceFromLocationToEntitySurface(sourceEyeLocation, dest) <= maxRange)
+		if (SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, destBase, destVolume) <= maxRange)
 		{
 			consumer.accept(arg);
 			isInRange = true;

@@ -602,7 +602,9 @@ public class CreatureLogic
 		// We know that the target is valid and in range when we get here so the exist and are in range.
 		MinimalEntity targetEntity = context.previousEntityLookUp.apply(mutable.newTargetEntityId);
 		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(mutable.newLocation, mutable.newType.volume());
-		float distance = SpatialHelpers.distanceFromLocationToEntitySurface(sourceEyeLocation, targetEntity);
+		EntityLocation targetLocation = targetEntity.location();
+		EntityVolume targetVolume = targetEntity.type().volume();
+		float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, targetLocation, targetVolume);
 		EntityType creatureType = mutable.getType();
 		float pathDistance = creatureType.getPathDistance();
 		Assert.assertTrue(distance <= pathDistance);
@@ -615,7 +617,6 @@ public class CreatureLogic
 		else
 		{
 			// We can keep this but see if we need to update their location.
-			EntityLocation targetLocation = targetEntity.location();
 			AbsoluteLocation newLocation = targetLocation.getBlockLocation();
 			if (!newLocation.equals(mutable.newTargetPreviousLocation))
 			{
@@ -633,8 +634,9 @@ public class CreatureLogic
 		_TargetEntity[] target = new _TargetEntity[1];
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
 		EntityType thisType = creature.getType();
+		EntityVolume thisVolume = thisType.volume();
 		int thisCreatureId = creature.getId();
-		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), thisType.volume());
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), thisVolume);
 		entityCollection.walkCreaturesInViewDistance(creature, (CreatureEntity check) -> {
 			// Ignore ourselves and make sure that they are the same type and in love mode.
 			if ((thisCreatureId != check.id()) && (thisType == check.type()))
@@ -644,7 +646,7 @@ public class CreatureLogic
 				{
 					// See how far away they are so we choose the closest.
 					EntityLocation end = check.location();
-					float distance = SpatialHelpers.distanceFromLocationToEntitySurface(sourceEyeLocation, MinimalEntity.fromCreature(check));
+					float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, end, thisVolume);
 					if (distance < distanceToTarget[0])
 					{
 						target[0] = new _TargetEntity(check.id(), end);
@@ -662,13 +664,14 @@ public class CreatureLogic
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
 		EntityType thisType = creature.getType();
 		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), thisType.volume());
+		EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
 		entityCollection.walkPlayersInViewDistance(creature, (Entity player) -> {
 			// See if this player has the breeding item in their hand.
 			if (thisType.breedingItem() == _itemInPlayerHand(player))
 			{
 				// See how far away they are so we choose the closest.
 				EntityLocation end = player.location();
-				float distance = SpatialHelpers.distanceFromLocationToEntitySurface(sourceEyeLocation, MinimalEntity.fromEntity(player));
+				float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, end, playerVolume);
 				if (distance < distanceToTarget[0])
 				{
 					target[0] = new _TargetEntity(player.id(), end);
@@ -684,10 +687,11 @@ public class CreatureLogic
 		_TargetEntity[] target = new _TargetEntity[1];
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
 		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), creature.getType().volume());
+		EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
 		entityCollection.walkPlayersInViewDistance(creature, (Entity player) -> {
 			// We are looking for any player so just choose the closest.
 			EntityLocation end = player.location();
-			float distance = SpatialHelpers.distanceFromLocationToEntitySurface(sourceEyeLocation, MinimalEntity.fromEntity(player));
+			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, end, playerVolume);
 			if (distance < distanceToTarget[0])
 			{
 				target[0] = new _TargetEntity(player.id(), end);
@@ -728,7 +732,9 @@ public class CreatureLogic
 			
 			// See if they are within mating distance and we are the father.
 			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), creatureType.volume());
-			float distance = SpatialHelpers.distanceFromLocationToEntitySurface(sourceEyeLocation, targetEntity);
+			EntityLocation targetBase = targetEntity.location();
+			EntityVolume targetVolume = targetEntity.type().volume();
+			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, targetBase, targetVolume);
 			float matingDistance = creatureType.actionDistance();
 			if ((distance <= matingDistance) && (targetEntity.id() < creature.getId()))
 			{
@@ -768,7 +774,9 @@ public class CreatureLogic
 			// See if they are in attack range.
 			EntityType creatureType = creature.getType();
 			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), creatureType.volume());
-			float distance = SpatialHelpers.distanceFromLocationToEntitySurface(sourceEyeLocation, targetEntity);
+			EntityLocation targetBase = targetEntity.location();
+			EntityVolume targetVolume = targetEntity.type().volume();
+			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, targetBase, targetVolume);
 			float attackDistance = creatureType.actionDistance();
 			if (distance <= attackDistance)
 			{
@@ -781,8 +789,8 @@ public class CreatureLogic
 					, creature.newTargetEntityId
 					, creature.newLocation
 					, creature.getType().volume()
-					, targetEntity.location()
-					, targetEntity.type().volume()
+					, targetBase
+					, targetVolume
 				);
 				
 				// Since we sent the attack, put us on attack cooldown.
@@ -821,13 +829,13 @@ public class CreatureLogic
 			// See if they are in attack range - we will aim for the centre of the entity, since that will give us a large target.
 			EntityType creatureType = creature.getType();
 			EntityLocation sourceEye = SpatialHelpers.getEyeLocation(creature.getLocation(), creatureType.volume());
-			float distance = SpatialHelpers.distanceFromLocationToEntitySurface(sourceEye, targetEntity);
+			EntityLocation targetBase = targetEntity.location();
+			EntityVolume targetVolume = targetEntity.type().volume();
+			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEye, targetBase, targetVolume);
 			float attackDistance = creatureType.actionDistance();
 			if (distance <= attackDistance)
 			{
 				// We are in range so find the vector which will fire in an arc toward the centre of the target.
-				EntityLocation targetBase = targetEntity.location();
-				EntityVolume targetVolume = targetEntity.type().volume();
 				EntityLocation targetCentre = SpatialHelpers.getCentreOfRegion(targetBase, targetVolume);
 				
 				// Make sure that we can see them.
@@ -965,7 +973,9 @@ public class CreatureLogic
 			if (null != player)
 			{
 				EntityLocation sourceEye = SpatialHelpers.getEyeLocation(mutable.newLocation, creatureType.volume());
-				float distance = SpatialHelpers.distanceFromLocationToEntitySurface(sourceEye, MinimalEntity.fromEntity(player));
+				EntityLocation playerBase = player.location();
+				EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
+				float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEye, playerBase, playerVolume);
 				isValid = (distance <= creatureType.viewDistance());
 			}
 		}
@@ -979,7 +989,9 @@ public class CreatureLogic
 		if (null != player)
 		{
 			EntityLocation sourceEye = SpatialHelpers.getEyeLocation(creature.getLocation(), creature.getType().volume());
-			float distance = SpatialHelpers.distanceFromLocationToEntitySurface(sourceEye, MinimalEntity.fromEntity(player));
+			EntityLocation playerBase = player.location();
+			EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
+			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEye, playerBase, playerVolume);
 			EntityType creatureType = creature.getType();
 			if (distance <= creatureType.viewDistance())
 			{
