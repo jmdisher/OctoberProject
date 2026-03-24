@@ -59,16 +59,19 @@ public class ServerMain
 				, worldGen
 				, config
 			);
+			// By default, we assume that the server has access to all the processors.
+			int maxThreadsForServer = Runtime.getRuntime().availableProcessors();
 			
 			System.out.println("Starting server on port " + port);
 			try
 			{
 				ServerProcess process = new ServerProcess(port
-						, ServerRunner.DEFAULT_MILLIS_PER_TICK
-						, cuboidLoader
-						, () -> System.currentTimeMillis()
-						, monitoringAgent
-						, config
+					, maxThreadsForServer
+					, ServerRunner.DEFAULT_MILLIS_PER_TICK
+					, cuboidLoader
+					, () -> System.currentTimeMillis()
+					, monitoringAgent
+					, config
 				);
 				// Hand over control to the ConsoleHandler.  Once it returns, we can shut down.
 				ConsoleHandler.readUntilStop(System.in, System.out, monitoringAgent, config);

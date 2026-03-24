@@ -45,6 +45,9 @@ public class ServerProcess
 	 * 
 	 * @param port The port which should be bound for accepting incoming connections (0 if the port should be ephemeral
 	 * and only bound on the loopback address).
+	 * @param maxThreadsForServer The maximum number of threads available to the server (shared by TickRunner,
+	 * ServerRunner, and ResourceLoader).  If a small or negative number, a minimal number of threads will still be
+	 * created and used.
 	 * @param millisPerTick The number of milliseconds which should be allowed to pass between logical ticks.
 	 * @param cuboidLoader The loader object which will load or generate required cuboids.
 	 * @param currentTimeMillisProvider The provider of the current system time, in milliseconds.
@@ -53,23 +56,25 @@ public class ServerProcess
 	 * @throws IOException There was an error starting up the network.
 	 */
 	public ServerProcess(int port
-			, long millisPerTick
-			, ResourceLoader cuboidLoader
-			, LongSupplier currentTimeMillisProvider
-			, MonitoringAgent monitoringAgent
-			, WorldConfig config
+		, int maxThreadsForServer
+		, long millisPerTick
+		, ResourceLoader cuboidLoader
+		, LongSupplier currentTimeMillisProvider
+		, MonitoringAgent monitoringAgent
+		, WorldConfig config
 	) throws IOException
 	{
 		_sharedConfigInstance = config;
 		_clientsById = new HashMap<>();
 		_partialDisconnectIds = new HashSet<>();
 		// We will assume that ServerRunner will shut down the cuboidLoader for us.
-		_server = new ServerRunner(millisPerTick
-				, new _ServerListener()
-				, cuboidLoader
-				, currentTimeMillisProvider
-				, monitoringAgent
-				, config
+		_server = new ServerRunner(maxThreadsForServer
+			, millisPerTick
+			, new _ServerListener()
+			, cuboidLoader
+			, currentTimeMillisProvider
+			, monitoringAgent
+			, config
 		);
 		// The server passes its listener back within the constructor so we should see that, now.
 		Assert.assertTrue(null != _serverListener);

@@ -49,7 +49,6 @@ import com.jeffdisher.october.mutations.ShockwaveMutation;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.properties.PropertyRegistry;
-import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.subactions.EntityChangeAttackEntity;
 import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.subactions.EntityChangeSendItem;
@@ -88,6 +87,7 @@ import com.jeffdisher.october.utils.Encoding;
 
 public class TestTickRunner
 {
+	public static final int TICK_RUNNER_THREAD_COUNT = 4;
 	public static final long MILLIS_PER_TICK = 10L;
 	private static Environment ENV;
 	private static Item STONE_ITEM;
@@ -506,7 +506,7 @@ public class TestTickRunner
 		Consumer<TickSnapshot> snapshotListener = (TickSnapshot completed) -> {
 			snapshotRef[0] = completed;
 		};
-		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
+		TickRunner runner = new TickRunner(TICK_RUNNER_THREAD_COUNT
 				, MILLIS_PER_TICK
 				, null
 				, null
@@ -578,7 +578,7 @@ public class TestTickRunner
 		Consumer<TickSnapshot> snapshotListener = (TickSnapshot completed) -> {
 			snapshotRef[0] = completed;
 		};
-		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
+		TickRunner runner = new TickRunner(TICK_RUNNER_THREAD_COUNT
 				, MILLIS_PER_TICK
 				, null
 				, null
@@ -981,7 +981,7 @@ public class TestTickRunner
 		
 		// We need to fix the random value to get a predictable set of drops.
 		Consumer<TickSnapshot> snapshotListener = (TickSnapshot completed) -> {};
-		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
+		TickRunner runner = new TickRunner(TICK_RUNNER_THREAD_COUNT
 				, MILLIS_PER_TICK
 				, new CreatureIdAssigner()
 				, new PassiveIdAssigner()
@@ -2578,7 +2578,7 @@ public class TestTickRunner
 		config.difficulty = Difficulty.PEACEFUL;
 		Consumer<TickSnapshot> snapshotListener = (TickSnapshot completed) -> {};
 		Random random = new Random();
-		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
+		TickRunner runner = new TickRunner(TICK_RUNNER_THREAD_COUNT
 				, MILLIS_PER_TICK
 				, new CreatureIdAssigner()
 				, new PassiveIdAssigner()

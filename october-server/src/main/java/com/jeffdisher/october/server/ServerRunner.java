@@ -34,15 +34,15 @@ import com.jeffdisher.october.utils.MessageQueue;
 public class ServerRunner
 {
 	/**
-	 * Currently, we default to running 4 threads since that should give reasonable stress testing while being feasible
-	 * on modern systems.
-	 */
-	public static final int TICK_RUNNER_THREAD_COUNT = 4;
-	/**
 	 * The number of milliseconds in a tick in the standard configuration.
 	 * 50 ms/tick is 20 ticks/sec.
 	 */
 	public static final long DEFAULT_MILLIS_PER_TICK = 50L;
+	/**
+	 * The name of the environment variable to set in order to force the number of threads in TickRunner (no matter what
+	 * this value is, a value of 1 is always the minimum).
+	 */
+	public static final String ENV_VAR_OCTOBER_PROJECT_TICK_RUNNER_THREAD_COUNT = "OCTOBER_PROJECT_TICK_RUNNER_THREAD_COUNT";
 
 	// General and configuration variables.
 	private final long _millisPerTick;
@@ -65,15 +65,45 @@ public class ServerRunner
 	private final ServerStateManager _stateManager;
 	private MonitoringAgent.Sampler _currentSampler;
 
-	// Note that the runner takes ownership of CuboidLoader and will shut it down.
-	public ServerRunner(long millisPerTick
-			, IServerAdapter network
-			, ResourceLoader loader
-			, LongSupplier currentTimeMillisProvider
-			, MonitoringAgent monitoringAgent
-			, WorldConfig config
+	/**
+	 * Creates the main components of the server (TickRunner and ServerRunner background thread) and starts them.
+	 * Note that the runner takes ownership of loader (started ResourceLoader) and will shut it down.
+	 * 
+	 * @param maxThreadsForServer The maximum number of threads available to the server (shared by TickRunner,
+	 * ServerRunner, and ResourceLoader).  If a small or negative number, a minimal number of threads will still be
+	 * created and used.
+	 * @param millisPerTick The number of milliseconds between TickRunner tick triggers.
+	 * @param network The network layer.
+	 * @param loader The loader/generator for cuboids and entities.
+	 * @param currentTimeMillisProvider The provider for the current wall-clock millisecond time.
+	 * @param monitoringAgent A monitoring agent for the console.
+	 * @param config The configuration for the world being started.
+	 */
+	public ServerRunner(int maxThreadsForServer
+		, long millisPerTick
+		, IServerAdapter network
+		, ResourceLoader loader
+		, LongSupplier currentTimeMillisProvider
+		, MonitoringAgent monitoringAgent
+		, WorldConfig config
 	)
 	{
+		// We apply some logic here to determine how many threads to use in the TickRunner by subtracting others we know the server uses.
+		int idealTickRunnerThreadCount = maxThreadsForServer
+			// Remove one for ServerRunner
+			- 1
+			// Remove one for ResourceLoader
+			- 1
+		;
+		// We also expose an environment variable to override this.
+		String envVar = System.getenv(ENV_VAR_OCTOBER_PROJECT_TICK_RUNNER_THREAD_COUNT);
+		if (null != envVar)
+		{
+			idealTickRunnerThreadCount = Integer.parseInt(envVar);
+		}
+		// At minimum, we need 1 thread.
+		int tickRunnerThreadCount = Math.max(idealTickRunnerThreadCount, 1);
+		
 		_millisPerTick = millisPerTick;
 		_clientViewDistanceMaximum = config.clientViewDistanceMaximum;
 		NetworkListener networkListener = new NetworkListener();
@@ -82,7 +112,7 @@ public class ServerRunner
 		_loader = loader;
 		Random random = new Random();
 		TickListener tickListener = new TickListener();
-		_tickRunner = new TickRunner(TICK_RUNNER_THREAD_COUNT
+		_tickRunner = new TickRunner(tickRunnerThreadCount
 				, _millisPerTick
 				, loader.creatureIdAssigner
 				, loader.passiveIdAssigner

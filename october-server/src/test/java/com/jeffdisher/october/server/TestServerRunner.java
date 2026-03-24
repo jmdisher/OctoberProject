@@ -85,6 +85,8 @@ import com.jeffdisher.october.worldgen.WorldGenHelpers;
 
 public class TestServerRunner
 {
+	public static final int MAX_THREADS_FOR_SERVER = 8;
+
 	@ClassRule
 	public static TemporaryFolder DIRECTORY = new TemporaryFolder();
 	private static Environment ENV;
@@ -114,15 +116,16 @@ public class TestServerRunner
 		int startingActiveCount = Thread.currentThread().getThreadGroup().activeCount();
 		TestAdapter network = new TestAdapter();
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
-				, network
-				, new ResourceLoader(DIRECTORY.newFolder(), null, null)
-				, () -> System.currentTimeMillis()
-				, monitoringAgent
-				, new WorldConfig()
+		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
+			, ServerRunner.DEFAULT_MILLIS_PER_TICK
+			, network
+			, new ResourceLoader(DIRECTORY.newFolder(), null, null)
+			, () -> System.currentTimeMillis()
+			, monitoringAgent
+			, new WorldConfig()
 		);
 		// We expect to see an extra 6 threads:  ServerRunner, CuboidLoader, and 4xTickRunner.
-		Assert.assertEquals(startingActiveCount + 2 + ServerRunner.TICK_RUNNER_THREAD_COUNT, Thread.currentThread().getThreadGroup().activeCount());
+		Assert.assertEquals(startingActiveCount + MAX_THREADS_FOR_SERVER, Thread.currentThread().getThreadGroup().activeCount());
 		runner.shutdown();
 		
 		// Verify that the threads have stopped.
@@ -139,12 +142,13 @@ public class TestServerRunner
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
 		_loadDefaultMap(cuboidLoader);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
-				, network
-				, cuboidLoader
-				, () -> System.currentTimeMillis()
-				, monitoringAgent
-				, new WorldConfig()
+		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
+			, ServerRunner.DEFAULT_MILLIS_PER_TICK
+			, network
+			, cuboidLoader
+			, () -> System.currentTimeMillis()
+			, monitoringAgent
+			, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
@@ -183,12 +187,13 @@ public class TestServerRunner
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE));
 		
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
-				, network
-				, cuboidLoader
-				, () -> System.currentTimeMillis()
-				, monitoringAgent
-				, new WorldConfig()
+		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
+			, ServerRunner.DEFAULT_MILLIS_PER_TICK
+			, network
+			, cuboidLoader
+			, () -> System.currentTimeMillis()
+			, monitoringAgent
+			, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId = 1;
@@ -241,12 +246,13 @@ public class TestServerRunner
 		Inventory inventory = Inventory.start(ENV.stations.getNormalInventorySize(chest)).addStackable(STONE.item(), 2).finish();
 		cuboidChest.setDataSpecial(AspectRegistry.INVENTORY, BlockAddress.fromInt(0, 0, 31), inventory);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
-				, network
-				, cuboidLoader
-				, () -> System.currentTimeMillis()
-				, monitoringAgent
-				, new WorldConfig()
+		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
+			, ServerRunner.DEFAULT_MILLIS_PER_TICK
+			, network
+			, cuboidLoader
+			, () -> System.currentTimeMillis()
+			, monitoringAgent
+			, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId = 1;
@@ -285,12 +291,13 @@ public class TestServerRunner
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), ENV.special.AIR));
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
-				, network
-				, cuboidLoader
-				, () -> System.currentTimeMillis()
-				, monitoringAgent
-				, new WorldConfig()
+		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
+			, ServerRunner.DEFAULT_MILLIS_PER_TICK
+			, network
+			, cuboidLoader
+			, () -> System.currentTimeMillis()
+			, monitoringAgent
+			, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId = 1;
@@ -327,12 +334,13 @@ public class TestServerRunner
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
 		_loadDefaultMap(cuboidLoader);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
-				, network
-				, cuboidLoader
-				, () -> System.currentTimeMillis()
-				, monitoringAgent
-				, new WorldConfig()
+		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
+			, ServerRunner.DEFAULT_MILLIS_PER_TICK
+			, network
+			, cuboidLoader
+			, () -> System.currentTimeMillis()
+			, monitoringAgent
+			, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
@@ -380,12 +388,13 @@ public class TestServerRunner
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-2, 0, -1), STONE));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-2, 0, 0), ENV.special.AIR));
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
-				, network
-				, cuboidLoader
-				, () -> System.currentTimeMillis()
-				, monitoringAgent
-				, new WorldConfig()
+		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
+			, ServerRunner.DEFAULT_MILLIS_PER_TICK
+			, network
+			, cuboidLoader
+			, () -> System.currentTimeMillis()
+			, monitoringAgent
+			, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
@@ -419,12 +428,13 @@ public class TestServerRunner
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
 		_loadDefaultMap(cuboidLoader);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
-				, network
-				, cuboidLoader
-				, () -> System.currentTimeMillis()
-				, monitoringAgent
-				, new WorldConfig()
+		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
+			, ServerRunner.DEFAULT_MILLIS_PER_TICK
+			, network
+			, cuboidLoader
+			, () -> System.currentTimeMillis()
+			, monitoringAgent
+			, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
@@ -471,12 +481,13 @@ public class TestServerRunner
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		// We use peaceful here so that the behaviour is deterministic (no dynamic spawning).
 		config.difficulty = Difficulty.PEACEFUL;
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
-				, network
-				, cuboidLoader
-				, () -> System.currentTimeMillis()
-				, monitoringAgent
-				, config
+		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
+			, ServerRunner.DEFAULT_MILLIS_PER_TICK
+			, network
+			, cuboidLoader
+			, () -> System.currentTimeMillis()
+			, monitoringAgent
+			, config
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
@@ -546,12 +557,13 @@ public class TestServerRunner
 		WorldGenConfig worldGenConfig = WorldGenHelpers.buildDefaultWorldGenConfig(ENV);
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(worldGenConfig, false), config);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
-				, network
-				, cuboidLoader
-				, () -> System.currentTimeMillis()
-				, monitoringAgent
-				, config
+		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
+			, ServerRunner.DEFAULT_MILLIS_PER_TICK
+			, network
+			, cuboidLoader
+			, () -> System.currentTimeMillis()
+			, monitoringAgent
+			, config
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		
@@ -589,12 +601,13 @@ public class TestServerRunner
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		// We use peaceful here so that the behaviour is deterministic (no dynamic spawning).
 		config.difficulty = Difficulty.PEACEFUL;
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
-				, network
-				, cuboidLoader
-				, () -> System.currentTimeMillis()
-				, monitoringAgent
-				, config
+		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
+			, ServerRunner.DEFAULT_MILLIS_PER_TICK
+			, network
+			, cuboidLoader
+			, () -> System.currentTimeMillis()
+			, monitoringAgent
+			, config
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		
@@ -681,12 +694,13 @@ public class TestServerRunner
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), worldGen, config);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
-				, network
-				, cuboidLoader
-				, () -> System.currentTimeMillis()
-				, monitoringAgent
-				, config
+		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
+			, ServerRunner.DEFAULT_MILLIS_PER_TICK
+			, network
+			, cuboidLoader
+			, () -> System.currentTimeMillis()
+			, monitoringAgent
+			, config
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		
@@ -737,12 +751,13 @@ public class TestServerRunner
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
 		_loadDefaultMap(cuboidLoader);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
-				, network
-				, cuboidLoader
-				, () -> System.currentTimeMillis()
-				, monitoringAgent
-				, new WorldConfig()
+		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
+			, ServerRunner.DEFAULT_MILLIS_PER_TICK
+			, network
+			, cuboidLoader
+			, () -> System.currentTimeMillis()
+			, monitoringAgent
+			, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
@@ -801,12 +816,13 @@ public class TestServerRunner
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		// We will use a faster tick speed but this can't get too small or rounding errors will impact movement.
 		long millisPerTick = 20L;
-		ServerRunner runner = new ServerRunner(millisPerTick
-				, network
-				, cuboidLoader
-				, () -> System.currentTimeMillis()
-				, monitoringAgent
-				, new WorldConfig()
+		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
+			, millisPerTick
+			, network
+			, cuboidLoader
+			, () -> System.currentTimeMillis()
+			, monitoringAgent
+			, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId = 1;
@@ -882,12 +898,13 @@ public class TestServerRunner
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		// We use peaceful here so that the behaviour is deterministic (no dynamic spawning).
 		config.difficulty = Difficulty.PEACEFUL;
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
-				, network
-				, cuboidLoader
-				, () -> System.currentTimeMillis()
-				, monitoringAgent
-				, config
+		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
+			, ServerRunner.DEFAULT_MILLIS_PER_TICK
+			, network
+			, cuboidLoader
+			, () -> System.currentTimeMillis()
+			, monitoringAgent
+			, config
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;

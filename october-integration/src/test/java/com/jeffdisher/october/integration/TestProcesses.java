@@ -45,6 +45,7 @@ import com.jeffdisher.october.utils.CuboidGenerator;
 public class TestProcesses
 {
 	public static final int PORT = 5678;
+	public static final int MAX_THREADS_FOR_SERVER = 8;
 	public static final long MILLIS_PER_TICK = 20L;
 	public static final LongSupplier TIME_SUPPLIER = () -> System.currentTimeMillis();
 
@@ -67,7 +68,7 @@ public class TestProcesses
 	{
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, null);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
+		ServerProcess server = new ServerProcess(PORT, MAX_THREADS_FOR_SERVER, MILLIS_PER_TICK
 				, cuboidLoader
 				, TIME_SUPPLIER
 				, monitoringAgent
@@ -91,7 +92,7 @@ public class TestProcesses
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
+		ServerProcess server = new ServerProcess(PORT, MAX_THREADS_FOR_SERVER, MILLIS_PER_TICK
 				, cuboidLoader
 				, TIME_SUPPLIER
 				, monitoringAgent
@@ -128,7 +129,7 @@ public class TestProcesses
 		cuboidLoader.preload(airCuboid);
 		cuboidLoader.preload(stoneCuboid);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
+		ServerProcess server = new ServerProcess(PORT, MAX_THREADS_FOR_SERVER, MILLIS_PER_TICK
 				, cuboidLoader
 				, TIME_SUPPLIER
 				, monitoringAgent
@@ -182,7 +183,7 @@ public class TestProcesses
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0,  0), ENV.special.AIR));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), ENV.special.AIR));
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
+		ServerProcess server = new ServerProcess(PORT, MAX_THREADS_FOR_SERVER, MILLIS_PER_TICK
 				, cuboidLoader
 				, TIME_SUPPLIER
 				, monitoringAgent
@@ -242,7 +243,7 @@ public class TestProcesses
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.fromItem(ENV.items.getItemById("op.stone")));
 		cuboidLoader.preload(cuboid);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
+		ServerProcess server = new ServerProcess(PORT, MAX_THREADS_FOR_SERVER, MILLIS_PER_TICK
 				, cuboidLoader
 				, () -> 100L
 				, monitoringAgent
@@ -281,7 +282,7 @@ public class TestProcesses
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0,  0, 0), ENV.special.AIR));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, -1, 0), ENV.special.AIR));
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
+		ServerProcess server = new ServerProcess(PORT, MAX_THREADS_FOR_SERVER, MILLIS_PER_TICK
 				, cuboidLoader
 				, () -> currentTimeMillis[0]
 				, monitoringAgent
@@ -399,7 +400,7 @@ public class TestProcesses
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.fromItem(ENV.items.getItemById("op.stone")));
 		cuboidLoader.preload(cuboid);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
+		ServerProcess server = new ServerProcess(PORT, MAX_THREADS_FOR_SERVER, MILLIS_PER_TICK
 				, cuboidLoader
 				, () -> 100L
 				, monitoringAgent
@@ -456,7 +457,7 @@ public class TestProcesses
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0,  0, 0), ENV.special.AIR));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, -1, 0), ENV.special.AIR));
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
+		ServerProcess server = new ServerProcess(PORT, MAX_THREADS_FOR_SERVER, MILLIS_PER_TICK
 				, cuboidLoader
 				, () -> currentTimeMillis[0]
 				, monitoringAgent

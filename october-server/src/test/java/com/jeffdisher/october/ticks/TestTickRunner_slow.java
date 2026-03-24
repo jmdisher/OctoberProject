@@ -32,7 +32,6 @@ import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
-import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.subactions.EntityChangeSetBlockLogicState;
 import com.jeffdisher.october.subactions.MutationEntityPushItems;
@@ -61,6 +60,7 @@ import com.jeffdisher.october.utils.Encoding;
  */
 public class TestTickRunner_slow
 {
+	public static final int TICK_RUNNER_THREAD_COUNT = 4;
 	public static final long MILLIS_PER_TICK = 10L;
 	private static Environment ENV;
 	private static Item STONE_ITEM;
@@ -540,7 +540,7 @@ public class TestTickRunner_slow
 		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(1, 0, -1).getBlockAddress(), DIRT_ITEM.number());
 		
 		int[] randomHolder = new int[] {0};
-		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
+		TickRunner runner = new TickRunner(TICK_RUNNER_THREAD_COUNT
 				, MILLIS_PER_TICK
 				, null
 				, null
@@ -616,7 +616,7 @@ public class TestTickRunner_slow
 		int[] randomHolder = new int[] {0};
 		WorldConfig config = new WorldConfig();
 		config.difficulty = Difficulty.PEACEFUL;
-		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
+		TickRunner runner = new TickRunner(TICK_RUNNER_THREAD_COUNT
 				, MILLIS_PER_TICK
 				, null
 				, null
@@ -1087,7 +1087,7 @@ public class TestTickRunner_slow
 		config.difficulty = Difficulty.PEACEFUL;
 		Consumer<TickSnapshot> snapshotListener = (TickSnapshot completed) -> {};
 		Random random = new Random();
-		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
+		TickRunner runner = new TickRunner(TICK_RUNNER_THREAD_COUNT
 				, MILLIS_PER_TICK
 				, new CreatureIdAssigner()
 				, new PassiveIdAssigner()
