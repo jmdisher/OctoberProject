@@ -826,7 +826,9 @@ public class CreatureLogic
 			if (distance <= attackDistance)
 			{
 				// We are in range so find the vector which will fire in an arc toward the centre of the target.
-				EntityLocation targetCentre = SpatialHelpers.getCentreOfRegion(targetEntity.location(), creatureType.volume());
+				EntityLocation targetBase = targetEntity.location();
+				EntityVolume targetVolume = targetEntity.type().volume();
+				EntityLocation targetCentre = SpatialHelpers.getCentreOfRegion(targetBase, targetVolume);
 				
 				// Make sure that we can see them.
 				Environment env = Environment.getShared();

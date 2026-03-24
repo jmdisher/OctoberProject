@@ -1093,7 +1093,7 @@ public class TestCreatureLogic
 		Assert.assertNotNull(out[0]);
 		Assert.assertEquals(PassiveType.PROJECTILE_ARROW, out[0].type());
 		Assert.assertEquals(new EntityLocation(0.3f, 0.3f, 2.62f), out[0].location());
-		Assert.assertEquals(new EntityLocation(24.81f, 0.0f, -3.08f), out[0].velocity());
+		Assert.assertEquals(new EntityLocation(24.75f, -0.56f, -3.46f), out[0].velocity());
 		out[0] = null;
 		
 		// A second attack on the following tick should fail since we are on cooldown.
@@ -1121,7 +1121,7 @@ public class TestCreatureLogic
 		Assert.assertNotNull(out[0]);
 		Assert.assertEquals(PassiveType.PROJECTILE_ARROW, out[0].type());
 		Assert.assertEquals(new EntityLocation(0.3f, 0.3f, 2.62f), out[0].location());
-		Assert.assertEquals(new EntityLocation(24.81f, 0.0f, -3.08f), out[0].velocity());
+		Assert.assertEquals(new EntityLocation(24.75f, -0.56f, -3.46f), out[0].velocity());
 	}
 
 	@Test
