@@ -122,9 +122,14 @@ public class ServerRunner
 		);
 		
 		_messages = new MessageQueue();
+		
 		_background = new Thread(()-> {
 			_backgroundMain();
 		}, "ServerRunner");
+		// We want the ServerRunner to run at a higher priority than default since it does TickRunner scheduling and network management.
+		int priority = Math.min(_background.getPriority() + 1, Thread.MAX_PRIORITY);
+		_background.setPriority(priority);
+		
 		_currentTimeMillisProvider = currentTimeMillisProvider;
 		_monitoringAgent = monitoringAgent;
 		
