@@ -402,7 +402,10 @@ public class TickRunner
 			// Create the BlockProxy loader for the read-only state from the previous tick.
 			final TickMaterials thisTickMaterials = materials;
 			// WARNING:  This block cache is used for everything this thread does and we may want to provide a flushing mechanism.
-			BlockFetcher previousBlockLookUp = new BlockFetcher(materials.previousProxyCache, materials.completedCuboids);
+			BlockFetcher previousBlockLookUp = new BlockFetcher(materials.previousProxyCache
+				, materials.forceMissBlocksPreviousCache
+				, materials.completedCuboids
+			);
 			
 			CommonMutationSink newMutationSink = new CommonMutationSink(materials.completedCuboids.keySet());
 			CommonChangeSink newChangeSink = new CommonChangeSink(materials.completedEntities.keySet(), materials.completedCreatures.keySet(), materials.completedPassives.keySet());
@@ -1038,6 +1041,8 @@ public class TickRunner
 				// The corresponding actions for the creatures and passives only originate from inside the tick so just pass those through.
 				Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> nextCreatureChanges = flatResults.creatureActionsById();
 				Map<Integer, List<IPassiveAction>> nextPassiveActions = flatResults.passiveActionsById();
+				Map<AbsoluteLocation, BlockProxy> previousProxyCache = masterFragment.populatedProxyCache();
+				Set<AbsoluteLocation> changedBlocksInPreviousTick = flatResults.allChangedBlockLocations();
 				long nanosAfterPreamblePreTick = System.nanoTime();
 				
 				// WARNING:  completedHeightMaps does NOT include the new height maps loaded after the previous tick finished!
@@ -1077,7 +1082,10 @@ public class TickRunner
 					, flatResults.lightingUpdatesByCuboid()
 					, flatResults.logicUpdatesByCuboid()
 					, preTickState.cuboidsLoadedThisTick()
-					, preTickState.previousProxyCache()
+					
+					// BlockFetcher data.
+					, previousProxyCache
+					, changedBlocksInPreviousTick
 					
 					, entityCollection
 					, highLevelPlan
@@ -1561,7 +1569,10 @@ public class TickRunner
 			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid
 			// The set of addresses loaded in this tick (they are present in this tick, but for the first time).
 			, Set<CuboidAddress> cuboidsLoadedThisTick
+			
+			// Information used to build the BlockFetcher for each thread in parallel phase.
 			, Map<AbsoluteLocation, BlockProxy> previousProxyCache
+			, Set<AbsoluteLocation> forceMissBlocksPreviousCache
 			
 			// Higher-level data associated with the materials.
 			, EntityCollection entityCollection

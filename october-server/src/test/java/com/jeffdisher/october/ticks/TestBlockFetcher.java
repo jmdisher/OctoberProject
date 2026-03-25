@@ -2,6 +2,7 @@ package com.jeffdisher.october.ticks;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -35,7 +36,7 @@ public class TestBlockFetcher
 	{
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
-		BlockFetcher fetcher = new BlockFetcher(Map.of(), Map.of(address, cuboid));
+		BlockFetcher fetcher = new BlockFetcher(Map.of(), Set.of(), Map.of(address, cuboid));
 		
 		AbsoluteLocation mix = new AbsoluteLocation(1, 2, 3);
 		AbsoluteLocation one = new AbsoluteLocation(1, 1, 1);
@@ -54,13 +55,50 @@ public class TestBlockFetcher
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation one = new AbsoluteLocation(1, 1, 1);
 		BlockProxy fake = BlockProxy.init(one.getBlockAddress(), cuboid, (short)1);
-		BlockFetcher fetcher = new BlockFetcher(Map.of(one, fake), Map.of(address, cuboid));
+		BlockFetcher fetcher = new BlockFetcher(Map.of(one, fake), Set.of(), Map.of(address, cuboid));
 		
 		AbsoluteLocation mix = new AbsoluteLocation(1, 2, 3);
 		AbsoluteLocation two = new AbsoluteLocation(2, 2, 2);
 		Assert.assertEquals(ENV.special.AIR, fetcher.readBlock(mix).getBlock());
 		Map<AbsoluteLocation, BlockProxy> map = fetcher.readBlockBatch(List.of(one, two));
 		Assert.assertEquals(1, map.get(one).getBlock().item().number());
+		Assert.assertEquals(ENV.special.AIR, map.get(two).getBlock());
+		Assert.assertNull(fetcher.readBlock(new AbsoluteLocation(100, 4, 5)));
+	}
+
+	@Test
+	public void failPreviousCacheWhenUnloaded()
+	{
+		// We will put something in the previous cache from a not-loaded cuboid and show that we don't see it.
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		AbsoluteLocation one = new AbsoluteLocation(32, 32, 32);
+		BlockProxy fake = BlockProxy.init(one.getBlockAddress(), cuboid, (short)1);
+		BlockFetcher fetcher = new BlockFetcher(Map.of(one, fake), Set.of(), Map.of(address, cuboid));
+		
+		AbsoluteLocation two = new AbsoluteLocation(2, 2, 2);
+		Map<AbsoluteLocation, BlockProxy> map = fetcher.readBlockBatch(List.of(one, two));
+		Assert.assertEquals(1, map.size());
+		Assert.assertNull(map.get(one));
+		Assert.assertEquals(ENV.special.AIR, map.get(two).getBlock());
+		Assert.assertNull(fetcher.readBlock(new AbsoluteLocation(100, 4, 5)));
+	}
+
+	@Test
+	public void failPreviousCacheWhenChanged()
+	{
+		// We will load a value into the previous cache which we will mark as changed (stale) so we should avoid the previous cache.
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		AbsoluteLocation one = new AbsoluteLocation(1, 1, 1);
+		BlockProxy fake = BlockProxy.init(one.getBlockAddress(), cuboid, (short)1);
+		BlockFetcher fetcher = new BlockFetcher(Map.of(one, fake), Set.of(one), Map.of(address, cuboid));
+		
+		AbsoluteLocation mix = new AbsoluteLocation(1, 2, 3);
+		AbsoluteLocation two = new AbsoluteLocation(2, 2, 2);
+		Assert.assertEquals(ENV.special.AIR, fetcher.readBlock(mix).getBlock());
+		Map<AbsoluteLocation, BlockProxy> map = fetcher.readBlockBatch(List.of(one, two));
+		Assert.assertEquals(ENV.special.AIR, map.get(one).getBlock());
 		Assert.assertEquals(ENV.special.AIR, map.get(two).getBlock());
 		Assert.assertNull(fetcher.readBlock(new AbsoluteLocation(100, 4, 5)));
 	}

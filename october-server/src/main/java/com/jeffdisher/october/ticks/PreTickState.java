@@ -11,14 +11,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -44,7 +42,6 @@ public record PreTickState(Map<CuboidAddress, IReadOnlyCuboidData> cuboidsByAddr
 	, Map<Integer, List<ScheduledChange>> entityActionsById
 	
 	, Set<CuboidAddress> cuboidsLoadedThisTick
-	, Map<AbsoluteLocation, BlockProxy> previousProxyCache
 )
 {
 	public static PreTickState fromChanges(TickOutput masterFragment
@@ -241,22 +238,6 @@ public record PreTickState(Map<CuboidAddress, IReadOnlyCuboidData> cuboidsByAddr
 			}
 		}
 		
-		// Carry forward the proxy cache from the previous tick unless the corresponding block locations changed or where removed.
-		Set<AbsoluteLocation> changedBlocksInPreviousTick = flatResults.allChangedBlockLocations();
-		Map<AbsoluteLocation, BlockProxy> previousProxyCache = masterFragment.populatedProxyCache().entrySet().stream()
-			.filter((Map.Entry<AbsoluteLocation, BlockProxy> ent) -> {
-				AbsoluteLocation location = ent.getKey();
-				boolean shouldDrop = changedBlocksInPreviousTick.contains(location);
-				if (!shouldDrop && (null != cuboidsToDrop))
-				{
-					CuboidAddress cuboidAddress = location.getCuboidAddress();
-					shouldDrop = cuboidsToDrop.contains(cuboidAddress);
-				}
-				return !shouldDrop;
-			})
-			.collect(Collectors.toMap((Map.Entry<AbsoluteLocation, BlockProxy> ent) -> ent.getKey(), (Map.Entry<AbsoluteLocation, BlockProxy> ent) -> ent.getValue()))
-		;
-		
 		// TODO:  We should probably remove this once we are sure we know what is happening and/or find a cheaper way to check this.
 		for (CuboidAddress key : blockMutationsByAddress.keySet())
 		{
@@ -288,7 +269,6 @@ public record PreTickState(Map<CuboidAddress, IReadOnlyCuboidData> cuboidsByAddr
 			, _lockMapOfLists(entityActionsById)
 			
 			, Collections.unmodifiableSet(cuboidsLoadedThisTick)
-			, Collections.unmodifiableMap(previousProxyCache)
 		);
 	}
 

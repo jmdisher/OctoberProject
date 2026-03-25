@@ -26,13 +26,20 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public class BlockFetcher implements TickProcessingContext.IBlockFetcher
 {
 	private final Map<AbsoluteLocation, BlockProxy> _previousCache;
+	private final Set<AbsoluteLocation> _forceMissBlocksPreviousCache;
+
 	private final Map<CuboidAddress, IReadOnlyCuboidData> _cuboids;
 	private final Map<AbsoluteLocation, BlockProxy> _cache;
 	private final Set<AbsoluteLocation> _misses;
 
-	public BlockFetcher(Map<AbsoluteLocation, BlockProxy> previousCache, Map<CuboidAddress, IReadOnlyCuboidData> cuboids)
+	public BlockFetcher(Map<AbsoluteLocation, BlockProxy> previousCache
+		, Set<AbsoluteLocation> forceMissBlocksPreviousCache
+		, Map<CuboidAddress, IReadOnlyCuboidData> cuboids
+	)
 	{
 		_previousCache = previousCache;
+		_forceMissBlocksPreviousCache = forceMissBlocksPreviousCache;
+		
 		_cuboids = cuboids;
 		_cache = new HashMap<>();
 		_misses = new HashSet<>();
@@ -44,26 +51,31 @@ public class BlockFetcher implements TickProcessingContext.IBlockFetcher
 		BlockProxy proxy = _cache.get(location);
 		if (null == proxy)
 		{
-			if (!_misses.contains(location))
+			if (_misses.contains(location))
 			{
-				proxy = _previousCache.get(location);
-				if (null != proxy)
+				// Explicitly fail to find this.
+			}
+			else
+			{
+				CuboidAddress address = location.getCuboidAddress();
+				if (!_cuboids.containsKey(address))
 				{
-					_cache.put(location, proxy);
+					// Force miss so add this to our misses.
+					_misses.add(location);
 				}
 				else
 				{
-					CuboidAddress address = location.getCuboidAddress();
-					IReadOnlyCuboidData cuboid = _cuboids.get(address);
-					if (null != cuboid)
+					// Try actually looking for this.
+					if (!_forceMissBlocksPreviousCache.contains(location))
 					{
+						proxy = _previousCache.get(location);
+					}
+					if (null == proxy)
+					{
+						IReadOnlyCuboidData cuboid = _cuboids.get(address);
 						proxy = BlockProxy.load(location.getBlockAddress(), cuboid);
-						_cache.put(location, proxy);
 					}
-					else
-					{
-						_misses.add(location);
-					}
+					_cache.put(location, proxy);
 				}
 			}
 		}
@@ -89,17 +101,22 @@ public class BlockFetcher implements TickProcessingContext.IBlockFetcher
 			{
 				// Just do nothing since  we don't include nulls.
 			}
-			else if (_previousCache.containsKey(location))
-			{
-				BlockProxy proxy = _previousCache.get(location);
-				
-				_cache.put(location, proxy);
-				completed.put(location, proxy);
-			}
 			else
 			{
 				CuboidAddress cuboidAddress = location.getCuboidAddress();
-				if (_cuboids.containsKey(cuboidAddress))
+				if (!_cuboids.containsKey(cuboidAddress))
+				{
+					// Force miss so add this to our misses.
+					_misses.add(location);
+				}
+				else if (!_forceMissBlocksPreviousCache.contains(location) && _previousCache.containsKey(location))
+				{
+					BlockProxy proxy = _previousCache.get(location);
+					
+					_cache.put(location, proxy);
+					completed.put(location, proxy);
+				}
+				else
 				{
 					List<BlockAddress> batch = toBatch.get(cuboidAddress);
 					if (null == batch)
@@ -108,11 +125,6 @@ public class BlockFetcher implements TickProcessingContext.IBlockFetcher
 						toBatch.put(cuboidAddress, batch);
 					}
 					batch.add(location.getBlockAddress());
-				}
-				else
-				{
-					// This isn't loaded so just fast-fail (no nulls stored in the returned map).
-					_misses.add(location);
 				}
 			}
 		}
@@ -127,10 +139,11 @@ public class BlockFetcher implements TickProcessingContext.IBlockFetcher
 			
 			if (1 == list.size())
 			{
-				// We already made sure that this cuboid is loaded so just load it.
-				AbsoluteLocation location = base.relativeForBlock(list.get(0));
-				BlockProxy proxy = BlockProxy.load(location.getBlockAddress(), cuboid);
+				// This is the only block in this cuboid so just use the single-read path.
+				BlockAddress address = list.get(0);
+				BlockProxy proxy = BlockProxy.load(address, cuboid);
 				
+				AbsoluteLocation location = base.relativeForBlock(address);
 				_cache.put(location, proxy);
 				completed.put(location, proxy);
 			}
@@ -146,8 +159,8 @@ public class BlockFetcher implements TickProcessingContext.IBlockFetcher
 					BlockAddress address = array[i];
 					short type = blocks[i];
 					BlockProxy proxy = BlockProxy.init(address, cuboid, type);
-					AbsoluteLocation location = base.relativeForBlock(address);
 					
+					AbsoluteLocation location = base.relativeForBlock(address);
 					_cache.put(location, proxy);
 					completed.put(location, proxy);
 				}
