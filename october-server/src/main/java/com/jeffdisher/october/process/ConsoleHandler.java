@@ -100,7 +100,21 @@ public class ConsoleHandler
 
 	private static void _readAndProcessOneLine(PrintStream out, BufferedReader reader, _ConsoleState state) throws IOException
 	{
+		// This will return null on EOF.
 		String line = reader.readLine();
+		if (null != line)
+		{
+			_processOneLine(out, line, state);
+		}
+		else
+		{
+			out.println("EOF received");
+			state.canContinue = false;
+		}
+	}
+
+	private static void _processOneLine(PrintStream out, String line, _ConsoleState state)
+	{
 		String[] fragments = line.split(" ");
 		String first = fragments[0];
 		if (first.startsWith("!"))

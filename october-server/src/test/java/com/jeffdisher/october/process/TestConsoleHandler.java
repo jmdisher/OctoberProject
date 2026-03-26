@@ -57,6 +57,18 @@ public class TestConsoleHandler
 	}
 
 	@Test
+	public void eof() throws Throwable
+	{
+		// EOF is handled much like "stop".
+		InputStream in = new ByteArrayInputStream(new byte[0]);
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		PrintStream printer = new PrintStream(out);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
+		Assert.assertArrayEquals("EOF received\nShutting down...\n".getBytes(), out.toByteArray());
+	}
+
+	@Test
 	public void backgroundThread() throws Throwable
 	{
 		// A use-case for cases where the existing thread cannot be blocked so the handler is run on another thread.
