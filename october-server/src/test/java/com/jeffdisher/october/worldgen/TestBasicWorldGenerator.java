@@ -465,6 +465,20 @@ public class TestBasicWorldGenerator
 		Assert.assertEquals(sandNumber, cuboid.getData15(AspectRegistry.BLOCK, sand.getBlockAddress()));
 	}
 
+	@Test
+	public void errorCase0() throws Throwable
+	{
+		// In infinite loop in cuboid generation in batch read found during interactive testing.
+		int seed = -2009860445;
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
+		CuboidAddress address = CuboidAddress.fromInt(-34, -11, 0);
+		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, address, 0L);
+		CuboidData cuboid = suspended.cuboid();
+		
+		// This is a block we try to convert but shouldn't, since it is at the bottom of the cuboid.
+		Assert.assertEquals(0, cuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(4, 0, 0)));
+	}
+
 
 	private static void _checkBlockTypes(CuboidData data
 		, int stone

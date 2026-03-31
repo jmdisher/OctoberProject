@@ -442,8 +442,9 @@ public class BasicWorldGenerator implements IWorldGenerator
 				int relativeX = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
 				int relativeY = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
 				// Choose the block above the grass (making the grass dirt).
+				// NOTE:  Checking the block below means we can never place a plant on a local-0 Z coordinate (multiple of 32).
 				int relativeZ = heightMap.getHeight(relativeX, relativeY) - cuboidBottomZ + 1;
-				if ((relativeZ >= 0) && (relativeZ < Encoding.CUBOID_EDGE_SIZE))
+				if ((relativeZ > 0) && (relativeZ < Encoding.CUBOID_EDGE_SIZE))
 				{
 					BlockAddress address = BlockAddress.fromInt(relativeX, relativeY, relativeZ);
 					short original = data.getData15(AspectRegistry.BLOCK, address);
@@ -451,6 +452,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 					{
 						// Make sure that these are over grass.
 						BlockAddress underBlock = address.getRelativeInt(0, 0, -1);
+						Assert.assertTrue(underBlock.z() >= 0);
 						if (supportBlockToReplace == data.getData15(AspectRegistry.BLOCK, underBlock))
 						{
 							data.setData15(AspectRegistry.BLOCK, underBlock, supportBlockToAdd);
