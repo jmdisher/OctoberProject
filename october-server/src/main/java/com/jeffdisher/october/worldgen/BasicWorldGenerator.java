@@ -3,14 +3,20 @@ package com.jeffdisher.october.worldgen;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ScheduledMutation;
@@ -436,7 +442,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 					? FIELD_WHEAT_COUNT
 					: FIELD_CARROT_COUNT
 			;
-			int randomPlantCount = 0;
+			// We need to use a set here since the random selection can choose duplicates.
+			Set<BlockAddress> readSet = new HashSet<>();
 			for (int i = 0; i < count; ++i)
 			{
 				int relativeX = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
@@ -447,19 +454,37 @@ public class BasicWorldGenerator implements IWorldGenerator
 				if ((relativeZ > 0) && (relativeZ < Encoding.CUBOID_EDGE_SIZE))
 				{
 					BlockAddress address = BlockAddress.fromInt(relativeX, relativeY, relativeZ);
-					short original = data.getData15(AspectRegistry.BLOCK, address);
-					if (blockToReplace == original)
-					{
-						// Make sure that these are over grass.
-						BlockAddress underBlock = address.getRelativeInt(0, 0, -1);
-						Assert.assertTrue(underBlock.z() >= 0);
-						if (supportBlockToReplace == data.getData15(AspectRegistry.BLOCK, underBlock))
-						{
-							data.setData15(AspectRegistry.BLOCK, underBlock, supportBlockToAdd);
-							data.setData15(AspectRegistry.BLOCK, address, blockToAdd);
-							randomPlantCount += 1;
-						}
-					}
+					readSet.add(address);
+				}
+			}
+			Map<BlockAddress, Short> readMap1 = _batchReadMap(data, readSet);
+			
+			List<BlockAddress> readList2 = new ArrayList<>();
+			for (Map.Entry<BlockAddress, Short> elt : readMap1.entrySet())
+			{
+				short original = elt.getValue();
+				if (blockToReplace == original)
+				{
+					// Make sure that these are over grass.
+					BlockAddress address = elt.getKey();
+					BlockAddress underBlock = address.getRelativeInt(0, 0, -1);
+					Assert.assertTrue(underBlock.z() >= 0);
+					readList2.add(underBlock);
+				}
+			}
+			Map<BlockAddress, Short> readMap2 = _batchReadMap(data, readList2);
+			
+			int randomPlantCount = 0;
+			for (Map.Entry<BlockAddress, Short> elt : readMap2.entrySet())
+			{
+				// Make sure that these are over grass.
+				if (supportBlockToReplace == elt.getValue())
+				{
+					BlockAddress underBlock = elt.getKey();
+					BlockAddress address = underBlock.getRelativeInt(0, 0, 1);
+					data.setData15(AspectRegistry.BLOCK, underBlock, supportBlockToAdd);
+					data.setData15(AspectRegistry.BLOCK, address, blockToAdd);
+					randomPlantCount += 1;
 				}
 			}
 			
@@ -521,18 +546,35 @@ public class BasicWorldGenerator implements IWorldGenerator
 
 	private void _replaceLayer(CuboidData data, byte z, short supportBlockToReplace, short supportBlockToAdd, short blockToReplace, short blockToAdd)
 	{
+		List<BlockAddress> toRead = new ArrayList<>();
 		for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
 			for (byte x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 			{
 				BlockAddress address = new BlockAddress(x, y, z);
-				short original = data.getData15(AspectRegistry.BLOCK, address);
+				toRead.add(address);
+				if (z > 0)
+				{
+					// TODO:  We currently can't check the block below the bottom of the cuboid so we will default to not placing there.
+					BlockAddress supportAddress = address.getRelative((byte)0, (byte)0, (byte)-1);
+					toRead.add(supportAddress);
+				}
+			}
+		}
+		Map<BlockAddress, Short> readMap = _batchReadMap(data, toRead);
+		
+		for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
+		{
+			for (byte x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
+			{
+				BlockAddress address = new BlockAddress(x, y, z);
+				short original = readMap.get(address);
 				short underBlock = 0;
 				if (z > 0)
 				{
 					// TODO:  We currently can't check the block below the bottom of the cuboid so we will default to not placing there.
 					BlockAddress supportAddress = address.getRelative((byte)0, (byte)0, (byte)-1);
-					underBlock = data.getData15(AspectRegistry.BLOCK, supportAddress);
+					underBlock = readMap.get(supportAddress);
 					if (supportBlockToReplace == underBlock)
 					{
 						data.setData15(AspectRegistry.BLOCK, supportAddress, supportBlockToAdd);
@@ -652,6 +694,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 		// It assumes that the crust is completely made of stone and will only replace stone (meaning gaps or special blocks will NOT be replaced).
 		short stoneValue = _blockStone.item().number();
 		ColumnHeightMap heightMap = heightMaps.fetchHeightMapForCuboidColumn(0, 0);
+		List<BlockAddress> readList = new ArrayList<>();
+		Map<BlockAddress, Block> blocksToWrite = new HashMap<>();
 		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
 			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
@@ -714,15 +758,25 @@ public class BasicWorldGenerator implements IWorldGenerator
 					if ((null != blockToWrite) && (_blockStone != blockToWrite))
 					{
 						BlockAddress blockAddress = BlockAddress.fromInt(x, y, z);
-						short blockValue = blockToWrite.item().number();
-						short existingValue = data.getData15(AspectRegistry.BLOCK, blockAddress);
-						// We only want to write this if it changes something and there is stone to overwrite, already (otherwise, it is probably a cave).
-						if ((blockValue != existingValue) && (stoneValue == existingValue))
-						{
-							data.setData15(AspectRegistry.BLOCK, blockAddress, blockValue);
-						}
+						readList.add(blockAddress);
+						blocksToWrite.put(blockAddress, blockToWrite);
 					}
 				}
+			}
+		}
+		Map<BlockAddress, Short> readMap = _batchReadMap(data, readList);
+		
+		for (Map.Entry<BlockAddress, Short> elt : readMap.entrySet())
+		{
+			BlockAddress blockAddress = elt.getKey();
+			short existingValue = elt.getValue();
+			Block blockToWrite = blocksToWrite.get(blockAddress);
+			short blockValue = blockToWrite.item().number();
+			
+			// We only want to write this if it changes something and there is stone to overwrite, already (otherwise, it is probably a cave).
+			if ((blockValue != existingValue) && (stoneValue == existingValue))
+			{
+				data.setData15(AspectRegistry.BLOCK, blockAddress, blockValue);
 			}
 		}
 	}
@@ -892,6 +946,29 @@ public class BasicWorldGenerator implements IWorldGenerator
 			}
 		}
 		return isLess;
+	}
+
+	private static Map<BlockAddress, Short> _batchReadMap(CuboidData data, Collection<BlockAddress> toRead)
+	{
+		Map<BlockAddress, Short> ret;
+		if (toRead.isEmpty())
+		{
+			ret = Map.of();
+		}
+		else
+		{
+			BlockAddress[] readAddresses = toRead.toArray((int size) -> new BlockAddress[size]);
+			IReadOnlyCuboidData.BlockAddressBatchComparator readComparator = new IReadOnlyCuboidData.BlockAddressBatchComparator();
+			Arrays.sort(readAddresses, readComparator);
+			short[] readValues = data.batchReadData15(AspectRegistry.BLOCK, readAddresses);
+			Map<BlockAddress, Short> readMap = new HashMap<>();
+			for (int i = 0; i < readAddresses.length; ++i)
+			{
+				readMap.put(readAddresses[i], readValues[i]);
+			}
+			ret = Collections.unmodifiableMap(readMap);
+		}
+		return ret;
 	}
 
 
