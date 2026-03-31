@@ -431,6 +431,88 @@ public class TestOctreeBlock
 		}, (byte)0);
 	}
 
+	@Test
+	public void batchWriteShortBasic()
+	{
+		// Put a few values into a short octree and verify that they are changed.
+		short start = 0;
+		OctreeShort test = OctreeShort.create(start);
+		BlockAddress[] addresses = new BlockAddress[32];
+		short[] values = new short[32];
+		for (int i = 0; i < addresses.length; ++i)
+		{
+			addresses[i] = BlockAddress.fromInt(i, i, i);
+			values[i] = 1;
+		}
+		IReadOnlyCuboidData.BlockAddressBatchComparator comparator = new IReadOnlyCuboidData.BlockAddressBatchComparator();
+		Arrays.sort(addresses, comparator);
+		
+		test.writeBatch(addresses, values);
+		
+		for (BlockAddress a : addresses)
+		{
+			short value = test.getData(AspectRegistry.BLOCK, a).shortValue();
+			Assert.assertEquals(1, value);
+		}
+		Assert.assertEquals(start, test.getData(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 7, 31)).shortValue());
+	}
+
+	@Test
+	public void batchWriteShortGrowShrink()
+	{
+		// Show that we can grow a sub-tree and then re-coalesce it back into the root if it becomes similar, again.
+		short start = 0;
+		OctreeShort test = OctreeShort.create(start);
+		BlockAddress[] addresses = new BlockAddress[] {
+			BlockAddress.fromInt(30, 30, 30),
+			BlockAddress.fromInt(30, 30, 31),
+			BlockAddress.fromInt(30, 31, 30),
+			BlockAddress.fromInt(30, 31, 31),
+			BlockAddress.fromInt(31, 30, 30),
+			BlockAddress.fromInt(31, 30, 31),
+			BlockAddress.fromInt(31, 31, 30),
+			BlockAddress.fromInt(31, 31, 31),
+		};
+		IReadOnlyCuboidData.BlockAddressBatchComparator comparator = new IReadOnlyCuboidData.BlockAddressBatchComparator();
+		Arrays.sort(addresses, comparator);
+		short[] values = new short[] {
+			1,
+			1,
+			1,
+			1,
+			1,
+			1,
+			1,
+			1,
+		};
+		
+		test.writeBatch(addresses, values);
+		
+		for (BlockAddress a : addresses)
+		{
+			short value = test.getData(AspectRegistry.BLOCK, a).shortValue();
+			Assert.assertEquals(1, value);
+		}
+		
+		// Now, change these back and observe the serialized shape has completely inlined.
+		short[] reset = new short[] {
+			0,
+			0,
+			0,
+			0,
+			0,
+			0,
+			0,
+			0,
+		};
+		test.writeBatch(addresses, reset);
+		
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		Object state = test.serializeResumable(null, buffer, null);
+		Assert.assertNull(state);
+		Assert.assertEquals(2, buffer.position());
+	}
+
 
 	private static OctreeShort _codec(OctreeShort input, int expectedSizeBytes)
 	{

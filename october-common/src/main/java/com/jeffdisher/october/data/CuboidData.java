@@ -134,6 +134,26 @@ public class CuboidData implements IReadOnlyCuboidData
 		return data;
 	}
 
+	/**
+	 * Writes several 15-bit shorts at the same time.
+	 * Note that the array of addresses given must contain at least 1 element, must be in the "batch sorted order", and
+	 * contain no duplicates.  The values array must be the same length as the addresses array.  Use
+	 * BlockAddressBatchComparator to sort BlockAddress instances.
+	 * 
+	 * @param type The aspect to write.
+	 * @param addresses The array of addresses to write.
+	 * @param addresses The corresponding array of values to write to those addresses.
+	 */
+	public void batchWiteData15(Aspect<Short, ?> type, BlockAddress[] addresses, short[] values)
+	{
+		// We require that at least one address be requested.
+		Assert.assertTrue(addresses.length > 0);
+		Assert.assertTrue(addresses.length == values.length);
+		
+		IOctree<Short> tree = type.octreeType().cast(_data[type.index()]);
+		tree.writeBatch(addresses, values);
+	}
+
 	@Override
 	public <T> void walkData(Aspect<T, ?> type, IOctree.IWalkerCallback<T> callback, T valueToSkip)
 	{

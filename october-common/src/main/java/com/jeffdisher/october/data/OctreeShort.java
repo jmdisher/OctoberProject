@@ -414,6 +414,32 @@ public class OctreeShort implements IOctree<Short>
 	}
 
 	@Override
+	public void writeBatch(BlockAddress[] addresses, Object arrayType)
+	{
+		short[] valuesToWrite = (short[]) arrayType;
+		
+		// We will assert that the inputs are in sorted order and without duplicates (the algorithm assumes this is true).
+		int lastSort = -1;
+		for (BlockAddress address : addresses)
+		{
+			int thisSort = IReadOnlyCuboidData.getBatchSortOrder(address);
+			Assert.assertTrue(thisSort > lastSort);
+			lastSort = thisSort;
+		}
+		// We similarly want to make sure that no values are negative.
+		for (short value : valuesToWrite)
+		{
+			Assert.assertTrue(value >= 0);
+		}
+		
+		// TODO:  We just call the public setData interface in order to not change behaviour while the API is introduced, along with basic tests.
+		for (int i = 0; i < addresses.length; ++i)
+		{
+			this.setData(addresses[i], valuesToWrite[i]);
+		}
+	}
+
+	@Override
 	public void walkData(IWalkerCallback<Short> callback, Short valueToSkip)
 	{
 		short skip = valueToSkip.shortValue();

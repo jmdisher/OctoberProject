@@ -39,6 +39,17 @@ public interface IOctree<T>
 	void readBatch(Object arrayType, BlockAddress[] addresses);
 
 	/**
+	 * Writes the data elements in arrayType to the corresponding octree data locations specified in addresses (both
+	 * arrays must be the same length, not empty, and their indices correspond).
+	 * NOTE:  arrayType is down-cast into the appropriate type in the implementation so care must be used to avoid cast
+	 * failures.
+	 * 
+	 * @param addresses The array of addresses to write.
+	 * @param arrayType The array to of corresponding values to write (is down-cast in implementation).
+	 */
+	void writeBatch(BlockAddress[] addresses, Object arrayType);
+
+	/**
 	 * Walks the tree, issuing callbacks for every data entry found (in no particular order), so long as it isn't
 	 * valueToSkip.
 	 * 
