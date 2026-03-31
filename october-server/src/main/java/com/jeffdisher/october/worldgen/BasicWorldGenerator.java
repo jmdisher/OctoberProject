@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -475,6 +476,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 			Map<BlockAddress, Short> readMap2 = _batchReadMap(data, readList2);
 			
 			int randomPlantCount = 0;
+			List<_Update> updateList = new ArrayList<>();
 			for (Map.Entry<BlockAddress, Short> elt : readMap2.entrySet())
 			{
 				// Make sure that these are over grass.
@@ -482,11 +484,12 @@ public class BasicWorldGenerator implements IWorldGenerator
 				{
 					BlockAddress underBlock = elt.getKey();
 					BlockAddress address = underBlock.getRelativeInt(0, 0, 1);
-					data.setData15(AspectRegistry.BLOCK, underBlock, supportBlockToAdd);
-					data.setData15(AspectRegistry.BLOCK, address, blockToAdd);
+					updateList.add(new _Update(underBlock, supportBlockToAdd));
+					updateList.add(new _Update(address, blockToAdd));
 					randomPlantCount += 1;
 				}
 			}
+			_batchWriteUpdates(data, updateList);
 			
 			// If this is a gully, we want to spawn a herd of the native fauna.
 			if (didFillGully)
@@ -563,6 +566,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		}
 		Map<BlockAddress, Short> readMap = _batchReadMap(data, toRead);
 		
+		List<_Update> updates = new ArrayList<>();
 		for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
 			for (byte x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
@@ -577,16 +581,17 @@ public class BasicWorldGenerator implements IWorldGenerator
 					underBlock = readMap.get(supportAddress);
 					if (supportBlockToReplace == underBlock)
 					{
-						data.setData15(AspectRegistry.BLOCK, supportAddress, supportBlockToAdd);
+						updates.add(new _Update(supportAddress, supportBlockToAdd));
 						underBlock = supportBlockToAdd;
 					}
 				}
 				if ((blockToReplace == original) && (supportBlockToAdd == underBlock))
 				{
-					data.setData15(AspectRegistry.BLOCK, address, blockToAdd);
+					updates.add(new _Update(address, blockToAdd));
 				}
 			}
 		}
+		_batchWriteUpdates(data, updates);
 	}
 
 	private int _getAverageHeightInColumn(ColumnHeightMap heightMap)
@@ -653,6 +658,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		Assert.assertTrue((_blockWaterSource == defaultEmptyBlock) || (_blockAir == defaultEmptyBlock));
 		Assert.assertTrue((_blockStone == defaultBlock) || (_blockWaterSource == defaultBlock) || (_blockAir == defaultBlock));
 		
+		List<_Update> updates = new ArrayList<>();
 		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
 			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
@@ -681,11 +687,12 @@ public class BasicWorldGenerator implements IWorldGenerator
 					}
 					if (blockToWrite != defaultBlock)
 					{
-						data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, z), blockToWrite.item().number());
+						updates.add(new _Update(BlockAddress.fromInt(x, y, z), blockToWrite.item().number()));
 					}
 				}
 			}
 		}
+		_batchWriteUpdates(data, updates);
 	}
 
 	private void _replaceCrustTopAndBottom(LazyColumnHeightMapGrid heightMaps, CuboidData data, int cuboidZ)
@@ -766,6 +773,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		}
 		Map<BlockAddress, Short> readMap = _batchReadMap(data, readList);
 		
+		List<_Update> writeUpdates = new ArrayList<>();
 		for (Map.Entry<BlockAddress, Short> elt : readMap.entrySet())
 		{
 			BlockAddress blockAddress = elt.getKey();
@@ -776,9 +784,10 @@ public class BasicWorldGenerator implements IWorldGenerator
 			// We only want to write this if it changes something and there is stone to overwrite, already (otherwise, it is probably a cave).
 			if ((blockValue != existingValue) && (stoneValue == existingValue))
 			{
-				data.setData15(AspectRegistry.BLOCK, blockAddress, blockValue);
+				writeUpdates.add(new _Update(blockAddress, blockValue));
 			}
 		}
+		_batchWriteUpdates(data, writeUpdates);
 	}
 
 	private List<CreatureEntity> _spawnCreatures(CreatureIdAssigner creatureIdAssigner, PerColumnRandomSeedField.View subField, ColumnHeightMap heightMap, CuboidData data, AbsoluteLocation cuboidBase, long gameTimeMillis)
@@ -971,6 +980,24 @@ public class BasicWorldGenerator implements IWorldGenerator
 		return ret;
 	}
 
+	private static void _batchWriteUpdates(CuboidData data, List<_Update> updates)
+	{
+		if (!updates.isEmpty())
+		{
+			_UpdateComparator writeComparator = new _UpdateComparator();
+			updates.sort(writeComparator);
+			BlockAddress[] addresses = new BlockAddress[updates.size()];
+			short[] values = new short[updates.size()];
+			for (int i = 0; i < values.length; ++i)
+			{
+				_Update update = updates.get(i);
+				addresses[i] = update.address;
+				values[i] = update.blockValue;
+			}
+			data.batchWiteData15(AspectRegistry.BLOCK, addresses, values);
+		}
+	}
+
 
 	private static record _Cavern(byte x
 			, byte y
@@ -978,4 +1005,17 @@ public class BasicWorldGenerator implements IWorldGenerator
 			, byte radius
 	)
 	{}
+
+	private static record _Update(BlockAddress address, short blockValue) {}
+
+	private static class _UpdateComparator implements Comparator<_Update>
+	{
+		@Override
+		public int compare(_Update o1, _Update o2)
+		{
+			int sort1 = IReadOnlyCuboidData.getBatchSortOrder(o1.address);
+			int sort2 = IReadOnlyCuboidData.getBatchSortOrder(o2.address);
+			return sort1 - sort2;
+		}
+	}
 }

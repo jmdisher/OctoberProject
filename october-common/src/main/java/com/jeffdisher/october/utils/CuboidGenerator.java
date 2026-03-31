@@ -1,8 +1,11 @@
 package com.jeffdisher.october.utils;
 
+import java.util.Arrays;
+
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IOctree;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.OctreeInflatedByte;
 import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
@@ -41,13 +44,20 @@ public class CuboidGenerator
 	public static void fillPlane(CuboidData data, byte z, Block block)
 	{
 		short number = block.item().number();
+		BlockAddress[] addresses = new BlockAddress[32 * 32];
+		short[] values = new short[32 * 32];
 		for (byte y = 0; y < 32; ++y)
 		{
 			for (byte x = 0; x < 32; ++x)
 			{
-				data.setData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z), number);
+				int index = (32 * y) + x;
+				addresses[index] = new BlockAddress(x, y, z);
+				values[index] = number;
 			}
 		}
+		IReadOnlyCuboidData.BlockAddressBatchComparator comparator = new IReadOnlyCuboidData.BlockAddressBatchComparator();
+		Arrays.sort(addresses, comparator);
+		data.batchWiteData15(AspectRegistry.BLOCK, addresses, values);
 	}
 
 
