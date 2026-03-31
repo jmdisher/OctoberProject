@@ -50,7 +50,6 @@ public class ResourceLoader
 	public static final EntityLocation ENTITY_DEFAULT_LOCATION = new EntityLocation(0.0f, 0.0f, 0.0f);
 	public static final float ENTITY_DEFAULT_BLOCKS_PER_TICK_SPEED = 0.5f;
 
-	private final File _configFile;
 	private final File _entityDirectory;
 	private final CuboidClusterManager _cuboidClusterManager;
 	private final IWorldGenerator _cuboidGenerator;
@@ -85,7 +84,6 @@ public class ResourceLoader
 		// The save directory must exist as a directory before we get here.
 		Assert.assertTrue(saveDirectory.isDirectory());
 		
-		_configFile = _getConfigFile(saveDirectory);
 		_entityDirectory = new File(saveDirectory, "entities");
 		if (!_entityDirectory.exists())
 		{
@@ -381,13 +379,15 @@ public class ResourceLoader
 	 * Stores the given world config to disk.
 	 * NOTE:  This call is synchronous so should only be called during shut-down.
 	 * 
+	 * @param saveDirectory The directory where the world data is stored.
 	 * @param config A WorldConfig object to save to disk.
 	 * @throws IOException There was a problem saving the file.
 	 */
-	public void storeWorldConfig(WorldConfig config) throws IOException
+	public static void storeWorldConfig(File saveDirectory, WorldConfig config) throws IOException
 	{
+		File configFile = _getConfigFile(saveDirectory);
 		Map<String, String> options = config.getRawOptions();
-		try (FileOutputStream stream = new FileOutputStream(_configFile))
+		try (FileOutputStream stream = new FileOutputStream(configFile))
 		{
 			stream.write("# World config for an OctoberProject world.  This uses the tablist format and errors will cause start-up failures.\n\n".getBytes(StandardCharsets.UTF_8));
 			for (Map.Entry<String, String> elt : options.entrySet())

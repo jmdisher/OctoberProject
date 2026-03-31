@@ -48,6 +48,7 @@ public class ServerMain
 					// There is no config so ask the world-gen for the default spawn.
 					EntityLocation spawnLocation = worldGen.getDefaultSpawnLocation();
 					config.worldSpawn = spawnLocation.getBlockLocation();
+					ResourceLoader.storeWorldConfig(worldDirectory, config);
 				}
 			}
 			catch (IOException | TabListReader.TabListException e)
@@ -86,7 +87,7 @@ public class ServerMain
 				// Adjust the config's day start so that it will sync up with the time of day when ending.
 				config.dayStartTick = (int)PropagationHelpers.resumableStartTick(ticksRun, config.ticksPerDay, config.dayStartTick);
 				// We can now re-write the config.
-				cuboidLoader.storeWorldConfig(config);
+				ResourceLoader.storeWorldConfig(worldDirectory, config);
 				System.out.println("Exiting normally");
 			}
 			catch (IOException e)

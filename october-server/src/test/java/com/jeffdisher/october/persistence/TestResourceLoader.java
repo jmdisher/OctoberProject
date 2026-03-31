@@ -587,7 +587,7 @@ public class TestResourceLoader
 	{
 		File resourceDirectory = DIRECTORY.newFolder();
 		ResourceLoader loader = new ResourceLoader(resourceDirectory, null, null);
-		loader.storeWorldConfig(new WorldConfig());
+		ResourceLoader.storeWorldConfig(resourceDirectory, new WorldConfig());
 		File configFile = new File(resourceDirectory, "config.tablist");
 		String rawData = Files.readString(configFile.toPath());
 		Assert.assertTrue(rawData.contains("difficulty\tHOSTILE\n"));
