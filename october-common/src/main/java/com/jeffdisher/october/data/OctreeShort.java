@@ -143,7 +143,7 @@ public class OctreeShort implements IOctree<Short>
 			
 			int index = 0;
 			short[] values = new short[8];
-			ShortWriter captured = new ShortWriter(buffer.capacity());
+			ShortWriter captured = new ShortWriter(buffer.capacity(), 1);
 			for (int i = 0; i < 2; ++i)
 			{
 				for (int j = 0; j < 2; ++j)
@@ -315,7 +315,7 @@ public class OctreeShort implements IOctree<Short>
 			byte y = address.y();
 			byte z = address.z();
 			_topLevelTrees = new byte[8][];
-			ShortWriter writer = new ShortWriter(Short.BYTES);
+			ShortWriter writer = new ShortWriter(Short.BYTES, 1);
 			writer.putShort(_inlineCompact);
 			byte[] raw = writer.getData();
 			for (int i = 0; i < 8; ++i)
@@ -325,7 +325,7 @@ public class OctreeShort implements IOctree<Short>
 			_inlineCompact = -1;
 			
 			int index = _getTopLevelIndex(x, y, z);
-			writer = new ShortWriter(_topLevelTrees[index].length);
+			writer = new ShortWriter(_topLevelTrees[index].length, 1);
 			// Half of 32 (the base size) is 16.
 			byte half = 16;
 			_updateValue(writer, ByteBuffer.wrap(_topLevelTrees[index]), (byte)(x & ~half), (byte)(y & ~half), (byte)(z & ~half), (byte)(half >> 1), correct);
@@ -339,7 +339,7 @@ public class OctreeShort implements IOctree<Short>
 			byte z = address.z();
 			int index = _getTopLevelIndex(x, y, z);
 			byte[] data = _topLevelTrees[index];
-			ShortWriter writer = new ShortWriter(data.length);
+			ShortWriter writer = new ShortWriter(data.length, 1);
 			// Half of 32 (the base size) is 16.
 			byte half = 16;
 			_updateValue(writer, ByteBuffer.wrap(data), (byte)(x & ~half), (byte)(y & ~half), (byte)(z & ~half), (byte)(half >> 1), correct);
@@ -365,7 +365,6 @@ public class OctreeShort implements IOctree<Short>
 				_topLevelTrees = null;
 			}
 		}
-		
 	}
 
 	@Override
@@ -432,10 +431,104 @@ public class OctreeShort implements IOctree<Short>
 			Assert.assertTrue(value >= 0);
 		}
 		
-		// TODO:  We just call the public setData interface in order to not change behaviour while the API is introduced, along with basic tests.
-		for (int i = 0; i < addresses.length; ++i)
+		_BatchWriteState state = new _BatchWriteState(addresses, valuesToWrite);
+		while (state.workRemaining() > 0)
 		{
-			this.setData(addresses[i], valuesToWrite[i]);
+			// It is possible for us to change whether this is inline or has top-level trees so check the current state.
+			if (null != _topLevelTrees)
+			{
+				// Get the location to find the next tree to seek.
+				BlockAddress address = state.currentAddress();
+				byte x = address.x();
+				byte y = address.y();
+				byte z = address.z();
+				int treeIndex = _getTopLevelIndex(x, y, z);
+				byte[] data = _topLevelTrees[treeIndex];
+				byte half = 16;
+				
+				// Note that our recursive write might need to return a value if it is a fully-inline write (since it doesn't know if we need to inline it on this level, too).
+				ShortWriter writer = new ShortWriter(data.length, state.workRemaining());
+				ByteBuffer buffer = ByteBuffer.wrap(data);
+				short oldValue = _loadHeader(buffer);
+				short carriedWrite = _writeBatchInSubtreeLevel(writer
+					, buffer
+					, oldValue
+					, state
+					, (byte)(x & half)
+					, (byte)(y & half)
+					, (byte)(z & half)
+					, half
+				);
+				if (-1 != carriedWrite)
+				{
+					// This is the case where we need to inline the result (the callee doesn't know if it should write this, based on caller).
+					writer.putShort(carriedWrite);
+				}
+				_topLevelTrees[treeIndex] = writer.getData();
+			}
+			else
+			{
+				// This is inline so check if it can stay inline or if we need to break it out.
+				short toWrite = state.currentWrite();
+				if (_inlineCompact == toWrite)
+				{
+					// This is being preserved so do nothing but advance.
+					state.advance();
+				}
+				else
+				{
+					// We need to break this out into top-level trees (we won't progress until the next loop iteration, to avoid duplication in code).
+					_topLevelTrees = new byte[8][];
+					ShortWriter writer = new ShortWriter(Short.BYTES, 1);
+					writer.putShort(_inlineCompact);
+					byte[] raw = writer.getData();
+					for (int i = 0; i < 8; ++i)
+					{
+						_topLevelTrees[i] = raw;
+					}
+					_inlineCompact = -1;
+				}
+			}
+		}
+		
+		// Check if we should inline this (note that we could do this while walking the trees but that would complicate the loop).
+		if (null != _topLevelTrees)
+		{
+			boolean shouldCoalesce = true;
+			short value = -1;
+			for (byte[] subTree : _topLevelTrees)
+			{
+				if (Short.BYTES == subTree.length)
+				{
+					// This is a single-value tree so consider this.
+					short thisShort = ByteBuffer.wrap(subTree).getShort();
+					if (-1 == value)
+					{
+						value = thisShort;
+					}
+					else if (value == thisShort)
+					{
+						// This is still matching so continue.
+					}
+					else
+					{
+						// Mismatch so fail out.
+						shouldCoalesce = false;
+						break;
+					}
+				}
+				else
+				{
+					// There is something more complex here so fail out.
+					shouldCoalesce = false;
+					break;
+				}
+			}
+			if (shouldCoalesce)
+			{
+				_inlineCompact = value;
+				_topLevelTrees = null;
+			}
 		}
 	}
 
@@ -753,12 +846,8 @@ public class OctreeShort implements IOctree<Short>
 					{
 						// Otherwise, we need to dig into the 8 sub-trees.
 						// Due to the way the octree is represented, we must walk all subtrees "before" the one where we are finding the element.
-						// The order of the sub-trees is a 3-level nested loop:  x is outer-most, y is middle, and z is inner-most.
 						byte half = (byte)(size >> 1);
-						int targetX = ((thisX - baseX) < half) ? 0 : 1;
-						int targetY = ((thisY - baseY) < half) ? 0 : 1;
-						int targetZ = ((thisZ - baseZ) < half) ? 0 : 1;
-						int treesToSkipAtThisLevel = (targetX * 4) + (targetY * 2) + targetZ;
+						int treesToSkipAtThisLevel = _subTreeIndexAtThisLevel(baseX, baseY, baseZ, thisX, thisY, thisZ, half);
 						
 						int subTreesToPass = treesToSkipAtThisLevel - treesSkippedInLevel;
 						Assert.assertTrue(subTreesToPass >= 0);
@@ -819,16 +908,279 @@ public class OctreeShort implements IOctree<Short>
 		}
 	}
 
+	private static short _writeBatchInSubtreeLevel(ShortWriter writer
+		, ByteBuffer buffer
+		, short oldValue
+		, _BatchWriteState state
+		, byte baseX
+		, byte baseY
+		, byte baseZ
+		, byte size
+	)
+	{
+		// Determine if the next write is in this sub-tree.
+		byte edgeX = (byte)(baseX + size);
+		byte edgeY = (byte)(baseY + size);
+		byte edgeZ = (byte)(baseZ + size);
+		
+		BlockAddress blockAddress = state.currentAddress();
+		byte thisX = blockAddress.x();
+		byte thisY = blockAddress.y();
+		byte thisZ = blockAddress.z();
+		
+		short writeAfterReturn;
+		if ((thisX >= baseX) && (thisX < edgeX) && (thisY >= baseY) && (thisY < edgeY) && (thisZ >= baseZ) && (thisZ < edgeZ))
+		{
+			if (1 == size)
+			{
+				// The leaf case always returns inline.
+				writeAfterReturn = state.currentWrite();
+				state.advance();
+			}
+			else
+			{
+				// This is the more complex case so we handle that elsewhere.
+				// NOTE:  _writeBatchInSubtreeNonLeaf will completely process the sub-tree so we can return directly.
+				writeAfterReturn = _writeBatchInSubtreeNonLeaf(writer
+					, buffer
+					, oldValue
+					, state
+					, baseX
+					, baseY
+					, baseZ
+					, size
+				);
+			}
+		}
+		else
+		{
+			// We can just skip over this sub-tree so re-write it.
+			writeAfterReturn = _copyFullSubtree(writer
+				, buffer
+				, oldValue
+				, size
+			);
+		}
+		return writeAfterReturn;
+	}
+
+	private static short _writeBatchInSubtreeNonLeaf(ShortWriter writer
+		, ByteBuffer buffer
+		, short oldValue
+		, _BatchWriteState state
+		, byte baseX
+		, byte baseY
+		, byte baseZ
+		, byte size
+	)
+	{
+		byte edgeX = (byte)(baseX + size);
+		byte edgeY = (byte)(baseY + size);
+		byte edgeZ = (byte)(baseZ + size);
+		byte half = (byte)(size >> 1);
+		
+		// Since we handle the case of updating a size-1 inline tree elsewhere, as well as cases where we skip this sub-tree, there are 2 modes remaining:
+		// 1) Seeking into an expanded sub-tree to update something within it
+		//  -this is a pretty common case
+		//  -the only special thing to consider here is if the change to the sub-tree should cause an inlining change at this level
+		// 2) Expanding an inline sub-tree so that part of it can be updated
+		//  -this is a complicated case as it is possible that we need to re-inline it if all the updates were to change every block in the sub-tree to the same value
+		short possibleInlineValue = -1;
+		
+		// We need to fully walk the tree so just determine the next index.
+		int targetIndex;
+		{
+			// There must be work here.
+			Assert.assertTrue(state.workRemaining() > 0);
+			BlockAddress blockAddress = state.currentAddress();
+			byte thisX = blockAddress.x();
+			byte thisY = blockAddress.y();
+			byte thisZ = blockAddress.z();
+			
+			// There must be work in this sub-tree.
+			Assert.assertTrue((thisX >= baseX) && (thisX < edgeX) && (thisY >= baseY) && (thisY < edgeY) && (thisZ >= baseZ) && (thisZ < edgeZ));
+			targetIndex = _subTreeIndexAtThisLevel(baseX, baseY, baseZ, thisX, thisY, thisZ, half);
+		}
+		
+		// Capture the buffer position in case we need to rewind it to inline the sub-tree.
+		int rewindPosition = writer.getPosition();
+		
+		// Since we are changing something in this sub-tree, we will assume it is split out and worry about the coalesce to inline case, at the end.
+		writer.putSubtreeStart();
+		
+		for (int i = 0; i < 8; ++i)
+		{
+			short valueWritten;
+			if (i < targetIndex)
+			{
+				// Just skip this sub-tree.
+				if (oldValue >= 0)
+				{
+					// We are expanding this case so just use the value we were given instead of reading.
+					writer.putShort(oldValue);
+					valueWritten = oldValue;
+				}
+				else
+				{
+					// This is similar to a blind copy but we want to see the value we wrote in case we inline, later (and changing that function would imply the caller should write, which is not the case for that helper).
+					short treeValue = _loadHeader(buffer);
+					short writeValue = _copyFullSubtree(writer
+						, buffer
+						, treeValue
+						, size
+					);
+					Assert.assertTrue(treeValue == writeValue);
+					if (writeValue >= 0)
+					{
+						writer.putShort(writeValue);
+					}
+					valueWritten = writeValue;
+				}
+			}
+			else
+			{
+				// We need to process this sub-tree.
+				BlockAddress blockAddress = state.currentAddress();
+				byte thisX = blockAddress.x();
+				byte thisY = blockAddress.y();
+				byte thisZ = blockAddress.z();
+				
+				// The value we will start with is either the one we were given, if inline, or the one in the buffer, if expanded.
+				short startingValue = (oldValue >= 0) ? oldValue : _loadHeader(buffer);
+				short valueToWrite = _writeBatchInSubtreeLevel(writer
+					, buffer
+					, startingValue
+					, state
+					, (byte)(baseX + (thisX & half))
+					, (byte)(baseY + (thisY & half))
+					, (byte)(baseZ + (thisZ & half))
+					, half
+				);
+				if (valueToWrite >= 0)
+				{
+					writer.putShort(valueToWrite);
+				}
+				valueWritten = valueToWrite;
+				
+				// We must have completed this item in the sub-tree, so determine the next sub-tree index.
+				if (state.workRemaining() > 0)
+				{
+					BlockAddress nextAddress = state.currentAddress();
+					byte nextX = nextAddress.x();
+					byte nextY = nextAddress.y();
+					byte nextZ = nextAddress.z();
+					
+					// There must be work in this sub-tree.
+					if ((nextX >= baseX) && (nextX < edgeX) && (nextY >= baseY) && (nextY < edgeY) && (nextZ >= baseZ) && (nextZ < edgeZ))
+					{
+						targetIndex = _subTreeIndexAtThisLevel(baseX, baseY, baseZ, nextX, nextY, nextZ, half);
+					}
+					else
+					{
+						// Put the target index after the sub-trees so we will walk to the end.
+						targetIndex = 8;
+					}
+				}
+				else
+				{
+					// Put the target index after the sub-trees so we will walk to the end.
+					targetIndex = 8;
+				}
+			}
+			
+			// Check out our possible inline case.
+			if (0 == i)
+			{
+				// This is either the inline value or -1.
+				possibleInlineValue = valueWritten;
+			}
+			else
+			{
+				// Make sure that this matches.
+				if (possibleInlineValue != valueWritten)
+				{
+					possibleInlineValue = -1;
+				}
+			}
+		}
+		
+		// See if we need to rewind and apply our inline case.
+		if (possibleInlineValue >= 0)
+		{
+			// Rewind and return this value so that the caller can decide whether or not to write it.
+			writer.setPosition(rewindPosition);
+		}
+		return possibleInlineValue;
+	}
+
+	private static short _copyFullSubtree(ShortWriter writer
+		, ByteBuffer buffer
+		, short oldValue
+		, byte size
+	)
+	{
+		// Make sure that this call is valid.
+		Assert.assertTrue(size > 0);
+		
+		short writeAfterReturn;
+		if (oldValue >= 0)
+		{
+			// Note that even the 1-size case will show up as a non-negative value.
+			writeAfterReturn = oldValue;
+		}
+		else
+		{
+			// This is an expanded tree so walk all 8 sub-trees.
+			byte half = (byte)(size >> 1);
+			writer.putSubtreeStart();
+			for (int i = 0; i < 8; ++i)
+			{
+				_blindCopyOneTree(writer, buffer, half);
+			}
+			
+			// We aren't changing the tree so it clearly isn't becoming inline.
+			writeAfterReturn = -1;
+		}
+		return writeAfterReturn;
+	}
+
+	private static void _blindCopyOneTree(ShortWriter writer, ByteBuffer buffer, byte size)
+	{
+		short treeValue = _loadHeader(buffer);
+		short writeValue = _copyFullSubtree(writer
+			, buffer
+			, treeValue
+			, size
+		);
+		
+		// We don't expect any changes.
+		Assert.assertTrue(treeValue == writeValue);
+		if (writeValue >= 0)
+		{
+			writer.putShort(writeValue);
+		}
+	}
+
+	private static int _subTreeIndexAtThisLevel(byte baseX, byte baseY, byte baseZ, byte thisX, byte thisY, byte thisZ, byte half)
+	{
+		// The order of the sub-trees is a 3-level nested loop:  x is outer-most, y is middle, and z is inner-most.
+		int targetX = ((thisX - baseX) < half) ? 0 : 1;
+		int targetY = ((thisY - baseY) < half) ? 0 : 1;
+		int targetZ = ((thisZ - baseZ) < half) ? 0 : 1;
+		int treesToSkipAtThisLevel = (targetX * 4) + (targetY * 2) + targetZ;
+		return treesToSkipAtThisLevel;
+	}
+
 
 	private static class ShortWriter
 	{
 		private final ByteBuffer _builder;
 		
-		public ShortWriter(int previousLength)
+		public ShortWriter(int previousLength, int possibleWrites)
 		{
 			// For temp space, we allocate the previous length plus the worst-case growth:  An empty tree adding 1 element.
 			// An empty tree is 2 bytes and a tree with 1 element is 77 so we add 75.
-			_builder = ByteBuffer.allocate(previousLength + 75);
+			_builder = ByteBuffer.allocate(previousLength + (75 * possibleWrites));
 		}
 		
 		public void putSubtreeStart()
@@ -853,6 +1205,16 @@ public class OctreeShort implements IOctree<Short>
 			byte[] data = new byte[_builder.remaining()];
 			_builder.get(data);
 			return data;
+		}
+		
+		public int getPosition()
+		{
+			return _builder.position();
+		}
+		
+		public void setPosition(int position)
+		{
+			_builder.position(position);
 		}
 	}
 
@@ -879,6 +1241,37 @@ public class OctreeShort implements IOctree<Short>
 		public void completeAndAdvance(short output)
 		{
 			this.resultArray[this.currentIndex] = output;
+			this.currentIndex += 1;
+		}
+	}
+
+	private static class _BatchWriteState
+	{
+		public BlockAddress[] addressArray;
+		public short[] writeArray;
+		public int currentIndex;
+		public _BatchWriteState(BlockAddress[] addressArray, short[] writeArray)
+		{
+			this.addressArray = addressArray;
+			this.writeArray = writeArray;
+			this.currentIndex = 0;
+		}
+		public int workRemaining()
+		{
+			return this.addressArray.length - this.currentIndex;
+		}
+		public BlockAddress currentAddress()
+		{
+			// NOTE:  This implementation assumes it is only called if hasWork() is true.
+			return this.addressArray[this.currentIndex];
+		}
+		public short currentWrite()
+		{
+			// NOTE:  This implementation assumes it is only called if hasWork() is true.
+			return this.writeArray[this.currentIndex];
+		}
+		public void advance()
+		{
 			this.currentIndex += 1;
 		}
 	}
