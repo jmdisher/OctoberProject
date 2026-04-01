@@ -24,7 +24,6 @@ import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
-import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.PassiveIdAssigner;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -54,7 +53,6 @@ public class ResourceLoader
 	private final CuboidClusterManager _cuboidClusterManager;
 	private final IWorldGenerator _cuboidGenerator;
 	private final WorldConfig _config;
-	private final Map<CuboidAddress, CuboidData> _preLoaded;
 	private final MessageQueue _queue;
 	private final Thread _background;
 	private final ByteBuffer _backround_serializationBuffer;
@@ -83,6 +81,12 @@ public class ResourceLoader
 	{
 		// The save directory must exist as a directory before we get here.
 		Assert.assertTrue(saveDirectory.isDirectory());
+		
+		// We need to be given a config.
+		Assert.assertTrue(null != config);
+		
+		// We MUST be given a world generator (even if just the PreloadedWorldGenerator with nothing).
+		Assert.assertTrue(null != cuboidGenerator);
 		
 		_entityDirectory = new File(saveDirectory, "entities");
 		if (!_entityDirectory.exists())
@@ -128,7 +132,6 @@ public class ResourceLoader
 		}
 		_cuboidGenerator = cuboidGenerator;
 		_config = config;
-		_preLoaded = new HashMap<>();
 		_queue = new MessageQueue();
 		_background = new Thread(() -> {
 			_background_main();
@@ -160,19 +163,6 @@ public class ResourceLoader
 		// Once everything is done, we expect those internal caches to be empty (otherwise, something is leaking).
 		Assert.assertTrue(_background_serializedEntityBuffer.isEmpty());
 		_cuboidClusterManager.shutdown();
-	}
-
-	/**
-	 * Loads the given cuboid.  Note that this must be called before any consumer of the loader starts up as there is
-	 * no synchronization on this path.
-	 * Note that this is a temporary interface and will be replaced by a generator and/or pre-constructed world save in
-	 * the future.
-	 * 
-	 * @param cuboid The cuboid to add to the pre-loaded data set.
-	 */
-	public void preload(CuboidData cuboid)
-	{
-		_preLoaded.put(cuboid.getCuboidAddress(), cuboid);
 	}
 
 	/**
@@ -215,22 +205,7 @@ public class ResourceLoader
 					SuspendedCuboid<CuboidData> data = _background_readCuboidFromDisk(address, currentGameMillis);
 					if (null == data)
 					{
-						if (_preLoaded.containsKey(address))
-						{
-							// We will "consume" this since we will load from disk on the next call.
-							CuboidData preloaded = _preLoaded.remove(address);
-							data = new SuspendedCuboid<>(preloaded
-									, HeightMapHelpers.buildHeightMap(preloaded)
-									, List.of()
-									, List.of()
-									, Map.of()
-									, List.of()
-							);
-						}
-						else if (null != _cuboidGenerator)
-						{
-							data = _cuboidGenerator.generateCuboid(this.creatureIdAssigner, address, currentGameMillis);
-						}
+						data = _cuboidGenerator.generateCuboid(this.creatureIdAssigner, address, currentGameMillis);
 						if (null == data)
 						{
 							// This only happens in tests but we want to tell the cluster manager to drop this.

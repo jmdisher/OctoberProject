@@ -37,6 +37,7 @@ import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.CuboidGenerator;
+import com.jeffdisher.october.worldgen.PreloadedWorldGenerator;
 
 
 /**
@@ -66,13 +67,14 @@ public class TestProcesses
 	@Test
 	public void startStopServer() throws Throwable
 	{
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, null);
+		WorldConfig config = new WorldConfig();
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), new PreloadedWorldGenerator(), config);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MAX_THREADS_FOR_SERVER, MILLIS_PER_TICK
 				, cuboidLoader
 				, TIME_SUPPLIER
 				, monitoringAgent
-				, new WorldConfig()
+				, config
 		);
 		server.stop();
 	}
@@ -90,13 +92,13 @@ public class TestProcesses
 		// Start everything, connect and disconnect once the see the entity arrive.
 		WorldConfig config = new WorldConfig();
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), new PreloadedWorldGenerator(), config);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MAX_THREADS_FOR_SERVER, MILLIS_PER_TICK
 				, cuboidLoader
 				, TIME_SUPPLIER
 				, monitoringAgent
-				, new WorldConfig()
+				, config
 		);
 		_ClientListener listener = new _ClientListener();
 		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test", 1);
@@ -118,22 +120,23 @@ public class TestProcesses
 	public void basicMovement() throws Throwable
 	{
 		// Demonstrate that a client can move around the server without issue.
-		WorldConfig config = new WorldConfig();
-		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
-		
-		// Load central cuboids.
+		PreloadedWorldGenerator generator = new PreloadedWorldGenerator();
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), stone);
-		cuboidLoader.preload(airCuboid);
-		cuboidLoader.preload(stoneCuboid);
+		generator.preload(airCuboid);
+		generator.preload(stoneCuboid);
+		
+		WorldConfig config = new WorldConfig();
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), generator, config);
+		
+		// Load central cuboids.
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MAX_THREADS_FOR_SERVER, MILLIS_PER_TICK
 				, cuboidLoader
 				, TIME_SUPPLIER
 				, monitoringAgent
-				, new WorldConfig()
+				, config
 		);
 		
 		// Connect the client.
@@ -175,19 +178,19 @@ public class TestProcesses
 	public void falling() throws Throwable
 	{
 		// Demonstrate that a client will fall through air and this will make sense in the projection.
-		WorldConfig config = new WorldConfig();
-		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
+		PreloadedWorldGenerator generator = new PreloadedWorldGenerator();
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0,  0), ENV.special.AIR));
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), ENV.special.AIR));
 		
-		// Load a cuboids.
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0,  0), ENV.special.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), ENV.special.AIR));
+		WorldConfig config = new WorldConfig();
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), generator, config);
+		
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MAX_THREADS_FOR_SERVER, MILLIS_PER_TICK
 				, cuboidLoader
 				, TIME_SUPPLIER
 				, monitoringAgent
-				, new WorldConfig()
+				, config
 		);
 		
 		// Connect the client.
@@ -234,20 +237,22 @@ public class TestProcesses
 	{
 		// We want to create a server with a single cuboid, connect a client to it, and observe that the client sees everything.
 		long currentTimeMillis = 1000L;
-		WorldConfig config = new WorldConfig();
-		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
 		
 		// Create and load the cuboid full of stone with no inventories.
+		PreloadedWorldGenerator generator = new PreloadedWorldGenerator();
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.fromItem(ENV.items.getItemById("op.stone")));
-		cuboidLoader.preload(cuboid);
+		generator.preload(cuboid);
+		
+		WorldConfig config = new WorldConfig();
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), generator, config);
+		
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MAX_THREADS_FOR_SERVER, MILLIS_PER_TICK
 				, cuboidLoader
 				, () -> 100L
 				, monitoringAgent
-				, new WorldConfig()
+				, config
 		);
 		
 		// Connect a client and wait to receive their entity.
@@ -274,19 +279,21 @@ public class TestProcesses
 	{
 		// We want to create a server with a single cuboid, connect a client to it, and observe that the client sees everything.
 		long[] currentTimeMillis = new long[] { 1000L };
-		WorldConfig config = new WorldConfig();
-		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
 		
 		// Create and load the cuboids full of air (so we can walk through them) with no inventories.
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0,  0, 0), ENV.special.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, -1, 0), ENV.special.AIR));
+		PreloadedWorldGenerator generator = new PreloadedWorldGenerator();
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0,  0, 0), ENV.special.AIR));
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, -1, 0), ENV.special.AIR));
+		
+		WorldConfig config = new WorldConfig();
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), generator, config);
+		
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MAX_THREADS_FOR_SERVER, MILLIS_PER_TICK
 				, cuboidLoader
 				, () -> currentTimeMillis[0]
 				, monitoringAgent
-				, new WorldConfig()
+				, config
 		);
 		
 		// Create the first client.
@@ -392,19 +399,21 @@ public class TestProcesses
 	{
 		// Connect a client and then use the agent to request that they be disconnected.
 		long currentTimeMillis = 1000L;
-		WorldConfig config = new WorldConfig();
-		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
 		
+		PreloadedWorldGenerator generator = new PreloadedWorldGenerator();
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.fromItem(ENV.items.getItemById("op.stone")));
-		cuboidLoader.preload(cuboid);
+		generator.preload(cuboid);
+		
+		WorldConfig config = new WorldConfig();
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), generator, config);
+		
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MAX_THREADS_FOR_SERVER, MILLIS_PER_TICK
 				, cuboidLoader
 				, () -> 100L
 				, monitoringAgent
-				, new WorldConfig()
+				, config
 		);
 		
 		// Connect a client and wait to receive their entity.
@@ -449,19 +458,21 @@ public class TestProcesses
 	{
 		// We need 2 clients and we want to verify that messages arrive at the correct targets.
 		long[] currentTimeMillis = new long[] { 1000L };
-		WorldConfig config = new WorldConfig();
-		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
 		
 		// Create and load the cuboids full of air (so we can walk through them) with no inventories.
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0,  0, 0), ENV.special.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, -1, 0), ENV.special.AIR));
+		PreloadedWorldGenerator generator = new PreloadedWorldGenerator();
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0,  0, 0), ENV.special.AIR));
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, -1, 0), ENV.special.AIR));
+		
+		WorldConfig config = new WorldConfig();
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), generator, config);
+		
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MAX_THREADS_FOR_SERVER, MILLIS_PER_TICK
 				, cuboidLoader
 				, () -> currentTimeMillis[0]
 				, monitoringAgent
-				, new WorldConfig()
+				, config
 		);
 		
 		// Create the first client.

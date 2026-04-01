@@ -79,6 +79,7 @@ import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.Encoding;
 import com.jeffdisher.october.worldgen.FlatWorldGenerator;
 import com.jeffdisher.october.worldgen.IWorldGenerator;
+import com.jeffdisher.october.worldgen.PreloadedWorldGenerator;
 import com.jeffdisher.october.worldgen.WorldGenConfig;
 import com.jeffdisher.october.worldgen.WorldGenHelpers;
 
@@ -119,7 +120,7 @@ public class TestServerRunner
 		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
 			, ServerRunner.DEFAULT_MILLIS_PER_TICK
 			, network
-			, new ResourceLoader(DIRECTORY.newFolder(), null, null)
+			, new ResourceLoader(DIRECTORY.newFolder(), new PreloadedWorldGenerator(), new WorldConfig())
 			, () -> System.currentTimeMillis()
 			, monitoringAgent
 			, new WorldConfig()
@@ -137,10 +138,12 @@ public class TestServerRunner
 	{
 		// Just connect two clients and verify that they see themselves and each other.
 		TestAdapter network = new TestAdapter();
+		
+		PreloadedWorldGenerator generator = new PreloadedWorldGenerator();
+		_loadDefaultMap(generator);
+		
 		WorldConfig config = new WorldConfig();
-		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
-		_loadDefaultMap(cuboidLoader);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), generator, config);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
 			, ServerRunner.DEFAULT_MILLIS_PER_TICK
@@ -180,11 +183,12 @@ public class TestServerRunner
 		TestAdapter network = new TestAdapter();
 		
 		// Create a world with a stone cuboid and an air cuboid on top.
+		PreloadedWorldGenerator generator = new PreloadedWorldGenerator();
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE));
+		
 		WorldConfig config = new WorldConfig();
-		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE));
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), generator, config);
 		
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
@@ -230,18 +234,20 @@ public class TestServerRunner
 	{
 		// Send a basic dependent change to verify that the ServerRunner's internal calls are unwrapped correctly.
 		TestAdapter network = new TestAdapter();
-		WorldConfig config = new WorldConfig();
-		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
 		
 		// Fill the cuboid with chests and put some items into one, so we can pull them out.
+		PreloadedWorldGenerator generator = new PreloadedWorldGenerator();
 		CuboidAddress addressAir = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboidAir = CuboidGenerator.createFilledCuboid(addressAir, ENV.special.AIR);
-		cuboidLoader.preload(cuboidAir);
+		generator.preload(cuboidAir);
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE));
 		CuboidAddress addressChest = CuboidAddress.fromInt(0, 0, -1);
 		Block chest = ENV.blocks.fromItem(ENV.items.getItemById("op.chest"));
 		CuboidData cuboidChest = CuboidGenerator.createFilledCuboid(addressChest, chest);
-		cuboidLoader.preload(cuboidChest);
+		generator.preload(cuboidChest);
+		
+		WorldConfig config = new WorldConfig();
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), generator, config);
 		
 		Inventory inventory = Inventory.start(ENV.stations.getNormalInventorySize(chest)).addStackable(STONE.item(), 2).finish();
 		cuboidChest.setDataSpecial(AspectRegistry.INVENTORY, BlockAddress.fromInt(0, 0, 31), inventory);
@@ -285,11 +291,13 @@ public class TestServerRunner
 	{
 		// Do nothing and observe that the entity doesn't fall, since that is now client-owned state.
 		TestAdapter network = new TestAdapter();
+		
+		PreloadedWorldGenerator generator = new PreloadedWorldGenerator();
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), ENV.special.AIR));
+		
 		WorldConfig config = new WorldConfig();
-		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), ENV.special.AIR));
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), generator, config);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
 			, ServerRunner.DEFAULT_MILLIS_PER_TICK
@@ -329,10 +337,12 @@ public class TestServerRunner
 	{
 		// Connect 2 clients and verify that 1 can see the other when they disconnect.
 		TestAdapter network = new TestAdapter();
+		
+		PreloadedWorldGenerator generator = new PreloadedWorldGenerator();
+		_loadDefaultMap(generator);
+		
 		WorldConfig config = new WorldConfig();
-		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
-		_loadDefaultMap(cuboidLoader);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), generator, config);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
 			, ServerRunner.DEFAULT_MILLIS_PER_TICK
@@ -376,17 +386,19 @@ public class TestServerRunner
 	{
 		// Connect a client and have them walk over a cuboid boundary so that cuboids are removed.
 		TestAdapter network = new TestAdapter();
+		
+		PreloadedWorldGenerator generator = new PreloadedWorldGenerator();
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, 0, -1), STONE));
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, 0, 0), ENV.special.AIR));
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE));
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, 0, -1), STONE));
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, 0, 0), ENV.special.AIR));
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-2, 0, -1), STONE));
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-2, 0, 0), ENV.special.AIR));
+		
 		WorldConfig config = new WorldConfig();
-		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, 0, -1), STONE));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, 0, 0), ENV.special.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, 0, -1), STONE));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, 0, 0), ENV.special.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-2, 0, -1), STONE));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-2, 0, 0), ENV.special.AIR));
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), generator, config);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
 			, ServerRunner.DEFAULT_MILLIS_PER_TICK
@@ -423,10 +435,12 @@ public class TestServerRunner
 	{
 		// Connect a client, change something about them, disconnect, then reconnect and verify the change is still present.
 		TestAdapter network = new TestAdapter();
+		
+		PreloadedWorldGenerator generator = new PreloadedWorldGenerator();
+		_loadDefaultMap(generator);
+		
 		WorldConfig config = new WorldConfig();
-		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
-		_loadDefaultMap(cuboidLoader);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), generator, config);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
 			, ServerRunner.DEFAULT_MILLIS_PER_TICK
@@ -746,10 +760,12 @@ public class TestServerRunner
 	{
 		// Connect 2 clients and show different message uses.
 		TestAdapter network = new TestAdapter();
+		
+		PreloadedWorldGenerator generator = new PreloadedWorldGenerator();
+		_loadDefaultMap(generator);
+		
 		WorldConfig config = new WorldConfig();
-		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
-		_loadDefaultMap(cuboidLoader);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), generator, config);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
 			, ServerRunner.DEFAULT_MILLIS_PER_TICK
@@ -808,11 +824,13 @@ public class TestServerRunner
 	{
 		// Show that tick processing resumes after a pause and resume.
 		TestAdapter network = new TestAdapter();
+		
+		PreloadedWorldGenerator generator = new PreloadedWorldGenerator();
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), ENV.special.AIR));
+		
 		WorldConfig config = new WorldConfig();
-		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, config);
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), ENV.special.AIR));
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), generator, config);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		// We will use a faster tick speed but this can't get too small or rounding errors will impact movement.
 		long millisPerTick = 20L;
@@ -948,12 +966,12 @@ public class TestServerRunner
 	}
 
 
-	private static void _loadDefaultMap(ResourceLoader cuboidLoader)
+	private static void _loadDefaultMap(PreloadedWorldGenerator generator)
 	{
 		// Create and load the cuboid full of stone with no inventories.
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
-		cuboidLoader.preload(cuboid);
+		generator.preload(cuboid);
 	}
 
 	private static EntityActionSimpleMove<IMutablePlayerEntity> _wrapSubAction(IEntitySubAction<IMutablePlayerEntity> subAction)

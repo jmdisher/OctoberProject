@@ -68,6 +68,7 @@ import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.Encoding;
 import com.jeffdisher.october.worldgen.FlatWorldGenerator;
 import com.jeffdisher.october.worldgen.IWorldGenerator;
+import com.jeffdisher.october.worldgen.PreloadedWorldGenerator;
 import com.jeffdisher.october.worldgen.WorldGenConfig;
 import com.jeffdisher.october.worldgen.WorldGenHelpers;
 
@@ -101,7 +102,7 @@ public class TestResourceLoader
 	@Test
 	public void empty() throws Throwable
 	{
-		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), null, null);
+		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), new PreloadedWorldGenerator(), new WorldConfig());
 		CuboidAddress address = CuboidAddress.fromInt(1, 0, 0);
 		
 		// We should see nothing come back, not matter how many times we issue the request.
@@ -114,10 +115,11 @@ public class TestResourceLoader
 	@Test
 	public void basic() throws Throwable
 	{
-		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), null, null);
+		PreloadedWorldGenerator generator = new PreloadedWorldGenerator();
 		CuboidAddress address = CuboidAddress.fromInt(1, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
-		loader.preload(cuboid);
+		generator.preload(cuboid);
+		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), generator, new WorldConfig());
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
 		Collection<CuboidData> results = _loadSimpleCuboids(loader, List.of(address));
@@ -137,7 +139,7 @@ public class TestResourceLoader
 	public void flatWorld() throws Throwable
 	{
 		WorldGenConfig worldGenConfig = WorldGenHelpers.buildDefaultWorldGenConfig(ENV);
-		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(worldGenConfig, false), null);
+		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(worldGenConfig, false), new WorldConfig());
 		CuboidAddress stoneAddress = CuboidAddress.fromInt(1, 0, -1);
 		CuboidAddress airAddress = CuboidAddress.fromInt(1, 0, 0);
 		
@@ -173,7 +175,8 @@ public class TestResourceLoader
 	{
 		File worldDirectory = DIRECTORY.newFolder();
 		WorldGenConfig worldGenConfig = WorldGenHelpers.buildDefaultWorldGenConfig(ENV);
-		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(worldGenConfig, false), null);
+		WorldConfig config = new WorldConfig();
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(worldGenConfig, false), config);
 		CuboidAddress airAddress = CuboidAddress.fromInt(1, 0, 0);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
@@ -192,7 +195,7 @@ public class TestResourceLoader
 		Assert.assertTrue(cuboidFile.isFile());
 		
 		// Now, create a new loader to verify that we can read this.
-		loader = new ResourceLoader(worldDirectory, null, null);
+		loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);
 		results = _loadSimpleCuboids(loader, List.of(airAddress));
 		Assert.assertNull(results);
 		loaded = _waitForOne(loader);
@@ -208,7 +211,7 @@ public class TestResourceLoader
 		File worldDirectory = DIRECTORY.newFolder();
 		WorldConfig config = new WorldConfig();
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
 		Assert.assertNull(_loadEntities(loader, List.of(1, 2)));
@@ -237,7 +240,7 @@ public class TestResourceLoader
 		Assert.assertTrue(new File(entitiesDirectory, otherName).isFile());
 		
 		// Now, create a new loader to verify that we can read this.
-		loader = new ResourceLoader(worldDirectory, null, null);
+		loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);
 		Assert.assertNull(_loadEntities(loader, List.of(1, 2)));
 		results = new ArrayList<>();
 		for (int i = 0; (results.size() < 2) && (i < 10); ++i)
@@ -260,7 +263,8 @@ public class TestResourceLoader
 	{
 		File worldDirectory = DIRECTORY.newFolder();
 		WorldGenConfig worldGenConfig = WorldGenHelpers.buildDefaultWorldGenConfig(ENV);
-		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(worldGenConfig, false), null);
+		WorldConfig config = new WorldConfig();
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(worldGenConfig, false), config);
 		CuboidAddress airAddress = CuboidAddress.fromInt(1, 0, 0);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
@@ -278,7 +282,7 @@ public class TestResourceLoader
 		Assert.assertTrue(cuboidFile.isFile());
 		
 		// Now, create a new loader to verify that we can read this.
-		loader = new ResourceLoader(worldDirectory, null, null);
+		loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);
 		SuspendedCuboid<CuboidData> suspended = _loadOneSuspended(loader, airAddress);
 		Assert.assertEquals(airAddress, suspended.cuboid().getCuboidAddress());
 		Assert.assertEquals(1, suspended.pendingMutations().size());
@@ -295,7 +299,7 @@ public class TestResourceLoader
 		File worldDirectory = DIRECTORY.newFolder();
 		WorldConfig config = new WorldConfig();
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);
 		int entityId = 1;
 		
 		List<SuspendedEntity> results = new ArrayList<>();
@@ -328,7 +332,7 @@ public class TestResourceLoader
 		Assert.assertTrue(new File(entitiesDirectory, fileName).isFile());
 		
 		// Now, create a new loader to verify that we can read this.
-		loader = new ResourceLoader(worldDirectory, null, null);
+		loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);
 		results = new ArrayList<>();
 		loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(entityId), 0L);
 		Assert.assertTrue(results.isEmpty());
@@ -351,7 +355,8 @@ public class TestResourceLoader
 	{
 		File worldDirectory = DIRECTORY.newFolder();
 		WorldGenConfig worldGenConfig = WorldGenHelpers.buildDefaultWorldGenConfig(ENV);
-		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(worldGenConfig, false), null);
+		WorldConfig config = new WorldConfig();
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(worldGenConfig, false), config);
 		CuboidAddress airAddress = CuboidAddress.fromInt(1, 0, 0);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
@@ -371,7 +376,7 @@ public class TestResourceLoader
 		Assert.assertEquals(Integer.BYTES + 64 * Integer.BYTES + 73L, cuboidFile.length());
 		
 		// Now, create a new loader, load, and resave this.
-		loader = new ResourceLoader(worldDirectory, null, null);
+		loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);
 		SuspendedCuboid<CuboidData> suspended = _loadOneSuspended(loader, airAddress);
 		Assert.assertEquals(airAddress, suspended.cuboid().getCuboidAddress());
 		Assert.assertEquals(1, suspended.pendingMutations().size());
@@ -386,7 +391,7 @@ public class TestResourceLoader
 		Assert.assertEquals(Integer.BYTES + 64 * Integer.BYTES + 50L, cuboidFile.length());
 		
 		// Load it again and verify that the mutation is missing and we parsed without issue.
-		loader = new ResourceLoader(worldDirectory, null, null);
+		loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);
 		suspended = _loadOneSuspended(loader, airAddress);
 		Assert.assertEquals(airAddress, suspended.cuboid().getCuboidAddress());
 		Assert.assertEquals(0, suspended.pendingMutations().size());
@@ -421,7 +426,7 @@ public class TestResourceLoader
 			{
 				throw new AssertionError("Not in test");
 			}
-		}, null);
+		}, new WorldConfig());
 		List<SuspendedCuboid<CuboidData>> out_loadedCuboids = new ArrayList<>();
 		loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(CuboidAddress.fromInt(1, 2, 3)), List.of(), 0L);
 		Assert.assertTrue(out_loadedCuboids.isEmpty());
@@ -535,7 +540,7 @@ public class TestResourceLoader
 	{
 		File worldDirectory = DIRECTORY.newFolder();
 		WorldGenConfig worldGenConfig = WorldGenHelpers.buildDefaultWorldGenConfig(ENV);
-		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(worldGenConfig, false), null);
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(worldGenConfig, false), new WorldConfig());
 		CuboidAddress airAddress = CuboidAddress.fromInt(3, -5, 0);
 		
 		// We will request that this be generated and verify that there is an entity.
@@ -586,8 +591,9 @@ public class TestResourceLoader
 	public void config() throws Throwable
 	{
 		File resourceDirectory = DIRECTORY.newFolder();
-		ResourceLoader loader = new ResourceLoader(resourceDirectory, null, null);
-		ResourceLoader.storeWorldConfig(resourceDirectory, new WorldConfig());
+		WorldConfig config = new WorldConfig();
+		ResourceLoader loader = new ResourceLoader(resourceDirectory, new PreloadedWorldGenerator(), config);
+		ResourceLoader.storeWorldConfig(resourceDirectory, config);
 		File configFile = new File(resourceDirectory, "config.tablist");
 		String rawData = Files.readString(configFile.toPath());
 		Assert.assertTrue(rawData.contains("difficulty\tHOSTILE\n"));
@@ -605,8 +611,8 @@ public class TestResourceLoader
 				+ "client_view_distance_maximum\t5\n"
 		;
 		Files.writeString(configFile.toPath(), fileToWrite);
-		loader = new ResourceLoader(resourceDirectory, null, null);
-		WorldConfig config = new WorldConfig();
+		config = new WorldConfig();
+		loader = new ResourceLoader(resourceDirectory, new PreloadedWorldGenerator(), config);
 		ResourceLoader.populateWorldConfig(resourceDirectory, config);
 		Assert.assertEquals(Difficulty.PEACEFUL, config.difficulty);
 		Assert.assertEquals(-465342154, config.basicSeed);
@@ -647,7 +653,7 @@ public class TestResourceLoader
 		// Now, read the data and verify that it is correct.
 		WorldConfig config = new WorldConfig();
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);
 		List<SuspendedEntity> results = new ArrayList<>();
 		loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(id), 0L);
 		Assert.assertTrue(results.isEmpty());
@@ -740,7 +746,7 @@ public class TestResourceLoader
 		// Now, read the data and verify that it is correct.
 		WorldConfig config = new WorldConfig();
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);
 		List<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
 		long loadingGameMillis = 2000L;
 		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of(), loadingGameMillis);
@@ -788,7 +794,7 @@ public class TestResourceLoader
 		// Now, read the data and verify that it is correct.
 		WorldConfig config = new WorldConfig();
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);
 		List<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
 		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of(), 0L);
 		for (int i = 0; (i < 10) && results.isEmpty(); ++i)
@@ -844,7 +850,7 @@ public class TestResourceLoader
 		// Now, read the data and verify that it is correct.
 		WorldConfig config = new WorldConfig();
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);
 		List<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
 		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of(), 0L);
 		for (int i = 0; (i < 10) && results.isEmpty(); ++i)
@@ -891,7 +897,7 @@ public class TestResourceLoader
 		config.worldGeneratorName = WorldConfig.WorldGeneratorName.FLAT;
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
 		config.defaultPlayerMode = WorldConfig.DefaultPlayerMode.CREATIVE;
-		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);
 		
 		// Just load a single entity to verify that it has the correct mode flag.
 		Assert.assertNull(_loadEntities(loader, List.of(1)));
@@ -932,7 +938,7 @@ public class TestResourceLoader
 		_storePerSerialized(worldDirectory, fileName, preSerializedV7);
 		
 		// Now, read this and make sure it contains what we serialized.
-		ResourceLoader loader = new ResourceLoader(worldDirectory, null, new WorldConfig());
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), new WorldConfig());
 		List<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
 		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of(), 0L);
 		for (int i = 0; (i < 10) && results.isEmpty(); ++i)
@@ -1005,7 +1011,7 @@ public class TestResourceLoader
 		_storePerSerialized(worldDirectory, entityFile, capturedEntityData);
 		
 		// Now, read this and make sure it contains what we serialized.
-		ResourceLoader loader = new ResourceLoader(worldDirectory, null, new WorldConfig());
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), new WorldConfig());
 		List<SuspendedCuboid<CuboidData>> cuboidResults = new ArrayList<>();
 		List<SuspendedEntity> entityResults = new ArrayList<>();
 		loader.getResultsAndRequestBackgroundLoad(cuboidResults, entityResults, List.of(address), List.of(playerId), 0L);
@@ -1052,12 +1058,14 @@ public class TestResourceLoader
 	@Test
 	public void writeThenReadPassives() throws Throwable
 	{
-		File worldDirectory = DIRECTORY.newFolder();
-		WorldGenConfig worldGenConfig = WorldGenHelpers.buildDefaultWorldGenConfig(ENV);
-		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(worldGenConfig, false), null);
-		
+		PreloadedWorldGenerator generator = new PreloadedWorldGenerator();
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		generator.preload(cuboid);
+		
+		File worldDirectory = DIRECTORY.newFolder();
+		WorldConfig config = new WorldConfig();
+		ResourceLoader loader = new ResourceLoader(worldDirectory, generator, config);
 		
 		int id = 2;
 		PassiveType type = PassiveType.ITEM_SLOT;
@@ -1067,7 +1075,6 @@ public class TestResourceLoader
 		long lastAliveMillis = 1000L;
 		
 		// Load, and then discard, an empty example so we can save back the one we want.
-		loader.preload(CuboidGenerator.createFilledCuboid(address, ENV.special.AIR));
 		_loadOneSuspendedWithTime(loader, address, 1000L);
 		
 		PassiveEntity passive = new PassiveEntity(id
@@ -1082,7 +1089,7 @@ public class TestResourceLoader
 		loader.shutdown();
 		
 		// Now, create a new loader to verify that we can read this.
-		loader = new ResourceLoader(worldDirectory, null, null);
+		loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);
 		long newLoadTimeMillis = 2000L;
 		SuspendedCuboid<CuboidData> loaded = _loadOneSuspendedWithTime(loader, address, newLoadTimeMillis);
 		
@@ -1167,7 +1174,7 @@ public class TestResourceLoader
 		
 		// Now, read the data and verify that it is correct.
 		WorldConfig config = new WorldConfig();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);
 		List<SuspendedEntity> results = new ArrayList<>();
 		loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(id), 0L);
 		Assert.assertTrue(results.isEmpty());
@@ -1217,7 +1224,7 @@ public class TestResourceLoader
 		_storePerSerialized(worldDirectory, cuboidFile, capturedCuboidData);
 		
 		// Now, read this and make sure it contains what we serialized.
-		ResourceLoader loader = new ResourceLoader(worldDirectory, null, new WorldConfig());
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), new WorldConfig());
 		List<SuspendedCuboid<CuboidData>> cuboidResults = new ArrayList<>();
 		List<SuspendedEntity> entityResults = new ArrayList<>();
 		loader.getResultsAndRequestBackgroundLoad(cuboidResults, entityResults, List.of(address), List.of(), 0L);
@@ -1310,7 +1317,7 @@ public class TestResourceLoader
 		
 		// This is written in the old format so it should 
 		
-		ResourceLoader loader = new ResourceLoader(worldDirectory, null, new WorldConfig());
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), new WorldConfig());
 		List<SuspendedCuboid<CuboidData>> cuboidResults = new ArrayList<>();
 		List<SuspendedEntity> entityResults = new ArrayList<>();
 		loader.getResultsAndRequestBackgroundLoad(cuboidResults, entityResults, List.of(v8Address, v10Address), List.of(entityId), 0L);
