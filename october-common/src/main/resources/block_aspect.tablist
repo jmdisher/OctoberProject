@@ -101,10 +101,6 @@ op.copper_ore
 op.diamond_ore
 	block_material	PICKAXE
 	special_drop	100	op.diamond
-op.torch
-	block_material	AXE
-	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick	op.grass	op.basalt	op.copper_ore	op.diamond_ore
-	viscosity	0
 # op.carrot
 op.carrot_seedling
 	placed_from	op.carrot_seed
@@ -119,9 +115,6 @@ op.carrot_mature
 	requires_support	op.tilled_soil
 	special_drop	100	op.carrot_seed	50	op.carrot_seed	100	op.carrot_item	100	op.carrot_item
 	viscosity	10
-op.bed	is_flammable
-	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick	op.grass	op.basalt	op.copper_ore	op.diamond_ore
-	block_material	AXE
 op.lava_source	can_be_replaced	is_fire_source
 	viscosity	80
 	damage	10
@@ -159,3 +152,10 @@ op.door	is_multiblock
 	block_material	AXE
 op.enchanting_table
 	block_material	PICKAXE
+op.bed	is_flammable
+	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick	op.grass	op.basalt	op.copper_ore	op.diamond_ore	op.portal_stone	op.sand
+	block_material	AXE
+op.torch
+	block_material	AXE
+	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick	op.grass	op.basalt	op.copper_ore	op.diamond_ore	op.portal_stone	op.sand
+	viscosity	0
