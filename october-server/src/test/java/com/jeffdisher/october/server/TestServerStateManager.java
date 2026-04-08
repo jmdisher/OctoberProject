@@ -72,6 +72,7 @@ import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.utils.CuboidGenerator;
+import com.jeffdisher.october.utils.Encoding;
 
 
 public class TestServerStateManager
@@ -1558,6 +1559,213 @@ public class TestServerStateManager
 			manager.setupNextTickAfterCompletion(snapshot1, new AbsoluteLocation(0, 0, 0));
 			callouts.cuboidsToTryWrite.clear();
 			callouts.entitiesToTryWrite.clear();
+		}
+	}
+
+	@Test
+	public void perf_consumeSnapshot()
+	{
+		// A micro-bench to measure the cost in consuming the snapshot at the end of a tick when there are lots of clients.
+		boolean infiniteLoopForProfiler = false;
+		boolean longLoopForObjectiveScore = false;
+		
+		ByteBuffer inlineBuffer = ByteBuffer.allocate(1024 * 1024);
+		CuboidHeightMap cuboidHeightMap = CuboidHeightMap.wrap(new byte[Encoding.CUBOID_EDGE_SIZE][]);
+		ColumnHeightMap columnHeightMap = ColumnHeightMap.build().freeze();
+		ItemSlot slot = ItemSlot.fromStack(new Items(ENV.items.getItemById("op.stone"), 1));
+		ServerStateManager.ICallouts callouts = new ServerStateManager.ICallouts() {
+			List<CuboidAddress> _requestedCuboids = new ArrayList<>();
+			List<Integer> _requestedEntities = new ArrayList<>();
+			float _nextY = 0.0f;
+			int _nextCreatureId = -1;
+			int _nextPassiveId = 1;
+			@Override
+			public void resources_writeToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities, long gameTimeMillis)
+			{
+				// Do nothing.
+			}
+			@Override
+			public void resources_tryWriteToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities, long gameTimeMillis)
+			{
+				// Do nothing.
+			}
+			@Override
+			public void resources_getAndRequestBackgroundLoad(Collection<SuspendedCuboid<CuboidData>> out_loadedCuboids, Collection<SuspendedEntity> out_loadedEntities, Collection<CuboidAddress> requestedCuboids, Collection<Integer> requestedEntityIds, long currentGameMillis)
+			{
+				// We always delay load requests by 1 tick but everything is the same shape but players are loaded at a static stride.
+				for (CuboidAddress address : _requestedCuboids)
+				{
+					CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+					AbsoluteLocation cuboidBase = cuboid.getCuboidAddress().getBase();
+					EntityLocation creatureLocation = cuboidBase.getRelative(5, 5, 5).toEntityLocation();
+					CreatureEntity creature = new CreatureEntity(_nextCreatureId
+						, COW
+						, creatureLocation
+						, new EntityLocation(0.0f, 0.0f, 0.0f)
+						, (byte)0
+						, (byte)0
+						, (byte)100
+						, (byte)100
+						, COW.extendedCodec().buildDefault(1000L)
+						, null
+					);
+					_nextCreatureId -= 1;
+					
+					EntityLocation passiveLocation = cuboidBase.getRelative(25, 25, 25).toEntityLocation();
+					PassiveEntity passive = new PassiveEntity(_nextPassiveId
+						, PassiveType.ITEM_SLOT
+						, passiveLocation
+						, new EntityLocation(0.0f, 0.0f, 0.0f)
+						, slot
+						, 1000L
+					);
+					SuspendedCuboid<CuboidData> suspended = new SuspendedCuboid<>(cuboid
+						, cuboidHeightMap
+						, List.of(creature)
+						, List.of()
+						, Map.of()
+						, List.of(passive)
+					);
+					out_loadedCuboids.add(suspended);
+				}
+				for (Integer id : _requestedEntities)
+				{
+					EntityLocation location = new EntityLocation(0.0f, _nextY, 0.0f);
+					_nextY += 10.0f;
+					EntityLocation spawn = new EntityLocation(0.0f, 0.0f, 0.0f);
+					Entity entity = MutableEntity.createWithLocation(id, location, spawn).freeze();
+					SuspendedEntity suspended = new SuspendedEntity(entity, List.of());
+					out_loadedEntities.add(suspended);
+				}
+				
+				_requestedCuboids.clear();
+				_requestedEntities.clear();
+				
+				_requestedCuboids.addAll(requestedCuboids);
+				_requestedEntities.addAll(requestedEntityIds);
+			}
+			@Override
+			public PacketFromClient network_peekOrRemoveNextPacketFromClient(int clientId, PacketFromClient toRemove)
+			{
+				// Just assume that there is nothing.
+				return null;
+			}
+			@Override
+			public void network_sendPacket(int clientId, PacketFromServer packet)
+			{
+				// Do nothing.
+			}
+			@Override
+			public OutpacketBuffer network_openOutputBuffer(int clientId)
+			{
+				// Return a buffer we can ignore.
+				return new OutpacketBuffer(inlineBuffer, 1);
+			}
+
+			@Override
+			public void network_closeOutputBuffer(int clientId, OutpacketBuffer buffer)
+			{
+				// We just ignore this buffer coming back.
+			}
+			@Override
+			public boolean runner_enqueueEntityChange(int entityId, EntityActionSimpleMove<IMutablePlayerEntity> change, long commitLevel)
+			{
+				// Do nothing.
+				return true;
+			}
+			@Override
+			public void handleClientUpdateOptions(int clientId, int clientViewDistance)
+			{
+				// Do nothing.
+			}
+		};
+		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
+		manager.setOwningThread();
+		
+		// We will connect 100 clients.
+		for (int clientId = 1; clientId <= 100; ++clientId)
+		{
+			String clientName = "client" + clientId;
+			manager.clientConnected(clientId, clientName, 1);
+		}
+		
+		// Run a few iterations until loading is finished.
+		TickSnapshot snapshot = _createEmptySnapshot();
+		AbsoluteLocation worldSpawn = new AbsoluteLocation(0, 0, 0);
+		ServerStateManager.TickChanges tickChanges = manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
+		
+		for (int i = 0; i < 4; ++i)
+		{
+			// Extract originals.
+			Map<CuboidAddress, TickSnapshot.SnapshotCuboid> cuboids = new HashMap<>(snapshot.cuboids());
+			Map<Integer, TickSnapshot.SnapshotEntity> entities = new HashMap<>(snapshot.entities());
+			Map<Integer, TickSnapshot.SnapshotCreature> completedCreatures = new HashMap<>(snapshot.creatures());
+			Map<Integer, TickSnapshot.SnapshotPassive> completedPassives = new HashMap<>(snapshot.passives());
+			Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = new HashMap<>(snapshot.completedHeightMaps());
+			
+			// Add whatever is new.
+			for (SuspendedCuboid<IReadOnlyCuboidData> suspended : tickChanges.newCuboids())
+			{
+				IReadOnlyCuboidData cuboid = suspended.cuboid();
+				CuboidAddress address = cuboid.getCuboidAddress();
+				cuboids.put(address, new TickSnapshot.SnapshotCuboid(cuboid, null, List.of(), Map.of()));
+				for (CreatureEntity creature : suspended.creatures())
+				{
+					completedCreatures.put(creature.id(), new TickSnapshot.SnapshotCreature(creature, null));
+				}
+				for (PassiveEntity passive : suspended.passives())
+				{
+					completedPassives.put(passive.id(), new TickSnapshot.SnapshotPassive(passive, null));
+				}
+				completedHeightMaps.put(address.getColumn(), columnHeightMap);
+			}
+			for (SuspendedEntity suspended :tickChanges.newEntities())
+			{
+				Entity completed = suspended.entity();
+				entities.put(completed.id(), new TickSnapshot.SnapshotEntity(completed, null, 0L, List.of()));
+			}
+			
+			// Just mark everything alive.
+			Set<CuboidAddress> internallyMarkedAlive = cuboids.keySet();
+			
+			TickSnapshot.TickStats stats = snapshot.stats();
+			snapshot = new TickSnapshot(snapshot.tickNumber()
+					, cuboids
+					, entities
+					, completedCreatures
+					, completedPassives
+					, completedHeightMaps
+					
+					, snapshot.postedEvents()
+					, internallyMarkedAlive
+					
+					, stats
+			);
+			tickChanges = manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
+		}
+		
+		// We are now in a steady state so run the test.
+		if (infiniteLoopForProfiler)
+		{
+			while (true)
+			{
+				manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
+			}
+		}
+		else if (longLoopForObjectiveScore)
+		{
+			int iterationCount = 1_000;
+			long startNanos = System.nanoTime();
+			for (int i = 0; i < iterationCount; ++i)
+			{
+				manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
+			}
+			long endNanos = System.nanoTime();
+			System.out.println("Nanos per: " + ((endNanos - startNanos) / iterationCount));
+		}
+		else
+		{
+			manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		}
 	}
 
