@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.Environment;
@@ -197,62 +196,85 @@ public class ServerStateManager
 		
 		// We will first tear the snapshot apart and cache the relevant parts of it in our state (then base all decisions on the state).
 		_tickNumber = snapshot.tickNumber();
-		_completedCuboids = snapshot.cuboids().entrySet().stream().collect(Collectors.toMap(
-				(Map.Entry<CuboidAddress, TickSnapshot.SnapshotCuboid> elt) -> elt.getKey()
-				, (Map.Entry<CuboidAddress, TickSnapshot.SnapshotCuboid> elt) -> elt.getValue().completed()
-		));
-		_completedEntities = snapshot.entities().entrySet().stream().collect(Collectors.toMap(
-				(Map.Entry<Integer, TickSnapshot.SnapshotEntity> elt) -> elt.getKey()
-				, (Map.Entry<Integer, TickSnapshot.SnapshotEntity> elt) -> elt.getValue().completed()
-		));
-		_previousEntityVersions = snapshot.entities().entrySet().stream().filter(
-				(Map.Entry<Integer, TickSnapshot.SnapshotEntity> elt) -> (null != elt.getValue().previousVersion())
-		).collect(Collectors.toMap(
-				(Map.Entry<Integer, TickSnapshot.SnapshotEntity> elt) -> elt.getKey()
-				, (Map.Entry<Integer, TickSnapshot.SnapshotEntity> elt) -> elt.getValue().previousVersion()
-		));
-		_commitLevels = snapshot.entities().entrySet().stream().collect(Collectors.toMap(
-				(Map.Entry<Integer, TickSnapshot.SnapshotEntity> elt) -> elt.getKey()
-				, (Map.Entry<Integer, TickSnapshot.SnapshotEntity> elt) -> elt.getValue().commitLevel()
-		));
-		_completedCreatures = snapshot.creatures().entrySet().stream().collect(Collectors.toMap(
-				(Map.Entry<Integer, TickSnapshot.SnapshotCreature> elt) -> elt.getKey()
-				, (Map.Entry<Integer, TickSnapshot.SnapshotCreature> elt) -> elt.getValue().completed()
-		));
-		_previousCreatureVersions = snapshot.creatures().entrySet().stream().filter(
-			(Map.Entry<Integer, TickSnapshot.SnapshotCreature> elt) -> (null != elt.getValue().previousVersion())
-		).collect(Collectors.toMap(
-			(Map.Entry<Integer, TickSnapshot.SnapshotCreature> elt) -> elt.getKey()
-			, (Map.Entry<Integer, TickSnapshot.SnapshotCreature> elt) -> elt.getValue().previousVersion()
-		));
-		_completedPassives = snapshot.passives().entrySet().stream().collect(Collectors.toMap(
-				(Map.Entry<Integer, TickSnapshot.SnapshotPassive> elt) -> elt.getKey()
-				, (Map.Entry<Integer, TickSnapshot.SnapshotPassive> elt) -> elt.getValue().completed()
-		));
-		_previousPassiveVersions = snapshot.passives().entrySet().stream().filter(
-			(Map.Entry<Integer, TickSnapshot.SnapshotPassive> elt) -> (null != elt.getValue().previousVersion())
-		).collect(Collectors.toMap(
-			(Map.Entry<Integer, TickSnapshot.SnapshotPassive> elt) -> elt.getKey()
-			, (Map.Entry<Integer, TickSnapshot.SnapshotPassive> elt) -> elt.getValue().previousVersion()
-		));
-		_blockChanges = snapshot.cuboids().entrySet().stream().filter(
-				(Map.Entry<CuboidAddress, TickSnapshot.SnapshotCuboid> elt) -> (null != elt.getValue().blockChanges())
-		).collect(Collectors.toMap(
-				(Map.Entry<CuboidAddress, TickSnapshot.SnapshotCuboid> elt) -> elt.getKey()
-				, (Map.Entry<CuboidAddress, TickSnapshot.SnapshotCuboid> elt) -> elt.getValue().blockChanges()
-		));
-		_scheduledBlockMutations = snapshot.cuboids().entrySet().stream().collect(Collectors.toMap(
-				(Map.Entry<CuboidAddress, TickSnapshot.SnapshotCuboid> elt) -> elt.getKey()
-				, (Map.Entry<CuboidAddress, TickSnapshot.SnapshotCuboid> elt) -> elt.getValue().scheduledBlockMutations()
-		));
-		_periodicBlockMutations = snapshot.cuboids().entrySet().stream().collect(Collectors.toMap(
-				(Map.Entry<CuboidAddress, TickSnapshot.SnapshotCuboid> elt) -> elt.getKey()
-				, (Map.Entry<CuboidAddress, TickSnapshot.SnapshotCuboid> elt) -> elt.getValue().periodicMutationMillis()
-		));
-		_scheduledEntityMutations = snapshot.entities().entrySet().stream().collect(Collectors.toMap(
-				(Map.Entry<Integer, TickSnapshot.SnapshotEntity> elt) -> elt.getKey()
-				, (Map.Entry<Integer, TickSnapshot.SnapshotEntity> elt) -> elt.getValue().scheduledMutations()
-		));
+		
+		// We start by reseting everything indexed by cuboid address.
+		_completedCuboids = new HashMap<>();
+		_scheduledBlockMutations = new HashMap<>();
+		_periodicBlockMutations = new HashMap<>();
+		_blockChanges = new HashMap<>();
+		for (TickSnapshot.SnapshotCuboid elt : snapshot.cuboids().values())
+		{
+			IReadOnlyCuboidData cuboid = elt.completed();
+			CuboidAddress address = cuboid.getCuboidAddress();
+			_completedCuboids.put(address, cuboid);
+			
+			// Never null but could be empty.
+			_scheduledBlockMutations.put(address, elt.scheduledBlockMutations());
+			
+			// Never null but could be empty.
+			_periodicBlockMutations.put(address, elt.periodicMutationMillis());
+			
+			// This one is a bit special in that we on make an entry in the map if non-null.
+			List<MutationBlockSetBlock> blockChanges = elt.blockChanges();
+			if (null != blockChanges)
+			{
+				Assert.assertTrue(!blockChanges.isEmpty());
+				_blockChanges.put(address, blockChanges);
+			}
+		}
+		
+		// Reset the entities.
+		_scheduledEntityMutations = new HashMap<>();
+		_completedEntities = new HashMap<>();
+		_previousEntityVersions = new HashMap<>();
+		_commitLevels = new HashMap<>();
+		for (TickSnapshot.SnapshotEntity elt : snapshot.entities().values())
+		{
+			Entity completed = elt.completed();
+			int id = completed.id();
+			_scheduledEntityMutations.put(id, elt.scheduledMutations());
+			_completedEntities.put(id, completed);
+			
+			Entity previous = elt.previousVersion();
+			if (null != previous)
+			{
+				_previousEntityVersions.put(id, previous);
+			}
+			
+			_commitLevels.put(id, elt.commitLevel());
+		}
+		
+		// Reset the creatures.
+		_completedCreatures = new HashMap<>();
+		_previousCreatureVersions = new HashMap<>();
+		for (TickSnapshot.SnapshotCreature elt : snapshot.creatures().values())
+		{
+			CreatureEntity completed = elt.completed();
+			int id = completed.id();
+			_completedCreatures.put(id, completed);
+			
+			CreatureEntity previous = elt.previousVersion();
+			if (null != previous)
+			{
+				_previousCreatureVersions.put(id, previous);
+			}
+		}
+		
+		// Reset the passives.
+		_completedPassives = new HashMap<>();
+		_previousPassiveVersions = new HashMap<>();
+		for (TickSnapshot.SnapshotPassive elt : snapshot.passives().values())
+		{
+			PassiveEntity completed = elt.completed();
+			int id = completed.id();
+			_completedPassives.put(id, completed);
+			
+			PassiveEntity previous = elt.previousVersion();
+			if (null != previous)
+			{
+				_previousPassiveVersions.put(id, previous);
+			}
+		}
 		
 		Set<CuboidAddress> completedCuboidAddresses = _completedCuboids.keySet();
 		
