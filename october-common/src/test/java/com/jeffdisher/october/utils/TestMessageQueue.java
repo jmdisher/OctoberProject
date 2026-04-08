@@ -23,7 +23,7 @@ public class TestMessageQueue
 	{
 		MessageQueue queue = new MessageQueue();
 		Thread thread = new Thread(() -> {
-			Runnable r = queue.pollForNext(0L, null);
+			MessageQueue.TimedRunnable r = queue.pollForNext(0L, null);
 			while (null != r)
 			{
 				r.run();
@@ -35,12 +35,12 @@ public class TestMessageQueue
 		int count[] = new int[1];
 		for (int i = 0; i < 10; ++i)
 		{
-			queue.enqueue(() -> {
+			queue.enqueue("name", () -> {
 				count[0] += 1;
 			});
 		}
 		CyclicBarrier barrier = new CyclicBarrier(2);
-		queue.enqueue(() -> {
+		queue.enqueue("name", () -> {
 			try
 			{
 				barrier.await();
@@ -65,13 +65,13 @@ public class TestMessageQueue
 		int count[] = new int[1];
 		for (int i = 0; i < 10; ++i)
 		{
-			queue.enqueue(() -> {
+			queue.enqueue("name", () -> {
 				count[0] += 1;
 			});
 		}
 		
 		CyclicBarrier barrier = new CyclicBarrier(2);
-		Runnable timeout = () -> {
+		MessageQueue.TimedRunnable timeout = new MessageQueue.TimedRunnable("name", () -> {
 			try
 			{
 				barrier.await();
@@ -81,10 +81,10 @@ public class TestMessageQueue
 				// Not expected.
 				Assert.fail();
 			}
-		};
+		});
 		
 		Thread thread = new Thread(() -> {
-			Runnable r = queue.pollForNext(1L, timeout);
+			MessageQueue.TimedRunnable r = queue.pollForNext(1L, timeout);
 			while (null != r)
 			{
 				r.run();
@@ -104,7 +104,7 @@ public class TestMessageQueue
 	{
 		MessageQueue queue = new MessageQueue();
 		Thread thread = new Thread(() -> {
-			Runnable r = queue.pollForNext(0L, null);
+			MessageQueue.TimedRunnable r = queue.pollForNext(0L, null);
 			while (null != r)
 			{
 				r.run();
@@ -115,7 +115,7 @@ public class TestMessageQueue
 		int count[] = new int[1];
 		for (int i = 0; i < 10; ++i)
 		{
-			queue.enqueue(() -> {
+			queue.enqueue("name", () -> {
 				count[0] += 1;
 			});
 		}
@@ -132,7 +132,7 @@ public class TestMessageQueue
 	{
 		MessageQueue queue = new MessageQueue();
 		Thread thread = new Thread(() -> {
-			Runnable r = queue.pollForNext(0L, null);
+			MessageQueue.TimedRunnable r = queue.pollForNext(0L, null);
 			while (null != r)
 			{
 				r.run();
@@ -143,7 +143,7 @@ public class TestMessageQueue
 		int count[] = new int[1];
 		for (int i = 0; i < 10; ++i)
 		{
-			queue.enqueue(() -> {
+			queue.enqueue("name", () -> {
 				count[0] += 1;
 			});
 		}

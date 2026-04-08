@@ -9,7 +9,7 @@ import java.util.Queue;
  */
 public class MessageQueue
 {
-	private Queue<Runnable> _queue = new LinkedList<>();
+	private Queue<TimedRunnable> _queue = new LinkedList<>();
 	private boolean _running = true;
 
 	/**
@@ -20,9 +20,9 @@ public class MessageQueue
 	 * timeoutRunnable).  This must always be >= 0L (even if timeoutRunnable is null) and > 0L if timeoutRunnable is
 	 * non-null.
 	 * @param timeoutRunnable The runnable to return if the timeout elapses without anything else happening.
-	 * @return The next Runnable or null, if the queue is shut down.
+	 * @return The next TimedRunnable or null, if the queue is shut down.
 	 */
-	public synchronized Runnable pollForNext(long millisToWait, Runnable timeoutRunnable)
+	public synchronized TimedRunnable pollForNext(long millisToWait, TimedRunnable timeoutRunnable)
 	{
 		// Millis to wait must be a reasonable value.
 		if (null != timeoutRunnable)
@@ -58,12 +58,12 @@ public class MessageQueue
 				throw Assert.unexpected(e);
 			}
 		}
-		Runnable runnable = _running
-				? (!_queue.isEmpty()
-						? _queue.remove()
-						: timeoutRunnable
-				)
-				: null
+		TimedRunnable runnable = _running
+			? (!_queue.isEmpty()
+				? _queue.remove()
+				: timeoutRunnable
+			)
+			: null
 		;
 		// We want to notify anyone waiting for the queue to drain.
 		if (_queue.isEmpty())
@@ -74,16 +74,18 @@ public class MessageQueue
 	}
  
 	/**
-	 * Enqueues the next runnable task.
+	 * Enqueues the next runnable task.  This builds the TimedRunnable wrapper, internally.
 	 * 
+	 * @param name The name of the task.
 	 * @param r The runnable task.
 	 * @return True if this was enqueued, false if the receiver has been shut down.
 	 */
-	public synchronized boolean enqueue(Runnable r)
+	public synchronized boolean enqueue(String name, Runnable r)
 	{
 		if (_running)
 		{
-			_queue.add(r);
+			TimedRunnable timed = new TimedRunnable(name, r);
+			_queue.add(timed);
 			this.notifyAll();
 		}
 		return _running;
@@ -119,5 +121,36 @@ public class MessageQueue
 	{
 		_running = false;
 		this.notifyAll();
+	}
+
+
+	public static class TimedRunnable
+	{
+		public final String name;
+		private final Runnable _runnable;
+		private final long _createNanos;
+		private long _startNanos;
+		private long _endNanos;
+		
+		public TimedRunnable(String name, Runnable runnable)
+		{
+			this.name = name;
+			_runnable = runnable;
+			_createNanos = System.nanoTime();
+		}
+		public void run()
+		{
+			_startNanos = System.nanoTime();
+			_runnable.run();
+			_endNanos = System.nanoTime();
+		}
+		public long getWaitingNanos()
+		{
+			return _startNanos - _createNanos;
+		}
+		public long getRunningNanos()
+		{
+			return _endNanos - _startNanos;
+		}
 	}
 }

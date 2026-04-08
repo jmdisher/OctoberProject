@@ -98,7 +98,8 @@ public class MonitoringAgent
 		
 		private long _totalNanosWaiting;
 		private long _totalNanosInTasks;
-		private long _slowestTask;
+		private String _slowestTaskName;
+		private long _slowestTaskNanos;
 		private long _totalTasksRun;
 		
 		private long _totalMillisInTicks;
@@ -106,11 +107,15 @@ public class MonitoringAgent
 		private long _slowestTickMillis;
 		private int _ticksRemaining = TICK_SAMPLE_SIZE;
 		
-		public void consumeTaskSample(long nanosWaitingForTask, long nanosInTask)
+		public void consumeTaskSample(String name, long nanosWaitingForTask, long nanosInTask)
 		{
 			_totalNanosWaiting += nanosWaitingForTask;
 			_totalNanosInTasks += nanosInTask;
-			_slowestTask = Math.max(_slowestTask, nanosInTask);
+			if (nanosInTask > _slowestTaskNanos)
+			{
+				_slowestTaskName = name;
+				_slowestTaskNanos = nanosInTask;
+			}
 			_totalTasksRun += 1L;
 		}
 		public synchronized boolean shouldRetireAfterTickSample(TickSnapshot.TickStats stats)
@@ -144,7 +149,7 @@ public class MonitoringAgent
 			out.println("Ran " + _totalTasksRun + " ServerRunner tasks:");
 			out.println("\tNanos running: " + _totalNanosInTasks);
 			out.println("\tNanos waiting: " + _totalNanosWaiting);
-			out.println("\tNanos slowest: " + _slowestTask);
+			out.println("\tNanos slowest: " + _slowestTaskNanos + " (\"" + _slowestTaskName + "\")");
 			out.println("\tNanos average: " + (_totalNanosInTasks / _totalTasksRun));
 			out.println("Spent " + _totalMillisInTicks + " ms in ticks, slowest taking " + _slowestTickMillis + " ms:");
 			_slowestTick.writeToStream(out);

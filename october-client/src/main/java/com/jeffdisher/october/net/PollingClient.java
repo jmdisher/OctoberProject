@@ -31,7 +31,7 @@ public class PollingClient
 
 	public void pollServer(InetSocketAddress serverToPoll)
 	{
-		_queue.enqueue(() -> {
+		_queue.enqueue("poll", () -> {
 			_backgroundPollServer(serverToPoll);
 		});
 	}
@@ -57,7 +57,7 @@ public class PollingClient
 
 	private void _backgroundThreadMain()
 	{
-		Runnable r = _queue.pollForNext(0, null);
+		MessageQueue.TimedRunnable r = _queue.pollForNext(0, null);
 		while (null != r)
 		{
 			r.run();
@@ -100,7 +100,7 @@ public class PollingClient
 				@Override
 				public void peerDisconnected(NetworkLayer.IPeerToken token)
 				{
-					_queue.enqueue(() -> {
+					_queue.enqueue("disconnect", () -> {
 						_network.stop();
 					});
 				}
@@ -113,7 +113,7 @@ public class PollingClient
 				public void peerReadyForRead(NetworkLayer.IPeerToken token)
 				{
 					long endMillis = System.currentTimeMillis();
-					_queue.enqueue(() -> {
+					_queue.enqueue("read ready", () -> {
 						List<PacketFromServer> packets = _network.receiveMessages(token);
 						Assert.assertTrue(1 == packets.size());
 						Packet_ServerReturnServerStatus safe = (Packet_ServerReturnServerStatus) packets.get(0);

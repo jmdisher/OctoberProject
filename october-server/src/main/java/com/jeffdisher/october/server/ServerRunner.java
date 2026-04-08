@@ -61,7 +61,7 @@ public class ServerRunner
 	private long _nextTickMillis;
 	private final _TickAdvancer _tickAdvancer;
 	// When we are due to start the next tick (after we receive the callback that the previous is done), we schedule the advancer.
-	private _TickAdvancer _scheduledAdvancer;
+	private MessageQueue.TimedRunnable _scheduledAdvancer;
 	private final ServerStateManager _stateManager;
 	private MonitoringAgent.Sampler _currentSampler;
 
@@ -138,7 +138,7 @@ public class ServerRunner
 		_stateManager = new ServerStateManager(new _Callouts(), _millisPerTick);
 		
 		// We want to prime the state manager's thread check.
-		_messages.enqueue(() -> {
+		_messages.enqueue("START", () -> {
 			_stateManager.setOwningThread();
 		});
 		
@@ -153,21 +153,21 @@ public class ServerRunner
 			@Override
 			public void requestConfigBroadcast()
 			{
-				_messages.enqueue(() -> {
+				_messages.enqueue("broadcast config", () -> {
 					_stateManager.broadcastConfig(config);
 				});
 			}
 			@Override
 			public void sendChatMessage(int targetId, String message)
 			{
-				_messages.enqueue(() -> {
+				_messages.enqueue("chat message", () -> {
 					_stateManager.sendConsoleMessage(targetId, message);
 				});
 			}
 			@Override
 			public void installSampler(MonitoringAgent.Sampler sampler)
 			{
-				_messages.enqueue(() -> {
+				_messages.enqueue("install sampler", () -> {
 					Assert.assertTrue(null == _currentSampler);
 					_currentSampler = sampler;
 				});
@@ -200,7 +200,7 @@ public class ServerRunner
 		
 		// Shut down the state manager in its own thread.
 		CountDownLatch latch = new CountDownLatch(1);
-		_messages.enqueue(() -> {
+		_messages.enqueue("SHUTDOWN", () -> {
 			// Allow the state manager to flush anything it has stored.
 			_stateManager.shutdown();
 			latch.countDown();
@@ -240,11 +240,11 @@ public class ServerRunner
 	private void _backgroundMain()
 	{
 		_nextTickMillis = _currentTimeMillisProvider.getAsLong() + _millisPerTick;
-		Runnable next = _messages.pollForNext(_millisPerTick, _scheduledAdvancer);
-		long nanosAfterRun = 0L;
+		MessageQueue.TimedRunnable previousRunnable = new MessageQueue.TimedRunnable("empty", null);
+		MessageQueue.TimedRunnable next = _messages.pollForNext(_millisPerTick, _scheduledAdvancer);
 		while (null != next)
 		{
-			nanosAfterRun = _runAndSample(next, nanosAfterRun);
+			_runAndSample(next);
 			// If we are ready to schedule the tick advancer, find out when.
 			long millisToWait;
 			if (null != _scheduledAdvancer)
@@ -260,11 +260,15 @@ public class ServerRunner
 					if (millisToWait < -_millisPerTick)
 					{
 						// We only want to log that we are dropping a tick if we are more than 1 tick behind since ticks are never scheduled ahead-of-time.
-						System.out.println("WARNING:  Dropping tick!");
+						System.out.printf("WARNING:  Dropping tick! (blocked by \"%s\" waiting %d ms and running for %d ms)\n"
+							, previousRunnable.name
+							, previousRunnable.getWaitingNanos() / 1_000_000L
+							, previousRunnable.getRunningNanos() / 1_000_000L
+						);
 						_nextTickMillis += _millisPerTick;
 					}
 					// In any case, we are ready to run this so do it now, not even going through the message queue.
-					nanosAfterRun = _runAndSample(_scheduledAdvancer, nanosAfterRun);
+					_runAndSample(_scheduledAdvancer);
 					// This should have cleared the instance variable.
 					Assert.assertTrue(null == _scheduledAdvancer);
 					// Since we ran the action, just go back to waiting without limit.
@@ -275,22 +279,20 @@ public class ServerRunner
 			{
 				millisToWait = 0L;
 			}
+			previousRunnable = next;
 			next = _messages.pollForNext(millisToWait, _scheduledAdvancer);
 		}
 	}
 
-	private long _runAndSample(Runnable next, long nanosAfterRun)
+	private void _runAndSample(MessageQueue.TimedRunnable next)
 	{
-		long nanosBeforeRun = System.nanoTime();
 		next.run();
-		long nanosWaitingForTask = (nanosBeforeRun - nanosAfterRun);
-		nanosAfterRun = System.nanoTime();
 		if (null != _currentSampler)
 		{
-			long nanosRunningTask = (nanosAfterRun - nanosBeforeRun);
-			_currentSampler.consumeTaskSample(nanosWaitingForTask, nanosRunningTask);
+			long nanosWaitingForTask = next.getWaitingNanos();
+			long nanosInTask = next.getRunningNanos();
+			_currentSampler.consumeTaskSample(next.name, nanosWaitingForTask, nanosInTask);
 		}
-		return nanosAfterRun;
 	}
 
 
@@ -300,7 +302,7 @@ public class ServerRunner
 		public void clientConnected(int clientId, NetworkLayer.IPeerToken token, String name, int cuboidViewDistance)
 		{
 			Assert.assertTrue(cuboidViewDistance >= 0);
-			_messages.enqueue(() -> {
+			_messages.enqueue("client connect", () -> {
 				int viewDistance = Math.min(cuboidViewDistance, _clientViewDistanceMaximum);
 				_stateManager.clientConnected(clientId, name, viewDistance);
 				
@@ -310,7 +312,7 @@ public class ServerRunner
 		@Override
 		public void clientDisconnected(int clientId)
 		{
-			_messages.enqueue(() -> {
+			_messages.enqueue("client disconnect", () -> {
 				_stateManager.clientDisconnected(clientId);
 				// This message is now in-order so we can ack the disconnect.
 				_network.acknowledgeDisconnect(clientId);
@@ -321,7 +323,7 @@ public class ServerRunner
 		@Override
 		public void clientReadReady(int clientId)
 		{
-			_messages.enqueue(() -> {
+			_messages.enqueue("read ready", () -> {
 				_stateManager.clientReadReady(clientId);
 			});
 		}
@@ -335,9 +337,9 @@ public class ServerRunner
 			// We capture this callback to keep the message queue in-order:  This is the last thing which happens within
 			// the tick so we know that all tick callbacks are completed by the time we execute this message so we can
 			// update the connected clients.
-			_messages.enqueue(() -> {
+			_messages.enqueue("snapshot complete", () -> {
 				// This means we can schedule the next tick.
-				_scheduledAdvancer = _tickAdvancer;
+				_scheduledAdvancer = new MessageQueue.TimedRunnable("advance tick", _tickAdvancer);
 				
 				_monitoringAgent.snapshotPublished(completedSnapshot);
 			});
@@ -507,7 +509,7 @@ public class ServerRunner
 		public void handleClientUpdateOptions(int clientId, int clientViewDistance)
 		{
 			Assert.assertTrue(clientViewDistance >= 0);
-			_messages.enqueue(() -> {
+			_messages.enqueue("client update options", () -> {
 				int viewDistance = Math.min(clientViewDistance, _clientViewDistanceMaximum);
 				_stateManager.setClientViewDistance(clientId, viewDistance);
 			});

@@ -192,7 +192,7 @@ public class ResourceLoader
 			// Copy these since they could change out from under us once we hand-off.
 			Collection<CuboidAddress> copiedCuboids = new ArrayList<>(requestedCuboids);
 			Collection<Integer> copiedEntityIds = new ArrayList<>(requestedEntityIds);
-			_queue.enqueue(() -> {
+			_queue.enqueue("read", () -> {
 				for (CuboidAddress address : copiedCuboids)
 				{
 					// Priority of loads:
@@ -284,7 +284,7 @@ public class ResourceLoader
 	{
 		// This one should only be called if there are some to write.
 		Assert.assertTrue(!cuboids.isEmpty() || !entities.isEmpty());
-		_queue.enqueue(() -> {
+		_queue.enqueue("write", () -> {
 			for (PackagedCuboid cuboid : cuboids)
 			{
 				_background_writeCuboidToDisk(cuboid, gameTimeMillis, false);
@@ -303,7 +303,7 @@ public class ResourceLoader
 		if (!_isAttemptedWritePending)
 		{
 			_isAttemptedWritePending = true;
-			_queue.enqueue(() -> {
+			_queue.enqueue("try write", () -> {
 				for (PackagedCuboid cuboid : cuboids)
 				{
 					_background_writeCuboidToDisk(cuboid, gameTimeMillis, true);
@@ -376,7 +376,7 @@ public class ResourceLoader
 
 	private void _background_main()
 	{
-		Runnable toRun = _queue.pollForNext(0L, null);
+		MessageQueue.TimedRunnable toRun = _queue.pollForNext(0L, null);
 		while (null != toRun)
 		{
 			toRun.run();
