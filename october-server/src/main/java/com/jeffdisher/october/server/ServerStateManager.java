@@ -753,13 +753,11 @@ public class ServerStateManager
 		_sendNewAndUpdatedPassives(buffer, state, entityVisibleDistance);
 		
 		// If there are any entities in the state which aren't in the snapshot, remove them since they died or disconnected.
-		Set<Integer> allEntityIds = new HashSet<>(_completedEntities.keySet());
-		allEntityIds.addAll(_completedCreatures.keySet());
 		Iterator<Integer> entityIterator = state.knownEntities.iterator();
 		while (entityIterator.hasNext())
 		{
 			int entityId = entityIterator.next();
-			if (!allEntityIds.contains(entityId))
+			if (!_completedEntities.containsKey(entityId) && !_completedCreatures.containsKey(entityId))
 			{
 				Packet_RemoveEntity packet = new Packet_RemoveEntity(entityId);
 				buffer.writePacket(packet);
