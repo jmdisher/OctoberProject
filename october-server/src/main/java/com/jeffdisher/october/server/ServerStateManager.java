@@ -229,6 +229,9 @@ public class ServerStateManager
 			_entityIndex.completed.put(id, completed);
 			boolean wasKnown = previousEntityIds.remove(id);
 			
+			// NOTE:  We can't pre-check if this change matters, like in creatures and passives, as all changes are
+			// visible to the client behind the entity.  This means we need to check if this change matters when we know
+			// who is asking (full Entity or PartialEntity).
 			Entity previous = elt.previousVersion();
 			if (null != previous)
 			{
@@ -261,7 +264,8 @@ public class ServerStateManager
 			boolean wasKnown = previousCreatureIds.remove(id);
 			
 			CreatureEntity previous = elt.previousVersion();
-			if (null != previous)
+			boolean didChange = (null != previous) && PartialEntityUpdate.canDescribeCreatureChange(previous, completed);
+			if (didChange)
 			{
 				_creatureIndex.previousVersions.put(id, previous);
 				_creatureIndex.changed.add(completed);
@@ -290,7 +294,8 @@ public class ServerStateManager
 			boolean wasKnown = previousPassiveIds.remove(id);
 			
 			PassiveEntity previous = elt.previousVersion();
-			if (null != previous)
+			boolean didChange = (null != previous) && _canDescribePassiveChange(previous, completed);
+			if (didChange)
 			{
 				_passiveIndex.previousVersions.put(id, previous);
 				_passiveIndex.changed.add(completed);
@@ -833,18 +838,18 @@ public class ServerStateManager
 		}
 		for (Entity entity : _entityIndex.changed)
 		{
-			_handleChangedEntity(clientId, buffer, state, entityVisibleDistance, entityVolume, playerEyeLocation, entity);
+			_handleExistingEntity(clientId, buffer, state, entityVisibleDistance, entityVolume, playerEyeLocation, entity);
 		}
 		if (didMoveToNewCuboid)
 		{
 			for (Entity entity : _entityIndex.unchanged)
 			{
-				_handleChangedEntity(clientId, buffer, state, entityVisibleDistance, entityVolume, playerEyeLocation, entity);
+				_handleExistingEntity(clientId, buffer, state, entityVisibleDistance, entityVolume, playerEyeLocation, entity);
 			}
 		}
 	}
 
-	private void _handleChangedEntity(int clientId, OutpacketBuffer buffer, ClientState state, float entityVisibleDistance, EntityVolume entityVolume, EntityLocation playerEyeLocation, Entity entity)
+	private void _handleExistingEntity(int clientId, OutpacketBuffer buffer, ClientState state, float entityVisibleDistance, EntityVolume entityVolume, EntityLocation playerEyeLocation, Entity entity)
 	{
 		int entityId = entity.id();
 		EntityLocation entityBase = entity.location();
@@ -934,18 +939,18 @@ public class ServerStateManager
 		}
 		for (CreatureEntity entity : _creatureIndex.changed)
 		{
-			_handleChangedCreatureEntity(buffer, state, entityVisibleDistance, playerEyeLocation, entity);
+			_handleExistingCreature(buffer, state, entityVisibleDistance, playerEyeLocation, entity, true);
 		}
 		if (didMoveToNewCuboid)
 		{
 			for (CreatureEntity entity : _creatureIndex.unchanged)
 			{
-				_handleChangedCreatureEntity(buffer, state, entityVisibleDistance, playerEyeLocation, entity);
+				_handleExistingCreature(buffer, state, entityVisibleDistance, playerEyeLocation, entity, false);
 			}
 		}
 	}
 
-	private void _handleChangedCreatureEntity(OutpacketBuffer buffer, ClientState state, float entityVisibleDistance, EntityLocation playerEyeLocation, CreatureEntity entity)
+	private void _handleExistingCreature(OutpacketBuffer buffer, ClientState state, float entityVisibleDistance, EntityLocation playerEyeLocation, CreatureEntity entity, boolean didChange)
 	{
 		int entityId = entity.id();
 		EntityLocation entityBase = entity.location();
@@ -962,30 +967,17 @@ public class ServerStateManager
 				buffer.writePacket(packet);
 				state.knownEntities.remove(entityId);
 			}
-			else
-			{
-				_handleKnownCreatureEntityInRange(buffer, entity, entityId);
-			}
-		}
-		else if (distance <= entityVisibleDistance)
-		{
-			_handleUnknownCreatureEntityInRange(buffer, state, entity, entityId);
-		}
-	}
-
-	private void _handleKnownCreatureEntityInRange(OutpacketBuffer buffer, CreatureEntity entity, int entityId)
-	{
-		// They are in range and we know about them so send the update if they changed.
-		CreatureEntity previousEntityVersion = _creatureIndex.previousVersions.get(entityId);
-		if (null != previousEntityVersion)
-		{
-			if (PartialEntityUpdate.canDescribeCreatureChange(previousEntityVersion, entity))
+			else if (didChange)
 			{
 				// The client will have a partial so just send that.
 				PartialEntityUpdate update = new PartialEntityUpdate(PartialEntity.fromCreature(entity));
 				Packet_PartialEntityUpdateFromServer packet = new Packet_PartialEntityUpdateFromServer(update);
 				buffer.writePacket(packet);
 			}
+		}
+		else if (distance <= entityVisibleDistance)
+		{
+			_handleUnknownCreatureEntityInRange(buffer, state, entity, entityId);
 		}
 	}
 
@@ -1019,18 +1011,18 @@ public class ServerStateManager
 		}
 		for (PassiveEntity passive : _passiveIndex.changed)
 		{
-			_handleChangedPassive(buffer, state, entityVisibleDistance, playerEyeLocation, passive);
+			_handleExistingPassive(buffer, state, entityVisibleDistance, playerEyeLocation, passive, true);
 		}
 		if (didMoveToNewCuboid)
 		{
 			for (PassiveEntity passive : _passiveIndex.unchanged)
 			{
-				_handleChangedPassive(buffer, state, entityVisibleDistance, playerEyeLocation, passive);
+				_handleExistingPassive(buffer, state, entityVisibleDistance, playerEyeLocation, passive, false);
 			}
 		}
 	}
 
-	private void _handleChangedPassive(OutpacketBuffer buffer, ClientState state, float entityVisibleDistance, EntityLocation playerEyeLocation, PassiveEntity passive)
+	private void _handleExistingPassive(OutpacketBuffer buffer, ClientState state, float entityVisibleDistance, EntityLocation playerEyeLocation, PassiveEntity passive, boolean didChange)
 	{
 		int entityId = passive.id();
 		EntityLocation entityBase = passive.location();
@@ -1047,25 +1039,15 @@ public class ServerStateManager
 				buffer.writePacket(packet);
 				state.knownPassives.remove(entityId);
 			}
-			else
+			else if (didChange)
 			{
-				_handleKnownPassiveInRange(buffer, passive, entityId);
+				Packet_SendPartialPassiveUpdate packet = new Packet_SendPartialPassiveUpdate(entityId, passive.location(), passive.velocity());
+				buffer.writePacket(packet);
 			}
 		}
 		else if (distance <= entityVisibleDistance)
 		{
 			_handleUnknownPassiveInRange(buffer, state, passive, entityId);
-		}
-	}
-
-	private void _handleKnownPassiveInRange(OutpacketBuffer buffer, PassiveEntity passive, int entityId)
-	{
-		// They are in range and we know about them so send the update if they changed.
-		PassiveEntity previousPassiveVersion = _passiveIndex.previousVersions.get(entityId);
-		if ((null != previousPassiveVersion) && _canDescribePassiveChange(previousPassiveVersion, passive))
-		{
-			Packet_SendPartialPassiveUpdate packet = new Packet_SendPartialPassiveUpdate(entityId, passive.location(), passive.velocity());
-			buffer.writePacket(packet);
 		}
 	}
 
