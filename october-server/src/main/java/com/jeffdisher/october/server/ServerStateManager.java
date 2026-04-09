@@ -106,13 +106,10 @@ public class ServerStateManager
 	private Map<CuboidAddress, List<ScheduledMutation>> _scheduledBlockMutations;
 	private Map<CuboidAddress, Map<BlockAddress, Long>> _periodicBlockMutations;
 	private Map<Integer, List<ScheduledChange>> _scheduledEntityMutations;
-	private Map<Integer, Entity> _completedEntities;
-	private Map<Integer, Entity> _previousEntityVersions;
+	private final _EntityIndex<Entity> _entityIndex;
 	private Map<Integer, Long> _commitLevels;
-	private Map<Integer, CreatureEntity> _completedCreatures;
-	private Map<Integer, CreatureEntity> _previousCreatureVersions;
-	private Map<Integer, PassiveEntity> _completedPassives;
-	private Map<Integer, PassiveEntity> _previousPassiveVersions;
+	private final _EntityIndex<CreatureEntity> _creatureIndex;
+	private final _EntityIndex<PassiveEntity> _passiveIndex;
 	private Map<CuboidAddress, List<MutationBlockSetBlock>> _blockChanges;
 
 	public ServerStateManager(ICallouts callouts, long millisPerTick)
@@ -133,13 +130,10 @@ public class ServerStateManager
 		_scheduledBlockMutations = Collections.emptyMap();
 		_periodicBlockMutations = Collections.emptyMap();
 		_scheduledEntityMutations = Collections.emptyMap();
-		_completedEntities = Collections.emptyMap();
-		_previousEntityVersions = Collections.emptyMap();
+		_entityIndex = new _EntityIndex<>();
 		_commitLevels = Collections.emptyMap();
-		_completedCreatures = Collections.emptyMap();
-		_previousCreatureVersions = Collections.emptyMap();
-		_completedPassives = Collections.emptyMap();
-		_previousPassiveVersions = Collections.emptyMap();
+		_creatureIndex = new _EntityIndex<>();
+		_passiveIndex = new _EntityIndex<>();
 		_blockChanges = Collections.emptyMap();
 	}
 
@@ -225,55 +219,94 @@ public class ServerStateManager
 		
 		// Reset the entities.
 		_scheduledEntityMutations = new HashMap<>();
-		_completedEntities = new HashMap<>();
-		_previousEntityVersions = new HashMap<>();
+		Set<Integer> previousEntityIds = _entityIndex.resetAndTakeExistingIds();
 		_commitLevels = new HashMap<>();
 		for (TickSnapshot.SnapshotEntity elt : snapshot.entities().values())
 		{
 			Entity completed = elt.completed();
 			int id = completed.id();
 			_scheduledEntityMutations.put(id, elt.scheduledMutations());
-			_completedEntities.put(id, completed);
+			_entityIndex.completed.put(id, completed);
+			boolean wasKnown = previousEntityIds.remove(id);
 			
 			Entity previous = elt.previousVersion();
 			if (null != previous)
 			{
-				_previousEntityVersions.put(id, previous);
+				_entityIndex.previousVersions.put(id, previous);
+				_entityIndex.changed.add(completed);
+			}
+			else if (wasKnown)
+			{
+				_entityIndex.unchanged.add(completed);
+			}
+			else
+			{
+				_entityIndex.added.add(completed);
 			}
 			
 			_commitLevels.put(id, elt.commitLevel());
 		}
+		for (Integer id : previousEntityIds)
+		{
+			_entityIndex.removed.add(id);
+		}
 		
 		// Reset the creatures.
-		_completedCreatures = new HashMap<>();
-		_previousCreatureVersions = new HashMap<>();
+		Set<Integer> previousCreatureIds = _creatureIndex.resetAndTakeExistingIds();
 		for (TickSnapshot.SnapshotCreature elt : snapshot.creatures().values())
 		{
 			CreatureEntity completed = elt.completed();
 			int id = completed.id();
-			_completedCreatures.put(id, completed);
+			_creatureIndex.completed.put(id, completed);
+			boolean wasKnown = previousCreatureIds.remove(id);
 			
 			CreatureEntity previous = elt.previousVersion();
 			if (null != previous)
 			{
-				_previousCreatureVersions.put(id, previous);
+				_creatureIndex.previousVersions.put(id, previous);
+				_creatureIndex.changed.add(completed);
 			}
+			else if (wasKnown)
+			{
+				_creatureIndex.unchanged.add(completed);
+			}
+			else
+			{
+				_creatureIndex.added.add(completed);
+			}
+		}
+		for (Integer id : previousCreatureIds)
+		{
+			_creatureIndex.removed.add(id);
 		}
 		
 		// Reset the passives.
-		_completedPassives = new HashMap<>();
-		_previousPassiveVersions = new HashMap<>();
+		Set<Integer> previousPassiveIds = _passiveIndex.resetAndTakeExistingIds();
 		for (TickSnapshot.SnapshotPassive elt : snapshot.passives().values())
 		{
 			PassiveEntity completed = elt.completed();
 			int id = completed.id();
-			_completedPassives.put(id, completed);
+			_passiveIndex.completed.put(id, completed);
+			boolean wasKnown = previousPassiveIds.remove(id);
 			
 			PassiveEntity previous = elt.previousVersion();
 			if (null != previous)
 			{
-				_previousPassiveVersions.put(id, previous);
+				_passiveIndex.previousVersions.put(id, previous);
+				_passiveIndex.changed.add(completed);
 			}
+			else if (wasKnown)
+			{
+				_passiveIndex.unchanged.add(completed);
+			}
+			else
+			{
+				_passiveIndex.added.add(completed);
+			}
+		}
+		for (Integer id : previousPassiveIds)
+		{
+			_passiveIndex.removed.add(id);
 		}
 		
 		Set<CuboidAddress> completedCuboidAddresses = _completedCuboids.keySet();
@@ -348,7 +381,7 @@ public class ServerStateManager
 			ClientState state = elt.getValue();
 			
 			// Update the location snapshot in the ClientState in case the entity moved.
-			Entity entity = _completedEntities.get(clientId);
+			Entity entity = _entityIndex.completed.get(clientId);
 			// This may not be here if they just joined.
 			CuboidAddress newCuboidLocation = null;
 			if (null != entity)
@@ -475,13 +508,13 @@ public class ServerStateManager
 	{
 		Assert.assertTrue(Thread.currentThread() == _ownerThread);
 		// Finish any remaining write-back.
-		if (!_completedCuboids.isEmpty() || !_completedEntities.isEmpty())
+		if (!_completedCuboids.isEmpty() || !_entityIndex.completed.isEmpty())
 		{
 			// We need to package up the cuboids with any suspended operations.
 			Map<CuboidAddress, List<CreatureEntity>> creaturesToUnload = _findCreaturesToUnload(_completedCuboids.values());
 			Map<CuboidAddress, List<PassiveEntity>> passivesToUnload = _findPassivesToUnload(_completedCuboids.values());
 			Collection<PackagedCuboid> cuboidResources = _packageCuboidsForUnloading(_completedCuboids.values(), creaturesToUnload, passivesToUnload);
-			Collection<SuspendedEntity> entityResources = _packageEntitiesForUnloading(_completedEntities.values());
+			Collection<SuspendedEntity> entityResources = _packageEntitiesForUnloading(_entityIndex.completed.values());
 			
 			// Save this as of the last completed tick time.
 			long gameTimeMillis = _tickNumber * _millisPerTick;
@@ -525,7 +558,7 @@ public class ServerStateManager
 			Map<CuboidAddress, List<PassiveEntity>> passivesToUnload = _findPassivesToUnload(cuboidsToPackage);
 			Collection<PackagedCuboid> saveCuboids = _packageCuboidsForUnloading(cuboidsToPackage, creaturesToUnload, passivesToUnload);
 			List<Entity> entitiesToPackage = removedClients.stream().map(
-					(Integer id) -> _completedEntities.get(id)
+				(Integer id) -> _entityIndex.completed.get(id)
 			).filter(
 					// Note that these entities might be missing if they disconnect before they appear in a snapshot (very unusual but can happen in unit tests).
 					(Entity entity) -> (null != entity)
@@ -613,7 +646,7 @@ public class ServerStateManager
 		_sendEvents(buffer, state, postedEvents);
 		
 		// We send entities based on how far away they are.
-		_sendEntityUpdates(clientId, buffer, state);
+		_sendEntityUpdates(clientId, buffer, state, (null != newCuboidLocation));
 		
 		// We send cuboids based on how far away they are (also capture an update on what cuboids are visible).
 		_sendCuboidUpdates(buffer, state);
@@ -745,191 +778,304 @@ public class ServerStateManager
 		}
 	}
 
-	private void _sendEntityUpdates(int clientId, OutpacketBuffer buffer, ClientState state)
+	private void _sendEntityUpdates(int clientId, OutpacketBuffer buffer, ClientState state, boolean didMoveToNewCuboid)
 	{
 		float entityVisibleDistance = state.getEntityVisibleDistance();
-		_sendNewAndUpdatedEntities(clientId, buffer, state, entityVisibleDistance);
-		_sendNewAndUpdatedCreatures(buffer, state, entityVisibleDistance);
-		_sendNewAndUpdatedPassives(buffer, state, entityVisibleDistance);
+		_sendNewAndUpdatedEntities(clientId, buffer, state, entityVisibleDistance, didMoveToNewCuboid);
+		_sendNewAndUpdatedCreatures(buffer, state, entityVisibleDistance, didMoveToNewCuboid);
+		_sendNewAndUpdatedPassives(buffer, state, entityVisibleDistance, didMoveToNewCuboid);
 		
 		// If there are any entities in the state which aren't in the snapshot, remove them since they died or disconnected.
-		Iterator<Integer> entityIterator = state.knownEntities.iterator();
-		while (entityIterator.hasNext())
+		for (Integer entityId : _entityIndex.removed)
 		{
-			int entityId = entityIterator.next();
-			if (!_completedEntities.containsKey(entityId) && !_completedCreatures.containsKey(entityId))
+			if (state.knownEntities.remove(entityId))
 			{
 				Packet_RemoveEntity packet = new Packet_RemoveEntity(entityId);
 				buffer.writePacket(packet);
-				entityIterator.remove();
 			}
 		}
-		Iterator<Integer> passiveIterator = state.knownPassives.iterator();
-		while (passiveIterator.hasNext())
+		for (Integer creatureId : _creatureIndex.removed)
 		{
-			int passiveId = passiveIterator.next();
-			if (!_completedPassives.containsKey(passiveId))
+			if (state.knownEntities.remove(creatureId))
+			{
+				Packet_RemoveEntity packet = new Packet_RemoveEntity(creatureId);
+				buffer.writePacket(packet);
+			}
+		}
+		for (Integer passiveId : _passiveIndex.removed)
+		{
+			if (state.knownPassives.remove(passiveId))
 			{
 				Packet_RemovePassive packet = new Packet_RemovePassive(passiveId);
 				buffer.writePacket(packet);
-				passiveIterator.remove();
 			}
 		}
 	}
 
-	private void _sendNewAndUpdatedEntities(int clientId, OutpacketBuffer buffer, ClientState state, float entityVisibleDistance)
+	private void _sendNewAndUpdatedEntities(int clientId, OutpacketBuffer buffer, ClientState state, float entityVisibleDistance, boolean didMoveToNewCuboid)
 	{
 		// Note that this is similar to _sendNewAndUpdatedCreatures but duplicated to avoid spreading logic with extra levels of indirection.
 		EntityType playerType  = Environment.getShared().creatures.PLAYER;
 		EntityVolume entityVolume = playerType.volume();
 		EntityLocation playerEyeLocation = SpatialHelpers.getEyeLocation(state.location, entityVolume);
-		for (Map.Entry<Integer, Entity> entry : _completedEntities.entrySet())
+		
+		// We want to check what was added and what moved.  If we moved to a new cuboid, also check what didn't move.
+		for (Entity entity : _entityIndex.added)
 		{
-			int entityId = entry.getKey();
-			Entity entity = entry.getValue();
+			int entityId = entity.id();
 			EntityLocation entityBase = entity.location();
 			float distance = SpatialHelpers.distanceFromLocationToVolume(playerEyeLocation, entityBase, entityVolume);
-			if (state.knownEntities.contains(entityId))
+			
+			if (distance <= entityVisibleDistance)
 			{
-				// See if they are too far away.
-				if (distance > entityVisibleDistance)
-				{
-					// This is too far away so discard it.
-					Packet_RemoveEntity packet = new Packet_RemoveEntity(entityId);
-					buffer.writePacket(packet);
-					state.knownEntities.remove(entityId);
-				}
-				else
-				{
-					// They are in range and we know about them so send the update if they changed.
-					Entity previousEntityVersion = _previousEntityVersions.get(entityId);
-					if (null != previousEntityVersion)
-					{
-						if (clientId == entityId)
-						{
-							// The client has the full entity so send it.
-							EntityUpdatePerField update = EntityUpdatePerField.update(previousEntityVersion, entity);
-							Packet_EntityUpdateFromServer packet = new Packet_EntityUpdateFromServer(update);
-							buffer.writePacket(packet);
-						}
-						else if (PartialEntityUpdate.canDescribeChange(previousEntityVersion, entity))
-						{
-							// The client will have a partial so just send that.
-							PartialEntityUpdate update = new PartialEntityUpdate(PartialEntity.fromEntity(entity));
-							Packet_PartialEntityUpdateFromServer packet = new Packet_PartialEntityUpdateFromServer(update);
-							buffer.writePacket(packet);
-						}
-					}
-				}
+				_handleUnknownEntityInRange(clientId, buffer, state, entity, entityId);
 			}
-			else if (distance <= entityVisibleDistance)
+		}
+		for (Entity entity : _entityIndex.changed)
+		{
+			_handleChangedEntity(clientId, buffer, state, entityVisibleDistance, entityVolume, playerEyeLocation, entity);
+		}
+		if (didMoveToNewCuboid)
+		{
+			for (Entity entity : _entityIndex.unchanged)
 			{
-				// We don't know this entity, and they are close by, so send them.
-				// See if this is "them" or someone else.
-				if (clientId == entityId)
-				{
-					// This only won't be already known during the first tick after they join.
-					Packet_Entity packet = new Packet_Entity(entity);
-					buffer.writePacket(packet);
-				}
-				else
-				{
-					PartialEntity partial = PartialEntity.fromEntity(entity);
-					Packet_PartialEntity packet = new Packet_PartialEntity(partial);
-					buffer.writePacket(packet);
-				}
-				state.knownEntities.add(entityId);
+				_handleChangedEntity(clientId, buffer, state, entityVisibleDistance, entityVolume, playerEyeLocation, entity);
 			}
 		}
 	}
 
-	private void _sendNewAndUpdatedCreatures(OutpacketBuffer buffer, ClientState state, float entityVisibleDistance)
+	private void _handleChangedEntity(int clientId, OutpacketBuffer buffer, ClientState state, float entityVisibleDistance, EntityVolume entityVolume, EntityLocation playerEyeLocation, Entity entity)
+	{
+		int entityId = entity.id();
+		EntityLocation entityBase = entity.location();
+		float distance = SpatialHelpers.distanceFromLocationToVolume(playerEyeLocation, entityBase, entityVolume);
+		
+		if (state.knownEntities.contains(entityId))
+		{
+			// See if they are too far away.
+			if (distance > entityVisibleDistance)
+			{
+				// This is too far away so discard it.
+				Packet_RemoveEntity packet = new Packet_RemoveEntity(entityId);
+				buffer.writePacket(packet);
+				state.knownEntities.remove(entityId);
+			}
+			else
+			{
+				_handleKnownEntityInRange(clientId, buffer, entity, entityId);
+			}
+		}
+		else if (distance <= entityVisibleDistance)
+		{
+			_handleUnknownEntityInRange(clientId, buffer, state, entity, entityId);
+		}
+	}
+
+	private void _handleKnownEntityInRange(int clientId, OutpacketBuffer buffer, Entity entity, int entityId)
+	{
+		// They are in range and we know about them so send the update if they changed.
+		Entity previousEntityVersion = _entityIndex.previousVersions.get(entityId);
+		if (null != previousEntityVersion)
+		{
+			if (clientId == entityId)
+			{
+				// The client has the full entity so send it.
+				EntityUpdatePerField update = EntityUpdatePerField.update(previousEntityVersion, entity);
+				Packet_EntityUpdateFromServer packet = new Packet_EntityUpdateFromServer(update);
+				buffer.writePacket(packet);
+			}
+			else if (PartialEntityUpdate.canDescribeChange(previousEntityVersion, entity))
+			{
+				// The client will have a partial so just send that.
+				PartialEntityUpdate update = new PartialEntityUpdate(PartialEntity.fromEntity(entity));
+				Packet_PartialEntityUpdateFromServer packet = new Packet_PartialEntityUpdateFromServer(update);
+				buffer.writePacket(packet);
+			}
+		}
+	}
+
+	private void _handleUnknownEntityInRange(int clientId, OutpacketBuffer buffer, ClientState state, Entity entity, int entityId)
+	{
+		// We don't know this entity, and they are close by, so send them.
+		// See if this is "them" or someone else.
+		if (clientId == entityId)
+		{
+			// This only won't be already known during the first tick after they join.
+			Packet_Entity packet = new Packet_Entity(entity);
+			buffer.writePacket(packet);
+		}
+		else
+		{
+			PartialEntity partial = PartialEntity.fromEntity(entity);
+			Packet_PartialEntity packet = new Packet_PartialEntity(partial);
+			buffer.writePacket(packet);
+		}
+		state.knownEntities.add(entityId);
+	}
+
+	private void _sendNewAndUpdatedCreatures(OutpacketBuffer buffer, ClientState state, float entityVisibleDistance, boolean didMoveToNewCuboid)
 	{
 		// Note that this is similar to _sendNewAndUpdatedEntities but duplicated to avoid spreading logic with extra levels of indirection.
 		EntityType playerType  = Environment.getShared().creatures.PLAYER;
 		EntityLocation playerEyeLocation = SpatialHelpers.getEyeLocation(state.location, playerType.volume());
-		for (Map.Entry<Integer, CreatureEntity> entry : _completedCreatures.entrySet())
+		
+		// We want to check what was added and what moved.  If we moved to a new cuboid, also check what didn't move.
+		for (CreatureEntity entity : _creatureIndex.added)
 		{
-			int entityId = entry.getKey();
-			CreatureEntity entity = entry.getValue();
+			int entityId = entity.id();
 			EntityLocation entityBase = entity.location();
 			EntityVolume entityVolume = entity.type().volume();
 			float distance = SpatialHelpers.distanceFromLocationToVolume(playerEyeLocation, entityBase, entityVolume);
-			if (state.knownEntities.contains(entityId))
+			
+			if (distance <= entityVisibleDistance)
 			{
-				// See if they are too far away.
-				if (distance > entityVisibleDistance)
-				{
-					// This is too far away so discard it.
-					Packet_RemoveEntity packet = new Packet_RemoveEntity(entityId);
-					buffer.writePacket(packet);
-					state.knownEntities.remove(entityId);
-				}
-				else
-				{
-					// They are in range and we know about them so send the update if they changed.
-					CreatureEntity previousCreatureVersion = _previousCreatureVersions.get(entityId);
-					if ((null != previousCreatureVersion) && PartialEntityUpdate.canDescribeCreatureChange(previousCreatureVersion, entity))
-					{
-						// Creatures are always partial.
-						PartialEntityUpdate update = new PartialEntityUpdate(PartialEntity.fromCreature(entity));
-						Packet_PartialEntityUpdateFromServer packet = new Packet_PartialEntityUpdateFromServer(update);
-						buffer.writePacket(packet);
-					}
-				}
+				_handleUnknownCreatureEntityInRange(buffer, state, entity, entityId);
 			}
-			else if (distance <= entityVisibleDistance)
+		}
+		for (CreatureEntity entity : _creatureIndex.changed)
+		{
+			_handleChangedCreatureEntity(buffer, state, entityVisibleDistance, playerEyeLocation, entity);
+		}
+		if (didMoveToNewCuboid)
+		{
+			for (CreatureEntity entity : _creatureIndex.unchanged)
 			{
-				// We don't know this entity, and they are close by, so send them.
-				// Creatures are always partial.
-				PartialEntity partial = PartialEntity.fromCreature(entity);
-				Packet_PartialEntity packet = new Packet_PartialEntity(partial);
-				buffer.writePacket(packet);
-				state.knownEntities.add(entityId);
+				_handleChangedCreatureEntity(buffer, state, entityVisibleDistance, playerEyeLocation, entity);
 			}
 		}
 	}
 
-	private void _sendNewAndUpdatedPassives(OutpacketBuffer buffer, ClientState state, float entityVisibleDistance)
+	private void _handleChangedCreatureEntity(OutpacketBuffer buffer, ClientState state, float entityVisibleDistance, EntityLocation playerEyeLocation, CreatureEntity entity)
+	{
+		int entityId = entity.id();
+		EntityLocation entityBase = entity.location();
+		EntityVolume entityVolume = entity.type().volume();
+		float distance = SpatialHelpers.distanceFromLocationToVolume(playerEyeLocation, entityBase, entityVolume);
+		
+		if (state.knownEntities.contains(entityId))
+		{
+			// See if they are too far away.
+			if (distance > entityVisibleDistance)
+			{
+				// This is too far away so discard it.
+				Packet_RemoveEntity packet = new Packet_RemoveEntity(entityId);
+				buffer.writePacket(packet);
+				state.knownEntities.remove(entityId);
+			}
+			else
+			{
+				_handleKnownCreatureEntityInRange(buffer, entity, entityId);
+			}
+		}
+		else if (distance <= entityVisibleDistance)
+		{
+			_handleUnknownCreatureEntityInRange(buffer, state, entity, entityId);
+		}
+	}
+
+	private void _handleKnownCreatureEntityInRange(OutpacketBuffer buffer, CreatureEntity entity, int entityId)
+	{
+		// They are in range and we know about them so send the update if they changed.
+		CreatureEntity previousEntityVersion = _creatureIndex.previousVersions.get(entityId);
+		if (null != previousEntityVersion)
+		{
+			if (PartialEntityUpdate.canDescribeCreatureChange(previousEntityVersion, entity))
+			{
+				// The client will have a partial so just send that.
+				PartialEntityUpdate update = new PartialEntityUpdate(PartialEntity.fromCreature(entity));
+				Packet_PartialEntityUpdateFromServer packet = new Packet_PartialEntityUpdateFromServer(update);
+				buffer.writePacket(packet);
+			}
+		}
+	}
+
+	private void _handleUnknownCreatureEntityInRange(OutpacketBuffer buffer, ClientState state, CreatureEntity entity, int entityId)
+	{
+		// We don't know this entity, and they are close by, so send them.
+		PartialEntity partial = PartialEntity.fromCreature(entity);
+		Packet_PartialEntity packet = new Packet_PartialEntity(partial);
+		buffer.writePacket(packet);
+		state.knownEntities.add(entityId);
+	}
+
+	private void _sendNewAndUpdatedPassives(OutpacketBuffer buffer, ClientState state, float entityVisibleDistance, boolean didMoveToNewCuboid)
 	{
 		// Note that this is similar to _sendNewAndUpdatedCreatures but duplicated to avoid spreading logic with extra levels of indirection.
 		EntityType playerType  = Environment.getShared().creatures.PLAYER;
 		EntityLocation playerEyeLocation = SpatialHelpers.getEyeLocation(state.location, playerType.volume());
-		for (Map.Entry<Integer, PassiveEntity> entry : _completedPassives.entrySet())
+		
+		// We want to check what was added and what moved.  If we moved to a new cuboid, also check what didn't move.
+		for (PassiveEntity passive : _passiveIndex.added)
 		{
-			int entityId = entry.getKey();
-			PassiveEntity passive = entry.getValue();
-			float distance = SpatialHelpers.distanceFromLocationToVolume(playerEyeLocation, passive.location(), passive.type().volume());
-			if (state.knownPassives.contains(entityId))
+			int entityId = passive.id();
+			EntityLocation entityBase = passive.location();
+			EntityVolume entityVolume = passive.type().volume();
+			float distance = SpatialHelpers.distanceFromLocationToVolume(playerEyeLocation, entityBase, entityVolume);
+			
+			if (distance <= entityVisibleDistance)
 			{
-				// See if they are too far away.
-				if (distance > entityVisibleDistance)
-				{
-					// This is too far away so discard it.
-					Packet_RemovePassive packet = new Packet_RemovePassive(entityId);
-					buffer.writePacket(packet);
-					state.knownPassives.remove(entityId);
-				}
-				else
-				{
-					// They are in range and we know about them so send the update if they changed.
-					PassiveEntity previousPassiveVersion = _previousPassiveVersions.get(entityId);
-					if ((null != previousPassiveVersion) && _canDescribePassiveChange(previousPassiveVersion, passive))
-					{
-						Packet_SendPartialPassiveUpdate packet = new Packet_SendPartialPassiveUpdate(entityId, passive.location(), passive.velocity());
-						buffer.writePacket(packet);
-					}
-				}
-			}
-			else if (distance <= entityVisibleDistance)
-			{
-				// We don't know this passive, and they are close by, so send them.
-				PartialPassive partial = PartialPassive.fromPassive(passive);
-				Packet_SendPartialPassive packet = new Packet_SendPartialPassive(partial);
-				buffer.writePacket(packet);
-				state.knownPassives.add(entityId);
+				_handleUnknownPassiveInRange(buffer, state, passive, entityId);
 			}
 		}
+		for (PassiveEntity passive : _passiveIndex.changed)
+		{
+			_handleChangedPassive(buffer, state, entityVisibleDistance, playerEyeLocation, passive);
+		}
+		if (didMoveToNewCuboid)
+		{
+			for (PassiveEntity passive : _passiveIndex.unchanged)
+			{
+				_handleChangedPassive(buffer, state, entityVisibleDistance, playerEyeLocation, passive);
+			}
+		}
+	}
+
+	private void _handleChangedPassive(OutpacketBuffer buffer, ClientState state, float entityVisibleDistance, EntityLocation playerEyeLocation, PassiveEntity passive)
+	{
+		int entityId = passive.id();
+		EntityLocation entityBase = passive.location();
+		EntityVolume entityVolume = passive.type().volume();
+		float distance = SpatialHelpers.distanceFromLocationToVolume(playerEyeLocation, entityBase, entityVolume);
+		
+		if (state.knownPassives.contains(entityId))
+		{
+			// See if they are too far away.
+			if (distance > entityVisibleDistance)
+			{
+				// This is too far away so discard it.
+				Packet_RemovePassive packet = new Packet_RemovePassive(entityId);
+				buffer.writePacket(packet);
+				state.knownPassives.remove(entityId);
+			}
+			else
+			{
+				_handleKnownPassiveInRange(buffer, passive, entityId);
+			}
+		}
+		else if (distance <= entityVisibleDistance)
+		{
+			_handleUnknownPassiveInRange(buffer, state, passive, entityId);
+		}
+	}
+
+	private void _handleKnownPassiveInRange(OutpacketBuffer buffer, PassiveEntity passive, int entityId)
+	{
+		// They are in range and we know about them so send the update if they changed.
+		PassiveEntity previousPassiveVersion = _passiveIndex.previousVersions.get(entityId);
+		if ((null != previousPassiveVersion) && _canDescribePassiveChange(previousPassiveVersion, passive))
+		{
+			Packet_SendPartialPassiveUpdate packet = new Packet_SendPartialPassiveUpdate(entityId, passive.location(), passive.velocity());
+			buffer.writePacket(packet);
+		}
+	}
+
+	private void _handleUnknownPassiveInRange(OutpacketBuffer buffer, ClientState state, PassiveEntity passive, int entityId)
+	{
+		// We don't know this passive, and they are close by, so send them.
+		PartialPassive partial = PartialPassive.fromPassive(passive);
+		Packet_SendPartialPassive packet = new Packet_SendPartialPassive(partial);
+		buffer.writePacket(packet);
+		state.knownPassives.add(entityId);
 	}
 
 	private void _sendCuboidUpdates(OutpacketBuffer buffer
@@ -1065,7 +1211,7 @@ public class ServerStateManager
 			creaturesToUnload.put(address, new ArrayList<>());
 		}
 		// TODO:  Change this to use some sort of spatial look-up mechanism since this loop is attrocious.
-		for (CreatureEntity creature : _completedCreatures.values())
+		for (CreatureEntity creature : _creatureIndex.completed.values())
 		{
 			CuboidAddress address = creature.location().getBlockLocation().getCuboidAddress();
 			List<CreatureEntity> list = creaturesToUnload.get(address);
@@ -1086,7 +1232,7 @@ public class ServerStateManager
 			passivesToUnload.put(address, new ArrayList<>());
 		}
 		// TODO:  Change this to use some sort of spatial look-up mechanism since this loop is attrocious.
-		for (PassiveEntity passive : _completedPassives.values())
+		for (PassiveEntity passive : _passiveIndex.completed.values())
 		{
 			CuboidAddress address = passive.location().getBlockLocation().getCuboidAddress();
 			List<PassiveEntity> list = passivesToUnload.get(address);
@@ -1164,7 +1310,7 @@ public class ServerStateManager
 		// This path is to write-back everything we are NOT unloading, so filter those out.
 		Map<CuboidAddress, IReadOnlyCuboidData> remainingCuboids = new HashMap<>(_completedCuboids);
 		remainingCuboids.keySet().removeAll(orphanedCuboids);
-		Map<Integer, Entity> remainingEntities = new HashMap<>(_completedEntities);
+		Map<Integer, Entity> remainingEntities = new HashMap<>(_entityIndex.completed);
 		remainingEntities.keySet().removeAll(removedClients);
 		
 		if (!remainingCuboids.isEmpty() || !remainingEntities.isEmpty())
@@ -1279,6 +1425,28 @@ public class ServerStateManager
 			// We will build our estimate of distance based on the cuboid view distance minus 1 with a minimum of 1.
 			int cuboidDistance = Math.max(1, this.cuboidViewDistance - 1);
 			return (float)(cuboidDistance * Encoding.CUBOID_EDGE_SIZE);
+		}
+	}
+
+	private static final class _EntityIndex<T>
+	{
+		public Map<Integer, T> completed = Map.of();
+		public Map<Integer, T> previousVersions = Map.of();
+		public List<T> added = List.of();
+		public List<Integer> removed = List.of();
+		public List<T> changed = List.of();
+		public List<T> unchanged = List.of();
+		
+		public Set<Integer> resetAndTakeExistingIds()
+		{
+			Set<Integer> ids = this.completed.keySet();
+			this.completed = new HashMap<>();
+			this.previousVersions = new HashMap<>();
+			this.added = new ArrayList<>();
+			this.removed = new ArrayList<>();
+			this.changed = new ArrayList<>();
+			this.unchanged = new ArrayList<>();
+			return ids;
 		}
 	}
 }
