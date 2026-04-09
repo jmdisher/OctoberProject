@@ -1607,7 +1607,7 @@ public class TestServerStateManager
 						, (byte)100
 						, (byte)100
 						, COW.extendedCodec().buildDefault(1000L)
-						, null
+						, CreatureEntity.createEmptyEphemeral(1000L)
 					);
 					_nextCreatureId -= 1;
 					
@@ -1619,6 +1619,7 @@ public class TestServerStateManager
 						, slot
 						, 1000L
 					);
+					_nextPassiveId += 1;
 					SuspendedCuboid<CuboidData> suspended = new SuspendedCuboid<>(cuboid
 						, cuboidHeightMap
 						, List.of(creature)
@@ -1661,7 +1662,6 @@ public class TestServerStateManager
 				// Return a buffer we can ignore.
 				return new OutpacketBuffer(inlineBuffer, 1);
 			}
-
 			@Override
 			public void network_closeOutputBuffer(int clientId, OutpacketBuffer buffer)
 			{
@@ -1744,12 +1744,91 @@ public class TestServerStateManager
 			tickChanges = manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		}
 		
+		// Create a variant of the snapshot to show how we handle changing and unchanging data.
+		Map<Integer, TickSnapshot.SnapshotEntity> entities2 = new HashMap<>(snapshot.entities());
+		Map<Integer, TickSnapshot.SnapshotEntity> entities3 = new HashMap<>(snapshot.entities());
+		Map<Integer, TickSnapshot.SnapshotCreature> creatures2 = new HashMap<>(snapshot.creatures());
+		Map<Integer, TickSnapshot.SnapshotCreature> creatures3 = new HashMap<>(snapshot.creatures());
+		Map<Integer, TickSnapshot.SnapshotPassive> passives2 = new HashMap<>(snapshot.passives());
+		Map<Integer, TickSnapshot.SnapshotPassive> passives3 = new HashMap<>(snapshot.passives());
+		boolean flip = false;
+		for (TickSnapshot.SnapshotEntity snap : snapshot.entities().values())
+		{
+			if (flip)
+			{
+				Entity original = snap.completed();
+				MutableEntity mut = MutableEntity.existing(original);
+				mut.newLocation = new EntityLocation(1.0f, mut.newLocation.y(), mut.newLocation.z());
+				Entity changed = mut.freeze();
+				
+				entities2.put(original.id(), new TickSnapshot.SnapshotEntity(changed, original, snap.commitLevel(), snap.scheduledMutations()));
+				entities3.put(original.id(), new TickSnapshot.SnapshotEntity(original, changed, snap.commitLevel(), snap.scheduledMutations()));
+			}
+			flip = !flip;
+		}
+		for (TickSnapshot.SnapshotCreature snap : snapshot.creatures().values())
+		{
+			if (flip)
+			{
+				CreatureEntity original = snap.completed();
+				MutableCreature mut = MutableCreature.existing(original);
+				mut.newLocation = new EntityLocation(mut.newLocation.x() + 1.0f, mut.newLocation.y(), mut.newLocation.z());
+				CreatureEntity changed = mut.freeze();
+				
+				creatures2.put(original.id(), new TickSnapshot.SnapshotCreature(changed, original));
+				creatures3.put(original.id(), new TickSnapshot.SnapshotCreature(original, changed));
+			}
+			flip = !flip;
+		}
+		for (TickSnapshot.SnapshotPassive snap : snapshot.passives().values())
+		{
+			if (flip)
+			{
+				PassiveEntity original = snap.completed();
+				PassiveEntity changed = new PassiveEntity(original.id()
+					, original.type()
+					, new EntityLocation(original.location().x() + 1.0f, original.location().y(), original.location().z())
+					, original.velocity()
+					, original.extendedData()
+					, original.lastAliveMillis()
+				);
+				passives2.put(original.id(), new TickSnapshot.SnapshotPassive(changed, original));
+				passives3.put(original.id(), new TickSnapshot.SnapshotPassive(original, changed));
+			}
+			flip = !flip;
+		}
+		TickSnapshot snap2 = new TickSnapshot(snapshot.tickNumber()
+			, snapshot.cuboids()
+			, entities2
+			, creatures2
+			, passives2
+			, snapshot.completedHeightMaps()
+			
+			, snapshot.postedEvents()
+			, snapshot.internallyMarkedAlive()
+			
+			, snapshot.stats()
+		);
+		TickSnapshot snap3 = new TickSnapshot(snapshot.tickNumber()
+			, snapshot.cuboids()
+			, entities3
+			, creatures3
+			, passives3
+			, snapshot.completedHeightMaps()
+			
+			, snapshot.postedEvents()
+			, snapshot.internallyMarkedAlive()
+			
+			, snapshot.stats()
+		);
+		
 		// We are now in a steady state so run the test.
 		if (infiniteLoopForProfiler)
 		{
 			while (true)
 			{
-				manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
+				manager.setupNextTickAfterCompletion(snap2, worldSpawn);
+				manager.setupNextTickAfterCompletion(snap3, worldSpawn);
 			}
 		}
 		else if (longLoopForObjectiveScore)
@@ -1758,14 +1837,16 @@ public class TestServerStateManager
 			long startNanos = System.nanoTime();
 			for (int i = 0; i < iterationCount; ++i)
 			{
-				manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
+				manager.setupNextTickAfterCompletion(snap2, worldSpawn);
+				manager.setupNextTickAfterCompletion(snap3, worldSpawn);
 			}
 			long endNanos = System.nanoTime();
 			System.out.println("Nanos per: " + ((endNanos - startNanos) / iterationCount));
 		}
 		else
 		{
-			manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
+			manager.setupNextTickAfterCompletion(snap2, worldSpawn);
+			manager.setupNextTickAfterCompletion(snap3, worldSpawn);
 		}
 	}
 
