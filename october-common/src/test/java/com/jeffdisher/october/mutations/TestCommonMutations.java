@@ -221,7 +221,7 @@ public class TestCommonMutations
 		
 		// We should see the applied damage at 12x the time since we were using the pickaxe (hard-coded since we are partially validating the env lookup).
 		Assert.assertEquals(STONE, proxy.getBlock());
-		Assert.assertEquals((short)1200, proxy.getDamage());
+		Assert.assertEquals((short)1500, proxy.getDamage());
 	}
 
 	@Test

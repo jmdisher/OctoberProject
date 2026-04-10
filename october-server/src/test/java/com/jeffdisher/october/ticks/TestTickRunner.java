@@ -466,11 +466,11 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
 		BlockProxy proxy1 = _getBlockProxy(snapshot, changeLocation1);
 		Assert.assertEquals(STONE, proxy1.getBlock());
-		Assert.assertEquals(1200, proxy1.getDamage());
+		Assert.assertEquals(1500, proxy1.getDamage());
 		Assert.assertNull(proxy1.getInventory());
 		
 		// Now, enqueue the remaining hits to finish the break.
-		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, entity, changeLocation1, (short)2400);
+		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, entity, changeLocation1, (short)1900);
 		
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(nextCommit - 1L, snapshot.entities().get(entityId).commitLevel());

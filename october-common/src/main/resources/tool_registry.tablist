@@ -17,7 +17,7 @@
 
 # Melee Weapons:
 op.club	NO_MATERIAL
-	material_multiplier	2
+	material_multiplier	1
 	weapon_damage	3
 op.stone_knife	NO_MATERIAL
 	material_multiplier	1
@@ -41,7 +41,7 @@ op.bow	NO_MATERIAL
 
 # Shovels:
 op.digging_stick	SHOVEL
-	material_multiplier	6
+	material_multiplier	4
 	weapon_damage	1
 op.copper_shovel	SHOVEL
 	material_multiplier	6
@@ -61,7 +61,7 @@ op.copper_pickaxe	PICKAXE
 	material_multiplier	8
 	weapon_damage	2
 op.iron_pickaxe	PICKAXE
-	material_multiplier	12
+	material_multiplier	15
 	weapon_damage	2
 op.diamond_pickaxe	PICKAXE
 	material_multiplier	20
