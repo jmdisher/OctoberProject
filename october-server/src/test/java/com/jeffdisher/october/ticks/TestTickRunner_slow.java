@@ -112,10 +112,12 @@ public class TestTickRunner_slow
 	public void furnaceLoadAndCraft()
 	{
 		// Create a cuboid of furnaces, load one with fuel and ingredients, and watch it craft.
+		int logsToConvert = 2;
+		int craftCharcoalMillis = (int)ENV.crafting.getCraftById("op.furnace_logs_to_charcoal").millisPerCraft;
+		int craftCharcoalTicks = (int) (craftCharcoalMillis / MILLIS_PER_TICK);
 		int burnPlankMillis = ENV.fuel.millisOfFuel(PLANK_ITEM);
-		long burnPlankTicks = burnPlankMillis / MILLIS_PER_TICK;
-		long craftCharcoalMillis = ENV.crafting.getCraftById("op.furnace_logs_to_charcoal").millisPerCraft;
-		long craftCharcoalTicks = craftCharcoalMillis / MILLIS_PER_TICK;
+		int planksAsFuel = (logsToConvert * craftCharcoalMillis) / burnPlankMillis;
+		int planksToProvide = 1 + planksAsFuel;
 		
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.fromItem(ENV.items.getItemById("op.furnace")));
@@ -123,11 +125,11 @@ public class TestTickRunner_slow
 		int entityId1 = 1;
 		int entityId2 = 2;
 		MutableEntity mutable1 = MutableEntity.createForTest(entityId1);
-		mutable1.newInventory.addAllItems(LOG_ITEM, 3);
+		mutable1.newInventory.addAllItems(LOG_ITEM, logsToConvert);
 		int logKey = mutable1.newInventory.getIdOfStackableType(LOG_ITEM);
 		Entity entity1 = mutable1.freeze();
 		MutableEntity mutable2 = MutableEntity.createForTest(entityId2);
-		mutable2.newInventory.addAllItems(PLANK_ITEM, 2);
+		mutable2.newInventory.addAllItems(PLANK_ITEM, planksToProvide);
 		int plankKey = mutable2.newInventory.getIdOfStackableType(PLANK_ITEM);
 		Entity entity2 = mutable2.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of(), List.of()))
@@ -146,8 +148,8 @@ public class TestTickRunner_slow
 		// Load the furnace with fuel and material.
 		AbsoluteLocation location = new AbsoluteLocation(0, 0, 0);
 		BlockAddress block = location.getBlockAddress();
-		runner.enqueueEntityChange(entityId1, _wrapSubAction(entity1, new MutationEntityPushItems(location, logKey, 3, Inventory.INVENTORY_ASPECT_INVENTORY)), 1L);
-		runner.enqueueEntityChange(entityId2, _wrapSubAction(entity2, new MutationEntityPushItems(location, plankKey, 2, Inventory.INVENTORY_ASPECT_FUEL)), 2L);
+		runner.enqueueEntityChange(entityId1, _wrapSubAction(entity1, new MutationEntityPushItems(location, logKey, logsToConvert, Inventory.INVENTORY_ASPECT_INVENTORY)), 1L);
+		runner.enqueueEntityChange(entityId2, _wrapSubAction(entity2, new MutationEntityPushItems(location, plankKey, planksToProvide, Inventory.INVENTORY_ASPECT_FUEL)), 2L);
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
 		Assert.assertEquals(2, snap.stats().committedEntityMutationCount());
@@ -159,85 +161,228 @@ public class TestTickRunner_slow
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
 		Assert.assertEquals(2, snap.stats().committedCuboidMutationCount());
-		// We should see the two calls to accept the items.
+		// We should see the mutation to start craft scheduled but the fuel and items still as they started.
 		Assert.assertTrue(snap.cuboids().get(address).scheduledBlockMutations().get(0).mutation() instanceof MutationBlockFurnaceCraft);
 		BlockProxy proxy = BlockProxy.load(block, snap.cuboids().get(address).completed());
-		Assert.assertEquals(3, proxy.getInventory().getCount(LOG_ITEM));
-		Assert.assertEquals(2, proxy.getFuel().fuelInventory().getCount(PLANK_ITEM));
+		Assert.assertEquals(logsToConvert, proxy.getInventory().getCount(LOG_ITEM));
+		Assert.assertEquals(planksToProvide, proxy.getFuel().fuelInventory().getCount(PLANK_ITEM));
 		
 		// Loop until 1 tick before the end of the craft.
-		int burnedMillis = 0;
-		int craftedMillis = 0;
-		int logCount = 3;
-		int plankCount = 1;
-		for (int i = 1; i < (3 * craftCharcoalTicks); ++i)
+		int totalTicks = (logsToConvert * craftCharcoalTicks) - 1;
+		int fueledMillis = 0;
+		int craftProgressMillis = 0;
+		int logCount = logsToConvert;
+		int plankCount = planksToProvide;
+		int charcoalCount = 0;
+		for (int i = 0; i < totalTicks; ++i)
 		{
-			if (0 == (i % craftCharcoalTicks))
-			{
-				logCount -= 1;
-			}
-			if ((burnPlankTicks + 1) == i)
-			{
-				plankCount -= 1;
-			}
-			burnedMillis = (burnedMillis + (int)MILLIS_PER_TICK) % burnPlankMillis;
-			craftedMillis = (craftedMillis + (int)MILLIS_PER_TICK) % 1000;
+			// Run the tick.
 			runner.startNextTick();
 			snap = runner.waitForPreviousTick();
 			
+			// Adjust our counters to what we expect to see now that the tick completed.
+			if (0 == fueledMillis)
+			{
+				// We are out of fuel so top it up.
+				plankCount -= 1;
+				fueledMillis = burnPlankMillis;
+			}
+			fueledMillis -= MILLIS_PER_TICK;
+			craftProgressMillis += MILLIS_PER_TICK;
+			if (craftProgressMillis == craftCharcoalMillis)
+			{
+				logCount -= 1;
+				charcoalCount += 1;
+				craftProgressMillis = 0;
+			}
+			
+			// Verify these assumptions against state.
 			Assert.assertEquals(1, snap.stats().committedCuboidMutationCount());
 			Assert.assertTrue(snap.cuboids().get(address).scheduledBlockMutations().get(0).mutation() instanceof MutationBlockFurnaceCraft);
+			
 			proxy = BlockProxy.load(block, snap.cuboids().get(address).completed());
 			Assert.assertEquals(logCount, proxy.getInventory().getCount(LOG_ITEM));
+			Assert.assertEquals(charcoalCount, proxy.getInventory().getCount(CHARCOAL_ITEM));
 			Assert.assertEquals(plankCount, proxy.getFuel().fuelInventory().getCount(PLANK_ITEM));
-			if (0 != (i % burnPlankTicks))
+			
+			Assert.assertEquals(fueledMillis, proxy.getFuel().millisFuelled());
+			if (0 == fueledMillis)
 			{
-				Assert.assertEquals(burnedMillis, burnPlankMillis - proxy.getFuel().millisFuelled());
-				Assert.assertEquals(PLANK_ITEM, proxy.getFuel().currentFuel());
+				Assert.assertNull(proxy.getFuel().currentFuel());
+				Assert.assertNull(proxy.getCrafting());
 			}
 			else
 			{
-				Assert.assertNull(proxy.getFuel().currentFuel());
-			}
-			if (0 != (i % craftCharcoalTicks))
-			{
-				Assert.assertEquals(craftedMillis, proxy.getCrafting().completedMillis());
+				Assert.assertEquals(PLANK_ITEM, proxy.getFuel().currentFuel());
+				Assert.assertEquals(craftProgressMillis, proxy.getCrafting().completedMillis());
 			}
 		}
+		
 		// Run the last tick to finish things.
-		burnedMillis += MILLIS_PER_TICK;
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
 		
+		// This logic assumes that the crafting operation is a multiple of fuel uses.
+		Assert.assertEquals(0, craftCharcoalMillis % burnPlankMillis);
 		Assert.assertEquals(1, snap.stats().committedCuboidMutationCount());
-		Assert.assertTrue(snap.cuboids().get(address).scheduledBlockMutations().get(0).mutation() instanceof MutationBlockFurnaceCraft);
+		Assert.assertEquals(0, snap.cuboids().values().iterator().next().scheduledBlockMutations().size());
 		proxy = BlockProxy.load(block, snap.cuboids().get(address).completed());
 		Assert.assertEquals(0, proxy.getInventory().getCount(LOG_ITEM));
-		Assert.assertEquals(3, proxy.getInventory().getCount(CHARCOAL_ITEM));
-		Assert.assertEquals(burnedMillis, burnPlankMillis - proxy.getFuel().millisFuelled());
-		Assert.assertEquals(PLANK_ITEM, proxy.getFuel().currentFuel());
+		Assert.assertEquals(2, proxy.getInventory().getCount(CHARCOAL_ITEM));
+		Assert.assertEquals(1, proxy.getFuel().fuelInventory().getCount(PLANK_ITEM));
+		Assert.assertEquals(0, proxy.getFuel().millisFuelled());
+		Assert.assertNull(proxy.getFuel().currentFuel());
 		Assert.assertNull(proxy.getCrafting());
 		
-		// Now, wait for the fuel to finish.
-		int ticksToFinishBurn = (int)((burnPlankMillis - burnedMillis) / MILLIS_PER_TICK);
-		for (int i = 0; i < ticksToFinishBurn; ++i)
+		// Verify that we still have nothing to do after another tick.
+		runner.startNextTick();
+		snap = runner.waitForPreviousTick();
+		Assert.assertEquals(0, snap.cuboids().values().iterator().next().scheduledBlockMutations().size());
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void furnaceLoadAndCraftWithExcess()
+	{
+		// Create a cuboid of furnaces, load one with fuel and ingredients, and watch it craft such that it will have extra time to burn out.
+		int logsToConvert = 1;
+		int craftCharcoalMillis = (int)ENV.crafting.getCraftById("op.furnace_logs_to_charcoal").millisPerCraft;
+		int craftCharcoalTicks = (int) (craftCharcoalMillis / MILLIS_PER_TICK);
+		int burnCharcoalMillis = ENV.fuel.millisOfFuel(CHARCOAL_ITEM);
+		int burnCharcoalTicks = (int) (burnCharcoalMillis / MILLIS_PER_TICK);
+		int charcoalAsFuel = 1;
+		int charcoalToProvide = 1 + charcoalAsFuel;
+		
+		// This test assumes that there is at least one more tick of fuel than in the craft.
+		Assert.assertTrue(burnCharcoalTicks > craftCharcoalTicks);
+		
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.fromItem(ENV.items.getItemById("op.furnace")));
+		TickRunner runner = _createTestRunner();
+		int entityId1 = 1;
+		int entityId2 = 2;
+		MutableEntity mutable1 = MutableEntity.createForTest(entityId1);
+		mutable1.newInventory.addAllItems(LOG_ITEM, logsToConvert);
+		int logKey = mutable1.newInventory.getIdOfStackableType(LOG_ITEM);
+		Entity entity1 = mutable1.freeze();
+		MutableEntity mutable2 = MutableEntity.createForTest(entityId2);
+		mutable2.newInventory.addAllItems(CHARCOAL_ITEM, charcoalToProvide);
+		int charcoalKey = mutable2.newInventory.getIdOfStackableType(CHARCOAL_ITEM);
+		Entity entity2 = mutable2.freeze();
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of(), List.of()))
+			, null
+			, List.of(new SuspendedEntity(entity1, List.of()), new SuspendedEntity(entity2, List.of()))
+			, null
+		);
+		
+		runner.start();
+		// Remember that the first tick is just returning the empty state.
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		TickSnapshot snap = runner.waitForPreviousTick();
+		Assert.assertNotNull(snap.cuboids().get(address));
+		
+		// Load the furnace with fuel and material.
+		AbsoluteLocation location = new AbsoluteLocation(0, 0, 0);
+		BlockAddress block = location.getBlockAddress();
+		runner.enqueueEntityChange(entityId1, _wrapSubAction(entity1, new MutationEntityPushItems(location, logKey, logsToConvert, Inventory.INVENTORY_ASPECT_INVENTORY)), 1L);
+		runner.enqueueEntityChange(entityId2, _wrapSubAction(entity2, new MutationEntityPushItems(location, charcoalKey, charcoalToProvide, Inventory.INVENTORY_ASPECT_FUEL)), 2L);
+		runner.startNextTick();
+		snap = runner.waitForPreviousTick();
+		Assert.assertEquals(2, snap.stats().committedEntityMutationCount());
+		// We should see the two calls to accept the items.
+		Assert.assertTrue(snap.cuboids().get(address).scheduledBlockMutations().get(0).mutation() instanceof MutationBlockStoreItems);
+		Assert.assertTrue(snap.cuboids().get(address).scheduledBlockMutations().get(1).mutation() instanceof MutationBlockStoreItems);
+		
+		// Run the next tick to see the craft scheduled.
+		runner.startNextTick();
+		snap = runner.waitForPreviousTick();
+		Assert.assertEquals(2, snap.stats().committedCuboidMutationCount());
+		// We should see the mutation to start craft scheduled but the fuel and items still as they started.
+		Assert.assertTrue(snap.cuboids().get(address).scheduledBlockMutations().get(0).mutation() instanceof MutationBlockFurnaceCraft);
+		BlockProxy proxy = BlockProxy.load(block, snap.cuboids().get(address).completed());
+		Assert.assertEquals(logsToConvert, proxy.getInventory().getCount(LOG_ITEM));
+		Assert.assertEquals(charcoalToProvide, proxy.getFuel().fuelInventory().getCount(CHARCOAL_ITEM));
+		
+		// We want to watch the entire duration of the craft and the draining away of the excess, but make sure that the craft stops after that, and nothing else is enqeueud.
+		int fueledMillis = 0;
+		int fuelItemCount = charcoalToProvide;
+		int craftProgressMillis = 0;
+		int logCount = logsToConvert;
+		int charcoalCount = 0;
+		for (int i = 0; i < burnCharcoalTicks; ++i)
 		{
-			burnedMillis += MILLIS_PER_TICK;
+			// Run the tick.
 			runner.startNextTick();
 			snap = runner.waitForPreviousTick();
 			
+			// Adjust our counters to what we expect to see now that the tick completed.
+			if (0 == fueledMillis)
+			{
+				// We are out of fuel so top it up if there is still work to do.
+				if (logCount > 0)
+				{
+					fuelItemCount -= 1;
+					fueledMillis = burnCharcoalMillis;
+				}
+			}
+			if (fueledMillis > 0)
+			{
+				fueledMillis -= MILLIS_PER_TICK;
+			}
+			if (logCount > 0)
+			{
+				craftProgressMillis += MILLIS_PER_TICK;
+			}
+			if (craftProgressMillis == craftCharcoalMillis)
+			{
+				logCount -= 1;
+				charcoalCount += 1;
+				craftProgressMillis = 0;
+			}
+			
+			// Verify these assumptions against state.
 			Assert.assertEquals(1, snap.stats().committedCuboidMutationCount());
+			
 			proxy = BlockProxy.load(block, snap.cuboids().get(address).completed());
-			Assert.assertEquals(burnedMillis, burnPlankMillis - proxy.getFuel().millisFuelled());
+			Assert.assertEquals(logCount, proxy.getInventory().getCount(LOG_ITEM));
+			Assert.assertEquals(charcoalCount, proxy.getInventory().getCount(CHARCOAL_ITEM));
+			Assert.assertEquals(fuelItemCount, proxy.getFuel().fuelInventory().getCount(CHARCOAL_ITEM));
+			
+			Assert.assertEquals(fueledMillis, proxy.getFuel().millisFuelled());
+			if (0 == fueledMillis)
+			{
+				Assert.assertNull(proxy.getFuel().currentFuel());
+			}
+			else
+			{
+				Assert.assertEquals(CHARCOAL_ITEM, proxy.getFuel().currentFuel());
+			}
+			if (0 == craftProgressMillis)
+			{
+				Assert.assertNull(proxy.getCrafting());
+			}
+			else
+			{
+				Assert.assertEquals(craftProgressMillis, proxy.getCrafting().completedMillis());
+			}
 		}
-		Assert.assertEquals(0, proxy.getFuel().millisFuelled());
-		Assert.assertNull(proxy.getFuel().currentFuel());
 		
-		// Note that we no longer see block update events in the scheduled mutations and nothing else was scheduled.
-		Assert.assertEquals(0, snap.cuboids().values().iterator().next().scheduledBlockMutations().size());
+		// Run the last tick to finish things.
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
+		
+		// Show that we are done and nothing else was enqueued (and the final tick did nothing).
+		Assert.assertEquals(0, snap.stats().committedCuboidMutationCount());
 		Assert.assertEquals(0, snap.cuboids().values().iterator().next().scheduledBlockMutations().size());
+		proxy = BlockProxy.load(block, snap.cuboids().get(address).completed());
+		Assert.assertEquals(0, proxy.getInventory().getCount(LOG_ITEM));
+		Assert.assertEquals(1, proxy.getInventory().getCount(CHARCOAL_ITEM));
+		Assert.assertEquals(1, proxy.getFuel().fuelInventory().getCount(CHARCOAL_ITEM));
+		Assert.assertEquals(0, proxy.getFuel().millisFuelled());
+		Assert.assertNull(proxy.getFuel().currentFuel());
+		Assert.assertNull(proxy.getCrafting());
 		
 		runner.shutdown();
 	}
