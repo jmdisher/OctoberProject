@@ -11,6 +11,7 @@
 #
 # Note that the item ID references are against item_registry.tablist.
 
+# Built-in (craftable in inventory):
 op.log_to_planks	BUILT_IN
 	input	op.log
 	output	op.plank	op.plank
@@ -23,6 +24,28 @@ op.planks_to_crafting_table	BUILT_IN
 	input	op.plank	op.plank	op.plank	op.plank
 	output	op.crafting_table
 	millis	4000
+op.plank_to_stick	BUILT_IN
+	input	op.plank
+	output	op.stick	op.stick
+	millis	1000
+op.torch_from_charcoal	BUILT_IN
+	input	op.stick	op.charcoal
+	output	op.torch	op.torch	op.torch	op.torch
+	millis	1000
+op.torch_from_coal	BUILT_IN
+	input	op.stick	op.coal
+	output	op.torch	op.torch	op.torch	op.torch
+	millis	1000
+op.club	BUILT_IN
+	input	op.log
+	output	op.club
+	millis	500
+op.digging_stick	BUILT_IN
+	input	op.stick
+	output	op.digging_stick
+	millis	500
+
+# Common crafting (referenced in station_registry for use in crafting tables - note that these always have a multiplier applied to reduce time):
 op.stone_bricks_to_furnace	COMMON
 	input	op.stone_brick	op.stone_brick	op.stone_brick	op.stone_brick
 	output	op.furnace
@@ -31,27 +54,6 @@ op.lantern	COMMON
 	input	op.iron_ingot	op.iron_ingot	op.charcoal
 	output	op.lantern
 	millis	4000
-op.furnace_logs_to_charcoal	FUELLED_FURNACE
-	input	op.log
-	output	op.charcoal
-	millis	1000
-op.furnace_smelt_iron	FUELLED_FURNACE
-	input	op.iron_ore
-	output	op.iron_ingot
-	millis	2000
-op.furnace_smelt_iron_dust	FUELLED_FURNACE
-	input	op.iron_dust	op.iron_dust
-	output	op.iron_ingot
-	millis	2000
-op.bread	FUELLED_FURNACE
-	input	op.flour
-	output	op.bread
-	millis	1000
-# TODO:  This should make more than 1 stick but we need to do an encumbrance rework, first.
-op.plank_to_stick	BUILT_IN
-	input	op.plank
-	output	op.stick	op.stick
-	millis	1000
 op.iron_pickaxe	COMMON
 	input	op.stick	op.iron_ingot
 	output	op.iron_pickaxe
@@ -92,10 +94,6 @@ op.chest	COMMON
 	input	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank
 	output	op.chest
 	millis	8000
-op.furnace_cook_steak	FUELLED_FURNACE
-	input	op.beef
-	output	op.steak
-	millis	1000
 op.gate	COMMON
 	input	op.plank	op.plank	op.plank	op.plank
 	output	op.gate
@@ -120,38 +118,10 @@ op.quern	COMMON
 	input	op.stone	op.stone	op.stone_brick
 	output	op.quern
 	millis	8000
-op.flour	GRINDING
-	input	op.wheat_item
-	output	op.flour
-	millis	2000
-op.iron_dust	GRINDING
-	input	op.iron_ore
-	output	op.iron_dust	op.iron_dust	op.iron_dust
-	millis	4000
-op.torch_from_charcoal	BUILT_IN
-	input	op.stick	op.charcoal
-	output	op.torch	op.torch	op.torch	op.torch
-	millis	1000
-op.torch_from_coal	BUILT_IN
-	input	op.stick	op.coal
-	output	op.torch	op.torch	op.torch	op.torch
-	millis	1000
-op.fertilizer_from_wheat	GRINDING
-	input	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.charcoal
-	output	op.fertilizer	op.fertilizer
-	millis	4000
-op.fertilizer_from_carrot	GRINDING
-	input	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.charcoal
-	output	op.fertilizer	op.fertilizer
-	millis	4000
 op.bed	COMMON
 	input	op.plank	op.plank	op.plank	op.wheat_item	op.wheat_item
 	output	op.bed
 	millis	10000
-op.club	BUILT_IN
-	input	op.log
-	output	op.club
-	millis	500
 op.stone_knife	COMMON
 	input	op.stick	op.stone
 	output	op.stone_knife
@@ -164,10 +134,6 @@ op.wooden_chisel	COMMON
 	input	op.stick	op.log
 	output	op.wooden_chisel
 	millis	2000
-op.digging_stick	BUILT_IN
-	input	op.stick
-	output	op.digging_stick
-	millis	500
 op.double_door_base	COMMON
 	input	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank	op.iron_ingot	op.iron_ingot
 	output	op.double_door_base
@@ -208,18 +174,6 @@ op.pedestal	COMMON
 	input	op.stone_brick	op.stone_brick
 	output	op.pedestal
 	millis	8000
-op.copper_dust	GRINDING
-	input	op.copper_ore
-	output	op.copper_dust	op.copper_dust	op.copper_dust
-	millis	2000
-op.furnace_smelt_copper	FUELLED_FURNACE
-	input	op.copper_ore
-	output	op.copper_ingot
-	millis	1000
-op.furnace_smelt_copper_dust	FUELLED_FURNACE
-	input	op.copper_dust	op.copper_dust
-	output	op.copper_ingot
-	millis	1000
 op.copper_pickaxe	COMMON
 	input	op.stick	op.copper_ingot
 	output	op.copper_pickaxe
@@ -280,3 +234,55 @@ op.portal_keystone	COMMON
 	input	op.portal_stone	op.portal_stone
 	output	op.portal_keystone
 	millis	8000
+
+# Fueled furnace crafting (referenced in station_registry for use furnaces, requiring fuel):
+op.furnace_logs_to_charcoal	FUELLED_FURNACE
+	input	op.log
+	output	op.charcoal
+	millis	1000
+op.furnace_smelt_iron	FUELLED_FURNACE
+	input	op.iron_ore
+	output	op.iron_ingot
+	millis	2000
+op.furnace_smelt_iron_dust	FUELLED_FURNACE
+	input	op.iron_dust	op.iron_dust
+	output	op.iron_ingot
+	millis	2000
+op.bread	FUELLED_FURNACE
+	input	op.flour
+	output	op.bread
+	millis	1000
+op.furnace_cook_steak	FUELLED_FURNACE
+	input	op.beef
+	output	op.steak
+	millis	1000
+op.furnace_smelt_copper	FUELLED_FURNACE
+	input	op.copper_ore
+	output	op.copper_ingot
+	millis	1000
+op.furnace_smelt_copper_dust	FUELLED_FURNACE
+	input	op.copper_dust	op.copper_dust
+	output	op.copper_ingot
+	millis	1000
+
+# Grinding crafting (referenced in station_registry for use in querns):
+op.flour	GRINDING
+	input	op.wheat_item
+	output	op.flour
+	millis	2000
+op.iron_dust	GRINDING
+	input	op.iron_ore
+	output	op.iron_dust	op.iron_dust	op.iron_dust
+	millis	4000
+op.fertilizer_from_wheat	GRINDING
+	input	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.charcoal
+	output	op.fertilizer	op.fertilizer
+	millis	4000
+op.fertilizer_from_carrot	GRINDING
+	input	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.charcoal
+	output	op.fertilizer	op.fertilizer
+	millis	4000
+op.copper_dust	GRINDING
+	input	op.copper_ore
+	output	op.copper_dust	op.copper_dust	op.copper_dust
+	millis	2000

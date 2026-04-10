@@ -15,59 +15,68 @@
 # Note that "charge_millis_max" and "ammunition_type" are optional but, if one appears, the other is also required.
 # Note that the ID is from item_registry.tablist.
 
-op.iron_pickaxe	PICKAXE
-	material_multiplier	12
-	weapon_damage	2
-op.iron_shovel	SHOVEL
-	material_multiplier	10
-	weapon_damage	2
-op.iron_axe	AXE
-	material_multiplier	10
-	weapon_damage	4
-op.iron_sword	NO_MATERIAL
-	material_multiplier	1
-	weapon_damage	10
+# Melee Weapons:
 op.club	NO_MATERIAL
 	material_multiplier	2
 	weapon_damage	3
 op.stone_knife	NO_MATERIAL
 	material_multiplier	1
 	weapon_damage	4
-op.stone_hatchet	AXE
-	material_multiplier	4
-	weapon_damage	2
-op.wooden_chisel	PICKAXE
-	material_multiplier	5
-	weapon_damage	1
-op.digging_stick	SHOVEL
-	material_multiplier	6
-	weapon_damage	1
-op.copper_pickaxe	PICKAXE
-	material_multiplier	8
-	weapon_damage	2
-op.copper_shovel	SHOVEL
-	material_multiplier	6
-	weapon_damage	2
-op.copper_axe	AXE
-	material_multiplier	6
-	weapon_damage	3
 op.copper_sword	NO_MATERIAL
 	material_multiplier	1
 	weapon_damage	7
-op.diamond_pickaxe	PICKAXE
-	material_multiplier	20
-	weapon_damage	3
-op.diamond_shovel	SHOVEL
-	material_multiplier	15
-	weapon_damage	3
-op.diamond_axe	AXE
-	material_multiplier	15
-	weapon_damage	6
+op.iron_sword	NO_MATERIAL
+	material_multiplier	1
+	weapon_damage	10
 op.diamond_sword	NO_MATERIAL
 	material_multiplier	1
 	weapon_damage	15
+
+# Ranged Weapons:
 op.bow	NO_MATERIAL
 	material_multiplier	1
 	weapon_damage	1
 	charge_millis_max	3000
 	ammunition_type	op.arrow
+
+# Shovels:
+op.digging_stick	SHOVEL
+	material_multiplier	6
+	weapon_damage	1
+op.copper_shovel	SHOVEL
+	material_multiplier	6
+	weapon_damage	2
+op.iron_shovel	SHOVEL
+	material_multiplier	10
+	weapon_damage	2
+op.diamond_shovel	SHOVEL
+	material_multiplier	15
+	weapon_damage	3
+
+# Pickaxes:
+op.wooden_chisel	PICKAXE
+	material_multiplier	5
+	weapon_damage	1
+op.copper_pickaxe	PICKAXE
+	material_multiplier	8
+	weapon_damage	2
+op.iron_pickaxe	PICKAXE
+	material_multiplier	12
+	weapon_damage	2
+op.diamond_pickaxe	PICKAXE
+	material_multiplier	20
+	weapon_damage	3
+
+# Axes:
+op.stone_hatchet	AXE
+	material_multiplier	4
+	weapon_damage	2
+op.copper_axe	AXE
+	material_multiplier	6
+	weapon_damage	3
+op.iron_axe	AXE
+	material_multiplier	10
+	weapon_damage	4
+op.diamond_axe	AXE
+	material_multiplier	15
+	weapon_damage	6
