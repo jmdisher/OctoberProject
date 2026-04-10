@@ -9,9 +9,9 @@
 # Note that every item listed here is non-stackable (which is why 0 is sometimes used).
 
 # Melee Weapons:
-op.club	20
-op.stone_knife	1500
-op.copper_sword	1000
+op.club	30
+op.stone_knife	30
+op.copper_sword	500
 op.iron_sword	2000
 op.diamond_sword	4000
 
@@ -31,26 +31,26 @@ op.iron_pickaxe	500000
 op.diamond_pickaxe	2000000
 
 # Axes:
-op.stone_hatchet	50000
-op.copper_axe	200000
-op.iron_axe	500000
-op.diamond_axe	2000000
+op.stone_hatchet	25000
+op.copper_axe	100000
+op.iron_axe	250000
+op.diamond_axe	1000000
 
 # Helmets:
-op.copper_helmet	5000
-op.iron_helmet	10000
+op.copper_helmet	500
+op.iron_helmet	2000
 
 # Chestplates:
-op.copper_chestplate	5000
-op.iron_chestplate	10000
+op.copper_chestplate	500
+op.iron_chestplate	2000
 
 # Greaves:
-op.copper_greaves	5000
-op.iron_greaves	10000
+op.copper_greaves	500
+op.iron_greaves	2000
 
 # Boots:
-op.copper_boots	5000
-op.iron_boots	10000
+op.copper_boots	500
+op.iron_boots	2000
 
 # Buckets:
 op.bucket_empty	0
