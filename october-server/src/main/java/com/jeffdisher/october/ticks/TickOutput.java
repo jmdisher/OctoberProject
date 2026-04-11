@@ -1,5 +1,8 @@
 package com.jeffdisher.october.ticks;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,19 +53,43 @@ public record TickOutput(WorldOutput world
 		, List<ColumnHeightOutput> columns
 		, List<ScheduledMutation> notYetReadyMutations
 		, int committedMutationCount
-	) {}
+	)
+	{
+		public static WorldOutput empty()
+		{
+			return new WorldOutput(List.of(), List.of(), List.of(), 0);
+		}
+	}
 
 	public static record EntitiesOutput(int committedMutationCount
 		, List<EntityOutput> entityOutput
-	) {}
+	)
+	{
+		public static EntitiesOutput empty()
+		{
+			return new EntitiesOutput(0, List.of());
+		}
+	}
 
 	public static record CreaturesOutput(boolean ignored
 		, List<BasicOutput<CreatureEntity>> creatureOutput
-	) {}
+	)
+	{
+		public static CreaturesOutput empty()
+		{
+			return new TickOutput.CreaturesOutput(false, List.of());
+		}
+	}
 
 	public static record PassivesOutput(boolean ignored
 		, List<BasicOutput<PassiveEntity>> passiveOutput
-	) {}
+	)
+	{
+		public static PassivesOutput empty()
+		{
+			return new TickOutput.PassivesOutput(false, List.of());
+		}
+	}
 
 	public static record BasicOutput<T>(int id
 		, T previous
@@ -93,4 +120,112 @@ public record TickOutput(WorldOutput world
 	public static record ColumnHeightOutput(CuboidColumnAddress columnAddress
 		, ColumnHeightMap columnHeightMap
 	) {}
+
+	public static TickOutput empty()
+	{
+		return new TickOutput(TickOutput.WorldOutput.empty()
+			, TickOutput.EntitiesOutput.empty()
+			, TickOutput.CreaturesOutput.empty()
+			, TickOutput.PassivesOutput.empty()
+			, List.of()
+			, List.of()
+			, List.of()
+			, List.of()
+			, List.of()
+			, List.of()
+			, List.of()
+			, Set.of()
+			, Map.of()
+		);
+	}
+
+	public static TickOutput mergeAndClearPartialFragments(TickOutput[] partials)
+	{
+		// EngineCuboids.ProcessedFragment world
+		List<TickOutput.CuboidOutput> cuboids = new ArrayList<>();
+		List<TickOutput.ColumnHeightOutput> columns = new ArrayList<>();
+		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
+		int world_committedMutationCount = 0;
+		
+		// EnginePlayers.ProcessedGroup crowd
+		int players_committedMutationCount = 0;
+		List<TickOutput.EntityOutput> entityOutput = new ArrayList<>();
+		
+		// EngineCreatures.CreatureGroup creatures
+		List<TickOutput.BasicOutput<CreatureEntity>> creatureOutput = new ArrayList<>();
+		
+		// EnginePassives
+		List<TickOutput.BasicOutput<PassiveEntity>> passiveOutput = new ArrayList<>();
+		
+		List<CreatureEntity> spawnedCreatures = new ArrayList<>();
+		List<PassiveEntity> spawnedPassives = new ArrayList<>();
+		List<ScheduledMutation> newlyScheduledMutations = new ArrayList<>();
+		List<TargetedAction<ScheduledChange>> newlyScheduledChanges = new ArrayList<>();
+		List<TargetedAction<IEntityAction<IMutableCreatureEntity>>> newlyScheduledCreatureChanges = new ArrayList<>();
+		List<TargetedAction<IPassiveAction>> newlyScheduledPassiveActions = new ArrayList<>();
+		List<EventRecord> postedEvents = new ArrayList<>();
+		Set<CuboidAddress> internallyMarkedAlive = new HashSet<>();
+		Map<AbsoluteLocation, BlockProxy> populatedProxyCache = new HashMap<>();
+		
+		for (int i = 0; i < partials.length; ++i)
+		{
+			TickOutput fragment = partials[i];
+			
+			// EngineCuboids.ProcessedFragment world
+			cuboids.addAll(fragment.world().cuboids());
+			columns.addAll(fragment.world().columns());
+			notYetReadyMutations.addAll(fragment.world().notYetReadyMutations());
+			world_committedMutationCount += fragment.world().committedMutationCount();
+			
+			// EnginePlayers.ProcessedGroup crowd
+			players_committedMutationCount += fragment.entities().committedMutationCount();
+			entityOutput.addAll(fragment.entities().entityOutput());
+			
+			// EngineCreatures.CreatureGroup creatures
+			creatureOutput.addAll(fragment.creatures().creatureOutput());
+			
+			// EnginePassives
+			passiveOutput.addAll(fragment.passives().passiveOutput());
+			
+			spawnedCreatures.addAll(fragment.spawnedCreatures());
+			spawnedPassives.addAll(fragment.spawnedPassives());
+			newlyScheduledMutations.addAll(fragment.newlyScheduledMutations());
+			newlyScheduledChanges.addAll(fragment.newlyScheduledChanges());
+			newlyScheduledCreatureChanges.addAll(fragment.newlyScheduledCreatureChanges());
+			newlyScheduledPassiveActions.addAll(fragment.newlyScheduledPassiveActions());
+			postedEvents.addAll(fragment.postedEvents());
+			internallyMarkedAlive.addAll(fragment.internallyMarkedAlive());
+			populatedProxyCache.putAll(fragment.populatedProxyCache());
+			partials[i] = null;
+		}
+		
+		TickOutput.WorldOutput world = new TickOutput.WorldOutput(cuboids
+			, columns
+			, notYetReadyMutations
+			, world_committedMutationCount
+		);
+		TickOutput.EntitiesOutput crowd = new TickOutput.EntitiesOutput(players_committedMutationCount
+			, entityOutput
+		);
+		TickOutput.CreaturesOutput creatures = new TickOutput.CreaturesOutput(false
+			, creatureOutput
+		);
+		TickOutput.PassivesOutput passives = new TickOutput.PassivesOutput(false
+			, passiveOutput
+		);
+		return new TickOutput(world
+			, crowd
+			, creatures
+			, passives
+			, spawnedCreatures
+			, spawnedPassives
+			, newlyScheduledMutations
+			, newlyScheduledChanges
+			, newlyScheduledCreatureChanges
+			, newlyScheduledPassiveActions
+			, postedEvents
+			, internallyMarkedAlive
+			, populatedProxyCache
+		);
+	}
 }

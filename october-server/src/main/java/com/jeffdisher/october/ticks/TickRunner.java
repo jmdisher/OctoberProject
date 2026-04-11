@@ -58,7 +58,6 @@ import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
-import com.jeffdisher.october.types.TargetedAction;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
@@ -376,20 +375,7 @@ public class TickRunner
 	{
 		// There is nothing loaded at the start so pass in an empty world and crowd state, as well as no work having been processed.
 		TickMaterials materials = _mergeTickStateAndWaitForNext(thisThread
-				, new TickOutput(new TickOutput.WorldOutput(List.of(), List.of(), List.of(), 0)
-						, new TickOutput.EntitiesOutput(0, List.of())
-						, new TickOutput.CreaturesOutput(false, List.of())
-						, new TickOutput.PassivesOutput(false, List.of())
-						, List.of()
-						, List.of()
-						, List.of()
-						, List.of()
-						, List.of()
-						, List.of()
-						, List.of()
-						, Set.of()
-						, Map.of()
-				)
+				, TickOutput.empty()
 				, 0L
 				, 0L
 				, 0L
@@ -600,10 +586,10 @@ public class TickRunner
 				}
 				TickOutput.EntitiesOutput spilledGroup = new TickOutput.EntitiesOutput(0, repackaged);
 				// Just use empty elements except for our spilled group.
-				TickOutput spilledPartial = new TickOutput(new TickOutput.WorldOutput(List.of(), List.of(), List.of(), 0)
+				TickOutput spilledPartial = new TickOutput(TickOutput.WorldOutput.empty()
 					, spilledGroup
-					, new TickOutput.CreaturesOutput(false, List.of())
-					, new TickOutput.PassivesOutput(false, List.of())
+					, TickOutput.CreaturesOutput.empty()
+					, TickOutput.PassivesOutput.empty()
 					, List.of()
 					, List.of()
 					, List.of()
@@ -626,7 +612,7 @@ public class TickRunner
 				partials.add(result);
 			}
 		}
-		TickOutput finalResult = _mergeAndClearPartialFragments(partials.toArray((int size) -> new TickOutput[size]));
+		TickOutput finalResult = TickOutput.mergeAndClearPartialFragments(partials.toArray((int size) -> new TickOutput[size]));
 		return finalResult;
 	}
 
@@ -855,7 +841,7 @@ public class TickRunner
 			long nanosAtPostambleStart = System.nanoTime();
 			
 			// We will merge together all the per-thread fragments into one master fragment.
-			TickOutput masterFragment = _mergeAndClearPartialFragments(_partial);
+			TickOutput masterFragment = TickOutput.mergeAndClearPartialFragments(_partial);
 			long nanosAfterPostambleMerge = System.nanoTime();
 			
 			FlatResults flatResults = FlatResults.fromOutput(masterFragment);
@@ -1148,96 +1134,6 @@ public class TickRunner
 			}
 		}
 		return _snapshot;
-	}
-
-	private static TickOutput _mergeAndClearPartialFragments(TickOutput[] partials)
-	{
-		// EngineCuboids.ProcessedFragment world
-		List<TickOutput.CuboidOutput> cuboids = new ArrayList<>();
-		List<TickOutput.ColumnHeightOutput> columns = new ArrayList<>();
-		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
-		int world_committedMutationCount = 0;
-		
-		// EnginePlayers.ProcessedGroup crowd
-		int players_committedMutationCount = 0;
-		List<TickOutput.EntityOutput> entityOutput = new ArrayList<>();
-		
-		// EngineCreatures.CreatureGroup creatures
-		List<TickOutput.BasicOutput<CreatureEntity>> creatureOutput = new ArrayList<>();
-		
-		// EnginePassives
-		List<TickOutput.BasicOutput<PassiveEntity>> passiveOutput = new ArrayList<>();
-		
-		List<CreatureEntity> spawnedCreatures = new ArrayList<>();
-		List<PassiveEntity> spawnedPassives = new ArrayList<>();
-		List<ScheduledMutation> newlyScheduledMutations = new ArrayList<>();
-		List<TargetedAction<ScheduledChange>> newlyScheduledChanges = new ArrayList<>();
-		List<TargetedAction<IEntityAction<IMutableCreatureEntity>>> newlyScheduledCreatureChanges = new ArrayList<>();
-		List<TargetedAction<IPassiveAction>> newlyScheduledPassiveActions = new ArrayList<>();
-		List<EventRecord> postedEvents = new ArrayList<>();
-		Set<CuboidAddress> internallyMarkedAlive = new HashSet<>();
-		Map<AbsoluteLocation, BlockProxy> populatedProxyCache = new HashMap<>();
-		
-		for (int i = 0; i < partials.length; ++i)
-		{
-			TickOutput fragment = partials[i];
-			
-			// EngineCuboids.ProcessedFragment world
-			cuboids.addAll(fragment.world().cuboids());
-			columns.addAll(fragment.world().columns());
-			notYetReadyMutations.addAll(fragment.world().notYetReadyMutations());
-			world_committedMutationCount += fragment.world().committedMutationCount();
-			
-			// EnginePlayers.ProcessedGroup crowd
-			players_committedMutationCount += fragment.entities().committedMutationCount();
-			entityOutput.addAll(fragment.entities().entityOutput());
-			
-			// EngineCreatures.CreatureGroup creatures
-			creatureOutput.addAll(fragment.creatures().creatureOutput());
-			
-			// EnginePassives
-			passiveOutput.addAll(fragment.passives().passiveOutput());
-			
-			spawnedCreatures.addAll(fragment.spawnedCreatures());
-			spawnedPassives.addAll(fragment.spawnedPassives());
-			newlyScheduledMutations.addAll(fragment.newlyScheduledMutations());
-			newlyScheduledChanges.addAll(fragment.newlyScheduledChanges());
-			newlyScheduledCreatureChanges.addAll(fragment.newlyScheduledCreatureChanges());
-			newlyScheduledPassiveActions.addAll(fragment.newlyScheduledPassiveActions());
-			postedEvents.addAll(fragment.postedEvents());
-			internallyMarkedAlive.addAll(fragment.internallyMarkedAlive());
-			populatedProxyCache.putAll(fragment.populatedProxyCache());
-			partials[i] = null;
-		}
-		
-		TickOutput.WorldOutput world = new TickOutput.WorldOutput(cuboids
-			, columns
-			, notYetReadyMutations
-			, world_committedMutationCount
-		);
-		TickOutput.EntitiesOutput crowd = new TickOutput.EntitiesOutput(players_committedMutationCount
-			, entityOutput
-		);
-		TickOutput.CreaturesOutput creatures = new TickOutput.CreaturesOutput(false
-			, creatureOutput
-		);
-		TickOutput.PassivesOutput passives = new TickOutput.PassivesOutput(false
-			, passiveOutput
-		);
-		return new TickOutput(world
-			, crowd
-			, creatures
-			, passives
-			, spawnedCreatures
-			, spawnedPassives
-			, newlyScheduledMutations
-			, newlyScheduledChanges
-			, newlyScheduledCreatureChanges
-			, newlyScheduledPassiveActions
-			, postedEvents
-			, internallyMarkedAlive
-			, populatedProxyCache
-		);
 	}
 
 	private static Map<CuboidAddress, TickSnapshot.SnapshotCuboid> _buildSnapshotCuboids(FlatResults flatResults
