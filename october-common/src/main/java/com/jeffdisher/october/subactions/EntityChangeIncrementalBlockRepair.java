@@ -2,6 +2,7 @@ package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
@@ -86,8 +87,8 @@ public class EntityChangeIncrementalBlockRepair implements IEntitySubAction<IMut
 			// Do other state reset.
 			newEntity.setCurrentCraftingOperation(null);
 			
-			// Repairing a block expends energy proportional to repairing time.
-			newEntity.applyEnergyCost(breakingMillis);
+			// Repairing a block expends the same per-tick cost as breaking, no matter the material.
+			newEntity.applyEnergyCost(EntityActionPeriodic.ENERGY_COST_PER_TICK_BREAK_BLOCK);
 			
 			// While this is an action which is considered primary, it should actually delay secondary actions, too.
 			newEntity.setLastSpecialActionMillis(context.currentTickTimeMillis);

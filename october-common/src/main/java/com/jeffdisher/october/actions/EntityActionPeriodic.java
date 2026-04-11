@@ -45,12 +45,13 @@ public class EntityActionPeriodic implements IEntityAction<IMutablePlayerEntity>
 	public static final int ENERGY_COST_PER_ATTACK = 200;
 	/**
 	 * The energy cost to break/repair a block for one tick.
+	 * A tick is currently 50 ms, so this is half the cost of the old "per milli" approach.
 	 */
-	public static final int ENERGY_COST_PER_TICK_BREAK_BLOCK = 100;
+	public static final int ENERGY_COST_PER_TICK_BREAK_BLOCK = 25;
 	/**
 	 * The energy cost to place a block.
 	 */
-	public static final int ENERGY_COST_PLACE_BLOCK = 50;
+	public static final int ENERGY_COST_PLACE_BLOCK = 20;
 	/**
 	 * The energy cost to jump, once.
 	 */
