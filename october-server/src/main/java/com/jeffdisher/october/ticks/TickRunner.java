@@ -428,17 +428,8 @@ public class TickRunner
 				PassiveEntity entity = new PassiveEntity(id, type, location, velocity, extendedData, currentTickTimeMillis);
 				spawnedPassives.add(entity);
 			};
-			// NOTE:  We only expose passive entities in the interface since we only have a use-case for them, at the moment.
-			SpatialIndex.Builder builder = new SpatialIndex.Builder();
-			for (PassiveEntity passive : thisTickMaterials.completedPassives.values())
-			{
-				if (PassiveType.ITEM_SLOT == passive.type())
-				{
-					builder.add(passive.id(), passive.location());
-				}
-			}
-			SpatialIndex passiveSpatialIndex = builder.finish(PassiveType.ITEM_SLOT.volume());
 			TickProcessingContext.IPassiveSearch passiveSearch = new TickProcessingContext.IPassiveSearch() {
+				private SpatialIndex _passiveSpatialIndex;
 				@Override
 				public PartialPassive getById(int id)
 				{
@@ -451,7 +442,21 @@ public class TickRunner
 				@Override
 				public PartialPassive[] findPassiveItemSlotsInRegion(EntityLocation base, EntityLocation edge)
 				{
-					return passiveSpatialIndex.idsIntersectingRegion(base, edge).stream()
+					// The _passiveSpatialIndex is lazily constructed since it is only used by hoppers and player entities.
+					if (null == _passiveSpatialIndex)
+					{
+						// NOTE:  We only expose passive entities in the interface since we only have a use-case for them, at the moment.
+						SpatialIndex.Builder builder = new SpatialIndex.Builder();
+						for (PassiveEntity passive : thisTickMaterials.completedPassives.values())
+						{
+							if (PassiveType.ITEM_SLOT == passive.type())
+							{
+								builder.add(passive.id(), passive.location());
+							}
+						}
+						_passiveSpatialIndex = builder.finish(PassiveType.ITEM_SLOT.volume());
+					}
+					return _passiveSpatialIndex.idsIntersectingRegion(base, edge).stream()
 						.map((Integer id) -> {
 							PassiveEntity passive = thisTickMaterials.completedPassives.get(id);
 							return PartialPassive.fromPassive(passive);
