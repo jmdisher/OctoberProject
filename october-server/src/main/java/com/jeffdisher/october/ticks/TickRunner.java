@@ -388,17 +388,17 @@ public class TickRunner
 			// Create the BlockProxy loader for the read-only state from the previous tick.
 			final TickMaterials thisTickMaterials = materials;
 			// WARNING:  This block cache is used for everything this thread does and we may want to provide a flushing mechanism.
-			BlockFetcher previousBlockLookUp = new BlockFetcher(materials.previousProxyCache
-				, materials.forceMissBlocksPreviousCache
-				, materials.completedCuboids
+			BlockFetcher previousBlockLookUp = new BlockFetcher(materials.previousProxyCache()
+				, materials.forceMissBlocksPreviousCache()
+				, materials.completedCuboids()
 			);
 			
-			CommonMutationSink newMutationSink = new CommonMutationSink(materials.completedCuboids.keySet());
-			CommonChangeSink newChangeSink = new CommonChangeSink(materials.completedEntities.keySet(), materials.completedCreatures.keySet(), materials.completedPassives.keySet());
+			CommonMutationSink newMutationSink = new CommonMutationSink(materials.completedCuboids().keySet());
+			CommonChangeSink newChangeSink = new CommonChangeSink(materials.completedEntities().keySet(), materials.completedCreatures().keySet(), materials.completedPassives().keySet());
 			List<EventRecord> events = new ArrayList<>();
 			
 			// On the server, we just generate the tick time as purely abstract monotonic value.
-			long currentTickTimeMillis = (materials.thisGameTick * _millisPerTick);
+			long currentTickTimeMillis = (materials.thisGameTick() * _millisPerTick);
 			
 			// We will capture the newly-spawned creatures into a basic list.
 			List<CreatureEntity> spawnedCreatures = new ArrayList<>();
@@ -419,7 +419,7 @@ public class TickRunner
 				@Override
 				public PartialPassive getById(int id)
 				{
-					PassiveEntity passive = thisTickMaterials.completedPassives.get(id);
+					PassiveEntity passive = thisTickMaterials.completedPassives().get(id);
 					return (null != passive)
 						? PartialPassive.fromPassive(passive)
 						: null
@@ -433,7 +433,7 @@ public class TickRunner
 					{
 						// NOTE:  We only expose passive entities in the interface since we only have a use-case for them, at the moment.
 						SpatialIndex.Builder builder = new SpatialIndex.Builder();
-						for (PassiveEntity passive : thisTickMaterials.completedPassives.values())
+						for (PassiveEntity passive : thisTickMaterials.completedPassives().values())
 						{
 							if (PassiveType.ITEM_SLOT == passive.type())
 							{
@@ -444,7 +444,7 @@ public class TickRunner
 					}
 					return _passiveSpatialIndex.idsIntersectingRegion(base, edge).stream()
 						.map((Integer id) -> {
-							PassiveEntity passive = thisTickMaterials.completedPassives.get(id);
+							PassiveEntity passive = thisTickMaterials.completedPassives().get(id);
 							return PartialPassive.fromPassive(passive);
 						})
 						.toArray((int size) -> new PartialPassive[size])
@@ -452,16 +452,16 @@ public class TickRunner
 				}
 			};
 			Set<CuboidAddress> internallyMarkedAlive = new HashSet<>();
-			TickProcessingContext context = new TickProcessingContext(materials.thisGameTick
+			TickProcessingContext context = new TickProcessingContext(materials.thisGameTick()
 					, previousBlockLookUp
 					, (Integer entityId) -> (entityId > 0)
-						? MinimalEntity.fromEntity(thisTickMaterials.completedEntities.get(entityId))
-						: MinimalEntity.fromCreature(thisTickMaterials.completedCreatures.get(entityId))
+						? MinimalEntity.fromEntity(thisTickMaterials.completedEntities().get(entityId))
+						: MinimalEntity.fromCreature(thisTickMaterials.completedCreatures().get(entityId))
 					, passiveSearch
 					, (AbsoluteLocation blockLocation) -> {
 						CuboidColumnAddress column = blockLocation.getCuboidAddress().getColumn();
 						BlockAddress blockAddress = blockLocation.getBlockAddress();
-						ColumnHeightMap map = thisTickMaterials.completedHeightMaps.get(column);
+						ColumnHeightMap map = thisTickMaterials.completedHeightMaps().get(column);
 						
 						byte skyLight;
 						if (null != map)
@@ -469,7 +469,7 @@ public class TickRunner
 							int highestBlock = map.getHeight(blockAddress.x(), blockAddress.y());
 							// If this is the highest block, return the light, otherwise 0.
 							skyLight = (blockLocation.z() == highestBlock)
-									? PropagationHelpers.currentSkyLightValue(thisTickMaterials.thisGameTick, _config.ticksPerDay, _config.dayStartTick)
+									? PropagationHelpers.currentSkyLightValue(thisTickMaterials.thisGameTick(), _config.ticksPerDay, _config.dayStartTick)
 									: 0
 							;
 						}
@@ -514,11 +514,11 @@ public class TickRunner
 					, internallyMarkedAlive
 					, previousBlockLookUp.extractCache()
 				)
-				, materials.nanosInPreamble
-				, materials.nanosInPreambleIncoming
-				, materials.nanosInPreamblePreTick
-				, materials.nanosInPreamblePackage
-				, materials.nanosAtPreambleEnd
+				, materials.nanosInPreamble()
+				, materials.nanosInPreambleIncoming()
+				, materials.nanosInPreamblePreTick()
+				, materials.nanosInPreamblePackage()
+				, materials.nanosAtPreambleEnd()
 			);
 		}
 	}
@@ -535,10 +535,10 @@ public class TickRunner
 			
 			// This will spawn in the context, if spawning is appropriate.
 			EngineSpawner.trySpawnCreature(context
-					, materials.entityCollection
-					, materials.completedCuboids
-					, materials.completedHeightMaps
-					, materials.completedCreatures
+					, materials.entityCollection()
+					, materials.completedCuboids()
+					, materials.completedHeightMaps()
+					, materials.completedCreatures()
 			);
 			
 			long endNanos = System.nanoTime();
@@ -550,8 +550,8 @@ public class TickRunner
 			long startNanos = System.nanoTime();
 			
 			// Verify that this isn't redundantly described.
-			Assert.assertTrue(!materials.completedEntities.containsKey(EnginePlayers.OPERATOR_ENTITY_ID));
-			EnginePlayers.processOperatorActions(context, materials.operatorChanges);
+			Assert.assertTrue(!materials.completedEntities().containsKey(EnginePlayers.OPERATOR_ENTITY_ID));
+			EnginePlayers.processOperatorActions(context, materials.operatorChanges());
 			
 			long endNanos = System.nanoTime();
 			thisThread.nanosProcessingOperator = (endNanos - startNanos);
@@ -565,7 +565,7 @@ public class TickRunner
 	{
 		// TODO:  Replace this collection technique and return value with something more appropriate as this re-write progresses.
 		List<TickOutput> partials = new ArrayList<>();
-		TickInput highLevel = materials.highLevel;
+		TickInput highLevel = materials.highLevel();
 		
 		// We will have a thread repackage anything which spilled.
 		if (thisThread.handleNextWorkUnit())
@@ -639,7 +639,7 @@ public class TickRunner
 		
 		// We need to walk the cuboids and collect data from each of them and associated players and creatures.
 		processor.workUnitsProcessed += 1;
-		Set<CuboidAddress> loadedCuboids = materials.completedCuboids.keySet();
+		Set<CuboidAddress> loadedCuboids = materials.completedCuboids().keySet();
 		Map<CuboidAddress, CuboidHeightMap> existingAndUpdatedCuboidHeightMaps = new HashMap<>();
 		for (TickInput.CuboidInput subUnit : unit.cuboids())
 		{
@@ -658,10 +658,10 @@ public class TickRunner
 				, loadedCuboids
 				, subUnit.mutations()
 				, subUnit.periodicMutationMillis()
-				, materials.modifiedBlocksByCuboidAddress
-				, materials.potentialLightChangesByCuboid
-				, materials.potentialLogicChangesByCuboid
-				, materials.cuboidsLoadedThisTick
+				, materials.modifiedBlocksByCuboidAddress()
+				, materials.potentialLightChangesByCuboid()
+				, materials.potentialLogicChangesByCuboid()
+				, materials.cuboidsLoadedThisTick()
 				, cuboidAddress
 				, previousCuboid
 				, previousHeightMap
@@ -716,7 +716,7 @@ public class TickRunner
 				processor.playersProcessed += 1;
 				
 				EnginePlayers.SinglePlayerResult result = EnginePlayers.processOnePlayer(context
-					, materials.entityCollection
+					, materials.entityCollection()
 					, entity
 					, changes
 				);
@@ -740,7 +740,7 @@ public class TickRunner
 				processor.creaturesProcessed += 1;
 				processor.creatureActionsProcessed += changes.size();
 				EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
-					, materials.entityCollection
+					, materials.entityCollection()
 					, creature
 					, changes
 				);
@@ -768,7 +768,7 @@ public class TickRunner
 				List<IPassiveAction> actions = passiveUnit.actions();
 				processor.passivesProcessed += 1;
 				processor.passiveActionsProcessed += actions.size();
-				PassiveEntity result = EnginePassives.processOneCreature(context, materials.entityCollection, passive, actions);
+				PassiveEntity result = EnginePassives.processOneCreature(context, materials.entityCollection(), passive, actions);
 				
 				boolean didDie = (null == result);
 				boolean wasUpdated = !didDie && (result != passive);
@@ -1447,45 +1447,6 @@ public class TickRunner
 			, Collections.unmodifiableList(entitiesInUnloadedCuboids)
 		);
 	}
-
-	private static record TickMaterials(long thisGameTick
-			// Read-only versions of the cuboids produced by the previous tick (by address).
-			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
-			, Map<CuboidAddress, CuboidHeightMap> cuboidHeightMaps
-			, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
-			// Read-only versions of the Entities produced by the previous tick (by ID).
-			, Map<Integer, Entity> completedEntities
-			// Read-only versions of the creatures from the previous tick (by ID).
-			, Map<Integer, CreatureEntity> completedCreatures
-			// Read-only versions of the passives from the previous tick (by ID).
-			, Map<Integer, PassiveEntity> completedPassives
-			// Never null but typically empty.
-			, List<IEntityAction<IMutablePlayerEntity>> operatorChanges
-			// The blocks modified in the last tick, represented as a list per cuboid where they originate.
-			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
-			// The blocks which were modified in such a way that they may require a lighting update.
-			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
-			// The blocks which were modified in such a way that they may have changed the logic aspect which needs to
-			// be propagated.
-			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid
-			// The set of addresses loaded in this tick (they are present in this tick, but for the first time).
-			, Set<CuboidAddress> cuboidsLoadedThisTick
-			
-			// Information used to build the BlockFetcher for each thread in parallel phase.
-			, Map<AbsoluteLocation, BlockProxy> previousProxyCache
-			, Set<AbsoluteLocation> forceMissBlocksPreviousCache
-			
-			// Higher-level data associated with the materials.
-			, EntityCollection entityCollection
-			, TickInput highLevel
-			
-			// Data related to internal statistics to be passed back at the end of the tick.
-			, long nanosInPreamble
-			, long nanosInPreambleIncoming
-			, long nanosInPreamblePreTick
-			, long nanosInPreamblePackage
-			, long nanosAtPreambleEnd
-	) {}
 
 	/**
 	 * The per-entity data shared between foreground and background threads for scheduling changes.
