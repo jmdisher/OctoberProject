@@ -26,17 +26,13 @@ import com.jeffdisher.october.engine.EnginePlayers;
 import com.jeffdisher.october.engine.EngineCuboids;
 import com.jeffdisher.october.engine.EnginePassives;
 import com.jeffdisher.october.logic.BlockChangeDescription;
-import com.jeffdisher.october.logic.CommonChangeSink;
-import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.PassiveIdAssigner;
 import com.jeffdisher.october.logic.ProcessorElement;
-import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
-import com.jeffdisher.october.logic.SpatialIndex;
 import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
@@ -47,17 +43,11 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityType;
-import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.IPassiveAction;
-import com.jeffdisher.october.types.MinimalEntity;
-import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
-import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
@@ -385,112 +375,14 @@ public class TickRunner
 		while (null != materials)
 		{
 			// Run the tick.
-			// Create the BlockProxy loader for the read-only state from the previous tick.
-			final TickMaterials thisTickMaterials = materials;
-			// WARNING:  This block cache is used for everything this thread does and we may want to provide a flushing mechanism.
-			BlockFetcher previousBlockLookUp = new BlockFetcher(materials.previousProxyCache()
-				, materials.forceMissBlocksPreviousCache()
-				, materials.completedCuboids()
+			TickContextBuilder contextContainer = new TickContextBuilder(materials
+				, _millisPerTick
+				, _idAssigner
+				, _passiveIdAssigner
+				, _random
+				, _config
 			);
-			
-			CommonMutationSink newMutationSink = new CommonMutationSink(materials.completedCuboids().keySet());
-			CommonChangeSink newChangeSink = new CommonChangeSink(materials.completedEntities().keySet(), materials.completedCreatures().keySet(), materials.completedPassives().keySet());
-			List<EventRecord> events = new ArrayList<>();
-			
-			// On the server, we just generate the tick time as purely abstract monotonic value.
-			long currentTickTimeMillis = (materials.thisGameTick() * _millisPerTick);
-			
-			// We will capture the newly-spawned creatures into a basic list.
-			List<CreatureEntity> spawnedCreatures = new ArrayList<>();
-			TickProcessingContext.ICreatureSpawner spawnConsumer = (EntityType type, EntityLocation location) -> {
-				int id = _idAssigner.next();
-				CreatureEntity entity = CreatureEntity.create(id, type, location, currentTickTimeMillis);
-				spawnedCreatures.add(entity);
-			};
-			// Same with passives.
-			List<PassiveEntity> spawnedPassives = new ArrayList<>();
-			TickProcessingContext.IPassiveSpawner passiveConsumer = (PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
-				int id = _passiveIdAssigner.next();
-				PassiveEntity entity = new PassiveEntity(id, type, location, velocity, extendedData, currentTickTimeMillis);
-				spawnedPassives.add(entity);
-			};
-			TickProcessingContext.IPassiveSearch passiveSearch = new TickProcessingContext.IPassiveSearch() {
-				private SpatialIndex _passiveSpatialIndex;
-				@Override
-				public PartialPassive getById(int id)
-				{
-					PassiveEntity passive = thisTickMaterials.completedPassives().get(id);
-					return (null != passive)
-						? PartialPassive.fromPassive(passive)
-						: null
-					;
-				}
-				@Override
-				public PartialPassive[] findPassiveItemSlotsInRegion(EntityLocation base, EntityLocation edge)
-				{
-					// The _passiveSpatialIndex is lazily constructed since it is only used by hoppers and player entities.
-					if (null == _passiveSpatialIndex)
-					{
-						// NOTE:  We only expose passive entities in the interface since we only have a use-case for them, at the moment.
-						SpatialIndex.Builder builder = new SpatialIndex.Builder();
-						for (PassiveEntity passive : thisTickMaterials.completedPassives().values())
-						{
-							if (PassiveType.ITEM_SLOT == passive.type())
-							{
-								builder.add(passive.id(), passive.location());
-							}
-						}
-						_passiveSpatialIndex = builder.finish(PassiveType.ITEM_SLOT.volume());
-					}
-					return _passiveSpatialIndex.idsIntersectingRegion(base, edge).stream()
-						.map((Integer id) -> {
-							PassiveEntity passive = thisTickMaterials.completedPassives().get(id);
-							return PartialPassive.fromPassive(passive);
-						})
-						.toArray((int size) -> new PartialPassive[size])
-					;
-				}
-			};
-			Set<CuboidAddress> internallyMarkedAlive = new HashSet<>();
-			TickProcessingContext context = new TickProcessingContext(materials.thisGameTick()
-					, previousBlockLookUp
-					, (Integer entityId) -> (entityId > 0)
-						? MinimalEntity.fromEntity(thisTickMaterials.completedEntities().get(entityId))
-						: MinimalEntity.fromCreature(thisTickMaterials.completedCreatures().get(entityId))
-					, passiveSearch
-					, (AbsoluteLocation blockLocation) -> {
-						CuboidColumnAddress column = blockLocation.getCuboidAddress().getColumn();
-						BlockAddress blockAddress = blockLocation.getBlockAddress();
-						ColumnHeightMap map = thisTickMaterials.completedHeightMaps().get(column);
-						
-						byte skyLight;
-						if (null != map)
-						{
-							int highestBlock = map.getHeight(blockAddress.x(), blockAddress.y());
-							// If this is the highest block, return the light, otherwise 0.
-							skyLight = (blockLocation.z() == highestBlock)
-									? PropagationHelpers.currentSkyLightValue(thisTickMaterials.thisGameTick(), _config.ticksPerDay, _config.dayStartTick)
-									: 0
-							;
-						}
-						else
-						{
-							// Note that the map may be null if this is just during start-up so just say that the light is 0, in that case.
-							skyLight = 0;
-						}
-						return skyLight;
-					}
-					, newMutationSink
-					, newChangeSink
-					, spawnConsumer
-					, passiveConsumer
-					, _random
-					, (EventRecord event) -> events.add(event)
-					, (CuboidAddress address) -> internallyMarkedAlive.add(address)
-					, _config
-					, _millisPerTick
-					, currentTickTimeMillis
-			);
+			TickProcessingContext context = contextContainer.buildContext();
 			
 			// We cluster work together in cuboid columns in order to improve per-thread world cache utilization and allow some result merging in the parallel phase.
 			// First, we will handle the one-off special-cases.
@@ -504,15 +396,15 @@ public class TickRunner
 					, innerResults.entities()
 					, innerResults.creatures()
 					, innerResults.passives()
-					, spawnedCreatures
-					, spawnedPassives
-					, newMutationSink.takeExportedMutations()
-					, newChangeSink.takeExportedChanges()
-					, newChangeSink.takeExportedCreatureChanges()
-					, newChangeSink.takeExportedPassiveActions()
-					, events
-					, internallyMarkedAlive
-					, previousBlockLookUp.extractCache()
+					, contextContainer.creaturesSpawned
+					, contextContainer.passivesSpawned
+					, contextContainer.mutationSink.takeExportedMutations()
+					, contextContainer.changeSink.takeExportedChanges()
+					, contextContainer.changeSink.takeExportedCreatureChanges()
+					, contextContainer.changeSink.takeExportedPassiveActions()
+					, contextContainer.eventsPosted
+					, contextContainer.cuboidsMarkedAliveInternally
+					, contextContainer.previousBlockLookUp.extractCache()
 				)
 				, materials.nanosInPreamble()
 				, materials.nanosInPreambleIncoming()
