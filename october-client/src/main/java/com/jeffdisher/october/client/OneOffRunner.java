@@ -71,7 +71,7 @@ public class OneOffRunner
 			, state.thisEntity()
 			, List.of(scheduled)
 		);
-		boolean wasSuccess = (playerResult.committedMutationCount() > 0);
+		boolean wasSuccess = (playerResult.countOfEntityActionsCommitted() > 0);
 		Entity updatedEntity = wasSuccess
 				? playerResult.changedEntityOrNull()
 				: null

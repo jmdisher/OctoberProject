@@ -50,7 +50,7 @@ public record TickOutput(WorldOutput world
 	public static record WorldOutput(List<CuboidOutput> cuboids
 		, List<ColumnHeightOutput> columns
 		, List<ScheduledMutation> notYetReadyMutations
-		, int committedMutationCount
+		, int countOfCuboidMutationsRun
 	)
 	{
 		public static WorldOutput empty()
@@ -59,7 +59,7 @@ public record TickOutput(WorldOutput world
 		}
 	}
 
-	public static record EntitiesOutput(int committedMutationCount
+	public static record EntitiesOutput(int countOfEntityActionsRun
 		, List<EntityOutput> entityOutput
 	)
 	{
@@ -143,10 +143,10 @@ public record TickOutput(WorldOutput world
 		List<TickOutput.CuboidOutput> cuboids = new ArrayList<>();
 		List<TickOutput.ColumnHeightOutput> columns = new ArrayList<>();
 		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
-		int world_committedMutationCount = 0;
+		int world_countOfCuboidMutationsRun = 0;
 		
 		// EnginePlayers.ProcessedGroup crowd
-		int players_committedMutationCount = 0;
+		int players_countOfEntityActionsRun = 0;
 		List<TickOutput.EntityOutput> entityOutput = new ArrayList<>();
 		
 		// EngineCreatures.CreatureGroup creatures
@@ -172,10 +172,10 @@ public record TickOutput(WorldOutput world
 			cuboids.addAll(fragment.world().cuboids());
 			columns.addAll(fragment.world().columns());
 			notYetReadyMutations.addAll(fragment.world().notYetReadyMutations());
-			world_committedMutationCount += fragment.world().committedMutationCount();
+			world_countOfCuboidMutationsRun += fragment.world().countOfCuboidMutationsRun();
 			
 			// EnginePlayers.ProcessedGroup crowd
-			players_committedMutationCount += fragment.entities().committedMutationCount();
+			players_countOfEntityActionsRun += fragment.entities().countOfEntityActionsRun();
 			entityOutput.addAll(fragment.entities().entityOutput());
 			
 			// EngineCreatures.CreatureGroup creatures
@@ -198,9 +198,9 @@ public record TickOutput(WorldOutput world
 		TickOutput.WorldOutput world = new TickOutput.WorldOutput(cuboids
 			, columns
 			, notYetReadyMutations
-			, world_committedMutationCount
+			, world_countOfCuboidMutationsRun
 		);
-		TickOutput.EntitiesOutput crowd = new TickOutput.EntitiesOutput(players_committedMutationCount
+		TickOutput.EntitiesOutput crowd = new TickOutput.EntitiesOutput(players_countOfEntityActionsRun
 			, entityOutput
 		);
 		TickOutput.CreaturesOutput creatures = new TickOutput.CreaturesOutput(false

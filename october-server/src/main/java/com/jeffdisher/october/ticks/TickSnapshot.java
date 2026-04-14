@@ -77,18 +77,18 @@ public record TickSnapshot(long tickNumber
 	{}
 
 	public static record TickStats(long tickNumber
-			, long nanosInPreamble
-			, long nanosInPreambleIncoming
-			, long nanosInPreamblePreTick
-			, long nanosInPreamblePackage
-			, long nanosInParallelPhase
-			, long nanosInPostamble
-			, long nanosInPostambleMerge
-			, long nanosInPostambleFlatten
-			, long nanosInPostambleSnapshot
-			, ProcessorElement.PerThreadStats[] threadStats
-			, int committedEntityMutationCount
-			, int committedCuboidMutationCount
+		, long nanosInPreamble
+		, long nanosInPreambleIncoming
+		, long nanosInPreamblePreTick
+		, long nanosInPreamblePackage
+		, long nanosInParallelPhase
+		, long nanosInPostamble
+		, long nanosInPostambleMerge
+		, long nanosInPostambleFlatten
+		, long nanosInPostambleSnapshot
+		, ProcessorElement.PerThreadStats[] threadStats
+		, int countOfEntityActionsRun
+		, int countOfCuboidMutationsRun
 	) {
 		public void writeToStream(PrintStream out)
 		{

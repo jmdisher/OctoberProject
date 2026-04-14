@@ -84,7 +84,7 @@ public class EngineCuboids
 		
 		// We want to synthesize block updates adjacent to modified blocks and, optionally, boundaries of fresh cuboids.
 		// NOTE:  This is disabled by default since it washes out all performance values and will be replaced with something more precise in the future.
-		_UpdateResults updateResults = _synthesizeAndRunBlockUpdates(context
+		int blockUpdatesProcessed = _synthesizeAndRunBlockUpdates(context
 			, context.config.shouldSynthesizeUpdatesOnLoad
 			, lazyMutableBlockCache
 			, oldState
@@ -92,10 +92,7 @@ public class EngineCuboids
 			, allLoadedCuboids
 			, cuboidsLoadedThisTick
 		);
-		int blockUpdatesProcessed = updateResults.blockUpdatesProcessed;
-		int blockUpdatesApplied = updateResults.blockUpdatesApplied;
 		int mutationsProcessed = 0;
-		int mutationsApplied = 0;
 		
 		// Run any periodic mutations which have been requested.
 		Map<BlockAddress, Long> periodicNotReady = new HashMap<>();
@@ -110,11 +107,7 @@ public class EngineCuboids
 					// Synthesize this.
 					MutationBlockPeriodic mutation = new MutationBlockPeriodic(key.getBase().relativeForBlock(block));
 					mutationsProcessed += 1;
-					boolean didApply = _runOneMutation(lazyMutableBlockCache, context, oldState, mutation);
-					if (didApply)
-					{
-						mutationsApplied += 1;
-					}
+					_runOneMutation(lazyMutableBlockCache, context, oldState, mutation);
 				}
 				else
 				{
@@ -139,11 +132,7 @@ public class EngineCuboids
 				if (0L == millisUntilReady)
 				{
 					mutationsProcessed += 1;
-					boolean didApply = _runOneMutation(lazyMutableBlockCache, context, oldState, mutation);
-					if (didApply)
-					{
-						mutationsApplied += 1;
-					}
+					_runOneMutation(lazyMutableBlockCache, context, oldState, mutation);
 				}
 				else
 				{
@@ -246,9 +235,7 @@ public class EngineCuboids
 			, periodicNotReady.isEmpty() ? null : periodicNotReady
 			, notYetReadyMutations.isEmpty() ? null : notYetReadyMutations
 			, blockUpdatesProcessed
-			, blockUpdatesApplied
 			, mutationsProcessed
-			, mutationsApplied
 		);
 	}
 
@@ -263,7 +250,7 @@ public class EngineCuboids
 		return mutation.applyMutation(context, thisBlockProxy);
 	}
 
-	private static _UpdateResults _synthesizeAndRunBlockUpdates(TickProcessingContext context
+	private static int _synthesizeAndRunBlockUpdates(TickProcessingContext context
 			, boolean shouldIncludeLoadedCuboidFaces
 			, Function<AbsoluteLocation, MutableBlockProxy> lazyMutableBlockCache
 			, IReadOnlyCuboidData oldState
@@ -301,17 +288,12 @@ public class EngineCuboids
 		
 		// Now, walk that set, synthesize and run a block update on each.
 		int blockUpdatesProcessed = toSynthesize.size();
-		int appliedUpdates = 0;
 		for (AbsoluteLocation target : toSynthesize)
 		{
 			MutationBlockUpdate update = new MutationBlockUpdate(target);
-			boolean didApply = _runOneMutation(lazyMutableBlockCache, context, oldState, update);
-			if (didApply)
-			{
-				appliedUpdates += 1;
-			}
+			_runOneMutation(lazyMutableBlockCache, context, oldState, update);
 		}
-		return new _UpdateResults(blockUpdatesProcessed, appliedUpdates);
+		return blockUpdatesProcessed;
 	}
 
 	private static void _collectFacesOfNewCuboids(Set<AbsoluteLocation> inout_toSynthesize
@@ -412,10 +394,6 @@ public class EngineCuboids
 		, Map<BlockAddress, Long> periodicNotReady
 		, List<ScheduledMutation> notYetReadyMutations
 		, int blockUpdatesProcessed
-		, int blockUpdatesApplied
 		, int mutationsProcessed
-		, int mutationsApplied
 	) {}
-
-	private static record _UpdateResults(int blockUpdatesProcessed, int blockUpdatesApplied) {}
 }

@@ -699,7 +699,7 @@ public class SpeculativeProjection
 			, entity
 			, scheduled
 		);
-		return (playerResult.committedMutationCount() > 0)
+		return (playerResult.countOfEntityActionsCommitted() > 0)
 			? new Entity[] { playerResult.changedEntityOrNull() }
 			: null
 		;

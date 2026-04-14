@@ -128,7 +128,7 @@ public class EnginePlayers
 
 	public static record SinglePlayerResult(Entity changedEntityOrNull
 		, List<ScheduledChange> notYetReadyChanges
-		, int entityChangesProcessed
-		, int committedMutationCount
+		, int countOfEntityActionsRun
+		, int countOfEntityActionsCommitted
 	) {}
 }

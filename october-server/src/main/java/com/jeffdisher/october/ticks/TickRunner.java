@@ -516,11 +516,11 @@ public class TickRunner
 		// Collect data for _ProcessedFragment.
 		List<TickOutput.CuboidOutput> cuboids = new ArrayList<>();
 		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
-		int committedMutationCount = 0;
+		int countOfCuboidMutationsRun = 0;
 		
 		// Per-player entity data.
 		List<TickOutput.EntityOutput> processedEntities = new ArrayList<>();
-		int committedActionCount = 0;
+		int countOfEntityActionsRun = 0;
 		
 		// Per-creature entity data.
 		List<TickOutput.BasicOutput<CreatureEntity>> updatedCreatures = new ArrayList<>();
@@ -601,7 +601,7 @@ public class TickRunner
 			processor.cuboidBlockupdatesProcessed += cuboidResult.blockUpdatesProcessed();
 			processor.cuboidMutationsProcessed += cuboidResult.mutationsProcessed();
 			processor.nanosInEngineCuboids += (endCuboidNanos - startCuboidNanos);
-			committedMutationCount += cuboidResult.blockUpdatesApplied() + cuboidResult.mutationsApplied();
+			countOfCuboidMutationsRun += cuboidResult.blockUpdatesProcessed() + cuboidResult.mutationsProcessed();
 			
 			// Process the player entities in this cuboid.
 			for (TickInput.EntityInput entityUnit : subUnit.entities())
@@ -621,8 +621,8 @@ public class TickRunner
 					, result.notYetReadyChanges()
 					, entityUnit.clientCommitLevel()
 				));
-				processor.playerActionsProcessed += result.entityChangesProcessed();
-				committedActionCount += result.committedMutationCount();
+				processor.playerActionsProcessed += result.countOfEntityActionsRun();
+				countOfEntityActionsRun += result.countOfEntityActionsRun();
 			}
 			long endPlayerNanos = System.nanoTime();
 			processor.nanosInEnginePlayers += (endPlayerNanos - endCuboidNanos);
@@ -688,9 +688,9 @@ public class TickRunner
 		TickOutput.WorldOutput world = new TickOutput.WorldOutput(cuboids
 			, List.of(outputColumnHeight)
 			, notYetReadyMutations
-			, committedMutationCount
+			, countOfCuboidMutationsRun
 		);
-		TickOutput.EntitiesOutput crowd = new TickOutput.EntitiesOutput(committedActionCount
+		TickOutput.EntitiesOutput crowd = new TickOutput.EntitiesOutput(countOfEntityActionsRun
 			, processedEntities
 		);
 		TickOutput.CreaturesOutput creatures = new TickOutput.CreaturesOutput(false
@@ -807,8 +807,8 @@ public class TickRunner
 				, nanosInPostambleFlatten
 				, nanosInPostambleSnapshot
 				, _threadStats.clone()
-				, masterFragment.entities().committedMutationCount()
-				, masterFragment.world().committedMutationCount()
+				, masterFragment.entities().countOfEntityActionsRun()
+				, masterFragment.world().countOfCuboidMutationsRun()
 			);
 			
 			TickSnapshot completedTick = new TickSnapshot(_nextTick

@@ -152,7 +152,7 @@ public class TestTickRunner_slow
 		runner.enqueueEntityChange(entityId2, _wrapSubAction(entity2, new MutationEntityPushItems(location, plankKey, planksToProvide, Inventory.INVENTORY_ASPECT_FUEL)), 2L);
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
-		Assert.assertEquals(2, snap.stats().committedEntityMutationCount());
+		Assert.assertEquals(2, snap.stats().countOfEntityActionsRun());
 		// We should see the two calls to accept the items.
 		Assert.assertTrue(snap.cuboids().get(address).scheduledBlockMutations().get(0).mutation() instanceof MutationBlockStoreItems);
 		Assert.assertTrue(snap.cuboids().get(address).scheduledBlockMutations().get(1).mutation() instanceof MutationBlockStoreItems);
@@ -160,7 +160,7 @@ public class TestTickRunner_slow
 		// Run the next tick to see the craft scheduled.
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
-		Assert.assertEquals(2, snap.stats().committedCuboidMutationCount());
+		Assert.assertEquals(2, snap.stats().countOfCuboidMutationsRun());
 		// We should see the mutation to start craft scheduled but the fuel and items still as they started.
 		Assert.assertTrue(snap.cuboids().get(address).scheduledBlockMutations().get(0).mutation() instanceof MutationBlockFurnaceCraft);
 		BlockProxy proxy = BlockProxy.load(block, snap.cuboids().get(address).completed());
@@ -174,6 +174,7 @@ public class TestTickRunner_slow
 		int logCount = logsToConvert;
 		int plankCount = planksToProvide;
 		int charcoalCount = 0;
+		boolean isBlockUpdatePending = true;
 		for (int i = 0; i < totalTicks; ++i)
 		{
 			// Run the tick.
@@ -189,15 +190,24 @@ public class TestTickRunner_slow
 			}
 			fueledMillis -= MILLIS_PER_TICK;
 			craftProgressMillis += MILLIS_PER_TICK;
+			boolean didRunBlockUpdates = isBlockUpdatePending;
 			if (craftProgressMillis == craftCharcoalMillis)
 			{
 				logCount -= 1;
 				charcoalCount += 1;
 				craftProgressMillis = 0;
+				isBlockUpdatePending = true;
+			}
+			else
+			{
+				isBlockUpdatePending = false;
 			}
 			
 			// Verify these assumptions against state.
-			Assert.assertEquals(1, snap.stats().committedCuboidMutationCount());
+			// We see the MutationBlockFurnaceCraft and updates for adjacent blocks (only 3 are within this loaded
+			// cuboid) unless the inventory didn't change (since that triggers the update).
+			int expectedMutationsRun = didRunBlockUpdates ? (1 + 3) : 1;
+			Assert.assertEquals(expectedMutationsRun, snap.stats().countOfCuboidMutationsRun());
 			Assert.assertTrue(snap.cuboids().get(address).scheduledBlockMutations().get(0).mutation() instanceof MutationBlockFurnaceCraft);
 			
 			proxy = BlockProxy.load(block, snap.cuboids().get(address).completed());
@@ -224,7 +234,7 @@ public class TestTickRunner_slow
 		
 		// This logic assumes that the crafting operation is a multiple of fuel uses.
 		Assert.assertEquals(0, craftCharcoalMillis % burnPlankMillis);
-		Assert.assertEquals(1, snap.stats().committedCuboidMutationCount());
+		Assert.assertEquals(1, snap.stats().countOfCuboidMutationsRun());
 		Assert.assertEquals(0, snap.cuboids().values().iterator().next().scheduledBlockMutations().size());
 		proxy = BlockProxy.load(block, snap.cuboids().get(address).completed());
 		Assert.assertEquals(0, proxy.getInventory().getCount(LOG_ITEM));
@@ -290,7 +300,7 @@ public class TestTickRunner_slow
 		runner.enqueueEntityChange(entityId2, _wrapSubAction(entity2, new MutationEntityPushItems(location, charcoalKey, charcoalToProvide, Inventory.INVENTORY_ASPECT_FUEL)), 2L);
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
-		Assert.assertEquals(2, snap.stats().committedEntityMutationCount());
+		Assert.assertEquals(2, snap.stats().countOfEntityActionsRun());
 		// We should see the two calls to accept the items.
 		Assert.assertTrue(snap.cuboids().get(address).scheduledBlockMutations().get(0).mutation() instanceof MutationBlockStoreItems);
 		Assert.assertTrue(snap.cuboids().get(address).scheduledBlockMutations().get(1).mutation() instanceof MutationBlockStoreItems);
@@ -298,7 +308,7 @@ public class TestTickRunner_slow
 		// Run the next tick to see the craft scheduled.
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
-		Assert.assertEquals(2, snap.stats().committedCuboidMutationCount());
+		Assert.assertEquals(2, snap.stats().countOfCuboidMutationsRun());
 		// We should see the mutation to start craft scheduled but the fuel and items still as they started.
 		Assert.assertTrue(snap.cuboids().get(address).scheduledBlockMutations().get(0).mutation() instanceof MutationBlockFurnaceCraft);
 		BlockProxy proxy = BlockProxy.load(block, snap.cuboids().get(address).completed());
@@ -311,6 +321,7 @@ public class TestTickRunner_slow
 		int craftProgressMillis = 0;
 		int logCount = logsToConvert;
 		int charcoalCount = 0;
+		boolean isBlockUpdatePending = true;
 		for (int i = 0; i < burnCharcoalTicks; ++i)
 		{
 			// Run the tick.
@@ -335,15 +346,24 @@ public class TestTickRunner_slow
 			{
 				craftProgressMillis += MILLIS_PER_TICK;
 			}
+			boolean didRunBlockUpdates = isBlockUpdatePending;
 			if (craftProgressMillis == craftCharcoalMillis)
 			{
 				logCount -= 1;
 				charcoalCount += 1;
 				craftProgressMillis = 0;
+				isBlockUpdatePending = true;
+			}
+			else
+			{
+				isBlockUpdatePending = false;
 			}
 			
 			// Verify these assumptions against state.
-			Assert.assertEquals(1, snap.stats().committedCuboidMutationCount());
+			// We see the MutationBlockFurnaceCraft and updates for adjacent blocks (only 3 are within this loaded
+			// cuboid) unless the inventory didn't change (since that triggers the update).
+			int expectedMutationsRun = didRunBlockUpdates ? (1 + 3) : 1;
+			Assert.assertEquals(expectedMutationsRun, snap.stats().countOfCuboidMutationsRun());
 			
 			proxy = BlockProxy.load(block, snap.cuboids().get(address).completed());
 			Assert.assertEquals(logCount, proxy.getInventory().getCount(LOG_ITEM));
@@ -374,7 +394,7 @@ public class TestTickRunner_slow
 		snap = runner.waitForPreviousTick();
 		
 		// Show that we are done and nothing else was enqueued (and the final tick did nothing).
-		Assert.assertEquals(0, snap.stats().committedCuboidMutationCount());
+		Assert.assertEquals(0, snap.stats().countOfCuboidMutationsRun());
 		Assert.assertEquals(0, snap.cuboids().values().iterator().next().scheduledBlockMutations().size());
 		proxy = BlockProxy.load(block, snap.cuboids().get(address).completed());
 		Assert.assertEquals(0, proxy.getInventory().getCount(LOG_ITEM));
@@ -492,7 +512,7 @@ public class TestTickRunner_slow
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertNull(snapshot.cuboids().get(address).blockChanges());
-		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
+		Assert.assertEquals(1, snapshot.stats().countOfEntityActionsRun());
 		
 		// Wait for this to trickle through the cuboid.
 		// This will take 33 steps, with some ticks between to allow flow - found experimentally.
@@ -572,7 +592,7 @@ public class TestTickRunner_slow
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertTrue(snapshot.cuboids().values().stream().filter((TickSnapshot.SnapshotCuboid cuboid) -> (null != cuboid.blockChanges())).toList().isEmpty());
-		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
+		Assert.assertEquals(1, snapshot.stats().countOfEntityActionsRun());
 		
 		// Wait for this to trickle through the cuboid.
 		// This will take 65 steps, with some ticks between to allow flow - found experimentally.
@@ -646,11 +666,11 @@ public class TestTickRunner_slow
 		
 		// (run an extra tick to unwrap the entity change)
 		TickSnapshot snapshot = runner.startNextTick();
-		Assert.assertEquals(2, snapshot.stats().committedEntityMutationCount());
+		Assert.assertEquals(2, snapshot.stats().countOfEntityActionsRun());
 		
 		snapshot = runner.waitForPreviousTick();
 		// Here, we should see the block types changed but not yet the light.
-		Assert.assertEquals(2, snapshot.stats().committedCuboidMutationCount());
+		Assert.assertEquals(2, snapshot.stats().countOfCuboidMutationsRun());
 		Assert.assertEquals(2, snapshot.cuboids().get(address).blockChanges().size());
 		Assert.assertEquals(LANTERN_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, lanternLocation.getBlockAddress()));
 		Assert.assertEquals(STONE_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
@@ -712,11 +732,11 @@ public class TestTickRunner_slow
 		
 		// (run an extra tick to unwrap the entity change)
 		TickSnapshot snapshot = runner.startNextTick();
-		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
+		Assert.assertEquals(1, snapshot.stats().countOfEntityActionsRun());
 		
 		snapshot = runner.waitForPreviousTick();
 		// We should see the sapling for one tick before it grows.
-		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
+		Assert.assertEquals(1, snapshot.stats().countOfCuboidMutationsRun());
 		Assert.assertEquals(SAPLING_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// The last call will have enqueued a growth tick so we want to skip ahead 500 ticks to see the growth.
@@ -788,11 +808,11 @@ public class TestTickRunner_slow
 		
 		// (run an extra tick to unwrap the entity change)
 		TickSnapshot snapshot = runner.startNextTick();
-		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
+		Assert.assertEquals(1, snapshot.stats().countOfEntityActionsRun());
 		
 		snapshot = runner.waitForPreviousTick();
 		// We should see the seed for one tick before it grows.
-		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
+		Assert.assertEquals(1, snapshot.stats().countOfCuboidMutationsRun());
 		Assert.assertEquals(WHEAT_SEEDLING_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// The last call will have enqueued a growth tick so we want to skip ahead 500 ticks to see the growth.
