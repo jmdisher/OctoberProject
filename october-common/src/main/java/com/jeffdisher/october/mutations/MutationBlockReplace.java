@@ -50,10 +50,8 @@ public class MutationBlockReplace implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
-		boolean didApply = false;
-		
 		// Check to see if this is the expected type.
 		Block oldType = newBlock.getBlock();
 		if (oldType == _originalType)
@@ -64,10 +62,7 @@ public class MutationBlockReplace implements IMutationBlock
 			
 			// See if we might need to reflow water (consider if this was a bucket picking up a source).
 			CommonBlockMutationHelpers.scheduleLiquidFlowIfRequired(env, context, _location, oldType, _newType);
-			
-			didApply = true;
 		}
-		return didApply;
 	}
 
 	@Override

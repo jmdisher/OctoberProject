@@ -51,10 +51,9 @@ public class MutationBlockApplyGravity implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
-		boolean didApply = false;
 		
 		Block thisBlock = newBlock.getBlock();
 		if (env.blocks.hasGravity(thisBlock))
@@ -76,11 +75,9 @@ public class MutationBlockApplyGravity implements IMutationBlock
 					
 					// Create the falling block.
 					context.passiveSpawner.spawnPassive(PassiveType.FALLING_BLOCK, _blockLocation.toEntityLocation(), new EntityLocation(0.0f, 0.0f, 0.0f), thisBlock);
-					didApply = true;
 				}
 			}
 		}
-		return didApply;
 	}
 
 	@Override

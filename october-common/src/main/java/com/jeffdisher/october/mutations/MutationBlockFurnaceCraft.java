@@ -42,14 +42,13 @@ public class MutationBlockFurnaceCraft implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		CraftingBlockSupport.FuelledResult result = CraftingBlockSupport.runFuelled(Environment.getShared(), context, newBlock, _blockLocation, context.millisPerTick);
 		if (result.shouldReschedule())
 		{
 			context.mutationSink.next(new MutationBlockFurnaceCraft(_blockLocation));
 		}
-		return result.didApply();
 	}
 
 	@Override

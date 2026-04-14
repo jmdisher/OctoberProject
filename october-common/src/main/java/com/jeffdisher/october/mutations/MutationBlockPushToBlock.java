@@ -61,9 +61,8 @@ public class MutationBlockPushToBlock implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
-		boolean didApply = false;
 		Inventory existing = _getInventory(newBlock);
 		if (null != existing)
 		{
@@ -148,11 +147,9 @@ public class MutationBlockPushToBlock implements IMutationBlock
 					// This is only used to push directly to normal inventory.
 					MutationBlockStoreItems store = new MutationBlockStoreItems(_receiverBlockLocation, stackToSend, nonStackToSend, Inventory.INVENTORY_ASPECT_INVENTORY);
 					context.mutationSink.next(store);
-					didApply = true;
 				}
 			}
 		}
-		return didApply;
 	}
 
 	@Override

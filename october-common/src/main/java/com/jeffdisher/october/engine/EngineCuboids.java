@@ -239,7 +239,7 @@ public class EngineCuboids
 		);
 	}
 
-	private static boolean _runOneMutation(Function<AbsoluteLocation, MutableBlockProxy> lazyMutableBlockCache
+	private static void _runOneMutation(Function<AbsoluteLocation, MutableBlockProxy> lazyMutableBlockCache
 			, TickProcessingContext context
 			, IReadOnlyCuboidData oldState
 			, IMutationBlock mutation
@@ -247,7 +247,7 @@ public class EngineCuboids
 	{
 		AbsoluteLocation absoluteLocation = mutation.getAbsoluteLocation();
 		MutableBlockProxy thisBlockProxy = lazyMutableBlockCache.apply(absoluteLocation);
-		return mutation.applyMutation(context, thisBlockProxy);
+		mutation.applyMutation(context, thisBlockProxy);
 	}
 
 	private static int _synthesizeAndRunBlockUpdates(TickProcessingContext context

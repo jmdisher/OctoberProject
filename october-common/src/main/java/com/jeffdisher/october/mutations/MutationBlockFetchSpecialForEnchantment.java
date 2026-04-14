@@ -44,7 +44,7 @@ public class MutationBlockFetchSpecialForEnchantment implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		// See if we have a special slot.
 		ItemSlot slot = newBlock.getSpecialSlot();
@@ -70,9 +70,6 @@ public class MutationBlockFetchSpecialForEnchantment implements IMutationBlock
 			context.mutationSink.next(send);
 			newBlock.setSpecialSlot(toRestore);
 		}
-		
-		// Return true if there was a special.
-		return (null != slot);
 	}
 
 	@Override

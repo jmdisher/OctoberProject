@@ -54,10 +54,9 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
-		boolean didApply = false;
 		
 		// We want to see if this is a kind of block which can be broken.
 		Block block = newBlock.getBlock();
@@ -90,9 +89,7 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				// The block still exists so just update the damage.
 				newBlock.setDamage(damage);
 			}
-			didApply = true;
 		}
-		return didApply;
 	}
 
 	@Override

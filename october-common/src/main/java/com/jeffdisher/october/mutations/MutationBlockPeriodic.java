@@ -49,10 +49,10 @@ public class MutationBlockPeriodic implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
-		boolean didApply = false;
+		
 		// Make sure that this is a block which can grow.
 		Block block = newBlock.getBlock();
 		if (PlantHelpers.canGrow(env, block))
@@ -63,19 +63,16 @@ public class MutationBlockPeriodic implements IMutationBlock
 			{
 				newBlock.requestFutureMutation(MILLIS_BETWEEN_GROWTH_CALLS);
 			}
-			didApply = true;
 		}
 		else if (env.logic.hasSpecialChangeLogic(block))
 		{
 			byte flags = newBlock.getFlags();
 			SpecialLogicChangeHelpers.periodicUpdate(context, newBlock, _location, block, flags);
-			didApply = true;
 		}
 		else if (HopperHelpers.isHopper(_location, newBlock))
 		{
 			HopperHelpers.tryProcessHopper(context, _location, newBlock);
 			newBlock.requestFutureMutation(MILLIS_BETWEEN_HOPPER_CALLS);
-			didApply = true;
 		}
 		else if (env.composites.isActiveCornerstone(block))
 		{
@@ -88,9 +85,7 @@ public class MutationBlockPeriodic implements IMutationBlock
 			{
 				PortalHelpers.handlePortalSurface(env, context, _location, newBlock);
 			}
-			didApply = true;
 		}
-		return didApply;
 	}
 
 	@Override

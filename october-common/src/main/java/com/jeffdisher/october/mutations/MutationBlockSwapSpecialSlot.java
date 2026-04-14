@@ -51,7 +51,7 @@ public class MutationBlockSwapSpecialSlot implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		boolean didApply = false;
 		
@@ -94,7 +94,6 @@ public class MutationBlockSwapSpecialSlot implements IMutationBlock
 			EntityActionStoreToInventory storeAction = new EntityActionStoreToInventory(_slot.stack, _slot.nonStackable);
 			context.newChangeSink.next(_returnEntityId, storeAction);
 		}
-		return didApply;
 	}
 
 	@Override

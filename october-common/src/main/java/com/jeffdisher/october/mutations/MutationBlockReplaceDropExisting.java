@@ -51,7 +51,7 @@ public class MutationBlockReplaceDropExisting implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
 		MutableInventory tempInventory = new MutableInventory(Inventory.start(Integer.MAX_VALUE).finish());
@@ -95,9 +95,6 @@ public class MutationBlockReplaceDropExisting implements IMutationBlock
 			AbsoluteLocation passiveDropBlock = _location.getRelative(0, 0, 1);
 			CommonBlockMutationHelpers.dropTempInventoryAsPassives(context, passiveDropBlock, tempInventory);
 		}
-		
-		// In either case, we took some action so say this applied.
-		return true;
 	}
 
 	@Override

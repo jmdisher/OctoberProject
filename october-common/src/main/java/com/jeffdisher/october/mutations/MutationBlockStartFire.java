@@ -45,18 +45,14 @@ public class MutationBlockStartFire implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
-		boolean didApply = false;
-		
 		// Check if this is flammable and isn't already burning.
 		Environment env = Environment.getShared();
 		if (FireHelpers.canIgnite(env, context, _blockLocation, newBlock))
 		{
 			CommonBlockMutationHelpers.igniteBlockAndSpread(env, context, _blockLocation, newBlock);
-			didApply = true;
 		}
-		return didApply;
 	}
 
 	@Override

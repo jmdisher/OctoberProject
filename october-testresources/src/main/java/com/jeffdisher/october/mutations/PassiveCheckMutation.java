@@ -31,14 +31,13 @@ public class PassiveCheckMutation implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		// We just want to store the output.
 		Assert.assertTrue(null == this.output);
 		EntityLocation base = _location.getRelative(-1, -1, -1).toEntityLocation();
 		EntityLocation edge = _location.getRelative(2, 2, 2).toEntityLocation();
 		this.output = context.previousPassiveLookUp.findPassiveItemSlotsInRegion(base, edge);
-		return null != this.output;
 	}
 
 	@Override

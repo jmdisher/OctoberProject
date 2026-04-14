@@ -51,10 +51,10 @@ public class MutationBlockOverwriteInternal implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
-		boolean didApply = CommonBlockMutationHelpers.overwriteBlock(context, newBlock, _location, null, _blockType, false);
-		return didApply;
+		// We ignore the return value of whether or not the change applied.
+		CommonBlockMutationHelpers.overwriteBlock(context, newBlock, _location, null, _blockType, false);
 	}
 
 	@Override

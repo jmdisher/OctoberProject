@@ -45,13 +45,12 @@ public class MutationBlockLogicChange implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		// Check to see if this block is sensitive to logic changes.
 		Environment env = Environment.getShared();
 		Block thisBlock = newBlock.getBlock();
 		
-		boolean didApply = false;
 		LogicAspect.ISignalChangeCallback logicHandler = env.logic.logicUpdateHandler(thisBlock);
 		if ((null != logicHandler) && !MultiBlockUtils.isMultiBlockExtension(env, newBlock))
 		{
@@ -62,7 +61,6 @@ public class MutationBlockLogicChange implements IMutationBlock
 				if (!isActive)
 				{
 					_sendReplaceWithAlternate(env, context, _blockLocation, true);
-					didApply = true;
 				}
 			}
 			else
@@ -71,11 +69,9 @@ public class MutationBlockLogicChange implements IMutationBlock
 				if (isActive)
 				{
 					_sendReplaceWithAlternate(env, context, _blockLocation, false);
-					didApply = true;
 				}
 			}
 		}
-		return didApply;
 	}
 
 	@Override

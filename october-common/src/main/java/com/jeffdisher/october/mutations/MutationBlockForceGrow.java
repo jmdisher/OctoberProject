@@ -43,10 +43,9 @@ public class MutationBlockForceGrow implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
-		boolean didApply = false;
 		// Make sure that this is a block which can grow.
 		Block block = newBlock.getBlock();
 		if (PlantHelpers.canGrow(env, block))
@@ -54,9 +53,7 @@ public class MutationBlockForceGrow implements IMutationBlock
 			PlantHelpers.performForcedGrow(env, context, _location, newBlock, block);
 			
 			// Note that the force grow doesn't reschedule the growth mutation since that is independent.
-			didApply = true;
 		}
-		return didApply;
 	}
 
 	@Override

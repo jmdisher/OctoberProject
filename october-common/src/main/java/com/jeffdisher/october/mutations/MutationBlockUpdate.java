@@ -50,7 +50,7 @@ public class MutationBlockUpdate implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
 		boolean didApply = false;
@@ -195,7 +195,6 @@ public class MutationBlockUpdate implements IMutationBlock
 				}
 			}
 		}
-		return didApply;
 	}
 
 	@Override

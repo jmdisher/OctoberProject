@@ -64,7 +64,7 @@ public class MutationBlockPlaceMultiBlock implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
 		boolean isRoot = _rootLocation.equals(_location);
@@ -108,7 +108,6 @@ public class MutationBlockPlaceMultiBlock implements IMutationBlock
 				newBlock.setMultiBlockRoot(_rootLocation);
 			}
 		}
-		return didApply;
 	}
 
 	@Override

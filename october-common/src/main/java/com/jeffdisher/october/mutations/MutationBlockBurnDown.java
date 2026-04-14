@@ -46,10 +46,8 @@ public class MutationBlockBurnDown implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
-		boolean didApply = false;
-		
 		// Check that this is currently on fire.
 		byte flags = newBlock.getFlags();
 		if (FlagsAspect.isSet(flags, FlagsAspect.FLAG_BURNING))
@@ -68,10 +66,7 @@ public class MutationBlockBurnDown implements IMutationBlock
 				long millisDelay = env.liquids.minFlowDelayMillis(eventualBlock, eventualBlock);
 				context.mutationSink.future(new MutationBlockLiquidFlowInto(_blockLocation), millisDelay);
 			}
-			
-			didApply = true;
 		}
-		return didApply;
 	}
 
 	@Override

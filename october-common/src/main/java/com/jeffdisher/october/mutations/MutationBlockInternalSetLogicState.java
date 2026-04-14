@@ -49,10 +49,9 @@ public class MutationBlockInternalSetLogicState implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
-		boolean didApply = false;
 		
 		// We assume that whoever scheduled us knows what they are doing and we only check the block type to make sure
 		// it didn't change in the meantime.
@@ -71,10 +70,8 @@ public class MutationBlockInternalSetLogicState implements IMutationBlock
 						: FlagsAspect.clear(flags, FlagsAspect.FLAG_ACTIVE)
 				;
 				newBlock.setFlags(flags);
-				didApply = true;
 			}
 		}
-		return didApply;
 	}
 
 	@Override

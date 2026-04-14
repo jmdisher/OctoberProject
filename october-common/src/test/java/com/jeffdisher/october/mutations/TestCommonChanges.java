@@ -267,7 +267,7 @@ public class TestCommonChanges
 		AbsoluteLocation location = holder.mutation.getAbsoluteLocation();
 		MutableBlockProxy proxy = new MutableBlockProxy(location, cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, location, 0, entityId));
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		holder.mutation.applyMutation(holder.context, proxy);
 		proxy.writeBack(cuboid);
 		
 		// We expect that the block will be placed and our selection and inventory will be cleared.
@@ -300,7 +300,7 @@ public class TestCommonChanges
 		Assert.assertTrue(holder.mutation instanceof MutationBlockExtractItems);
 		AbsoluteLocation location = holder.mutation.getAbsoluteLocation();
 		MutableBlockProxy newBlock = new MutableBlockProxy(location, cuboid);
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, newBlock));
+		holder.mutation.applyMutation(holder.context, newBlock);
 		newBlock.writeBack(cuboid);
 		
 		// By this point, the entity shouldn't yet have changed.
@@ -324,7 +324,7 @@ public class TestCommonChanges
 		holder.change = null;
 		request = new MutationEntityRequestItemPickUp(targetLocation, stoneKey, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(request.applyChange(holder.context, newEntity));
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, newBlock));
+		holder.mutation.applyMutation(holder.context, newBlock);
 		newBlock.writeBack(cuboid);
 		Assert.assertTrue(holder.change.applyChange(holder.context, newEntity));
 		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
@@ -362,7 +362,7 @@ public class TestCommonChanges
 		Assert.assertTrue(holder.mutation instanceof MutationBlockStoreItems);
 		AbsoluteLocation location = holder.mutation.getAbsoluteLocation();
 		MutableBlockProxy newBlock = new MutableBlockProxy(location, cuboid);
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, newBlock));
+		holder.mutation.applyMutation(holder.context, newBlock);
 		newBlock.writeBack(cuboid);
 		holder.mutation = null;
 		
@@ -376,7 +376,7 @@ public class TestCommonChanges
 		// Drop again to verify that this correctly handles dropping the last selected item.
 		push = new MutationEntityPushItems(targetLocation, newEntity.newInventory.getIdOfStackableType(STONE_ITEM), 1, Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(push.applyChange(holder.context, newEntity));
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, newBlock));
+		holder.mutation.applyMutation(holder.context, newBlock);
 		newBlock.writeBack(cuboid);
 		
 		// By this point, we should be able to verify both the entity and the block.
@@ -420,7 +420,7 @@ public class TestCommonChanges
 		Assert.assertTrue(holder.mutation instanceof MutationBlockStoreItems);
 		AbsoluteLocation location = holder.mutation.getAbsoluteLocation();
 		MutableBlockProxy newBlock = new MutableBlockProxy(location, cuboid);
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, newBlock));
+		holder.mutation.applyMutation(holder.context, newBlock);
 		newBlock.writeBack(cuboid);
 		holder.mutation = null;
 		
@@ -642,7 +642,7 @@ public class TestCommonChanges
 			Assert.assertTrue(mutation instanceof MutationBlockStoreItems);
 			AbsoluteLocation location = mutation.getAbsoluteLocation();
 			MutableBlockProxy newBlock = new MutableBlockProxy(location, cuboid);
-			Assert.assertTrue(mutation.applyMutation(context, newBlock));
+			mutation.applyMutation(context, newBlock);
 			newBlock.writeBack(cuboid);
 		}
 		
@@ -1046,7 +1046,7 @@ public class TestCommonChanges
 			holder.mutation = null;
 			
 			MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
-			Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
+			breaking.applyMutation(holder.context, proxy);
 			proxy.writeBack(cuboid);
 		}
 		Assert.assertTrue(holder.events.didPost());
@@ -1095,7 +1095,7 @@ public class TestCommonChanges
 		MutationBlockIncrementalBreak breaking = (MutationBlockIncrementalBreak) holder.mutation;
 		holder.mutation = null;
 		MutableBlockProxy proxy = new MutableBlockProxy(targetStone, cuboid);
-		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
+		breaking.applyMutation(holder.context, proxy);
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(startDurability - (int)holder.context.millisPerTick, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(1)));
 		Assert.assertEquals(15 * duration, cuboid.getDataSpecial(AspectRegistry.DAMAGE, targetStone.getBlockAddress()).intValue());
@@ -1107,7 +1107,7 @@ public class TestCommonChanges
 		breaking = (MutationBlockIncrementalBreak) holder.mutation;
 		holder.mutation = null;
 		proxy = new MutableBlockProxy(targetLog, cuboid);
-		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
+		breaking.applyMutation(holder.context, proxy);
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(startDurability - 2 * (int)holder.context.millisPerTick, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(1)));
 		Assert.assertEquals(duration, cuboid.getDataSpecial(AspectRegistry.DAMAGE, targetLog.getBlockAddress()).intValue());
@@ -1144,7 +1144,7 @@ public class TestCommonChanges
 		MutationBlockReplace replace = (MutationBlockReplace) holder.mutation;
 		holder.mutation = null;
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
-		Assert.assertTrue(replace.applyMutation(holder.context, proxy));
+		replace.applyMutation(holder.context, proxy);
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(emptyBucket, newEntity.newInventory.getNonStackableForKey(1).type());
 		Assert.assertEquals(waterSourceItemNumber, cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
@@ -1157,7 +1157,7 @@ public class TestCommonChanges
 		replace = (MutationBlockReplace) holder.mutation;
 		holder.mutation = null;
 		proxy = new MutableBlockProxy(target, cuboid);
-		Assert.assertTrue(replace.applyMutation(holder.context, proxy));
+		replace.applyMutation(holder.context, proxy);
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(waterBucket, newEntity.newInventory.getNonStackableForKey(1).type());
 		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
@@ -1170,7 +1170,7 @@ public class TestCommonChanges
 		replace = (MutationBlockReplace) holder.mutation;
 		holder.mutation = null;
 		proxy = new MutableBlockProxy(target, cuboid);
-		Assert.assertTrue(replace.applyMutation(holder.context, proxy));
+		replace.applyMutation(holder.context, proxy);
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(emptyBucket, newEntity.newInventory.getNonStackableForKey(2).type());
 		Assert.assertEquals(lavaSourceItemNumber, cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
@@ -1182,7 +1182,7 @@ public class TestCommonChanges
 		replace = (MutationBlockReplace) holder.mutation;
 		holder.mutation = null;
 		proxy = new MutableBlockProxy(target, cuboid);
-		Assert.assertTrue(replace.applyMutation(holder.context, proxy));
+		replace.applyMutation(holder.context, proxy);
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(lavaBucket, newEntity.newInventory.getNonStackableForKey(2).type());
 		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
@@ -1323,7 +1323,7 @@ public class TestCommonChanges
 		Assert.assertTrue(pushToInventory.applyChange(holder.context, newEntity));
 		Assert.assertNull(holder.change);
 		Assert.assertTrue(holder.mutation instanceof MutationBlockStoreItems);
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
+		holder.mutation.applyMutation(holder.context, mutable);
 		Assert.assertNull(holder.change);
 		holder.mutation = null;
 		mutable.writeBack(cuboid);
@@ -1332,7 +1332,7 @@ public class TestCommonChanges
 		Assert.assertTrue(pushToFuel.applyChange(holder.context, newEntity));
 		Assert.assertNull(holder.change);
 		Assert.assertTrue(holder.mutation instanceof MutationBlockStoreItems);
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
+		holder.mutation.applyMutation(holder.context, mutable);
 		Assert.assertNull(holder.change);
 		holder.mutation = null;
 		mutable.writeBack(cuboid);
@@ -1345,7 +1345,7 @@ public class TestCommonChanges
 		Assert.assertEquals(0, newEntity.getSelectedKey());
 		Assert.assertNull(holder.change);
 		Assert.assertTrue(holder.mutation instanceof MutationBlockExtractItems);
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
+		holder.mutation.applyMutation(holder.context, mutable);
 		holder.mutation = null;
 		Assert.assertTrue(holder.change instanceof EntityActionStoreToInventory);
 		Assert.assertTrue(holder.change.applyChange(holder.context, newEntity));
@@ -1358,7 +1358,7 @@ public class TestCommonChanges
 		Assert.assertTrue(pullFromFuel.applyChange(holder.context, newEntity));
 		Assert.assertNull(holder.change);
 		Assert.assertTrue(holder.mutation instanceof MutationBlockExtractItems);
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
+		holder.mutation.applyMutation(holder.context, mutable);
 		holder.mutation = null;
 		Assert.assertTrue(holder.change instanceof EntityActionStoreToInventory);
 		Assert.assertTrue(holder.change.applyChange(holder.context, newEntity));
@@ -1491,7 +1491,7 @@ public class TestCommonChanges
 		// We also need to apply the actual mutation.
 		MutableBlockProxy proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, holder.mutation.getAbsoluteLocation(), 0, entityId));
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		holder.mutation.applyMutation(holder.context, proxy);
 		proxy.writeBack(cuboid);
 		holder.mutation = null;
 		
@@ -1499,7 +1499,7 @@ public class TestCommonChanges
 		EntityChangeSetBlockLogicState open = new EntityChangeSetBlockLogicState(target, true);
 		Assert.assertTrue(open.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		holder.mutation.applyMutation(holder.context, proxy);
 		Assert.assertEquals(gate, proxy.getBlock());
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, proxy.getFlags());
 		proxy.writeBack(cuboid);
@@ -1509,7 +1509,7 @@ public class TestCommonChanges
 		EntityChangeSetBlockLogicState close = new EntityChangeSetBlockLogicState(target, false);
 		Assert.assertTrue(close.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		holder.mutation.applyMutation(holder.context, proxy);
 		Assert.assertEquals(gate, proxy.getBlock());
 		Assert.assertNotEquals(FlagsAspect.FLAG_ACTIVE, proxy.getFlags());
 		proxy.writeBack(cuboid);
@@ -1518,7 +1518,7 @@ public class TestCommonChanges
 		// Open it again.
 		Assert.assertTrue(open.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		holder.mutation.applyMutation(holder.context, proxy);
 		Assert.assertEquals(gate, proxy.getBlock());
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, proxy.getFlags());
 		proxy.writeBack(cuboid);
@@ -1535,7 +1535,7 @@ public class TestCommonChanges
 			{
 				holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, holder.mutation.getAbsoluteLocation(), 0, entityId));
 			}
-			Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+			holder.mutation.applyMutation(holder.context, proxy);
 			proxy.writeBack(cuboid);
 			holder.mutation = null;
 		}
@@ -1572,7 +1572,7 @@ public class TestCommonChanges
 		Assert.assertTrue(north.applyChange(holder.context, newEntity));
 		MutableBlockProxy proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(0, -1, 0), 0, entityId));
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		holder.mutation.applyMutation(holder.context, proxy);
 		Assert.assertEquals(ENV.items.getItemById("op.hopper"), proxy.getBlock().item());
 		Assert.assertEquals(FacingDirection.NORTH, proxy.getOrientation());
 		proxy.writeBack(cuboid);
@@ -1583,7 +1583,7 @@ public class TestCommonChanges
 		Assert.assertTrue(south.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(0, 1, 0), 0, entityId));
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		holder.mutation.applyMutation(holder.context, proxy);
 		Assert.assertEquals(ENV.items.getItemById("op.hopper"), proxy.getBlock().item());
 		Assert.assertEquals(FacingDirection.SOUTH, proxy.getOrientation());
 		proxy.writeBack(cuboid);
@@ -1594,7 +1594,7 @@ public class TestCommonChanges
 		Assert.assertTrue(east.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(-1, 0, 0), 0, entityId));
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		holder.mutation.applyMutation(holder.context, proxy);
 		Assert.assertEquals(ENV.items.getItemById("op.hopper"), proxy.getBlock().item());
 		Assert.assertEquals(FacingDirection.EAST, proxy.getOrientation());
 		proxy.writeBack(cuboid);
@@ -1605,7 +1605,7 @@ public class TestCommonChanges
 		Assert.assertTrue(west.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(1, 0, 0), 0, entityId));
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		holder.mutation.applyMutation(holder.context, proxy);
 		Assert.assertEquals(ENV.items.getItemById("op.hopper"), proxy.getBlock().item());
 		Assert.assertEquals(FacingDirection.WEST, proxy.getOrientation());
 		proxy.writeBack(cuboid);
@@ -1616,7 +1616,7 @@ public class TestCommonChanges
 		Assert.assertTrue(down.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(0, 0, -1), 0, entityId));
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		holder.mutation.applyMutation(holder.context, proxy);
 		Assert.assertEquals(itemHopper, proxy.getBlock().item());
 		proxy.writeBack(cuboid);
 		holder.mutation = null;
@@ -1840,7 +1840,7 @@ public class TestCommonChanges
 		Assert.assertTrue(pushToInventory.applyChange(holder.context, newEntity));
 		Assert.assertNull(holder.change);
 		Assert.assertTrue(holder.mutation instanceof MutationBlockStoreItems);
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
+		holder.mutation.applyMutation(holder.context, mutable);
 		Assert.assertNull(holder.change);
 		holder.mutation = null;
 		mutable.writeBack(cuboid);
@@ -1857,7 +1857,7 @@ public class TestCommonChanges
 			EntityChangeCraftInBlock craft = new EntityChangeCraftInBlock(quern, grindFlour);
 			Assert.assertTrue(craft.applyChange(holder.context, newEntity));
 			Assert.assertTrue(holder.mutation instanceof MutationBlockCraft);
-			Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
+			holder.mutation.applyMutation(holder.context, mutable);
 			Inventory inv = mutable.getInventory();
 			boolean isLastIteration = (spent + holder.context.millisPerTick) >= grindFlour.millisPerCraft;
 			if (isLastIteration)
@@ -1933,8 +1933,8 @@ public class TestCommonChanges
 		// We can now apply the step 2.
 		AbsoluteLocation location = step2_1.getAbsoluteLocation();
 		MutableBlockProxy newBlock = new MutableBlockProxy(location, cuboid);
-		Assert.assertTrue(step2_1.applyMutation(holder.context, newBlock));
-		Assert.assertTrue(step2_2.applyMutation(holder.context, newBlock));
+		step2_1.applyMutation(holder.context, newBlock);
+		step2_2.applyMutation(holder.context, newBlock);
 		newBlock.writeBack(cuboid);
 		Assert.assertNull(holder.mutation);
 		
@@ -2176,7 +2176,7 @@ public class TestCommonChanges
 		MutationBlockIncrementalRepair followUp = (MutationBlockIncrementalRepair) holder.mutation;
 		holder.mutation = null;
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
-		Assert.assertTrue(followUp.applyMutation(holder.context, proxy));
+		followUp.applyMutation(holder.context, proxy);
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(log.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(0x0, cuboid.getData7(AspectRegistry.FLAGS, target.getBlockAddress()));
@@ -2272,7 +2272,7 @@ public class TestCommonChanges
 		for (IMutationBlock mutation : mutations)
 		{
 			MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
-			Assert.assertTrue(mutation.applyMutation(context, proxy));
+			mutation.applyMutation(context, proxy);
 			proxy.writeBack(cuboid);
 			Assert.assertEquals(door, proxy.getBlock());
 			Assert.assertEquals(0x0, proxy.getFlags());
@@ -2287,7 +2287,7 @@ public class TestCommonChanges
 		for (IMutationBlock mutation : futureMutations)
 		{
 			MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
-			Assert.assertTrue(mutation.applyMutation(context, proxy));
+			mutation.applyMutation(context, proxy);
 			proxy.writeBack(cuboid);
 			Assert.assertNull(out_record[0]);
 		}
@@ -2300,7 +2300,7 @@ public class TestCommonChanges
 		for (IMutationBlock mutation : mutations)
 		{
 			MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
-			Assert.assertTrue(mutation.applyMutation(context, proxy));
+			mutation.applyMutation(context, proxy);
 			proxy.writeBack(cuboid);
 			Assert.assertEquals(door, proxy.getBlock());
 			Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, proxy.getFlags());
@@ -2322,7 +2322,7 @@ public class TestCommonChanges
 		for (IMutationBlock mutation : mutations)
 		{
 			MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
-			Assert.assertTrue(mutation.applyMutation(context, proxy));
+			mutation.applyMutation(context, proxy);
 			proxy.writeBack(cuboid);
 			Assert.assertEquals(door, proxy.getBlock());
 			Assert.assertEquals(0x0, proxy.getFlags());
@@ -2343,7 +2343,7 @@ public class TestCommonChanges
 		for (IMutationBlock mutation : mutations)
 		{
 			MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
-			Assert.assertTrue(mutation.applyMutation(context, proxy));
+			mutation.applyMutation(context, proxy);
 			proxy.writeBack(cuboid);
 			Assert.assertEquals(door, proxy.getBlock());
 			Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, proxy.getFlags());
@@ -2373,7 +2373,7 @@ public class TestCommonChanges
 		{
 			IMutationBlock mutation = mutations.remove(0);
 			MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
-			Assert.assertTrue(mutation.applyMutation(context, proxy));
+			mutation.applyMutation(context, proxy);
 			proxy.writeBack(cuboid);
 		}
 		Assert.assertEquals(4, mutations.size());
@@ -2381,7 +2381,7 @@ public class TestCommonChanges
 		{
 			IMutationBlock mutation = mutations.remove(0);
 			MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
-			Assert.assertTrue(mutation.applyMutation(context, proxy));
+			mutation.applyMutation(context, proxy);
 			proxy.writeBack(cuboid);
 			Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
 		}
@@ -2750,7 +2750,7 @@ public class TestCommonChanges
 		MutationBlockIncrementalBreak breaking = (MutationBlockIncrementalBreak) holder.mutation;
 		holder.mutation = null;
 		MutableBlockProxy proxy = new MutableBlockProxy(targetStone, cuboid);
-		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
+		breaking.applyMutation(holder.context, proxy);
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(startDurability - (int)holder.context.millisPerTick, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(1)));
 		Assert.assertEquals((15 + 5) * duration, cuboid.getDataSpecial(AspectRegistry.DAMAGE, targetStone.getBlockAddress()).intValue());
@@ -2783,7 +2783,7 @@ public class TestCommonChanges
 		Assert.assertNull(holder.change);
 		holder.mutation = null;
 		MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
-		Assert.assertTrue(mutation.applyMutation(holder.context, proxy));
+		mutation.applyMutation(holder.context, proxy);
 		proxy.writeBack(cuboid);
 		Assert.assertNull(holder.change);
 		Assert.assertEquals(0, newEntity.newInventory.getCurrentEncumbrance());
@@ -2798,7 +2798,7 @@ public class TestCommonChanges
 		Assert.assertNull(holder.change);
 		holder.mutation = null;
 		proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
-		Assert.assertTrue(mutation.applyMutation(holder.context, proxy));
+		mutation.applyMutation(holder.context, proxy);
 		proxy.writeBack(cuboid);
 		EntityActionStoreToInventory store = (EntityActionStoreToInventory) holder.change;
 		holder.change = null;
@@ -2838,7 +2838,7 @@ public class TestCommonChanges
 		Assert.assertTrue(north.applyChange(holder.context, newEntity));
 		MutableBlockProxy proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(0, -1, 0), 0, entityId));
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		holder.mutation.applyMutation(holder.context, proxy);
 		Assert.assertEquals(itemKeystone, proxy.getBlock().item());
 		Assert.assertEquals(FacingDirection.NORTH, proxy.getOrientation());
 		proxy.writeBack(cuboid);
@@ -2849,7 +2849,7 @@ public class TestCommonChanges
 		Assert.assertTrue(east.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(-1, 0, 0), 0, entityId));
-		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		holder.mutation.applyMutation(holder.context, proxy);
 		Assert.assertEquals(itemKeystone, proxy.getBlock().item());
 		Assert.assertEquals(FacingDirection.EAST, proxy.getOrientation());
 		proxy.writeBack(cuboid);
@@ -3757,7 +3757,7 @@ public class TestCommonChanges
 		IMutationBlock mutation = holder.mutation;
 		holder.mutation = null;
 		MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
-		Assert.assertTrue(mutation.applyMutation(holder.context, proxy));
+		mutation.applyMutation(holder.context, proxy);
 		Assert.assertEquals(expectedBlock, proxy.getBlock());
 		Assert.assertEquals(expectedFlags, proxy.getFlags());
 		byte logicBits = proxy.potentialLogicChangeBits();

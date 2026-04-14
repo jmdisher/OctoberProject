@@ -59,9 +59,8 @@ public class MutationBlockExtractItems implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
-		boolean didApply = false;
 		Inventory existing = _getInventory(newBlock);
 		if (null != existing)
 		{
@@ -116,10 +115,8 @@ public class MutationBlockExtractItems implements IMutationBlock
 				}
 				_putInventory(newBlock, mutable.freeze());
 				context.newChangeSink.next(_returnEntityId, new EntityActionStoreToInventory(stackToSend, nonStackToSend));
-				didApply = true;
 			}
 		}
-		return didApply;
 	}
 
 	@Override

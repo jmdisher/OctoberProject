@@ -30,18 +30,15 @@ public class SaturatingDamage implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
-		boolean didApply = false;
 		// We will only apply this if we haven't yet in this tick.
 		if (null == newBlock.getEphemeralState())
 		{
 			newBlock.setDamage((short)(newBlock.getDamage() + _damage));
 			// We just need to store ANY object.
 			newBlock.setEphemeralState(Boolean.TRUE);
-			didApply = true;
 		}
-		return didApply;
 	}
 
 	@Override

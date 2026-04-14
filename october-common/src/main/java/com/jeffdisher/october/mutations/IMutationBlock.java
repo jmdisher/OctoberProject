@@ -24,16 +24,12 @@ public interface IMutationBlock
 	AbsoluteLocation getAbsoluteLocation();
 
 	/**
-	 * Applies the mutation to the given world, returning true if it was a success (and should be transmitted to
-	 * clients) and false if it failed and should be rejected.
-	 * For context:  This call is made when a mutation is being applied authoritatively.  That is, it will NOT be
-	 * reverted as is common via the other apply path).
+	 * Applies the mutation described by the receiver to the given newBlock mutable proxy within the given context.
 	 * 
 	 * @param context Used for reading world state or scheduling follow-up operations.
 	 * @param newBlock The block currently being modified by this mutation in the current tick.
-	 * @return True if the mutation was applied successfully, false if it changed nothing and should be rejected.
 	 */
-	boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock);
+	void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock);
 
 	/**
 	 * This type is just used for serialization so it should be null if the mutation is only for testing or internal

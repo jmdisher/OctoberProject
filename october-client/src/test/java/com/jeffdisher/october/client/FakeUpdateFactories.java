@@ -44,9 +44,7 @@ public class FakeUpdateFactories
 		Assert.assertTrue(null != proxy);
 		
 		MutableBlockProxy mutable = new MutableBlockProxy(location, mutableData);
-		boolean didApply = mutation.applyMutation(context, mutable);
-		// This implementation needs to assume clean application.
-		Assert.assertTrue(didApply);
+		mutation.applyMutation(context, mutable);
 		// We need to call didChange() to clear redundant changes.
 		if (mutable.didChange())
 		{

@@ -47,10 +47,9 @@ public class MutationBlockSetLogicState implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
-		boolean didApply = false;
 		Block previousBlock = newBlock.getBlock();
 		if (env.logic.isManual(previousBlock))
 		{
@@ -72,10 +71,8 @@ public class MutationBlockSetLogicState implements IMutationBlock
 					;
 					newBlock.setFlags(flags);
 				}
-				didApply = true;
 			}
 		}
-		return didApply;
 	}
 
 	@Override

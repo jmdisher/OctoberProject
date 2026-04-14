@@ -45,11 +45,10 @@ public class MutationBlockLiquidFlowInto implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
 		
-		boolean didApply = false;
 		Block thisBlock = newBlock.getBlock();
 		if (env.blocks.canBeReplaced(thisBlock))
 		{
@@ -58,7 +57,6 @@ public class MutationBlockLiquidFlowInto implements IMutationBlock
 			{
 				CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _blockLocation, newBlock, newType);
 				thisBlock = newType;
-				didApply = true;
 			}
 		}
 		else if (env.blocks.isBrokenByFlowingLiquid(thisBlock))
@@ -78,11 +76,8 @@ public class MutationBlockLiquidFlowInto implements IMutationBlock
 				
 				// Break the block and replace it with the flowing type.
 				CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _blockLocation, newBlock, eventualBlock);
-				
-				didApply = true;
 			}
 		}
-		return didApply;
 	}
 
 	@Override

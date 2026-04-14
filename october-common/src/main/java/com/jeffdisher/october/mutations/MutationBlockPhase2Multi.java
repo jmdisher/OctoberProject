@@ -65,7 +65,7 @@ public class MutationBlockPhase2Multi implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		// Check all the blocks.
 		Environment env = Environment.getShared();
@@ -85,9 +85,6 @@ public class MutationBlockPhase2Multi implements IMutationBlock
 			// See if we might need to reflow water (if this multi-block failed to be placed in water).
 			CommonBlockMutationHelpers.scheduleLiquidFlowIfRequired(env, context, _location, oldType, _revertType);
 		}
-		
-		// Whatever happened, we always say that this applied.
-		return true;
 	}
 
 	@Override

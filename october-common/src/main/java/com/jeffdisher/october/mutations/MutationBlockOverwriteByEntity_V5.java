@@ -54,10 +54,8 @@ public class MutationBlockOverwriteByEntity_V5 implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
-		// No longer does anything.
-		return false;
 	}
 
 	@Override

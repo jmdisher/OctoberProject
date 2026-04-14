@@ -52,17 +52,16 @@ public class MutationBlockCraft implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
-		boolean didApply = false;
 		
 		// Make sure that we are a crafting table.
 		if (env.stations.getManualMultiplier(newBlock.getBlock()) > 0)
 		{
-			didApply = CraftingBlockSupport.runManual(env, context, newBlock, _location, _craft, _millisToApply);
+			// We ignore the return value here - whether or not any crafting was done.
+			CraftingBlockSupport.runManual(env, context, newBlock, _location, _craft, _millisToApply);
 		}
-		return didApply;
 	}
 
 	@Override

@@ -44,19 +44,15 @@ public class MutationBlockCleanEnchantment implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
-		boolean didApply = false;
 		
 		// Just call the state machine helper.
 		if (env.enchantments.canEnchant(newBlock.getBlock()))
 		{
 			EnchantingBlockSupport.cleanUpOrphanedOperations(env, context, _blockLocation, newBlock);
-			// We just assume that this always applies.
-			didApply = true;
 		}
-		return didApply;
 	}
 
 	@Override

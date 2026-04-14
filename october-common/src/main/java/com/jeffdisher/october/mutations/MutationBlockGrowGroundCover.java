@@ -50,19 +50,16 @@ public class MutationBlockGrowGroundCover implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
-		boolean didApply = false;
 		
 		// Check that all the rules to change this are passed.
 		if (GroundCoverHelpers.canChangeToGroundCover(env, context.previousBlockLookUp, _blockLocation, newBlock.getBlock(), _groundCoverType))
 		{
 			// Change our block type.
 			CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _blockLocation, newBlock, _groundCoverType);
-			didApply = true;
 		}
-		return didApply;
 	}
 
 	@Override

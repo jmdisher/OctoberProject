@@ -36,17 +36,14 @@ public class ReplaceBlockMutation implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
-		boolean didApply = false;
 		if (_oldType == newBlock.getBlock().item().number())
 		{
 			Environment env = Environment.getShared();
 			Item rawItem = env.items.ITEMS_BY_TYPE[_newType];
 			newBlock.setBlockAndClear(env.blocks.fromItem(rawItem));
-			didApply = true;
 		}
-		return didApply;
 	}
 
 	@Override

@@ -45,10 +45,8 @@ public class MutationBlockIncrementalRepair implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
-		boolean didApply = false;
-		
 		// Check that this block is damaged.
 		int damage = newBlock.getDamage();
 		boolean hasPositiveDamage = (damage > 0);
@@ -59,7 +57,6 @@ public class MutationBlockIncrementalRepair implements IMutationBlock
 			short repair = (short)Math.min(_damageToRepair, damage);
 			short updatedDamage = (short)(damage - repair);
 			newBlock.setDamage(updatedDamage);
-			didApply = true;
 		}
 		
 		// We also use this path to extinguish a fire in the block.
@@ -68,7 +65,6 @@ public class MutationBlockIncrementalRepair implements IMutationBlock
 		{
 			flags = FlagsAspect.clear(flags, FlagsAspect.FLAG_BURNING);
 			newBlock.setFlags(flags);
-			didApply = true;
 			
 			// See if this is still something which can be re-ignited.
 			Environment env = Environment.getShared();
@@ -79,7 +75,6 @@ public class MutationBlockIncrementalRepair implements IMutationBlock
 			}
 		}
 		
-		return didApply;
 	}
 
 	@Override

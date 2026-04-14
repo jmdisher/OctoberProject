@@ -30,10 +30,9 @@ public class ShockwaveMutation implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
+	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
-		boolean didApply = false;
 		
 		// We want to apply a single point of damage to this block, so that we changed something.
 		Block block = newBlock.getBlock();
@@ -41,12 +40,10 @@ public class ShockwaveMutation implements IMutationBlock
 		{
 			short newDamage = (short)(newBlock.getDamage() + 1);
 			newBlock.setDamage(newDamage);
-			didApply = true;
 		}
 		
 		// Now, apply this to the other blocks.
 		_commonMutation((IMutationBlock mutation) -> context.mutationSink.next(mutation));
-		return didApply;
 	}
 
 	@Override
