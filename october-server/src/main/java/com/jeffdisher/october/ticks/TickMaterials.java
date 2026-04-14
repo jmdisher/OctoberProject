@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -43,7 +42,6 @@ public record TickMaterials(long thisGameTick
 	, Set<CuboidAddress> cuboidsLoadedThisTick
 	
 	// Information used to build the BlockFetcher for each thread in parallel phase.
-	, Map<AbsoluteLocation, BlockProxy> previousProxyCache
 	, Set<AbsoluteLocation> forceMissBlocksPreviousCache
 	
 	// Higher-level data associated with the materials.

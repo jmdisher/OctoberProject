@@ -3,9 +3,11 @@ package com.jeffdisher.october.ticks;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.IntUnaryOperator;
 
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
@@ -44,7 +46,6 @@ public class TickContextBuilder
 	public final Set<CuboidAddress> cuboidsMarkedAliveInternally;
 
 	// Derived components used to build the context.
-	public final BlockFetcher previousBlockLookUp;
 	private final TickProcessingContext.IPassiveSearch _passiveSearch;
 	public final CommonMutationSink mutationSink;
 	public final CommonChangeSink changeSink;
@@ -69,12 +70,6 @@ public class TickContextBuilder
 		this.eventsPosted = new ArrayList<>();
 		this.cuboidsMarkedAliveInternally = new HashSet<>();
 		
-		// Create the BlockProxy loader for the read-only state from the previous tick.
-		// WARNING:  This block cache is used for everything this thread does and we may want to provide a flushing mechanism.
-		this.previousBlockLookUp = new BlockFetcher(materials.previousProxyCache()
-			, materials.forceMissBlocksPreviousCache()
-			, materials.completedCuboids()
-		);
 		_passiveSearch = new TickProcessingContext.IPassiveSearch() {
 			private SpatialIndex _passiveSpatialIndex;
 			@Override
@@ -132,13 +127,21 @@ public class TickContextBuilder
 		};
 	}
 
-	public TickProcessingContext buildContext()
+	public BlockFetcher buildBlockFetcher(Map<AbsoluteLocation, BlockProxy> previousProxyCache)
+	{
+		return new BlockFetcher(previousProxyCache
+			, _materials.forceMissBlocksPreviousCache()
+			, _materials.completedCuboids()
+		);
+	}
+
+	public TickProcessingContext buildContext(BlockFetcher blockFetcher)
 	{
 		long gameTick = _materials.thisGameTick();
 		long currentTickTimeMillis = (gameTick * _millisPerTick);
 		
 		return new TickProcessingContext(gameTick
-			, this.previousBlockLookUp
+			, blockFetcher
 			, (Integer entityId) -> (entityId > 0)
 				? MinimalEntity.fromEntity(_materials.completedEntities().get(entityId))
 				: MinimalEntity.fromCreature(_materials.completedCreatures().get(entityId))

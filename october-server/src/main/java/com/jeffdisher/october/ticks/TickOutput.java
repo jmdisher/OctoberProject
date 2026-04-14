@@ -1,7 +1,6 @@
 package com.jeffdisher.october.ticks;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +45,6 @@ public record TickOutput(WorldOutput world
 	, List<TargetedAction<IPassiveAction>> newlyScheduledPassiveActions
 	, List<EventRecord> postedEvents
 	, Set<CuboidAddress> internallyMarkedAlive
-	, Map<AbsoluteLocation, BlockProxy> populatedProxyCache
 )
 {
 	public static record WorldOutput(List<CuboidOutput> cuboids
@@ -119,6 +117,7 @@ public record TickOutput(WorldOutput world
 
 	public static record ColumnHeightOutput(CuboidColumnAddress columnAddress
 		, ColumnHeightMap columnHeightMap
+		, Map<AbsoluteLocation, BlockProxy> columnProxyCache
 	) {}
 
 	public static TickOutput empty()
@@ -135,7 +134,6 @@ public record TickOutput(WorldOutput world
 			, List.of()
 			, List.of()
 			, Set.of()
-			, Map.of()
 		);
 	}
 
@@ -165,7 +163,6 @@ public record TickOutput(WorldOutput world
 		List<TargetedAction<IPassiveAction>> newlyScheduledPassiveActions = new ArrayList<>();
 		List<EventRecord> postedEvents = new ArrayList<>();
 		Set<CuboidAddress> internallyMarkedAlive = new HashSet<>();
-		Map<AbsoluteLocation, BlockProxy> populatedProxyCache = new HashMap<>();
 		
 		for (int i = 0; i < partials.length; ++i)
 		{
@@ -195,7 +192,6 @@ public record TickOutput(WorldOutput world
 			newlyScheduledPassiveActions.addAll(fragment.newlyScheduledPassiveActions());
 			postedEvents.addAll(fragment.postedEvents());
 			internallyMarkedAlive.addAll(fragment.internallyMarkedAlive());
-			populatedProxyCache.putAll(fragment.populatedProxyCache());
 			partials[i] = null;
 		}
 		
@@ -225,7 +221,6 @@ public record TickOutput(WorldOutput world
 			, newlyScheduledPassiveActions
 			, postedEvents
 			, internallyMarkedAlive
-			, populatedProxyCache
 		);
 	}
 }

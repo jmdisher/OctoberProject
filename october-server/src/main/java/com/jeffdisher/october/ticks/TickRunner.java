@@ -382,14 +382,13 @@ public class TickRunner
 				, _random
 				, _config
 			);
-			TickProcessingContext context = contextContainer.buildContext();
 			
 			// We cluster work together in cuboid columns in order to improve per-thread world cache utilization and allow some result merging in the parallel phase.
 			// First, we will handle the one-off special-cases.
-			_runParallelSpecialCases(thisThread, materials, context);
+			_runParallelSpecialCases(thisThread, materials, contextContainer);
 			
 			// Now, loop over the rest of the high-level units.
-			TickOutput innerResults = _runParallelHighLevelUnits(thisThread, materials, context);
+			TickOutput innerResults = _runParallelHighLevelUnits(thisThread, materials, contextContainer);
 			
 			materials = _mergeTickStateAndWaitForNext(thisThread
 				, new TickOutput(innerResults.world()
@@ -404,7 +403,6 @@ public class TickRunner
 					, contextContainer.changeSink.takeExportedPassiveActions()
 					, contextContainer.eventsPosted
 					, contextContainer.cuboidsMarkedAliveInternally
-					, contextContainer.previousBlockLookUp.extractCache()
 				)
 				, materials.nanosInPreamble()
 				, materials.nanosInPreambleIncoming()
@@ -417,7 +415,7 @@ public class TickRunner
 
 	private static void _runParallelSpecialCases(ProcessorElement thisThread
 		, TickMaterials materials
-		, TickProcessingContext context
+		, TickContextBuilder contextBuilder
 	)
 	{
 		// We will have the first thread attempt the monster spawning algorithm.
@@ -426,6 +424,7 @@ public class TickRunner
 			long startNanos = System.nanoTime();
 			
 			// This will spawn in the context, if spawning is appropriate.
+			TickProcessingContext context = contextBuilder.buildContext(contextBuilder.buildBlockFetcher(Map.of()));
 			EngineSpawner.trySpawnCreature(context
 					, materials.entityCollection()
 					, materials.completedCuboids()
@@ -443,6 +442,7 @@ public class TickRunner
 			
 			// Verify that this isn't redundantly described.
 			Assert.assertTrue(!materials.completedEntities().containsKey(EnginePlayers.OPERATOR_ENTITY_ID));
+			TickProcessingContext context = contextBuilder.buildContext(contextBuilder.buildBlockFetcher(Map.of()));
 			EnginePlayers.processOperatorActions(context, materials.operatorChanges());
 			
 			long endNanos = System.nanoTime();
@@ -452,7 +452,7 @@ public class TickRunner
 
 	private static TickOutput _runParallelHighLevelUnits(ProcessorElement thisThread
 		, TickMaterials materials
-		, TickProcessingContext context
+		, TickContextBuilder contextBuilder
 	)
 	{
 		// TODO:  Replace this collection technique and return value with something more appropriate as this re-write progresses.
@@ -490,7 +490,6 @@ public class TickRunner
 					, List.of()
 					, List.of()
 					, Set.of()
-					, Map.of()
 				);
 				partials.add(spilledPartial);
 			}
@@ -500,7 +499,7 @@ public class TickRunner
 		{
 			if (thisThread.handleNextWorkUnit())
 			{
-				TickOutput result = _processWorkUnit(thisThread, materials, context, unit);
+				TickOutput result = _processWorkUnit(thisThread, materials, contextBuilder, unit);
 				partials.add(result);
 			}
 		}
@@ -510,7 +509,7 @@ public class TickRunner
 
 	private static TickOutput _processWorkUnit(ProcessorElement processor
 		, TickMaterials materials
-		, TickProcessingContext context
+		, TickContextBuilder contextBuilder
 		, TickInput.ColumnInput unit
 	)
 	{
@@ -528,6 +527,10 @@ public class TickRunner
 		
 		// Per-passive entity data.
 		List<TickOutput.BasicOutput<PassiveEntity>> updatedPassives = new ArrayList<>();
+		
+		// We use the same block proxy lookup cache for the entire column and return its cache state as part of the results for the column.
+		BlockFetcher fetcher = contextBuilder.buildBlockFetcher(unit.populatedProxyCache());
+		TickProcessingContext context = contextBuilder.buildContext(fetcher);
 		
 		// We need to walk the cuboids and collect data from each of them and associated players and creatures.
 		processor.workUnitsProcessed += 1;
@@ -679,6 +682,7 @@ public class TickRunner
 		ColumnHeightMap columnHeightMap = HeightMapHelpers.buildSingleColumn(existingAndUpdatedCuboidHeightMaps);
 		TickOutput.ColumnHeightOutput outputColumnHeight = new TickOutput.ColumnHeightOutput(unit.columnAddress()
 			, columnHeightMap
+			, fetcher.extractCache()
 		);
 		
 		TickOutput.WorldOutput world = new TickOutput.WorldOutput(cuboids
@@ -707,7 +711,6 @@ public class TickRunner
 			, List.of()
 			, List.of()
 			, Set.of()
-			, Map.of()
 		);
 	}
 
@@ -924,7 +927,6 @@ public class TickRunner
 				// The corresponding actions for the creatures and passives only originate from inside the tick so just pass those through.
 				Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> nextCreatureChanges = flatResults.creatureActionsById();
 				Map<Integer, List<IPassiveAction>> nextPassiveActions = flatResults.passiveActionsById();
-				Map<AbsoluteLocation, BlockProxy> previousProxyCache = masterFragment.populatedProxyCache();
 				Set<AbsoluteLocation> changedBlocksInPreviousTick = flatResults.allChangedBlockLocations();
 				long nanosAfterPreamblePreTick = System.nanoTime();
 				
@@ -942,6 +944,7 @@ public class TickRunner
 					, preTickState.periodicMutationsByCuboid()
 					, nextCreatureChanges
 					, nextPassiveActions
+					, flatResults.columnProxyCaches()
 				);
 				long nanosAfterPreamblePackage = System.nanoTime();
 				
@@ -967,7 +970,6 @@ public class TickRunner
 					, preTickState.cuboidsLoadedThisTick()
 					
 					// BlockFetcher data.
-					, previousProxyCache
 					, changedBlocksInPreviousTick
 					
 					, entityCollection
@@ -1181,6 +1183,7 @@ public class TickRunner
 		, Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationMillis
 		, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureChanges
 		, Map<Integer, List<IPassiveAction>> passiveActions
+		, Map<CuboidColumnAddress, Map<AbsoluteLocation, BlockProxy>> columnProxyCaches
 	)
 	{
 		List<TickInput.EntityInput> entitiesInUnloadedCuboids = new ArrayList<>();
@@ -1314,6 +1317,11 @@ public class TickRunner
 		List<TickInput.ColumnInput> result = new ArrayList<>();
 		for (CuboidColumnAddress column : workingWorkList.keySet())
 		{
+			Map<AbsoluteLocation, BlockProxy> populatedProxyCache = columnProxyCaches.get(column);
+			if (null == populatedProxyCache)
+			{
+				populatedProxyCache = Map.of();
+			}
 			List<TickInput.CuboidInput> list = workingWorkList.get(column);
 			if (null == list)
 			{
@@ -1328,6 +1336,7 @@ public class TickRunner
 				(TickInput.CuboidInput inner) -> 1 + inner.mutations().size() + inner.creatures().size() + inner.entities().size()
 			).sum();
 			TickInput.ColumnInput unit = new TickInput.ColumnInput(column
+				, populatedProxyCache
 				, Collections.unmodifiableList(list)
 				, priorityHint
 			);

@@ -12,6 +12,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -70,7 +71,17 @@ public class TestTickOutput
 				proxy = BlockProxy.init(absolute.getBlockAddress(), null, (short)0);
 				populatedProxyCache.put(absolute, proxy);
 			}
-			partials[i] = new TickOutput(TickOutput.WorldOutput.empty()
+			
+			TickOutput.ColumnHeightOutput column = new TickOutput.ColumnHeightOutput(cuboidAddress.getColumn()
+				, ColumnHeightMap.build().freeze()
+				, populatedProxyCache
+			);
+			TickOutput.WorldOutput worldOutput = new TickOutput.WorldOutput(List.of()
+				, List.of(column)
+				, List.of()
+				, 0
+			);
+			partials[i] = new TickOutput(worldOutput
 				, TickOutput.EntitiesOutput.empty()
 				, TickOutput.CreaturesOutput.empty()
 				, TickOutput.PassivesOutput.empty()
@@ -82,7 +93,6 @@ public class TestTickOutput
 				, List.of()
 				, List.of()
 				, Set.of()
-				, populatedProxyCache
 			);
 		}
 		
@@ -108,9 +118,8 @@ public class TestTickOutput
 		}
 		else
 		{
-			// Merge and we expect to see to see 64 * 32 * 32 * 4 + 4 * 2;
 			TickOutput merged = TickOutput.mergeAndClearPartialFragments(partials);
-			Assert.assertEquals(partials.length * zLevels.length * Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE + 2 * zLevels.length, merged.populatedProxyCache().size());
+			Assert.assertEquals(partials.length, merged.world().columns().size());
 		}
 	}
 }

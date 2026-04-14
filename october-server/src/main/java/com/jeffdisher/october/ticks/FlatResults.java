@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -37,6 +38,7 @@ import com.jeffdisher.october.utils.Assert;
  * logic (since TickOutput types are just lists to keep the merging cheap and other interactions low-overhead).
  */
 public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeightMaps
+	, Map<CuboidColumnAddress, Map<AbsoluteLocation, BlockProxy>> columnProxyCaches
 	, Map<CuboidAddress, IReadOnlyCuboidData> cuboidsByAddress
 	, Map<CuboidAddress, CuboidHeightMap> heightMapsByAddress
 	
@@ -62,9 +64,14 @@ public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeight
 	public static FlatResults fromOutput(TickOutput masterFragment)
 	{
 		// Collect the column data.
-		Map<CuboidColumnAddress, ColumnHeightMap> columnHeightMaps = masterFragment.world().columns().stream()
-			.collect(Collectors.toMap((TickOutput.ColumnHeightOutput output) -> output.columnAddress(), (TickOutput.ColumnHeightOutput output) -> output.columnHeightMap()))
-		;
+		Map<CuboidColumnAddress, ColumnHeightMap> columnHeightMaps = new HashMap<>();
+		Map<CuboidColumnAddress, Map<AbsoluteLocation, BlockProxy>> columnProxyCaches = new HashMap<>();
+		
+		for (TickOutput.ColumnHeightOutput oneColumn : masterFragment.world().columns())
+		{
+			columnHeightMaps.put(oneColumn.columnAddress(), oneColumn.columnHeightMap());
+			columnProxyCaches.put(oneColumn.columnAddress(), oneColumn.columnProxyCache());
+		}
 		
 		// Collect to cuboid-related data.
 		Map<CuboidAddress, IReadOnlyCuboidData> cuboidsByAddress = new HashMap<>();
@@ -248,7 +255,8 @@ public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeight
 			_scheduleChangesForEntity(passiveActionsById, targeted.targetId(), targeted.action());
 		}
 		
-		return new FlatResults(columnHeightMaps
+		return new FlatResults(Collections.unmodifiableMap(columnHeightMaps)
+			, Collections.unmodifiableMap(columnProxyCaches)
 			
 			, Collections.unmodifiableMap(cuboidsByAddress)
 			, Collections.unmodifiableMap(heightMapsByAddress)

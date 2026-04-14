@@ -3,10 +3,12 @@ package com.jeffdisher.october.ticks;
 import java.util.List;
 import java.util.Map;
 
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidColumnAddress;
@@ -29,6 +31,7 @@ public record TickInput(List<ColumnInput> columns
 )
 {
 	public static record ColumnInput(CuboidColumnAddress columnAddress
+		, Map<AbsoluteLocation, BlockProxy> populatedProxyCache
 		, List<CuboidInput> cuboids
 		, int priorityHint
 	) {}
