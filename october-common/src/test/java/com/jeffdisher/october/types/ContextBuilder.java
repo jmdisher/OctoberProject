@@ -70,6 +70,7 @@ public class ContextBuilder
 	public TickProcessingContext.IBlockFetcher previousBlockLookUp;
 	public Function<Integer, MinimalEntity> previousEntityLookUp;
 	public TickProcessingContext.IPassiveSearch previousPassiveLookUp;
+	public TickProcessingContext.ITransactionSupport transactions;
 	public IByteLookup<AbsoluteLocation> skyLight;
 	public TickProcessingContext.IMutationSink mutationSink;
 	public TickProcessingContext.IChangeSink newChangeSink;
@@ -107,6 +108,12 @@ public class ContextBuilder
 		this.previousBlockLookUp = previousBlockLookUp;
 		this.previousEntityLookUp = previousEntityLookUp;
 		this.previousPassiveLookUp = previousPassiveLookUp;
+		return this;
+	}
+
+	public ContextBuilder transactions(TickProcessingContext.ITransactionSupport transactions)
+	{
+		this.transactions = transactions;
 		return this;
 	}
 
@@ -195,6 +202,7 @@ public class ContextBuilder
 				, this.previousBlockLookUp
 				, this.previousEntityLookUp
 				, this.previousPassiveLookUp
+				, this.transactions
 				, this.skyLight
 				, this.mutationSink
 				, this.newChangeSink

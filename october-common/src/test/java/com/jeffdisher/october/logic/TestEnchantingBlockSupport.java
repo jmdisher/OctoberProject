@@ -474,6 +474,7 @@ public class TestEnchantingBlockSupport
 			, null
 			, null
 			, null
+			, null
 			, mutationSink
 			, null
 			, null

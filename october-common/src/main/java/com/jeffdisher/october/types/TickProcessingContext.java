@@ -40,6 +40,11 @@ public class TickProcessingContext
 	public final IPassiveSearch previousPassiveLookUp;
 
 	/**
+	 * A helper used for scheduling and executing transactions.
+	 */
+	public final ITransactionSupport transactions;
+
+	/**
 	 * Looks up the sky light landing on the block at the given location as of the previous tick.
 	 * Note that this means the sky light will account for the current time of day as well as the height map, such that
 	 * only the highest non-air block in the z-column will return non-0 (everything above and below is always 0).
@@ -105,6 +110,7 @@ public class TickProcessingContext
 			, IBlockFetcher previousBlockLookUp
 			, Function<Integer, MinimalEntity> previousEntityLookUp
 			, IPassiveSearch previousPassiveLookUp
+			, ITransactionSupport transactions
 			, IByteLookup<AbsoluteLocation> skyLight
 			, IMutationSink mutationSink
 			, IChangeSink newChangeSink
@@ -122,6 +128,7 @@ public class TickProcessingContext
 		this.previousBlockLookUp = previousBlockLookUp;
 		this.previousEntityLookUp = previousEntityLookUp;
 		this.previousPassiveLookUp = previousPassiveLookUp;
+		this.transactions = transactions;
 		this.skyLight = skyLight;
 		this.mutationSink = mutationSink;
 		this.newChangeSink = newChangeSink;
@@ -283,5 +290,17 @@ public class TickProcessingContext
 		 * @return A map of BlockProxy instances (missing any not present in the previous tick snapshot).
 		 */
 		Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations);
+	}
+
+	/**
+	 * An interface used to implement transactional mutation support.
+	 */
+	public static interface ITransactionSupport
+	{
+		/**
+		 * Checks the number of mutations (including periodic) scheduled for each given block in locations.  If they are
+		 * all loaded and have precisely expectedMutations scheduled, this will return true.
+		 */
+		boolean checkScheduledMutationCount(Collection<AbsoluteLocation> locations, int expectedMutations);
 	}
 }

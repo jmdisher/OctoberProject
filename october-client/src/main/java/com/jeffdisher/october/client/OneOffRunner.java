@@ -1,6 +1,7 @@
 package com.jeffdisher.october.client;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -17,6 +18,7 @@ import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -161,12 +163,15 @@ public class OneOffRunner
 				return new PartialPassive[0];
 			}
 		};
+		// For local runs, we will just assume that all transactions are valid (server will correct us if we are wrong).
+		TickProcessingContext.ITransactionSupport transactions = (Collection<AbsoluteLocation> locations, int expectedMutations) -> true;
 		TickProcessingContext context = new TickProcessingContext(gameTick
 				, state.proxyLoader
 				, (Integer entityId) -> (thisEntityId == entityId)
 					? MinimalEntity.fromEntity(state.thisEntity())
 					: MinimalEntity.fromPartialEntity(state.otherEntities.get(entityId))
 				, passiveSearch
+				, transactions
 				, null
 				, newMutationSink
 				, newChangeSink

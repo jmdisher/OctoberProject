@@ -1,6 +1,8 @@
 package com.jeffdisher.october.ticks;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +16,7 @@ import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.PassiveIdAssigner;
 import com.jeffdisher.october.logic.PropagationHelpers;
+import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SpatialIndex;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
@@ -138,6 +141,7 @@ public class TickContextBuilder
 	public TickProcessingContext buildContext(BlockFetcher blockFetcher)
 	{
 		long gameTick = _materials.thisGameTick();
+		TickProcessingContext.ITransactionSupport transactions = _buildMaxMutationCountLookup();
 		long currentTickTimeMillis = (gameTick * _millisPerTick);
 		
 		return new TickProcessingContext(gameTick
@@ -146,6 +150,7 @@ public class TickContextBuilder
 				? MinimalEntity.fromEntity(_materials.completedEntities().get(entityId))
 				: MinimalEntity.fromCreature(_materials.completedCreatures().get(entityId))
 			, _passiveSearch
+			, transactions
 			, (AbsoluteLocation blockLocation) -> {
 				CuboidColumnAddress column = blockLocation.getCuboidAddress().getColumn();
 				BlockAddress blockAddress = blockLocation.getBlockAddress();
@@ -179,5 +184,62 @@ public class TickContextBuilder
 			, _millisPerTick
 			, currentTickTimeMillis
 		);
+	}
+
+
+	private TickProcessingContext.ITransactionSupport _buildMaxMutationCountLookup()
+	{
+		// The transactions that this utility supports are very uncommon so we don't do any expensive setup.
+		TickProcessingContext.ITransactionSupport transactions = (Collection<AbsoluteLocation> locations, int expectedMutations) -> {
+			// In the future, we might want to optimize this since the current approach is quite expensive but adds no overhead when not called.
+			Map<AbsoluteLocation, Integer> mutationsThisTick = new HashMap<>();
+			for (TickInput.ColumnInput column : _materials.highLevel().columns())
+			{
+				for (TickInput.CuboidInput cuboid : column.cuboids())
+				{
+					for (ScheduledMutation scheduled : cuboid.mutations())
+					{
+						if (0L == scheduled.millisUntilReady())
+						{
+							AbsoluteLocation location = scheduled.mutation().getAbsoluteLocation();
+							int existing = mutationsThisTick.getOrDefault(location, 0);
+							mutationsThisTick.put(location, existing + 1);
+						}
+					}
+					AbsoluteLocation cuboidBase = cuboid.cuboid().getCuboidAddress().getBase();
+					for (Map.Entry<BlockAddress, Long> ent : cuboid.periodicMutationMillis().entrySet())
+					{
+						if (0L == ent.getValue())
+						{
+							BlockAddress blockAddress = ent.getKey();
+							AbsoluteLocation location = cuboidBase.relativeForBlock(blockAddress);
+							int existing = mutationsThisTick.getOrDefault(location, 0);
+							mutationsThisTick.put(location, existing + 1);
+						}
+					}
+				}
+			}
+			
+			boolean didMatch = false;
+			Set<CuboidAddress> loadedCuboids = _materials.completedCuboids().keySet();
+			for (AbsoluteLocation location : locations)
+			{
+				if (loadedCuboids.contains(location.getCuboidAddress()))
+				{
+					if (expectedMutations != mutationsThisTick.getOrDefault(location, 0))
+					{
+						didMatch = false;
+						break;
+					}
+				}
+				else
+				{
+					didMatch = false;
+					break;
+				}
+			}
+			return didMatch;
+		};
+		return transactions;
 	}
 }
