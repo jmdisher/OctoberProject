@@ -42,7 +42,7 @@ public class TestCommonTransactionSupport
 	@Test
 	public void nothingRunningAllLoaded()
 	{
-		TickMaterials materials = _createMaterials(List.of(), Map.of());
+		TickMaterials materials = _createMaterials(List.of(), Map.of(), Set.of());
 		CommonTransactionSupport support = new CommonTransactionSupport(materials);
 		Assert.assertTrue(support.checkScheduledMutationCount(List.of(new AbsoluteLocation(4, 5, 6), new AbsoluteLocation(7, 8, 40)), 0));
 		Assert.assertFalse(support.checkScheduledMutationCount(List.of(new AbsoluteLocation(4, 5, 6), new AbsoluteLocation(7, 8, 40)), 1));
@@ -51,7 +51,10 @@ public class TestCommonTransactionSupport
 	@Test
 	public void runningTransactionFails()
 	{
-		TickMaterials materials = _createMaterials(List.of(new MutationBlockApplyGravity(new AbsoluteLocation(4, 5, 6))), Map.of());
+		TickMaterials materials = _createMaterials(List.of(new MutationBlockApplyGravity(new AbsoluteLocation(4, 5, 6)))
+			, Map.of()
+			, Set.of()
+		);
 		CommonTransactionSupport support = new CommonTransactionSupport(materials);
 		Assert.assertFalse(support.checkScheduledMutationCount(List.of(new AbsoluteLocation(4, 5, 6), new AbsoluteLocation(7, 8, 40)), 0));
 		Assert.assertFalse(support.checkScheduledMutationCount(List.of(new AbsoluteLocation(4, 5, 6), new AbsoluteLocation(7, 8, 40)), 1));
@@ -61,7 +64,10 @@ public class TestCommonTransactionSupport
 	public void periodicTransactionFails()
 	{
 		AbsoluteLocation periodicLocation = new AbsoluteLocation(4, 5, 6);
-		TickMaterials materials = _createMaterials(List.of(), Map.of(periodicLocation.getCuboidAddress(), Map.of(periodicLocation.getBlockAddress(), 0L)));
+		TickMaterials materials = _createMaterials(List.of()
+			, Map.of(periodicLocation.getCuboidAddress(), Map.of(periodicLocation.getBlockAddress(), 0L))
+			, Set.of()
+		);
 		CommonTransactionSupport support = new CommonTransactionSupport(materials);
 		Assert.assertFalse(support.checkScheduledMutationCount(List.of(new AbsoluteLocation(4, 5, 6), new AbsoluteLocation(7, 8, 40)), 0));
 		Assert.assertFalse(support.checkScheduledMutationCount(List.of(new AbsoluteLocation(4, 5, 6), new AbsoluteLocation(7, 8, 40)), 1));
@@ -70,7 +76,10 @@ public class TestCommonTransactionSupport
 	@Test
 	public void expectedSingleTransaction()
 	{
-		TickMaterials materials = _createMaterials(List.of(new MutationBlockApplyGravity(new AbsoluteLocation(4, 5, 6)), new MutationBlockApplyGravity(new AbsoluteLocation(7, 8, 40))), Map.of());
+		TickMaterials materials = _createMaterials(List.of(new MutationBlockApplyGravity(new AbsoluteLocation(4, 5, 6)), new MutationBlockApplyGravity(new AbsoluteLocation(7, 8, 40)))
+			, Map.of()
+			, Set.of()
+		);
 		CommonTransactionSupport support = new CommonTransactionSupport(materials);
 		Assert.assertFalse(support.checkScheduledMutationCount(List.of(new AbsoluteLocation(4, 5, 6), new AbsoluteLocation(7, 8, 40)), 0));
 		Assert.assertTrue(support.checkScheduledMutationCount(List.of(new AbsoluteLocation(4, 5, 6), new AbsoluteLocation(7, 8, 40)), 1));
@@ -81,9 +90,12 @@ public class TestCommonTransactionSupport
 	{
 		AbsoluteLocation periodicLocation0 = new AbsoluteLocation(4, 5, 6);
 		AbsoluteLocation periodicLocation1 = new AbsoluteLocation(7, 8, 40);
-		TickMaterials materials = _createMaterials(List.of(), Map.of(periodicLocation0.getCuboidAddress(), Map.of(periodicLocation0.getBlockAddress(), 0L)
-			, periodicLocation1.getCuboidAddress(), Map.of(periodicLocation1.getBlockAddress(), 0L)
-		));
+		TickMaterials materials = _createMaterials(List.of()
+			, Map.of(periodicLocation0.getCuboidAddress(), Map.of(periodicLocation0.getBlockAddress(), 0L)
+				, periodicLocation1.getCuboidAddress(), Map.of(periodicLocation1.getBlockAddress(), 0L)
+			)
+			, Set.of()
+		);
 		CommonTransactionSupport support = new CommonTransactionSupport(materials);
 		Assert.assertFalse(support.checkScheduledMutationCount(List.of(new AbsoluteLocation(4, 5, 6), new AbsoluteLocation(7, 8, 40)), 0));
 		Assert.assertTrue(support.checkScheduledMutationCount(List.of(new AbsoluteLocation(4, 5, 6), new AbsoluteLocation(7, 8, 40)), 1));
@@ -92,13 +104,25 @@ public class TestCommonTransactionSupport
 	@Test
 	public void unloadedBlockFails()
 	{
-		TickMaterials materials = _createMaterials(List.of(), Map.of());
+		TickMaterials materials = _createMaterials(List.of(), Map.of(), Set.of());
 		CommonTransactionSupport support = new CommonTransactionSupport(materials);
 		Assert.assertFalse(support.checkScheduledMutationCount(List.of(new AbsoluteLocation(4, 5, 6), new AbsoluteLocation(7, 40, 40)), 0));
 	}
 
+	@Test
+	public void failsOnBlockUpdate()
+	{
+		TickMaterials materials = _createMaterials(List.of(), Map.of(), Set.of(new AbsoluteLocation(4, 5, 7)));
+		CommonTransactionSupport support = new CommonTransactionSupport(materials);
+		Assert.assertFalse(support.checkScheduledMutationCount(List.of(new AbsoluteLocation(4, 5, 6), new AbsoluteLocation(7, 8, 40)), 0));
+		Assert.assertFalse(support.checkScheduledMutationCount(List.of(new AbsoluteLocation(4, 5, 6), new AbsoluteLocation(7, 8, 40)), 1));
+	}
 
-	private static TickMaterials _createMaterials(List<IMutationBlock> mutations, Map<CuboidAddress, Map<BlockAddress, Long>> periodic)
+
+	private static TickMaterials _createMaterials(List<IMutationBlock> mutations
+		, Map<CuboidAddress, Map<BlockAddress, Long>> periodic
+		, Set<AbsoluteLocation> previouslyUpdatedLocations
+	)
 	{
 		CuboidAddress address0 = CuboidAddress.fromInt(0, 0, 0);
 		CuboidAddress address1 = CuboidAddress.fromInt(0, 0, 1);
@@ -140,7 +164,7 @@ public class TestCommonTransactionSupport
 			, Map.of()
 			, Set.of()
 			
-			, Set.of()
+			, previouslyUpdatedLocations
 			
 			, EntityCollection.emptyCollection()
 			, tickInput

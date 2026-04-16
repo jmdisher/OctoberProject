@@ -2,6 +2,7 @@ package com.jeffdisher.october.ticks;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -75,6 +76,28 @@ public class CommonTransactionSupport implements TickProcessingContext.ITransact
 				didMatch = false;
 				break;
 			}
+		}
+		
+		if (didMatch)
+		{
+			// Finally, we will check if there were any block updates which would invalidate this (this should logically
+			// go first but the current implementation is expensive so it goes last).
+			// TODO:  This should be replaced with a more locally-restricted algorithm instead of checking all updates.
+			Set<AbsoluteLocation> syntheticUpdateSources = new HashSet<>();
+			for (AbsoluteLocation location : locations)
+			{
+				syntheticUpdateSources.add(location.getRelative(0, 0, -1));
+				syntheticUpdateSources.add(location.getRelative(0, 0, 1));
+				syntheticUpdateSources.add(location.getRelative(0, -1, 0));
+				syntheticUpdateSources.add(location.getRelative(0, 1, 0));
+				syntheticUpdateSources.add(location.getRelative(-1, 0, 0));
+				syntheticUpdateSources.add(location.getRelative(1, 0, 0));
+			}
+			
+			// The match only persists if none of these blocks are expected to be the source of a block update (meaning
+			// the update will run against one of our selected block).
+			syntheticUpdateSources.retainAll(_materials.forceMissBlocksPreviousCache());
+			didMatch = syntheticUpdateSources.isEmpty();
 		}
 		return didMatch;
 	}
