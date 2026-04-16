@@ -24,7 +24,8 @@ public class TestMovableBlockData
 {
 	private static Environment ENV;
 	private static Block FURNACE;
-	private static Block DOUBLE_DOOR;
+	private static Block PORTAL_SURFACE;
+	private static Block LOGIC_WIRE;
 	private static Item LOG_ITEM;
 	private static Item CHARCOAL_ITEM;
 	@BeforeClass
@@ -32,7 +33,8 @@ public class TestMovableBlockData
 	{
 		ENV = Environment.createSharedInstance();
 		FURNACE = ENV.blocks.fromItem(ENV.items.getItemById("op.furnace"));
-		DOUBLE_DOOR = ENV.blocks.fromItem(ENV.items.getItemById("op.double_door_base"));
+		PORTAL_SURFACE = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_surface"));
+		LOGIC_WIRE = ENV.blocks.fromItem(ENV.items.getItemById("op.logic_wire"));
 		LOG_ITEM = ENV.items.getItemById("op.log");
 		CHARCOAL_ITEM = ENV.items.getItemById("op.charcoal");
 	}
@@ -47,15 +49,19 @@ public class TestMovableBlockData
 	{
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		AbsoluteLocation furnace = new AbsoluteLocation(1, 2, 3);
-		AbsoluteLocation doorRoot = new AbsoluteLocation(5, 6, 7);
+		AbsoluteLocation portalRoot = new AbsoluteLocation(5, 6, 7);
+		AbsoluteLocation wire = new AbsoluteLocation(10, 11, 12);
 		cuboid.setData15(AspectRegistry.BLOCK, furnace.getBlockAddress(), FURNACE.item().number());
-		cuboid.setData15(AspectRegistry.BLOCK, doorRoot.getBlockAddress(), DOUBLE_DOOR.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, portalRoot.getBlockAddress(), PORTAL_SURFACE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, wire.getBlockAddress(), LOGIC_WIRE.item().number());
 		
 		BlockProxy furnaceProxy = BlockProxy.load(furnace.getBlockAddress(), cuboid);
-		BlockProxy doorProxy = BlockProxy.load(doorRoot.getBlockAddress(), cuboid);
+		BlockProxy portalProxy = BlockProxy.load(portalRoot.getBlockAddress(), cuboid);
+		BlockProxy wireProxy = BlockProxy.load(wire.getBlockAddress(), cuboid);
 		
 		Assert.assertTrue(MovableBlockData.canBeMoved(furnaceProxy));
-		Assert.assertFalse(MovableBlockData.canBeMoved(doorProxy));
+		Assert.assertFalse(MovableBlockData.canBeMoved(portalProxy));
+		Assert.assertFalse(MovableBlockData.canBeMoved(wireProxy));
 	}
 
 	@Test

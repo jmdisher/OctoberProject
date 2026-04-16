@@ -66,9 +66,14 @@ public class MovableBlockData
 	private static boolean _canBeMoved(BlockProxy proxy)
 	{
 		// We CANNOT move multi-blocks or anything with an enchanting aspect.
+		// We also won't move anything which is sensitive to logic (that might be possible but requires further analysis).
+		Environment env = Environment.getShared();
 		Block block = proxy.getBlock();
-		boolean isMultiBlock = Environment.getShared().blocks.isMultiBlock(block);
-		return !isMultiBlock && (null == proxy.getEnchantingOperation());
+		boolean isMultiBlock = env.blocks.isMultiBlock(block);
+		return !isMultiBlock
+			&& (null == proxy.getEnchantingOperation())
+			&& !env.logic.isAware(block)
+		;
 	}
 
 
