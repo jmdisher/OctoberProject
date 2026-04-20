@@ -127,8 +127,7 @@ public class MutationBlockUpdate implements IMutationBlock
 				// If it looks like this should fall, schedule the mutation to apply that.
 				if (null != belowBlock)
 				{
-					boolean belowActive = FlagsAspect.isSet(belowBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
-					if (!env.blocks.isSupportedAgainstGravity(thisBlock, belowBlock.getBlock(), belowActive))
+					if (!env.blocks.isSupportedAgainstGravity(thisBlock, belowBlock.getBlock()))
 					{
 						context.mutationSink.next(new MutationBlockApplyGravity(_blockLocation));
 						didApply = true;

@@ -80,8 +80,7 @@ public class MutationBlockReplaceDropExisting implements IMutationBlock
 				BlockProxy belowBlock = context.previousBlockLookUp.readBlock(_location.getRelative(0, 0, -1));
 				if (null != belowBlock)
 				{
-					boolean belowActive = FlagsAspect.isSet(belowBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
-					if (!env.blocks.isSupportedAgainstGravity(_newType, belowBlock.getBlock(), belowActive))
+					if (!env.blocks.isSupportedAgainstGravity(_newType, belowBlock.getBlock()))
 					{
 						context.mutationSink.next(new MutationBlockApplyGravity(_location));
 					}

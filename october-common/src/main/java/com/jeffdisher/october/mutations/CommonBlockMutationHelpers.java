@@ -121,8 +121,7 @@ public class CommonBlockMutationHelpers
 					// If we think that this should fall, schedule the apply gravity mutation.
 					if (null != belowBlock)
 					{
-						boolean belowActive = FlagsAspect.isSet(belowBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
-						if (!env.blocks.isSupportedAgainstGravity(blockType, belowBlock.getBlock(), belowActive))
+						if (!env.blocks.isSupportedAgainstGravity(blockType, belowBlock.getBlock()))
 						{
 							context.mutationSink.next(new MutationBlockApplyGravity(location));
 						}

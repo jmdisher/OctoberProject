@@ -452,17 +452,18 @@ public class BlockAspect
 	 * always stay where it is, but otherwise will only stay if bottomBlock is a solid block.
 	 * 
 	 * @param topBlock The block being checked (on top).
-	 * @param bottomBlock The block underneath (null if not loaded).
 	 * @param isBottomActive True if the bottom block is in an active state.
 	 * @return True if topBlock should remain as a fixed block or false if it should drop as a falling passive.
 	 */
-	public boolean isSupportedAgainstGravity(Block topBlock, Block bottomBlock, boolean isBottomActive)
+	public boolean isSupportedAgainstGravity(Block topBlock, Block bottomBlock)
 	{
 		// Relatively few blocks are gravity blocks.
 		boolean isSupported = !_hasGravity.contains(topBlock);
 		if (!isSupported)
 		{
-			// See the block under it can support it.
+			// When checking if we are supported against gravity, we don't want to be sensitive to active state so just assume inactive.
+			// (this is to reduce the set of reasons for block updates).
+			boolean isBottomActive = false;
 			isSupported = _isSolid(bottomBlock, isBottomActive);
 		}
 		return isSupported;

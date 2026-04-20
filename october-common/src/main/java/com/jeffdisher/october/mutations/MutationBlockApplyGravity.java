@@ -3,7 +3,6 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IMutableBlockProxy;
@@ -63,8 +62,7 @@ public class MutationBlockApplyGravity implements IMutationBlock
 			BlockProxy belowBlock = context.previousBlockLookUp.readBlock(belowBlockLocation);
 			if (null != belowBlock)
 			{
-				boolean belowActive = FlagsAspect.isSet(belowBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
-				if (!env.blocks.isSupportedAgainstGravity(thisBlock, belowBlock.getBlock(), belowActive))
+				if (!env.blocks.isSupportedAgainstGravity(thisBlock, belowBlock.getBlock()))
 				{
 					// We need to break this block and drop it as a passive falling block.
 					// Note that we will assume that gravity blocks can't have inventories.

@@ -2392,9 +2392,9 @@ public class TestTickRunner
 	}
 
 	@Test
-	public void sandStackOnGate()
+	public void sandStackOnGateOpenDoor()
 	{
-		// Show that blocks of sand above a gate block will fall through it when it opens.
+		// Show that blocks of sand above a gate block are unchanged by the door being open.
 		Item sandItem = ENV.items.getItemById("op.sand");
 		Block sandBlock = ENV.blocks.fromItem(sandItem);
 		Block gateBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.gate"));
@@ -2435,15 +2435,88 @@ public class TestTickRunner
 		TickSnapshot snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(0, snapshot.passives().size());
 		IReadOnlyCuboidData completed = snapshot.cuboids().get(address).completed();
+		Assert.assertEquals(0, snapshot.cuboids().get(address).scheduledBlockMutations().size());
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, completed.getData7(AspectRegistry.FLAGS, gateLocation.getBlockAddress()));
 		
-		// Another trick will run the block update, which applies MutationBlockApplyGravity.
+		// Another trick will run the block update, but it should change nothing since the block is still considered "supporting" whether open or closed.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0, snapshot.passives().size());
+		completed = snapshot.cuboids().get(address).completed();
+		Assert.assertEquals(0, snapshot.cuboids().get(address).scheduledBlockMutations().size());
+		Assert.assertEquals(sandItem.number(), completed.getData15(AspectRegistry.BLOCK, gateLocation.getRelative(0, 0, 1).getBlockAddress()));
+		
+		// We should see nothing happen and there should be no passives.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0, snapshot.passives().size());
+		
+		completed = snapshot.cuboids().get(address).completed();
+		Assert.assertEquals(gateBlock.item().number(), completed.getData15(AspectRegistry.BLOCK, gateLocation.getBlockAddress()));
+		Assert.assertEquals(sandBlock.item().number(), completed.getData15(AspectRegistry.BLOCK, gateLocation.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(sandBlock.item().number(), completed.getData15(AspectRegistry.BLOCK, gateLocation.getRelative(0, 0, 2).getBlockAddress()));
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void sandStackOnGateBreakBlock()
+	{
+		// Show that blocks of sand above a gate block will fall through an open door when their supporting block is broken.
+		// Note that this is an odd quirk which may be changed in the future:  An open door will support a gravity block but a falling block will pass through it and potentially break it when it solidifies.
+		Item sandItem = ENV.items.getItemById("op.sand");
+		Block sandBlock = ENV.blocks.fromItem(sandItem);
+		Block gateBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.gate"));
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		AbsoluteLocation gateLocation = new AbsoluteLocation(5, 6, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, gateLocation.getBlockAddress(), gateBlock.item().number());
+		cuboid.setData7(AspectRegistry.FLAGS, gateLocation.getBlockAddress(), FlagsAspect.FLAG_ACTIVE);
+		cuboid.setData15(AspectRegistry.BLOCK, gateLocation.getRelative(0, 0, 1).getBlockAddress(), sandBlock.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, gateLocation.getRelative(0, 0, 2).getBlockAddress(), sandBlock.item().number());
+		
+		WorldConfig config = new WorldConfig();
+		config.difficulty = Difficulty.PEACEFUL;
+		Consumer<TickSnapshot> snapshotListener = (TickSnapshot completed) -> {};
+		TickRunner runner = new TickRunner(1
+			, 50L
+			, null
+			, new PassiveIdAssigner()
+			, (int bound) -> 0
+			, snapshotListener
+			, config
+		);
+		
+		// Inject the mutation to break the block above the door to see what happens.
+		int toughness = ENV.damage.getToughness(sandBlock);
+		int fakeEntityId = 1;
+		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(gateLocation.getRelative(0, 0, 1), toughness, fakeEntityId);
+		ScheduledMutation scheduled = new ScheduledMutation(mutation, 0L);
+		SuspendedCuboid<IReadOnlyCuboidData> suspended = new SuspendedCuboid<>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(scheduled), Map.of(), List.of());
+		runner.setupChangesForTick(List.of(suspended)
+			, null
+			, null
+			, null
+		);
+		runner.start();
+		TickSnapshot startState = runner.waitForPreviousTick();
+		Assert.assertEquals(0, startState.passives().size());
+		
+		// Run a tick to see everything loaded and the first change applied.
+		runner.startNextTick();
+		TickSnapshot snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0, snapshot.passives().size());
+		IReadOnlyCuboidData completed = snapshot.cuboids().get(address).completed();
+		Assert.assertEquals(0, completed.getData15(AspectRegistry.BLOCK, gateLocation.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(sandItem.number(), completed.getData15(AspectRegistry.BLOCK, gateLocation.getRelative(0, 0, 2).getBlockAddress()));
+		
+		// Another trick will run the block update, which applies MutationBlockApplyGravity to the block above.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(0, snapshot.passives().size());
 		completed = snapshot.cuboids().get(address).completed();
 		Assert.assertEquals(1, snapshot.cuboids().get(address).scheduledBlockMutations().size());
-		Assert.assertEquals(sandItem.number(), completed.getData15(AspectRegistry.BLOCK, gateLocation.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(sandItem.number(), completed.getData15(AspectRegistry.BLOCK, gateLocation.getRelative(0, 0, 2).getBlockAddress()));
 		
 		// A third tick will run the apply gravity mutation.
 		runner.startNextTick();
@@ -2451,40 +2524,37 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.passives().size());
 		PassiveEntity passive1 = snapshot.passives().get(1).completed();
 		Assert.assertEquals(PassiveType.FALLING_BLOCK, passive1.type());
-		Assert.assertEquals(new EntityLocation(5.0f, 6.0f, 1.0f), passive1.location());
+		Assert.assertEquals(new EntityLocation(5.0f, 6.0f, 2.0f), passive1.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), passive1.velocity());
 		completed = snapshot.cuboids().get(address).completed();
-		Assert.assertEquals(0, completed.getData15(AspectRegistry.BLOCK, gateLocation.getRelative(0, 0, 1).getBlockAddress()));
-		Assert.assertEquals(sandItem.number(), completed.getData15(AspectRegistry.BLOCK, gateLocation.getRelative(0, 0, 2).getBlockAddress()));
+		Assert.assertEquals(0, completed.getData15(AspectRegistry.BLOCK, gateLocation.getRelative(0, 0, 2).getBlockAddress()));
 		
-		// We expect to see the gate replaced by the the sand after 10 ticks (determined experimentally).
-		for (int i = 0; i < 10; ++i)
+		// We expect to see the gate replaced by the the sand after 14 ticks (determined experimentally).
+		for (int i = 0; i < 14; ++i)
 		{
 			runner.startNextTick();
 			snapshot = runner.waitForPreviousTick();
-			Assert.assertFalse(snapshot.passives().isEmpty());
+			
+			// We expect the passive to disappear the tick before it solidifies and spawn a new one in the tick where it solifies.
+			if (12 == i)
+			{
+				Assert.assertTrue(snapshot.passives().isEmpty());
+			}
+			else
+			{
+				Assert.assertFalse(snapshot.passives().isEmpty());
+			}
 		}
-		Assert.assertEquals(2, snapshot.passives().size());
+		
+		// Verify that the gate has been replaced and that it dropped as an item.
 		completed = snapshot.cuboids().get(address).completed();
 		Assert.assertEquals(sandBlock.item().number(), completed.getData15(AspectRegistry.BLOCK, gateLocation.getBlockAddress()));
-		
-		// Run 2 more ticks to see the final block form.
-		runner.startNextTick();
-		snapshot = runner.waitForPreviousTick();
-		runner.startNextTick();
-		snapshot = runner.waitForPreviousTick();
-		
-		// We should see the sand blocks formed as solid and the gate as a passive.
-		completed = snapshot.cuboids().get(address).completed();
-		Assert.assertEquals(sandBlock.item().number(), completed.getData15(AspectRegistry.BLOCK, gateLocation.getBlockAddress()));
-		Assert.assertEquals(sandBlock.item().number(), completed.getData15(AspectRegistry.BLOCK, gateLocation.getRelative(0, 0, 1).getBlockAddress()));
-		Assert.assertEquals(0, completed.getData15(AspectRegistry.BLOCK, gateLocation.getRelative(0, 0, 2).getBlockAddress()));
-		
 		Assert.assertEquals(1, snapshot.passives().size());
-		PassiveEntity passive3 = snapshot.passives().get(3).completed();
-		Assert.assertEquals(PassiveType.ITEM_SLOT, passive3.type());
-		Assert.assertEquals(new EntityLocation(5.0f, 6.0f, 1.0f), passive3.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), passive3.velocity());
+		PassiveEntity passive2 = snapshot.passives().get(2).completed();
+		Assert.assertEquals(PassiveType.ITEM_SLOT, passive2.type());
+		Assert.assertEquals(new EntityLocation(5.0f, 6.0f, 1.0f), passive2.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), passive2.velocity());
+		Assert.assertEquals(ItemSlot.fromStack(new Items(gateBlock.item(), 1)), passive2.extendedData());
 		
 		runner.shutdown();
 	}
