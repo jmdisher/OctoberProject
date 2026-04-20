@@ -2457,7 +2457,7 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.stats().countOfCuboidMutationsRun());
 		Assert.assertEquals(0, snapshot.stats().countOfBlockUpdatesSynthesized());
 		
-		// Another trick will run the block update, but it should change nothing since the block is still considered "supporting" whether open or closed.
+		// Note that the block is still considered "supporting" whether open or closed and this FLAG change does NOT trigger a block update.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(0, snapshot.passives().size());
@@ -2465,7 +2465,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.cuboids().get(address).scheduledBlockMutations().size());
 		Assert.assertEquals(sandItem.number(), completed.getData15(AspectRegistry.BLOCK, gateLocation.getRelative(0, 0, 1).getBlockAddress()));
 		Assert.assertEquals(0, snapshot.stats().countOfCuboidMutationsRun());
-		Assert.assertEquals(5, snapshot.stats().countOfBlockUpdatesSynthesized());
+		Assert.assertEquals(0, snapshot.stats().countOfBlockUpdatesSynthesized());
 		
 		// We should see nothing happen and there should be no passives.
 		runner.startNextTick();

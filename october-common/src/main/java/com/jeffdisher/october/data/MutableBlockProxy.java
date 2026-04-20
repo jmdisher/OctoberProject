@@ -418,10 +418,8 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	{
 		// We want to trigger updates on BLOCK changes, since that often changes adjacent blocks.
 		// We also want to include INVENTORY changes, since that can impact things like hoppers.
-		// We need to include FLAGS changes since this can change how adjacent blocks interpret this block.
 		return (null != _writes[AspectRegistry.BLOCK.index()])
 				|| (null != _writes[AspectRegistry.INVENTORY.index()])
-				|| (null != _writes[AspectRegistry.FLAGS.index()])
 		;
 	}
 
