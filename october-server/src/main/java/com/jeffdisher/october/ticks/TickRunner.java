@@ -177,6 +177,7 @@ public class TickRunner
 				, null
 				, 0
 				, 0
+				, 0
 			)
 		);
 		for (Thread thread : _threads)
@@ -517,6 +518,7 @@ public class TickRunner
 		List<TickOutput.CuboidOutput> cuboids = new ArrayList<>();
 		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
 		int countOfCuboidMutationsRun = 0;
+		int countOfBlockUpdatesSynthesized = 0;
 		
 		// Per-player entity data.
 		List<TickOutput.EntityOutput> processedEntities = new ArrayList<>();
@@ -601,7 +603,8 @@ public class TickRunner
 			processor.cuboidBlockupdatesProcessed += cuboidResult.blockUpdatesProcessed();
 			processor.cuboidMutationsProcessed += cuboidResult.mutationsProcessed();
 			processor.nanosInEngineCuboids += (endCuboidNanos - startCuboidNanos);
-			countOfCuboidMutationsRun += cuboidResult.blockUpdatesProcessed() + cuboidResult.mutationsProcessed();
+			countOfCuboidMutationsRun += cuboidResult.mutationsProcessed();
+			countOfBlockUpdatesSynthesized += cuboidResult.blockUpdatesProcessed();
 			
 			// Process the player entities in this cuboid.
 			for (TickInput.EntityInput entityUnit : subUnit.entities())
@@ -689,6 +692,7 @@ public class TickRunner
 			, List.of(outputColumnHeight)
 			, notYetReadyMutations
 			, countOfCuboidMutationsRun
+			, countOfBlockUpdatesSynthesized
 		);
 		TickOutput.EntitiesOutput crowd = new TickOutput.EntitiesOutput(countOfEntityActionsRun
 			, processedEntities
@@ -809,6 +813,7 @@ public class TickRunner
 				, _threadStats.clone()
 				, masterFragment.entities().countOfEntityActionsRun()
 				, masterFragment.world().countOfCuboidMutationsRun()
+				, masterFragment.world().countOfBlockUpdatesSynthesized()
 			);
 			
 			TickSnapshot completedTick = new TickSnapshot(_nextTick

@@ -938,7 +938,7 @@ public class TestTickRunner
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		// Here, we should see the 5 block updates (we are against the edge of an unloaded cuboid so there isn't a 6th).
-		Assert.assertEquals(5, snapshot.stats().countOfCuboidMutationsRun());
+		Assert.assertEquals(5, snapshot.stats().countOfBlockUpdatesSynthesized());
 		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		Assert.assertEquals(1, snapshot.passives().size());
 		Assert.assertEquals(WHEAT_SEED_ITEM, ((ItemSlot)snapshot.passives().values().iterator().next().completed().extendedData()).getType());
@@ -2342,6 +2342,8 @@ public class TestTickRunner
 		runner.start();
 		TickSnapshot startState = runner.waitForPreviousTick();
 		Assert.assertEquals(0, startState.passives().size());
+		Assert.assertEquals(0, startState.stats().countOfCuboidMutationsRun());
+		Assert.assertEquals(0, startState.stats().countOfBlockUpdatesSynthesized());
 		
 		// Run a tick to see everything loaded and the first change applied.
 		runner.startNextTick();
@@ -2349,6 +2351,8 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.passives().size());
 		IReadOnlyCuboidData completed = snapshot.cuboids().get(address).completed();
 		Assert.assertEquals(0, completed.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(1, snapshot.stats().countOfCuboidMutationsRun());
+		Assert.assertEquals(0, snapshot.stats().countOfBlockUpdatesSynthesized());
 		
 		// Another trick will run the block update.
 		runner.startNextTick();
@@ -2356,6 +2360,8 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.passives().size());
 		completed = snapshot.cuboids().get(address).completed();
 		Assert.assertEquals(0, completed.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.stats().countOfCuboidMutationsRun());
+		Assert.assertEquals(6, snapshot.stats().countOfBlockUpdatesSynthesized());
 		
 		// A third tick will run the apply gravity mutation.
 		runner.startNextTick();
@@ -2368,6 +2374,13 @@ public class TestTickRunner
 		completed = snapshot.cuboids().get(address).completed();
 		Assert.assertEquals(0, completed.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(0, completed.getData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(1, snapshot.stats().countOfCuboidMutationsRun());
+		Assert.assertEquals(0, snapshot.stats().countOfBlockUpdatesSynthesized());
+		
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0, snapshot.stats().countOfCuboidMutationsRun());
+		Assert.assertEquals(6, snapshot.stats().countOfBlockUpdatesSynthesized());
 		
 		// Run ticks until the cascade of falling sand is completed.
 		while (snapshot.passives().size() > 0)
@@ -2379,6 +2392,8 @@ public class TestTickRunner
 		// Run another tick so that the final block placement completes.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.stats().countOfCuboidMutationsRun());
+		Assert.assertEquals(0, snapshot.stats().countOfBlockUpdatesSynthesized());
 		
 		// Verify that all the blocks are settled and the one at the top is missing.
 		completed = snapshot.cuboids().get(address).completed();
@@ -2429,6 +2444,8 @@ public class TestTickRunner
 		runner.start();
 		TickSnapshot startState = runner.waitForPreviousTick();
 		Assert.assertEquals(0, startState.passives().size());
+		Assert.assertEquals(0, startState.stats().countOfCuboidMutationsRun());
+		Assert.assertEquals(0, startState.stats().countOfBlockUpdatesSynthesized());
 		
 		// Run a tick to see everything loaded and the first change applied.
 		runner.startNextTick();
@@ -2437,6 +2454,8 @@ public class TestTickRunner
 		IReadOnlyCuboidData completed = snapshot.cuboids().get(address).completed();
 		Assert.assertEquals(0, snapshot.cuboids().get(address).scheduledBlockMutations().size());
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, completed.getData7(AspectRegistry.FLAGS, gateLocation.getBlockAddress()));
+		Assert.assertEquals(1, snapshot.stats().countOfCuboidMutationsRun());
+		Assert.assertEquals(0, snapshot.stats().countOfBlockUpdatesSynthesized());
 		
 		// Another trick will run the block update, but it should change nothing since the block is still considered "supporting" whether open or closed.
 		runner.startNextTick();
@@ -2445,11 +2464,15 @@ public class TestTickRunner
 		completed = snapshot.cuboids().get(address).completed();
 		Assert.assertEquals(0, snapshot.cuboids().get(address).scheduledBlockMutations().size());
 		Assert.assertEquals(sandItem.number(), completed.getData15(AspectRegistry.BLOCK, gateLocation.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(0, snapshot.stats().countOfCuboidMutationsRun());
+		Assert.assertEquals(5, snapshot.stats().countOfBlockUpdatesSynthesized());
 		
 		// We should see nothing happen and there should be no passives.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(0, snapshot.passives().size());
+		Assert.assertEquals(0, snapshot.stats().countOfCuboidMutationsRun());
+		Assert.assertEquals(0, snapshot.stats().countOfBlockUpdatesSynthesized());
 		
 		completed = snapshot.cuboids().get(address).completed();
 		Assert.assertEquals(gateBlock.item().number(), completed.getData15(AspectRegistry.BLOCK, gateLocation.getBlockAddress()));
@@ -2501,6 +2524,8 @@ public class TestTickRunner
 		runner.start();
 		TickSnapshot startState = runner.waitForPreviousTick();
 		Assert.assertEquals(0, startState.passives().size());
+		Assert.assertEquals(0, startState.stats().countOfCuboidMutationsRun());
+		Assert.assertEquals(0, startState.stats().countOfBlockUpdatesSynthesized());
 		
 		// Run a tick to see everything loaded and the first change applied.
 		runner.startNextTick();
@@ -2509,6 +2534,8 @@ public class TestTickRunner
 		IReadOnlyCuboidData completed = snapshot.cuboids().get(address).completed();
 		Assert.assertEquals(0, completed.getData15(AspectRegistry.BLOCK, gateLocation.getRelative(0, 0, 1).getBlockAddress()));
 		Assert.assertEquals(sandItem.number(), completed.getData15(AspectRegistry.BLOCK, gateLocation.getRelative(0, 0, 2).getBlockAddress()));
+		Assert.assertEquals(1, snapshot.stats().countOfCuboidMutationsRun());
+		Assert.assertEquals(0, snapshot.stats().countOfBlockUpdatesSynthesized());
 		
 		// Another trick will run the block update, which applies MutationBlockApplyGravity to the block above.
 		runner.startNextTick();
@@ -2517,6 +2544,8 @@ public class TestTickRunner
 		completed = snapshot.cuboids().get(address).completed();
 		Assert.assertEquals(1, snapshot.cuboids().get(address).scheduledBlockMutations().size());
 		Assert.assertEquals(sandItem.number(), completed.getData15(AspectRegistry.BLOCK, gateLocation.getRelative(0, 0, 2).getBlockAddress()));
+		Assert.assertEquals(0, snapshot.stats().countOfCuboidMutationsRun());
+		Assert.assertEquals(6, snapshot.stats().countOfBlockUpdatesSynthesized());
 		
 		// A third tick will run the apply gravity mutation.
 		runner.startNextTick();
@@ -2528,6 +2557,8 @@ public class TestTickRunner
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), passive1.velocity());
 		completed = snapshot.cuboids().get(address).completed();
 		Assert.assertEquals(0, completed.getData15(AspectRegistry.BLOCK, gateLocation.getRelative(0, 0, 2).getBlockAddress()));
+		Assert.assertEquals(1, snapshot.stats().countOfCuboidMutationsRun());
+		Assert.assertEquals(0, snapshot.stats().countOfBlockUpdatesSynthesized());
 		
 		// We expect to see the gate replaced by the the sand after 14 ticks (determined experimentally).
 		for (int i = 0; i < 14; ++i)

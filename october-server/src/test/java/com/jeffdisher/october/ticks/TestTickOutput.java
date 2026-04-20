@@ -80,6 +80,7 @@ public class TestTickOutput
 				, List.of(column)
 				, List.of()
 				, 0
+				, 0
 			);
 			partials[i] = new TickOutput(worldOutput
 				, TickOutput.EntitiesOutput.empty()

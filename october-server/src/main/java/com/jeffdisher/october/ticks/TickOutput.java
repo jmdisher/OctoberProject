@@ -51,11 +51,12 @@ public record TickOutput(WorldOutput world
 		, List<ColumnHeightOutput> columns
 		, List<ScheduledMutation> notYetReadyMutations
 		, int countOfCuboidMutationsRun
+		, int countOfBlockUpdatesSynthesized
 	)
 	{
 		public static WorldOutput empty()
 		{
-			return new WorldOutput(List.of(), List.of(), List.of(), 0);
+			return new WorldOutput(List.of(), List.of(), List.of(), 0, 0);
 		}
 	}
 
@@ -144,6 +145,7 @@ public record TickOutput(WorldOutput world
 		List<TickOutput.ColumnHeightOutput> columns = new ArrayList<>();
 		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
 		int world_countOfCuboidMutationsRun = 0;
+		int world_countOfBlockUpdatesSynthesized = 0;
 		
 		// EnginePlayers.ProcessedGroup crowd
 		int players_countOfEntityActionsRun = 0;
@@ -173,6 +175,7 @@ public record TickOutput(WorldOutput world
 			columns.addAll(fragment.world().columns());
 			notYetReadyMutations.addAll(fragment.world().notYetReadyMutations());
 			world_countOfCuboidMutationsRun += fragment.world().countOfCuboidMutationsRun();
+			world_countOfBlockUpdatesSynthesized += fragment.world().countOfBlockUpdatesSynthesized();
 			
 			// EnginePlayers.ProcessedGroup crowd
 			players_countOfEntityActionsRun += fragment.entities().countOfEntityActionsRun();
@@ -199,6 +202,7 @@ public record TickOutput(WorldOutput world
 			, columns
 			, notYetReadyMutations
 			, world_countOfCuboidMutationsRun
+			, world_countOfBlockUpdatesSynthesized
 		);
 		TickOutput.EntitiesOutput crowd = new TickOutput.EntitiesOutput(players_countOfEntityActionsRun
 			, entityOutput

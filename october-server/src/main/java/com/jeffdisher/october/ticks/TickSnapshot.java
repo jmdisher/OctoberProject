@@ -89,6 +89,7 @@ public record TickSnapshot(long tickNumber
 		, ProcessorElement.PerThreadStats[] threadStats
 		, int countOfEntityActionsRun
 		, int countOfCuboidMutationsRun
+		, int countOfBlockUpdatesSynthesized
 	) {
 		public void writeToStream(PrintStream out)
 		{

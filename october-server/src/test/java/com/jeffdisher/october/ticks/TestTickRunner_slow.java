@@ -206,8 +206,10 @@ public class TestTickRunner_slow
 			// Verify these assumptions against state.
 			// We see the MutationBlockFurnaceCraft and updates for adjacent blocks (only 3 are within this loaded
 			// cuboid) unless the inventory didn't change (since that triggers the update).
-			int expectedMutationsRun = didRunBlockUpdates ? (1 + 3) : 1;
+			int expectedMutationsRun = 1;
+			int expectedUpdatesSynthesized = didRunBlockUpdates ? 3 : 0;
 			Assert.assertEquals(expectedMutationsRun, snap.stats().countOfCuboidMutationsRun());
+			Assert.assertEquals(expectedUpdatesSynthesized, snap.stats().countOfBlockUpdatesSynthesized());
 			Assert.assertTrue(snap.cuboids().get(address).scheduledBlockMutations().get(0).mutation() instanceof MutationBlockFurnaceCraft);
 			
 			proxy = BlockProxy.load(block, snap.cuboids().get(address).completed());
@@ -362,8 +364,10 @@ public class TestTickRunner_slow
 			// Verify these assumptions against state.
 			// We see the MutationBlockFurnaceCraft and updates for adjacent blocks (only 3 are within this loaded
 			// cuboid) unless the inventory didn't change (since that triggers the update).
-			int expectedMutationsRun = didRunBlockUpdates ? (1 + 3) : 1;
+			int expectedMutationsRun = 1;
+			int expectedUpdatesSynthesized = didRunBlockUpdates ? 3 : 0;
 			Assert.assertEquals(expectedMutationsRun, snap.stats().countOfCuboidMutationsRun());
+			Assert.assertEquals(expectedUpdatesSynthesized, snap.stats().countOfBlockUpdatesSynthesized());
 			
 			proxy = BlockProxy.load(block, snap.cuboids().get(address).completed());
 			Assert.assertEquals(logCount, proxy.getInventory().getCount(LOG_ITEM));
