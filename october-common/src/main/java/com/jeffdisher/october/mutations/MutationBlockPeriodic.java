@@ -3,12 +3,13 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.logic.PlantHelpers;
 import com.jeffdisher.october.logic.PortalHelpers;
-import com.jeffdisher.october.logic.SpecialLogicChangeHelpers;
+import com.jeffdisher.october.logic.CuboidLoaderHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -64,10 +65,11 @@ public class MutationBlockPeriodic implements IMutationBlock
 				newBlock.requestFutureMutation(MILLIS_BETWEEN_GROWTH_CALLS);
 			}
 		}
-		else if (env.logic.hasSpecialChangeLogic(block))
+		else if (env.special.blockCuboidLoader == block)
 		{
 			byte flags = newBlock.getFlags();
-			SpecialLogicChangeHelpers.periodicUpdate(context, newBlock, _location, block, flags);
+			boolean isActive = FlagsAspect.isSet(flags, FlagsAspect.FLAG_ACTIVE);
+			CuboidLoaderHelpers.periodicUpdate(context, newBlock, _location, isActive);
 		}
 		else if (HopperHelpers.isHopper(_location, newBlock))
 		{

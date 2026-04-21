@@ -117,18 +117,6 @@ public class TestMiscAspects
 	}
 
 	@Test
-	public void logicSpecialChange() throws Throwable
-	{
-		Block switchBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.switch"));
-		Block loaderBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.cuboid_loader"));
-		
-		Assert.assertTrue(ENV.logic.isManual(switchBlock));
-		Assert.assertTrue(ENV.logic.isManual(loaderBlock));
-		Assert.assertFalse(ENV.logic.hasSpecialChangeLogic(switchBlock));
-		Assert.assertTrue(ENV.logic.hasSpecialChangeLogic(loaderBlock));
-	}
-
-	@Test
 	public void voidComposite() throws Throwable
 	{
 		Block voidStone = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_stone"));
