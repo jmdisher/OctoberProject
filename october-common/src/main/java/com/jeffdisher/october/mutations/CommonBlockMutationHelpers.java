@@ -5,6 +5,7 @@ import java.util.List;
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
+import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IBlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
@@ -111,8 +112,18 @@ public class CommonBlockMutationHelpers
 				
 				if (shouldSetHigh)
 				{
-					byte flags = FlagsAspect.set(newBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
-					newBlock.setFlags(flags);
+					byte oldFlags = newBlock.getFlags();
+					if (!FlagsAspect.isSet(oldFlags, FlagsAspect.FLAG_ACTIVE))
+					{
+						byte newFlags = FlagsAspect.set(oldFlags, FlagsAspect.FLAG_ACTIVE);
+						newBlock.setFlags(newFlags);
+						
+						LogicAspect.IActiveFlagChangeCallback changeState = env.logic.flagChangeHandler(newBlock.getBlock());
+						if (null != changeState)
+						{
+							changeState.activeFlagDidChange(context, newBlock, location, shouldSetHigh);
+						}
+					}
 				}
 				
 				// Gravity blocks are placed once and then fall after an update, so see if that matters here.

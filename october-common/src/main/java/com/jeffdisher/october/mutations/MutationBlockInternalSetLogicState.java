@@ -70,6 +70,12 @@ public class MutationBlockInternalSetLogicState implements IMutationBlock
 						: FlagsAspect.clear(flags, FlagsAspect.FLAG_ACTIVE)
 				;
 				newBlock.setFlags(flags);
+				
+				LogicAspect.IActiveFlagChangeCallback changeState = env.logic.flagChangeHandler(previousBlock);
+				if (null != changeState)
+				{
+					changeState.activeFlagDidChange(context, newBlock, _location, _setHigh);
+				}
 			}
 		}
 	}

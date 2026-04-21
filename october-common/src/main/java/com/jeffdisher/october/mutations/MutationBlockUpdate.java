@@ -191,6 +191,13 @@ public class MutationBlockUpdate implements IMutationBlock
 							: FlagsAspect.clear(flags, FlagsAspect.FLAG_ACTIVE)
 					;
 					newBlock.setFlags(flags);
+					
+					// Note that we keep the change of block ACTIVE state and the response to this change as 2 distinct callbacks.
+					LogicAspect.IActiveFlagChangeCallback changeState = env.logic.flagChangeHandler(newBlock.getBlock());
+					if (null != changeState)
+					{
+						changeState.activeFlagDidChange(context, newBlock, _blockLocation, isActive);
+					}
 				}
 			}
 		}

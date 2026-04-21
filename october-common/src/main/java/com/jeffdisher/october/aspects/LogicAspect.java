@@ -9,6 +9,7 @@ import com.jeffdisher.october.config.IValueTransformer;
 import com.jeffdisher.october.config.SimpleTabListCallbacks;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.config.TabListReader.TabListException;
+import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FacingDirection;
@@ -195,21 +196,38 @@ public class LogicAspect
 		return (_logicWireBlock == block);
 	}
 
+	/**
+	 * Used to look up any special handler for when this block switches to become active or inactive.  The returned
+	 * callback must be called AFTER the flag state is updated in the proxy.
+	 * 
+	 * @param block The block type.
+	 * @return The helper to call if the block switched to active or inactive, null if there is no special handling for
+	 * this transition.
+	 */
+	public IActiveFlagChangeCallback flagChangeHandler(Block block)
+	{
+		_Role role = _roles.get(block);
+		return (null != role)
+				? role.flagChange
+				: null
+		;
+	}
+
 
 	private static enum _Role
 	{
-		DOOR(false, LogicSpecialRegistry.GENERIC_SINK, null, LogicSpecialRegistry.GENERIC_SINK, true),
-		LAMP(false, LogicSpecialRegistry.GENERIC_SINK, null, LogicSpecialRegistry.GENERIC_SINK, false),
-		SWITCH(true, null, null, null, true),
-		EMITTER(true, LogicSpecialRegistry.EMITTER, null, null, false),
-		DIODE(true, LogicSpecialRegistry.DIODE_SINK, null, LogicSpecialRegistry.DIODE_SINK, false),
-		AND_GATE(true, LogicSpecialRegistry.AND_SINK, null, LogicSpecialRegistry.AND_SINK, false),
-		OR_GATE(true, LogicSpecialRegistry.OR_SINK, null, LogicSpecialRegistry.OR_SINK, false),
-		NOT_GATE(true, LogicSpecialRegistry.NOT_SINK, null, LogicSpecialRegistry.NOT_SINK, false),
-		SENSOR_INVENTORY(true, LogicSpecialRegistry.SENSOR_INVENTORY, LogicSpecialRegistry.SENSOR_INVENTORY, null, false),
-		OFFLINE_MANUAL(false, null, null, null, true),
+		DOOR(false, LogicSpecialRegistry.GENERIC_SINK, null, LogicSpecialRegistry.GENERIC_SINK, true, null),
+		LAMP(false, LogicSpecialRegistry.GENERIC_SINK, null, LogicSpecialRegistry.GENERIC_SINK, false, null),
+		SWITCH(true, null, null, null, true, null),
+		EMITTER(true, LogicSpecialRegistry.EMITTER, null, null, false, null),
+		DIODE(true, LogicSpecialRegistry.DIODE_SINK, null, LogicSpecialRegistry.DIODE_SINK, false, null),
+		AND_GATE(true, LogicSpecialRegistry.AND_SINK, null, LogicSpecialRegistry.AND_SINK, false, null),
+		OR_GATE(true, LogicSpecialRegistry.OR_SINK, null, LogicSpecialRegistry.OR_SINK, false, null),
+		NOT_GATE(true, LogicSpecialRegistry.NOT_SINK, null, LogicSpecialRegistry.NOT_SINK, false, null),
+		SENSOR_INVENTORY(true, LogicSpecialRegistry.SENSOR_INVENTORY, LogicSpecialRegistry.SENSOR_INVENTORY, null, false, null),
+		OFFLINE_MANUAL(false, null, null, null, true, LogicSpecialRegistry.FLAG_CHANGE_CUBOID_LOADER),
 		// NOTE:  CONDUIT is a degenerate type, only used for parsing (these are never seen after bootstrap).
-		CONDUIT(false, null, null, null, false),
+		CONDUIT(false, null, null, null, false, null),
 		;
 		
 		public static IValueTransformer<_Role> transformer = new IValueTransformer<>() {
@@ -230,14 +248,22 @@ public class LogicAspect
 		public final ISignalChangeCallback blockUpdate;
 		public final ISignalChangeCallback logicUpdate;
 		public final boolean canManuallyChange;
+		public final IActiveFlagChangeCallback flagChange;
 		
-		private _Role(boolean isSource, ISignalChangeCallback placement, ISignalChangeCallback blockUpdate, ISignalChangeCallback logicUpdate, boolean canManuallyChange)
+		private _Role(boolean isSource
+			, ISignalChangeCallback placement
+			, ISignalChangeCallback blockUpdate
+			, ISignalChangeCallback logicUpdate
+			, boolean canManuallyChange
+			, IActiveFlagChangeCallback flagChange
+		)
 		{
 			this.isSource = isSource;
 			this.placement = placement;
 			this.blockUpdate = blockUpdate;
 			this.logicUpdate = logicUpdate;
 			this.canManuallyChange = canManuallyChange;
+			this.flagChange = flagChange;
 		}
 	}
 
@@ -260,5 +286,23 @@ public class LogicAspect
 		 * @return True if it would receive a high signal here.
 		 */
 		public boolean shouldStoreHighSignal(Environment env, TickProcessingContext.IBlockFetcher proxyLookup, AbsoluteLocation location, FacingDirection outputDirection);
+	}
+
+	/**
+	 * The interface implemented by special logic-sensitive blocks to take special action when the underlying ACTIVE
+	 * flag changes state.
+	 */
+	public static interface IActiveFlagChangeCallback
+	{
+		/**
+		 * Called when the ACTIVE flag has changed state (and been written-back to mutable) so that the implementation
+		 * can take special actions in response (if more than just the flag change is required).
+		 * 
+		 * @param context The current context.
+		 * @param mutable The mutable proxy which chanaged state.
+		 * @param location The in-world location of the block which changed.
+		 * @param isActive The new state of the ACTIVE flag.
+		 */
+		public void activeFlagDidChange(TickProcessingContext context, IMutableBlockProxy mutable, AbsoluteLocation location, boolean isActive);
 	}
 }

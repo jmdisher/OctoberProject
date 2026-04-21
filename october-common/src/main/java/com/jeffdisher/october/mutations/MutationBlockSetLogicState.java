@@ -4,9 +4,9 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
+import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.data.IMutableBlockProxy;
-import com.jeffdisher.october.logic.CuboidLoaderHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -64,10 +64,10 @@ public class MutationBlockSetLogicState implements IMutationBlock
 				;
 				newBlock.setFlags(flags);
 				
-				// We need special-cases here for various blocks (these probably can't be generalized but might be extracted elsewhere to be formalized).
-				if (env.special.blockCuboidLoader == previousBlock)
+				LogicAspect.IActiveFlagChangeCallback changeState = env.logic.flagChangeHandler(previousBlock);
+				if (null != changeState)
 				{
-					CuboidLoaderHelpers.didActiveFlagChange(context, newBlock, _location, _setHigh);
+					changeState.activeFlagDidChange(context, newBlock, _location, _setHigh);
 				}
 			}
 		}

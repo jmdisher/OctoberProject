@@ -182,7 +182,8 @@ public class CompositeRegistry
 	public void processCornerstoneUpdate(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
 	{
 		// Note that this only operates on active cornerstone types and we assume it was called for that reason.
-		Assert.assertTrue(_isActiveCornerstone(proxy.getBlock()));
+		Block block = proxy.getBlock();
+		Assert.assertTrue(_isActiveCornerstone(block));
 		
 		boolean shouldBeActive = (null != _getExtensionsIfValid(env, context, location, proxy));
 		byte flags = proxy.getFlags();
@@ -194,6 +195,12 @@ public class CompositeRegistry
 				: FlagsAspect.clear(flags, FlagsAspect.FLAG_ACTIVE)
 			;
 			proxy.setFlags(newFlags);
+			
+			LogicAspect.IActiveFlagChangeCallback changeState = env.logic.flagChangeHandler(block);
+			if (null != changeState)
+			{
+				changeState.activeFlagDidChange(context, proxy, location, shouldBeActive);
+			}
 		}
 		proxy.requestFutureMutation(COMPOSITE_CHECK_FREQUENCY);
 	}

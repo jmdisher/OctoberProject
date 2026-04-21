@@ -1,6 +1,8 @@
 package com.jeffdisher.october.aspects;
 
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.IMutableBlockProxy;
+import com.jeffdisher.october.logic.CuboidLoaderHelpers;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.FacingDirection;
@@ -91,6 +93,15 @@ public class LogicSpecialRegistry
 			setHigh = (null != inv) && (inv.currentEncumbrance > 0);
 		}
 		return setHigh;
+	};
+
+	/**
+	 * A special active change callback for the cuboid loader since it needs to request that the cuboid remain loaded
+	 * when it becomes active.
+	 */
+	public static final LogicAspect.IActiveFlagChangeCallback FLAG_CHANGE_CUBOID_LOADER = (TickProcessingContext context, IMutableBlockProxy mutable, AbsoluteLocation location, boolean isActive) ->
+	{
+		CuboidLoaderHelpers.didActiveFlagChange(context, mutable, location, isActive);
 	};
 
 
