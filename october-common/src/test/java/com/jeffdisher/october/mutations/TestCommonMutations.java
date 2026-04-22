@@ -20,7 +20,9 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
+import com.jeffdisher.october.block_movement.MovableBlockData;
 import com.jeffdisher.october.block_movement.MutationBlockDeleteBlock;
+import com.jeffdisher.october.block_movement.MutationBlockOverwriteWithMove;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.DeserializationContext;
@@ -2276,6 +2278,101 @@ public class TestCommonMutations
 		Assert.assertEquals(switchLocation, out_mutation[0].getAbsoluteLocation());
 		Assert.assertEquals(ENV.special.AIR.item().number(), airCuboid.getData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress()));
 		Assert.assertEquals(0x0, airCuboid.getData7(AspectRegistry.FLAGS, switchLocation.getBlockAddress()));
+	}
+
+	@Test
+	public void moveComplexBlocks() throws Throwable
+	{
+		// We will use the new block moving helper to move some non-trivial blocks (furnace, crafting table, pedestal).
+		Block furnaceBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.furnace"));
+		Block craftingTableBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.crafting_table"));
+		Block pedestalBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.pedestal"));
+		
+		AbsoluteLocation furnaceLocation = new AbsoluteLocation(5, 6, 7);
+		AbsoluteLocation craftingTableLocation = new AbsoluteLocation(5, 6, 9);
+		AbsoluteLocation pedestalLocation = new AbsoluteLocation(5, 6, 11);
+		
+		// Write these into a cuboid that we can use as a data source.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, furnaceLocation.getBlockAddress(), furnaceBlock.item().number());
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, furnaceLocation.getBlockAddress(), Inventory.start(10).addStackable(CHARCOAL_ITEM, 2).finish());
+		cuboid.setDataSpecial(AspectRegistry.FUELLED, furnaceLocation.getBlockAddress(), new FuelState(10, CHARCOAL_ITEM, Inventory.start(10).addStackable(CHARCOAL_ITEM, 1).finish()));
+		cuboid.setData15(AspectRegistry.BLOCK, craftingTableLocation.getBlockAddress(), craftingTableBlock.item().number());
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, craftingTableLocation.getBlockAddress(), Inventory.start(10).addStackable(STONE_ITEM, 2).finish());
+		cuboid.setDataSpecial(AspectRegistry.CRAFTING, craftingTableLocation.getBlockAddress(), new CraftOperation(ENV.crafting.getCraftById("op.stone_to_stone_brick"), 100L));
+		cuboid.setData15(AspectRegistry.BLOCK, pedestalLocation.getBlockAddress(), pedestalBlock.item().number());
+		cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, pedestalLocation.getBlockAddress(), ItemSlot.fromStack(new Items(CHARCOAL_ITEM, 3)));
+		
+		// Extract these as input data.
+		MovableBlockData furnaceData = MovableBlockData.fromProxy(BlockProxy.load(furnaceLocation.getBlockAddress(), cuboid));
+		MovableBlockData craftingTableData = MovableBlockData.fromProxy(BlockProxy.load(craftingTableLocation.getBlockAddress(), cuboid));
+		MovableBlockData pedestalData = MovableBlockData.fromProxy(BlockProxy.load(pedestalLocation.getBlockAddress(), cuboid));
+		
+		// Apply these to a new cuboid, with different kinds of blocks to overwrite.
+		CuboidData outputCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		outputCuboid.setData15(AspectRegistry.BLOCK, furnaceLocation.getBlockAddress(), WATER_SOURCE.item().number());
+		outputCuboid.setData15(AspectRegistry.BLOCK, craftingTableLocation.getBlockAddress(), WATER_WEAK.item().number());
+		outputCuboid.setData15(AspectRegistry.BLOCK, pedestalLocation.getBlockAddress(), STONE.item().number());
+		PassiveEntity[] out_passive = new PassiveEntity[1];
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups(new TickProcessingContext.IBlockFetcher() {
+				@Override
+				public BlockProxy readBlock(AbsoluteLocation location)
+				{
+					return BlockProxy.load(location.getBlockAddress(), outputCuboid);
+				}
+				@Override
+				public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
+				{
+					throw new AssertionError("Not in test");
+				}
+			}, null, null)
+			.passive(new TickProcessingContext.IPassiveSpawner() {
+				private int _nextId = 1;
+				@Override
+				public void spawnPassive(PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData)
+				{
+					out_passive[0] = new PassiveEntity(_nextId, type, location, velocity, extendedData, 100L);
+					_nextId += 1;
+				}
+			})
+			.finish()
+		;
+		
+		MutationBlockOverwriteWithMove furnaceMove = new MutationBlockOverwriteWithMove(furnaceLocation, furnaceData, true);
+		MutableBlockProxy proxy = new MutableBlockProxy(furnaceLocation, outputCuboid);
+		furnaceMove.applyMutation(context, proxy);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(outputCuboid);
+		Assert.assertNull(out_passive[0]);
+		
+		MutationBlockOverwriteWithMove craftingTableMove = new MutationBlockOverwriteWithMove(craftingTableLocation, craftingTableData, true);
+		proxy = new MutableBlockProxy(craftingTableLocation, outputCuboid);
+		craftingTableMove.applyMutation(context, proxy);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(outputCuboid);
+		Assert.assertNull(out_passive[0]);
+		
+		MutationBlockOverwriteWithMove pedestalMove = new MutationBlockOverwriteWithMove(pedestalLocation, pedestalData, true);
+		proxy = new MutableBlockProxy(pedestalLocation, outputCuboid);
+		pedestalMove.applyMutation(context, proxy);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(outputCuboid);
+		Assert.assertNotNull(out_passive[0]);
+		
+		// Verify the final state.
+		Assert.assertEquals(pedestalLocation.toEntityLocation(), out_passive[0].location());
+		Assert.assertEquals(ItemSlot.fromStack(new Items(STONE_ITEM, 1)), out_passive[0].extendedData());
+		Assert.assertEquals(furnaceBlock.item().number(), outputCuboid.getData15(AspectRegistry.BLOCK, furnaceLocation.getBlockAddress()));
+		Assert.assertEquals(2, outputCuboid.getDataSpecial(AspectRegistry.INVENTORY, furnaceLocation.getBlockAddress()).getCount(CHARCOAL_ITEM));
+		Assert.assertEquals(10, outputCuboid.getDataSpecial(AspectRegistry.FUELLED, furnaceLocation.getBlockAddress()).millisFuelled());
+		Assert.assertEquals(CHARCOAL_ITEM, outputCuboid.getDataSpecial(AspectRegistry.FUELLED, furnaceLocation.getBlockAddress()).currentFuel());
+		Assert.assertEquals(craftingTableBlock.item().number(), outputCuboid.getData15(AspectRegistry.BLOCK, craftingTableLocation.getBlockAddress()));
+		Assert.assertEquals(2, outputCuboid.getDataSpecial(AspectRegistry.INVENTORY, craftingTableLocation.getBlockAddress()).getCount(STONE_ITEM));
+		Assert.assertEquals(ENV.crafting.getCraftById("op.stone_to_stone_brick"), outputCuboid.getDataSpecial(AspectRegistry.CRAFTING, craftingTableLocation.getBlockAddress()).selectedCraft());
+		Assert.assertEquals(100L, outputCuboid.getDataSpecial(AspectRegistry.CRAFTING, craftingTableLocation.getBlockAddress()).completedMillis());
+		Assert.assertEquals(pedestalBlock.item().number(), outputCuboid.getData15(AspectRegistry.BLOCK, pedestalLocation.getBlockAddress()));
+		Assert.assertEquals(ItemSlot.fromStack(new Items(CHARCOAL_ITEM, 3)), outputCuboid.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, pedestalLocation.getBlockAddress()));
 	}
 
 

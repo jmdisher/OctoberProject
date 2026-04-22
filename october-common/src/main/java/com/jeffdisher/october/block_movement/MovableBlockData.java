@@ -2,7 +2,7 @@ package com.jeffdisher.october.block_movement;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.FacingDirection;
@@ -106,7 +106,7 @@ public class MovableBlockData
 		_specialItemSlot = specialItemSlot;
 	}
 
-	public void clearProxyAndApply(MutableBlockProxy proxy)
+	public void clearProxyAndApply(IMutableBlockProxy proxy)
 	{
 		// We write the block type first since that will clear other relevant data.
 		proxy.setBlockAndClear(_block);
