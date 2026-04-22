@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
+import com.jeffdisher.october.block_movement.MutationBlockDeleteBlock;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.DeserializationContext;
@@ -2213,6 +2215,67 @@ public class TestCommonMutations
 		proxy.writeBack(cuboid);
 		Assert.assertNotNull(out_change[0]);
 		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, tableLocation.getBlockAddress()));
+	}
+
+	@Test
+	public void deleteBlock() throws Throwable
+	{
+		// Show what happens when we use the mutation to delete a block.
+		Block switchBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.switch"));
+		AbsoluteLocation switchLocation = new AbsoluteLocation(5, 6, 0);
+		
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		airCuboid.setData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress(), switchBlock.item().number());
+		airCuboid.setData7(AspectRegistry.FLAGS, switchLocation.getBlockAddress(), FlagsAspect.FLAG_ACTIVE);
+		airCuboid.setData15(AspectRegistry.BLOCK, switchLocation.getRelative(1, 0, 0).getBlockAddress(), WATER_SOURCE.item().number());
+		Map<CuboidAddress, CuboidData> map = Map.of(airCuboid.getCuboidAddress(), airCuboid
+			, stoneCuboid.getCuboidAddress()
+			, stoneCuboid
+		);
+		
+		MutationBlockLiquidFlowInto[] out_mutation = new MutationBlockLiquidFlowInto[1];
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups(new TickProcessingContext.IBlockFetcher() {
+				@Override
+				public BlockProxy readBlock(AbsoluteLocation location)
+				{
+					return BlockProxy.load(location.getBlockAddress(), map.get(location.getCuboidAddress()));
+				}
+				@Override
+				public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
+				{
+					throw new AssertionError("Not in test");
+				}
+			}, null, null)
+			.sinks(new TickProcessingContext.IMutationSink() {
+				@Override
+				public boolean next(IMutationBlock mutation)
+				{
+					throw new AssertionError("Not in test");
+				}
+				@Override
+				public boolean future(IMutationBlock mutation, long millisToDelay)
+				{
+					Assert.assertNull(out_mutation[0]);
+					out_mutation[0] = (MutationBlockLiquidFlowInto) mutation;
+					return true;
+				}
+			}, null)
+			.finish()
+		;
+		
+		// Delete the switch block.
+		MutationBlockDeleteBlock mutation = new MutationBlockDeleteBlock(switchLocation);
+		MutableBlockProxy proxy = new MutableBlockProxy(switchLocation, airCuboid);
+		mutation.applyMutation(context, proxy);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(airCuboid);
+		Assert.assertNotNull(out_mutation[0]);
+		
+		Assert.assertEquals(switchLocation, out_mutation[0].getAbsoluteLocation());
+		Assert.assertEquals(ENV.special.AIR.item().number(), airCuboid.getData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress()));
+		Assert.assertEquals(0x0, airCuboid.getData7(AspectRegistry.FLAGS, switchLocation.getBlockAddress()));
 	}
 
 
