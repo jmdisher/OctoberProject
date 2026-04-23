@@ -191,7 +191,12 @@ public class CuboidCodec
 			// Read the parts of the suspended data.
 			long millisUntilReady = buffer.getLong();
 			IMutationBlock mutation = MutationBlockCodec.parseAndSeekContext(context);
-			suspended.add(new ScheduledMutation(mutation, millisUntilReady));
+			
+			// Note that this might return a null mutation if the mutation is invalid.
+			if (null != mutation)
+			{
+				suspended.add(new ScheduledMutation(mutation, millisUntilReady));
+			}
 		}
 		return suspended;
 	}

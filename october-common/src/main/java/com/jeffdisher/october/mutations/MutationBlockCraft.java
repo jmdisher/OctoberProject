@@ -24,9 +24,21 @@ public class MutationBlockCraft implements IMutationBlock
 	{
 		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
-		Craft craft = CodecHelpers.readCraft(buffer);
-		long millisToApply = buffer.getLong();
-		return new MutationBlockCraft(location, craft, millisToApply);
+		
+		MutationBlockCraft toReturn;
+		if (context.skipPreV13CraftObjects())
+		{
+			buffer.getShort();
+			buffer.getLong();
+			toReturn = null;
+		}
+		else
+		{
+			Craft craft = CodecHelpers.readCraft(buffer);
+			long millisToApply = buffer.getLong();
+			toReturn = new MutationBlockCraft(location, craft, millisToApply);
+		}
+		return toReturn;
 	}
 
 

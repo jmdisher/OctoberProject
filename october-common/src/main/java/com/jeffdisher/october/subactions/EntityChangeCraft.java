@@ -32,9 +32,21 @@ public class EntityChangeCraft implements IEntitySubAction<IMutablePlayerEntity>
 	public static EntityChangeCraft deserializeFromContext(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
-		Craft operation = CodecHelpers.readCraft(buffer);
-		buffer.getLong();
-		return new EntityChangeCraft(operation);
+		
+		EntityChangeCraft toReturn;
+		if (context.skipPreV13CraftObjects())
+		{
+			buffer.getShort();
+			buffer.getLong();
+			toReturn = null;
+		}
+		else
+		{
+			Craft operation = CodecHelpers.readCraft(buffer);
+			buffer.getLong();
+			toReturn = new EntityChangeCraft(operation);
+		}
+		return toReturn;
 	}
 
 

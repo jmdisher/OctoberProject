@@ -37,9 +37,21 @@ public class EntityChangeCraftInBlock implements IEntitySubAction<IMutablePlayer
 	{
 		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation targetBlock = CodecHelpers.readAbsoluteLocation(buffer);
-		Craft craft = CodecHelpers.readCraft(buffer);
-		buffer.getLong();
-		return new EntityChangeCraftInBlock(targetBlock, craft);
+		
+		EntityChangeCraftInBlock toReturn;
+		if (context.skipPreV13CraftObjects())
+		{
+			buffer.getShort();
+			buffer.getLong();
+			toReturn = null;
+		}
+		else
+		{
+			Craft craft = CodecHelpers.readCraft(buffer);
+			buffer.getLong();
+			return new EntityChangeCraftInBlock(targetBlock, craft);
+		}
+		return toReturn;
 	}
 
 

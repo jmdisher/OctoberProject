@@ -51,12 +51,13 @@ public class EntityTranslator
 		Environment env = Environment.getShared();
 		boolean usePreV8NonStackableDecoding = (version <= StorageVersions.V7);
 		boolean usePreV11DamageDecoding = (version <= StorageVersions.V10);
-		// TODO:  Add support for cleaning old crafting data.
+		boolean skipPreV13CraftObjects = (version <= StorageVersions.V12);
 		DeserializationContext context = new DeserializationContext(env
 			, inBuffer
 			, currentGameMillis
 			, usePreV8NonStackableDecoding
 			, usePreV11DamageDecoding
+			, skipPreV13CraftObjects
 		);
 		
 		SuspendedEntity result;
@@ -128,8 +129,11 @@ public class EntityTranslator
 		{
 			armour[i] = CodecHelpers.readNonStackableItem(context);
 		}
-		// We ignore localCraftOperation as it is now ephemeral.
-		CodecHelpers.readCraftOperation(buffer);
+		// We ignore localCraftOperation as it is now ephemeral (a long followed by a short unless completedMillis is 0L).
+		if (buffer.getLong() > 0L)
+		{
+			buffer.getShort();
+		}
 		byte health = buffer.get();
 		byte food = buffer.get();
 		byte breath = buffer.get();

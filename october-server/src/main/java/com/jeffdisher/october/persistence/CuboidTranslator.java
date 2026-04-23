@@ -88,17 +88,22 @@ public class CuboidTranslator
 		Environment env = Environment.getShared();
 		boolean usePreV8NonStackableDecoding = (version <= StorageVersions.V7);
 		boolean usePreV11DamageDecoding = (version <= StorageVersions.V10);
+		boolean skipPreV13CraftObjects = (version <= StorageVersions.V12);
 		DeserializationContext context = new DeserializationContext(env
 			, inBuffer
 			, currentGameMillis
 			, usePreV8NonStackableDecoding
 			, usePreV11DamageDecoding
+			, skipPreV13CraftObjects
 		);
 		
 		PackagedCuboid packaged;
-		if (StorageVersions.V11 == version)
+		if ((StorageVersions.V11 == version)
+			|| (StorageVersions.V12 == version)
+		)
 		{
 			// Version 11 is the same as version 12, except it is packaged in the cuboid cluster directories, not flat files.
+			// Version 12 is the same as version 13, except that the craft objects need to be stripped out (dont with DeserializationContext).
 			CuboidData cuboid = CuboidCodec.readCuboid(address, context);
 			
 			// Load any creatures associated with the cuboid.

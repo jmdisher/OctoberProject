@@ -54,7 +54,12 @@ public record LegacyEntityV1(int id
 		{
 			armour[i] = CodecHelpers.readNonStackableItem(context);
 		}
-		CraftOperation localCraftOperation = CodecHelpers.readCraftOperation(buffer);
+		// We ignore localCraftOperation as it is now ephemeral (a long followed by a short unless completedMillis is 0L).
+		if (buffer.getLong() > 0L)
+		{
+			buffer.getShort();
+		}
+		CraftOperation localCraftOperation = null;
 		byte health = buffer.get();
 		byte food = buffer.get();
 		byte breath = buffer.get();

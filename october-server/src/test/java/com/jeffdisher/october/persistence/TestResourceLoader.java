@@ -37,14 +37,12 @@ import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
-import com.jeffdisher.october.mutations.MutationBlockCraft;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV1;
 import com.jeffdisher.october.subactions.EntityChangeAttackEntity;
-import com.jeffdisher.october.subactions.EntityChangeCraft;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -1466,22 +1464,21 @@ public class TestResourceLoader
 		Assert.assertEquals(1, cuboidResults.size());
 		Assert.assertEquals(1, entityResults.size());
 		
-		// Verify the state of the cuboid.
+		// Verify the state of the cuboid -  we should see anything related to Craft disappear.
 		SuspendedCuboid<CuboidData> cuboidData = cuboidResults.get(0);
 		CuboidData cuboid = cuboidData.cuboid();
 		Assert.assertEquals(craftingTable.item().number(), cuboid.getData15(AspectRegistry.BLOCK, tableLocation));
 		Assert.assertEquals(2, cuboid.getDataSpecial(AspectRegistry.INVENTORY, tableLocation).getCount(LOG_ITEM));
-		Assert.assertEquals("op.log_to_planks", cuboid.getDataSpecial(AspectRegistry.CRAFTING, tableLocation).selectedCraft().name);
-		Assert.assertEquals(1, cuboidData.pendingMutations().size());
-		Assert.assertTrue(cuboidData.pendingMutations().get(0).mutation() instanceof MutationBlockCraft);
+		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.CRAFTING, tableLocation));
+		Assert.assertEquals(0, cuboidData.pendingMutations().size());
 		
-		// Verify the state of the entity.
+		// Verify the state of the entity -  we should see anything related to Craft disappear.
 		SuspendedEntity suspended = entityResults.get(0);
 		Entity entity = suspended.entity();
 		Assert.assertEquals(playerLocation, entity.location());
 		Assert.assertEquals(1, suspended.changes().size());
 		EntityActionSimpleMove<IMutablePlayerEntity> move = (EntityActionSimpleMove<IMutablePlayerEntity>) suspended.changes().get(0).change();
-		Assert.assertTrue(move.getSubAction() instanceof EntityChangeCraft);
+		Assert.assertNull(move.getSubAction());
 		Assert.assertEquals(2, entity.inventory().getCount(LOG_ITEM));
 	}
 

@@ -12,7 +12,20 @@ public class CraftingAspectCodec implements IObjectCodec<CraftOperation>
 	public CraftOperation loadData(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
-		return CodecHelpers.readCraftOperation(buffer);
+		
+		CraftOperation toReturn;
+		if (context.skipPreV13CraftObjects())
+		{
+			// The CraftOperation is a long time and a short craft index.
+			buffer.getLong();
+			buffer.getShort();
+			toReturn = null;
+		}
+		else
+		{
+			toReturn = CodecHelpers.readCraftOperation(buffer);
+		}
+		return toReturn;
 	}
 
 	@Override

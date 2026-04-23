@@ -57,10 +57,21 @@ public class Deprecated_EntityAction<T extends IMutableMinimalEntity> implements
 	@SuppressWarnings("unused")
 	public static <T extends IMutableMinimalEntity> Deprecated_EntityAction<T> deserialize_Craft(DeserializationContext context)
 	{
+		Deprecated_EntityAction<T> toReturn;
 		ByteBuffer buffer = context.buffer();
-		Craft operation = CodecHelpers.readCraft(buffer);
-		buffer.getLong();
-		return new Deprecated_EntityAction<>();
+		if (context.skipPreV13CraftObjects())
+		{
+			buffer.getShort();
+			buffer.getLong();
+			toReturn = null;
+		}
+		else
+		{
+			Craft operation = CodecHelpers.readCraft(buffer);
+			buffer.getLong();
+			toReturn = new Deprecated_EntityAction<>();
+		}
+		return toReturn;
 	}
 
 	@SuppressWarnings("unused")
@@ -109,9 +120,21 @@ public class Deprecated_EntityAction<T extends IMutableMinimalEntity> implements
 	{
 		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation targetBlock = CodecHelpers.readAbsoluteLocation(buffer);
-		Craft craft = CodecHelpers.readCraft(buffer);
-		buffer.getLong();
-		return new Deprecated_EntityAction<>();
+		
+		Deprecated_EntityAction<T> toReturn;
+		if (context.skipPreV13CraftObjects())
+		{
+			buffer.getShort();
+			buffer.getLong();
+			toReturn = null;
+		}
+		else
+		{
+			Craft operation = CodecHelpers.readCraft(buffer);
+			buffer.getLong();
+			toReturn = new Deprecated_EntityAction<>();
+		}
+		return toReturn;
 	}
 
 	@SuppressWarnings("unused")

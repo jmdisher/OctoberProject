@@ -16,6 +16,7 @@ public record DeserializationContext(Environment env
 	, long currentGameMillis
 	, boolean usePreV8NonStackableDecoding
 	, boolean usePreV11DamageDecoding
+	, boolean skipPreV13CraftObjects
 )
 {
 	/**
@@ -31,6 +32,7 @@ public record DeserializationContext(Environment env
 		return new DeserializationContext(env
 			, buffer
 			, 0L
+			, false
 			, false
 			, false
 		);
@@ -50,6 +52,7 @@ public record DeserializationContext(Environment env
 		return new DeserializationContext(env
 			, buffer
 			, currentGameMillis
+			, false
 			, false
 			, false
 		);

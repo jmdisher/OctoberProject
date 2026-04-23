@@ -195,8 +195,13 @@ public class OctreeObject<T> implements IOctree<T>
 			try
 			{
 				short key = buffer.getShort();
+				
+				// Note that this decoding is allowed to return null if the data can't be decoded in this version.
 				T value = codec.loadData(context);
-				_data.put(key, value);
+				if (null != value)
+				{
+					_data.put(key, value);
+				}
 				canFail = true;
 			}
 			catch (BufferUnderflowException e)

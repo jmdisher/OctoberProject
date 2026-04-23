@@ -30,6 +30,10 @@ public class CuboidCluster
 	 * Since we shift the address by 2 bits to find out the cluster, we use those 2 bits to index within it.
 	 */
 	public static final int MASK_ADDRESS_CLUSTER = 0x3;
+	/**
+	 * The size of the buffer used to update individual cuboids between versions.
+	 */
+	public static final int UPDATE_BUFFER_SIZE_BYTES = 1024 * 1024;
 
 	private final File _backingStore;
 	/**
@@ -251,13 +255,14 @@ public class CuboidCluster
 
 	private void _loadAndConvertV12(ByteBuffer buffer)
 	{
-		// TODO:  Implement the conversion here, once it is implemented.
+		// This has the same high-level structure as V13 but we need to re-write the cuboids to strip out Craft instances.
 		int[] sizes = new int[64];
 		for (int i = 0; i < sizes.length; ++i)
 		{
 			sizes[i] = buffer.getInt();
 		}
 		
+		ByteBuffer updateBuffer = ByteBuffer.allocate(UPDATE_BUFFER_SIZE_BYTES);
 		for (int i = 0; i < sizes.length; ++i)
 		{
 			int thisSize = sizes[i];
@@ -265,7 +270,19 @@ public class CuboidCluster
 			{
 				byte[] rawCuboid = new byte[thisSize];
 				buffer.get(rawCuboid);
-				_rawCuboidData[i] = rawCuboid;
+				
+				// Use the CuboidTranslator to convert this, inline.
+				ByteBuffer inBuffer = ByteBuffer.wrap(rawCuboid);
+				CuboidTranslator.changeToLatestVersion(updateBuffer
+					, inBuffer
+					, StorageVersions.V12
+				);
+				updateBuffer.flip();
+				
+				byte[] updatedCuboid = new byte[updateBuffer.remaining()];
+				updateBuffer.get(updatedCuboid);
+				updateBuffer.clear();
+				_rawCuboidData[i] = updatedCuboid;
 			}
 		}
 	}
