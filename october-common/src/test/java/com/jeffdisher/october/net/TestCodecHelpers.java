@@ -377,11 +377,9 @@ public class TestCodecHelpers
 		
 		buffer.flip();
 		long newAliveMillis = 5500L;
-		DeserializationContext context = new DeserializationContext(Environment.getShared()
+		DeserializationContext context = DeserializationContext.current(Environment.getShared()
 			, buffer
 			, newAliveMillis
-			, false
-			, false
 		);
 		
 		int newId = 3;
@@ -479,11 +477,9 @@ public class TestCodecHelpers
 		
 		buffer.flip();
 		long newAliveMillis = 5500L;
-		DeserializationContext context = new DeserializationContext(Environment.getShared()
+		DeserializationContext context = DeserializationContext.current(Environment.getShared()
 			, buffer
 			, newAliveMillis
-			, false
-			, false
 		);
 		
 		int newId = 3;
@@ -532,11 +528,9 @@ public class TestCodecHelpers
 		
 		buffer.flip();
 		long newAliveMillis = 5500L;
-		DeserializationContext context = new DeserializationContext(Environment.getShared()
+		DeserializationContext context = DeserializationContext.current(Environment.getShared()
 			, buffer
 			, newAliveMillis
-			, false
-			, false
 		);
 		
 		int newId = 3;

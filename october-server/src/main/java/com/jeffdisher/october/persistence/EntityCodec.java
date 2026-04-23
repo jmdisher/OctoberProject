@@ -44,14 +44,11 @@ public class EntityCodec
 		, long currentGameMillis
 	)
 	{
+		// This version is always current.
 		Environment env = Environment.getShared();
-		boolean usePreV8NonStackableDecoding = false;
-		boolean usePreV11DamageDecoding = false;
-		DeserializationContext context = new DeserializationContext(env
+		DeserializationContext context = DeserializationContext.current(env
 			, inBuffer
 			, currentGameMillis
-			, usePreV8NonStackableDecoding
-			, usePreV11DamageDecoding
 		);
 		
 		Entity entity = CodecHelpers.readEntityDisk(context);

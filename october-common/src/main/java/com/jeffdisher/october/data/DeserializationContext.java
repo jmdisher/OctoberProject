@@ -35,4 +35,23 @@ public record DeserializationContext(Environment env
 			, false
 		);
 	}
+
+	/**
+	 * Similar to "empty", but also includes the currentGameMillis.  This helper is intended for the common-case of
+	 * reading from disk, where the time matters but there are no other options.
+	 * 
+	 * @param env The environment.
+	 * @param buffer The buffer to deserialize.
+	 * @param currentGameMillis The current game time, in milliseconds.
+	 * @return A context with no special deserialization options.
+	 */
+	public static DeserializationContext current(Environment env, ByteBuffer buffer, long currentGameMillis)
+	{
+		return new DeserializationContext(env
+			, buffer
+			, currentGameMillis
+			, false
+			, false
+		);
+	}
 }

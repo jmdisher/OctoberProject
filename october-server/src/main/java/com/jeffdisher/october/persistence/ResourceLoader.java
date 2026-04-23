@@ -435,13 +435,9 @@ public class ResourceLoader
 			
 			// Note that the CuboidClusterManager is responsible for updating when the version changes so we always see the most up-to-date version of data at this level.
 			Environment env = Environment.getShared();
-			boolean usePreV8NonStackableDecoding = false;
-			boolean usePreV11DamageDecoding = false;
-			DeserializationContext context = new DeserializationContext(env
+			DeserializationContext context = DeserializationContext.current(env
 				, buffer
 				, currentGameMillis
-				, usePreV8NonStackableDecoding
-				, usePreV11DamageDecoding
 			);
 			result = CuboidCodec.deserializeCuboidWithoutVersionHeader(context
 				, address
