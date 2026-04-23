@@ -7,6 +7,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -36,12 +37,14 @@ import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
+import com.jeffdisher.october.mutations.MutationBlockCraft;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV1;
 import com.jeffdisher.october.subactions.EntityChangeAttackEntity;
+import com.jeffdisher.october.subactions.EntityChangeCraft;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -1354,6 +1357,132 @@ public class TestResourceLoader
 		Assert.assertTrue(regionDirectory.isDirectory());
 		Assert.assertEquals(1, regionDirectory.listFiles().length);
 		Assert.assertTrue(new File(regionDirectory, "cluster_0_0_7.c4").isFile());
+	}
+
+	@Test
+	public void readCraftingDataV12() throws Throwable
+	{
+		// Verify that we can read V12 cuboid and entity data (Craft serialization changed in V13).
+		File worldDirectory = DIRECTORY.newFolder();
+		
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		BlockAddress tableLocation = BlockAddress.fromInt(1, 2, 3);
+		Block craftingTable = ENV.blocks.fromItem(ENV.items.getItemById("op.crafting_table"));
+		
+		int playerId = 1;
+		EntityLocation playerLocation = new EntityLocation(25.0f, 25.0f, 0.0f);
+		
+		File clusterFile = new File(new File(new File(worldDirectory, "cuboids"), "region_0_0_0.cd8"), "cluster_0_0_0.c4");
+		File entityFile = new File(new File(worldDirectory, "entities"), "entity_1.entity");
+		clusterFile.getParentFile().mkdirs();
+		entityFile.getParentFile().mkdirs();
+		
+		/* ----- This code was used to generate the serialized buffer in the V12 shape (kept here for reference)
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, tableLocation, craftingTable.item().number());
+		
+		// We will create the CraftOperation instance.
+		Craft craft = ENV.crafting.getCraftById("op.log_to_planks");
+		CraftOperation operation = new CraftOperation(craft, 100L);
+		Inventory inv = Inventory.start(50).addStackable(LOG_ITEM, 2).finish();
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, tableLocation, inv);
+		cuboid.setDataSpecial(AspectRegistry.CRAFTING, tableLocation, operation);
+		
+		// Create a mutation to craft in block.
+		ScheduledMutation craftInBlock = new ScheduledMutation(new MutationBlockCraft(address.getBase().relativeForBlock(tableLocation), craft, 50L), 0L);
+		
+		// Package the cuboid.
+		PackagedCuboid packaged = new PackagedCuboid(cuboid
+			, List.of()
+			, List.of(craftInBlock)
+			, Map.of()
+			, List.of()
+		);
+		
+		// Create the entity instance.
+		MutableEntity mutable = MutableEntity.createForTest(playerId);
+		mutable.newLocation = playerLocation;
+		mutable.newInventory.addAllItems(LOG_ITEM, 2);
+		Entity player = mutable.freeze();
+		
+		// Add a future action, just to show that these crafting operations can deserialize (although this shape is unlikely, in reality).
+		EntityActionSimpleMove<IMutablePlayerEntity> move = new EntityActionSimpleMove<>(0.0f, 0.0f, Intensity.STANDING, (byte)0, (byte)0, new EntityChangeCraft(craft));
+		
+		// Package the entity.
+		ScheduledChange scheduled = new ScheduledChange(move, 0L);
+		SuspendedEntity suspended = new SuspendedEntity(player, List.of(scheduled));
+		
+		// Serialize the cuboid.
+		ByteBuffer buffer = ByteBuffer.allocate(512);
+		CuboidCodec.serializeCuboidWithoutVersionHeader(buffer, packaged, 0L);
+		buffer.flip();
+		byte[] serializedCuboid = new byte[buffer.remaining()];
+		buffer.get(serializedCuboid);
+		buffer.clear();
+		
+		// Create the cluster structure.
+		buffer.putInt(12);
+		buffer.putInt(serializedCuboid.length);
+		for (int i = 1; i < 64; ++i)
+		{
+			buffer.putInt(0);
+		}
+		buffer.put(serializedCuboid);
+		buffer.flip();
+		byte[] serializedCluster = new byte[buffer.remaining()];
+		buffer.get(serializedCluster);
+		Files.write(clusterFile.toPath(), serializedCluster, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+		
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), new WorldConfig());
+		loader.getResultsAndRequestBackgroundLoad(null
+			, null
+			, List.of()
+			, List.of(playerId)
+			, 0L
+		);
+		loader.writeBackToDiskAndRetire(List.of(), List.of(suspended), 0L);
+		loader.shutdown();
+		
+		System.out.println(Arrays.toString(Files.readAllBytes(clusterFile.toPath())));
+		System.out.println(Arrays.toString(Files.readAllBytes(entityFile.toPath())));
+		*/
+		byte[] capturedCuboidData = new byte[] {0, 0, 0, 12, 0, 0, 0, -56, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 62, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, -1, -1, -1, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 67, 0, 0, 0, 50, 1, 0, 0, 0, 1, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 4, 67, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 0, 0, 0, 0, 0, 0, 0, 0};
+		byte[] capturedEntityData = new byte[] {0, 0, 0, 12, 0, 0, 0, 1, 0, 65, -56, 0, 0, 65, -56, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -56, 1, 0, 0, 0, 1, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1, 100, 100, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+		
+		// Write the pre-serialized data.
+		Files.write(clusterFile.toPath(), capturedCuboidData, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+		Files.write(entityFile.toPath(), capturedEntityData, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+		
+		// Now, read this and make sure it contains what we serialized.
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), new WorldConfig());
+		List<SuspendedCuboid<CuboidData>> cuboidResults = new ArrayList<>();
+		List<SuspendedEntity> entityResults = new ArrayList<>();
+		loader.getResultsAndRequestBackgroundLoad(cuboidResults, entityResults, List.of(address), List.of(playerId), 0L);
+		for (int i = 0; (i < 10) && (cuboidResults.isEmpty() || entityResults.isEmpty()); ++i)
+		{
+			Thread.sleep(10L);
+			loader.getResultsAndRequestBackgroundLoad(cuboidResults, entityResults, List.of(), List.of(), 0L);
+		}
+		Assert.assertEquals(1, cuboidResults.size());
+		Assert.assertEquals(1, entityResults.size());
+		
+		// Verify the state of the cuboid.
+		SuspendedCuboid<CuboidData> cuboidData = cuboidResults.get(0);
+		CuboidData cuboid = cuboidData.cuboid();
+		Assert.assertEquals(craftingTable.item().number(), cuboid.getData15(AspectRegistry.BLOCK, tableLocation));
+		Assert.assertEquals(2, cuboid.getDataSpecial(AspectRegistry.INVENTORY, tableLocation).getCount(LOG_ITEM));
+		Assert.assertEquals("op.log_to_planks", cuboid.getDataSpecial(AspectRegistry.CRAFTING, tableLocation).selectedCraft().name);
+		Assert.assertEquals(1, cuboidData.pendingMutations().size());
+		Assert.assertTrue(cuboidData.pendingMutations().get(0).mutation() instanceof MutationBlockCraft);
+		
+		// Verify the state of the entity.
+		SuspendedEntity suspended = entityResults.get(0);
+		Entity entity = suspended.entity();
+		Assert.assertEquals(playerLocation, entity.location());
+		Assert.assertEquals(1, suspended.changes().size());
+		EntityActionSimpleMove<IMutablePlayerEntity> move = (EntityActionSimpleMove<IMutablePlayerEntity>) suspended.changes().get(0).change();
+		Assert.assertTrue(move.getSubAction() instanceof EntityChangeCraft);
+		Assert.assertEquals(2, entity.inventory().getCount(LOG_ITEM));
 	}
 
 
