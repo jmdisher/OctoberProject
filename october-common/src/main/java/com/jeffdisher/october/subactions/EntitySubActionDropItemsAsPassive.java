@@ -2,6 +2,7 @@ package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.EntityLocation;
@@ -22,8 +23,9 @@ public class EntitySubActionDropItemsAsPassive implements IEntitySubAction<IMuta
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.DROP_ITEMS_AS_PASSIVE;
 
-	public static EntitySubActionDropItemsAsPassive deserializeFromBuffer(ByteBuffer buffer)
+	public static EntitySubActionDropItemsAsPassive deserializeFromContext(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		int localInventoryId = buffer.getInt();
 		Assert.assertTrue(localInventoryId > 0);
 		boolean dropAll = CodecHelpers.readBoolean(buffer);

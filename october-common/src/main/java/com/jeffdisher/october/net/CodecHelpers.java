@@ -578,12 +578,16 @@ public class CodecHelpers
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T extends IMutableMinimalEntity> IEntitySubAction<T> readNullableNestedChange(ByteBuffer buffer)
+	public static <T extends IMutableMinimalEntity> IEntitySubAction<T> readNullableNestedChange(DeserializationContext context)
 	{
+		// We use a single byte to describe whether or not to try decoding the sub-action, so that not all sub-actions
+		// need a specific null encoding (this could be part of the type opcode, but that would be a large change, by
+		// this point).
+		ByteBuffer buffer = context.buffer();
 		byte nullBit = buffer.get();
 		return (NULL_BYTE == nullBit)
-				? null
-				: (IEntitySubAction<T>) EntitySubActionCodec.parseAndSeekFlippedBuffer(buffer)
+			? null
+			: (IEntitySubAction<T>) EntitySubActionCodec.parseAndSeekFlippedBuffer(context)
 		;
 	}
 

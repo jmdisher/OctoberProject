@@ -249,7 +249,7 @@ public class Deprecated_EntityAction<T extends IMutableMinimalEntity> implements
 		byte intensityOrdinal = buffer.get();
 		byte yaw = buffer.get();
 		byte pitch = buffer.get();
-		IEntitySubAction<T> subAction = CodecHelpers.readNullableNestedChange(buffer);
+		IEntitySubAction<T> subAction = CodecHelpers.readNullableNestedChange(context);
 		return new Deprecated_EntityAction<>();
 	}
 

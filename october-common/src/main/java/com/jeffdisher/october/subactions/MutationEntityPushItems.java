@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
@@ -32,8 +33,9 @@ public class MutationEntityPushItems implements IEntitySubAction<IMutablePlayerE
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.ITEMS_REQUEST_PUSH;
 
-	public static MutationEntityPushItems deserializeFromBuffer(ByteBuffer buffer)
+	public static MutationEntityPushItems deserializeFromContext(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation blockLocation = CodecHelpers.readAbsoluteLocation(buffer);
 		int localInventoryId = buffer.getInt();
 		Assert.assertTrue(localInventoryId > 0);

@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
@@ -34,8 +35,9 @@ public class MutationEntityRequestItemPickUp implements IEntitySubAction<IMutabl
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.ITEMS_REQUEST_PULL;
 
-	public static MutationEntityRequestItemPickUp deserializeFromBuffer(ByteBuffer buffer)
+	public static MutationEntityRequestItemPickUp deserializeFromContext(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation blockLocation = CodecHelpers.readAbsoluteLocation(buffer);
 		int blockInventoryKey = buffer.getInt();
 		int countRequested = buffer.getInt();

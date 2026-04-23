@@ -6,6 +6,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.mutations.MultiBlockUtils;
@@ -29,8 +30,9 @@ public class EntityChangeSetBlockLogicState implements IEntitySubAction<IMutable
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.SET_BLOCK_LOGIC_STATE;
 
-	public static EntityChangeSetBlockLogicState deserializeFromBuffer(ByteBuffer buffer)
+	public static EntityChangeSetBlockLogicState deserializeFromContext(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation target = CodecHelpers.readAbsoluteLocation(buffer);
 		boolean setHigh = CodecHelpers.readBoolean(buffer);
 		return new EntityChangeSetBlockLogicState(target, setHigh);

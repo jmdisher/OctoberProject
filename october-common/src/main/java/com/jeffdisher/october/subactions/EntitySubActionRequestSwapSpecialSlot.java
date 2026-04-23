@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.mutations.MutationBlockSwapSpecialSlot;
@@ -33,8 +34,9 @@ public class EntitySubActionRequestSwapSpecialSlot implements IEntitySubAction<I
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.ITEM_SLOT_REQUEST_SWAP;
 
-	public static EntitySubActionRequestSwapSpecialSlot deserializeFromBuffer(ByteBuffer buffer)
+	public static EntitySubActionRequestSwapSpecialSlot deserializeFromContext(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation blockLocation = CodecHelpers.readAbsoluteLocation(buffer);
 		boolean sendAll = CodecHelpers.readBoolean(buffer);
 		return new EntitySubActionRequestSwapSpecialSlot(blockLocation, sendAll);

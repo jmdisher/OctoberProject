@@ -3,6 +3,7 @@ package com.jeffdisher.october.subactions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.actions.passive.PassiveActionPickUp;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.EntityLocation;
@@ -26,8 +27,9 @@ public class EntitySubActionPickUpPassive implements IEntitySubAction<IMutablePl
 	public static final EntitySubActionType TYPE = EntitySubActionType.PICK_UP_ITEMS_PASSIVE;
 	public static final float PICKUP_DISTANCE = 2.0f;
 
-	public static EntitySubActionPickUpPassive deserializeFromBuffer(ByteBuffer buffer)
+	public static EntitySubActionPickUpPassive deserializeFromContext(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		int passiveId = buffer.getInt();
 		return new EntitySubActionPickUpPassive(passiveId);
 	}

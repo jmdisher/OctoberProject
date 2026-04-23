@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
@@ -23,8 +24,9 @@ public class EntityChangeSetDayAndSpawn implements IEntitySubAction<IMutablePlay
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.SET_DAY_AND_SPAWN;
 
-	public static EntityChangeSetDayAndSpawn deserializeFromBuffer(ByteBuffer buffer)
+	public static EntityChangeSetDayAndSpawn deserializeFromContext(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation bedLocation = CodecHelpers.readAbsoluteLocation(buffer);
 		return new EntityChangeSetDayAndSpawn(bedLocation);
 	}

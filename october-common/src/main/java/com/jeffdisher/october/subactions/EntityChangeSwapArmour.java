@@ -3,6 +3,7 @@ package com.jeffdisher.october.subactions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.BodyPart;
@@ -23,8 +24,9 @@ public class EntityChangeSwapArmour implements IEntitySubAction<IMutablePlayerEn
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.SWAP_ARMOUR;
 
-	public static EntityChangeSwapArmour deserializeFromBuffer(ByteBuffer buffer)
+	public static EntityChangeSwapArmour deserializeFromContext(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		BodyPart slot = CodecHelpers.readBodyPart(buffer);
 		int inventoryId = buffer.getInt();
 		return new EntityChangeSwapArmour(slot, inventoryId);

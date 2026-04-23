@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.aspects.CraftAspect;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.mutations.CommonEntityMutationHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -28,8 +29,9 @@ public class EntityChangeCraft implements IEntitySubAction<IMutablePlayerEntity>
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.CRAFT;
 
-	public static EntityChangeCraft deserializeFromBuffer(ByteBuffer buffer)
+	public static EntityChangeCraft deserializeFromContext(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		Craft operation = CodecHelpers.readCraft(buffer);
 		buffer.getLong();
 		return new EntityChangeCraft(operation);

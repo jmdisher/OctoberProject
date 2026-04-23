@@ -11,6 +11,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.EntitySubActionType;
@@ -43,8 +44,9 @@ public class EntityChangePlaceMultiBlock implements IEntitySubAction<IMutablePla
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.MULTI_BLOCK_PLACE;
 
-	public static EntityChangePlaceMultiBlock deserializeFromBuffer(ByteBuffer buffer)
+	public static EntityChangePlaceMultiBlock deserializeFromContext(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation target = CodecHelpers.readAbsoluteLocation(buffer);
 		FacingDirection orientation = CodecHelpers.readOrientation(buffer);
 		return new EntityChangePlaceMultiBlock(target, orientation);

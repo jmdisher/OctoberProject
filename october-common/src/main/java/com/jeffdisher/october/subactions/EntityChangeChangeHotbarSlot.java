@@ -2,6 +2,7 @@ package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IEntitySubAction;
@@ -17,8 +18,9 @@ public class EntityChangeChangeHotbarSlot implements IEntitySubAction<IMutablePl
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.CHANGE_HOTBAR_SLOT;
 
-	public static EntityChangeChangeHotbarSlot deserializeFromBuffer(ByteBuffer buffer)
+	public static EntityChangeChangeHotbarSlot deserializeFromContext(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		int index = buffer.getInt();
 		return new EntityChangeChangeHotbarSlot(index);
 	}

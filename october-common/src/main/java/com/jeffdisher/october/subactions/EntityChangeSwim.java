@@ -6,6 +6,7 @@ import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.EntityLocation;
@@ -41,7 +42,7 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IEntit
 		);
 	}
 
-	public static <T extends IMutableMinimalEntity> EntityChangeSwim<T> deserializeFromBuffer(ByteBuffer buffer)
+	public static <T extends IMutableMinimalEntity> EntityChangeSwim<T> deserializeFromContext(DeserializationContext context)
 	{
 		return new EntityChangeSwim<>();
 	}

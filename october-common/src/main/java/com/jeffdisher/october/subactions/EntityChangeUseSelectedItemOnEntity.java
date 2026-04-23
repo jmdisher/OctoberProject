@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.actions.EntityActionApplyItemToCreature;
 import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.MiscConstants;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.Entity;
@@ -30,8 +31,9 @@ public class EntityChangeUseSelectedItemOnEntity implements IEntitySubAction<IMu
 	public static final EntitySubActionType TYPE = EntitySubActionType.USE_SELECTED_ITEM_ON_ENTITY;
 	public static final long COOLDOWN_MILLIS = 250L;
 
-	public static EntityChangeUseSelectedItemOnEntity deserializeFromBuffer(ByteBuffer buffer)
+	public static EntityChangeUseSelectedItemOnEntity deserializeFromContext(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		int entityId = buffer.getInt();
 		return new EntityChangeUseSelectedItemOnEntity(entityId);
 	}

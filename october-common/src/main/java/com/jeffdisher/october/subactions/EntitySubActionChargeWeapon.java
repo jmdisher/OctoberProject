@@ -3,6 +3,7 @@ package com.jeffdisher.october.subactions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
@@ -24,7 +25,7 @@ public class EntitySubActionChargeWeapon implements IEntitySubAction<IMutablePla
 	 */
 	public static final int ENERGY_COST_PER_TICK_CHARGING_WEAPON = 50;
 
-	public static EntitySubActionChargeWeapon deserializeFromBuffer(ByteBuffer buffer)
+	public static EntitySubActionChargeWeapon deserializeFromContext(DeserializationContext context)
 	{
 		return new EntitySubActionChargeWeapon();
 	}

@@ -10,6 +10,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.EntitySubActionType;
@@ -37,8 +38,9 @@ public class MutationPlaceSelectedBlock implements IEntitySubAction<IMutablePlay
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.BLOCK_PLACE;
 
-	public static MutationPlaceSelectedBlock deserializeFromBuffer(ByteBuffer buffer)
+	public static MutationPlaceSelectedBlock deserializeFromContext(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation target = CodecHelpers.readAbsoluteLocation(buffer);
 		AbsoluteLocation blockOutput = CodecHelpers.readAbsoluteLocation(buffer);
 		return new MutationPlaceSelectedBlock(target, blockOutput);

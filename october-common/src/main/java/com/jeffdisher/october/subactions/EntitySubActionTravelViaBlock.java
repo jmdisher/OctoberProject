@@ -5,6 +5,7 @@ import java.util.function.Predicate;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
@@ -53,8 +54,9 @@ public class EntitySubActionTravelViaBlock implements IEntitySubAction<IMutableP
 		return EntityMovementHelpers.checkTypeIntersection(location, volume, supplier);
 	}
 
-	public static EntitySubActionTravelViaBlock deserializeFromBuffer(ByteBuffer buffer)
+	public static EntitySubActionTravelViaBlock deserializeFromContext(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation portalSurfaceLocation = CodecHelpers.readAbsoluteLocation(buffer);
 		return new EntitySubActionTravelViaBlock(portalSurfaceLocation);
 	}

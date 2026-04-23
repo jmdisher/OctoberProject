@@ -2,6 +2,7 @@ package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
@@ -19,8 +20,9 @@ public class MutationEntitySelectItem implements IEntitySubAction<IMutablePlayer
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.SELECT_ITEM;
 
-	public static MutationEntitySelectItem deserializeFromBuffer(ByteBuffer buffer)
+	public static MutationEntitySelectItem deserializeFromContext(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		int inventoryId = buffer.getInt();
 		return new MutationEntitySelectItem(inventoryId);
 	}

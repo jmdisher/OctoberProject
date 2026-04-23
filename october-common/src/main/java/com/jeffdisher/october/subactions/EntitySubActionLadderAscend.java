@@ -5,6 +5,7 @@ import java.util.function.Predicate;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.EntitySubActionType;
@@ -39,7 +40,7 @@ public class EntitySubActionLadderAscend<T extends IMutableMinimalEntity> implem
 		));
 	}
 
-	public static <T extends IMutableMinimalEntity> EntitySubActionLadderAscend<T> deserializeFromBuffer(ByteBuffer buffer)
+	public static <T extends IMutableMinimalEntity> EntitySubActionLadderAscend<T> deserializeFromContext(DeserializationContext context)
 	{
 		return new EntitySubActionLadderAscend<>();
 	}

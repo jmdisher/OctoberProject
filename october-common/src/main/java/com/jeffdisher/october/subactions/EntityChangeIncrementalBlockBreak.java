@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.CommonEntityMutationHelpers;
@@ -31,8 +32,9 @@ public class EntityChangeIncrementalBlockBreak implements IEntitySubAction<IMuta
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.INCREMENTAL_BREAK_BLOCK;
 
-	public static EntityChangeIncrementalBlockBreak deserializeFromBuffer(ByteBuffer buffer)
+	public static EntityChangeIncrementalBlockBreak deserializeFromContext(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation target = CodecHelpers.readAbsoluteLocation(buffer);
 		buffer.getShort();
 		return new EntityChangeIncrementalBlockBreak(target);

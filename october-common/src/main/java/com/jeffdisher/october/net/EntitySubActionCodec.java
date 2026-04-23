@@ -3,6 +3,7 @@ package com.jeffdisher.october.net;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.subactions.EntityChangeAttackEntity;
 import com.jeffdisher.october.subactions.EntityChangeChangeHotbarSlot;
@@ -40,50 +41,50 @@ import com.jeffdisher.october.utils.Assert;
 public class EntitySubActionCodec
 {
 	@SuppressWarnings("unchecked")
-	private static Function<ByteBuffer, IEntitySubAction<IMutablePlayerEntity>>[] _CODEC_TABLE = new Function[EntitySubActionType.END_OF_LIST.ordinal()];
+	private static Function<DeserializationContext, IEntitySubAction<IMutablePlayerEntity>>[] _CODEC_TABLE = new Function[EntitySubActionType.END_OF_LIST.ordinal()];
 
 	// We specifically request that all the mutation types which can be serialized for the network are registered here.
 	static
 	{
-		_CODEC_TABLE[EntitySubActionType.UNUSED_MOVE.ordinal()] = (ByteBuffer buffer) -> { throw Assert.unreachable(); };
-		_CODEC_TABLE[EntityChangeJump.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeJump.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntityChangeSwim.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeSwim.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationPlaceSelectedBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationPlaceSelectedBlock.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntityChangeCraft.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeCraft.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationEntitySelectItem.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationEntitySelectItem.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationEntityPushItems.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationEntityPushItems.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationEntityRequestItemPickUp.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationEntityRequestItemPickUp.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntitySubActionType.UNUSED_ITEMS_STORE_TO_INVENTORY.ordinal()] = (ByteBuffer buffer) -> { throw Assert.unreachable(); };
-		_CODEC_TABLE[EntityChangeIncrementalBlockBreak.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeIncrementalBlockBreak.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntityChangeCraftInBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeCraftInBlock.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntityChangeAttackEntity.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeAttackEntity.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntitySubActionType.UNUSED_TAKE_DAMAGE_V2.ordinal()] = (ByteBuffer buffer) -> { throw Assert.unreachable(); };
-		_CODEC_TABLE[EntitySubActionType.UNUSED_PERIODIC.ordinal()] = (ByteBuffer buffer) -> { throw Assert.unreachable(); };
-		_CODEC_TABLE[EntityChangeUseSelectedItemOnSelf.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeUseSelectedItemOnSelf.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntityChangeUseSelectedItemOnBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeUseSelectedItemOnBlock.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntityChangeUseSelectedItemOnEntity.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeUseSelectedItemOnEntity.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntityChangeChangeHotbarSlot.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeChangeHotbarSlot.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntityChangeSwapArmour.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeSwapArmour.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntityChangeSetBlockLogicState.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeSetBlockLogicState.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntitySubActionType.UNUSED_OPERATOR_SET_CREATIVE.ordinal()] = (ByteBuffer buffer) -> { throw Assert.unreachable(); };
-		_CODEC_TABLE[EntitySubActionType.UNUSED_OPERATOR_SET_LOCATION.ordinal()] = (ByteBuffer buffer) -> { throw Assert.unreachable(); };
-		_CODEC_TABLE[EntityChangeSetDayAndSpawn.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeSetDayAndSpawn.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntitySubActionType.UNUSED_SET_ORIENTATION.ordinal()] = (ByteBuffer buffer) -> { throw Assert.unreachable(); };
-		_CODEC_TABLE[EntitySubActionType.UNUSED_ACCELERATE.ordinal()] = (ByteBuffer buffer) -> { throw Assert.unreachable(); };
-		_CODEC_TABLE[EntityChangeIncrementalBlockRepair.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeIncrementalBlockRepair.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntitySubActionType.UNUSED_TAKE_DAMAGE_FROM_ENTITY.ordinal()] = (ByteBuffer buffer) -> { throw Assert.unreachable(); };
-		_CODEC_TABLE[EntitySubActionType.UNUSED_TAKE_DAMAGE_FROM_OTHER_V4.ordinal()] = (ByteBuffer buffer) -> { throw Assert.unreachable(); };
-		_CODEC_TABLE[EntityChangePlaceMultiBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangePlaceMultiBlock.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntitySubActionLadderAscend.TYPE.ordinal()] = (ByteBuffer buffer) -> EntitySubActionLadderAscend.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntitySubActionLadderDescend.TYPE.ordinal()] = (ByteBuffer buffer) -> EntitySubActionLadderDescend.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntitySubActionRequestSwapSpecialSlot.TYPE.ordinal()] = (ByteBuffer buffer) -> EntitySubActionRequestSwapSpecialSlot.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntitySubActionTravelViaBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> EntitySubActionTravelViaBlock.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntitySubActionDropItemsAsPassive.TYPE.ordinal()] = (ByteBuffer buffer) -> EntitySubActionDropItemsAsPassive.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntitySubActionPickUpPassive.TYPE.ordinal()] = (ByteBuffer buffer) -> EntitySubActionPickUpPassive.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntitySubActionPopOutOfBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> EntitySubActionPopOutOfBlock.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntitySubActionChargeWeapon.TYPE.ordinal()] = (ByteBuffer buffer) -> EntitySubActionChargeWeapon.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntitySubActionReleaseWeapon.TYPE.ordinal()] = (ByteBuffer buffer) -> EntitySubActionReleaseWeapon.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntitySubActionType.TESTING_ONLY.ordinal()] = (ByteBuffer buffer) -> { throw Assert.unreachable(); };
+		_CODEC_TABLE[EntitySubActionType.UNUSED_MOVE.ordinal()] = (DeserializationContext context) -> { throw Assert.unreachable(); };
+		_CODEC_TABLE[EntityChangeJump.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeJump.deserializeFromContext(context);
+		_CODEC_TABLE[EntityChangeSwim.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeSwim.deserializeFromContext(context);
+		_CODEC_TABLE[MutationPlaceSelectedBlock.TYPE.ordinal()] = (DeserializationContext context) -> MutationPlaceSelectedBlock.deserializeFromContext(context);
+		_CODEC_TABLE[EntityChangeCraft.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeCraft.deserializeFromContext(context);
+		_CODEC_TABLE[MutationEntitySelectItem.TYPE.ordinal()] = (DeserializationContext context) -> MutationEntitySelectItem.deserializeFromContext(context);
+		_CODEC_TABLE[MutationEntityPushItems.TYPE.ordinal()] = (DeserializationContext context) -> MutationEntityPushItems.deserializeFromContext(context);
+		_CODEC_TABLE[MutationEntityRequestItemPickUp.TYPE.ordinal()] = (DeserializationContext context) -> MutationEntityRequestItemPickUp.deserializeFromContext(context);
+		_CODEC_TABLE[EntitySubActionType.UNUSED_ITEMS_STORE_TO_INVENTORY.ordinal()] = (DeserializationContext context) -> { throw Assert.unreachable(); };
+		_CODEC_TABLE[EntityChangeIncrementalBlockBreak.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeIncrementalBlockBreak.deserializeFromContext(context);
+		_CODEC_TABLE[EntityChangeCraftInBlock.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeCraftInBlock.deserializeFromContext(context);
+		_CODEC_TABLE[EntityChangeAttackEntity.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeAttackEntity.deserializeFromContext(context);
+		_CODEC_TABLE[EntitySubActionType.UNUSED_TAKE_DAMAGE_V2.ordinal()] = (DeserializationContext context) -> { throw Assert.unreachable(); };
+		_CODEC_TABLE[EntitySubActionType.UNUSED_PERIODIC.ordinal()] = (DeserializationContext context) -> { throw Assert.unreachable(); };
+		_CODEC_TABLE[EntityChangeUseSelectedItemOnSelf.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeUseSelectedItemOnSelf.deserializeFromContext(context);
+		_CODEC_TABLE[EntityChangeUseSelectedItemOnBlock.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeUseSelectedItemOnBlock.deserializeFromContext(context);
+		_CODEC_TABLE[EntityChangeUseSelectedItemOnEntity.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeUseSelectedItemOnEntity.deserializeFromContext(context);
+		_CODEC_TABLE[EntityChangeChangeHotbarSlot.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeChangeHotbarSlot.deserializeFromContext(context);
+		_CODEC_TABLE[EntityChangeSwapArmour.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeSwapArmour.deserializeFromContext(context);
+		_CODEC_TABLE[EntityChangeSetBlockLogicState.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeSetBlockLogicState.deserializeFromContext(context);
+		_CODEC_TABLE[EntitySubActionType.UNUSED_OPERATOR_SET_CREATIVE.ordinal()] = (DeserializationContext context) -> { throw Assert.unreachable(); };
+		_CODEC_TABLE[EntitySubActionType.UNUSED_OPERATOR_SET_LOCATION.ordinal()] = (DeserializationContext context) -> { throw Assert.unreachable(); };
+		_CODEC_TABLE[EntityChangeSetDayAndSpawn.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeSetDayAndSpawn.deserializeFromContext(context);
+		_CODEC_TABLE[EntitySubActionType.UNUSED_SET_ORIENTATION.ordinal()] = (DeserializationContext context) -> { throw Assert.unreachable(); };
+		_CODEC_TABLE[EntitySubActionType.UNUSED_ACCELERATE.ordinal()] = (DeserializationContext context) -> { throw Assert.unreachable(); };
+		_CODEC_TABLE[EntityChangeIncrementalBlockRepair.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangeIncrementalBlockRepair.deserializeFromContext(context);
+		_CODEC_TABLE[EntitySubActionType.UNUSED_TAKE_DAMAGE_FROM_ENTITY.ordinal()] = (DeserializationContext context) -> { throw Assert.unreachable(); };
+		_CODEC_TABLE[EntitySubActionType.UNUSED_TAKE_DAMAGE_FROM_OTHER_V4.ordinal()] = (DeserializationContext context) -> { throw Assert.unreachable(); };
+		_CODEC_TABLE[EntityChangePlaceMultiBlock.TYPE.ordinal()] = (DeserializationContext context) -> EntityChangePlaceMultiBlock.deserializeFromContext(context);
+		_CODEC_TABLE[EntitySubActionLadderAscend.TYPE.ordinal()] = (DeserializationContext context) -> EntitySubActionLadderAscend.deserializeFromContext(context);
+		_CODEC_TABLE[EntitySubActionLadderDescend.TYPE.ordinal()] = (DeserializationContext context) -> EntitySubActionLadderDescend.deserializeFromContext(context);
+		_CODEC_TABLE[EntitySubActionRequestSwapSpecialSlot.TYPE.ordinal()] = (DeserializationContext context) -> EntitySubActionRequestSwapSpecialSlot.deserializeFromContext(context);
+		_CODEC_TABLE[EntitySubActionTravelViaBlock.TYPE.ordinal()] = (DeserializationContext context) -> EntitySubActionTravelViaBlock.deserializeFromContext(context);
+		_CODEC_TABLE[EntitySubActionDropItemsAsPassive.TYPE.ordinal()] = (DeserializationContext context) -> EntitySubActionDropItemsAsPassive.deserializeFromContext(context);
+		_CODEC_TABLE[EntitySubActionPickUpPassive.TYPE.ordinal()] = (DeserializationContext context) -> EntitySubActionPickUpPassive.deserializeFromContext(context);
+		_CODEC_TABLE[EntitySubActionPopOutOfBlock.TYPE.ordinal()] = (DeserializationContext context) -> EntitySubActionPopOutOfBlock.deserializeFromContext(context);
+		_CODEC_TABLE[EntitySubActionChargeWeapon.TYPE.ordinal()] = (DeserializationContext context) -> EntitySubActionChargeWeapon.deserializeFromContext(context);
+		_CODEC_TABLE[EntitySubActionReleaseWeapon.TYPE.ordinal()] = (DeserializationContext context) -> EntitySubActionReleaseWeapon.deserializeFromContext(context);
+		_CODEC_TABLE[EntitySubActionType.TESTING_ONLY.ordinal()] = (DeserializationContext context) -> { throw Assert.unreachable(); };
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)
@@ -93,15 +94,16 @@ public class EntitySubActionCodec
 	}
 
 
-	public static IEntitySubAction<IMutablePlayerEntity> parseAndSeekFlippedBuffer(ByteBuffer buffer)
+	public static IEntitySubAction<IMutablePlayerEntity> parseAndSeekFlippedBuffer(DeserializationContext context)
 	{
 		IEntitySubAction<IMutablePlayerEntity> parsed = null;
+		ByteBuffer buffer = context.buffer();
 		// We only use a single byte to describe the type.
 		if (buffer.remaining() >= 1)
 		{
 			byte opcode = buffer.get();
 			EntitySubActionType type = EntitySubActionType.values()[opcode];
-			parsed = _CODEC_TABLE[type.ordinal()].apply(buffer);
+			parsed = _CODEC_TABLE[type.ordinal()].apply(context);
 		}
 		return parsed;
 	}

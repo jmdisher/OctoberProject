@@ -3,6 +3,7 @@ package com.jeffdisher.october.subactions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.EntitySubActionType;
@@ -26,8 +27,9 @@ public class EntitySubActionPopOutOfBlock<T extends IMutableMinimalEntity> imple
 	public static final float POP_OUT_MAX_DISTANCE = 0.4f;
 	public static final EntitySubActionType TYPE = EntitySubActionType.POP_OUT;
 
-	public static <T extends IMutableMinimalEntity> EntitySubActionPopOutOfBlock<T> deserializeFromBuffer(ByteBuffer buffer)
+	public static <T extends IMutableMinimalEntity> EntitySubActionPopOutOfBlock<T> deserializeFromContext(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		EntityLocation newLocation = CodecHelpers.readEntityLocation(buffer);
 		return new EntitySubActionPopOutOfBlock<>(newLocation);
 	}

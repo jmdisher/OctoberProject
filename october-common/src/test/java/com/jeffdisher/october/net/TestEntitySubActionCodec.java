@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockRepair;
 import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -24,7 +25,8 @@ public class TestEntitySubActionCodec
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		EntitySubActionCodec.serializeToBuffer(buffer, change);
 		buffer.flip();
-		IEntitySubAction<IMutablePlayerEntity> read = EntitySubActionCodec.parseAndSeekFlippedBuffer(buffer);
+		DeserializationContext context = DeserializationContext.empty(null, buffer);
+		IEntitySubAction<IMutablePlayerEntity> read = EntitySubActionCodec.parseAndSeekFlippedBuffer(context);
 		Assert.assertTrue(read instanceof EntityChangeIncrementalBlockRepair);
 		Assert.assertEquals(0, buffer.remaining());
 	}
@@ -38,7 +40,8 @@ public class TestEntitySubActionCodec
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		EntitySubActionCodec.serializeToBuffer(buffer, change);
 		buffer.flip();
-		IEntitySubAction<IMutablePlayerEntity> read = EntitySubActionCodec.parseAndSeekFlippedBuffer(buffer);
+		DeserializationContext context = DeserializationContext.empty(null, buffer);
+		IEntitySubAction<IMutablePlayerEntity> read = EntitySubActionCodec.parseAndSeekFlippedBuffer(context);
 		Assert.assertTrue(read instanceof EntitySubActionPopOutOfBlock);
 		Assert.assertEquals(0, buffer.remaining());
 	}

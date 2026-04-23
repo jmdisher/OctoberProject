@@ -6,6 +6,7 @@ import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.NudgeHelpers;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
@@ -34,8 +35,9 @@ public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayer
 	public static final EntitySubActionType TYPE = EntitySubActionType.ATTACK_ENTITY;
 	public static final long ATTACK_COOLDOWN_MILLIS = 500L;
 
-	public static EntityChangeAttackEntity deserializeFromBuffer(ByteBuffer buffer)
+	public static EntityChangeAttackEntity deserializeFromContext(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		int targetEntityId = buffer.getInt();
 		return new EntityChangeAttackEntity(targetEntityId);
 	}

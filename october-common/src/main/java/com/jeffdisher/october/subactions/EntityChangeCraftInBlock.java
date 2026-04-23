@@ -6,6 +6,7 @@ import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.mutations.MutationBlockCraft;
@@ -32,8 +33,9 @@ public class EntityChangeCraftInBlock implements IEntitySubAction<IMutablePlayer
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.CRAFT_IN_BLOCK;
 
-	public static EntityChangeCraftInBlock deserializeFromBuffer(ByteBuffer buffer)
+	public static EntityChangeCraftInBlock deserializeFromContext(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation targetBlock = CodecHelpers.readAbsoluteLocation(buffer);
 		Craft craft = CodecHelpers.readCraft(buffer);
 		buffer.getLong();

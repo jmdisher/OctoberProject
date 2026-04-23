@@ -75,7 +75,7 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 		Intensity intensity = Intensity.read(buffer);
 		byte yaw = buffer.get();
 		byte pitch = buffer.get();
-		IEntitySubAction<T> subAction = CodecHelpers.readNullableNestedChange(buffer);
+		IEntitySubAction<T> subAction = CodecHelpers.readNullableNestedChange(context);
 		return new EntityActionSimpleMove<>(activeX, activeY, intensity, yaw, pitch, subAction);
 	}
 

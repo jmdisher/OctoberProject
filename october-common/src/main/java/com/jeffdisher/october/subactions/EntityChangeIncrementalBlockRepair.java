@@ -6,6 +6,7 @@ import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.mutations.MultiBlockUtils;
@@ -28,8 +29,9 @@ public class EntityChangeIncrementalBlockRepair implements IEntitySubAction<IMut
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.INCREMENTAL_REPAIR_BLOCK;
 
-	public static EntityChangeIncrementalBlockRepair deserializeFromBuffer(ByteBuffer buffer)
+	public static EntityChangeIncrementalBlockRepair deserializeFromContext(DeserializationContext context)
 	{
+		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation target = CodecHelpers.readAbsoluteLocation(buffer);
 		buffer.getShort();
 		return new EntityChangeIncrementalBlockRepair(target);

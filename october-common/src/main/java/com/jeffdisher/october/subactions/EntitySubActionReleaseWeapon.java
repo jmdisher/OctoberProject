@@ -3,6 +3,7 @@ package com.jeffdisher.october.subactions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.CommonEntityMutationHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
@@ -29,7 +30,7 @@ public class EntitySubActionReleaseWeapon implements IEntitySubAction<IMutablePl
 	 */
 	public static final float PROJECTILE_POWER_MULTIPLIER = 25.0f;
 
-	public static EntitySubActionReleaseWeapon deserializeFromBuffer(ByteBuffer buffer)
+	public static EntitySubActionReleaseWeapon deserializeFromContext(DeserializationContext context)
 	{
 		return new EntitySubActionReleaseWeapon();
 	}
