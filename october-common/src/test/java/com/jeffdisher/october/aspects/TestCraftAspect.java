@@ -33,12 +33,11 @@ public class TestCraftAspect
 		Item stoneItem = ENV.items.getItemById("op.stone");
 		Item coalOreItem = ENV.items.getItemById("op.coal_ore");
 		Item ironOreItem = ENV.items.getItemById("op.iron_ore");
-		Craft craft = new Craft((short)1
-				, "Simple"
-				, "COMMON"
-				, new Items[] { new Items(dirtItem, 2), new Items(stoneItem, 1)  }
-				, new Item[] {coalOreItem, coalOreItem, ironOreItem }
-				, 1000L
+		Craft craft = new Craft("Simple"
+			, "COMMON"
+			, new Items[] { new Items(dirtItem, 2), new Items(stoneItem, 1)  }
+			, new Item[] {coalOreItem, coalOreItem, ironOreItem }
+			, 1000L
 		);
 		Inventory inv = Inventory.start(50).addStackable(dirtItem, 4).addStackable(stoneItem, 2).finish();
 		Assert.assertTrue(CraftAspect.canApply(craft, inv));
@@ -57,12 +56,11 @@ public class TestCraftAspect
 		Item pick = ENV.items.getItemById("op.iron_pickaxe");
 		Item dirtItem = ENV.items.getItemById("op.dirt");
 		Item stoneItem = ENV.items.getItemById("op.stone");
-		Craft craft = new Craft((short)1
-				, "Non-stack"
-				, "COMMON"
-				, new Items[] { new Items(dirtItem, 1), new Items(stoneItem, 1)  }
-				, new Item[] { pick }
-				, 1000L
+		Craft craft = new Craft("Non-stack"
+			, "COMMON"
+			, new Items[] { new Items(dirtItem, 1), new Items(stoneItem, 1)  }
+			, new Item[] { pick }
+			, 1000L
 		);
 		Inventory inv = Inventory.start(50).addStackable(dirtItem, 2).addStackable(stoneItem, 1).finish();
 		Assert.assertTrue(CraftAspect.canApply(craft, inv));

@@ -95,7 +95,7 @@ public class CraftAspect
 					index += 1;
 				}
 				Item[] output = _output.toArray((int size) -> new Item[size]);
-				Craft craft = new Craft((short)1, _name, _classification, inputs, output, _millis);
+				Craft craft = new Craft(_name, _classification, inputs, output, _millis);
 				Set<Craft> oneClass = craftingByClassifications.get(_classification);
 				if (null == oneClass)
 				{

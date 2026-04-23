@@ -9,25 +9,31 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class Craft
 {
-	public final short number;
 	public final String name;
 	public final String classification;
 	public final Items[] input;
 	public final Item[] output;
 	public final long millisPerCraft;
 
-	public Craft(short number
-			, String name
-			, String classification
-			, Items[] input
-			, Item[] output
-			, long millisPerCraft
+	public Craft(String name
+		, String classification
+		, Items[] input
+		, Item[] output
+		, long millisPerCraft
 	)
 	{
-		Assert.assertTrue(number >= 0);
+		// The name will be a small string (7-bit size) so make sure it is in range.
+		Assert.assertTrue(name.length() > 0);
+		Assert.assertTrue(name.length() <= Byte.MAX_VALUE);
+		// Classification must exist.
 		Assert.assertTrue(null != classification);
+		// The input cannot be empty.
+		Assert.assertTrue(input.length > 0);
+		// The output cannot be empty.
+		Assert.assertTrue(output.length > 0);
+		// Crafting time must be a positive value.
+		Assert.assertTrue(millisPerCraft > 0L);
 		
-		this.number = number;
 		this.name = name;
 		this.classification = classification;
 		this.input = input;
