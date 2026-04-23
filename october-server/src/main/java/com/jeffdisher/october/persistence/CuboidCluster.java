@@ -62,32 +62,23 @@ public class CuboidCluster
 		byte[] rawData = Files.readAllBytes(_backingStore.toPath());
 		ByteBuffer buffer = ByteBuffer.wrap(rawData);
 		int version = buffer.getInt();
-		int[] sizes = new int[64];
 		
-		if ((StorageVersions.CURRENT == version)
-			|| (StorageVersions.V12 == version)
-		)
+		if (StorageVersions.CURRENT == version)
 		{
-			// This is a supported version (earlier versions didn't use the cluster and future versions are unknown).
+			_loadCurrentData(buffer);
+		}
+		else if (StorageVersions.V12 == version)
+		{
+			// Convert this data.
+			_loadAndConvertV12(buffer);
+			
+			// Write it back, immediately.
+			_writeToBackingStore();
 		}
 		else
 		{
+			// Earlier versions didn't use the cluster and future versions are unknown.
 			throw new RuntimeException("UNSUPPORTED ENTITY STORAGE VERSION:  " + version);
-		}
-		for (int i = 0; i < sizes.length; ++i)
-		{
-			sizes[i] = buffer.getInt();
-		}
-		
-		for (int i = 0; i < sizes.length; ++i)
-		{
-			int thisSize = sizes[i];
-			if (thisSize > 0)
-			{
-				byte[] rawCuboid = new byte[thisSize];
-				buffer.get(rawCuboid);
-				_rawCuboidData[i] = rawCuboid;
-			}
 		}
 	}
 
@@ -236,5 +227,46 @@ public class CuboidCluster
 		}
 		
 		Files.write(_backingStore.toPath(), serializedBytes, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+	}
+
+	private void _loadCurrentData(ByteBuffer buffer)
+	{
+		int[] sizes = new int[64];
+		for (int i = 0; i < sizes.length; ++i)
+		{
+			sizes[i] = buffer.getInt();
+		}
+		
+		for (int i = 0; i < sizes.length; ++i)
+		{
+			int thisSize = sizes[i];
+			if (thisSize > 0)
+			{
+				byte[] rawCuboid = new byte[thisSize];
+				buffer.get(rawCuboid);
+				_rawCuboidData[i] = rawCuboid;
+			}
+		}
+	}
+
+	private void _loadAndConvertV12(ByteBuffer buffer)
+	{
+		// TODO:  Implement the conversion here, once it is implemented.
+		int[] sizes = new int[64];
+		for (int i = 0; i < sizes.length; ++i)
+		{
+			sizes[i] = buffer.getInt();
+		}
+		
+		for (int i = 0; i < sizes.length; ++i)
+		{
+			int thisSize = sizes[i];
+			if (thisSize > 0)
+			{
+				byte[] rawCuboid = new byte[thisSize];
+				buffer.get(rawCuboid);
+				_rawCuboidData[i] = rawCuboid;
+			}
+		}
 	}
 }

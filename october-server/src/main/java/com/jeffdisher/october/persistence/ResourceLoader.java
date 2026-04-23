@@ -19,10 +19,12 @@ import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.jeffdisher.october.actions.EntityActionPeriodic;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.config.FlatTabListCallbacks;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.PassiveIdAssigner;
 import com.jeffdisher.october.logic.ScheduledChange;
@@ -432,10 +434,17 @@ public class ResourceLoader
 			ByteBuffer buffer = ByteBuffer.wrap(rawData);
 			
 			// Note that the CuboidClusterManager is responsible for updating when the version changes so we always see the most up-to-date version of data at this level.
-			
-			result = CuboidCodec.deserializeCuboidWithoutVersionHeader(buffer
-				, address
+			Environment env = Environment.getShared();
+			boolean usePreV8NonStackableDecoding = false;
+			boolean usePreV11DamageDecoding = false;
+			DeserializationContext context = new DeserializationContext(env
+				, buffer
 				, currentGameMillis
+				, usePreV8NonStackableDecoding
+				, usePreV11DamageDecoding
+			);
+			result = CuboidCodec.deserializeCuboidWithoutVersionHeader(context
+				, address
 				, this.creatureIdAssigner
 				, this.passiveIdAssigner
 			);

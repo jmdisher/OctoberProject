@@ -14,22 +14,6 @@ import com.jeffdisher.october.utils.Assert;
 
 public class OctreeObject<T> implements IOctree<T>
 {
-	public static <T> OctreeObject<T> load(DeserializationContext context, IObjectCodec<T> codec)
-	{
-		ByteBuffer raw = context.buffer();
-		// We encode these as the number of elements in a single cuboid (which is a short - at most 15 bits of elements).
-		short count = raw.getShort();
-		Map<Short, T> data = new HashMap<>();
-		// Each of these elements is a pair of Short and abstract data for some object.
-		for (short i = 0; i < count; ++i)
-		{
-			short key = raw.getShort();
-			T value = codec.loadData(context);
-			data.put(key, value);
-		}
-		return new OctreeObject<>(data);
-	}
-
 	public static <T> OctreeObject<T> create()
 	{
 		// Just start with an empty map.

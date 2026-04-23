@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.DeserializationContext;
@@ -90,23 +89,12 @@ public class CuboidCodec
 		// From here, the entire cuboid is serialized into the outBuffer so we can return.
 	}
 
-	public static SuspendedCuboid<CuboidData> deserializeCuboidWithoutVersionHeader(ByteBuffer inBuffer
+	public static SuspendedCuboid<CuboidData> deserializeCuboidWithoutVersionHeader(DeserializationContext context
 		, CuboidAddress address
-		, long currentGameMillis
 		, CreatureIdAssigner creatureIdAssigner
 		, PassiveIdAssigner passiveIdAssigner
 	)
 	{
-		Environment env = Environment.getShared();
-		boolean usePreV8NonStackableDecoding = false;
-		boolean usePreV11DamageDecoding = false;
-		DeserializationContext context = new DeserializationContext(env
-			, inBuffer
-			, currentGameMillis
-			, usePreV8NonStackableDecoding
-			, usePreV11DamageDecoding
-		);
-		
 		CuboidData cuboid = _readCuboid(address, context);
 		
 		// Load any creatures associated with the cuboid.
@@ -115,13 +103,13 @@ public class CuboidCodec
 		// Now, load any suspended mutations.
 		List<ScheduledMutation> pendingMutations = _readMutations(context);
 		// ... and any periodic mutations.
-		Map<BlockAddress, Long> periodicMutations = _readPeriodic(inBuffer);
+		Map<BlockAddress, Long> periodicMutations = _readPeriodic(context.buffer());
 		
 		// Passives are stored much like creatures.
 		List<PassiveEntity> passives = _readPassives(context, passiveIdAssigner);
 		
 		// This should be fully read (might remove this check if buffer usage changes).
-		Assert.assertTrue(!inBuffer.hasRemaining());
+		Assert.assertTrue(!context.buffer().hasRemaining());
 		
 		// The height map is ephemeral so it is built here.  Note that building this might be somewhat expensive.
 		CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
