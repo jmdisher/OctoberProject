@@ -53,10 +53,9 @@ public class CraftAspect
 		}
 		
 		// We will dynamically build the set of classifications but always start with the built-in.
-		Set<String> craftingClassifications = new HashSet<>();
-		craftingClassifications.add(CraftAspect.BUILT_IN);
+		Map<String, Set<Craft>> craftingByClassifications = new HashMap<>();
+		craftingByClassifications.put(CraftAspect.BUILT_IN, new HashSet<>());
 		
-		List<Craft> crafts = new ArrayList<>();
 		Map<String, Craft> craftByName = new HashMap<>();
 		
 		TabListReader.readEntireFile(new TabListReader.IParseCallbacks() {
@@ -75,8 +74,6 @@ public class CraftAspect
 					throw new TabListReader.TabListException("One classification required: \"" + name + "\"");
 				}
 				_name = name;
-				// Add this classification.
-				craftingClassifications.add(parameters[0]);
 				_classification = parameters[0];
 				_input = new HashMap<>();
 				_output = new ArrayList<>();
@@ -98,8 +95,14 @@ public class CraftAspect
 					index += 1;
 				}
 				Item[] output = _output.toArray((int size) -> new Item[size]);
-				Craft craft = new Craft((short)crafts.size(), _name, _classification, inputs, output, _millis);
-				crafts.add(craft);
+				Craft craft = new Craft((short)1, _name, _classification, inputs, output, _millis);
+				Set<Craft> oneClass = craftingByClassifications.get(_classification);
+				if (null == oneClass)
+				{
+					oneClass = new HashSet<>();
+					craftingByClassifications.put(_classification, oneClass);
+				}
+				oneClass.add(craft);
 				craftByName.put(_name, craft);
 				
 				_name = null;
@@ -170,31 +173,23 @@ public class CraftAspect
 			}
 		}, stream);
 		
-		return new CraftAspect(blocks, inventory, craftingClassifications, crafts, craftByName);
+		return new CraftAspect(blocks, inventory, craftingByClassifications, craftByName);
 	}
 
-	private final Set<String> _craftingClassifications;
+	private final Map<String, Set<Craft>> _craftingByClassifications;
 	private final Map<String, Craft> _craftByName;
 
-	/**
-	 * Since blocks are the non-negative item types, this helper exists to look them up by block type.
-	 */
-	public final Craft[] CRAFTING_OPERATIONS;
-
 	private CraftAspect(BlockAspect blocks
-			, InventoryEncumbrance inventory
-			, Set<String> craftingClassifications
-			, List<Craft> crafts
-			, Map<String, Craft> craftByName
+		, InventoryEncumbrance inventory
+		, Map<String, Set<Craft>> craftingByClassifications
+		, Map<String, Craft> craftByName
 	)
 	{
-		this.CRAFTING_OPERATIONS = crafts.toArray((int size) -> new Craft[size]);
-		
-		_craftingClassifications = craftingClassifications;
+		_craftingByClassifications = craftingByClassifications;
 		_craftByName = craftByName;
 		
 		// We never want to allow encumbrance to increase through crafting.
-		for (Craft craft : crafts)
+		for (Craft craft : craftByName.values())
 		{
 			int inputEncumbrance = 0;
 			for (Items oneInput : craft.input)
@@ -211,7 +206,7 @@ public class CraftAspect
 	}
 
 	/**
-	 * Looks up a crafting recipe by the ID assigned in the tablist file.  This is generally only useful for testing.
+	 * Looks up a crafting recipe by the ID assigned in the tablist file.
 	 * 
 	 * @param id The crafting recipe ID.
 	 * @return The crafting recipe.
@@ -232,7 +227,13 @@ public class CraftAspect
 	 */
 	public List<Craft> craftsForClassifications(Set<String> classifications)
 	{
-		return List.of(CRAFTING_OPERATIONS).stream().filter((Craft craft) -> classifications.contains(craft.classification)).toList();
+		Set<Craft> unionSet = new HashSet<>();
+		for (String classification : classifications)
+		{
+			Set<Craft> oneClass = _craftingByClassifications.get(classification);
+			unionSet.addAll(oneClass);
+		}
+		return unionSet.stream().toList();
 	}
 
 	/**
@@ -243,7 +244,7 @@ public class CraftAspect
 	 */
 	public boolean isCraftingClassification(String value)
 	{
-		return _craftingClassifications.contains(value);
+		return _craftingByClassifications.containsKey(value);
 	}
 
 

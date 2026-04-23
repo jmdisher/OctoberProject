@@ -937,33 +937,42 @@ public class CodecHelpers
 	private static Craft _readCraft(ByteBuffer buffer)
 	{
 		Environment env = Environment.getShared();
-		// Each craft has a numbered index.
-		short ordinal = buffer.getShort();
+		
+		// The Craft is serialized by its name, a small string (7-bit length or -1).
+		byte length = buffer.get();
 		Craft craft;
-		if (-1 == ordinal)
+		if (-1 == length)
 		{
 			// -1 is our "null"
 			craft = null;
 		}
 		else
 		{
-			craft = env.crafting.CRAFTING_OPERATIONS[ordinal];
+			// This is the length of the name.
+			byte[] utf8 = new byte[length];
+			buffer.get(utf8);
+			String id = new String(utf8, StandardCharsets.UTF_8);
+			craft = env.crafting.getCraftById(id);
 		}
 		return craft;
 	}
 
 	private static void _writeCraft(ByteBuffer buffer, Craft operation)
 	{
+		// The Craft is serialized by its name, a small string (7-bit length or -1).
 		// We will use -1 as a "null".
 		if (null == operation)
 		{
-			buffer.putShort((short) -1);
+			buffer.put((byte)-1);
 		}
 		else
 		{
-			// Each craft has a numbered index.
-			short ordinal = operation.number;
-			buffer.putShort(ordinal);
+			// Write the small string length and then content.
+			byte[] utf8 = operation.name.getBytes(StandardCharsets.UTF_8);
+			Assert.assertTrue(utf8.length > 0);
+			Assert.assertTrue(utf8.length <= Byte.MAX_VALUE);
+			buffer.put((byte)utf8.length);
+			buffer.put(utf8);
 		}
 	}
 

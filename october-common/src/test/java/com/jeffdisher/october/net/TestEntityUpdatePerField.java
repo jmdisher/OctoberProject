@@ -99,7 +99,7 @@ public class TestEntityUpdatePerField
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		update.serializeToNetworkBuffer(buffer);
-		Assert.assertEquals(14, buffer.position());
+		Assert.assertEquals(36, buffer.position());
 		buffer.flip();
 		EntityUpdatePerField read = EntityUpdatePerField.deserializeFromNetworkBuffer(buffer);
 		
@@ -134,7 +134,7 @@ public class TestEntityUpdatePerField
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		update.serializeToNetworkBuffer(buffer);
-		Assert.assertEquals(127, buffer.position());
+		Assert.assertEquals(149, buffer.position());
 		buffer.flip();
 		EntityUpdatePerField read = EntityUpdatePerField.deserializeFromNetworkBuffer(buffer);
 		
