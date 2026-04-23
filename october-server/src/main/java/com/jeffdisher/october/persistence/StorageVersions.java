@@ -69,8 +69,12 @@ public class StorageVersions
 	public static final int V11 = 11;
 
 	/**
+	 * Version 12 was used in v1.12 and earlier, and is supported.
+	 */
+	public static final int V12 = 12;
+
+	/**
 	 * The storage version used in the current development version (and usually the most recent release).
 	 */
-	public static final int CURRENT = 12;
-
+	public static final int CURRENT = 13;
 }

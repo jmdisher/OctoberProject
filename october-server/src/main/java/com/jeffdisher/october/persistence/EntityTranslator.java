@@ -51,6 +51,7 @@ public class EntityTranslator
 		Environment env = Environment.getShared();
 		boolean usePreV8NonStackableDecoding = (version <= StorageVersions.V7);
 		boolean usePreV11DamageDecoding = (version <= StorageVersions.V10);
+		// TODO:  Add support for cleaning old crafting data.
 		DeserializationContext context = new DeserializationContext(env
 			, inBuffer
 			, currentGameMillis
@@ -59,8 +60,9 @@ public class EntityTranslator
 		);
 		
 		SuspendedEntity result;
-		if ((StorageVersions.V11 == version)
-			|| (StorageVersions.V10 == version)
+		if ((StorageVersions.V10 == version)
+			|| (StorageVersions.V11 == version)
+			|| (StorageVersions.V12 == version)
 		)
 		{
 			// Do nothing special - just stops old versions from being broken.

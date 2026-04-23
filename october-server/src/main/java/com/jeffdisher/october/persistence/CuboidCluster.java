@@ -64,7 +64,13 @@ public class CuboidCluster
 		int version = buffer.getInt();
 		int[] sizes = new int[64];
 		
-		if (StorageVersions.CURRENT != version)
+		if ((StorageVersions.CURRENT == version)
+			|| (StorageVersions.V12 == version)
+		)
+		{
+			// This is a supported version (earlier versions didn't use the cluster and future versions are unknown).
+		}
+		else
 		{
 			throw new RuntimeException("UNSUPPORTED ENTITY STORAGE VERSION:  " + version);
 		}
