@@ -1,5 +1,6 @@
 package com.jeffdisher.october.aspects;
 
+import com.jeffdisher.october.block_movement.MovableBlockHelpers;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.CuboidLoaderHelpers;
@@ -102,6 +103,26 @@ public class LogicSpecialRegistry
 	public static final LogicAspect.IActiveFlagChangeCallback FLAG_CHANGE_CUBOID_LOADER = (TickProcessingContext context, IMutableBlockProxy mutable, AbsoluteLocation location, boolean isActive) ->
 	{
 		CuboidLoaderHelpers.didActiveFlagChange(context, mutable, location, isActive);
+	};
+
+	/**
+	 * An active change callback used by the block mover.  It pushes blocks when it becomes active and pulls it when it
+	 * becomes inactive.
+	 */
+	public static final LogicAspect.IActiveFlagChangeCallback FLAG_CHANGE_BLOCK_MOVER = (TickProcessingContext context, IMutableBlockProxy mutable, AbsoluteLocation location, boolean isActive) ->
+	{
+		// We need to use the block mover helper logic, depending on whether we became active (push) or inactive (pull).
+		Environment env = Environment.getShared();
+		FacingDirection facing = mutable.getOrientation();
+		// In both cases, we ignore the result.
+		if (isActive)
+		{
+			MovableBlockHelpers.didSchedulePushTransaction(env, context, location, facing);
+		}
+		else
+		{
+			MovableBlockHelpers.didSchedulePullTransaction(env, context, location, facing);
+		}
 	};
 
 

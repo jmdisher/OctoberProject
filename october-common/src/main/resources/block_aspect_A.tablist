@@ -1,6 +1,6 @@
 # The "ACTIVE" variant of the block_aspect.tablist file.  Any blocks listed here must also be in block_aspect.tablist
 # and these are the values which will be applied when in an active state.
-# If the block is NOT listed here, the defaults from block_aspect.tablist will be used even when in active state.
+# Note that all blocks which have an active state MUST be listed here.
 # NOTE:  ONLY the "viscosity" is honoured here, beyond just the mention of the block.  Others fields are ignored.
 
 op.gate	is_flammable
@@ -23,3 +23,5 @@ op.portal_keystone
 op.door	is_flammable
 	block_material	AXE
 	viscosity	0
+op.block_mover
+	block_material	PICKAXE
