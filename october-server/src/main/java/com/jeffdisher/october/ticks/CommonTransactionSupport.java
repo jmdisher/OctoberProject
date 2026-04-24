@@ -3,6 +3,7 @@ package com.jeffdisher.october.ticks;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -83,23 +84,58 @@ public class CommonTransactionSupport implements TickProcessingContext.ITransact
 			// Finally, we will check if there were any block updates which would invalidate this (this should logically
 			// go first but the current implementation is expensive so it goes last).
 			// TODO:  This should be replaced with a more locally-restricted algorithm instead of checking all updates.
-			Set<AbsoluteLocation> syntheticUpdateSources = new HashSet<>();
+			Map<CuboidAddress, Set<AbsoluteLocation>> syntheticUpdateSources = new HashMap<>();
 			for (AbsoluteLocation location : locations)
 			{
-				syntheticUpdateSources.add(location.getRelative(0, 0, -1));
-				syntheticUpdateSources.add(location.getRelative(0, 0, 1));
-				syntheticUpdateSources.add(location.getRelative(0, -1, 0));
-				syntheticUpdateSources.add(location.getRelative(0, 1, 0));
-				syntheticUpdateSources.add(location.getRelative(-1, 0, 0));
-				syntheticUpdateSources.add(location.getRelative(1, 0, 0));
+				_addBlockToMapSet(syntheticUpdateSources, location.getRelative(0, 0, -1));
+				_addBlockToMapSet(syntheticUpdateSources, location.getRelative(0, 0, 1));
+				_addBlockToMapSet(syntheticUpdateSources, location.getRelative(0, -1, 0));
+				_addBlockToMapSet(syntheticUpdateSources, location.getRelative(0, 1, 0));
+				_addBlockToMapSet(syntheticUpdateSources, location.getRelative(-1, 0, 0));
+				_addBlockToMapSet(syntheticUpdateSources, location.getRelative(1, 0, 0));
 			}
 			
 			// The match only persists if none of these blocks are expected to be the source of a block update (meaning
 			// the update will run against one of our selected block).
-			syntheticUpdateSources.retainAll(_materials.forceMissBlocksPreviousCache());
-			didMatch = syntheticUpdateSources.isEmpty();
+			Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress = _materials.modifiedBlocksByCuboidAddress();
+			boolean isNearUpdate = false;
+			for (Map.Entry<CuboidAddress, Set<AbsoluteLocation>> ent : syntheticUpdateSources.entrySet())
+			{
+				CuboidAddress address = ent.getKey();
+				if (modifiedBlocksByCuboidAddress.containsKey(address))
+				{
+					Set<AbsoluteLocation> neighbours = ent.getValue();
+					List<AbsoluteLocation> updateSources = modifiedBlocksByCuboidAddress.get(address);
+					for (AbsoluteLocation update : updateSources)
+					{
+						if (neighbours.contains(update))
+						{
+							isNearUpdate = true;
+							break;
+						}
+					}
+				}
+				if (isNearUpdate)
+				{
+					break;
+				}
+			}
+			
+			didMatch = !isNearUpdate;
 		}
 		return didMatch;
 	}
 
+
+	private static void _addBlockToMapSet(Map<CuboidAddress, Set<AbsoluteLocation>> map, AbsoluteLocation location)
+	{
+		CuboidAddress address = location.getCuboidAddress();
+		Set<AbsoluteLocation> set = map.get(address);
+		if (null == set)
+		{
+			set = new HashSet<>();
+			map.put(address, set);
+		}
+		set.add(location);
+	}
 }

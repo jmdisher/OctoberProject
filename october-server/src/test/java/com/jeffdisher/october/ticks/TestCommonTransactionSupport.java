@@ -151,6 +151,19 @@ public class TestCommonTransactionSupport
 		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = Map.of(address0, cuboid0
 			, address1, cuboid1
 		);
+		// We will assume that all of these updates are real block updates (not just flags, etc).
+		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress = new HashMap<>();
+		for (AbsoluteLocation loc : previouslyUpdatedLocations)
+		{
+			CuboidAddress address = loc.getCuboidAddress();
+			List<AbsoluteLocation> list = modifiedBlocksByCuboidAddress.get(address);
+			if (null == list)
+			{
+				list = new ArrayList<>();
+				modifiedBlocksByCuboidAddress.put(address, list);
+			}
+			list.add(loc);
+		}
 		return new TickMaterials(0L
 			, completedCuboids
 			, Map.of()
@@ -159,7 +172,7 @@ public class TestCommonTransactionSupport
 			, Map.of()
 			, Map.of()
 			, List.of()
-			, Map.of()
+			, modifiedBlocksByCuboidAddress
 			, Map.of()
 			, Map.of()
 			, Set.of()
