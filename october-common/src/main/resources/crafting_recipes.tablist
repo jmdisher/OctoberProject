@@ -234,6 +234,10 @@ op.portal_keystone	COMMON
 	input	op.portal_stone	op.portal_stone
 	output	op.portal_keystone
 	millis	8000
+op.block_mover	COMMON
+	input	op.stone_brick	op.plank	op.copper_ingot
+	output	op.block_mover
+	millis	8000
 
 # Fueled furnace crafting (referenced in station_registry for use furnaces, requiring fuel):
 op.furnace_logs_to_charcoal	FUELLED_FURNACE

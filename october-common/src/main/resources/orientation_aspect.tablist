@@ -14,3 +14,4 @@ op.or_gate
 op.not_gate
 op.sensor_inventory
 op.portal_keystone
+op.block_mover	allows_down

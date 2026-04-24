@@ -159,3 +159,5 @@ op.torch
 	block_material	AXE
 	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick	op.grass	op.basalt	op.copper_ore	op.diamond_ore	op.portal_stone	op.sand
 	viscosity	0
+op.block_mover
+	block_material	PICKAXE
