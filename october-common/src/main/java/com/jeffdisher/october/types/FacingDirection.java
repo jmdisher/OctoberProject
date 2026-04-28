@@ -10,15 +10,45 @@ import java.util.function.Function;
 public enum FacingDirection
 {
 	// North is the positive Y direction, which we consider the "default" orientation (hence 0).
-	NORTH(new int[] {1, 0, 0, 1}, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(0, 1, 0)),
+	NORTH(new int[] {1, 0, 0, 1}
+		, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(0, 1, 0)
+		, new byte[] {1, 0, 0
+			, 0, 1, 0
+			, 0, 0, 1
+		}
+	),
 	// West is the negative X direction.
-	WEST(new int[] {0, -1, 1, 0}, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(-1, 0, 0)),
+	WEST(new int[] {0, -1, 1, 0}
+		, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(-1, 0, 0)
+		, new byte[] {0, 1, 0
+			, -1, 0, 0
+			, 0, 0, 1
+		}
+	),
 	// South is the negative Y direction.
-	SOUTH(new int[] {-1, 0, 0, -1}, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(0, -1, 0)),
+	SOUTH(new int[] {-1, 0, 0, -1}
+		, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(0, -1, 0)
+		, new byte[] {0, -1, 0
+			, -1, 0, 0
+			, 0, 0, 1
+		}
+	),
 	// East is the positive X direction.
-	EAST(new int[] {0, 1, -1, 0}, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(1, 0, 0)),
-	// Down is the negative Z direction but rotation doesn't make sense for this direction.
-	DOWN(null, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(0, 0, -1)),
+	EAST(new int[] {0, 1, -1, 0}
+		, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(1, 0, 0)
+		, new byte[] {0, -1, 0
+			, 1, 0, 0
+			, 0, 0, 1
+		}
+	),
+	// Down is the negative Z direction but 2D rotation doesn't make sense for this direction.
+	DOWN(null
+		, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(0, 0, -1)
+		, new byte[] {1, 0, 0
+			, 0, 0, -1
+			, 0, 1, 0
+		}
+	),
 	;
 
 	/**
@@ -85,11 +115,16 @@ public enum FacingDirection
 
 	private final int[] _twoDRotationMatrix;
 	private final Function<AbsoluteLocation, AbsoluteLocation> _sinkLocation;
+	private final byte[] _inverse3DRotationMatrix;
 
-	private FacingDirection(int[] twoDRotationMatrix, Function<AbsoluteLocation, AbsoluteLocation> sinkLocation)
+	private FacingDirection(int[] twoDRotationMatrix
+		, Function<AbsoluteLocation, AbsoluteLocation> sinkLocation
+		, byte[] inverse3DRotationMatrix
+	)
 	{
 		_twoDRotationMatrix = twoDRotationMatrix;
 		_sinkLocation = sinkLocation;
+		_inverse3DRotationMatrix = inverse3DRotationMatrix;
 	}
 
 	/**
@@ -138,5 +173,60 @@ public enum FacingDirection
 			rotated = FacingDirection.values()[index];
 		}
 		return rotated;
+	}
+
+	/**
+	 * Returns a SubBlock which is internally rotated reverse by the receiver's direction.
+	 * 
+	 * @param input The SubBlock to rotate.
+	 * @return The rotated SubBlock.
+	 */
+	public SubBlock inverseRotateInSubBlock(SubBlock input)
+	{
+		// We need to rotate "within" the sub-block so rotate about the centre of it.
+		byte x = (byte) (input.x - 2);
+		if (x >= 0)
+		{
+			x += 1;
+		}
+		byte y = (byte) (input.y - 2);
+		if (y >= 0)
+		{
+			y += 1;
+		}
+		byte z = (byte) (input.z - 2);
+		if (z >= 0)
+		{
+			z += 1;
+		}
+		
+		int outX = (_inverse3DRotationMatrix[0] * x)
+			+ (_inverse3DRotationMatrix[1] * y)
+			+ (_inverse3DRotationMatrix[2] * z)
+		;
+		if (outX > 0)
+		{
+			outX -= 1;
+		}
+		int outY = (_inverse3DRotationMatrix[3] * x)
+			+ (_inverse3DRotationMatrix[4] * y)
+			+ (_inverse3DRotationMatrix[5] * z)
+		;
+		if (outY > 0)
+		{
+			outY -= 1;
+		}
+		int outZ = (_inverse3DRotationMatrix[6] * x)
+			+ (_inverse3DRotationMatrix[7] * y)
+			+ (_inverse3DRotationMatrix[8] * z)
+		;
+		if (outZ > 0)
+		{
+			outZ -= 1;
+		}
+		return SubBlock.fromInt(outX + 2
+			, outY + 2
+			, outZ + 2
+		);
 	}
 }
