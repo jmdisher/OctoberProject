@@ -7,6 +7,19 @@ import org.junit.Test;
 public class TestSubBlock
 {
 	@Test
+	public void basics()
+	{
+		SubBlock sub1 = SubBlock.base(new EntityLocation(0.1f, 1.3f, 2.7f));
+		SubBlock sub2 = SubBlock.fromInt(0, 1, 2);
+		SubBlock sub3 = SubBlock.base(new EntityLocation(0.1f, 1.8f, 2.7f));
+		Assert.assertEquals(sub1, sub2);
+		Assert.assertEquals(sub1.hashCode(), sub2.hashCode());
+		Assert.assertNotEquals(sub1, sub3);
+		Assert.assertNotEquals(sub1.hashCode(), sub3.hashCode());
+		Assert.assertEquals("SubBlock(0, 1, 2)", sub1.toString());
+	}
+
+	@Test
 	public void positiveLow()
 	{
 		EntityLocation location = new EntityLocation(0.1f, 1.3f, 2.7f);

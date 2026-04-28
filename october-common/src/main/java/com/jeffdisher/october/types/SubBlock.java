@@ -27,6 +27,19 @@ public class SubBlock
 		return new SubBlock(x, y, z);
 	}
 
+	/**
+	 * Creates a sub-block instance from raw inputs, constructed externally.
+	 * 
+	 * @param x The x-coordinate to use.
+	 * @param y The y-coordinate to use.
+	 * @param z The z-coordinate to use.
+	 * @return The SubBlock instance.
+	 */
+	public static SubBlock fromInt(int x, int y, int z)
+	{
+		return new SubBlock((byte)x, (byte)y, (byte)z);
+	}
+
 
 	public final byte x;
 	public final byte y;
@@ -45,5 +58,35 @@ public class SubBlock
 		this.x = x;
 		this.y = y;
 		this.z = z;
+	}
+
+	@Override
+	public boolean equals(Object obj)
+	{
+		boolean isEqual = false;
+		if (obj instanceof SubBlock)
+		{
+			SubBlock other = (SubBlock) obj;
+			isEqual = (this.x == other.x)
+				&& (this.y == other.y)
+				&& (this.z == other.z)
+			;
+		}
+		return isEqual;
+	}
+
+	@Override
+	public int hashCode()
+	{
+		return (this.z << 16)
+			| (this.y << 8)
+			| this.x
+		;
+	}
+
+	@Override
+	public String toString()
+	{
+		return String.format("SubBlock(%d, %d, %d)", this.x, this.y, this.z);
 	}
 }
