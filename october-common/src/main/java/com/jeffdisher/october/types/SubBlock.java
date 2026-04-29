@@ -60,6 +60,19 @@ public class SubBlock
 		this.z = z;
 	}
 
+	/**
+	 * Sub-block collision data is represented as a long bitvector per block.  This allows for any permutation of the
+	 * 64 sub-block locations to be represented.
+	 * This helper returns the mask to use to look up this location in that bitvector.
+	 * 
+	 * @return The mask used to look up whether this sub-block is solid in a sub-block bitvector.
+	 */
+	public long getMask()
+	{
+		int offset = (16 * this.z) + (4 * this.y) + this.x;
+		return 0x1L << offset;
+	}
+
 	@Override
 	public boolean equals(Object obj)
 	{
