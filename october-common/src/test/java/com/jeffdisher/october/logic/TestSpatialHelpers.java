@@ -425,23 +425,24 @@ public class TestSpatialHelpers
 			Assert.assertEquals(_isOnGround, cancelZ);
 		}
 		@Override
-		public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
+		public boolean isSolid(EntityLocation base, EntityVolume volume, boolean fromAbove)
 		{
 			List<AbsoluteLocation> locations = VolumeIterator.getAllInVolume(base, volume);
 			
-			float accumulated = 0.0f;
+			boolean isSolid = false;
 			for (AbsoluteLocation l : locations)
 			{
 				if (((1 == l.x()) && (1 == l.y())) || (l.z() >= 2))
 				{
-					// This is just 0.0f.
+					// This is our non-solid block.
 				}
 				else
 				{
-					accumulated = Math.max(accumulated, 1.0f);
+					isSolid = true;
+					break;
 				}
 			}
-			return accumulated;
+			return isSolid;
 		}
 	}
 }

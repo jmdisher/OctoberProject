@@ -339,11 +339,9 @@ public class EntityMovementHelpers
 	}
 
 
-	private static boolean _canOccupyLocation(EntityLocation movingStart, EntityVolume volume, IViscosityLookup helper, boolean fromAbove)
+	private static boolean _canOccupyLocation(EntityLocation movingStart, EntityVolume volume, IInteractiveHelper helper, boolean fromAbove)
 	{
-		float maxViscosity = helper.getMaxViscosityInVolume(movingStart, volume, fromAbove);
-		boolean canOccupy = (maxViscosity < 1.0f);
-		return canOccupy;
+		return !helper.isSolid(movingStart, volume, fromAbove);
 	}
 
 	private static void _interactiveEntityMoveNotStuck(EntityLocation start, EntityVolume volume, EntityLocation vectorToMove, IInteractiveHelper helper, boolean failZ)
@@ -603,27 +601,23 @@ public class EntityMovementHelpers
 	}
 
 
-	public static interface IViscosityLookup
+	/**
+	 * The interface used by interactiveEntityMove() in order to look up required information and return the final
+	 * result.
+	 */
+	public static interface IInteractiveHelper
 	{
 		/**
-		 * Gets the maximum viscosity of all blocks in the volume rooted at base (0.0f is no resistance while 1.0f is
-		 * fully solid).
+		 * Checks if there are any solid blocks in the area rooted at base of volume size.
 		 * 
 		 * @param base The base of the region to check.
 		 * @param volume The volume of the region to check.
 		 * @param fromAbove True if we are asking for viscosity while falling into the block, false for other
 		 * collisions.
-		 * @return The viscosity fraction (1.0f being solid).
+		 * @return True if there are ANY solid blocks intersecting this volume.
 		 */
-		public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove);
-	}
+		public boolean isSolid(EntityLocation base, EntityVolume volume, boolean fromAbove);
 
-	/**
-	 * The interface used by interactiveEntityMove() in order to look up required information and return the final
-	 * result.
-	 */
-	public static interface IInteractiveHelper extends IViscosityLookup
-	{
 		/**
 		 * The call issued by the interactive call to return all results instead of returning some kind of tuple.
 		 * 
@@ -684,9 +678,10 @@ public class EntityMovementHelpers
 			this.result = new HighLevelMovementResult(finalLocation, velocity, isOnGround, didCollide);
 		}
 		@Override
-		public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
+		public boolean isSolid(EntityLocation base, EntityVolume volume, boolean fromAbove)
 		{
-			return _reader.getMaxViscosityInVolume(base, volume, fromAbove);
+			float maxViscosity = _reader.getMaxViscosityInVolume(base, volume, fromAbove);
+			return 1.0f == maxViscosity;
 		}
 	}
 }

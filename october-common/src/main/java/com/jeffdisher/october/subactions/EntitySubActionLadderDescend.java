@@ -131,10 +131,11 @@ public class EntitySubActionLadderDescend<T extends IMutableMinimalEntity> imple
 			_reader = reader;
 		}
 		@Override
-		public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
+		public boolean isSolid(EntityLocation base, EntityVolume volume, boolean fromAbove)
 		{
 			// This is only used for ladder movement so we override this not to be from above, ever.
-			return _reader.getMaxViscosityInVolume(base, volume, false);
+			float maxViscosity = _reader.getMaxViscosityInVolume(base, volume, false);
+			return 1.0f == maxViscosity;
 		}
 		@Override
 		public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)

@@ -60,23 +60,30 @@ public class TestEntityMovementHelpers
 				Assert.assertTrue(cancelZ);
 			}
 			@Override
-			public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
+			public boolean isSolid(EntityLocation base, EntityVolume volume, boolean fromAbove)
 			{
 				List<AbsoluteLocation> locations = VolumeIterator.getAllInVolume(base, volume);
 				
-				float accumulated = 0.0f;
+				boolean isSolid = false;
 				for (AbsoluteLocation location : locations)
 				{
 					int x = location.x();
 					int y = location.y();
 					int z = location.z();
-					float one = (((1 == x) || (2 == x))
+					if (((1 == x) || (2 == x))
 						&& ((1 == y) || (2 == y))
 						&& ((1 == z) || (2 == z))
-					) ? 0.0f : 1.0f;
-					accumulated = Math.max(accumulated, one);
+					)
+					{
+						// This is our non-solid block.
+					}
+					else
+					{
+						isSolid = true;
+						break;
+					}
 				}
-				return accumulated;
+				return isSolid;
 			}
 		});
 	}
@@ -97,23 +104,30 @@ public class TestEntityMovementHelpers
 				Assert.assertTrue(cancelZ);
 			}
 			@Override
-			public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
+			public boolean isSolid(EntityLocation base, EntityVolume volume, boolean fromAbove)
 			{
 				List<AbsoluteLocation> locations = VolumeIterator.getAllInVolume(base, volume);
 				
-				float accumulated = 0.0f;
+				boolean isSolid = false;
 				for (AbsoluteLocation location : locations)
 				{
 					int x = location.x();
 					int y = location.y();
 					int z = location.z();
-					float one = (((1 == x) || (2 == x))
+					if (((1 == x) || (2 == x))
 						&& ((1 == y) || (2 == y))
 						&& ((1 == z) || (2 == z))
-					) ? 0.0f : 1.0f;
-					accumulated = Math.max(accumulated, one);
+					)
+					{
+						// This is our non-solid block.
+					}
+					else
+					{
+						isSolid = true;
+						break;
+					}
 				}
-				return accumulated;
+				return isSolid;
 			}
 		});
 	}
@@ -134,9 +148,9 @@ public class TestEntityMovementHelpers
 				Assert.assertFalse(cancelZ);
 			}
 			@Override
-			public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
+			public boolean isSolid(EntityLocation base, EntityVolume volume, boolean fromAbove)
 			{
-				return 0.0f;
+				return false;
 			}
 		});
 	}
@@ -193,9 +207,9 @@ public class TestEntityMovementHelpers
 				Assert.assertTrue(cancelZ);
 			}
 			@Override
-			public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
+			public boolean isSolid(EntityLocation base, EntityVolume volume, boolean fromAbove)
 			{
-				return 1.0f;
+				return true;
 			}
 		});
 	}
@@ -216,9 +230,10 @@ public class TestEntityMovementHelpers
 				Assert.assertTrue(cancelZ);
 			}
 			@Override
-			public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
+			public boolean isSolid(EntityLocation base, EntityVolume volume, boolean fromAbove)
 			{
-				return fromAbove ? 1.0f : 0.0f;
+				// Solid if entering the ladder from above.
+				return fromAbove;
 			}
 		});
 	}
@@ -333,14 +348,12 @@ public class TestEntityMovementHelpers
 				Assert.assertFalse(cancelZ);
 			}
 			@Override
-			public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
+			public boolean isSolid(EntityLocation base, EntityVolume volume, boolean fromAbove)
 			{
 				List<AbsoluteLocation> locations = VolumeIterator.getAllInVolume(base, volume);
 				
-				return locations.contains(block)
-					? 1.0f
-					: 0.0f
-				;
+				// We are solid if this volume contains the block.
+				return locations.contains(block);
 			}
 		});
 	}
@@ -363,9 +376,9 @@ public class TestEntityMovementHelpers
 				Assert.assertFalse(cancelZ);
 			}
 			@Override
-			public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
+			public boolean isSolid(EntityLocation base, EntityVolume volume, boolean fromAbove)
 			{
-				return 0.0f;
+				return false;
 			}
 		});
 	}
@@ -388,20 +401,20 @@ public class TestEntityMovementHelpers
 				Assert.assertTrue(cancelZ);
 			}
 			@Override
-			public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
+			public boolean isSolid(EntityLocation base, EntityVolume volume, boolean fromAbove)
 			{
 				List<AbsoluteLocation> locations = VolumeIterator.getAllInVolume(base, volume);
 				
-				float accumulated = 0.0f;
+				boolean isSolid = false;
 				for (AbsoluteLocation location : locations)
 				{
-					float one = (0 == location.z())
-						? 1.0f
-						: 0.0f
-					;
-					accumulated = Math.max(accumulated, one);
+					if (0 == location.z())
+					{
+						isSolid = true;
+						break;
+					}
 				}
-				return accumulated;
+				return isSolid;
 			}
 		});
 	}

@@ -325,9 +325,10 @@ public class SpatialHelpers
 			_reader = reader;
 		}
 		@Override
-		public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
+		public boolean isSolid(EntityLocation base, EntityVolume volume, boolean fromAbove)
 		{
-			return _reader.getMaxViscosityInVolume(base, volume, fromAbove);
+			float maxViscosity = _reader.getMaxViscosityInVolume(base, volume, fromAbove);
+			return 1.0f == maxViscosity;
 		}
 		@Override
 		public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)

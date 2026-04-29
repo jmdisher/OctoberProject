@@ -3837,9 +3837,10 @@ public class TestCommonChanges
 				);
 			}
 			@Override
-			public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
+			public boolean isSolid(EntityLocation base, EntityVolume volume, boolean fromAbove)
 			{
-				return reader.getMaxViscosityInVolume(base, volume, fromAbove);
+				float maxViscosity = reader.getMaxViscosityInVolume(base, volume, fromAbove);
+				return 1.0f == maxViscosity;
 			}
 		});
 		
