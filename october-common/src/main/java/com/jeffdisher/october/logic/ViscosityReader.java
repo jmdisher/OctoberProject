@@ -27,7 +27,7 @@ public class ViscosityReader
 		_blockLookup = blockLookup;
 	}
 
-	public float getMaxViscosityInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
+	public float getMaxStillViscosityInVolume(EntityLocation base, EntityVolume volume)
 	{
 		List<AbsoluteLocation> locations = VolumeIterator.getAllInVolume(base, volume);
 		Map<AbsoluteLocation, BlockProxy> map = _blockLookup.readBlockBatch(locations);
@@ -40,6 +40,8 @@ public class ViscosityReader
 		}
 		else
 		{
+			// In this case, we are always just considering the standing viscosity, not falling from above.
+			boolean fromAbove = false;
 			viscosity = 0.0f;
 			for (BlockProxy proxy : map.values())
 			{
@@ -48,5 +50,32 @@ public class ViscosityReader
 			}
 		}
 		return viscosity;
+	}
+
+	public boolean isSolidBlockInVolume(EntityLocation base, EntityVolume volume, boolean fromAbove)
+	{
+		List<AbsoluteLocation> locations = VolumeIterator.getAllInVolume(base, volume);
+		Map<AbsoluteLocation, BlockProxy> map = _blockLookup.readBlockBatch(locations);
+		
+		boolean isSolid;
+		if (map.size() < locations.size())
+		{
+			// We were missing something so just default to saying it is solid.
+			isSolid = true;
+		}
+		else
+		{
+			isSolid = false;
+			for (BlockProxy proxy : map.values())
+			{
+				float one = _env.blocks.getViscosityFraction(proxy.getBlock(), FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE), fromAbove);
+				if (1.0f == one)
+				{
+					isSolid = true;
+					break;
+				}
+			}
+		}
+		return isSolid;
 	}
 }

@@ -73,21 +73,6 @@ public class EntityMovementHelpers
 	}
 
 	/**
-	 * Looks up the maximum viscosity of any block occupied by the given volume rooted at entityBase.
-	 * 
-	 * @param reader A ViscosityReader to interpret blocks.
-	 * @param entityBase The base south-west-down corner of the space to check.
-	 * @param volume The volume of the space to check.
-	 * @return The maximum viscosity of any of the blocks in the requested space.
-	 */
-	public static float maxViscosityInEntityBlocks(ViscosityReader reader, EntityLocation entityBase, EntityVolume volume)
-	{
-		// In this case, we are just check where we stand, not falling.
-		boolean fromAbove = false;
-		return reader.getMaxViscosityInVolume(entityBase, volume, fromAbove);
-	}
-
-	/**
 	 * Used to check if the entity with volume at entityBase is intersecting a specific type of block based on
 	 * caller-defined criteria.
 	 * 
@@ -138,9 +123,7 @@ public class EntityMovementHelpers
 		, float seconds
 	)
 	{
-		// In this case, we are just check where we stand, not falling.
-		boolean fromAbove = false;
-		float startViscosity = reader.getMaxViscosityInVolume(startLocation, volume, fromAbove);
+		float startViscosity = reader.getMaxStillViscosityInVolume(startLocation, volume);
 		EntityLocation effectiveVelocity = _adjustVelocityForMovement(startVelocity, activeXMovement, activeYMovement, maxVelocityPerSecond, seconds, startViscosity);
 		
 		// Derive the effective movement vector for this action.
@@ -680,8 +663,7 @@ public class EntityMovementHelpers
 		@Override
 		public boolean isSolid(EntityLocation base, EntityVolume volume, boolean fromAbove)
 		{
-			float maxViscosity = _reader.getMaxViscosityInVolume(base, volume, fromAbove);
-			return 1.0f == maxViscosity;
+			return _reader.isSolidBlockInVolume(base, volume, fromAbove);
 		}
 	}
 }

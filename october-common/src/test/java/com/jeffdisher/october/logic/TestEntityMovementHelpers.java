@@ -1,7 +1,6 @@
 package com.jeffdisher.october.logic;
 
 import java.util.List;
-import java.util.Map;
 import java.util.function.Predicate;
 
 import org.junit.AfterClass;
@@ -153,42 +152,6 @@ public class TestEntityMovementHelpers
 				return false;
 			}
 		});
-	}
-
-	@Test
-	public void viscosity()
-	{
-		// Check the viscosity of a few different cuboids.
-		CuboidData topCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 1), ENV.special.AIR);
-		CuboidData middleCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), WATER_SOURCE);
-		CuboidData bottomCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
-		Map<CuboidAddress, CuboidData> map = Map.of(topCuboid.getCuboidAddress(), topCuboid
-			, middleCuboid.getCuboidAddress(), middleCuboid
-			, bottomCuboid.getCuboidAddress(), bottomCuboid
-		);
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			CuboidData cuboid = map.get(location.getCuboidAddress());
-			return (null != cuboid)
-				? BlockProxy.load(location.getBlockAddress(), cuboid)
-				: null
-			;
-		});
-		
-		EntityVolume volume = new EntityVolume(2.2f, 1.7f);
-		EntityLocation airLocation = new EntityLocation(0.0f, 0.0f, 40.0f);
-		EntityLocation waterLocation = new EntityLocation(0.0f, 0.0f, 20.0f);
-		EntityLocation stoneLocation = new EntityLocation(0.0f, 0.0f, -20.0f);
-		EntityLocation airWaterLocation = new EntityLocation(0.0f, 0.0f, 31.0f);
-		EntityLocation waterStoneLocation = new EntityLocation(0.0f, 0.0f, -1.0f);
-		EntityLocation airEdgeLocation = new EntityLocation(0.0f, 31.0f, 40.0f);
-		
-		ViscosityReader reader = new ViscosityReader(ENV, previousBlockLookUp);
-		Assert.assertEquals(0.0f, EntityMovementHelpers.maxViscosityInEntityBlocks(reader, airLocation, volume), 0.01f);
-		Assert.assertEquals(0.5f, EntityMovementHelpers.maxViscosityInEntityBlocks(reader, waterLocation, volume), 0.01f);
-		Assert.assertEquals(1.0f, EntityMovementHelpers.maxViscosityInEntityBlocks(reader, stoneLocation, volume), 0.01f);
-		Assert.assertEquals(0.5f, EntityMovementHelpers.maxViscosityInEntityBlocks(reader, airWaterLocation, volume), 0.01f);
-		Assert.assertEquals(1.0f, EntityMovementHelpers.maxViscosityInEntityBlocks(reader, waterStoneLocation, volume), 0.01f);
-		Assert.assertEquals(1.0f, EntityMovementHelpers.maxViscosityInEntityBlocks(reader, airEdgeLocation, volume), 0.01f);
 	}
 
 	@Test

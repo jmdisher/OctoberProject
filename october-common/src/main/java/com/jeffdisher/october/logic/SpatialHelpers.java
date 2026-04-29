@@ -28,9 +28,8 @@ public class SpatialHelpers
 	 */
 	public static boolean canExistInLocation(ViscosityReader reader, EntityLocation targetLocation, EntityVolume volume)
 	{
-		// Just check for solid viscosity in this space.
-		float viscosity = reader.getMaxViscosityInVolume(targetLocation, volume, false);
-		return (viscosity < 1.0f);
+		boolean isSolid = reader.isSolidBlockInVolume(targetLocation, volume, false);
+		return !isSolid;
 	}
 
 	/**
@@ -327,8 +326,7 @@ public class SpatialHelpers
 		@Override
 		public boolean isSolid(EntityLocation base, EntityVolume volume, boolean fromAbove)
 		{
-			float maxViscosity = _reader.getMaxViscosityInVolume(base, volume, fromAbove);
-			return 1.0f == maxViscosity;
+			return _reader.isSolidBlockInVolume(base, volume, fromAbove);
 		}
 		@Override
 		public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)

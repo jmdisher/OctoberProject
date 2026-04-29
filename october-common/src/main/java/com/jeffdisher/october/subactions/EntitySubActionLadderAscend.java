@@ -129,8 +129,7 @@ public class EntitySubActionLadderAscend<T extends IMutableMinimalEntity> implem
 		public boolean isSolid(EntityLocation base, EntityVolume volume, boolean fromAbove)
 		{
 			// This is only used for ladder movement so we override this not to be from above, ever.
-			float maxViscosity = _reader.getMaxViscosityInVolume(base, volume, false);
-			return 1.0f == maxViscosity;
+			return _reader.isSolidBlockInVolume(base, volume, false);
 		}
 		@Override
 		public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
