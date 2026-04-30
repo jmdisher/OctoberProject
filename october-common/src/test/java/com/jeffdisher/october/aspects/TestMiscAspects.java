@@ -203,4 +203,30 @@ public class TestMiscAspects
 		}
 		Assert.assertEquals(expectedMask, bits);
 	}
+
+	@Test
+	public void slabSubBlocks() throws Throwable
+	{
+		Block slab = ENV.blocks.fromItem(ENV.items.getItemById("op.stone_brick_slab"));
+		
+		Assert.assertNull(ENV.blocks.getSubBlocks(slab, true));
+		long bits = ENV.blocks.getSubBlocks(slab, false);
+		
+		// The slab has orientation so we expect it to fill the NORTH half of the block, so this can be correctly rotated.
+		long expectedMask = 0x0;
+		for (byte z = 0; z < SubBlock.SUB_BLOCK_EDGE; ++z)
+		{
+			for (byte y = 2; y < SubBlock.SUB_BLOCK_EDGE; ++y)
+			{
+				for (byte x = 0; x < SubBlock.SUB_BLOCK_EDGE; ++x)
+				{
+					SubBlock sub = SubBlock.fromInt(x, y, z);
+					expectedMask |= sub.getMask();
+				}
+			}
+		}
+		Assert.assertEquals(expectedMask, bits);
+		Assert.assertNotEquals(0L, bits | SubBlock.fromInt(0, 3, 0).getMask());
+		Assert.assertNotEquals(0L, bits | FacingDirection.DOWN.inverseRotateInSubBlock(SubBlock.fromInt(0, 0, 0)).getMask());
+	}
 }

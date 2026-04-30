@@ -15,3 +15,4 @@ op.not_gate
 op.sensor_inventory
 op.portal_keystone
 op.block_mover	allows_down
+op.stone_brick_slab	allows_down

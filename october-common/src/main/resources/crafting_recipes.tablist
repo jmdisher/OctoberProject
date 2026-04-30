@@ -238,6 +238,10 @@ op.block_mover	COMMON
 	input	op.stone_brick	op.plank	op.copper_ingot
 	output	op.block_mover
 	millis	8000
+op.stone_brick_slab	COMMON
+	input	op.stone_brick
+	output	op.stone_brick_slab	op.stone_brick_slab
+	millis	1000
 
 # Fueled furnace crafting (referenced in station_registry for use furnaces, requiring fuel):
 op.furnace_logs_to_charcoal	FUELLED_FURNACE

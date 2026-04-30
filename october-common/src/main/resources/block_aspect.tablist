@@ -164,3 +164,6 @@ op.torch
 	viscosity	0
 op.block_mover
 	block_material	PICKAXE
+op.stone_brick_slab
+	block_material	PICKAXE
+	sub_blocks	0xff00ff00ff00ff00
