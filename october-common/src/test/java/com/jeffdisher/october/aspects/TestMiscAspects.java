@@ -14,6 +14,7 @@ import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.DropChance;
 import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.SubBlock;
 
 
 public class TestMiscAspects
@@ -172,5 +173,34 @@ public class TestMiscAspects
 		Assert.assertEquals(LiquidRegistry.FLOW_WEAK, ENV.liquids.getFlowStrength(waterWeak));
 		Assert.assertEquals(LiquidRegistry.FLOW_STRONG, ENV.liquids.getFlowStrength(waterStrong));
 		Assert.assertEquals(LiquidRegistry.FLOW_SOURCE, ENV.liquids.getFlowStrength(waterSource));
+	}
+
+	@Test
+	public void bedSubBlocks() throws Throwable
+	{
+		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		Block bed = ENV.blocks.fromItem(ENV.items.getItemById("op.bed"));
+		
+		// Note that bed and stone are always null, when active, since they have no active variants.
+		Assert.assertNull(ENV.blocks.getSubBlocks(stone, true));
+		Assert.assertNull(ENV.blocks.getSubBlocks(bed, true));
+		
+		Assert.assertNull(ENV.blocks.getSubBlocks(stone, false));
+		long bits = ENV.blocks.getSubBlocks(bed, false);
+		
+		// We expect the mask to be the bottom 3/4 of the block.
+		long expectedMask = 0x0;
+		for (byte z = 0; z < 3; ++z)
+		{
+			for (byte y = 0; y < 4; ++y)
+			{
+				for (byte x = 0; x < 4; ++x)
+				{
+					SubBlock sub = SubBlock.fromInt(x, y, z);
+					expectedMask |= sub.getMask();
+				}
+			}
+		}
+		Assert.assertEquals(expectedMask, bits);
 	}
 }

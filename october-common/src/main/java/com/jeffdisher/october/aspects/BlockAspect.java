@@ -50,6 +50,7 @@ public class BlockAspect
 	private static final String SUB_SPECIAL_DROP = "special_drop";
 	private static final String SUB_BLOCK_MATERIAL = "block_material";
 	private static final String SUB_VISCOSITY = "viscosity";
+	private static final String SUB_SUB_BLOCKS = "sub_blocks";
 	private static final String SUB_DAMAGE = "damage";
 
 	/**
@@ -101,6 +102,8 @@ public class BlockAspect
 				, parser.isMultiBlock
 				, parser.nonSolidViscosity
 				, activeParser.nonSolidViscosity
+				, parser.subBlockBits
+				, activeParser.subBlockBits
 				, parser.blockDamage
 				, parser.specialBlockSupport
 				, parser.specialBlockPlacement
@@ -120,6 +123,8 @@ public class BlockAspect
 	private final Set<Block> _isMultiBlock;
 	private final Map<Block, Integer> _nonSolidViscosity;
 	private final Map<Block, Integer> _activeNonSolidViscosity;
+	private final Map<Block, Long> _subBlocksBits;
+	private final Map<Block, Long> _activeSubBlocksBits;
 	private final Map<Block, Integer> _blockDamage;
 	private final Map<Block, Set<Block>> _specialBlockSupport;
 	private final Map<Item, Block> _specialBlockPlacement;
@@ -138,6 +143,8 @@ public class BlockAspect
 			, Set<Block> isMultiBlock
 			, Map<Block, Integer> nonSolidViscosity
 			, Map<Block, Integer> activeNonSolidViscosity
+			, Map<Block, Long> subBlocksBits
+			, Map<Block, Long> activeSubBlocksBits
 			, Map<Block, Integer> blockDamage
 			, Map<Block, Set<Block>> specialBlockSupport
 			, Map<Item, Block> specialBlockPlacement
@@ -157,6 +164,8 @@ public class BlockAspect
 		_isMultiBlock = Collections.unmodifiableSet(isMultiBlock);
 		_nonSolidViscosity = Collections.unmodifiableMap(nonSolidViscosity);
 		_activeNonSolidViscosity = Collections.unmodifiableMap(activeNonSolidViscosity);
+		_subBlocksBits = Collections.unmodifiableMap(subBlocksBits);
+		_activeSubBlocksBits = Collections.unmodifiableMap(activeSubBlocksBits);
 		_blockDamage = Collections.unmodifiableMap(blockDamage);
 		_specialBlockSupport = Collections.unmodifiableMap(specialBlockSupport);
 		_specialBlockPlacement = Collections.unmodifiableMap(specialBlockPlacement);
@@ -257,6 +266,7 @@ public class BlockAspect
 	 */
 	public boolean canBreatheInBlock(Block block, boolean isActive)
 	{
+		// TODO:  Determine how to handle this when the block type has sub-block bits.
 		Map<Block, Integer> nonSolidViscosity = _nonSolidViscosityMap(isActive);
 		return (nonSolidViscosity.containsKey(block))
 				? (nonSolidViscosity.get(block) < SUFFOCATION_VISCOSITY)
@@ -273,6 +283,7 @@ public class BlockAspect
 	 */
 	public boolean canSwimInBlock(Block block, boolean isActive)
 	{
+		// TODO:  Determine how to handle this when the block type has sub-block bits.
 		Map<Block, Integer> nonSolidViscosity = _nonSolidViscosityMap(isActive);
 		return (nonSolidViscosity.containsKey(block))
 				? (nonSolidViscosity.get(block) >= SWIMMABLE_VISCOSITY)
@@ -290,6 +301,7 @@ public class BlockAspect
 	 */
 	public float getViscosityFraction(Block block, boolean isActive, boolean fromAbove)
 	{
+		// TODO:  Determine how to handle this when the block type has sub-block bits.
 		float viscosity;
 		if (_ladderType.contains(block))
 		{
@@ -305,6 +317,24 @@ public class BlockAspect
 			;
 		}
 		return viscosity;
+	}
+
+	/**
+	 * Returns an object containing the bitmask of solid SubBlock location inside this block or null, if it doesn't use
+	 * sub-blocks.
+	 * 
+	 * @param block The block to check.
+	 * @param isActive True if the active variant should be consulted, instead.
+	 * @return The SubBlock mask or null, if viscosity should be consulted, instead.
+	 */
+	public Long getSubBlocks(Block block, boolean isActive)
+	{
+		Map<Block, Long> map = isActive
+			? _activeSubBlocksBits
+			: _subBlocksBits
+		;
+		// We just return null if there isn't a sub-block mask for this block type.
+		return map.get(block);
 	}
 
 	/**
@@ -480,6 +510,7 @@ public class BlockAspect
 
 	private boolean _isSolid(Block block, boolean isActive)
 	{
+		// TODO:  Determine how to handle this when the block type has sub-block bits.
 		// Note that the _nonSolidViscosity ONLY contains non-solid blocks (< SOLID_VISCOSITY).
 		return !_nonSolidViscosityMap(isActive).containsKey(block);
 	}
@@ -500,6 +531,7 @@ public class BlockAspect
 		public Set<Block> isLadder  = new HashSet<>();
 		public Set<Block> hasGravity = new HashSet<>();
 		public Map<Block, Integer> nonSolidViscosity = new HashMap<>();
+		public Map<Block, Long> subBlockBits = new HashMap<>();
 		public Map<Block, Integer> blockDamage = new HashMap<>();
 		public Map<Block, Set<Block>> specialBlockSupport = new HashMap<>();
 		public Map<Item, Block> specialBlockPlacement = new HashMap<>();
@@ -662,11 +694,45 @@ public class BlockAspect
 			}
 			else if (SUB_VISCOSITY.equals(name))
 			{
+				if (this.subBlockBits.containsKey(_currentBlock))
+				{
+					throw new TabListReader.TabListException("Cannot specify both viscosity and sub_blocks");
+				}
+				
 				int viscosity = _readIntInRange(parameters, 0, SOLID_VISCOSITY, SUB_VISCOSITY);
 				if (viscosity < SOLID_VISCOSITY)
 				{
 					this.nonSolidViscosity.put(_currentBlock, viscosity);
 				}
+			}
+			else if (SUB_SUB_BLOCKS.equals(name))
+			{
+				if (this.nonSolidViscosity.containsKey(_currentBlock))
+				{
+					throw new TabListReader.TabListException("Cannot specify both viscosity and sub_blocks");
+				}
+				
+				if (1 != parameters.length)
+				{
+					throw new TabListReader.TabListException("Exactly one value required for sub_blocks");
+				}
+				
+				if (!parameters[0].startsWith("0x"))
+				{
+					throw new TabListReader.TabListException("Hex prefix of \"0x\" required for sub_blocks");
+				}
+				String stringValue = parameters[0].substring(2);
+				long value;
+				try
+				{
+					// Read the bit-vector.
+					value = Long.parseUnsignedLong(stringValue, 16);
+				}
+				catch (NumberFormatException e)
+				{
+					throw new TabListReader.TabListException("Invalid bit-pattern for sub_blocks: \"" + parameters[0] + "\"");
+				}
+				this.subBlockBits.put(_currentBlock, value);
 			}
 			else if (SUB_DAMAGE.equals(name))
 			{

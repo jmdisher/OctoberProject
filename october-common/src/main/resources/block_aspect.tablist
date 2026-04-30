@@ -20,6 +20,8 @@
 # special_drop means that the block drops as the given item, instead of itself, when broken.
 # viscosity is a number in [0..100] describing the resistance of the block (100 is default and means "solid" - lower
 #  numbers mean entities and items can exist in the block).  Values in the range [50..99] are considered "swimmable".
+# sub_blocks is a hex bit-pattern (starting with 0x) which describes the sub-block pattern within the block.  Note that
+#  this value and viscosity conflict as a block can only define at most one of these fields.
 # damage is a number in [0..100] indicating the amount of damage applied per damage tick to entities standing in this
 #  block.  Note that any value >0 will also destroy items.  Default is 0.
 #
@@ -155,6 +157,7 @@ op.enchanting_table
 op.bed	is_flammable
 	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick	op.grass	op.basalt	op.copper_ore	op.diamond_ore	op.portal_stone	op.sand
 	block_material	AXE
+	sub_blocks	0xffffffffffff
 op.torch
 	block_material	AXE
 	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick	op.grass	op.basalt	op.copper_ore	op.diamond_ore	op.portal_stone	op.sand
