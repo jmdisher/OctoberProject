@@ -47,36 +47,6 @@ public class SpatialHelpers
 	}
 
 	/**
-	 * Returns true if the given location is pressed directly against a solid block ceiling somewhere within its volume
-	 * or is stuck in a block (since stuck in a block can't move, they are "unable to move up").
-	 * 
-	 * @param reader Used to check viscosity of blocks in the world.
-	 * @param location The location where the entity is.
-	 * @param volume The volume of the entity.
-	 * @return True if the entity's head is pressed directly against at least one solid block.
-	 */
-	public static boolean isTouchingCeiling(ViscosityReader reader, EntityLocation location, EntityVolume volume)
-	{
-		// We will just use the EntityMovementHelpers for this, showing what happens when we move up.
-		_CollisionHelper helper = new _CollisionHelper(reader);
-		EntityMovementHelpers.interactiveEntityMove(location, volume, new EntityLocation(0.0f, 0.0f, 1.0f), helper);
-		// If we are still in the same place, we must be touching the ceiling.
-		return location.equals(helper.finalLocation);
-	}
-
-	/**
-	 * Returns true if the given coordinate is block-aligned.  This means that it will be close enough to a X.00f value
-	 * for us to assume that it _is_ that integer value.
-	 * 
-	 * @param coord The coordinate to check.
-	 * @return True if this is aligned.
-	 */
-	public static boolean isBlockAligned(float coord)
-	{
-		return _isBlockAligned(coord);
-	}
-
-	/**
 	 * The location of the entity's feet (the centre of their model, at the very bottom).
 	 * 
 	 * @param entity The entity.
@@ -85,17 +55,6 @@ public class SpatialHelpers
 	public static EntityLocation getCentreFeetLocation(IMutableMinimalEntity entity)
 	{
 		return _getCentreFeetLocation(entity);
-	}
-
-	/**
-	 * The block location where the entity's feet are located.
-	 * 
-	 * @param entity The entity.
-	 * @return The block where the bottom of the entity's feet are.
-	 */
-	public static AbsoluteLocation getBlockAtFeet(IMutableMinimalEntity entity)
-	{
-		return _getCentreFeetLocation(entity).getBlockLocation();
 	}
 
 	/**
@@ -248,12 +207,6 @@ public class SpatialHelpers
 		return result;
 	}
 
-
-	private static boolean _isBlockAligned(float coord)
-	{
-		// TODO:  This technique could have problems with numbers "close" to whole, so we probably want a minimum delta if rounding errors could appear here.
-		return (coord == (float)Math.round(coord));
-	}
 
 	private static boolean _isStandingOnGround(ViscosityReader reader, EntityLocation location, EntityVolume volume)
 	{
