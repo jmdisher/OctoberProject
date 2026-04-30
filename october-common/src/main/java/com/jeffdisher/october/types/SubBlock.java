@@ -38,9 +38,9 @@ public class SubBlock
 		float lx = location.x();
 		float ly = location.y();
 		float lz = location.z();
-		byte x = (byte)(SUB_BLOCK_EDGE_FLOAT * (lx - Math.floor(lx)));
-		byte y = (byte)(SUB_BLOCK_EDGE_FLOAT * (ly - Math.floor(ly)));
-		byte z = (byte)(SUB_BLOCK_EDGE_FLOAT * (lz - Math.floor(lz)));
+		byte x = _oneAxis(lx);
+		byte y = _oneAxis(ly);
+		byte z = _oneAxis(lz);
 		return new SubBlock(x, y, z);
 	}
 
@@ -55,6 +55,24 @@ public class SubBlock
 	public static SubBlock fromInt(int x, int y, int z)
 	{
 		return new SubBlock((byte)x, (byte)y, (byte)z);
+	}
+
+	/**
+	 * Returns the sub-block byte offset into the fractional component of the given value, as though it were one axis of
+	 * a 3D location.
+	 * 
+	 * @param value The one axis floating point location.
+	 * @return The byte offset into this sub-block by interpreting the fractional component.
+	 */
+	public static byte oneAxis(float value)
+	{
+		return _oneAxis(value);
+	}
+
+
+	private static byte _oneAxis(float value)
+	{
+		return (byte)(SUB_BLOCK_EDGE_FLOAT * (value - Math.floor(value)));
 	}
 
 

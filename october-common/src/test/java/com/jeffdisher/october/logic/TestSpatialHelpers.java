@@ -11,22 +11,26 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
+import com.jeffdisher.october.utils.Encoding;
 
 
 public class TestSpatialHelpers
@@ -345,6 +349,42 @@ public class TestSpatialHelpers
 			// We are just using this as a unit test, not a performance measurement, so just verify that it is correct.
 			Assert.assertTrue(SpatialHelpers.isStandingOnGround(reader, location, volume));
 		}
+	}
+
+	@Test
+	public void slabGeometry()
+	{
+		// Show how some of these basic helpers interpret the slab with its sub-block collision.
+		EntityLocation locationFloor = new EntityLocation(2.0f, 2.0f, 1.5f);
+		Block slab = ENV.blocks.fromItem(ENV.items.getItemById("op.stone_brick_slab"));
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		
+		// Create the floor data.
+		byte slabZ = 1;
+		CuboidGenerator.fillPlane(cuboid, slabZ, slab);
+		for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
+		{
+			for (byte x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
+			{
+				BlockAddress address = new BlockAddress(x, y, slabZ);
+				cuboid.setData7(AspectRegistry.ORIENTATION, address, FacingDirection.directionToByte(FacingDirection.DOWN));
+			}
+		}
+		
+		// Create the wall data.
+		EntityLocation locationWall = new EntityLocation(2.5f, 2.0f, 10.0f);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(2, 2, 9), STONE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(2, 2, 10), slab.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, BlockAddress.fromInt(2, 2, 10), FacingDirection.directionToByte(FacingDirection.WEST));
+		
+		// Now, verify these.
+		TickProcessingContext.IBlockFetcher blockTypeReader = ContextBuilder.buildFetcher((AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid));
+		ViscosityReader reader = new ViscosityReader(ENV, blockTypeReader);
+		Assert.assertTrue(SpatialHelpers.canExistInLocation(reader, locationFloor, VOLUME));
+		Assert.assertTrue(SpatialHelpers.canExistInLocation(reader, locationWall, VOLUME));
+		Assert.assertFalse(SpatialHelpers.canExistInLocation(reader, new EntityLocation(2.0f, 2.0f, 1.4f), VOLUME));
+		Assert.assertFalse(SpatialHelpers.canExistInLocation(reader, new EntityLocation(2.4f, 2.0f, 10.0f), VOLUME));
 	}
 
 

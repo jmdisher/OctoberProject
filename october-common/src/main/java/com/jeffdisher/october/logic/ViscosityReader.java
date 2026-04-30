@@ -7,8 +7,11 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.FacingDirection;
+import com.jeffdisher.october.types.SubBlock;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -42,12 +45,7 @@ public class ViscosityReader
 		{
 			// In this case, we are always just considering the standing viscosity, not falling from above.
 			boolean fromAbove = false;
-			viscosity = 0.0f;
-			for (BlockProxy proxy : map.values())
-			{
-				float one = _env.blocks.getViscosityFraction(proxy.getBlock(), FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE), fromAbove);
-				viscosity = Math.max(one, viscosity);
-			}
+			viscosity = _maxViscosityInVolume(map, base, volume, fromAbove);
 		}
 		return viscosity;
 	}
@@ -65,17 +63,77 @@ public class ViscosityReader
 		}
 		else
 		{
-			isSolid = false;
-			for (BlockProxy proxy : map.values())
+			float viscosity = _maxViscosityInVolume(map, base, volume, fromAbove);
+			isSolid = (1.0f == viscosity);
+		}
+		return isSolid;
+	}
+
+
+	private float _maxViscosityInVolume(Map<AbsoluteLocation, BlockProxy> loadedProxies, EntityLocation base, EntityVolume volume, boolean fromAbove)
+	{
+		float viscosity = 0.0f;
+		boolean isSolid = false;
+		
+		// We want to walk every sub-block within the volume.
+		float edgeX = base.x() + volume.width();
+		float edgeY = base.y() + volume.width();
+		float edgeZ = base.z() + volume.height();
+		for (Map.Entry<AbsoluteLocation, BlockProxy> elt : loadedProxies.entrySet())
+		{
+			BlockProxy proxy = elt.getValue();
+			Block block = proxy.getBlock();
+			boolean isActive = FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE);
+			
+			// Determine if we need to use sub-block collision.
+			Long mask = _env.blocks.getSubBlocks(block, isActive);
+			if (null != mask)
 			{
-				float one = _env.blocks.getViscosityFraction(proxy.getBlock(), FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE), fromAbove);
+				// We need to check the intersection of sub-blocks and look up their flags.
+				AbsoluteLocation loc = elt.getKey();
+				FacingDirection facing = proxy.getOrientation();
+				EntityLocation thisBase = loc.toEntityLocation();
+				EntityLocation thisBeyond = new EntityLocation(thisBase.x() + 0.99f, thisBase.y() + 0.99f, thisBase.z() + 0.99f);
+				byte minX = SubBlock.oneAxis(Math.max(thisBase.x(), base.x()));
+				byte minY = SubBlock.oneAxis(Math.max(thisBase.y(), base.y()));
+				byte minZ = SubBlock.oneAxis(Math.max(thisBase.z(), base.z()));
+				byte maxX = SubBlock.oneAxis(Math.min(thisBeyond.x(), edgeX));
+				byte maxY = SubBlock.oneAxis(Math.min(thisBeyond.y(), edgeY));
+				byte maxZ = SubBlock.oneAxis(Math.min(thisBeyond.z(), edgeZ));
+				for (byte z = minZ; !isSolid && (z <= maxZ); ++z)
+				{
+					for (byte y = minY; !isSolid && (y <= maxY); ++y)
+					{
+						for (byte x = minX; !isSolid && (x <= maxX); ++x)
+						{
+							long bit = facing.inverseRotateInSubBlock(SubBlock.fromInt(x, y, z)).getMask();
+							isSolid = (0L != (mask & bit));
+						}
+					}
+				}
+				if (isSolid)
+				{
+					break;
+				}
+			}
+			else
+			{
+				// No sub-blocks so just use normal viscosity.
+				float one = _env.blocks.getViscosityFraction(block, isActive, fromAbove);
 				if (1.0f == one)
 				{
 					isSolid = true;
 					break;
 				}
+				else
+				{
+					viscosity = Math.max(one, viscosity);
+				}
 			}
 		}
-		return isSolid;
+		return isSolid
+			? 1.0f
+			: viscosity
+		;
 	}
 }
