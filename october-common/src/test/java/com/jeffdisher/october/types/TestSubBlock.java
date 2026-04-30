@@ -69,11 +69,11 @@ public class TestSubBlock
 		Set<Long> masks = new HashSet<>();
 		long fullMask = 0xFFFFFFFFFFFFFFFFL;
 		long lastMask = 0L;
-		for (int z = 0; z < 4; ++z)
+		for (int z = 0; z < SubBlock.SUB_BLOCK_EDGE; ++z)
 		{
-			for (int y = 0; y < 4; ++y)
+			for (int y = 0; y < SubBlock.SUB_BLOCK_EDGE; ++y)
 			{
-				for (int x = 0; x < 4; ++x)
+				for (int x = 0; x < SubBlock.SUB_BLOCK_EDGE; ++x)
 				{
 					SubBlock sub = SubBlock.fromInt(x, y, z);
 					long mask = sub.getMask();

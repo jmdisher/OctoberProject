@@ -11,6 +11,23 @@ import com.jeffdisher.october.utils.Assert;
 public class SubBlock
 {
 	/**
+	 * The number of sub-blocks along the edge of a block.
+	 */
+	public static final int SUB_BLOCK_EDGE = 4;
+	/**
+	 * The float representation of SUB_BLOCK_EDGE.
+	 */
+	public static final float SUB_BLOCK_EDGE_FLOAT = SUB_BLOCK_EDGE;
+	/**
+	 * The number of sub-blocks covering one face of a block.
+	 */
+	public static final int SUB_BLOCK_FACE = SUB_BLOCK_EDGE * SUB_BLOCK_EDGE;
+	/**
+	 * Half the number of sub-blocks along the edge of a block.
+	 */
+	public static final int SUB_BLOCK_HALF_EDGE = SUB_BLOCK_EDGE / 2;
+
+	/**
 	 * Creates a sub-block instance from the fractional part of this base entity location.
 	 * 
 	 * @param location The base location to describe.
@@ -21,9 +38,9 @@ public class SubBlock
 		float lx = location.x();
 		float ly = location.y();
 		float lz = location.z();
-		byte x = (byte)(4.0f * (lx - Math.floor(lx)));
-		byte y = (byte)(4.0f * (ly - Math.floor(ly)));
-		byte z = (byte)(4.0f * (lz - Math.floor(lz)));
+		byte x = (byte)(SUB_BLOCK_EDGE_FLOAT * (lx - Math.floor(lx)));
+		byte y = (byte)(SUB_BLOCK_EDGE_FLOAT * (ly - Math.floor(ly)));
+		byte z = (byte)(SUB_BLOCK_EDGE_FLOAT * (lz - Math.floor(lz)));
 		return new SubBlock(x, y, z);
 	}
 
@@ -49,11 +66,11 @@ public class SubBlock
 	{
 		// We will only allow special factory methods to call this, directly.
 		Assert.assertTrue(x >= 0);
-		Assert.assertTrue(x <= 3);
+		Assert.assertTrue(x < SUB_BLOCK_EDGE);
 		Assert.assertTrue(y >= 0);
-		Assert.assertTrue(y <= 3);
+		Assert.assertTrue(y < SUB_BLOCK_EDGE);
 		Assert.assertTrue(z >= 0);
-		Assert.assertTrue(z <= 3);
+		Assert.assertTrue(z < SUB_BLOCK_EDGE);
 		
 		this.x = x;
 		this.y = y;
@@ -69,7 +86,7 @@ public class SubBlock
 	 */
 	public long getMask()
 	{
-		int offset = (16 * this.z) + (4 * this.y) + this.x;
+		int offset = (SUB_BLOCK_FACE * this.z) + (SUB_BLOCK_EDGE * this.y) + this.x;
 		return 0x1L << offset;
 	}
 

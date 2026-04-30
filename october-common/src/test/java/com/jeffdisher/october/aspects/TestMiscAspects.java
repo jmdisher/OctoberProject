@@ -190,11 +190,11 @@ public class TestMiscAspects
 		
 		// We expect the mask to be the bottom 3/4 of the block.
 		long expectedMask = 0x0;
-		for (byte z = 0; z < 3; ++z)
+		for (byte z = 0; z < (SubBlock.SUB_BLOCK_EDGE - 1); ++z)
 		{
-			for (byte y = 0; y < 4; ++y)
+			for (byte y = 0; y < SubBlock.SUB_BLOCK_EDGE; ++y)
 			{
-				for (byte x = 0; x < 4; ++x)
+				for (byte x = 0; x < SubBlock.SUB_BLOCK_EDGE; ++x)
 				{
 					SubBlock sub = SubBlock.fromInt(x, y, z);
 					expectedMask |= sub.getMask();

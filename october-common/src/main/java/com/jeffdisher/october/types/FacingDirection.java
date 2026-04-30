@@ -184,17 +184,17 @@ public enum FacingDirection
 	public SubBlock inverseRotateInSubBlock(SubBlock input)
 	{
 		// We need to rotate "within" the sub-block so rotate about the centre of it.
-		byte x = (byte) (input.x - 2);
+		byte x = (byte) (input.x - SubBlock.SUB_BLOCK_HALF_EDGE);
 		if (x >= 0)
 		{
 			x += 1;
 		}
-		byte y = (byte) (input.y - 2);
+		byte y = (byte) (input.y - SubBlock.SUB_BLOCK_HALF_EDGE);
 		if (y >= 0)
 		{
 			y += 1;
 		}
-		byte z = (byte) (input.z - 2);
+		byte z = (byte) (input.z - SubBlock.SUB_BLOCK_HALF_EDGE);
 		if (z >= 0)
 		{
 			z += 1;
@@ -224,9 +224,9 @@ public enum FacingDirection
 		{
 			outZ -= 1;
 		}
-		return SubBlock.fromInt(outX + 2
-			, outY + 2
-			, outZ + 2
+		return SubBlock.fromInt(outX + SubBlock.SUB_BLOCK_HALF_EDGE
+			, outY + SubBlock.SUB_BLOCK_HALF_EDGE
+			, outZ + SubBlock.SUB_BLOCK_HALF_EDGE
 		);
 	}
 }
