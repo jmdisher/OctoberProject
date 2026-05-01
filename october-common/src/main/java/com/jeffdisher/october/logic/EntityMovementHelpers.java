@@ -351,12 +351,9 @@ public class EntityMovementHelpers
 		float leadingZ  = (effectiveZ >  0.0f) ? edgeLocation.z() : start.z();
 		EntityLocation leadingPoint = new EntityLocation(leadingX, leadingY, leadingZ);
 		EntityLocation endOfVector = new EntityLocation(leadingX + effectiveX, leadingY + effectiveY, leadingZ + effectiveZ);
-		AbsoluteLocation leadingBlock1 = leadingPoint.getBlockLocation();
 		
 		// Find the first block intersection of this point moving in the effective vector.
-		RayCastHelpers.RayBlock collision = RayCastHelpers.findFirstCollision(leadingPoint, endOfVector, (AbsoluteLocation currentBlock) -> {
-			return !leadingBlock1.equals(currentBlock);
-		});
+		RayCastHelpers.RayBlock collision = RayCastHelpers.walkOneGridStep(leadingPoint, endOfVector);
 		// If we didn't collide, we are done.
 		boolean cancelX = false;
 		boolean cancelY = false;
@@ -457,10 +454,7 @@ public class EntityMovementHelpers
 			
 			leadingPoint = new EntityLocation(leadingX, leadingY, leadingZ);
 			endOfVector = new EntityLocation(leadingX + effectiveX, leadingY + effectiveY, leadingZ + effectiveZ);
-			AbsoluteLocation leadingBlock = leadingPoint.getBlockLocation();
-			collision = RayCastHelpers.findFirstCollision(leadingPoint, endOfVector, (AbsoluteLocation currentBlock) -> {
-				return !leadingBlock.equals(currentBlock);
-			});
+			collision = RayCastHelpers.walkOneGridStep(leadingPoint, endOfVector);
 		}
 		// If we didn't collide, we must have reached the end of the vector (make sure we get the position).
 		movingStart = new EntityLocation(movingStart.x() + effectiveX

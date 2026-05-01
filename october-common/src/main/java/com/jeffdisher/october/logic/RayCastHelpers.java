@@ -46,6 +46,41 @@ public class RayCastHelpers
 	}
 
 	/**
+	 * Similar to findFirstCollision, but is explicitly designed to walk from start to end until crossing into another
+	 * location in a 3D grid.
+	 * 
+	 * @param start The starting-point of the ray.
+	 * @param end The end-point of the ray.
+	 * @return The result containing the stop block (block we entered) and pre-stop block (block where we started).
+	 */
+	public static RayBlock walkOneGridStep(EntityLocation start, EntityLocation end)
+	{
+		_ResultBuilder<RayBlock> builder = (Axis collisionAxis
+				, List<AbsoluteLocation> path
+				, AbsoluteLocation stopBlock
+				, AbsoluteLocation preStopBlock
+				, float rayDistance
+		) -> {
+			return (null != collisionAxis)
+					? new RayBlock(stopBlock, preStopBlock, collisionAxis, rayDistance)
+					: null
+			;
+		};
+		// There is always a call before we loop so skip that one and fall out after the first iteration.
+		Predicate<AbsoluteLocation> stopPredicate = new Predicate<AbsoluteLocation>() {
+			private boolean _stopNext;
+			@Override
+			public boolean test(AbsoluteLocation arg0)
+			{
+				boolean stop = _stopNext;
+				_stopNext = true;
+				return stop;
+			}
+		};
+		return _findFirstCollision(builder, start, end, stopPredicate);
+	}
+
+	/**
 	 * Finds the sequence of blocks from start to end, inclusive, traced from their bottom-left-south corners.
 	 * 
 	 * @param start The start block.

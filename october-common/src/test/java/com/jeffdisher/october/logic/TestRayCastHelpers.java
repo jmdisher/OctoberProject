@@ -266,6 +266,26 @@ public class TestRayCastHelpers
 		Assert.assertEquals(0, id);
 	}
 
+	@Test
+	public void walkSingleStep() throws Throwable
+	{
+		// Show how we interpret single-step rays in various directions.
+		RayCastHelpers.RayBlock result = RayCastHelpers.walkOneGridStep(new EntityLocation(-2.1f, -3.1f, -4.1f), new EntityLocation(-2.2f, -3.3f, -4.4f));
+		Assert.assertNull(result);
+		
+		result = RayCastHelpers.walkOneGridStep(new EntityLocation(-2.0f, -3.0f, -4.0f), new EntityLocation(2.0f, 3.0f, 4.0f));
+		Assert.assertEquals(new AbsoluteLocation(-2, -3, -3), result.stopBlock());
+		Assert.assertEquals(new AbsoluteLocation(-2, -3, -4), result.preStopBlock());
+		Assert.assertEquals(RayCastHelpers.Axis.Z, result.collisionAxis());
+		Assert.assertEquals(1.35f, result.rayDistance(), 0.01f);
+		
+		result = RayCastHelpers.walkOneGridStep(new EntityLocation(-2.0f, -3.0f, -4.0f), new EntityLocation(2.0f, -3.0f, -4.0f));
+		Assert.assertEquals(new AbsoluteLocation(-1, -3, -4), result.stopBlock());
+		Assert.assertEquals(new AbsoluteLocation(-2, -3, -4), result.preStopBlock());
+		Assert.assertEquals(RayCastHelpers.Axis.X, result.collisionAxis());
+		Assert.assertEquals(1.00f, result.rayDistance(), 0.01f);
+	}
+
 
 	private static void _checkPathOneBlockStep(List<AbsoluteLocation> path)
 	{
