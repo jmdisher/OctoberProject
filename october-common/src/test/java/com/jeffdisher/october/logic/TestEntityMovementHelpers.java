@@ -19,8 +19,10 @@ import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
+import com.jeffdisher.october.utils.Encoding;
 
 
 public class TestEntityMovementHelpers
@@ -459,5 +461,98 @@ public class TestEntityMovementHelpers
 		Assert.assertEquals(new EntityLocation(1.0f, -2.0f, 3.0f), EntityMovementHelpers.saturateVectorAddition(new EntityLocation(0.0f, 0.0f, 0.0f), new EntityLocation(1.0f, -2.0f, 3.0f)));
 		Assert.assertEquals(new EntityLocation(1.0f, -2.0f, 3.0f), EntityMovementHelpers.saturateVectorAddition(new EntityLocation(1.0f, -2.0f, 3.0f), new EntityLocation(1.0f, -2.0f, 3.0f)));
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), EntityMovementHelpers.saturateVectorAddition(new EntityLocation(-1.0f, 2.0f, -3.0f), new EntityLocation(1.0f, -2.0f, 3.0f)));
+	}
+
+	@Test
+	public void walkOverSlabs()
+	{
+		Block slab = ENV.blocks.fromItem(ENV.items.getItemById("op.stone_brick_slab"));
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		
+		// Create the floor data.
+		byte slabZ = 0;
+		CuboidGenerator.fillPlane(cuboid, slabZ, slab);
+		for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
+		{
+			for (byte x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
+			{
+				BlockAddress address = new BlockAddress(x, y, slabZ);
+				cuboid.setData7(AspectRegistry.ORIENTATION, address, FacingDirection.directionToByte(FacingDirection.DOWN));
+			}
+		}
+		
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
+			return location.getCuboidAddress().equals(cuboid.getCuboidAddress())
+				? BlockProxy.load(location.getBlockAddress(), cuboid)
+				: null
+			;
+		});
+		
+		EntityLocation startLocation = new EntityLocation(1.0f, 1.0f, 0.5f);
+		EntityLocation startVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		EntityVolume volume = new EntityVolume(2.2f, 1.7f);
+		float activeXMovement = 0.4f;
+		float activeYMovement = 0.0f;
+		float maxVelocityPerSecond = 4.0f;
+		float seconds = 0.1f;
+		
+		ViscosityReader reader = new ViscosityReader(ENV, previousBlockLookUp);
+		EntityMovementHelpers.HighLevelMovementResult result = EntityMovementHelpers.commonMovementIdiom(reader
+			, startLocation
+			, startVelocity
+			, volume
+			, activeXMovement
+			, activeYMovement
+			, maxVelocityPerSecond
+			, seconds
+		);
+		
+		Assert.assertEquals(new EntityLocation(1.4f, 1.0f, 0.5f), result.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), result.velocity());
+		Assert.assertTrue(result.isOnGround());
+	}
+
+	@Test
+	public void walkNearSlabs()
+	{
+		Block slab = ENV.blocks.fromItem(ENV.items.getItemById("op.stone_brick_slab"));
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, slab);
+		
+		// Add a few slabs as a wall.
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 1), slab.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, BlockAddress.fromInt(0, 0, 1), FacingDirection.directionToByte(FacingDirection.WEST));
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 1, 1), slab.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, BlockAddress.fromInt(0, 1, 1), FacingDirection.directionToByte(FacingDirection.WEST));
+		
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
+			return location.getCuboidAddress().equals(cuboid.getCuboidAddress())
+				? BlockProxy.load(location.getBlockAddress(), cuboid)
+				: null
+			;
+		});
+		
+		EntityLocation startLocation = new EntityLocation(0.8f, 0.8f, 1.0f);
+		EntityLocation startVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		EntityVolume volume = new EntityVolume(2.2f, 1.7f);
+		float activeXMovement = -0.4f;
+		float activeYMovement = 0.0f;
+		float maxVelocityPerSecond = 4.0f;
+		float seconds = 0.1f;
+		
+		ViscosityReader reader = new ViscosityReader(ENV, previousBlockLookUp);
+		EntityMovementHelpers.HighLevelMovementResult result = EntityMovementHelpers.commonMovementIdiom(reader
+			, startLocation
+			, startVelocity
+			, volume
+			, activeXMovement
+			, activeYMovement
+			, maxVelocityPerSecond
+			, seconds
+		);
+		
+		Assert.assertEquals(new EntityLocation(0.5f, 0.8f, 1.0f), result.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), result.velocity());
+		Assert.assertTrue(result.isOnGround());
 	}
 }

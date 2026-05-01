@@ -10,6 +10,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.SubBlock;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -353,7 +354,7 @@ public class EntityMovementHelpers
 		EntityLocation endOfVector = new EntityLocation(leadingX + effectiveX, leadingY + effectiveY, leadingZ + effectiveZ);
 		
 		// Find the first block intersection of this point moving in the effective vector.
-		RayCastHelpers.RayBlock collision = RayCastHelpers.walkOneGridStep(leadingPoint, endOfVector);
+		RayCastHelpers.RayBlock collision = _runScaledCollision(leadingPoint, endOfVector);
 		// If we didn't collide, we are done.
 		boolean cancelX = false;
 		boolean cancelY = false;
@@ -454,7 +455,7 @@ public class EntityMovementHelpers
 			
 			leadingPoint = new EntityLocation(leadingX, leadingY, leadingZ);
 			endOfVector = new EntityLocation(leadingX + effectiveX, leadingY + effectiveY, leadingZ + effectiveZ);
-			collision = RayCastHelpers.walkOneGridStep(leadingPoint, endOfVector);
+			collision = _runScaledCollision(leadingPoint, endOfVector);
 		}
 		// If we didn't collide, we must have reached the end of the vector (make sure we get the position).
 		movingStart = new EntityLocation(movingStart.x() + effectiveX
@@ -575,6 +576,19 @@ public class EntityMovementHelpers
 			sum = saturatingAddend;
 		}
 		return sum;
+	}
+
+	private static RayCastHelpers.RayBlock _runScaledCollision(EntityLocation leadingPoint, EntityLocation endOfVector)
+	{
+		// We will scale the vectors for collision by the sub-block factor so that each step is a sub-block, not just a block.
+		// This requires that we also scale the raw distance, as well.
+		float scaleFactor = SubBlock.SUB_BLOCK_EDGE_FLOAT;
+		RayCastHelpers.RayBlock collision = RayCastHelpers.walkOneGridStep(leadingPoint.makeScaledInstance(scaleFactor), endOfVector.makeScaledInstance(scaleFactor));
+		return (null != collision) ? new RayCastHelpers.RayBlock(null
+			, null
+			, collision.collisionAxis()
+			, collision.rayDistance() / scaleFactor
+		) : null;
 	}
 
 
