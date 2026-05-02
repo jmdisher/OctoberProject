@@ -167,3 +167,12 @@ op.block_mover
 op.stone_brick_slab
 	block_material	PICKAXE
 	sub_blocks	0xff00ff00ff00ff00
+op.stone_brick_stair
+	block_material	PICKAXE
+	sub_blocks	0xff00ff00ffffffff
+op.wood_plank_slab
+	block_material	AXE
+	sub_blocks	0xff00ff00ff00ff00
+op.wood_plank_stair
+	block_material	AXE
+	sub_blocks	0xff00ff00ffffffff

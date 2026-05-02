@@ -229,4 +229,35 @@ public class TestMiscAspects
 		Assert.assertNotEquals(0L, bits | SubBlock.fromInt(0, 3, 0).getMask());
 		Assert.assertNotEquals(0L, bits | FacingDirection.DOWN.inverseRotateInSubBlock(SubBlock.fromInt(0, 0, 0)).getMask());
 	}
+
+	@Test
+	public void stairSubBlocks() throws Throwable
+	{
+		Block stair = ENV.blocks.fromItem(ENV.items.getItemById("op.wood_plank_stair"));
+		
+		Assert.assertNull(ENV.blocks.getSubBlocks(stair, true));
+		long bits = ENV.blocks.getSubBlocks(stair, false);
+		
+		// The stair has orientation so we expect it to fill the NORTH and DOWN halves of the block, so this can be correctly rotated.
+		long expectedMask = 0x0;
+		for (byte z = 0; z < SubBlock.SUB_BLOCK_EDGE; ++z)
+		{
+			for (byte y = 0; y < SubBlock.SUB_BLOCK_EDGE; ++y)
+			{
+				for (byte x = 0; x < SubBlock.SUB_BLOCK_EDGE; ++x)
+				{
+					boolean isNorth = (y >= 2);
+					boolean isDown = (z <= 1);
+					if (isNorth || isDown)
+					{
+						SubBlock sub = SubBlock.fromInt(x, y, z);
+						expectedMask |= sub.getMask();
+					}
+				}
+			}
+		}
+		Assert.assertEquals(expectedMask, bits);
+		Assert.assertNotEquals(0L, bits | SubBlock.fromInt(0, 1, 2).getMask());
+		Assert.assertNotEquals(0L, bits | FacingDirection.SOUTH.inverseRotateInSubBlock(SubBlock.fromInt(0, 2, 2)).getMask());
+	}
 }

@@ -18,3 +18,5 @@ op.chest	2000
 op.charcoal	8000
 op.coal_ore	8000
 op.coal	8000
+op.wood_plank_slab	500
+op.wood_plank_stair	1000

@@ -120,3 +120,6 @@ op.door	8
 op.enchanting_table	8
 op.block_mover	4
 op.stone_brick_slab	2
+op.stone_brick_stair	3
+op.wood_plank_slab	1
+op.wood_plank_stair	2

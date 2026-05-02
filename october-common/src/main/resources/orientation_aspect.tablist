@@ -16,3 +16,6 @@ op.sensor_inventory
 op.portal_keystone
 op.block_mover	allows_down
 op.stone_brick_slab	allows_down
+op.stone_brick_stair
+op.wood_plank_slab	allows_down
+op.wood_plank_stair

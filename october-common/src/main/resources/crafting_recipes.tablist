@@ -242,6 +242,18 @@ op.stone_brick_slab	COMMON
 	input	op.stone_brick
 	output	op.stone_brick_slab	op.stone_brick_slab
 	millis	1000
+op.stone_brick_stair	COMMON
+	input	op.stone_brick
+	output	op.stone_brick_stair
+	millis	2000
+op.wood_plank_slab	COMMON
+	input	op.plank
+	output	op.wood_plank_slab	op.wood_plank_slab
+	millis	1000
+op.wood_plank_stair	COMMON
+	input	op.plank
+	output	op.wood_plank_stair
+	millis	2000
 
 # Fueled furnace crafting (referenced in station_registry for use furnaces, requiring fuel):
 op.furnace_logs_to_charcoal	FUELLED_FURNACE
