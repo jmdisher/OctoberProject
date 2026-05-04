@@ -113,7 +113,7 @@ public class TestTickRunner_slow
 	{
 		// Create a cuboid of furnaces, load one with fuel and ingredients, and watch it craft.
 		int logsToConvert = 2;
-		int craftCharcoalMillis = (int)ENV.crafting.getCraftById("op.furnace_logs_to_charcoal").millisPerCraft;
+		int craftCharcoalMillis = (int)ENV.crafting.getCraftById("op.f000").millisPerCraft;
 		int craftCharcoalTicks = (int) (craftCharcoalMillis / MILLIS_PER_TICK);
 		int burnPlankMillis = ENV.fuel.millisOfFuel(PLANK_ITEM);
 		int planksAsFuel = (logsToConvert * craftCharcoalMillis) / burnPlankMillis;
@@ -259,7 +259,7 @@ public class TestTickRunner_slow
 	{
 		// Create a cuboid of furnaces, load one with fuel and ingredients, and watch it craft such that it will have extra time to burn out.
 		int logsToConvert = 1;
-		int craftCharcoalMillis = (int)ENV.crafting.getCraftById("op.furnace_logs_to_charcoal").millisPerCraft;
+		int craftCharcoalMillis = (int)ENV.crafting.getCraftById("op.f000").millisPerCraft;
 		int craftCharcoalTicks = (int) (craftCharcoalMillis / MILLIS_PER_TICK);
 		int burnCharcoalMillis = ENV.fuel.millisOfFuel(CHARCOAL_ITEM);
 		int burnCharcoalTicks = (int) (burnCharcoalMillis / MILLIS_PER_TICK);

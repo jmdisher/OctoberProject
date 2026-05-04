@@ -601,7 +601,7 @@ public class TestMovementAccumulator
 		// Enqueue a craft operation and run a standing iteration to see that it does set the local crafting operation but that the following tick, without continuing, abandons it.
 		long millisPerMove = millisPerTick;
 		currentTimeMillis += millisPerMove;
-		accumulator.enqueueSubAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.log_to_planks")), currentTimeMillis);
+		accumulator.enqueueSubAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.b000")), currentTimeMillis);
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(out.getSubAction() instanceof EntityChangeCraft);
@@ -1034,7 +1034,7 @@ public class TestMovementAccumulator
 		
 		// Enqueue a craft operation and run a standing iteration.
 		currentTimeMillis += (millisPerTick / 2L);
-		accumulator.enqueueSubAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.log_to_planks")), currentTimeMillis);
+		accumulator.enqueueSubAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.b000")), currentTimeMillis);
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
 		// We shouldn't see anything until we apply the accumulation.
@@ -1086,7 +1086,7 @@ public class TestMovementAccumulator
 		accumulator.clearAccumulation();
 		
 		// Try to craft something in the table, where normal validation that the sub-task is value will fail witout any accumulation.
-		accumulator.enqueueSubAction(new EntityChangeCraftInBlock(tableLocation, ENV.crafting.getCraftById("op.log_to_planks")), currentTimeMillis);
+		accumulator.enqueueSubAction(new EntityChangeCraftInBlock(tableLocation, ENV.crafting.getCraftById("op.b000")), currentTimeMillis);
 		currentTimeMillis += millisPerTick;
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);

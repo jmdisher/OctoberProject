@@ -202,7 +202,7 @@ public class TestCommonChanges
 	@Test
 	public void selection() throws Throwable
 	{
-		Craft logToPlanks = ENV.crafting.getCraftById("op.log_to_planks");
+		Craft logToPlanks = ENV.crafting.getCraftById("op.b000");
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		
@@ -504,7 +504,7 @@ public class TestCommonChanges
 	{
 		// We want to run a basic craft operation and observe that we start falling when it completes.
 		// (this will need to be adapted when the crafting system changes, later)
-		Craft logToPlanks = ENV.crafting.getCraftById("op.log_to_planks");
+		Craft logToPlanks = ENV.crafting.getCraftById("op.b000");
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(16.0f, 16.0f, 20.0f);
 		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
@@ -1693,8 +1693,8 @@ public class TestCommonChanges
 	public void craftHotbarClear() throws Throwable
 	{
 		// Handles the case where we need to clear the hotbar selections if we used up the last of them - test for the index we selected or another.
-		Craft logToPlanks = ENV.crafting.getCraftById("op.log_to_planks");
-		Craft stoneToBrick = ENV.crafting.getCraftById("op.stone_to_stone_brick");
+		Craft logToPlanks = ENV.crafting.getCraftById("op.b000");
+		Craft stoneToBrick = ENV.crafting.getCraftById("op.b001");
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		
@@ -1821,7 +1821,7 @@ public class TestCommonChanges
 	@Test
 	public void grindFlourInQuern() throws Throwable
 	{
-		Craft grindFlour = ENV.crafting.getCraftById("op.flour");
+		Craft grindFlour = ENV.crafting.getCraftById("op.g000");
 		Item wheatItem = ENV.items.getItemById("op.wheat_item");
 		Item flour = ENV.items.getItemById("op.flour");
 		MutableEntity newEntity = MutableEntity.createForTest(1);
@@ -2468,7 +2468,7 @@ public class TestCommonChanges
 	@Test
 	public void invalidCraft() throws Throwable
 	{
-		Craft logToPlanks = ENV.crafting.getCraftById("op.log_to_planks");
+		Craft logToPlanks = ENV.crafting.getCraftById("op.b000");
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		
@@ -2495,7 +2495,7 @@ public class TestCommonChanges
 	@Test
 	public void craftOperationNullDefault() throws Throwable
 	{
-		Craft logToPlanks = ENV.crafting.getCraftById("op.log_to_planks");
+		Craft logToPlanks = ENV.crafting.getCraftById("op.b000");
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
 		newEntity.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(IRON_SWORD_ITEM, Map.of(PropertyRegistry.DURABILITY, 5)));

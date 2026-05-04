@@ -135,7 +135,7 @@ public class TestCreativeInventory
 	public void craftInInventory() throws Throwable
 	{
 		Inventory inv = CreativeInventory.fakeInventory();
-		Craft craft = ENV.crafting.getCraftById("op.planks_to_crafting_table");
+		Craft craft = ENV.crafting.getCraftById("op.b002");
 		Assert.assertTrue(CraftAspect.canApply(craft, inv));
 	}
 }

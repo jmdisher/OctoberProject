@@ -93,13 +93,13 @@ public class TestEntityUpdatePerField
 	{
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		Entity first = mutable.freeze();
-		mutable.newLocalCraftOperation = new CraftOperation(ENV.crafting.getCraftById("op.stone_to_stone_brick"), 50L);
+		mutable.newLocalCraftOperation = new CraftOperation(ENV.crafting.getCraftById("op.b001"), 50L);
 		Entity second = mutable.freeze();
 		EntityUpdatePerField update = EntityUpdatePerField.update(first, second);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		update.serializeToNetworkBuffer(buffer);
-		Assert.assertEquals(36, buffer.position());
+		Assert.assertEquals(20, buffer.position());
 		buffer.flip();
 		EntityUpdatePerField read = EntityUpdatePerField.deserializeFromNetworkBuffer(buffer);
 		
@@ -127,14 +127,14 @@ public class TestEntityUpdatePerField
 		mutable.newFood = (byte)77;
 		mutable.newBreath = (byte)8;
 		mutable.newSpawn = new EntityLocation(14.1f, -22.5f, -5.6f);
-		mutable.newLocalCraftOperation = new CraftOperation(ENV.crafting.getCraftById("op.stone_to_stone_brick"), 50L);
+		mutable.newLocalCraftOperation = new CraftOperation(ENV.crafting.getCraftById("op.b001"), 50L);
 		mutable.chargeMillis = 1234;
 		Entity second = mutable.freeze();
 		EntityUpdatePerField update = EntityUpdatePerField.update(first, second);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		update.serializeToNetworkBuffer(buffer);
-		Assert.assertEquals(149, buffer.position());
+		Assert.assertEquals(133, buffer.position());
 		buffer.flip();
 		EntityUpdatePerField read = EntityUpdatePerField.deserializeFromNetworkBuffer(buffer);
 		
@@ -161,7 +161,7 @@ public class TestEntityUpdatePerField
 	public void completeCraft() throws Throwable
 	{
 		MutableEntity mutable = MutableEntity.createForTest(1);
-		Craft craft = ENV.crafting.getCraftById("op.stone_to_stone_brick");
+		Craft craft = ENV.crafting.getCraftById("op.b001");
 		mutable.newLocalCraftOperation = new CraftOperation(craft, craft.millisPerCraft - 50L);
 		Entity first = mutable.freeze();
 		mutable.newLocalCraftOperation = null;

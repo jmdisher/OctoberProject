@@ -2299,7 +2299,7 @@ public class TestCommonMutations
 		cuboid.setDataSpecial(AspectRegistry.FUELLED, furnaceLocation.getBlockAddress(), new FuelState(10, CHARCOAL_ITEM, Inventory.start(10).addStackable(CHARCOAL_ITEM, 1).finish()));
 		cuboid.setData15(AspectRegistry.BLOCK, craftingTableLocation.getBlockAddress(), craftingTableBlock.item().number());
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, craftingTableLocation.getBlockAddress(), Inventory.start(10).addStackable(STONE_ITEM, 2).finish());
-		cuboid.setDataSpecial(AspectRegistry.CRAFTING, craftingTableLocation.getBlockAddress(), new CraftOperation(ENV.crafting.getCraftById("op.stone_to_stone_brick"), 100L));
+		cuboid.setDataSpecial(AspectRegistry.CRAFTING, craftingTableLocation.getBlockAddress(), new CraftOperation(ENV.crafting.getCraftById("op.b001"), 100L));
 		cuboid.setData15(AspectRegistry.BLOCK, pedestalLocation.getBlockAddress(), pedestalBlock.item().number());
 		cuboid.setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, pedestalLocation.getBlockAddress(), ItemSlot.fromStack(new Items(CHARCOAL_ITEM, 3)));
 		
@@ -2369,7 +2369,7 @@ public class TestCommonMutations
 		Assert.assertEquals(CHARCOAL_ITEM, outputCuboid.getDataSpecial(AspectRegistry.FUELLED, furnaceLocation.getBlockAddress()).currentFuel());
 		Assert.assertEquals(craftingTableBlock.item().number(), outputCuboid.getData15(AspectRegistry.BLOCK, craftingTableLocation.getBlockAddress()));
 		Assert.assertEquals(2, outputCuboid.getDataSpecial(AspectRegistry.INVENTORY, craftingTableLocation.getBlockAddress()).getCount(STONE_ITEM));
-		Assert.assertEquals(ENV.crafting.getCraftById("op.stone_to_stone_brick"), outputCuboid.getDataSpecial(AspectRegistry.CRAFTING, craftingTableLocation.getBlockAddress()).selectedCraft());
+		Assert.assertEquals(ENV.crafting.getCraftById("op.b001"), outputCuboid.getDataSpecial(AspectRegistry.CRAFTING, craftingTableLocation.getBlockAddress()).selectedCraft());
 		Assert.assertEquals(100L, outputCuboid.getDataSpecial(AspectRegistry.CRAFTING, craftingTableLocation.getBlockAddress()).completedMillis());
 		Assert.assertEquals(pedestalBlock.item().number(), outputCuboid.getData15(AspectRegistry.BLOCK, pedestalLocation.getBlockAddress()));
 		Assert.assertEquals(ItemSlot.fromStack(new Items(CHARCOAL_ITEM, 3)), outputCuboid.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, pedestalLocation.getBlockAddress()));

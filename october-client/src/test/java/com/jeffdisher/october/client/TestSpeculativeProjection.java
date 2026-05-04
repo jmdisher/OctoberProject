@@ -1070,7 +1070,7 @@ public class TestSpeculativeProjection
 	public void craftPlanks()
 	{
 		// Test the in-inventory crafting operation.
-		Craft logToPlanks = ENV.crafting.getCraftById("op.log_to_planks");
+		Craft logToPlanks = ENV.crafting.getCraftById("op.b000");
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
@@ -1146,7 +1146,7 @@ public class TestSpeculativeProjection
 	public void craftBricksSelection()
 	{
 		// Test the in-inventory crafting operation.
-		Craft stoneToStoneBrick = ENV.crafting.getCraftById("op.stone_to_stone_brick");
+		Craft stoneToStoneBrick = ENV.crafting.getCraftById("op.b001");
 		CountingListener listener = new CountingListener();
 		// Start the entity with some stone and with them selected.
 		int entityId = 1;
@@ -1271,7 +1271,7 @@ public class TestSpeculativeProjection
 	public void placeAndUseTable()
 	{
 		// Test the in-inventory crafting operation.
-		Craft stoneToStoneBrick = ENV.crafting.getCraftById("op.stone_to_stone_brick");
+		Craft stoneToStoneBrick = ENV.crafting.getCraftById("op.b001");
 		CountingListener listener = new CountingListener();
 		int localEntityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(localEntityId, listener, MILLIS_PER_TICK);
@@ -1364,7 +1364,7 @@ public class TestSpeculativeProjection
 	public void craftFurnaceFailure()
 	{
 		// Test the in-inventory crafting operation.
-		Craft stoneBricksToFurnace = ENV.crafting.getCraftById("op.stone_bricks_to_furnace");
+		Craft stoneBricksToFurnace = ENV.crafting.getCraftById("op.c000");
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);

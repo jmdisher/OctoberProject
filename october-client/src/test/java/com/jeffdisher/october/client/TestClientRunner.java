@@ -276,10 +276,10 @@ public class TestClientRunner
 		
 		// Start crafting, but not with enough time to complete it.
 		currentTimeMillis += 100L;
-		runner.commonApplyEntityAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.log_to_planks")), currentTimeMillis);
+		runner.commonApplyEntityAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.b000")), currentTimeMillis);
 		runner.standStill(currentTimeMillis);
 		currentTimeMillis += 100L;
-		runner.commonApplyEntityAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.log_to_planks")), currentTimeMillis);
+		runner.commonApplyEntityAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.b000")), currentTimeMillis);
 		runner.standStill(currentTimeMillis);
 		// Verify that we now see this in the entity.
 		Assert.assertNotNull(projection.thisEntity.ephemeralShared().localCraftOperation());
@@ -428,7 +428,7 @@ public class TestClientRunner
 		
 		// Start crafting, but not with enough time to complete it (the table has 10x efficiency bonus).
 		currentTimeMillis += 50L;
-		runner.commonApplyEntityAction(new EntityChangeCraftInBlock(table, ENV.crafting.getCraftById("op.log_to_planks")), currentTimeMillis);
+		runner.commonApplyEntityAction(new EntityChangeCraftInBlock(table, ENV.crafting.getCraftById("op.b000")), currentTimeMillis);
 		currentTimeMillis += 70L;
 		runner.standStill(currentTimeMillis);
 		currentTimeMillis += 80L;
@@ -794,7 +794,7 @@ public class TestClientRunner
 		runnerList.runFullQueue(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
-		Craft craft = ENV.crafting.getCraftById("op.log_to_planks");
+		Craft craft = ENV.crafting.getCraftById("op.b000");
 		MutableEntity mutable = MutableEntity.createForTest(clientId);
 		mutable.newInventory.addAllItems(LOG_ITEM, 2);
 		mutable.newLocalCraftOperation = new CraftOperation(craft, craft.millisPerCraft - 50L);

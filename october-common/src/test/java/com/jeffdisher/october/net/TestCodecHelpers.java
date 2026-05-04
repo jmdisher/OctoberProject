@@ -189,7 +189,7 @@ public class TestCodecHelpers
 	public void craft() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		Craft test = ENV.crafting.getCraftById("op.log_to_planks");
+		Craft test = ENV.crafting.getCraftById("op.b000");
 		CodecHelpers.writeCraft(buffer, test);
 		buffer.flip();
 		Craft output = CodecHelpers.readCraft(buffer);
@@ -218,7 +218,7 @@ public class TestCodecHelpers
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutableEntity mutable = MutableEntity.createForTest(1);
-		mutable.newLocalCraftOperation = new CraftOperation(ENV.crafting.getCraftById("op.stone_to_stone_brick"), 50L);
+		mutable.newLocalCraftOperation = new CraftOperation(ENV.crafting.getCraftById("op.b001"), 50L);
 		Entity test = mutable.freeze();
 		CodecHelpers.writeEntityNetwork(buffer, test);
 		buffer.flip();

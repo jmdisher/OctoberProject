@@ -12,297 +12,297 @@
 # Note that the item ID references are against item_registry.tablist.
 
 # Built-in (craftable in inventory):
-op.log_to_planks	BUILT_IN
+op.b000	BUILT_IN
 	input	op.log
 	output	op.plank	op.plank
 	millis	1000
-op.stone_to_stone_brick	BUILT_IN
+op.b001	BUILT_IN
 	input	op.stone
 	output	op.stone_brick
 	millis	2000
-op.planks_to_crafting_table	BUILT_IN
+op.b002	BUILT_IN
 	input	op.plank	op.plank	op.plank	op.plank
 	output	op.crafting_table
 	millis	4000
-op.plank_to_stick	BUILT_IN
+op.b003	BUILT_IN
 	input	op.plank
 	output	op.stick	op.stick
 	millis	1000
-op.torch_from_charcoal	BUILT_IN
+op.b004	BUILT_IN
 	input	op.stick	op.charcoal
 	output	op.torch	op.torch	op.torch	op.torch
 	millis	1000
-op.torch_from_coal	BUILT_IN
+op.b005	BUILT_IN
 	input	op.stick	op.coal
 	output	op.torch	op.torch	op.torch	op.torch
 	millis	1000
-op.club	BUILT_IN
+op.b006	BUILT_IN
 	input	op.log
 	output	op.club
 	millis	500
-op.digging_stick	BUILT_IN
+op.b007	BUILT_IN
 	input	op.stick
 	output	op.digging_stick
 	millis	500
 
 # Common crafting (referenced in station_registry for use in crafting tables - note that these always have a multiplier applied to reduce time):
-op.stone_bricks_to_furnace	COMMON
+op.c000	COMMON
 	input	op.stone_brick	op.stone_brick	op.stone_brick	op.stone_brick
 	output	op.furnace
 	millis	8000
-op.lantern	COMMON
+op.c001	COMMON
 	input	op.iron_ingot	op.iron_ingot	op.charcoal
 	output	op.lantern
 	millis	4000
-op.iron_pickaxe	COMMON
+op.c002	COMMON
 	input	op.stick	op.iron_ingot
 	output	op.iron_pickaxe
 	millis	16000
-op.iron_shovel	COMMON
+op.c003	COMMON
 	input	op.stick	op.iron_ingot
 	output	op.iron_shovel
 	millis	12000
-op.iron_axe	COMMON
+op.c004	COMMON
 	input	op.stick	op.iron_ingot
 	output	op.iron_axe
 	millis	12000
-op.iron_sword	COMMON
+op.c005	COMMON
 	input	op.stick	op.iron_ingot	op.iron_ingot
 	output	op.iron_sword
 	millis	20000
-op.bucket_empty	COMMON
+op.c006	COMMON
 	input	op.iron_ingot
 	output	op.bucket_empty
 	millis	10000
-op.iron_helmet	COMMON
+op.c007	COMMON
 	input	op.iron_ingot	op.iron_ingot
 	output	op.iron_helmet
 	millis	20000
-op.iron_chestplate	COMMON
+op.c008	COMMON
 	input	op.iron_ingot	op.iron_ingot	op.iron_ingot	op.iron_ingot
 	output	op.iron_chestplate
 	millis	80000
-op.iron_greaves	COMMON
+op.c009	COMMON
 	input	op.iron_ingot	op.iron_ingot	op.iron_ingot
 	output	op.iron_greaves
 	millis	40000
-op.iron_boots	COMMON
+op.c010	COMMON
 	input	op.iron_ingot	op.iron_ingot
 	output	op.iron_boots
 	millis	20000
-op.chest	COMMON
+op.c011	COMMON
 	input	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank
 	output	op.chest
 	millis	8000
-op.gate	COMMON
+op.c012	COMMON
 	input	op.plank	op.plank	op.plank	op.plank
 	output	op.gate
 	millis	6000
-op.hopper	COMMON
+op.c013	COMMON
 	input	op.plank	op.plank	op.iron_ingot	op.iron_ingot
 	output	op.hopper
 	millis	10000
-op.switch	COMMON
+op.c014	COMMON
 	input	op.iron_ingot	op.stick
 	output	op.switch
 	millis	2000
-op.lamp	COMMON
+op.c015	COMMON
 	input	op.iron_ingot	op.iron_ingot	op.charcoal
 	output	op.lamp
 	millis	4000
-op.logic_wire	COMMON
+op.c016	COMMON
 	input	op.copper_ingot
 	output	op.logic_wire	op.logic_wire	op.logic_wire
 	millis	1000
-op.quern	COMMON
+op.c017	COMMON
 	input	op.stone	op.stone	op.stone_brick
 	output	op.quern
 	millis	8000
-op.bed	COMMON
+op.c018	COMMON
 	input	op.plank	op.plank	op.plank	op.wheat_item	op.wheat_item
 	output	op.bed
 	millis	10000
-op.stone_knife	COMMON
+op.c019	COMMON
 	input	op.stick	op.stone
 	output	op.stone_knife
 	millis	8000
-op.stone_hatchet	COMMON
+op.c020	COMMON
 	input	op.stick	op.stone
 	output	op.stone_hatchet
 	millis	8000
-op.wooden_chisel	COMMON
+op.c021	COMMON
 	input	op.stick	op.log
 	output	op.wooden_chisel
 	millis	2000
-op.double_door_base	COMMON
+op.c022	COMMON
 	input	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank	op.iron_ingot	op.iron_ingot
 	output	op.double_door_base
 	millis	16000
-op.stone_hoe	COMMON
+op.c023	COMMON
 	input	op.stick	op.stick	op.stone
 	output	op.stone_hoe
 	millis	8000
-op.emitter	COMMON
+op.c024	COMMON
 	input	op.copper_ingot	op.charcoal	op.stone
 	output	op.emitter	op.emitter
 	millis	4000
-op.diode	COMMON
+op.c025	COMMON
 	input	op.copper_ingot	op.charcoal	op.stone
 	output	op.diode	op.diode
 	millis	8000
-op.and_gate	COMMON
+op.c026	COMMON
 	input	op.copper_ingot	op.charcoal	op.stone
 	output	op.and_gate	op.and_gate
 	millis	8000
-op.or_gate	COMMON
+op.c027	COMMON
 	input	op.copper_ingot	op.charcoal	op.stone
 	output	op.or_gate	op.or_gate
 	millis	8000
-op.not_gate	COMMON
+op.c028	COMMON
 	input	op.copper_ingot	op.charcoal	op.stone
 	output	op.not_gate	op.not_gate
 	millis	8000
-op.sensor_inventory	COMMON
+op.c029	COMMON
 	input	op.stone	op.emitter	op.diode
 	output	op.sensor_inventory
 	millis	16000
-op.ladder	COMMON
+op.c030	COMMON
 	input	op.stick	op.stick	op.stick
 	output	op.ladder
 	millis	2000
-op.pedestal	COMMON
+op.c031	COMMON
 	input	op.stone_brick	op.stone_brick
 	output	op.pedestal
 	millis	8000
-op.copper_pickaxe	COMMON
+op.c032	COMMON
 	input	op.stick	op.copper_ingot
 	output	op.copper_pickaxe
 	millis	16000
-op.copper_shovel	COMMON
+op.c033	COMMON
 	input	op.stick	op.copper_ingot
 	output	op.copper_shovel
 	millis	12000
-op.copper_axe	COMMON
+op.c034	COMMON
 	input	op.stick	op.copper_ingot
 	output	op.copper_axe
 	millis	12000
-op.copper_sword	COMMON
+op.c035	COMMON
 	input	op.stick	op.copper_ingot	op.copper_ingot
 	output	op.copper_sword
 	millis	20000
-op.copper_helmet	COMMON
+op.c036	COMMON
 	input	op.copper_ingot	op.copper_ingot
 	output	op.copper_helmet
 	millis	20000
-op.copper_chestplate	COMMON
+op.c037	COMMON
 	input	op.copper_ingot	op.copper_ingot	op.copper_ingot	op.copper_ingot
 	output	op.copper_chestplate
 	millis	80000
-op.copper_greaves	COMMON
+op.c038	COMMON
 	input	op.copper_ingot	op.copper_ingot	op.copper_ingot
 	output	op.copper_greaves
 	millis	40000
-op.copper_boots	COMMON
+op.c039	COMMON
 	input	op.copper_ingot	op.copper_ingot
 	output	op.copper_boots
 	millis	20000
-op.diamond_pickaxe	COMMON
+op.c040	COMMON
 	input	op.stick	op.iron_ingot	op.diamond
 	output	op.diamond_pickaxe
 	millis	32000
-op.diamond_shovel	COMMON
+op.c041	COMMON
 	input	op.stick	op.iron_ingot	op.diamond
 	output	op.diamond_shovel
 	millis	24000
-op.diamond_axe	COMMON
+op.c042	COMMON
 	input	op.stick	op.iron_ingot	op.diamond
 	output	op.diamond_axe
 	millis	24000
-op.diamond_sword	COMMON
+op.c043	COMMON
 	input	op.stick	op.iron_ingot	op.iron_ingot	op.diamond
 	output	op.diamond_sword
 	millis	40000
-op.door	COMMON
+op.c044	COMMON
 	input	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank
 	output	op.door
 	millis	8000
-op.enchanting_table	COMMON
+op.c045	COMMON
 	input	op.basalt	op.stone_brick	op.stone_brick	op.stone_brick	op.stone_brick
 	output	op.enchanting_table
 	millis	16000
-op.portal_keystone	COMMON
+op.c046	COMMON
 	input	op.portal_stone	op.portal_stone
 	output	op.portal_keystone
 	millis	8000
-op.block_mover	COMMON
+op.c047	COMMON
 	input	op.stone_brick	op.plank	op.copper_ingot
 	output	op.block_mover
 	millis	8000
-op.stone_brick_slab	COMMON
+op.c048	COMMON
 	input	op.stone_brick
 	output	op.stone_brick_slab	op.stone_brick_slab
 	millis	1000
-op.stone_brick_stair	COMMON
+op.c049	COMMON
 	input	op.stone_brick
 	output	op.stone_brick_stair
 	millis	2000
-op.wood_plank_slab	COMMON
+op.c050	COMMON
 	input	op.plank
 	output	op.wood_plank_slab	op.wood_plank_slab
 	millis	1000
-op.wood_plank_stair	COMMON
+op.c051	COMMON
 	input	op.plank
 	output	op.wood_plank_stair
 	millis	2000
 
 # Fueled furnace crafting (referenced in station_registry for use furnaces, requiring fuel):
-op.furnace_logs_to_charcoal	FUELLED_FURNACE
+op.f000	FUELLED_FURNACE
 	input	op.log
 	output	op.charcoal
 	millis	1000
-op.furnace_smelt_iron	FUELLED_FURNACE
+op.f001	FUELLED_FURNACE
 	input	op.iron_ore
 	output	op.iron_ingot
 	millis	2000
-op.furnace_smelt_iron_dust	FUELLED_FURNACE
+op.f002	FUELLED_FURNACE
 	input	op.iron_dust	op.iron_dust
 	output	op.iron_ingot
 	millis	2000
-op.bread	FUELLED_FURNACE
+op.f003	FUELLED_FURNACE
 	input	op.flour
 	output	op.bread
 	millis	1000
-op.furnace_cook_steak	FUELLED_FURNACE
+op.f004	FUELLED_FURNACE
 	input	op.beef
 	output	op.steak
 	millis	1000
-op.furnace_smelt_copper	FUELLED_FURNACE
+op.f005	FUELLED_FURNACE
 	input	op.copper_ore
 	output	op.copper_ingot
 	millis	1000
-op.furnace_smelt_copper_dust	FUELLED_FURNACE
+op.f006	FUELLED_FURNACE
 	input	op.copper_dust	op.copper_dust
 	output	op.copper_ingot
 	millis	1000
 
 # Grinding crafting (referenced in station_registry for use in querns):
-op.flour	GRINDING
+op.g000	GRINDING
 	input	op.wheat_item
 	output	op.flour
 	millis	2000
-op.iron_dust	GRINDING
+op.g001	GRINDING
 	input	op.iron_ore
 	output	op.iron_dust	op.iron_dust	op.iron_dust
 	millis	4000
-op.fertilizer_from_wheat	GRINDING
+op.g002	GRINDING
 	input	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.charcoal
 	output	op.fertilizer	op.fertilizer
 	millis	4000
-op.fertilizer_from_carrot	GRINDING
+op.g003	GRINDING
 	input	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.charcoal
 	output	op.fertilizer	op.fertilizer
 	millis	4000
-op.copper_dust	GRINDING
+op.g004	GRINDING
 	input	op.copper_ore
 	output	op.copper_dust	op.copper_dust	op.copper_dust
 	millis	2000
