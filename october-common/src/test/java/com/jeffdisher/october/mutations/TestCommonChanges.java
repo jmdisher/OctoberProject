@@ -3729,12 +3729,20 @@ public class TestCommonChanges
 		
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = startLocation;
-		// TODO:  Wrap this into a simple move.
-		boolean didApply = stepUp.applyChange(context, newEntity);
+		EntityActionSimpleMove<IMutablePlayerEntity> action = new EntityActionSimpleMove<>(-0.8f
+			, 0.0f
+			, EntityActionSimpleMove.Intensity.RUNNING
+			, (byte)5
+			, (byte)6
+			, stepUp
+		);
+		boolean didApply = action.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
-		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 1.5f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.98f), newEntity.newVelocity);
-		Assert.assertEquals(EntityActionPeriodic.ENERGY_COST_PER_STEP_UP, newEntity.newEnergyDeficit);
+		Assert.assertEquals(new EntityLocation(4.5f, 5.0f, 1.5f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.newVelocity);
+		Assert.assertEquals(EntityActionPeriodic.ENERGY_COST_PER_TICK_RUNNING + EntityActionPeriodic.ENERGY_COST_PER_STEP_UP, newEntity.newEnergyDeficit);
+		Assert.assertEquals(5, newEntity.newYaw);
+		Assert.assertEquals(6, newEntity.newPitch);
 	}
 
 

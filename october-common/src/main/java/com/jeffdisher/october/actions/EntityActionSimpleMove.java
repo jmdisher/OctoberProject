@@ -64,6 +64,7 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 		EntitySubActionType.POP_OUT,
 		EntitySubActionType.CHARGE_WEAPON,
 		EntitySubActionType.TRIGGER_CHARGED_WEAPON,
+		EntitySubActionType.STEP_UP,
 		EntitySubActionType.TESTING_ONLY,
 	}).collect(Collectors.toSet());
 
@@ -129,6 +130,7 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 				+ (_activeY * _activeY)
 			) <= (maxMoveInTick * maxMoveInTick * FUDGE_FACTOR)
 		;
+		EntityLocation initialLocation = newEntity.getLocation();
 		
 		boolean forceFailure = !isValidMovement;
 		if (!forceFailure)
@@ -167,11 +169,11 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 			EntityLocation envVector = EntityMovementHelpers.getEnvironmentalVector(env, context.previousBlockLookUp, startLocation, volume);
 			EntityLocation preVelocity = EntityMovementHelpers.saturateVectorAddition(startVelocity, envVector);
 			
-			// We want to reduce active movement to 50% if not on solid ground.
+			// We want to reduce active movement to 50% if not on solid ground (based on where we started, not changes made by sub-actions).
 			float activeX = _activeX;
 			float activeY = _activeY;
 			ViscosityReader reader = new ViscosityReader(env, context.previousBlockLookUp);
-			if (!SpatialHelpers.isStandingOnGround(reader, startLocation, volume))
+			if (!SpatialHelpers.isStandingOnGround(reader, initialLocation, volume))
 			{
 				activeX /= 2.0f;
 				activeY /= 2.0f;
