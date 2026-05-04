@@ -57,6 +57,11 @@ public class EntityActionPeriodic implements IEntityAction<IMutablePlayerEntity>
 	 */
 	public static final int ENERGY_COST_PER_JUMP = 300;
 	/**
+	 * The energy cost to step up, once.
+	 * This is similar to jumping, but less.
+	 */
+	public static final int ENERGY_COST_PER_STEP_UP = ENERGY_COST_PER_JUMP / 4;
+	/**
 	 * The energy cost to "swim up", once.
 	 */
 	public static final int ENERGY_COST_PER_SWIM_UP = 200;

@@ -28,6 +28,7 @@ import com.jeffdisher.october.subactions.EntitySubActionPickUpPassive;
 import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
 import com.jeffdisher.october.subactions.EntitySubActionReleaseWeapon;
 import com.jeffdisher.october.subactions.EntitySubActionRequestSwapSpecialSlot;
+import com.jeffdisher.october.subactions.EntitySubActionStepUp;
 import com.jeffdisher.october.subactions.EntitySubActionTravelViaBlock;
 import com.jeffdisher.october.subactions.MutationEntityPushItems;
 import com.jeffdisher.october.subactions.MutationEntityRequestItemPickUp;
@@ -84,6 +85,7 @@ public class EntitySubActionCodec
 		_CODEC_TABLE[EntitySubActionPopOutOfBlock.TYPE.ordinal()] = (DeserializationContext context) -> EntitySubActionPopOutOfBlock.deserializeFromContext(context);
 		_CODEC_TABLE[EntitySubActionChargeWeapon.TYPE.ordinal()] = (DeserializationContext context) -> EntitySubActionChargeWeapon.deserializeFromContext(context);
 		_CODEC_TABLE[EntitySubActionReleaseWeapon.TYPE.ordinal()] = (DeserializationContext context) -> EntitySubActionReleaseWeapon.deserializeFromContext(context);
+		_CODEC_TABLE[EntitySubActionStepUp.TYPE.ordinal()] = (DeserializationContext context) -> EntitySubActionStepUp.deserializeFromContext(context);
 		_CODEC_TABLE[EntitySubActionType.TESTING_ONLY.ordinal()] = (DeserializationContext context) -> { throw Assert.unreachable(); };
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).

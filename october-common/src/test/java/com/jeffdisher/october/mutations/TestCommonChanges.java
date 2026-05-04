@@ -65,6 +65,7 @@ import com.jeffdisher.october.subactions.EntitySubActionPickUpPassive;
 import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
 import com.jeffdisher.october.subactions.EntitySubActionReleaseWeapon;
 import com.jeffdisher.october.subactions.EntitySubActionRequestSwapSpecialSlot;
+import com.jeffdisher.october.subactions.EntitySubActionStepUp;
 import com.jeffdisher.october.subactions.EntitySubActionTravelViaBlock;
 import com.jeffdisher.october.subactions.MutationEntityPushItems;
 import com.jeffdisher.october.subactions.MutationEntityRequestItemPickUp;
@@ -3700,6 +3701,40 @@ public class TestCommonChanges
 		Assert.assertFalse(place.applyChange(context, newEntity));
 		Assert.assertEquals(1, newEntity.freeze().inventory().getCount(LOG_ITEM));
 		Assert.assertEquals(1, newEntity.getSelectedKey());
+	}
+
+	@Test
+	public void walkUpStairs()
+	{
+		// Show that attempting to walk toward stairs will have us climb the stairs instead of just being blocked by them.
+		EntityLocation startLocation = new EntityLocation(5.0f, 5.0f, 1.0f);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		Block stair = ENV.blocks.fromItem(ENV.items.getItemById("op.wood_plank_stair"));
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(4, 5, 1), stair.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, BlockAddress.fromInt(4, 5, 1), FacingDirection.directionToByte(FacingDirection.WEST));
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
+			.finish()
+		;
+		
+		// Create the step-up, as well as showing examples of where it wouldn't work.
+		ViscosityReader reader = new ViscosityReader(ENV, context.previousBlockLookUp);
+		EntitySubActionStepUp<IMutablePlayerEntity> stepUp = EntitySubActionStepUp.buildStepUpWithReader(reader, startLocation, ENV.creatures.PLAYER.volume(), -0.8f, 0.0f);
+		Assert.assertNotNull(stepUp);
+		Assert.assertNull(EntitySubActionStepUp.buildStepUpWithReader(reader, new EntityLocation(6.0f, 6.0f, 1.0f), ENV.creatures.PLAYER.volume(), -0.8f, 0.0f));
+		Assert.assertNull(EntitySubActionStepUp.buildStepUpWithReader(reader, new EntityLocation(6.0f, 6.0f, 2.0f), ENV.creatures.PLAYER.volume(), -0.8f, 0.0f));
+		Assert.assertNull(EntitySubActionStepUp.buildStepUpWithReader(reader, startLocation, ENV.creatures.PLAYER.volume(), 0.0f, 0.0f));
+		
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = startLocation;
+		// TODO:  Wrap this into a simple move.
+		boolean didApply = stepUp.applyChange(context, newEntity);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 1.5f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.98f), newEntity.newVelocity);
+		Assert.assertEquals(EntityActionPeriodic.ENERGY_COST_PER_STEP_UP, newEntity.newEnergyDeficit);
 	}
 
 

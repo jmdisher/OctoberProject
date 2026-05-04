@@ -47,6 +47,7 @@ public enum EntitySubActionType
 	POP_OUT,
 	CHARGE_WEAPON,
 	TRIGGER_CHARGED_WEAPON,
+	STEP_UP,
 	
 	/**
 	 * This testing type is never serialized so it should be kept at the end of the list.
