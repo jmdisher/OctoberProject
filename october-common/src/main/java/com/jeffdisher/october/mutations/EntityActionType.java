@@ -44,6 +44,7 @@ public enum EntityActionType
 	DEPRECATED_TOP_LEVEL_MOVEMENT,
 	SIMPLE_MOVE,
 	NUDGE_ENTITY,
+	CREATIVE_FLIGHT,
 	
 	/**
 	 * This testing type is never serialized so it should be kept at the end of the list.

@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.function.Function;
 
 import com.jeffdisher.october.actions.Deprecated_EntityAction;
+import com.jeffdisher.october.actions.EntityActionCreativeFlight;
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.actions.EntityActionOperatorSetCreative;
 import com.jeffdisher.october.actions.EntityActionOperatorSetLocation;
@@ -61,6 +62,7 @@ public class EntityActionCodec
 		_CODEC_TABLE[EntityActionType.DEPRECATED_TOP_LEVEL_MOVEMENT.ordinal()] = (DeserializationContext context) -> Deprecated_EntityAction.deserialize_TopLevelMovement(context);
 		_CODEC_TABLE[EntityActionSimpleMove.TYPE.ordinal()] = (DeserializationContext context) -> EntityActionSimpleMove.deserialize(context);
 		_CODEC_TABLE[EntityActionNudge.TYPE.ordinal()] = (DeserializationContext context) -> EntityActionNudge.deserialize(context);
+		_CODEC_TABLE[EntityActionCreativeFlight.TYPE.ordinal()] = (DeserializationContext context) -> EntityActionCreativeFlight.deserialize(context);
 		_CODEC_TABLE[EntityActionType.TESTING_ONLY.ordinal()] = (DeserializationContext context) -> { throw Assert.unreachable(); };
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).

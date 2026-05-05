@@ -15,6 +15,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.actions.EntityActionApplyItemToCreature;
+import com.jeffdisher.october.actions.EntityActionCreativeFlight;
 import com.jeffdisher.october.actions.EntityActionNudge;
 import com.jeffdisher.october.actions.EntityActionOperatorSetCreative;
 import com.jeffdisher.october.actions.EntityActionOperatorSetLocation;
@@ -3797,6 +3798,44 @@ public class TestCommonChanges
 		// We expect that the block will be placed and our selection and inventory will be cleared.
 		Assert.assertEquals(0, newEntity.freeze().inventory().sortedKeys().size());
 		Assert.assertEquals(Entity.NO_SELECTION, newEntity.getSelectedKey());
+	}
+
+	@Test
+	public void creativeFlight() throws Throwable
+	{
+		// Creative flight is pretty simple so just show the basics.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
+		
+		// Create a normal entity.
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
+		
+		// Show that creative flight fails since they are not in creative mode.
+		EntityActionCreativeFlight move = new EntityActionCreativeFlight(1.0f, -2.0f, 1.5f, (byte)5, (byte)6, null);
+		Assert.assertFalse(move.applyChange(holder.context, newEntity));
+		Assert.assertEquals(new EntityLocation(10.0f, 10.0f, 10.0f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.newVelocity);
+		Assert.assertEquals((byte)0, newEntity.newYaw);
+		Assert.assertEquals((byte)0, newEntity.newPitch);
+		
+		// Set them to creative mode and show that this works.
+		newEntity.isCreativeMode = true;
+		Assert.assertTrue(move.applyChange(holder.context, newEntity));
+		Assert.assertEquals(new EntityLocation(10.1f, 9.8f, 10.15f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(1.0f, -2.0f, 1.5f), newEntity.newVelocity);
+		Assert.assertEquals((byte)5, newEntity.newYaw);
+		Assert.assertEquals((byte)6, newEntity.newPitch);
+		
+		// Now, show that we can select something from the creative inventory in hotbar.
+		int inventoryId = 1;
+		EntityActionCreativeFlight select = new EntityActionCreativeFlight(2.0f, -0.5f, -0.2f, (byte)7, (byte)8, new MutationEntitySelectItem(inventoryId));
+		Assert.assertTrue(select.applyChange(holder.context, newEntity));
+		Assert.assertEquals(new EntityLocation(10.35f, 9.65f, 10.21f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(2.5f, -1.5f, 0.55f), newEntity.newVelocity);
+		Assert.assertEquals((byte)7, newEntity.newYaw);
+		Assert.assertEquals((byte)8, newEntity.newPitch);
+		Assert.assertEquals(inventoryId, newEntity.getSelectedKey());
 	}
 
 
