@@ -22,6 +22,7 @@ import com.jeffdisher.october.types.Item;
 public class OrientationAspect
 {
 	public static final String FLAG_ALLOWS_DOWN = "allows_down";
+	public static final String FLAG_ALLOWS_UP = "allows_up";
 
 	public static OrientationAspect load(ItemRegistry items
 		, BlockAspect blocks
@@ -29,7 +30,8 @@ public class OrientationAspect
 	) throws IOException, TabListException
 	{
 		Set<Block> hasOrientation = new HashSet<>();
-		Set<Block> flatOnly = new HashSet<>();
+		Set<Block> allowsDown = new HashSet<>();
+		Set<Block> allowsUp = new HashSet<>();
 		
 		TabListReader.IParseCallbacks callbacks = new TabListReader.IParseCallbacks() {
 			@Override
@@ -40,22 +42,34 @@ public class OrientationAspect
 				{
 					throw new TabListReader.TabListException("Duplicate entry for: \"" + name + "\"");
 				}
-				if (parameters.length > 1)
+				if (parameters.length > 2)
 				{
-					throw new TabListReader.TabListException("Must have 0 or 1 parameter: \"" + name + "\"");
+					throw new TabListReader.TabListException("Must have at most 2 parameters: \"" + name + "\"");
 				}
 				
 				hasOrientation.add(block);
-				if (1 == parameters.length)
+				for (String param : parameters)
 				{
-					if (!FLAG_ALLOWS_DOWN.equals(parameters[0]))
+					if (FLAG_ALLOWS_DOWN.equals(param))
 					{
-						throw new TabListReader.TabListException("Unknown flag \"" + parameters[0] + "\" for: \"" + name + "\"");
+						boolean wasAdded = allowsDown.add(block);
+						if (!wasAdded)
+						{
+							throw new TabListReader.TabListException("Duplicate flag \"" + param + "\" for: \"" + name + "\"");
+						}
 					}
-				}
-				else
-				{
-					flatOnly.add(block);
+					else if (FLAG_ALLOWS_UP.equals(param))
+					{
+						boolean wasAdded = allowsUp.add(block);
+						if (!wasAdded)
+						{
+							throw new TabListReader.TabListException("Duplicate flag \"" + param + "\" for: \"" + name + "\"");
+						}
+					}
+					else
+					{
+						throw new TabListReader.TabListException("Unknown flag \"" + param + "\" for: \"" + name + "\"");
+					}
 				}
 			}
 			@Override
@@ -84,17 +98,22 @@ public class OrientationAspect
 		};
 		TabListReader.readEntireFile(callbacks, stream);
 		
-		return new OrientationAspect(hasOrientation, flatOnly);
+		return new OrientationAspect(hasOrientation, allowsDown, allowsUp);
 	}
 
 
 	private final Set<Block> _hasOrientation;
-	private final Set<Block> _flatOnly;
+	private final Set<Block> _allowsDown;
+	private final Set<Block> _allowsUp;
 
-	private OrientationAspect(Set<Block> hasOrientation, Set<Block> flatOnly)
+	private OrientationAspect(Set<Block> hasOrientation
+		, Set<Block> allowsDown
+		, Set<Block> allowsUp
+	)
 	{
 		_hasOrientation = Collections.unmodifiableSet(hasOrientation);
-		_flatOnly = Collections.unmodifiableSet(flatOnly);
+		_allowsDown = Collections.unmodifiableSet(allowsDown);
+		_allowsUp = Collections.unmodifiableSet(allowsUp);
 	}
 
 	/**
@@ -119,7 +138,20 @@ public class OrientationAspect
 	 */
 	public boolean doesAllowDownwardOutput(Block blockType)
 	{
-		return _downAllowDownwardOutput(blockType);
+		return _allowsDown.contains(blockType);
+	}
+
+	/**
+	 * Checks if the given block can be oriented with an upward output orientation (as opposed to only a flat
+	 * orientation).
+	 * This can only be called for single blocks (not multi-blocks).
+	 * 
+	 * @param blockType The block type.
+	 * @return True if this MUST store an orientation byte and can store an UP orientation.
+	 */
+	public boolean doesAllowUpwardOutput(Block blockType)
+	{
+		return _allowsDown.contains(blockType);
 	}
 
 	/**
@@ -134,14 +166,18 @@ public class OrientationAspect
 	 */
 	public FacingDirection getDirectionIfApplicableToSingle(Block blockType, AbsoluteLocation blockLocation, AbsoluteLocation outputLocation)
 	{
-		boolean has4 = _flatOnly.contains(blockType);
-		boolean has5 = _downAllowDownwardOutput(blockType);
 		FacingDirection outputDirection;
-		if ((has4 || has5) && (null != outputLocation))
+		if (null == outputLocation)
 		{
-			// Check the direction of the output, relative to target block.
+			// This is kind of a degenerate case where we allow this to be called with null so the caller can avoid extra checks.
+			outputDirection = null;
+		}
+		else if (_hasOrientation.contains(blockType))
+		{
 			outputDirection = FacingDirection.getRelativeDirection(blockLocation, outputLocation);
-			if ((FacingDirection.DOWN == outputDirection) && !has5)
+			if (((FacingDirection.DOWN == outputDirection) && !_allowsDown.contains(blockType))
+				|| ((FacingDirection.UP == outputDirection) && !_allowsUp.contains(blockType))
+			)
 			{
 				// This is an invalid case so just return null so the caller can check and realize the request is invalid.
 				outputDirection = null;
@@ -153,11 +189,5 @@ public class OrientationAspect
 			outputDirection = null;
 		}
 		return outputDirection;
-	}
-
-
-	private boolean _downAllowDownwardOutput(Block blockType)
-	{
-		return _hasOrientation.contains(blockType) && !_flatOnly.contains(blockType);
 	}
 }

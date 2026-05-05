@@ -103,8 +103,10 @@ public class TestMiscAspects
 		AbsoluteLocation blockLocation = new AbsoluteLocation(1, 2, 3);
 		AbsoluteLocation outputNorth = blockLocation.getRelative(0, 1, 0);
 		AbsoluteLocation outputDown = blockLocation.getRelative(0, 0, -1);
+		AbsoluteLocation outputUp = blockLocation.getRelative(0, 0, 1);
 		Assert.assertEquals(FacingDirection.NORTH, FacingDirection.getRelativeDirection(blockLocation, outputNorth));
 		Assert.assertEquals(FacingDirection.DOWN, FacingDirection.getRelativeDirection(blockLocation, outputDown));
+		Assert.assertEquals(FacingDirection.UP, FacingDirection.getRelativeDirection(blockLocation, outputUp));
 	}
 
 	@Test

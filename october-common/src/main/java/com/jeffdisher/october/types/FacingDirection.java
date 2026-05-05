@@ -2,6 +2,8 @@ package com.jeffdisher.october.types;
 
 import java.util.function.Function;
 
+import com.jeffdisher.october.utils.Assert;
+
 
 /**
  * The direction will rotate a given location from NORTH to the given direction.
@@ -49,6 +51,14 @@ public enum FacingDirection
 			, 0, 1, 0
 		}
 	),
+	// Up is the positive Z direction but 2D rotation doesn't make sense for this direction.
+	UP(null
+		, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(0, 0, 1)
+		, new byte[] {1, 0, 0
+			, 0, 0, 1
+			, 0, -1, 0
+		}
+	),
 	;
 
 	/**
@@ -85,8 +95,10 @@ public enum FacingDirection
 		// Check the direction of the output, relative to target block.
 		int blockX = blockLocation.x();
 		int blockY = blockLocation.y();
+		int blockZ = blockLocation.z();
 		int outputX = outputLocation.x();
 		int outputY = outputLocation.y();
+		int outputZ = outputLocation.z();
 		
 		FacingDirection outputDirection;
 		if (outputY > blockY)
@@ -105,9 +117,18 @@ public enum FacingDirection
 		{
 			outputDirection = FacingDirection.WEST;
 		}
-		else
+		else if (outputZ > blockZ)
+		{
+			outputDirection = FacingDirection.UP;
+		}
+		else if (outputZ < blockZ)
 		{
 			outputDirection = FacingDirection.DOWN;
+		}
+		else
+		{
+			// This means we were asked something nonsensical (output to itself).
+			throw Assert.unreachable();
 		}
 		return outputDirection;
 	}

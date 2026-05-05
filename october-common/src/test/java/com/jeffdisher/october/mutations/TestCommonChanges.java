@@ -1613,10 +1613,10 @@ public class TestCommonChanges
 		holder.mutation = null;
 		
 		// Face down - this case, the target just needs to match z.
-		MutationPlaceSelectedBlock down = new MutationPlaceSelectedBlock(centreTarget.getRelative(0, 0, -1), centreTarget);
+		MutationPlaceSelectedBlock down = new MutationPlaceSelectedBlock(centreTarget.getRelative(0, 0, 1), centreTarget);
 		Assert.assertTrue(down.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
-		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(0, 0, -1), 0, entityId));
+		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(0, 0, 1), 0, entityId));
 		holder.mutation.applyMutation(holder.context, proxy);
 		Assert.assertEquals(itemHopper, proxy.getBlock().item());
 		proxy.writeBack(cuboid);
