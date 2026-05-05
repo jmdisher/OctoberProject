@@ -230,6 +230,7 @@ public class TestMiscAspects
 		Assert.assertEquals(expectedMask, bits);
 		Assert.assertNotEquals(0L, bits | SubBlock.fromInt(0, 3, 0).getMask());
 		Assert.assertNotEquals(0L, bits | FacingDirection.DOWN.inverseRotateInSubBlock(SubBlock.fromInt(0, 0, 0)).getMask());
+		Assert.assertNotEquals(0L, bits | FacingDirection.UP.inverseRotateInSubBlock(SubBlock.fromInt(1, 3, 1)).getMask());
 	}
 
 	@Test

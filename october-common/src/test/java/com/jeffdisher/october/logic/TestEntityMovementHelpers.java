@@ -469,15 +469,17 @@ public class TestEntityMovementHelpers
 		Block slab = ENV.blocks.fromItem(ENV.items.getItemById("op.stone_brick_slab"));
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		
-		// Create the floor data.
-		byte slabZ = 0;
-		CuboidGenerator.fillPlane(cuboid, slabZ, slab);
+		// We will show that we can walk on top of slabs and under slabs in the same test.
+		byte slabFloorZ = 0;
+		byte slabCeilingZ = 2;
+		CuboidGenerator.fillPlane(cuboid, slabFloorZ, slab);
+		CuboidGenerator.fillPlane(cuboid, slabCeilingZ, slab);
 		for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
 			for (byte x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 			{
-				BlockAddress address = new BlockAddress(x, y, slabZ);
-				cuboid.setData7(AspectRegistry.ORIENTATION, address, FacingDirection.directionToByte(FacingDirection.DOWN));
+				cuboid.setData7(AspectRegistry.ORIENTATION, new BlockAddress(x, y, slabFloorZ), FacingDirection.directionToByte(FacingDirection.DOWN));
+				cuboid.setData7(AspectRegistry.ORIENTATION, new BlockAddress(x, y, slabCeilingZ), FacingDirection.directionToByte(FacingDirection.UP));
 			}
 		}
 		
@@ -490,7 +492,7 @@ public class TestEntityMovementHelpers
 		
 		EntityLocation startLocation = new EntityLocation(1.0f, 1.0f, 0.5f);
 		EntityLocation startVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
-		EntityVolume volume = new EntityVolume(2.2f, 1.7f);
+		EntityVolume volume = new EntityVolume(1.9f, 1.4f);
 		float activeXMovement = 0.4f;
 		float activeYMovement = 0.0f;
 		float maxVelocityPerSecond = 4.0f;

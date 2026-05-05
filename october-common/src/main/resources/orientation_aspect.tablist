@@ -15,7 +15,7 @@ op.not_gate
 op.sensor_inventory
 op.portal_keystone
 op.block_mover	allows_down
-op.stone_brick_slab	allows_down
+op.stone_brick_slab	allows_down	allows_up
 op.stone_brick_stair
-op.wood_plank_slab	allows_down
+op.wood_plank_slab	allows_down	allows_up
 op.wood_plank_stair
