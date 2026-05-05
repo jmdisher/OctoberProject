@@ -3745,6 +3745,60 @@ public class TestCommonChanges
 		Assert.assertEquals(6, newEntity.newPitch);
 	}
 
+	@Test
+	public void placeBlockMover() throws Throwable
+	{
+		// Show that we can place a block mover facing any direction.
+		Item blockMover = ENV.items.getItemById("op.block_mover");
+		int entityId = 1;
+		MutableEntity newEntity = MutableEntity.createForTest(entityId);
+		newEntity.newLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
+		newEntity.newInventory.addAllItems(blockMover, 6);
+		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(blockMover));
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
+		
+		AbsoluteLocation east = newEntity.newLocation.getBlockLocation().getRelative(1, 0, 0);
+		MutationPlaceSelectedBlock placeEast = new MutationPlaceSelectedBlock(east, east.getRelative(1, 0, 0));
+		Assert.assertTrue(placeEast.applyChange(holder.context, newEntity));
+		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwriteByEntity);
+		holder.mutation = null;
+		
+		AbsoluteLocation west = newEntity.newLocation.getBlockLocation().getRelative(-1, 0, 0);
+		MutationPlaceSelectedBlock placeWest = new MutationPlaceSelectedBlock(west, west.getRelative(-1, 0, 0));
+		Assert.assertTrue(placeWest.applyChange(holder.context, newEntity));
+		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwriteByEntity);
+		holder.mutation = null;
+		
+		AbsoluteLocation north = newEntity.newLocation.getBlockLocation().getRelative(0, 1, 0);
+		MutationPlaceSelectedBlock placeNorth = new MutationPlaceSelectedBlock(north, north.getRelative(0, 1, 0));
+		Assert.assertTrue(placeNorth.applyChange(holder.context, newEntity));
+		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwriteByEntity);
+		holder.mutation = null;
+		
+		AbsoluteLocation south = newEntity.newLocation.getBlockLocation().getRelative(0, -1, 0);
+		MutationPlaceSelectedBlock placeSouth = new MutationPlaceSelectedBlock(south, south.getRelative(0, -1, 0));
+		Assert.assertTrue(placeSouth.applyChange(holder.context, newEntity));
+		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwriteByEntity);
+		holder.mutation = null;
+		
+		AbsoluteLocation up = newEntity.newLocation.getBlockLocation().getRelative(0, 0, 2);
+		MutationPlaceSelectedBlock placeUp = new MutationPlaceSelectedBlock(up, up.getRelative(0, 0, 1));
+		Assert.assertTrue(placeUp.applyChange(holder.context, newEntity));
+		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwriteByEntity);
+		holder.mutation = null;
+		
+		AbsoluteLocation down = newEntity.newLocation.getBlockLocation().getRelative(0, 0, -1);
+		MutationPlaceSelectedBlock placeDown = new MutationPlaceSelectedBlock(down, down.getRelative(0, 0, -1));
+		Assert.assertTrue(placeDown.applyChange(holder.context, newEntity));
+		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwriteByEntity);
+		holder.mutation = null;
+		
+		// We expect that the block will be placed and our selection and inventory will be cleared.
+		Assert.assertEquals(0, newEntity.freeze().inventory().sortedKeys().size());
+		Assert.assertEquals(Entity.NO_SELECTION, newEntity.getSelectedKey());
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

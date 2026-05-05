@@ -2853,6 +2853,143 @@ public class TestTickRunner
 		runner.shutdown();
 	}
 
+	@Test
+	public void pushSandUp()
+	{
+		// Show that we can push a block up and down, but sand above it will move with it and then fall, afterward.
+		CuboidAddress address = CuboidAddress.fromInt(7, 8, 9);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		Item blockMover = ENV.items.getItemById("op.block_mover");
+		Item switc = ENV.items.getItemById("op.switch");
+		Item logicWire = ENV.items.getItemById("op.logic_wire");
+		Item sand = ENV.items.getItemById("op.sand");
+		AbsoluteLocation moverLocation = address.getBase().getRelative(5, 6, 6);
+		AbsoluteLocation wireLocation = moverLocation.getRelative(1, 0, 0);
+		AbsoluteLocation switchLocation = wireLocation.getRelative(1, 0, 0);
+		AbsoluteLocation stoneLocation = moverLocation.getRelative(0, 0, 1);
+		AbsoluteLocation sandLocation = stoneLocation.getRelative(0, 0, 1);
+		AbsoluteLocation outsideLocation = sandLocation.getRelative(0, 0, 1);
+		cuboid.setData15(AspectRegistry.BLOCK, moverLocation.getBlockAddress(), blockMover.number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, moverLocation.getBlockAddress(), FacingDirection.directionToByte(FacingDirection.UP));
+		cuboid.setData15(AspectRegistry.BLOCK, wireLocation.getBlockAddress(), logicWire.number());
+		cuboid.setData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress(), switc.number());
+		cuboid.setData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress(), STONE_ITEM.number());
+		cuboid.setData15(AspectRegistry.BLOCK, sandLocation.getBlockAddress(), sand.number());
+		
+		TickRunner runner = _createTestRunner();
+		int entityId = 1;
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		mutable.newLocation = new EntityLocation(switchLocation.x(), switchLocation.y(), switchLocation.z() + 1.0f);
+		Entity entity = mutable.freeze();
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of(), List.of())
+			)
+			, null
+			, List.of(new SuspendedEntity(entity, List.of()))
+			, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		
+		// Enqueue the mutation to change the state of the switch.
+		EntityChangeSetBlockLogicState setSwitch = new EntityChangeSetBlockLogicState(switchLocation, true);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, setSwitch), 1L);
+		runner.startNextTick();
+		
+		// (run an extra tick to apply the change to the block)
+		TickSnapshot snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.stats().countOfEntityActionsRun());
+		
+		// At the end of this next tick, we should see the switch state changed, but not yet the mover or the wire.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.FLAGS, switchLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
+		Assert.assertEquals(0x0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.FLAGS, moverLocation.getBlockAddress()));
+		
+		// After another tick, the logic update should go through but not yet set the mover active.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.FLAGS, switchLocation.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
+		Assert.assertEquals(0x0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.FLAGS, moverLocation.getBlockAddress()));
+		
+		// After the next tick, the mover should be active but the moves won't yet have happened.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		// (this actually takes 2 ticks to absorb a logic change)
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.FLAGS, switchLocation.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.FLAGS, moverLocation.getBlockAddress()));
+		Assert.assertEquals(STONE_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
+		
+		// After one more tick, we should see the moves.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.FLAGS, switchLocation.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.FLAGS, moverLocation.getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
+		Assert.assertEquals(STONE_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, sandLocation.getBlockAddress()));
+		Assert.assertEquals(sand.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, outsideLocation.getBlockAddress()));
+		
+		// Now, change the switch and see it pull one block back.
+		setSwitch = new EntityChangeSetBlockLogicState(switchLocation, false);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, setSwitch), 1L);
+		// Run a tick to apply the change and another to apply it to the block.
+		runner.startNextTick();
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0x0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.FLAGS, switchLocation.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.FLAGS, moverLocation.getBlockAddress()));
+		
+		// After another tick, the logic update should go through but not yet set the mover inactive.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0x0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.FLAGS, switchLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.FLAGS, moverLocation.getBlockAddress()));
+		
+		// After the next tick, the mover should be inactive but the move won't yet have happened.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		// (this actually takes 2 ticks to absorb a logic change)
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0x0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.FLAGS, switchLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
+		Assert.assertEquals(0x0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.FLAGS, moverLocation.getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
+		
+		// After one more tick, we should see the move.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0x0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.FLAGS, switchLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
+		Assert.assertEquals(0x0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.FLAGS, moverLocation.getBlockAddress()));
+		Assert.assertEquals(STONE_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, sandLocation.getBlockAddress()));
+		Assert.assertEquals(sand.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, outsideLocation.getBlockAddress()));
+		
+		// Run two more ticks to see the sand block break and turn into a passive.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(sand.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, outsideLocation.getBlockAddress()));
+		
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, outsideLocation.getBlockAddress()));
+		Assert.assertEquals(1, snapshot.passives().size());
+		PassiveEntity passive = snapshot.passives().get(1).completed();
+		Assert.assertEquals(PassiveType.FALLING_BLOCK, passive.type());
+		Assert.assertEquals(outsideLocation.toEntityLocation(), passive.location());
+		Assert.assertEquals(ENV.blocks.fromItem(sand), passive.extendedData());
+		
+		runner.shutdown();
+	}
+
 
 	private TickSnapshot _runTickLockStep(TickRunner runner, Entity entity, IMutationBlock mutation)
 	{
