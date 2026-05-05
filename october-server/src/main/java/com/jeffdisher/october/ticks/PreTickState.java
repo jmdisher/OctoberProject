@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.jeffdisher.october.actions.EntityActionSimpleMove;
+import com.jeffdisher.october.actions.IEntityActionFromClient;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.ScheduledChange;
@@ -51,7 +51,7 @@ public record PreTickState(Map<CuboidAddress, IReadOnlyCuboidData> cuboidsByAddr
 		, Set<CuboidAddress> cuboidsToDrop
 		
 		, List<SuspendedEntity> newEntities
-		, Map<Integer, EntityActionSimpleMove<IMutablePlayerEntity>> newEntityChanges
+		, Map<Integer, IEntityActionFromClient<IMutablePlayerEntity>> newEntityChanges
 		, Map<Integer, Long> newCommitLevels
 		, List<Integer> removedEntityIds
 		
@@ -140,7 +140,7 @@ public record PreTickState(Map<CuboidAddress, IReadOnlyCuboidData> cuboidsByAddr
 				}
 			}
 		}
-		for (Map.Entry<Integer, EntityActionSimpleMove<IMutablePlayerEntity>> container : newEntityChanges.entrySet())
+		for (Map.Entry<Integer, IEntityActionFromClient<IMutablePlayerEntity>> container : newEntityChanges.entrySet())
 		{
 			// These are coming in from outside, so they should be run immediately (no delay for future), after anything already scheduled from the previous tick.
 			int id = container.getKey();

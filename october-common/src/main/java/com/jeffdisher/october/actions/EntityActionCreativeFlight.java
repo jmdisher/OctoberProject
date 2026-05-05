@@ -10,7 +10,6 @@ import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -25,7 +24,7 @@ import com.jeffdisher.october.utils.Assert;
  * setting in order to know which kind of action to send but the server will permit either, so long as the entity is in
  * "creative mode".
  */
-public class EntityActionCreativeFlight implements IEntityAction<IMutablePlayerEntity>
+public class EntityActionCreativeFlight implements IEntityActionFromClient<IMutablePlayerEntity>
 {
 	public static final EntityActionType TYPE = EntityActionType.CREATIVE_FLIGHT;
 	public static final float MIN_COAST_VELOCITY_AXIS = 0.05f;

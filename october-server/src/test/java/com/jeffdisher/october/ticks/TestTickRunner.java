@@ -11,6 +11,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
+import com.jeffdisher.october.actions.EntityActionCreativeFlight;
 import com.jeffdisher.october.actions.EntityActionOperatorSetCreative;
 import com.jeffdisher.october.actions.EntityActionOperatorSpawnCreature;
 import com.jeffdisher.october.actions.EntityActionPeriodic;
@@ -2986,6 +2987,47 @@ public class TestTickRunner
 		Assert.assertEquals(PassiveType.FALLING_BLOCK, passive.type());
 		Assert.assertEquals(outsideLocation.toEntityLocation(), passive.location());
 		Assert.assertEquals(ENV.blocks.fromItem(sand), passive.extendedData());
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void simpleCreativeFlight()
+	{
+		CuboidData cuboid = _zeroAirCuboidWithBase();
+		int entityId = 1;
+		MutableEntity entity1 = MutableEntity.createForTest(entityId);
+		entity1.isCreativeMode = true;
+		entity1.newLocation = new EntityLocation(10.0f, 10.0f, 5.0f);
+		
+		// Create the runner and load all test data.
+		TickRunner runner = _createTestRunner();
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of(), List.of()))
+			, null
+			, List.of(new SuspendedEntity(entity1.freeze(), List.of())
+			)
+			, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		
+		// Just submit the single movement.
+		EntityActionCreativeFlight action = new EntityActionCreativeFlight(4.0f
+			, -4.0f
+			, 8.0f
+			, (byte)5
+			, (byte)6
+			, null
+		);
+		runner.enqueueEntityChange(1, action, 1L);
+		runner.startNextTick();
+		TickSnapshot snapshot = runner.waitForPreviousTick();
+		
+		Entity newEntity = snapshot.entities().get(entityId).completed();
+		Assert.assertEquals(new EntityLocation(10.03f, 9.97f, 5.07f), newEntity.location());
+		Assert.assertEquals(new EntityLocation(3.27f, -3.27f, 6.53f), newEntity.velocity());
+		Assert.assertEquals((byte)5, newEntity.yaw());
+		Assert.assertEquals((byte)6, newEntity.pitch());
 		
 		runner.shutdown();
 	}

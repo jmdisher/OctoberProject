@@ -15,7 +15,6 @@ import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
-import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -28,7 +27,7 @@ import com.jeffdisher.october.utils.Assert;
  * Note that the units of _activeX and _activeY are in total movement in each 2D axis within the tick (meaning dividing
  * by the tick's fraction of a second will return velocity).
  */
-public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements IEntityAction<T>
+public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements IEntityActionFromClient<T>
 {
 	public static final EntityActionType TYPE = EntityActionType.SIMPLE_MOVE;
 	public static final float FUDGE_FACTOR = 1.05f;
