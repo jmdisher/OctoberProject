@@ -7,10 +7,8 @@ import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
-import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
@@ -153,7 +151,7 @@ public class MovementAccumulator
 				, _subAction
 			);
 			long millisToApply = _accumulationMillis + toAdd;
-			Entity possibleEntity = _generateLocalEntity(toRun, millisToApply, currentTimeMillis);
+			Entity possibleEntity = _worldCache.localEntityAfterAction(toRun, millisToApply, currentTimeMillis);
 			boolean endedOnGround = SpatialHelpers.isStandingOnGround(_worldCache.reader, possibleEntity.location(), _worldCache.playerVolume);
 			
 			if (endedOnGround)
@@ -193,7 +191,7 @@ public class MovementAccumulator
 				// We need to apply at least some time, just to see if this will work.
 				millisToApply = 1L;
 			}
-			Entity newEntity = _generateLocalEntity(toRun, millisToApply, currentTimeMillis);
+			Entity newEntity = _worldCache.localEntityAfterAction(toRun, millisToApply, currentTimeMillis);
 			if (null == newEntity)
 			{
 				_subAction = null;
@@ -283,58 +281,6 @@ public class MovementAccumulator
 		return saturated;
 	}
 
-	// Returns null if there was an error in toRun or _thisEntity, if it was a success but had no impact.
-	private Entity _generateLocalEntity(EntityActionSimpleMove<IMutablePlayerEntity> toRun, long millisToApply, long currentTimeMillis)
-	{
-		OneOffRunner.InputState input = new OneOffRunner.InputState(_worldCache.thisEntity
-			, _worldCache.world
-			, _worldCache.otherEntities
-			, _worldCache.passives
-			, _worldCache.proxyLookup
-		);
-		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
-			// We can probably ignore events in this path since they will either be entity-related (hence sent by the
-			// server when it determines things like damage, etc) or were world-related and sent at the beginning of the
-			// action tick in the other path.
-		};
-		OneOffRunner.OutputState output = OneOffRunner.runOneChange(input, eventSink, millisToApply, currentTimeMillis, toRun);
-		Entity toReturn;
-		if (null != output)
-		{
-			// This was a success so return either the changed entity or default to the original.
-			Entity possible = output.thisEntity();
-			if (null != possible)
-			{
-				// Note that we will further ignore this change if it didn't cause a change to location or velocity, unless it also has a sub-action (since they can change other things).
-				if ((null != toRun.getSubAction())
-					|| !_worldCache.thisEntity.location().equals(possible.location())
-					|| !_worldCache.thisEntity.velocity().equals(possible.velocity())
-					|| (_worldCache.thisEntity.yaw() != possible.yaw())
-					|| (_worldCache.thisEntity.pitch() != possible.pitch())
-				)
-				{
-					toReturn = possible;
-				}
-				else
-				{
-					// Nothing meaningful changed so return the original instance.
-					toReturn = _worldCache.thisEntity;
-				}
-			}
-			else
-			{
-				// Nothing changed so return the original instance.
-				toReturn = _worldCache.thisEntity;
-			}
-		}
-		else
-		{
-			// There was a failure so return null.
-			toReturn = null;
-		}
-		return toReturn;
-	}
-
 	private Entity _getLatestLocalEntity(long currentTimeMillis)
 	{
 		Entity entity;
@@ -343,7 +289,7 @@ public class MovementAccumulator
 			// Build one based on our local state.
 			EntityActionSimpleMove<IMutablePlayerEntity> toRun = _moveFromAccumulation();
 			long millisToApply = _accumulationMillis;
-			Entity newEntity = _generateLocalEntity(toRun, millisToApply, currentTimeMillis);
+			Entity newEntity = _worldCache.localEntityAfterAction(toRun, millisToApply, currentTimeMillis);
 			if (null != newEntity)
 			{
 				entity = newEntity;
@@ -371,7 +317,7 @@ public class MovementAccumulator
 		{
 			// We always return actions with sub-actions so check those without to see if they can be dropped.
 			long millisToApply = _accumulationMillis;
-			Entity newEntity = _generateLocalEntity(toRun, millisToApply, currentTimeMillis);
+			Entity newEntity = _worldCache.localEntityAfterAction(toRun, millisToApply, currentTimeMillis);
 			if (newEntity == _worldCache.thisEntity)
 			{
 				// This changes nothing, so that either means that there is nothing changing, or that we are stuck in a block (we need to check for collision in either case since both can be true).
@@ -380,7 +326,7 @@ public class MovementAccumulator
 				{
 					_subAction = new EntitySubActionPopOutOfBlock<IMutablePlayerEntity>(targetLocation);
 					toRun = _moveFromAccumulation();
-					newEntity = _generateLocalEntity(toRun, millisToApply, currentTimeMillis);
+					newEntity = _worldCache.localEntityAfterAction(toRun, millisToApply, currentTimeMillis);
 					if ((null == newEntity) || (newEntity == _worldCache.thisEntity))
 					{
 						// This didn't work either.

@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import com.jeffdisher.october.actions.IEntityActionFromClient;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -15,6 +16,8 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.EventRecord;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -197,5 +200,66 @@ public class CommonClientWorldCache
 	public void removePassive(int entityId)
 	{
 		Assert.assertTrue(null != this.passives.remove(entityId));
+	}
+
+	/**
+	 * Used to test the action toRun against the receiver's current state (in a read-only way) in order to checks its
+	 * validity.
+	 * Returns null on failure, thisEntity if no meaningful change to the local entity, or the new entity instance.
+	 * 
+	 * @param toRun The action to run.
+	 * @param millisToApply The millis to apply as the millis per tick.
+	 * @param currentTimeMillis The current time to use for the invocation.
+	 * @return The changed Entity, thisEntity if unchanged or null if the execution was an error.
+	 */
+	public Entity localEntityAfterAction(IEntityActionFromClient<IMutablePlayerEntity> toRun, long millisToApply, long currentTimeMillis)
+	{
+		OneOffRunner.InputState input = new OneOffRunner.InputState(this.thisEntity
+			, this.world
+			, this.otherEntities
+			, this.passives
+			, this.proxyLookup
+		);
+		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
+			// We can probably ignore events in this path since they will either be entity-related (hence sent by the
+			// server when it determines things like damage, etc) or were world-related and sent at the beginning of the
+			// action tick in the other path.
+		};
+		OneOffRunner.OutputState output = OneOffRunner.runOneChange(input, eventSink, millisToApply, currentTimeMillis, toRun);
+		Entity toReturn;
+		if (null != output)
+		{
+			// This was a success so return either the changed entity or default to the original.
+			Entity possible = output.thisEntity();
+			if (null != possible)
+			{
+				// Note that we will further ignore this change if it didn't cause a change to location or velocity, unless it also has a sub-action (since they can change other things).
+				if ((null != toRun.getSubAction())
+					|| !this.thisEntity.location().equals(possible.location())
+					|| !this.thisEntity.velocity().equals(possible.velocity())
+					|| (this.thisEntity.yaw() != possible.yaw())
+					|| (this.thisEntity.pitch() != possible.pitch())
+				)
+				{
+					toReturn = possible;
+				}
+				else
+				{
+					// Nothing meaningful changed so return the original instance.
+					toReturn = this.thisEntity;
+				}
+			}
+			else
+			{
+				// Nothing changed so return the original instance.
+				toReturn = this.thisEntity;
+			}
+		}
+		else
+		{
+			// There was a failure so return null.
+			toReturn = null;
+		}
+		return toReturn;
 	}
 }

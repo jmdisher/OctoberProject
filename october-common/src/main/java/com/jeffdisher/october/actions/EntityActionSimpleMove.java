@@ -237,12 +237,7 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 		return String.format("SimpleMove(%s), by %.2f, %.2f, Sub: %s", _intensity, _activeX, _activeY, _subAction);
 	}
 
-	/**
-	 * Some tests but also things like MovementAccumulator need to know if there is a special sub-action inside this
-	 * instance so this allows them to view it.
-	 * 
-	 * @return The sub-action.
-	 */
+	@Override
 	public IEntitySubAction<T> getSubAction()
 	{
 		return _subAction;
