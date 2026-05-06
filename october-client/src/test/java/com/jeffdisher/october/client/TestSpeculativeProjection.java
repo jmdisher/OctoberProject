@@ -13,6 +13,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.actions.EntityActionCreativeFlight;
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.Aspect;
@@ -3397,6 +3398,48 @@ public class TestSpeculativeProjection
 			);
 			Assert.assertEquals(2, listener.changeCount);
 		}
+	}
+
+	@Test
+	public void creativeFlight()
+	{
+		// Just show that we can apply the creative flight action if in creative mode.
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		mutable.isCreativeMode = true;
+		mutable.newLocation = new EntityLocation(5.0f, 5.0f, 5.0f);
+		Entity localEntity = mutable.freeze();
+		projector.setThisEntity(localEntity);
+		long currentTimeMillis = 100_000L;
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		int remaining = projector.applyChangesForServerTick(1L
+			, List.of()
+			, List.of()
+			, List.of(cuboid)
+			, null
+			, List.of()
+			, List.of()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, List.of()
+			, 0L
+			, currentTimeMillis
+		);
+		Assert.assertEquals(0, remaining);
+		
+		EntityActionCreativeFlight fly = new EntityActionCreativeFlight(1.0f, -2.0f, 1.6f, (byte)5, (byte)6, null);
+		currentTimeMillis += MILLIS_PER_TICK;
+		long commit = projector.applyLocalChange(fly, currentTimeMillis);
+		Assert.assertEquals(1L, commit);
+		Assert.assertEquals((byte)5, listener.thisEntityState.yaw());
+		Assert.assertEquals((byte)6, listener.thisEntityState.pitch());
+		Assert.assertEquals(new EntityLocation(5.1f, 4.8f, 5.16f), listener.thisEntityState.location());
+		Assert.assertEquals(0, listener.events.size());
 	}
 
 

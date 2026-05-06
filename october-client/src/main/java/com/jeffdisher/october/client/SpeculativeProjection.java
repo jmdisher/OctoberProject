@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.jeffdisher.october.actions.EntityActionSimpleMove;
+import com.jeffdisher.october.actions.IEntityActionFromClient;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
@@ -414,7 +414,7 @@ public class SpeculativeProjection
 	 * @param currentTickTimeMillis The current time, in milliseconds.
 	 * @return The local commit number for this change, 0L if it failed to applied and should be rejected.
 	 */
-	public long applyLocalChange(EntityActionSimpleMove<IMutablePlayerEntity> change, long currentTickTimeMillis)
+	public long applyLocalChange(IEntityActionFromClient<IMutablePlayerEntity> change, long currentTickTimeMillis)
 	{
 		// Create the new commit number although we will reverse this if we can merge.
 		long commitNumber = _nextLocalCommitNumber;
@@ -480,7 +480,7 @@ public class SpeculativeProjection
 		}
 	}
 
-	private _LocalActionWrapper _applyChangeToProjected(EntityActionSimpleMove<IMutablePlayerEntity> change
+	private _LocalActionWrapper _applyChangeToProjected(IEntityActionFromClient<IMutablePlayerEntity> change
 			, long commitNumber
 			, long currentTickTimeMillis
 	)
@@ -972,7 +972,7 @@ public class SpeculativeProjection
 	}
 
 	private static record _LocalActionWrapper(long commitNumber
-		, EntityActionSimpleMove<IMutablePlayerEntity> entityAction
+		, IEntityActionFromClient<IMutablePlayerEntity> entityAction
 		, List<_LocalCallConsequences> consequences
 	) {}
 }
