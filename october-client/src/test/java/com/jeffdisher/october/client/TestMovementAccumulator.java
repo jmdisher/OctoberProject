@@ -39,7 +39,6 @@ import com.jeffdisher.october.subactions.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
-import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
@@ -51,7 +50,6 @@ import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
-import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
@@ -87,13 +85,14 @@ public class TestMovementAccumulator
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		Entity entity = MutableEntity.createForTest(1).freeze();
-		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(airCuboid, Set.of());
-		accumulator.setCuboid(stoneCuboid, Set.of());
+		commonCache.setThisEntity(entity);
+		commonCache.setCuboid(airCuboid, Set.of());
+		commonCache.setCuboid(stoneCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		
 		// Set our orientation and stand around until the action is generated.
@@ -112,7 +111,7 @@ public class TestMovementAccumulator
 		Assert.assertNotNull(out);
 		Assert.assertNull(out.getSubAction());
 		
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, commonCache, listener);
 		accumulator.applyLocalAccumulation();
 	}
 
@@ -124,15 +123,16 @@ public class TestMovementAccumulator
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		Entity entity = MutableEntity.createForTest(1).freeze();
-		accumulator.setThisEntity(entity);
+		commonCache.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
-		accumulator.setCuboid(airCuboid, Set.of());
-		accumulator.setCuboid(stoneCuboid, Set.of());
+		commonCache.setCuboid(airCuboid, Set.of());
+		commonCache.setCuboid(stoneCuboid, Set.of());
 		
 		// Walk until the action is generated.
 		currentTimeMillis += 50L;
@@ -147,7 +147,7 @@ public class TestMovementAccumulator
 		Assert.assertNull(out.getSubAction());
 		Assert.assertEquals("SimpleMove(WALKING), by 0.00, 0.40, Sub: null", out.toString());
 		
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, commonCache, listener);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.4f, 0.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
@@ -164,13 +164,14 @@ public class TestMovementAccumulator
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		Entity entity = MutableEntity.createForTest(1).freeze();
-		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(airCuboid, Set.of());
-		accumulator.setCuboid(stoneCuboid, Set.of());
+		commonCache.setThisEntity(entity);
+		commonCache.setCuboid(airCuboid, Set.of());
+		commonCache.setCuboid(stoneCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		
 		boolean didJump = accumulator.enqueueSubAction(new EntityChangeJump<>(), currentTimeMillis);
@@ -186,7 +187,7 @@ public class TestMovementAccumulator
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(out.getSubAction() instanceof EntityChangeJump);
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, commonCache, listener);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.49f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 4.9f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
@@ -202,15 +203,16 @@ public class TestMovementAccumulator
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
 		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(airCuboid, Set.of());
-		accumulator.setCuboid(stoneCuboid, Set.of());
+		commonCache.setThisEntity(entity);
+		commonCache.setCuboid(airCuboid, Set.of());
+		commonCache.setCuboid(stoneCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		
 		// We will walk south to make sure that there are no sign assumptions.
@@ -228,7 +230,7 @@ public class TestMovementAccumulator
 		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(out.getSubAction() instanceof EntityChangeJump);
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, commonCache, listener);
 		Assert.assertEquals(new EntityLocation(10.0f, 9.6f, 0.49f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, -4.0f, 4.9f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
@@ -244,13 +246,14 @@ public class TestMovementAccumulator
 		CuboidData topCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData bottomCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), ENV.special.AIR);
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		Entity entity = MutableEntity.createForTest(1).freeze();
-		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(topCuboid, Set.of());
-		accumulator.setCuboid(bottomCuboid, Set.of());
+		commonCache.setThisEntity(entity);
+		commonCache.setCuboid(topCuboid, Set.of());
+		commonCache.setCuboid(bottomCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		
 		// Run the first move.
@@ -271,7 +274,7 @@ public class TestMovementAccumulator
 		Assert.assertNull(out.getSubAction());
 		
 		// We need to apply this to our state since it would be considered part of the underlying state.
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(topCuboid, bottomCuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(topCuboid, bottomCuboid), entity, out, commonCache, listener);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.1f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.98f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
@@ -288,16 +291,17 @@ public class TestMovementAccumulator
 		CuboidData topCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData bottomCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), WATER_SOURCE);
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = new EntityLocation(16.0f, 16.0f, 2.0f);
 		mutable.newVelocity = new EntityLocation(0.0f, 0.0f, EntityMovementHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND);
 		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(topCuboid, Set.of());
-		accumulator.setCuboid(bottomCuboid, Set.of());
+		commonCache.setThisEntity(entity);
+		commonCache.setCuboid(topCuboid, Set.of());
+		commonCache.setCuboid(bottomCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		
 		// Run the first move.
@@ -318,7 +322,7 @@ public class TestMovementAccumulator
 		Assert.assertNull(out.getSubAction());
 		
 		// We need to apply this to our state since it would be considered part of the underlying state.
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(topCuboid, bottomCuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(topCuboid, bottomCuboid), entity, out, commonCache, listener);
 		Assert.assertEquals(new EntityLocation(16.0f, 16.0f, -2.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, EntityMovementHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
@@ -367,15 +371,16 @@ public class TestMovementAccumulator
 		long currentTimeMillis = 1000L;
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), WATER_SOURCE);
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = new EntityLocation(15.0f, 15.0f, 15.0f);
 		mutable.newVelocity = new EntityLocation(0.0f, 0.0f, -0.1f);
 		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(cuboid, Set.of());
+		commonCache.setThisEntity(entity);
+		commonCache.setCuboid(cuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		
 		// Swim, then move forward until the action is generated, and again to see that the swim impacts the second action.
@@ -392,7 +397,7 @@ public class TestMovementAccumulator
 		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(out.getSubAction() instanceof EntityChangeSwim);
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, commonCache, listener);
 		Assert.assertEquals(new EntityLocation(15.0f, 15.1f, 15.24f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 1.0f, 2.4f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
@@ -411,7 +416,7 @@ public class TestMovementAccumulator
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		Assert.assertNull(out.getSubAction());
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, commonCache, listener);
 		Assert.assertEquals(new EntityLocation(15.0f, 15.16f, 15.31f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.6f, 0.71f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
@@ -432,7 +437,8 @@ public class TestMovementAccumulator
 			, blockingCuboid.getCuboidAddress(), blockingMap
 		)).values().iterator().next();
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
@@ -440,9 +446,9 @@ public class TestMovementAccumulator
 		mutable.newInventory.addAllItems(STONE_ITEM, 1);
 		mutable.setSelectedKey(1);
 		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(cuboid, Set.of());
-		accumulator.setCuboid(blockingCuboid, Set.of());
+		commonCache.setThisEntity(entity);
+		commonCache.setCuboid(cuboid, Set.of());
+		commonCache.setCuboid(blockingCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, columnMap);
 		listener.cuboidDidLoad(blockingCuboid, columnMap);
@@ -465,7 +471,7 @@ public class TestMovementAccumulator
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(out.getSubAction() instanceof MutationPlaceSelectedBlock);
-		entity = _applyToEntityAndUpdateCuboid(millisPerTick, currentTimeMillis, cuboid, entity, out, accumulator, listener);
+		entity = _applyToEntityAndUpdateCuboid(millisPerTick, currentTimeMillis, cuboid, entity, out, commonCache, listener);
 		accumulator.applyLocalAccumulation();
 		
 		Assert.assertEquals(0, listener.thisEntity.inventory().currentEncumbrance);
@@ -482,13 +488,14 @@ public class TestMovementAccumulator
 		CuboidData topCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData bottomCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		Entity entity = MutableEntity.createForTest(1).freeze();
-		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(topCuboid, Set.of());
-		accumulator.setCuboid(bottomCuboid, Set.of());
+		commonCache.setThisEntity(entity);
+		commonCache.setCuboid(topCuboid, Set.of());
+		commonCache.setCuboid(bottomCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		
 		// Run the first move.
@@ -528,15 +535,16 @@ public class TestMovementAccumulator
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		Entity entity = MutableEntity.createForTest(1).freeze();
-		accumulator.setThisEntity(entity);
+		commonCache.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
-		accumulator.setCuboid(airCuboid, Set.of());
-		accumulator.setCuboid(stoneCuboid, Set.of());
+		commonCache.setCuboid(airCuboid, Set.of());
+		commonCache.setCuboid(stoneCuboid, Set.of());
 		
 		// Walk until the action is generated.
 		currentTimeMillis += 50L;
@@ -551,7 +559,7 @@ public class TestMovementAccumulator
 		Assert.assertNotNull(out);
 		Assert.assertNull(out.getSubAction());
 		
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, commonCache, listener);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.4f, 0.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
@@ -574,15 +582,16 @@ public class TestMovementAccumulator
 			, blockingCuboid.getCuboidAddress(), blockingMap
 		)).values().iterator().next();
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newInventory.addAllItems(LOG_ITEM, 1);
 		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(cuboid, Set.of());
-		accumulator.setCuboid(blockingCuboid, Set.of());
+		commonCache.setThisEntity(entity);
+		commonCache.setCuboid(cuboid, Set.of());
+		commonCache.setCuboid(blockingCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, columnMap);
 		listener.cuboidDidLoad(blockingCuboid, columnMap);
@@ -594,7 +603,7 @@ public class TestMovementAccumulator
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(out.getSubAction() instanceof EntityChangeCraft);
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid, blockingCuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid, blockingCuboid), entity, out, commonCache, listener);
 		accumulator.applyLocalAccumulation();
 		Assert.assertNotNull(listener.thisEntity.ephemeralShared().localCraftOperation());
 		
@@ -604,7 +613,7 @@ public class TestMovementAccumulator
 		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
 		Assert.assertNotNull(out);
 		Assert.assertNull(out.getSubAction());
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid, blockingCuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid, blockingCuboid), entity, out, commonCache, listener);
 		accumulator.applyLocalAccumulation();
 		Assert.assertNull(listener.thisEntity.ephemeralShared().localCraftOperation());
 		Assert.assertEquals(4, listener.thisEntity.inventory().currentEncumbrance);
@@ -621,14 +630,15 @@ public class TestMovementAccumulator
 		ColumnHeightMap columnMap = HeightMapHelpers.buildColumnMaps(Map.of(cuboid.getCuboidAddress(), cuboidMap
 		)).values().iterator().next();
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newInventory.addAllItems(LOG_ITEM, 1);
 		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(cuboid, Set.of());
+		commonCache.setThisEntity(entity);
+		commonCache.setCuboid(cuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, columnMap);
 		
@@ -640,7 +650,7 @@ public class TestMovementAccumulator
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(out.getSubAction() instanceof EntityChangeIncrementalBlockBreak);
-		entity = _applyToEntityAndUpdateCuboid(millisPerTick, currentTimeMillis, cuboid, entity, out, accumulator, listener);
+		entity = _applyToEntityAndUpdateCuboid(millisPerTick, currentTimeMillis, cuboid, entity, out, commonCache, listener);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(100, listener.loadedCuboids.get(cuboid.getCuboidAddress()).getDataSpecial(AspectRegistry.DAMAGE, targetBlock.getBlockAddress()).intValue());
 	}
@@ -654,18 +664,19 @@ public class TestMovementAccumulator
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = new EntityLocation(18.36f, 20.0f - 16.89f, 0.18f);
 		mutable.newVelocity = new EntityLocation(0.68f, -3.94f, -3.92f);
 		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
+		commonCache.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
-		accumulator.setCuboid(airCuboid, Set.of());
-		accumulator.setCuboid(stoneCuboid, Set.of());
+		commonCache.setCuboid(airCuboid, Set.of());
+		commonCache.setCuboid(stoneCuboid, Set.of());
 		
 		currentTimeMillis += 16L;
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
@@ -683,7 +694,7 @@ public class TestMovementAccumulator
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		Assert.assertNull(out.getSubAction());
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, commonCache, listener);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(18.39f, 2.91f, 0.0f), listener.thisEntity.location());
 		// Motion too little to detect collision.
@@ -709,16 +720,17 @@ public class TestMovementAccumulator
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, blockLocation.getBlockAddress(), STONE_ITEM.number());
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = startLocation;
 		mutable.isCreativeMode = true;
 		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
+		commonCache.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.setCuboid(cuboid, Set.of());
+		commonCache.setCuboid(cuboid, Set.of());
 		
 		// Enqueue and then stand around for a bit (enough that we will properly collide with the ground).
 		currentTimeMillis += 25L;
@@ -732,7 +744,7 @@ public class TestMovementAccumulator
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(out.getSubAction() instanceof EntityChangeChangeHotbarSlot);
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, commonCache, listener);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(1, listener.thisEntity.hotbarIndex());
 	}
@@ -746,15 +758,16 @@ public class TestMovementAccumulator
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
+		commonCache.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.setCuboid(airCuboid, Set.of());
-		accumulator.setCuboid(stoneCuboid, Set.of());
+		commonCache.setCuboid(airCuboid, Set.of());
+		commonCache.setCuboid(stoneCuboid, Set.of());
 		
 		// Walk for part of a tick.
 		currentTimeMillis += 40L;
@@ -767,7 +780,7 @@ public class TestMovementAccumulator
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		Assert.assertNull(out.getSubAction());
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, commonCache, listener);
 		accumulator.applyLocalAccumulation();
 		
 		// Completed this action and verify that it applied correctly.
@@ -792,7 +805,8 @@ public class TestMovementAccumulator
 		ColumnHeightMap columnHeightMap = HeightMapHelpers.buildColumnMaps(Map.of(cuboidAddress, cuboidHeightMap)).get(cuboidAddress.getColumn());
 		
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
@@ -800,9 +814,9 @@ public class TestMovementAccumulator
 		mutable.isCreativeMode = true;
 		mutable.setSelectedKey(STONE_ITEM.number());
 		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
+		commonCache.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.setCuboid(cuboid, Set.of());
+		commonCache.setCuboid(cuboid, Set.of());
 		listener.cuboidDidLoad(cuboid, columnHeightMap);
 		
 		// Enqueue and then stand around for a bit (enough that we will properly collide with the ground).
@@ -819,7 +833,7 @@ public class TestMovementAccumulator
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(out.getSubAction() instanceof MutationPlaceSelectedBlock);
-		entity = _applyToEntityAndUpdateCuboid(millisPerTick, currentTimeMillis, cuboid, entity, out, accumulator, listener);
+		entity = _applyToEntityAndUpdateCuboid(millisPerTick, currentTimeMillis, cuboid, entity, out, commonCache, listener);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(STONE_ITEM.number(), listener.loadedCuboids.get(targetLocation.getCuboidAddress()).getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
 	}
@@ -832,15 +846,16 @@ public class TestMovementAccumulator
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		Entity entity = MutableEntity.createForTest(1).freeze();
-		accumulator.setThisEntity(entity);
+		commonCache.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
-		accumulator.setCuboid(airCuboid, Set.of());
-		accumulator.setCuboid(stoneCuboid, Set.of());
+		commonCache.setCuboid(airCuboid, Set.of());
+		commonCache.setCuboid(stoneCuboid, Set.of());
 		
 		// Start running and continue by walking.
 		currentTimeMillis += 50L;
@@ -854,7 +869,7 @@ public class TestMovementAccumulator
 		Assert.assertNotNull(out);
 		Assert.assertNull(out.getSubAction());
 		
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, commonCache, listener);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.6f, 0.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
@@ -874,15 +889,16 @@ public class TestMovementAccumulator
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, solidBlock.getBlockAddress(), STONE.item().number());
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = startEntityLocation;
 		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
+		commonCache.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.setCuboid(cuboid, Set.of());
+		commonCache.setCuboid(cuboid, Set.of());
 		
 		// Take a few steps and verify that we can move but not fall off.
 		// Start running and continue by walking.
@@ -898,7 +914,7 @@ public class TestMovementAccumulator
 		Assert.assertNull(out.getSubAction());
 		
 		// We should see that the sneak didn't move us, this time, since we would have fallen off.
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, commonCache, listener);
 		Assert.assertEquals(new EntityLocation(5.8f, 5.9f, 6.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
@@ -921,14 +937,15 @@ public class TestMovementAccumulator
 		ColumnHeightMap columnMap = HeightMapHelpers.buildColumnMaps(Map.of(cuboid.getCuboidAddress(), cuboidMap
 		)).values().iterator().next();
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = startEntityLocation;
 		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(cuboid, Set.of());
+		commonCache.setThisEntity(entity);
+		commonCache.setCuboid(cuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, columnMap);
 		
@@ -939,50 +956,9 @@ public class TestMovementAccumulator
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.BACKWARD, false);
 		Assert.assertNotNull(out);
 		Assert.assertNull(out.getSubAction());
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, commonCache, listener);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(5.8f, 5.56f, 6.0f), entity.location());
-	}
-
-	@Test
-	public void addUpdateRemove() throws Throwable
-	{
-		// This just shows that we can correctly handle add/update/remove actions related to cuboids, creatures, and passives.
-		long millisPerTick = 100L;
-		long currentTimeMillis = 1000L;
-		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
-		
-		// Set the entity (just for completeness).  This is normally set first.
-		MutableEntity mutable = MutableEntity.createForTest(1);
-		mutable.newLocation = new EntityLocation(5.8f, 5.8f, 6.0f);
-		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
-		
-		// Create, update, remove a cuboid.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		accumulator.setCuboid(cuboid, Set.of());
-		// (these are just set again).
-		accumulator.setCuboid(cuboid, Set.of());
-		accumulator.removeCuboid(cuboid.getCuboidAddress());
-		
-		// Create, update, remove other entity (either a creature or other player).
-		PartialEntity partial = PartialEntity.fromCreature(CreatureEntity.create(-1, ENV.creatures.PLAYER, new EntityLocation(1.2f, -2.3f, 3.4f), 0L));
-		accumulator.setOtherEntity(partial);
-		// (these are just set again).
-		accumulator.setOtherEntity(partial);
-		accumulator.removeOtherEntity(partial.id());
-		
-		// Create, update, remove passive entity.
-		PartialPassive passive = new PartialPassive(1
-			, PassiveType.ITEM_SLOT
-			, new EntityLocation(1.2f, 2.3f, -3.4f)
-			, new EntityLocation(0.0f, 0.0f, -0.5f)
-			, null
-		);
-		accumulator.addPassive(passive);
-		accumulator.updatePassive(passive);
-		accumulator.removePassive(passive.id());
 	}
 
 	@Test
@@ -999,15 +975,16 @@ public class TestMovementAccumulator
 			, blockingCuboid.getCuboidAddress(), blockingMap
 		)).values().iterator().next();
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newInventory.addAllItems(LOG_ITEM, 1);
 		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(cuboid, Set.of());
-		accumulator.setCuboid(blockingCuboid, Set.of());
+		commonCache.setThisEntity(entity);
+		commonCache.setCuboid(cuboid, Set.of());
+		commonCache.setCuboid(blockingCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, columnMap);
 		listener.cuboidDidLoad(blockingCuboid, columnMap);
@@ -1028,7 +1005,7 @@ public class TestMovementAccumulator
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(out.getSubAction() instanceof EntityChangeCraft);
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid, blockingCuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid, blockingCuboid), entity, out, commonCache, listener);
 		// We should see the active operation since it was in this last action.
 		Assert.assertNotNull(listener.thisEntity.ephemeralShared().localCraftOperation());
 		accumulator.applyLocalAccumulation();
@@ -1052,14 +1029,15 @@ public class TestMovementAccumulator
 			, blockingCuboid.getCuboidAddress(), blockingMap
 		)).values().iterator().next();
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(cuboid, Set.of());
-		accumulator.setCuboid(blockingCuboid, Set.of());
+		commonCache.setThisEntity(entity);
+		commonCache.setCuboid(cuboid, Set.of());
+		commonCache.setCuboid(blockingCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, columnMap);
 		listener.cuboidDidLoad(blockingCuboid, columnMap);
@@ -1070,7 +1048,7 @@ public class TestMovementAccumulator
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(out.getSubAction() instanceof EntityChangeCraftInBlock);
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid, blockingCuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid, blockingCuboid), entity, out, commonCache, listener);
 		accumulator.applyLocalAccumulation();
 	}
 
@@ -1083,17 +1061,18 @@ public class TestMovementAccumulator
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = new EntityLocation(2.0f, 2.0f, -0.2f);
 		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
+		commonCache.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
-		accumulator.setCuboid(airCuboid, Set.of());
-		accumulator.setCuboid(stoneCuboid, Set.of());
+		commonCache.setCuboid(airCuboid, Set.of());
+		commonCache.setCuboid(stoneCuboid, Set.of());
 		
 		// Show that we don't move in even partial movement.
 		currentTimeMillis += 50L;
@@ -1107,7 +1086,7 @@ public class TestMovementAccumulator
 		currentTimeMillis += 90L;
 		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
 		Assert.assertNotNull(out);
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, commonCache, listener);
 		Assert.assertEquals(new EntityLocation(2.0f, 2.4f, 0.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
@@ -1124,17 +1103,18 @@ public class TestMovementAccumulator
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need (sunk down far enough not to pop out).
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = new EntityLocation(2.0f, 2.0f, -0.5f);
 		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
+		commonCache.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
-		accumulator.setCuboid(airCuboid, Set.of());
-		accumulator.setCuboid(stoneCuboid, Set.of());
+		commonCache.setCuboid(airCuboid, Set.of());
+		commonCache.setCuboid(stoneCuboid, Set.of());
 		
 		// Show that we don't move in even partial movement.
 		currentTimeMillis += 50L;
@@ -1159,7 +1139,7 @@ public class TestMovementAccumulator
 		// We will see that the the move is still generated, and still tries, since it can't tell that this has no impact.
 		Assert.assertEquals("SimpleMove(WALKING), by -0.00, 0.40, Sub: Jump", out.toString());
 		
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, commonCache, listener);
 		Assert.assertEquals(new EntityLocation(2.0f, 2.0f, -0.5f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
@@ -1177,14 +1157,15 @@ public class TestMovementAccumulator
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Usual boiler-plate.
 		Entity entity = MutableEntity.createForTest(1).freeze();
-		accumulator.setThisEntity(entity);
+		commonCache.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.setCuboid(airCuboid, Set.of());
-		accumulator.setCuboid(stoneCuboid, Set.of());
+		commonCache.setCuboid(airCuboid, Set.of());
+		commonCache.setCuboid(stoneCuboid, Set.of());
 		
 		// Walk forward-right, then forward until the action is generated.
 		currentTimeMillis += 50L;
@@ -1199,7 +1180,7 @@ public class TestMovementAccumulator
 		Assert.assertNull(out.getSubAction());
 		Assert.assertEquals("SimpleMove(WALKING), by 0.11, 0.31, Sub: null", out.toString());
 		
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, commonCache, listener);
 		Assert.assertEquals(new EntityLocation(0.11f, 0.31f, 0.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
@@ -1220,7 +1201,7 @@ public class TestMovementAccumulator
 		Assert.assertNull(out.getSubAction());
 		Assert.assertEquals("SimpleMove(WALKING), by -0.07, -0.15, Sub: null", out.toString());
 		
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, commonCache, listener);
 		Assert.assertEquals(new EntityLocation(0.04f, 0.16f, 0.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
@@ -1271,21 +1252,22 @@ public class TestMovementAccumulator
 		long millisPerTick = 100L;
 		long currentTimeMillis = 1000L;
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = new EntityLocation(31.8f, 31.8f, 0.0f);
 		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(bottomCuboid00, Set.of());
-		accumulator.setCuboid(bottomCuboid01, Set.of());
-		accumulator.setCuboid(bottomCuboid10, Set.of());
-		accumulator.setCuboid(bottomCuboid11, Set.of());
-		accumulator.setCuboid(topCuboid00, Set.of());
-		accumulator.setCuboid(topCuboid01, Set.of());
-		accumulator.setCuboid(topCuboid10, Set.of());
-		accumulator.setCuboid(topCuboid11, Set.of());
+		commonCache.setThisEntity(entity);
+		commonCache.setCuboid(bottomCuboid00, Set.of());
+		commonCache.setCuboid(bottomCuboid01, Set.of());
+		commonCache.setCuboid(bottomCuboid10, Set.of());
+		commonCache.setCuboid(bottomCuboid11, Set.of());
+		commonCache.setCuboid(topCuboid00, Set.of());
+		commonCache.setCuboid(topCuboid01, Set.of());
+		commonCache.setCuboid(topCuboid10, Set.of());
+		commonCache.setCuboid(topCuboid11, Set.of());
 		listener.thisEntityDidLoad(entity);
 		
 		long millisPerMove = 10L;
@@ -1335,14 +1317,15 @@ public class TestMovementAccumulator
 		long currentTimeMillis = 1000L;
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = new EntityLocation(5.8f, 5.8f, 30.0f);
 		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(cuboid, Set.of());
+		commonCache.setThisEntity(entity);
+		commonCache.setCuboid(cuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		
 		// Run the first move.
@@ -1359,7 +1342,7 @@ public class TestMovementAccumulator
 		// Now, place a block in the way and show that they pop out of it.
 		BlockAddress changed = BlockAddress.fromInt(6, 6, 30);
 		cuboid.setData15(AspectRegistry.BLOCK, changed, STONE.item().number());
-		accumulator.setCuboid(cuboid, Set.of(changed));
+		commonCache.setCuboid(cuboid, Set.of(changed));
 		
 		// Run the second move.
 		currentTimeMillis += millisPerMove;
@@ -1368,7 +1351,7 @@ public class TestMovementAccumulator
 		Assert.assertTrue(out.getSubAction() instanceof EntitySubActionPopOutOfBlock);
 		
 		// We need to apply this to our state since it would be considered part of the underlying state.
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, commonCache, listener);
 		Assert.assertEquals(new EntityLocation(5.8f, 5.59f, 29.9f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.98f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
@@ -1376,7 +1359,7 @@ public class TestMovementAccumulator
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -1.18f), listener.thisEntity.velocity());
 		
 		// Make sure that removing this doesn't cause issues.
-		accumulator.removeCuboid(cuboid.getCuboidAddress());
+		commonCache.removeCuboid(cuboid.getCuboidAddress());
 	}
 
 
@@ -1385,10 +1368,11 @@ public class TestMovementAccumulator
 		long millisPerTick = 50L;
 		long currentTimeMillis = 1000L;
 		_ProjectionListener listener = new _ProjectionListener();
-		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
 		
-		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(cuboid, Set.of());
+		commonCache.setThisEntity(entity);
+		commonCache.setCuboid(cuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		
 		// Run the standing sequences and return the final entity state.
@@ -1399,7 +1383,7 @@ public class TestMovementAccumulator
 			if (null != out)
 			{
 				Assert.assertNull(out.getSubAction());
-				entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
+				entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, commonCache, listener);
 			}
 			accumulator.applyLocalAccumulation();
 		}
@@ -1411,7 +1395,7 @@ public class TestMovementAccumulator
 			, List<IReadOnlyCuboidData> cuboids
 			, Entity inputEntity
 			, IEntityAction<IMutablePlayerEntity> action
-			, MovementAccumulator accumulator
+			, CommonClientWorldCache commonCache
 			, _ProjectionListener listener
 	)
 	{
@@ -1421,7 +1405,7 @@ public class TestMovementAccumulator
 		MutableEntity mutable = MutableEntity.existing(inputEntity);
 		Assert.assertTrue(action.applyChange(context, mutable));
 		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
+		commonCache.setThisEntity(entity);
 		listener.thisEntityDidChange(entity);
 		return entity;
 	}
@@ -1431,7 +1415,7 @@ public class TestMovementAccumulator
 			, IReadOnlyCuboidData cuboid
 			, Entity inputEntity
 			, IEntityAction<IMutablePlayerEntity> action
-			, MovementAccumulator accumulator
+			, CommonClientWorldCache commonCache
 			, _ProjectionListener listener
 	)
 	{
@@ -1443,7 +1427,7 @@ public class TestMovementAccumulator
 		MutableEntity mutable = MutableEntity.existing(inputEntity);
 		Assert.assertTrue(action.applyChange(context, mutable));
 		Entity entity = mutable.freeze();
-		accumulator.setThisEntity(entity);
+		commonCache.setThisEntity(entity);
 		listener.thisEntityDidChange(entity);
 		CuboidData lazyMutable = null;
 		Set<BlockAddress> changedBlocks = new HashSet<>();
@@ -1467,7 +1451,7 @@ public class TestMovementAccumulator
 			CuboidAddress address = lazyMutable.getCuboidAddress();
 			CuboidHeightMap cuboidHeightMap = HeightMapHelpers.buildHeightMap(lazyMutable);
 			ColumnHeightMap columnHeightMap = HeightMapHelpers.buildColumnMaps(Map.of(address, cuboidHeightMap)).get(address.getColumn());
-			accumulator.setCuboid(lazyMutable, Set.of());
+			commonCache.setCuboid(lazyMutable, Set.of());
 			// To keep things simple for these tests, we assume only block aspect changes.
 			listener.cuboidDidChange(lazyMutable, columnHeightMap, changedBlocks, Set.of(AspectRegistry.BLOCK));
 		}

@@ -43,6 +43,7 @@ public class ClientRunner
 	private final TimeRunnerList _callsFromNetworkToApply;
 
 	private SpeculativeProjection _projection;
+	private CommonClientWorldCache _commonWorldCache;
 	private MovementAccumulator _accumulator;
 
 	// This is set once when the client connects and is only read after that.
@@ -220,7 +221,11 @@ public class ClientRunner
 				// We create the projection here.
 				// We will locally wrap the projection listener we were given so that we will always know the properties of the entity.
 				_projection = new SpeculativeProjection(assignedId, new LocalProjection(), millisPerTick);
-				_accumulator = new MovementAccumulator(_projectionListener, millisPerTick, Environment.getShared().creatures.PLAYER.volume(), currentTimeMillis);
+				// We can only create the world cache here since it requires the millisPerTick, which we only know once connected.
+				Environment env = Environment.getShared();
+				_commonWorldCache = new CommonClientWorldCache(env, _projectionListener, millisPerTick);
+				// We default to enabling the normal movement accumulator.
+				_accumulator = new MovementAccumulator(_commonWorldCache, currentTimeMillis);
 				_serverMaximumViewDistance = viewDistanceMaximum;
 				// Notify the listener that we were assigned an ID.
 				_clientListener.clientDidConnectAndLogin(assignedId, currentViewDistance);
@@ -395,7 +400,7 @@ public class ClientRunner
 		{
 			// Ignored.
 			_projectionListener.cuboidDidLoad(cuboid, columnHeightMap);
-			_accumulator.setCuboid(cuboid, Set.of());
+			_commonWorldCache.setCuboid(cuboid, Set.of());
 		}
 		@Override
 		public void cuboidDidChange(IReadOnlyCuboidData cuboid
@@ -406,27 +411,27 @@ public class ClientRunner
 		{
 			// Ignored.
 			_projectionListener.cuboidDidChange(cuboid, columnHeightMap, changedBlocks, changedAspects);
-			_accumulator.setCuboid(cuboid, changedBlocks);
+			_commonWorldCache.setCuboid(cuboid, changedBlocks);
 		}
 		@Override
 		public void cuboidDidUnload(CuboidAddress address)
 		{
 			// Ignored.
 			_projectionListener.cuboidDidUnload(address);
-			_accumulator.removeCuboid(address);
+			_commonWorldCache.removeCuboid(address);
 		}
 		@Override
 		public void thisEntityDidLoad(Entity authoritativeEntity)
 		{
 			// We will start with the authoritative data since their is no client-divergence, yet.
 			_projectionListener.thisEntityDidLoad(authoritativeEntity);
-			_accumulator.setThisEntity(authoritativeEntity);
+			_commonWorldCache.setThisEntity(authoritativeEntity);
 		}
 		@Override
 		public void thisEntityDidChange(Entity projectedEntity)
 		{
 			// We might want to overrule this projected entity with one in the accumulator, if it is there (since this would otherwise revert our state).
-			_accumulator.setThisEntity(projectedEntity);
+			_commonWorldCache.setThisEntity(projectedEntity);
 			boolean didNotify = _accumulator.applyLocalAccumulation();
 			if (!didNotify)
 			{
@@ -437,37 +442,37 @@ public class ClientRunner
 		public void otherEntityDidLoad(PartialEntity entity)
 		{
 			_projectionListener.otherEntityDidLoad(entity);
-			_accumulator.setOtherEntity(entity);
+			_commonWorldCache.setOtherEntity(entity);
 		}
 		@Override
 		public void otherEntityDidChange(PartialEntity entity)
 		{
 			_projectionListener.otherEntityDidChange(entity);
-			_accumulator.setOtherEntity(entity);
+			_commonWorldCache.setOtherEntity(entity);
 		}
 		@Override
 		public void otherEntityDidUnload(int id)
 		{
 			_projectionListener.otherEntityDidUnload(id);
-			_accumulator.removeOtherEntity(id);
+			_commonWorldCache.removeOtherEntity(id);
 		}
 		@Override
 		public void passiveEntityDidLoad(PartialPassive entity)
 		{
 			_projectionListener.passiveEntityDidLoad(entity);
-			_accumulator.addPassive(entity);
+			_commonWorldCache.addPassive(entity);
 		}
 		@Override
 		public void passiveEntityDidChange(PartialPassive entity)
 		{
 			_projectionListener.passiveEntityDidChange(entity);
-			_accumulator.updatePassive(entity);
+			_commonWorldCache.updatePassive(entity);
 		}
 		@Override
 		public void passiveEntityDidUnload(int id)
 		{
 			_projectionListener.passiveEntityDidUnload(id);
-			_accumulator.removePassive(id);
+			_commonWorldCache.removePassive(id);
 		}
 		@Override
 		public void tickDidComplete(long gameTick)

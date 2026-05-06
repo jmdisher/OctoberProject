@@ -1,33 +1,16 @@
 package com.jeffdisher.october.client;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
-import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
-import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.BlockAddress;
-import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
-import com.jeffdisher.october.types.PartialEntity;
-import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -49,18 +32,7 @@ public class MovementAccumulator
 	public static final float SNEAK_SPEED_MULTIPLIER = 0.5f;
 	public static final float STANDING_SPEED_MULTIPLIER = 0.0f;
 
-	private final Environment _env;
-	private final IProjectionListener _listener;
-	private final long _millisPerTick;
-	private final EntityVolume _playerVolume;
-
-	private Entity _thisEntity;
-	private final Map<CuboidAddress, IReadOnlyCuboidData> _world;
-	private final Map<Integer, PartialEntity> _otherEntities;
-	private final Map<Integer, PartialPassive> _passives;
-	private final Map<AbsoluteLocation, BlockProxy> _proxyCache;
-	private final TickProcessingContext.IBlockFetcher _proxyLookup;
-	private final ViscosityReader _reader;
+	private final CommonClientWorldCache _worldCache;
 
 	private long _accumulationMillis;
 	private long _lastSampleMillis;
@@ -71,61 +43,13 @@ public class MovementAccumulator
 	private EntityActionSimpleMove.Intensity _intensity;
 	private Entity _lastNotifiedEntity;
 
-	public MovementAccumulator(IProjectionListener listener
-		, long millisPerTick
-		, EntityVolume playerVolume
+	public MovementAccumulator(CommonClientWorldCache worldCache
 		, long currentTimeMillis
 	)
 	{
-		_env = Environment.getShared();
-		_listener = listener;
-		_millisPerTick = millisPerTick;
-		_playerVolume = playerVolume;
-		
-		_world = new HashMap<>();
-		_otherEntities = new HashMap<>();
-		_passives = new HashMap<>();
+		_worldCache = worldCache;
 		
 		_discardAccumulation(currentTimeMillis);
-		
-		_proxyCache = new HashMap<>();
-		_proxyLookup = new TickProcessingContext.IBlockFetcher() {
-			@Override
-			public BlockProxy readBlock(AbsoluteLocation location)
-			{
-				return _readOneBlock(location);
-			}
-			@Override
-			public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
-			{
-				// TODO:  Make this call a batching mechanism in the lower level.
-				Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
-				for (AbsoluteLocation location : locations)
-				{
-					BlockProxy proxy = _readOneBlock(location);
-					if (null != proxy)
-					{
-						completed.put(location, proxy);
-					}
-				}
-				return completed;
-			}
-			private BlockProxy _readOneBlock(AbsoluteLocation location)
-			{
-				BlockProxy proxy = _proxyCache.get(location);
-				if (null == proxy)
-				{
-					IReadOnlyCuboidData cuboid = _world.get(location.getCuboidAddress());
-					if (null != cuboid)
-					{
-						proxy = BlockProxy.load(location.getBlockAddress(), cuboid);
-						_proxyCache.put(location, proxy);
-					}
-				}
-				return proxy;
-			}
-		};
-		_reader = new ViscosityReader(_env, _proxyLookup);
 	}
 
 	/**
@@ -198,7 +122,7 @@ public class MovementAccumulator
 		
 		// Before we apply anything, determine if we started on the ground.
 		Entity currentEntity = _getLatestLocalEntity(currentTimeMillis);
-		boolean startedOnGround = SpatialHelpers.isStandingOnGround(_reader, currentEntity.location(), _playerVolume);
+		boolean startedOnGround = SpatialHelpers.isStandingOnGround(_worldCache.reader, currentEntity.location(), _worldCache.playerVolume);
 		
 		// These are the constant parameters for every path.
 		EntityActionSimpleMove.Intensity intensity = EntityActionSimpleMove.Intensity.WALKING;
@@ -230,7 +154,7 @@ public class MovementAccumulator
 			);
 			long millisToApply = _accumulationMillis + toAdd;
 			Entity possibleEntity = _generateLocalEntity(toRun, millisToApply, currentTimeMillis);
-			boolean endedOnGround = SpatialHelpers.isStandingOnGround(_reader, possibleEntity.location(), _playerVolume);
+			boolean endedOnGround = SpatialHelpers.isStandingOnGround(_worldCache.reader, possibleEntity.location(), _worldCache.playerVolume);
 			
 			if (endedOnGround)
 			{
@@ -292,13 +216,13 @@ public class MovementAccumulator
 	public boolean applyLocalAccumulation()
 	{
 		_lastNotifiedEntity = _getLatestLocalEntity(_lastSampleMillis);
-		if (_thisEntity == _lastNotifiedEntity)
+		if (_worldCache.thisEntity == _lastNotifiedEntity)
 		{
 			_lastNotifiedEntity = null;
 		}
 		else
 		{
-			_listener.thisEntityDidChange(_lastNotifiedEntity);
+			_worldCache.listener.thisEntityDidChange(_lastNotifiedEntity);
 		}
 		return (null != _lastNotifiedEntity);
 	}
@@ -310,111 +234,6 @@ public class MovementAccumulator
 	public void clearAccumulation()
 	{
 		_discardAccumulation(_lastSampleMillis);
-	}
-
-	/**
-	 * Sets the underlying "known good" entity state for this entity.  Does not immediately impact accumulated state.
-	 * 
-	 * @param entity The new entity state.
-	 */
-	public void setThisEntity(Entity entity)
-	{
-		_thisEntity = entity;
-	}
-
-	/**
-	 * Sets or updates a cuboid in the local reference state.
-	 * 
-	 * @param cuboid The cuboid.
-	 * @param changedBlocks The set of blocks which changed in this cuboid.
-	 */
-	public void setCuboid(IReadOnlyCuboidData cuboid, Set<BlockAddress> changedBlocks)
-	{
-		CuboidAddress address = cuboid.getCuboidAddress();
-		_world.put(address, cuboid);
-		
-		// Invalidate any caching of the changed blocks.
-		AbsoluteLocation base = address.getBase();
-		for (BlockAddress block: changedBlocks)
-		{
-			AbsoluteLocation loc = base.relativeForBlock(block);
-			_proxyCache.remove(loc);
-		}
-	}
-
-	/**
-	 * Removes the cuboid with the given address from local reference state.
-	 * 
-	 * @param address The address of the cuboid to remove.
-	 */
-	public void removeCuboid(CuboidAddress address)
-	{
-		Assert.assertTrue(null != _world.remove(address));
-		
-		// Clean up the proxy cache.
-		Iterator<AbsoluteLocation> iter = _proxyCache.keySet().iterator();
-		while (iter.hasNext())
-		{
-			AbsoluteLocation location = iter.next();
-			if (address.equals(location.getCuboidAddress()))
-			{
-				iter.remove();
-			}
-		}
-	}
-
-	/**
-	 * Sets or updates another entity in the local reference state.
-	 * 
-	 * @param entity The entity to store.
-	 */
-	public void setOtherEntity(PartialEntity entity)
-	{
-		int id = entity.id();
-		_otherEntities.put(id, entity);
-	}
-
-	/**
-	 * Removes another entity from the local reference state.
-	 * 
-	 * @param id The ID of the entity to remove.
-	 */
-	public void removeOtherEntity(int id)
-	{
-		Assert.assertTrue(null != _otherEntities.remove(id));
-	}
-
-	/**
-	 * Adds a passive entity to the accumulator.
-	 * 
-	 * @param passive The new passive.
-	 */
-	public void addPassive(PartialPassive passive)
-	{
-		Object old = _passives.put(passive.id(), passive);
-		Assert.assertTrue(null == old);
-	}
-
-	/**
-	 * Updates a passive already known to the accumulator.
-	 * 
-	 * @param entity The updated passive state.
-	 */
-	public void updatePassive(PartialPassive entity)
-	{
-		PartialPassive old = _passives.get(entity.id());
-		Assert.assertTrue(null != old);
-		_passives.put(entity.id(), entity);
-	}
-
-	/**
-	 * Removes an already-known passive from the accumulator.
-	 * 
-	 * @param entityId The ID of the passive entity to remove.
-	 */
-	public void removePassive(int entityId)
-	{
-		Assert.assertTrue(null != _passives.remove(entityId));
 	}
 
 	/**
@@ -441,7 +260,7 @@ public class MovementAccumulator
 		float yawRadians = orientationRadians + relativeDirection.yawRadians;
 		float xComponent = OrientationHelpers.getEastYawComponent(yawRadians);
 		float yComponent = OrientationHelpers.getNorthYawComponent(yawRadians);
-		float maxSpeed = _env.creatures.PLAYER.blocksPerSecond() * intensity.speedMultipler * speedMultiplier;
+		float maxSpeed = _worldCache.env.creatures.PLAYER.blocksPerSecond() * intensity.speedMultipler * speedMultiplier;
 		float speed = maxSpeed * relativeDirection.speedMultiplier;
 		float seconds = (float)millisMoving / 1000.0f;
 		
@@ -467,11 +286,11 @@ public class MovementAccumulator
 	// Returns null if there was an error in toRun or _thisEntity, if it was a success but had no impact.
 	private Entity _generateLocalEntity(EntityActionSimpleMove<IMutablePlayerEntity> toRun, long millisToApply, long currentTimeMillis)
 	{
-		OneOffRunner.InputState input = new OneOffRunner.InputState(_thisEntity
-			, _world
-			, _otherEntities
-			, _passives
-			, _proxyLookup
+		OneOffRunner.InputState input = new OneOffRunner.InputState(_worldCache.thisEntity
+			, _worldCache.world
+			, _worldCache.otherEntities
+			, _worldCache.passives
+			, _worldCache.proxyLookup
 		);
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
 			// We can probably ignore events in this path since they will either be entity-related (hence sent by the
@@ -488,10 +307,10 @@ public class MovementAccumulator
 			{
 				// Note that we will further ignore this change if it didn't cause a change to location or velocity, unless it also has a sub-action (since they can change other things).
 				if ((null != toRun.getSubAction())
-					|| !_thisEntity.location().equals(possible.location())
-					|| !_thisEntity.velocity().equals(possible.velocity())
-					|| (_thisEntity.yaw() != possible.yaw())
-					|| (_thisEntity.pitch() != possible.pitch())
+					|| !_worldCache.thisEntity.location().equals(possible.location())
+					|| !_worldCache.thisEntity.velocity().equals(possible.velocity())
+					|| (_worldCache.thisEntity.yaw() != possible.yaw())
+					|| (_worldCache.thisEntity.pitch() != possible.pitch())
 				)
 				{
 					toReturn = possible;
@@ -499,13 +318,13 @@ public class MovementAccumulator
 				else
 				{
 					// Nothing meaningful changed so return the original instance.
-					toReturn = _thisEntity;
+					toReturn = _worldCache.thisEntity;
 				}
 			}
 			else
 			{
 				// Nothing changed so return the original instance.
-				toReturn = _thisEntity;
+				toReturn = _worldCache.thisEntity;
 			}
 		}
 		else
@@ -533,13 +352,13 @@ public class MovementAccumulator
 			{
 				// There is something wrong so just reset.
 				_discardAccumulation(currentTimeMillis);
-				entity = _thisEntity;
+				entity = _worldCache.thisEntity;
 			}
 		}
 		else
 		{
 			// Default to the one we last received.
-			entity = _thisEntity;
+			entity = _worldCache.thisEntity;
 		}
 		return entity;
 	}
@@ -553,17 +372,16 @@ public class MovementAccumulator
 			// We always return actions with sub-actions so check those without to see if they can be dropped.
 			long millisToApply = _accumulationMillis;
 			Entity newEntity = _generateLocalEntity(toRun, millisToApply, currentTimeMillis);
-			if (newEntity == _thisEntity)
+			if (newEntity == _worldCache.thisEntity)
 			{
 				// This changes nothing, so that either means that there is nothing changing, or that we are stuck in a block (we need to check for collision in either case since both can be true).
-				ViscosityReader reader = new ViscosityReader(_env, _proxyLookup);
-				EntityLocation targetLocation = EntityMovementHelpers.popOutLocation(reader, _thisEntity.location(), _playerVolume, EntitySubActionPopOutOfBlock.POP_OUT_MAX_DISTANCE);
+				EntityLocation targetLocation = EntityMovementHelpers.popOutLocation(_worldCache.reader, _worldCache.thisEntity.location(), _worldCache.playerVolume, EntitySubActionPopOutOfBlock.POP_OUT_MAX_DISTANCE);
 				if (null != targetLocation)
 				{
 					_subAction = new EntitySubActionPopOutOfBlock<IMutablePlayerEntity>(targetLocation);
 					toRun = _moveFromAccumulation();
 					newEntity = _generateLocalEntity(toRun, millisToApply, currentTimeMillis);
-					if ((null == newEntity) || (newEntity == _thisEntity))
+					if ((null == newEntity) || (newEntity == _worldCache.thisEntity))
 					{
 						// This didn't work either.
 						_subAction = null;
@@ -621,14 +439,14 @@ public class MovementAccumulator
 		long toAdd = (currentTimeMillis - _lastSampleMillis);
 		long combined = _accumulationMillis + toAdd;
 		EntityActionSimpleMove<IMutablePlayerEntity> toReturn;
-		if (combined > _millisPerTick)
+		if (combined > _worldCache.millisPerTick)
 		{
 			// Add to the existing, finish it, and start the next.
-			long spillToNext = combined % _millisPerTick;
-			long addToExisting = (toAdd - spillToNext) % _millisPerTick;
+			long spillToNext = combined % _worldCache.millisPerTick;
+			long addToExisting = (toAdd - spillToNext) % _worldCache.millisPerTick;
 			if (0L == addToExisting)
 			{
-				addToExisting = _millisPerTick;
+				addToExisting = _worldCache.millisPerTick;
 			}
 			
 			_accumulateMovement(addToExisting, relativeDirection, intensity, speedMultiplier);
@@ -644,7 +462,7 @@ public class MovementAccumulator
 			);
 			_intensity = intensity;
 		}
-		else if (combined == _millisPerTick)
+		else if (combined == _worldCache.millisPerTick)
 		{
 			// Add to the existing, finish it, and clear state.
 			_accumulateMovement(toAdd, relativeDirection, intensity, speedMultiplier);
