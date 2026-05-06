@@ -197,7 +197,6 @@ public class ClientRunner
 	{
 		// Since we get lots of small callbacks, we buffer them here, in the network thread, before passing back the
 		// finished tick data (just avoids a lot of tiny calls between threads to perform the same trivial action).
-		private boolean _didInitialize = false;
 		private Entity _thisEntity = null;
 		private List<PartialEntity> _addedEntities = new ArrayList<>();
 		private List<PartialPassive> _addedPassives = new ArrayList<>();
@@ -357,11 +356,6 @@ public class ClientRunner
 						, latestLocalCommitIncluded
 						, currentTimeMillis
 				);
-				if (!_didInitialize)
-				{
-					_accumulator.clearAccumulation();
-					_didInitialize = true;
-				}
 			});
 		}
 		@Override

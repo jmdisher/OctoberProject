@@ -95,7 +95,6 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(airCuboid, Set.of());
 		accumulator.setCuboid(stoneCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		
 		// Set our orientation and stand around until the action is generated.
 		byte yaw = 5;
@@ -131,7 +130,6 @@ public class TestMovementAccumulator
 		Entity entity = MutableEntity.createForTest(1).freeze();
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
 		accumulator.setCuboid(airCuboid, Set.of());
 		accumulator.setCuboid(stoneCuboid, Set.of());
@@ -174,7 +172,6 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(airCuboid, Set.of());
 		accumulator.setCuboid(stoneCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		
 		boolean didJump = accumulator.enqueueSubAction(new EntityChangeJump<>(), currentTimeMillis);
 		Assert.assertTrue(didJump);
@@ -215,7 +212,6 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(airCuboid, Set.of());
 		accumulator.setCuboid(stoneCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		
 		// We will walk south to make sure that there are no sign assumptions.
 		accumulator.setOrientation(OrientationHelpers.YAW_SOUTH, OrientationHelpers.PITCH_UP);
@@ -256,7 +252,6 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(topCuboid, Set.of());
 		accumulator.setCuboid(bottomCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		
 		// Run the first move.
 		long millisPerMove = 60L;
@@ -304,7 +299,6 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(topCuboid, Set.of());
 		accumulator.setCuboid(bottomCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		
 		// Run the first move.
 		long millisPerMove = 60L;
@@ -383,7 +377,6 @@ public class TestMovementAccumulator
 		accumulator.setThisEntity(entity);
 		accumulator.setCuboid(cuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		
 		// Swim, then move forward until the action is generated, and again to see that the swim impacts the second action.
 		boolean didSwim = accumulator.enqueueSubAction(new EntityChangeSwim<>(), currentTimeMillis);
@@ -453,7 +446,6 @@ public class TestMovementAccumulator
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, columnMap);
 		listener.cuboidDidLoad(blockingCuboid, columnMap);
-		accumulator.clearAccumulation();
 		
 		// Place a block and verify that the output information is correct for local accumulation.
 		long millisPerMove = 60L;
@@ -498,7 +490,6 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(topCuboid, Set.of());
 		accumulator.setCuboid(bottomCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		
 		// Run the first move.
 		long millisPerMove = 60L;
@@ -543,7 +534,6 @@ public class TestMovementAccumulator
 		Entity entity = MutableEntity.createForTest(1).freeze();
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
 		accumulator.setCuboid(airCuboid, Set.of());
 		accumulator.setCuboid(stoneCuboid, Set.of());
@@ -596,7 +586,6 @@ public class TestMovementAccumulator
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, columnMap);
 		listener.cuboidDidLoad(blockingCuboid, columnMap);
-		accumulator.clearAccumulation();
 		
 		// Enqueue a craft operation and run a standing iteration to see that it does set the local crafting operation but that the following tick, without continuing, abandons it.
 		long millisPerMove = millisPerTick;
@@ -642,7 +631,6 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(cuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, columnMap);
-		accumulator.clearAccumulation();
 		
 		// Enqueue a craft operation and run a standing iteration to see that it does set the local crafting operation but that the following tick, without continuing, abandons it.
 		AbsoluteLocation targetBlock = entity.location().getBlockLocation();
@@ -675,7 +663,6 @@ public class TestMovementAccumulator
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
 		accumulator.setCuboid(airCuboid, Set.of());
 		accumulator.setCuboid(stoneCuboid, Set.of());
@@ -731,7 +718,6 @@ public class TestMovementAccumulator
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		accumulator.setCuboid(cuboid, Set.of());
 		
 		// Enqueue and then stand around for a bit (enough that we will properly collide with the ground).
@@ -767,7 +753,6 @@ public class TestMovementAccumulator
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		accumulator.setCuboid(airCuboid, Set.of());
 		accumulator.setCuboid(stoneCuboid, Set.of());
 		
@@ -817,7 +802,6 @@ public class TestMovementAccumulator
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		accumulator.setCuboid(cuboid, Set.of());
 		listener.cuboidDidLoad(cuboid, columnHeightMap);
 		
@@ -854,7 +838,6 @@ public class TestMovementAccumulator
 		Entity entity = MutableEntity.createForTest(1).freeze();
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
 		accumulator.setCuboid(airCuboid, Set.of());
 		accumulator.setCuboid(stoneCuboid, Set.of());
@@ -899,7 +882,6 @@ public class TestMovementAccumulator
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		accumulator.setCuboid(cuboid, Set.of());
 		
 		// Take a few steps and verify that we can move but not fall off.
@@ -949,7 +931,6 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(cuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, columnMap);
-		accumulator.clearAccumulation();
 		
 		// Enqueue an action which we know will fail and observe that the top-level is still produced and passes.
 		long millisPerMove = millisPerTick;
@@ -1030,7 +1011,6 @@ public class TestMovementAccumulator
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, columnMap);
 		listener.cuboidDidLoad(blockingCuboid, columnMap);
-		accumulator.clearAccumulation();
 		
 		// Enqueue a craft operation and run a standing iteration.
 		currentTimeMillis += (millisPerTick / 2L);
@@ -1083,7 +1063,6 @@ public class TestMovementAccumulator
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, columnMap);
 		listener.cuboidDidLoad(blockingCuboid, columnMap);
-		accumulator.clearAccumulation();
 		
 		// Try to craft something in the table, where normal validation that the sub-task is value will fail witout any accumulation.
 		accumulator.enqueueSubAction(new EntityChangeCraftInBlock(tableLocation, ENV.crafting.getCraftById("op.b000")), currentTimeMillis);
@@ -1112,7 +1091,6 @@ public class TestMovementAccumulator
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
 		accumulator.setCuboid(airCuboid, Set.of());
 		accumulator.setCuboid(stoneCuboid, Set.of());
@@ -1154,7 +1132,6 @@ public class TestMovementAccumulator
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
 		accumulator.setCuboid(airCuboid, Set.of());
 		accumulator.setCuboid(stoneCuboid, Set.of());
@@ -1206,7 +1183,6 @@ public class TestMovementAccumulator
 		Entity entity = MutableEntity.createForTest(1).freeze();
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		accumulator.setCuboid(airCuboid, Set.of());
 		accumulator.setCuboid(stoneCuboid, Set.of());
 		
@@ -1311,7 +1287,6 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(topCuboid10, Set.of());
 		accumulator.setCuboid(topCuboid11, Set.of());
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		
 		long millisPerMove = 10L;
 		if (infiniteLoopForProfiler)
@@ -1369,7 +1344,6 @@ public class TestMovementAccumulator
 		accumulator.setThisEntity(entity);
 		accumulator.setCuboid(cuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		
 		// Run the first move.
 		long millisPerMove = 60L;
@@ -1416,7 +1390,6 @@ public class TestMovementAccumulator
 		accumulator.setThisEntity(entity);
 		accumulator.setCuboid(cuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation();
 		
 		// Run the standing sequences and return the final entity state.
 		for (int i = 0; i < iterationCount; ++i)
