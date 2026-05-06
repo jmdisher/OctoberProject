@@ -76,7 +76,7 @@ public class MovementAccumulator
 	public EntityActionSimpleMove<IMutablePlayerEntity> stand(long currentTimeMillis)
 	{
 		// We don't want to change motion here.
-		Relative relativeDirection = Relative.FORWARD;
+		RelativeDirection relativeDirection = RelativeDirection.FORWARD;
 		EntityActionSimpleMove.Intensity intensity = EntityActionSimpleMove.Intensity.STANDING;
 		float speedMultiplier = STANDING_SPEED_MULTIPLIER;
 		EntityActionSimpleMove<IMutablePlayerEntity> toReturn = _commonMovement(currentTimeMillis, relativeDirection, intensity, speedMultiplier);
@@ -93,7 +93,7 @@ public class MovementAccumulator
 	 * @param runningSpeed True if we should run, instead of walk.
 	 * @return A completed change, if one was generated.
 	 */
-	public EntityActionSimpleMove<IMutablePlayerEntity> walk(long currentTimeMillis, Relative relativeDirection, boolean runningSpeed)
+	public EntityActionSimpleMove<IMutablePlayerEntity> walk(long currentTimeMillis, RelativeDirection relativeDirection, boolean runningSpeed)
 	{
 		// We will need to add in some movement here and potentially increase the stored intensity.
 		EntityActionSimpleMove.Intensity intensity = runningSpeed
@@ -115,7 +115,7 @@ public class MovementAccumulator
 	 * @param relativeDirection Movement, relative to the current yaw direction.
 	 * @return A completed change, if one was generated.
 	 */
-	public EntityActionSimpleMove<IMutablePlayerEntity> sneak(long currentTimeMillis, Relative relativeDirection)
+	public EntityActionSimpleMove<IMutablePlayerEntity> sneak(long currentTimeMillis, RelativeDirection relativeDirection)
 	{
 		// Sneaking is similar to walking but we need to check if it would cause us to go from solid ground to no longer
 		// on solid ground and convert it into standing, in that case.
@@ -251,7 +251,7 @@ public class MovementAccumulator
 
 
 	private _Motion _buildOneStep(long millisMoving
-		, Relative relativeDirection
+		, RelativeDirection relativeDirection
 		, EntityActionSimpleMove.Intensity intensity
 		, float speedMultiplier
 	)
@@ -418,7 +418,7 @@ public class MovementAccumulator
 		_intensity = EntityActionSimpleMove.Intensity.STANDING;
 	}
 
-	private void _accumulateMovement(long millis, Relative relativeDirection, EntityActionSimpleMove.Intensity intensity, float speedMultiplier)
+	private void _accumulateMovement(long millis, RelativeDirection relativeDirection, EntityActionSimpleMove.Intensity intensity, float speedMultiplier)
 	{
 		_Motion step = _buildOneStep(millis
 			, relativeDirection
@@ -430,7 +430,7 @@ public class MovementAccumulator
 	}
 
 	private EntityActionSimpleMove<IMutablePlayerEntity> _commonMovement(long currentTimeMillis
-		, Relative relativeDirection
+		, RelativeDirection relativeDirection
 		, EntityActionSimpleMove.Intensity intensity
 		, float speedMultiplier
 	)
@@ -477,36 +477,6 @@ public class MovementAccumulator
 		}
 		_lastSampleMillis = currentTimeMillis;
 		return toReturn;
-	}
-
-
-	public static final float MULTIPLIER_FORWARD = 1.0f;
-	public static final float MULTIPLIER_STRAFE = 0.8f;
-	public static final float MULTIPLIER_BACKWARD = 0.6f;
-
-	/**
-	 * The direction of a horizontal move, relative to the orientation.
-	 * We assume that the client is digital, meaning it can only move in 8 directions (4 single-key moves and 8
-	 * double-key moves).
-	 */
-	public static enum Relative
-	{
-		FORWARD(MULTIPLIER_FORWARD, 0.0f),
-		FORWARD_LEFT(MULTIPLIER_STRAFE, (float)(1.0 / 4.0 * Math.PI)),
-		LEFT(MULTIPLIER_STRAFE, (float)(2.0 / 4.0 * Math.PI)),
-		BACKWARD_LEFT(MULTIPLIER_BACKWARD, (float)(3.0 / 4.0 * Math.PI)),
-		BACKWARD(MULTIPLIER_BACKWARD, (float)(4.0 / 4.0 * Math.PI)),
-		BACKWARD_RIGHT(MULTIPLIER_BACKWARD, (float)(5.0 / 4.0 * Math.PI)),
-		RIGHT(MULTIPLIER_STRAFE, (float)(6.0 / 4.0 * Math.PI)),
-		FORWARD_RIGHT(MULTIPLIER_STRAFE, (float)(7.0 / 4.0 * Math.PI)),
-		;
-		public final float speedMultiplier;
-		public final float yawRadians;
-		private Relative(float speedMultiplier, float yawRadians)
-		{
-			this.speedMultiplier = speedMultiplier;
-			this.yawRadians = yawRadians;
-		}
 	}
 
 

@@ -6,7 +6,7 @@ import java.util.Set;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.client.MovementAccumulator;
+import com.jeffdisher.october.client.RelativeDirection;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -167,7 +167,7 @@ public class AutoWalkingClient
 			{
 				byte yaw = command.direction.yaw;
 				client.setOrientation(yaw, OrientationHelpers.PITCH_FLAT);
-				client.walk(MovementAccumulator.Relative.FORWARD, false, currentTimeMillis);
+				client.walk(RelativeDirection.FORWARD, false, currentTimeMillis);
 			}
 		}
 		client.disconnect();

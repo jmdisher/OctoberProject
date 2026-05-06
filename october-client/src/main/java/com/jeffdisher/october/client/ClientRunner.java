@@ -104,7 +104,7 @@ public class ClientRunner
 	 * @param runningSpeed True if we should run, instead of walk.
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void walk(MovementAccumulator.Relative relativeDirection, boolean runningSpeed, long currentTimeMillis)
+	public void walk(RelativeDirection relativeDirection, boolean runningSpeed, long currentTimeMillis)
 	{
 		EntityActionSimpleMove<IMutablePlayerEntity> complete = _accumulator.walk(currentTimeMillis, relativeDirection, runningSpeed);
 		_endAction(complete, currentTimeMillis);
@@ -116,7 +116,7 @@ public class ClientRunner
 	 * @param relativeDirection The direction to move, relative to current yaw.
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void sneak(MovementAccumulator.Relative relativeDirection, long currentTimeMillis)
+	public void sneak(RelativeDirection relativeDirection, long currentTimeMillis)
 	{
 		EntityActionSimpleMove<IMutablePlayerEntity> complete = _accumulator.sneak(currentTimeMillis, relativeDirection);
 		_endAction(complete, currentTimeMillis);

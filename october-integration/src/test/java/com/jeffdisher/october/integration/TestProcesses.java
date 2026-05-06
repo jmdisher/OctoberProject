@@ -16,7 +16,7 @@ import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.client.MovementAccumulator;
+import com.jeffdisher.october.client.RelativeDirection;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -161,7 +161,7 @@ public class TestProcesses
 		while (millisRemaining > 0L)
 		{
 			currentTimeMillis += MILLIS_PER_TICK;
-			client.walk(MovementAccumulator.Relative.FORWARD, false, currentTimeMillis);
+			client.walk(RelativeDirection.FORWARD, false, currentTimeMillis);
 			millisRemaining -= MILLIS_PER_TICK;
 		}
 		long serverTick = server.waitForTicksToPass(millisInStep / MILLIS_PER_TICK);
@@ -338,9 +338,9 @@ public class TestProcesses
 			location1 = new EntityLocation(location1.x() + horizontalDistancePerTick, location1.y(), location1.z());
 			location2 = new EntityLocation(location2.x(), location2.y() - horizontalDistancePerTick, location2.z());
 			client1.setOrientation(OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT);
-			client1.walk(MovementAccumulator.Relative.FORWARD, false, currentTimeMillis[0]);
+			client1.walk(RelativeDirection.FORWARD, false, currentTimeMillis[0]);
 			client2.setOrientation(OrientationHelpers.YAW_SOUTH, OrientationHelpers.PITCH_FLAT);
-			client2.walk(MovementAccumulator.Relative.FORWARD, false, currentTimeMillis[0]);
+			client2.walk(RelativeDirection.FORWARD, false, currentTimeMillis[0]);
 			currentTimeMillis[0] += MILLIS_PER_TICK;
 		}
 		// We want client2 to walk further.
@@ -348,7 +348,7 @@ public class TestProcesses
 		{
 			location2 = new EntityLocation(location2.x(), location2.y() - horizontalDistancePerTick, location2.z());
 			client2.setOrientation(OrientationHelpers.YAW_SOUTH, OrientationHelpers.PITCH_FLAT);
-			client2.walk(MovementAccumulator.Relative.FORWARD, false, currentTimeMillis[0]);
+			client2.walk(RelativeDirection.FORWARD, false, currentTimeMillis[0]);
 			currentTimeMillis[0] += MILLIS_PER_TICK;
 		}
 		

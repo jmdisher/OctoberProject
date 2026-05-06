@@ -136,13 +136,13 @@ public class TestMovementAccumulator
 		
 		// Walk until the action is generated.
 		currentTimeMillis += 50L;
-		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, false);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(0.0f, 0.2f, 0.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 		currentTimeMillis += 60L;
-		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, false);
 		Assert.assertNotNull(out);
 		Assert.assertNull(out.getSubAction());
 		Assert.assertEquals("SimpleMove(WALKING), by 0.00, 0.40, Sub: null", out.toString());
@@ -220,14 +220,14 @@ public class TestMovementAccumulator
 		boolean didJump = accumulator.enqueueSubAction(new EntityChangeJump<>(), currentTimeMillis);
 		Assert.assertTrue(didJump);
 		currentTimeMillis += 20L;
-		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, false);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(10.0f, 9.92f, 0.11f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, -4.0f, 5.68f), listener.thisEntity.velocity());
 		
 		currentTimeMillis += 90L;
-		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, false);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(out.getSubAction() instanceof EntityChangeJump);
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, commonCache, listener);
@@ -387,14 +387,14 @@ public class TestMovementAccumulator
 		boolean didSwim = accumulator.enqueueSubAction(new EntityChangeSwim<>(), currentTimeMillis);
 		Assert.assertTrue(didSwim);
 		currentTimeMillis += 20L;
-		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, false);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(15.0f, 15.02f, 15.06f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 1.0f, 2.79f), listener.thisEntity.velocity());
 		
 		currentTimeMillis += 90L;
-		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, false);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(out.getSubAction() instanceof EntityChangeSwim);
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, commonCache, listener);
@@ -548,14 +548,14 @@ public class TestMovementAccumulator
 		
 		// Walk until the action is generated.
 		currentTimeMillis += 50L;
-		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, false);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(0.0f, 0.2f, 0.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 		// We spill by only 1 ms since that will cause any movement to round down while the velocity is still set.
 		currentTimeMillis += 51L;
-		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, false);
 		Assert.assertNotNull(out);
 		Assert.assertNull(out.getSubAction());
 		
@@ -610,7 +610,7 @@ public class TestMovementAccumulator
 		// Now, run another standing tick and see that it is dropped.
 		// NOTE:  We need to move to force the generation of the actual action or we will be considered doing nothing and it will still wait.
 		currentTimeMillis += millisPerMove;
-		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, false);
 		Assert.assertNotNull(out);
 		Assert.assertNull(out.getSubAction());
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid, blockingCuboid), entity, out, commonCache, listener);
@@ -771,7 +771,7 @@ public class TestMovementAccumulator
 		
 		// Walk for part of a tick.
 		currentTimeMillis += 40L;
-		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, false);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
 		
@@ -859,13 +859,13 @@ public class TestMovementAccumulator
 		
 		// Start running and continue by walking.
 		currentTimeMillis += 50L;
-		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, true);
+		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, true);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(0.0f, 0.4f, 0.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 		currentTimeMillis += 60L;
-		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, false);
 		Assert.assertNotNull(out);
 		Assert.assertNull(out.getSubAction());
 		
@@ -903,13 +903,13 @@ public class TestMovementAccumulator
 		// Take a few steps and verify that we can move but not fall off.
 		// Start running and continue by walking.
 		currentTimeMillis += 50L;
-		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.sneak(currentTimeMillis, MovementAccumulator.Relative.FORWARD);
+		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.sneak(currentTimeMillis, RelativeDirection.FORWARD);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(5.8f, 5.9f, 6.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 		currentTimeMillis += 60L;
-		out = accumulator.sneak(currentTimeMillis, MovementAccumulator.Relative.FORWARD);
+		out = accumulator.sneak(currentTimeMillis, RelativeDirection.FORWARD);
 		Assert.assertNotNull(out);
 		Assert.assertNull(out.getSubAction());
 		
@@ -953,7 +953,7 @@ public class TestMovementAccumulator
 		long millisPerMove = millisPerTick;
 		currentTimeMillis += millisPerMove;
 		accumulator.enqueueSubAction(new EntityChangeChangeHotbarSlot(0), currentTimeMillis);
-		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.BACKWARD, false);
+		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, RelativeDirection.BACKWARD, false);
 		Assert.assertNotNull(out);
 		Assert.assertNull(out.getSubAction());
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, commonCache, listener);
@@ -1076,7 +1076,7 @@ public class TestMovementAccumulator
 		
 		// Show that we don't move in even partial movement.
 		currentTimeMillis += 50L;
-		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, false);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(2.0f, 2.0f, -0.2f), listener.thisEntity.location());
@@ -1084,7 +1084,7 @@ public class TestMovementAccumulator
 		
 		// Since we are stuck, we also won't generate a move, since it won't change anything (unless there is a sub-action).
 		currentTimeMillis += 90L;
-		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, false);
 		Assert.assertNotNull(out);
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, commonCache, listener);
 		Assert.assertEquals(new EntityLocation(2.0f, 2.4f, 0.0f), listener.thisEntity.location());
@@ -1118,7 +1118,7 @@ public class TestMovementAccumulator
 		
 		// Show that we don't move in even partial movement.
 		currentTimeMillis += 50L;
-		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, false);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(2.0f, 2.0f, -0.5f), listener.thisEntity.location());
@@ -1126,14 +1126,14 @@ public class TestMovementAccumulator
 		
 		// Since we are stuck, we also won't generate a move, since it won't change anything (unless there is a sub-action).
 		currentTimeMillis += 90L;
-		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, false);
 		Assert.assertNull(out);
 		
 		// Show that adding a sub-action _will_ force the generation of the move.
 		EntityChangeJump<IMutablePlayerEntity> jump = new EntityChangeJump<>();
 		accumulator.enqueueSubAction(jump, currentTimeMillis);
 		currentTimeMillis += 70L;
-		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, false);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(jump == out.getSubAction());
 		// We will see that the the move is still generated, and still tries, since it can't tell that this has no impact.
@@ -1169,13 +1169,13 @@ public class TestMovementAccumulator
 		
 		// Walk forward-right, then forward until the action is generated.
 		currentTimeMillis += 50L;
-		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD_RIGHT, false);
+		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD_RIGHT, false);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(0.11f, 0.11f, 0.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 		currentTimeMillis += 60L;
-		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.FORWARD, false);
+		out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, false);
 		Assert.assertNotNull(out);
 		Assert.assertNull(out.getSubAction());
 		Assert.assertEquals("SimpleMove(WALKING), by 0.11, 0.31, Sub: null", out.toString());
@@ -1190,13 +1190,13 @@ public class TestMovementAccumulator
 		
 		// Now, backward and back-left.
 		currentTimeMillis += 50L;
-		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.BACKWARD, false);
+		out = accumulator.walk(currentTimeMillis, RelativeDirection.BACKWARD, false);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(0.11f, 0.23f, 0.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 		currentTimeMillis += 60L;
-		out = accumulator.walk(currentTimeMillis, MovementAccumulator.Relative.BACKWARD_LEFT, false);
+		out = accumulator.walk(currentTimeMillis, RelativeDirection.BACKWARD_LEFT, false);
 		Assert.assertNotNull(out);
 		Assert.assertNull(out.getSubAction());
 		Assert.assertEquals("SimpleMove(WALKING), by -0.07, -0.15, Sub: null", out.toString());

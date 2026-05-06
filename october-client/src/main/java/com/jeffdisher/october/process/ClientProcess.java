@@ -12,7 +12,7 @@ import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.client.ClientRunner;
 import com.jeffdisher.october.client.IClientAdapter;
 import com.jeffdisher.october.client.IProjectionListener;
-import com.jeffdisher.october.client.MovementAccumulator;
+import com.jeffdisher.october.client.RelativeDirection;
 import com.jeffdisher.october.client.TimeRunnerList;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
@@ -269,7 +269,7 @@ public class ClientProcess
 	 * @param runningSpeed True if we should run, instead of walk.
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void walk(MovementAccumulator.Relative relativeDirection, boolean runningSpeed, long currentTimeMillis)
+	public void walk(RelativeDirection relativeDirection, boolean runningSpeed, long currentTimeMillis)
 	{
 		_clientRunner.walk(relativeDirection, runningSpeed, currentTimeMillis);
 		_pendingCallbacks.runFullQueue(currentTimeMillis);
@@ -281,7 +281,7 @@ public class ClientProcess
 	 * @param relativeDirection The direction to move, relative to current yaw.
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void sneak(MovementAccumulator.Relative relativeDirection, long currentTimeMillis)
+	public void sneak(RelativeDirection relativeDirection, long currentTimeMillis)
 	{
 		_clientRunner.sneak(relativeDirection, currentTimeMillis);
 		_pendingCallbacks.runFullQueue(currentTimeMillis);
