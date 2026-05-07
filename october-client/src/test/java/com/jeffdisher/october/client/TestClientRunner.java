@@ -833,6 +833,46 @@ public class TestClientRunner
 		Assert.assertEquals(2, projection.thisEntity.inventory().getCount(PLANK_ITEM));
 	}
 
+	@Test
+	public void basicFlight() throws Throwable
+	{
+		TestAdapter network = new TestAdapter();
+		TestProjection projection = new TestProjection();
+		ClientListener clientListener = new ClientListener();
+		TimeRunnerList runnerList = new TimeRunnerList();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener, runnerList);
+		
+		// Connect them and send a creative entity and basic cuboid.
+		int clientId = 1;
+		long currentTimeMillis = 100L;
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		runnerList.runFullQueue(currentTimeMillis);
+		currentTimeMillis += 100L;
+		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
+		MutableEntity mutable = MutableEntity.createForTest(clientId);
+		mutable.newLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
+		mutable.isCreativeMode = true;
+		network.client.receivedFullEntity(mutable.freeze());
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
+		network.client.receivedEndOfTick(1L, 0L);
+		runnerList.runFullQueue(currentTimeMillis);
+		boolean isSet = runner.enableCreativeFlight(true, currentTimeMillis);
+		Assert.assertTrue(isSet);
+		
+		// Set orientation and fly a bit.
+		currentTimeMillis += 100L;
+		runner.setOrientation(OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT);
+		runner.fly(currentTimeMillis, RelativeDirection.BACKWARD, VerticalDirection.UP);
+		
+		EntityLocation location = projection.thisEntity.location();
+		Assert.assertEquals(9.94f, location.x(), 0.0001f);
+		Assert.assertEquals(10.0f, location.y(), 0.0001f);
+		Assert.assertEquals(10.06f, location.z(), 0.0001f);
+		Assert.assertEquals(OrientationHelpers.YAW_EAST, projection.thisEntity.yaw());
+		Assert.assertEquals(OrientationHelpers.PITCH_FLAT, projection.thisEntity.pitch());
+		Assert.assertTrue(projection.events.isEmpty());
+	}
+
 
 	private static class TestAdapter implements IClientAdapter
 	{

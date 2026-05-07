@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import com.jeffdisher.october.actions.EntityActionCreativeFlight;
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
+import com.jeffdisher.october.actions.IEntityActionFromClient;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
@@ -44,7 +46,8 @@ public class ClientRunner
 
 	private SpeculativeProjection _projection;
 	private CommonClientWorldCache _commonWorldCache;
-	private MovementAccumulator _accumulator;
+	private MovementAccumulator _standardAccumulator;
+	private CreativeFlightAccumulator _creativeFlightAccumulator;
 
 	// This is set once when the client connects and is only read after that.
 	private int _serverMaximumViewDistance;
@@ -79,7 +82,15 @@ public class ClientRunner
 	public boolean commonApplyEntityAction(IEntitySubAction<IMutablePlayerEntity> change, long currentTimeMillis)
 	{
 		// Note that this might fail.
-		boolean didApply = _accumulator.enqueueSubAction(change, currentTimeMillis);
+		boolean didApply;
+		if (null != _standardAccumulator)
+		{
+			didApply = _standardAccumulator.enqueueSubAction(change, currentTimeMillis);
+		}
+		else
+		{
+			didApply = _creativeFlightAccumulator.enqueueSubAction(currentTimeMillis, change);
+		}
 		return didApply;
 	}
 
@@ -91,7 +102,14 @@ public class ClientRunner
 	 */
 	public void setOrientation(byte yaw, byte pitch)
 	{
-		_accumulator.setOrientation(yaw, pitch);
+		if (null != _standardAccumulator)
+		{
+			_standardAccumulator.setOrientation(yaw, pitch);
+		}
+		else
+		{
+			_creativeFlightAccumulator.setOrientation(yaw, pitch);
+		}
 	}
 
 	/**
@@ -106,7 +124,7 @@ public class ClientRunner
 	 */
 	public void walk(RelativeDirection relativeDirection, boolean runningSpeed, long currentTimeMillis)
 	{
-		EntityActionSimpleMove<IMutablePlayerEntity> complete = _accumulator.walk(currentTimeMillis, relativeDirection, runningSpeed);
+		EntityActionSimpleMove<IMutablePlayerEntity> complete = _standardAccumulator.walk(currentTimeMillis, relativeDirection, runningSpeed);
 		_endAction(complete, currentTimeMillis);
 	}
 
@@ -118,7 +136,7 @@ public class ClientRunner
 	 */
 	public void sneak(RelativeDirection relativeDirection, long currentTimeMillis)
 	{
-		EntityActionSimpleMove<IMutablePlayerEntity> complete = _accumulator.sneak(currentTimeMillis, relativeDirection);
+		EntityActionSimpleMove<IMutablePlayerEntity> complete = _standardAccumulator.sneak(currentTimeMillis, relativeDirection);
 		_endAction(complete, currentTimeMillis);
 	}
 
@@ -130,7 +148,63 @@ public class ClientRunner
 	public void standStill(long currentTimeMillis)
 	{
 		// We will interpret this as just standing, since that also accounts for falling.
-		EntityActionSimpleMove<IMutablePlayerEntity> complete = _accumulator.stand(currentTimeMillis);
+		EntityActionSimpleMove<IMutablePlayerEntity> complete = _standardAccumulator.stand(currentTimeMillis);
+		_endAction(complete, currentTimeMillis);
+	}
+
+	/**
+	 * Called to switch into creative flight mode.  Note that this may do nothing if the entity is not in creative mode
+	 * or is already in the requested flight mode.  A side-effect of calling this is that any partially-accumulated
+	 * changes in the previous mode will be dropped.
+	 * 
+	 * @param shouldEnable Whether or not creative flight should be enabled (versus standard movement).
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 * @return Whether or not creative flight is enabled after this call.
+	 */
+	public boolean enableCreativeFlight(boolean shouldEnable, long currentTimeMillis)
+	{
+		if (shouldEnable)
+		{
+			if ((null == _creativeFlightAccumulator) && _commonWorldCache.thisEntity.isCreativeMode())
+			{
+				_standardAccumulator = null;
+				_creativeFlightAccumulator = new CreativeFlightAccumulator(_commonWorldCache, currentTimeMillis);
+			}
+		}
+		else
+		{
+			if (null == _standardAccumulator)
+			{
+				_creativeFlightAccumulator = null;
+				_standardAccumulator = new MovementAccumulator(_commonWorldCache, currentTimeMillis);
+			}
+		}
+		return (null != _creativeFlightAccumulator);
+	}
+
+	/**
+	 * Similar to "walk()" when in standard mode, this adds to the accumulated flight movement, based on the flight
+	 * speed of the entity.
+	 * 
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 * @param relativeDirection The relative direction of movement (or null if no horizontal movement).
+	 * @param elevationChange Vertical movement component.
+	 */
+	public void fly(long currentTimeMillis, RelativeDirection relativeDirection, VerticalDirection elevationChange)
+	{
+		EntityActionCreativeFlight complete = _creativeFlightAccumulator.fly(currentTimeMillis, relativeDirection, elevationChange);
+		_endAction(complete, currentTimeMillis);
+	}
+
+	/**
+	 * Similar to "standStill()" when in standard mode, this accumulates time while not moving (or just coasting) while
+	 * in creative flight mode.
+	 * 
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void hover(long currentTimeMillis)
+	{
+		EntityActionCreativeFlight complete = _creativeFlightAccumulator.hover(currentTimeMillis);
 		_endAction(complete, currentTimeMillis);
 	}
 
@@ -174,7 +248,7 @@ public class ClientRunner
 	}
 
 
-	private void _endAction(EntityActionSimpleMove<IMutablePlayerEntity> optionalOutput, long currentTimeMillis)
+	private void _endAction(IEntityActionFromClient<IMutablePlayerEntity> optionalOutput, long currentTimeMillis)
 	{
 		if (null != optionalOutput)
 		{
@@ -187,10 +261,24 @@ public class ClientRunner
 			else
 			{
 				// If something went wrong, discard our accumulation.
-				_accumulator.clearAccumulation();
+				if (null != _standardAccumulator)
+				{
+					_standardAccumulator.clearAccumulation();
+				}
+				else
+				{
+					_creativeFlightAccumulator.clearAccumulation();
+				}
 			}
 		}
-		_accumulator.applyLocalAccumulation();
+		if (null != _standardAccumulator)
+		{
+			_standardAccumulator.applyLocalAccumulation();
+		}
+		else
+		{
+			_creativeFlightAccumulator.applyLocalAccumulation();
+		}
 	}
 
 
@@ -225,7 +313,7 @@ public class ClientRunner
 				Environment env = Environment.getShared();
 				_commonWorldCache = new CommonClientWorldCache(env, _projectionListener, millisPerTick);
 				// We default to enabling the normal movement accumulator.
-				_accumulator = new MovementAccumulator(_commonWorldCache, currentTimeMillis);
+				_standardAccumulator = new MovementAccumulator(_commonWorldCache, currentTimeMillis);
 				_serverMaximumViewDistance = viewDistanceMaximum;
 				// Notify the listener that we were assigned an ID.
 				_clientListener.clientDidConnectAndLogin(assignedId, currentViewDistance);
@@ -432,7 +520,15 @@ public class ClientRunner
 		{
 			// We might want to overrule this projected entity with one in the accumulator, if it is there (since this would otherwise revert our state).
 			_commonWorldCache.setThisEntity(projectedEntity);
-			boolean didNotify = _accumulator.applyLocalAccumulation();
+			boolean didNotify;
+			if (null != _standardAccumulator)
+			{
+				didNotify = _standardAccumulator.applyLocalAccumulation();
+			}
+			else
+			{
+				didNotify = _creativeFlightAccumulator.applyLocalAccumulation();
+			}
 			if (!didNotify)
 			{
 				_projectionListener.thisEntityDidChange(projectedEntity);

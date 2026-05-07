@@ -14,6 +14,7 @@ import com.jeffdisher.october.client.IClientAdapter;
 import com.jeffdisher.october.client.IProjectionListener;
 import com.jeffdisher.october.client.RelativeDirection;
 import com.jeffdisher.october.client.TimeRunnerList;
+import com.jeffdisher.october.client.VerticalDirection;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -295,6 +296,46 @@ public class ClientProcess
 	public void doNothing(long currentTimeMillis)
 	{
 		_clientRunner.standStill(currentTimeMillis);
+		_pendingCallbacks.runFullQueue(currentTimeMillis);
+	}
+
+	/**
+	 * Called to switch into creative flight mode.  Note that this may do nothing if the entity is not in creative mode
+	 * or is already in the requested flight mode.  A side-effect of calling this is that any partially-accumulated
+	 * changes in the previous mode will be dropped.
+	 * 
+	 * @param shouldEnable Whether or not creative flight should be enabled (versus standard movement).
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 * @return Whether or not creative flight is enabled after this call.
+	 */
+	public boolean enableCreativeFlight(boolean shouldEnable, long currentTimeMillis)
+	{
+		return _clientRunner.enableCreativeFlight(shouldEnable, currentTimeMillis);
+	}
+
+	/**
+	 * Similar to "walk()" when in standard mode, this adds to the accumulated flight movement, based on the flight
+	 * speed of the entity.
+	 * 
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 * @param relativeDirection The relative direction of movement (or null if no horizontal movement).
+	 * @param elevationChange Vertical movement component.
+	 */
+	public void fly(long currentTimeMillis, RelativeDirection relativeDirection, VerticalDirection elevationChange)
+	{
+		_clientRunner.fly(currentTimeMillis, relativeDirection, elevationChange);
+		_pendingCallbacks.runFullQueue(currentTimeMillis);
+	}
+
+	/**
+	 * Similar to "standStill()" when in standard mode, this accumulates time while not moving (or just coasting) while
+	 * in creative flight mode.
+	 * 
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void hover(long currentTimeMillis)
+	{
+		_clientRunner.hover(currentTimeMillis);
 		_pendingCallbacks.runFullQueue(currentTimeMillis);
 	}
 
