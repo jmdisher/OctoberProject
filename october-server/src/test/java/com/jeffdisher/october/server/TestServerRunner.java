@@ -1,5 +1,6 @@
 package com.jeffdisher.october.server;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,6 +18,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
+import com.jeffdisher.october.actions.IEntityActionFromClient;
+import com.jeffdisher.october.actions.EntityActionCreativeFlight;
 import com.jeffdisher.october.actions.EntityActionOperatorSetLocation;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
@@ -54,6 +57,7 @@ import com.jeffdisher.october.net.Packet_SendPartialPassiveUpdate;
 import com.jeffdisher.october.net.Packet_ServerSendConfigUpdate;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
+import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.subactions.EntityChangeChangeHotbarSlot;
 import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.subactions.EntityChangeSetBlockLogicState;
@@ -965,6 +969,59 @@ public class TestServerRunner
 		runner.shutdown();
 	}
 
+	@Test
+	public void creativeFlight() throws Throwable
+	{
+		TestAdapter network = new TestAdapter();
+		
+		// Create a basic world with a cuboid and creative-mode entity.
+		PreloadedWorldGenerator generator = new PreloadedWorldGenerator();
+		generator.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE));
+		
+		int clientId = 1;
+		MutableEntity mutable = MutableEntity.createForTest(clientId);
+		mutable.newLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
+		mutable.isCreativeMode = true;
+		
+		WorldConfig config = new WorldConfig();
+		File directory = DIRECTORY.newFolder();
+		ResourceLoader cuboidLoader = new ResourceLoader(directory, generator, config);
+		cuboidLoader.getResultsAndRequestBackgroundLoad(null, null, List.of(), List.of(clientId), 1000L);
+		cuboidLoader.writeBackToDiskAndRetire(List.of(), List.of(new SuspendedEntity(mutable.freeze(), List.of())), 1000L);
+		cuboidLoader.shutdown();
+		cuboidLoader = new ResourceLoader(directory, generator, config);
+		
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		ServerRunner runner = new ServerRunner(MAX_THREADS_FOR_SERVER
+			, ServerRunner.DEFAULT_MILLIS_PER_TICK
+			, network
+			, cuboidLoader
+			, () -> System.currentTimeMillis()
+			, monitoringAgent
+			, new WorldConfig()
+		);
+		IServerAdapter.IListener server = network.waitForServer(1);
+		network.prepareForClient(clientId);
+		server.clientConnected(clientId, null, "name", 1);
+		Entity entity = network.waitForThisEntity(clientId);
+		Assert.assertEquals(mutable.newLocation, entity.location());
+		Assert.assertTrue(entity.isCreativeMode());
+		network.waitForCuboidAddedCount(clientId, 1);
+		
+		// Take some small movement with creative flight.
+		EntityActionCreativeFlight fly = new EntityActionCreativeFlight(8.0f, 0.0f, 0.0f, (byte)5, (byte)6, null);
+		network.receiveFromClient(clientId, fly, 1L);
+		Object mutation = network.waitForUpdate(clientId, 0);
+		Assert.assertTrue(mutation instanceof EntityUpdatePerField);
+		
+		// See the change as applied to the mutable.
+		((EntityUpdatePerField)mutation).applyToEntity(mutable);
+		Assert.assertEquals(new EntityLocation(10.4f, 10.0f, 10.0f), mutable.newLocation);
+		Assert.assertEquals(new EntityLocation(8.0f, 0.0f, 0.0f), mutable.newVelocity);
+		
+		runner.shutdown();
+	}
+
 
 	private static void _loadDefaultMap(PreloadedWorldGenerator generator)
 	{
@@ -1163,7 +1220,7 @@ public class TestServerRunner
 				this.wait();
 			}
 		}
-		public void receiveFromClient(int clientId, EntityActionSimpleMove<IMutablePlayerEntity> mutation, long commitLevel)
+		public void receiveFromClient(int clientId, IEntityActionFromClient<IMutablePlayerEntity> mutation, long commitLevel)
 		{
 			Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(mutation, commitLevel);
 			boolean wasEmpty;

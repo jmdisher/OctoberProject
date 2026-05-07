@@ -17,6 +17,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
+import com.jeffdisher.october.actions.IEntityActionFromClient;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
@@ -1668,7 +1669,7 @@ public class TestServerStateManager
 				// We just ignore this buffer coming back.
 			}
 			@Override
-			public boolean runner_enqueueEntityChange(int entityId, EntityActionSimpleMove<IMutablePlayerEntity> change, long commitLevel)
+			public boolean runner_enqueueEntityChange(int entityId, IEntityActionFromClient<IMutablePlayerEntity> change, long commitLevel)
 			{
 				// Do nothing.
 				return true;
@@ -2066,7 +2067,7 @@ public class TestServerStateManager
 		}
 		
 		@Override
-		public boolean runner_enqueueEntityChange(int entityId, EntityActionSimpleMove<IMutablePlayerEntity> change, long commitLevel)
+		public boolean runner_enqueueEntityChange(int entityId, IEntityActionFromClient<IMutablePlayerEntity> change, long commitLevel)
 		{
 			return this.didEnqueue;
 		}

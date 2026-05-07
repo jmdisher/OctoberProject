@@ -7,7 +7,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.jeffdisher.october.actions.EntityActionSimpleMove;
+import com.jeffdisher.october.actions.IEntityActionFromClient;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.client.ClientRunner;
 import com.jeffdisher.october.client.IClientAdapter;
@@ -572,7 +572,7 @@ public class ClientProcess
 			_client.stop();
 		}
 		@Override
-		public void sendChange(EntityActionSimpleMove<IMutablePlayerEntity> change, long commitLevel)
+		public void sendChange(IEntityActionFromClient<IMutablePlayerEntity> change, long commitLevel)
 		{
 			Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(change, commitLevel);
 			_background_bufferPacket(packet);

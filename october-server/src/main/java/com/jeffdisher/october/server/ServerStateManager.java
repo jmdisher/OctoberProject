@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
-import com.jeffdisher.october.actions.EntityActionSimpleMove;
+import com.jeffdisher.october.actions.IEntityActionFromClient;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.CuboidData;
@@ -1357,7 +1357,7 @@ public class ServerStateManager
 		void network_closeOutputBuffer(int clientId, OutpacketBuffer buffer);
 		
 		// TickRunner.
-		boolean runner_enqueueEntityChange(int entityId, EntityActionSimpleMove<IMutablePlayerEntity> change, long commitLevel);
+		boolean runner_enqueueEntityChange(int entityId, IEntityActionFromClient<IMutablePlayerEntity> change, long commitLevel);
 		
 		// Misc.
 		void handleClientUpdateOptions(int clientId, int clientViewDistance);

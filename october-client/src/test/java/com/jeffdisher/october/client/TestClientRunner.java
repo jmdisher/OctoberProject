@@ -12,6 +12,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
+import com.jeffdisher.october.actions.IEntityActionFromClient;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
@@ -836,7 +837,7 @@ public class TestClientRunner
 	private static class TestAdapter implements IClientAdapter
 	{
 		public IClientAdapter.IListener client;
-		public EntityActionSimpleMove<IMutablePlayerEntity> toSend;
+		public IEntityActionFromClient<IMutablePlayerEntity> toSend;
 		public long commitLevel;
 		public int clientViewDistance = -1;
 		@Override
@@ -850,7 +851,7 @@ public class TestClientRunner
 		{
 		}
 		@Override
-		public void sendChange(EntityActionSimpleMove<IMutablePlayerEntity> change, long commitLevel)
+		public void sendChange(IEntityActionFromClient<IMutablePlayerEntity> change, long commitLevel)
 		{
 			this.toSend = change;
 			this.commitLevel = commitLevel;
