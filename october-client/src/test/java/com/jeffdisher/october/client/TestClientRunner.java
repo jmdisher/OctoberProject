@@ -865,9 +865,9 @@ public class TestClientRunner
 		runner.fly(currentTimeMillis, RelativeDirection.BACKWARD, VerticalDirection.UP);
 		
 		EntityLocation location = projection.thisEntity.location();
-		Assert.assertEquals(9.94f, location.x(), 0.0001f);
+		Assert.assertEquals(9.43f, location.x(), 0.0001f);
 		Assert.assertEquals(10.0f, location.y(), 0.0001f);
-		Assert.assertEquals(10.06f, location.z(), 0.0001f);
+		Assert.assertEquals(10.57f, location.z(), 0.0001f);
 		Assert.assertEquals(OrientationHelpers.YAW_EAST, projection.thisEntity.yaw());
 		Assert.assertEquals(OrientationHelpers.PITCH_FLAT, projection.thisEntity.pitch());
 		Assert.assertTrue(projection.events.isEmpty());

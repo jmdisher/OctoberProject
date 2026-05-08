@@ -23,6 +23,8 @@ import com.jeffdisher.october.utils.Assert;
  * Note that there is no "flight mode", from the server's perspective.  A client would need to maintain this mode
  * setting in order to know which kind of action to send but the server will permit either, so long as the entity is in
  * "creative mode".
+ * The input XYZ values are interpreted as the velocity (blocks/second) to add to the entity while decaying their
+ * existing velocity.  The decay rate is not trying to be anything too specific so it is sensitive to tick rate.
  */
 public class EntityActionCreativeFlight implements IEntityActionFromClient<IMutablePlayerEntity>
 {
@@ -72,9 +74,9 @@ public class EntityActionCreativeFlight implements IEntityActionFromClient<IMuta
 	}
 
 
-	private final float _activeX;
-	private final float _activeY;
-	private final float _activeZ;
+	private final float _velocityX;
+	private final float _velocityY;
+	private final float _velocityZ;
 	private final byte _yaw;
 	private final byte _pitch;
 	private final IEntitySubAction<IMutablePlayerEntity> _subAction;
@@ -89,9 +91,9 @@ public class EntityActionCreativeFlight implements IEntityActionFromClient<IMuta
 	{
 		Assert.assertTrue((null == subAction) || ALLOWED_TYPES.contains(subAction.getType()));
 		
-		_activeX = activeX;
-		_activeY = activeY;
-		_activeZ = activeZ;
+		_velocityX = activeX;
+		_velocityY = activeY;
+		_velocityZ = activeZ;
 		_yaw = yaw;
 		_pitch = pitch;
 		_subAction = subAction;
@@ -133,7 +135,7 @@ public class EntityActionCreativeFlight implements IEntityActionFromClient<IMuta
 				// We will set our maximum to 2x the normal walking speed.
 				float seconds = ((float)context.millisPerTick / 1000.0f);
 				float entityBlocksPerSecond = 2.0f * newEntity.getType().blocksPerSecond();
-				EntityLocation newVelocity = new EntityLocation(vX + _activeX, vY + _activeY, vZ + _activeZ);
+				EntityLocation newVelocity = new EntityLocation(vX + _velocityX, vY + _velocityY, vZ + _velocityZ);
 				float magnitude = newVelocity.getMagnitude();
 				if (magnitude > entityBlocksPerSecond)
 				{
@@ -165,9 +167,9 @@ public class EntityActionCreativeFlight implements IEntityActionFromClient<IMuta
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		buffer.putFloat(_activeX);
-		buffer.putFloat(_activeY);
-		buffer.putFloat(_activeZ);
+		buffer.putFloat(_velocityX);
+		buffer.putFloat(_velocityY);
+		buffer.putFloat(_velocityZ);
 		buffer.put(_yaw);
 		buffer.put(_pitch);
 		CodecHelpers.writeNullableNestedChange(buffer, _subAction);
@@ -183,7 +185,7 @@ public class EntityActionCreativeFlight implements IEntityActionFromClient<IMuta
 	@Override
 	public String toString()
 	{
-		return String.format("CreativeFlight by %.2f, %.2f, %.2f, Sub: %s", _activeX, _activeY, _activeZ, _subAction);
+		return String.format("CreativeFlight by %.2f, %.2f, %.2f, Sub: %s", _velocityX, _velocityY, _velocityZ, _subAction);
 	}
 
 	@Override

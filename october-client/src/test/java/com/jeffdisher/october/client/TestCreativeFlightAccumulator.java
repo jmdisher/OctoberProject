@@ -166,14 +166,14 @@ public class TestCreativeFlightAccumulator
 			Assert.assertTrue(listener.thisEntity.velocity().z() > vZ);
 			vZ = listener.thisEntity.velocity().z();
 		}
-		Assert.assertEquals(new EntityLocation(10.0f, 10.05f, 10.05f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(10.0f, 10.51f, 10.51f), listener.thisEntity.location());
 		
 		currentTimeMillis += 5L;
 		EntityActionCreativeFlight out = accumulator.fly(currentTimeMillis, RelativeDirection.RIGHT, VerticalDirection.UP);
 		entity = _applyToEntity(MILLIS_PER_TICK, currentTimeMillis, List.of(airCuboid), entity, out, commonCache, listener, 0);
 		accumulator.applyLocalAccumulation();
-		Assert.assertEquals(new EntityLocation(10.0f, 10.06f, 10.06f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.57f, 0.57f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(10.0f, 10.57f, 10.57f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 5.66f, 5.66f), listener.thisEntity.velocity());
 	}
 
 	@Test
@@ -202,15 +202,15 @@ public class TestCreativeFlightAccumulator
 		EntityActionCreativeFlight out = accumulator.fly(currentTimeMillis, RelativeDirection.RIGHT, VerticalDirection.UP);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
-		Assert.assertEquals(new EntityLocation(10.0f, 9.98f, 10.02f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, -0.34f, 0.34f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(10.0f, 9.8f, 10.2f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, -3.41f, 3.41f), listener.thisEntity.velocity());
 		
 		currentTimeMillis += 60L;
 		out = accumulator.fly(currentTimeMillis, RelativeDirection.RIGHT, VerticalDirection.UP);
 		entity = _applyToEntity(MILLIS_PER_TICK, currentTimeMillis, List.of(airCuboid), entity, out, commonCache, listener, 0);
 		accumulator.applyLocalAccumulation();
-		Assert.assertEquals(new EntityLocation(10.0f, 9.93f, 10.07f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, -0.4f, 0.4f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(10.0f, 9.35f, 10.65f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, -3.97f, 3.97f), listener.thisEntity.velocity());
 	}
 
 	@Test
@@ -239,15 +239,15 @@ public class TestCreativeFlightAccumulator
 		EntityActionCreativeFlight out = accumulator.fly(currentTimeMillis, null, VerticalDirection.UP);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
-		Assert.assertEquals(new EntityLocation(10.0f, 10.0f, 10.03f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.48f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(10.0f, 10.0f, 10.29f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 4.8f), listener.thisEntity.velocity());
 		
 		currentTimeMillis += 60L;
 		out = accumulator.fly(currentTimeMillis, null, VerticalDirection.UP);
 		entity = _applyToEntity(MILLIS_PER_TICK, currentTimeMillis, List.of(airCuboid), entity, out, commonCache, listener, 0);
 		accumulator.applyLocalAccumulation();
-		Assert.assertEquals(new EntityLocation(10.0f, 10.0f, 10.09f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.56f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(10.0f, 10.0f, 10.91f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 5.6f), listener.thisEntity.velocity());
 	}
 
 	@Test

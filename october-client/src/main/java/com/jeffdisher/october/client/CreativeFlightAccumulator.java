@@ -210,7 +210,8 @@ public class CreativeFlightAccumulator
 
 	private void _accumulateMovement(long millisToAdd, EntityLocation vector)
 	{
-		float fraction = (float)millisToAdd / 1000.0f;
+		// This vector is the velocity we want to set so scale it by the fraction of the tick we are adding and accumulate.
+		float fraction = (float)millisToAdd / (float)_worldCache.millisPerTick;
 		float magnitude = fraction * _flightBlocksPerSecond;
 		_accumulationMillis += millisToAdd;
 		_accumulatedX += magnitude * vector.x();
