@@ -47,6 +47,9 @@ public class MutationBlockPlaceMultiBlock implements IMutationBlock
 		Environment env = Environment.getShared();
 		// This MUST be a multi-block type.
 		Assert.assertTrue(env.blocks.isMultiBlock(blockType));
+		// We need the root and direction.
+		Assert.assertTrue(null != rootLocation);
+		Assert.assertTrue(null != direction);
 		// This must be placed by a player entity or nobody at all.
 		Assert.assertTrue(entityId >= 0);
 		
@@ -69,9 +72,8 @@ public class MutationBlockPlaceMultiBlock implements IMutationBlock
 		Environment env = Environment.getShared();
 		boolean isRoot = _rootLocation.equals(_location);
 		Block oldBlock = newBlock.getBlock();
-		FacingDirection outputIfRoot = isRoot ? _direction : null;
 		boolean isMultiBlockExtension = !isRoot;
-		boolean didApply = CommonBlockMutationHelpers.overwriteBlock(context, newBlock, _location, outputIfRoot, _blockType, isMultiBlockExtension);
+		boolean didApply = CommonBlockMutationHelpers.overwriteBlock(context, newBlock, _location, _direction, _blockType, isMultiBlockExtension);
 		if (didApply)
 		{
 			if (isRoot)
