@@ -94,9 +94,30 @@ block_def	V
 block_def	[
 	block	op.door
 	facing_direction	NORTH
-block_def	]
+block_def	{
 	block	op.door
 	facing_direction	NORTH
+	root_rel	0	0	-1
+block_def	]
+	block	op.door
+	facing_direction	SOUTH
+block_def	}
+	block	op.door
+	facing_direction	SOUTH
+	root_rel	0	0	-1
+block_def	;
+	block	op.door
+	facing_direction	EAST
+block_def	:
+	block	op.door
+	facing_direction	EAST
+	root_rel	0	0	-1
+block_def	'
+	block	op.door
+	facing_direction	WEST
+block_def	"
+	block	op.door
+	facing_direction	WEST
 	root_rel	0	0	-1
 block_def	N
 	block	op.portal_keystone

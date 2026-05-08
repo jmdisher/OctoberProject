@@ -492,6 +492,41 @@ public class TestStructureLoader
 		Assert.assertArrayEquals(expectedLayers, layers);
 	}
 
+	@Test
+	public void doorsInFlat() throws Throwable
+	{
+		// Make sure that the doors are correctly oriented in the generated structures.
+		WorldGenConfig worldGenConfig = WorldGenHelpers.buildDefaultWorldGenConfig(ENV);
+		FlatWorldGenerator gen = new FlatWorldGenerator(worldGenConfig, true);
+		short doorNumber = ENV.items.getItemById("op.door").number();
+		
+		AbsoluteLocation northFacingDoorBase = new AbsoluteLocation(0, 7, 0);
+		CuboidData northFacing = gen.generateCuboid(new CreatureIdAssigner(), northFacingDoorBase.getCuboidAddress(), 0L).cuboid();
+		AbsoluteLocation eastFacingDoorBase = new AbsoluteLocation(7, 0, 0);
+		CuboidData eastFacing = gen.generateCuboid(new CreatureIdAssigner(), eastFacingDoorBase.getCuboidAddress(), 0L).cuboid();
+		AbsoluteLocation southFacingDoorBase = new AbsoluteLocation(0, -7, 0);
+		CuboidData southFacing = gen.generateCuboid(new CreatureIdAssigner(), southFacingDoorBase.getCuboidAddress(), 0L).cuboid();
+		AbsoluteLocation westFacingDoorBase = new AbsoluteLocation(-7, 0, 0);
+		CuboidData westFacing = gen.generateCuboid(new CreatureIdAssigner(), westFacingDoorBase.getCuboidAddress(), 0L).cuboid();
+		
+		Assert.assertEquals(doorNumber, northFacing.getData15(AspectRegistry.BLOCK, northFacingDoorBase.getBlockAddress()));
+		Assert.assertEquals(doorNumber, northFacing.getData15(AspectRegistry.BLOCK, northFacingDoorBase.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.NORTH), northFacing.getData7(AspectRegistry.ORIENTATION, northFacingDoorBase.getBlockAddress()));
+		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.NORTH), northFacing.getData7(AspectRegistry.ORIENTATION, northFacingDoorBase.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(doorNumber, eastFacing.getData15(AspectRegistry.BLOCK, eastFacingDoorBase.getBlockAddress()));
+		Assert.assertEquals(doorNumber, eastFacing.getData15(AspectRegistry.BLOCK, eastFacingDoorBase.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.EAST), eastFacing.getData7(AspectRegistry.ORIENTATION, eastFacingDoorBase.getBlockAddress()));
+		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.EAST), eastFacing.getData7(AspectRegistry.ORIENTATION, eastFacingDoorBase.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(doorNumber, southFacing.getData15(AspectRegistry.BLOCK, southFacingDoorBase.getBlockAddress()));
+		Assert.assertEquals(doorNumber, southFacing.getData15(AspectRegistry.BLOCK, southFacingDoorBase.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.SOUTH), southFacing.getData7(AspectRegistry.ORIENTATION, southFacingDoorBase.getBlockAddress()));
+		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.SOUTH), southFacing.getData7(AspectRegistry.ORIENTATION, southFacingDoorBase.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(doorNumber, westFacing.getData15(AspectRegistry.BLOCK, westFacingDoorBase.getBlockAddress()));
+		Assert.assertEquals(doorNumber, westFacing.getData15(AspectRegistry.BLOCK, westFacingDoorBase.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.WEST), westFacing.getData7(AspectRegistry.ORIENTATION, westFacingDoorBase.getBlockAddress()));
+		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.WEST), westFacing.getData7(AspectRegistry.ORIENTATION, westFacingDoorBase.getRelative(0, 0, 1).getBlockAddress()));
+	}
+
 
 	private static StructureLoader _buildDefaultStructureLoader() throws IOException, TabListReader.TabListException
 	{
