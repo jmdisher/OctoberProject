@@ -152,6 +152,7 @@ op.sand	has_gravity
 	block_material	SHOVEL
 op.door	is_multiblock
 	block_material	AXE
+	sub_blocks	0xf000f000f000f000
 op.enchanting_table
 	block_material	PICKAXE
 op.bed	is_flammable

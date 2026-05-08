@@ -13,6 +13,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -385,6 +386,39 @@ public class TestSpatialHelpers
 		Assert.assertTrue(SpatialHelpers.canExistInLocation(reader, locationWall, VOLUME));
 		Assert.assertFalse(SpatialHelpers.canExistInLocation(reader, new EntityLocation(2.0f, 2.0f, 1.4f), VOLUME));
 		Assert.assertFalse(SpatialHelpers.canExistInLocation(reader, new EntityLocation(2.4f, 2.0f, 10.0f), VOLUME));
+	}
+
+	@Test
+	public void doorCollision()
+	{
+		// Show how door collision works when active or not.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		
+		// Write the door in its inactive state.
+		Block door = ENV.blocks.fromItem(ENV.items.getItemById("op.door"));
+		AbsoluteLocation doorBase = new AbsoluteLocation(5, 5, 1);
+		FacingDirection orientation = FacingDirection.WEST;
+		cuboid.setData15(AspectRegistry.BLOCK, doorBase.getBlockAddress(), door.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, doorBase.getRelative(0, 0, 1).getBlockAddress(), door.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, doorBase.getBlockAddress(), FacingDirection.directionToByte(orientation));
+		cuboid.setData7(AspectRegistry.ORIENTATION, doorBase.getRelative(0, 0, 1).getBlockAddress(), FacingDirection.directionToByte(orientation));
+		cuboid.setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, doorBase.getRelative(0, 0, 1).getBlockAddress(), doorBase);
+		
+		// Check collision of the a player in the frame or stuck in the door.
+		EntityLocation playerInFrame = new EntityLocation(5.3f, 5.0f, 1.0f);
+		EntityLocation playerStuck = new EntityLocation(5.1f, 5.0f, 1.0f);
+		TickProcessingContext.IBlockFetcher blockTypeReader = ContextBuilder.buildFetcher((AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid));
+		ViscosityReader reader = new ViscosityReader(ENV, blockTypeReader);
+		Assert.assertTrue(SpatialHelpers.canExistInLocation(reader, playerInFrame, VOLUME));
+		Assert.assertFalse(SpatialHelpers.canExistInLocation(reader, playerStuck, VOLUME));
+		
+		// Now, set these to active (open) and make sure that neither of these collides.
+		cuboid.setData7(AspectRegistry.FLAGS, doorBase.getBlockAddress(), FlagsAspect.FLAG_ACTIVE);
+		cuboid.setData7(AspectRegistry.FLAGS, doorBase.getRelative(0, 0, 1).getBlockAddress(), FlagsAspect.FLAG_ACTIVE);
+		reader = new ViscosityReader(ENV, blockTypeReader);
+		Assert.assertTrue(SpatialHelpers.canExistInLocation(reader, playerInFrame, VOLUME));
+		Assert.assertTrue(SpatialHelpers.canExistInLocation(reader, playerStuck, VOLUME));
 	}
 
 

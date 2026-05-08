@@ -19,3 +19,4 @@ op.stone_brick_slab	allows_down	allows_up
 op.stone_brick_stair
 op.wood_plank_slab	allows_down	allows_up
 op.wood_plank_stair
+op.door
