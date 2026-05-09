@@ -100,4 +100,27 @@ public class TestFacingDirection
 		Assert.assertEquals(SubBlock.fromInt(2, 1, 2), outTwo);
 		Assert.assertEquals(SubBlock.fromInt(3, 0, 3), outThree);
 	}
+
+	@Test
+	public void subBlockSouthRotation()
+	{
+		// Select the 8 vertices of of the cube and show that they rotate onto each other as expected.
+		SubBlock zzz = SubBlock.fromInt(0, 0, 0);
+		SubBlock zzp = SubBlock.fromInt(0, 0, 3);
+		SubBlock zpz = SubBlock.fromInt(0, 3, 0);
+		SubBlock zpp = SubBlock.fromInt(0, 3, 3);
+		SubBlock pzz = SubBlock.fromInt(3, 0, 0);
+		SubBlock pzp = SubBlock.fromInt(3, 0, 3);
+		SubBlock ppz = SubBlock.fromInt(3, 3, 0);
+		SubBlock ppp = SubBlock.fromInt(3, 3, 3);
+		
+		Assert.assertEquals(ppz, FacingDirection.SOUTH.inverseRotateInSubBlock(zzz));
+		Assert.assertEquals(ppp, FacingDirection.SOUTH.inverseRotateInSubBlock(zzp));
+		Assert.assertEquals(pzz, FacingDirection.SOUTH.inverseRotateInSubBlock(zpz));
+		Assert.assertEquals(pzp, FacingDirection.SOUTH.inverseRotateInSubBlock(zpp));
+		Assert.assertEquals(zpz, FacingDirection.SOUTH.inverseRotateInSubBlock(pzz));
+		Assert.assertEquals(zpp, FacingDirection.SOUTH.inverseRotateInSubBlock(pzp));
+		Assert.assertEquals(zzz, FacingDirection.SOUTH.inverseRotateInSubBlock(ppz));
+		Assert.assertEquals(zzp, FacingDirection.SOUTH.inverseRotateInSubBlock(ppp));
+	}
 }

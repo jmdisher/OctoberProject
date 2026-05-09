@@ -421,6 +421,32 @@ public class TestSpatialHelpers
 		Assert.assertTrue(SpatialHelpers.canExistInLocation(reader, playerStuck, VOLUME));
 	}
 
+	@Test
+	public void doorFacingSouth()
+	{
+		// Shows that door collision still works correctly when facing south (verifies a bug was fixed).
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		
+		// Write the door in its inactive state.
+		Block door = ENV.blocks.fromItem(ENV.items.getItemById("op.door"));
+		AbsoluteLocation doorBase = new AbsoluteLocation(5, 5, 1);
+		FacingDirection orientation = FacingDirection.SOUTH;
+		cuboid.setData15(AspectRegistry.BLOCK, doorBase.getBlockAddress(), door.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, doorBase.getRelative(0, 0, 1).getBlockAddress(), door.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, doorBase.getBlockAddress(), FacingDirection.directionToByte(orientation));
+		cuboid.setData7(AspectRegistry.ORIENTATION, doorBase.getRelative(0, 0, 1).getBlockAddress(), FacingDirection.directionToByte(orientation));
+		cuboid.setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, doorBase.getRelative(0, 0, 1).getBlockAddress(), doorBase);
+		
+		// Check collision of the a player in the frame or stuck in the door.
+		EntityLocation playerInFrame = new EntityLocation(5.0f, 5.3f, 1.0f);
+		EntityLocation playerStuck = new EntityLocation(5.0f, 5.1f, 1.0f);
+		TickProcessingContext.IBlockFetcher blockTypeReader = ContextBuilder.buildFetcher((AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid));
+		ViscosityReader reader = new ViscosityReader(ENV, blockTypeReader);
+		Assert.assertTrue(SpatialHelpers.canExistInLocation(reader, playerInFrame, VOLUME));
+		Assert.assertFalse(SpatialHelpers.canExistInLocation(reader, playerStuck, VOLUME));
+	}
+
 
 	private static class _EndpointHelper implements EntityMovementHelpers.IInteractiveHelper
 	{

@@ -30,8 +30,8 @@ public enum FacingDirection
 	// South is the negative Y direction.
 	SOUTH(new int[] {-1, 0, 0, -1}
 		, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(0, -1, 0)
-		, new byte[] {0, -1, 0
-			, -1, 0, 0
+		, new byte[] {-1, 0, 0
+			, 0, -1, 0
 			, 0, 0, 1
 		}
 	),
