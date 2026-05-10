@@ -13,6 +13,7 @@ import com.jeffdisher.october.actions.passive.PassiveActionPickUp;
 import com.jeffdisher.october.actions.passive.PassiveActionRequestStoreToInventory;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.block_movement.PassiveActionPush;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.EntityCollection;
@@ -574,6 +575,29 @@ public class TestEnginePassives
 		Assert.assertEquals(new EntityLocation(25.0f, 0.0f, -0.98f), east.velocity());
 		Assert.assertEquals(new EntityLocation(-2.3f, 0.2f, 1.43f), west.location());
 		Assert.assertEquals(new EntityLocation(-25.0f, 0.0f, -0.98f), west.velocity());
+	}
+
+	@Test
+	public void actionPush()
+	{
+		int passiveId = 1;
+		EntityLocation location = new EntityLocation(3.0f, -4.0f, 5.6f);
+		ItemSlot slot = ItemSlot.fromStack(new Items(STONE_ITEM, 2));
+		long lastAliveMillis = PassiveType.ITEM_SLOT_DESPAWN_MILLIS + 1L;
+		PassiveEntity passive = new PassiveEntity(passiveId
+			, PassiveType.ITEM_SLOT
+			, location
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, slot
+			, lastAliveMillis
+		);
+		
+		TickProcessingContext context = _createContextWithSink(null);
+		EntityCollection entityCollection = EntityCollection.emptyCollection();
+		
+		PassiveActionPush push = new PassiveActionPush(new EntityLocation(0.3f, 0.4f, -0.5f));
+		PassiveEntity result = EnginePassives.processOneCreature(context, entityCollection, passive, List.of(push));
+		Assert.assertEquals(new EntityLocation(3.3f,-3.6f, 5.0f), result.location());
 	}
 
 
