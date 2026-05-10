@@ -55,7 +55,7 @@ public class EntitySubActionStepUp<T extends IMutableMinimalEntity> implements I
 		// 1)  We are currently standing on the ground.
 		// 2)  We can exist in the location a step up from where we are (we won't hit the ceiling).
 		// 3)  We are currently standing in only air blocks.
-		EntityLocation stepStartLocation = new EntityLocation(location.x(), location.y(), location.z() + MAX_STEP_HEIGHT);
+		EntityLocation stepStartLocation = location.getRelative(0.0f, 0.0f, MAX_STEP_HEIGHT);
 		if (SpatialHelpers.isStandingOnGround(reader, location, volume)
 			&& SpatialHelpers.canExistInLocation(reader, stepStartLocation, volume)
 			&& (0.0f == reader.getMaxStillViscosityInVolume(stepStartLocation, volume))
@@ -111,7 +111,7 @@ public class EntitySubActionStepUp<T extends IMutableMinimalEntity> implements I
 		EntityLocation vector = newEntity.getVelocityVector();
 		EntityVolume volume = newEntity.getType().volume();
 		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
-		EntityLocation stepStart = new EntityLocation(location.x(), location.y(), location.z() + _stepHeight);
+		EntityLocation stepStart = location.getRelative(0.0f, 0.0f, _stepHeight);
 		if ((_stepHeight <= MAX_STEP_HEIGHT)
 			&& (0.0f == vector.z())
 			&& SpatialHelpers.isStandingOnGround(reader, location, volume)
@@ -122,7 +122,7 @@ public class EntitySubActionStepUp<T extends IMutableMinimalEntity> implements I
 			// Note that this velocity change is intended to counter-act the natural "fall" due to gravity in this tick.
 			float seconds = (float)context.millisPerTick / 1000.0f;
 			float counterFall = seconds * -EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND;
-			EntityLocation stepVelocity = new EntityLocation(vector.x(), vector.y(), vector.z() + counterFall);
+			EntityLocation stepVelocity = vector.getRelative(0.0f, 0.0f, counterFall);
 			
 			newEntity.setLocation(stepStart);
 			newEntity.setVelocityVector(stepVelocity);

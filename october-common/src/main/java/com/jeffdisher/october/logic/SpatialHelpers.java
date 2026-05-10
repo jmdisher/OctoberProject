@@ -72,7 +72,7 @@ public class SpatialHelpers
 		
 		float widthOffset = volume.width() / 2.0f;
 		float heightOffset = volume.height() * entityEyeHeightMultiplier;
-		return new EntityLocation(entityLocation.x() + widthOffset, entityLocation.y() + widthOffset, entityLocation.z() + heightOffset);
+		return entityLocation.getRelative(widthOffset, widthOffset, heightOffset);
 	}
 
 	/**
@@ -128,7 +128,7 @@ public class SpatialHelpers
 	{
 		float width = volume.width() / 2.0f;
 		float height = volume.height() / 2.0f;
-		return new EntityLocation(base.x() + width, base.y() + width, base.z() + height);
+		return base.getRelative(width, width, height);
 	}
 
 	/**
@@ -223,7 +223,7 @@ public class SpatialHelpers
 		EntityVolume volume = entity.getType().volume();
 		// (we want the block under our centre).
 		float widthOffset = volume.width() / 2.0f;
-		return new EntityLocation(entityLocation.x() + widthOffset, entityLocation.y() + widthOffset, entityLocation.z());
+		return entityLocation.getRelative(widthOffset, widthOffset, 0.0f);
 	}
 
 	private static float _distanceToTarget(EntityLocation eye, EntityLocation target, EntityVolume targetVolume)

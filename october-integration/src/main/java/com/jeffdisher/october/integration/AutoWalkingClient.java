@@ -189,7 +189,7 @@ public class AutoWalkingClient
 	{
 		EntityLocation base = entity.location();
 		EntityVolume volume = env.creatures.PLAYER.volume();
-		EntityLocation edge = new EntityLocation(base.x() + volume.width(), base.y() + volume.width(), base.z() + volume.height());
+		EntityLocation edge = base.getRelative(volume.width(), volume.width(), volume.height());
 		
 		// We will say that we are out of this block if neither the base nor the edge are within this block (note that this could fail if the volume is larger than 1 block in any direction).
 		AbsoluteLocation baseBlock = base.getBlockLocation();

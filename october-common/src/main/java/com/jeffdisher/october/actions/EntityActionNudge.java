@@ -42,10 +42,7 @@ public class EntityActionNudge<T extends IMutableMinimalEntity> implements IEnti
 	public boolean applyChange(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
 		EntityLocation originalVelocity = newEntity.getVelocityVector();
-		EntityLocation combinedVelocity = new EntityLocation(originalVelocity.x() + _force.x()
-			, originalVelocity.y() + _force.y()
-			, originalVelocity.z() + _force.z()
-		);
+		EntityLocation combinedVelocity = originalVelocity.getRelativeForLocation(_force);
 		newEntity.setVelocityVector(combinedVelocity);
 		return true;
 	}

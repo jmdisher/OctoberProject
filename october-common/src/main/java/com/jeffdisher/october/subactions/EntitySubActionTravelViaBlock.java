@@ -126,7 +126,7 @@ public class EntitySubActionTravelViaBlock implements IEntitySubAction<IMutableP
 	private static boolean _checkBlockIntersecting(EntityLocation location, EntityVolume volume, AbsoluteLocation portalSurfaceLocation)
 	{
 		AbsoluteLocation base = location.getBlockLocation();
-		AbsoluteLocation edge = new EntityLocation(location.x() + volume.width(), location.y() + volume.width(), location.z() + volume.height()).getBlockLocation();
+		AbsoluteLocation edge = location.getRelative(volume.width(), volume.width(), volume.height()).getBlockLocation();
 		
 		int minX = base.x();
 		int minY = base.y();

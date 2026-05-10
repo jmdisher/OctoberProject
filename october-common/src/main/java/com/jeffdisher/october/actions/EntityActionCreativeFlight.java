@@ -147,7 +147,7 @@ public class EntityActionCreativeFlight implements IEntityActionFromClient<IMuta
 				float mX = seconds * newVelocity.x();
 				float mY = seconds * newVelocity.y();
 				float mZ = seconds * newVelocity.z();
-				EntityLocation newLocation = new EntityLocation(location.x() + mX, location.y() + mY, location.z() + mZ);
+				EntityLocation newLocation = location.getRelative(mX, mY, mZ);
 				
 				newEntity.setOrientation(_yaw, _pitch);
 				newEntity.setLocation(newLocation);

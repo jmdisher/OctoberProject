@@ -24,10 +24,7 @@ public class VolumeIterator implements Iterable<AbsoluteLocation>
 	 */
 	public static List<AbsoluteLocation> getAllInVolume(EntityLocation base, EntityVolume volume)
 	{
-		EntityLocation entityEdge = new EntityLocation(base.x() + volume.width()
-			, base.y() + volume.width()
-			, base.z() + volume.height()
-		);
+		EntityLocation entityEdge = base.getRelative(volume.width(), volume.width(), volume.height());
 		AbsoluteLocation start = base.getBlockLocation();
 		AbsoluteLocation end = entityEdge.getBlockLocation();
 		
@@ -51,10 +48,7 @@ public class VolumeIterator implements Iterable<AbsoluteLocation>
 
 	public VolumeIterator(EntityLocation base, EntityVolume volume)
 	{
-		EntityLocation entityEdge = new EntityLocation(base.x() + volume.width()
-			, base.y() + volume.width()
-			, base.z() + volume.height()
-		);
+		EntityLocation entityEdge = base.getRelative(volume.width(), volume.width(), volume.height());
 		_start = base.getBlockLocation();
 		_end = entityEdge.getBlockLocation();
 	}

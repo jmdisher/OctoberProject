@@ -108,7 +108,7 @@ public class EntitySubActionLadderDescend<T extends IMutableMinimalEntity> imple
 		if (!isLadder)
 		{
 			// Check the area just below us (where we will be going).
-			isLadder = (null != EntityMovementHelpers.checkTypeIntersection(new EntityLocation(location.x(), location.y(), location.z() + DESCEND_PER_TICK), volume, ladderSupplier));
+			isLadder = (null != EntityMovementHelpers.checkTypeIntersection(location.getRelative(0.0f, 0.0f, DESCEND_PER_TICK), volume, ladderSupplier));
 		}
 		
 		ViscosityReader reader = new ViscosityReader(env, previousBlockLookUp);

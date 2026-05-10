@@ -159,7 +159,7 @@ public class HopperHelpers
 			{
 				// Look for passives in the block above us and request that any which fit be pulled in.
 				EntityLocation base = sourceLocation.toEntityLocation();
-				EntityLocation edge = new EntityLocation(base.x() + 0.99f, base.y() + 0.99f, base.z() + 0.99f);
+				EntityLocation edge = base.getRelative(0.99f, 0.99f, 0.99f);
 				PartialPassive[] passives = context.previousPassiveLookUp.findPassiveItemSlotsInRegion(base, edge);
 				
 				for (PartialPassive passive : passives)

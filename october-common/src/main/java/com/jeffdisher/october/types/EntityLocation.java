@@ -64,6 +64,30 @@ public final record EntityLocation(float x, float y, float z)
 		return _roundToHundredths(f);
 	}
 
+	/**
+	 * Creates a new instance relative to the receiver.
+	 * 
+	 * @param rx The x float to add to the receiver.
+	 * @param ry The y float to add to the receiver.
+	 * @param rz The z float to add to the receiver.
+	 * @return The new instance relative to the receiver.
+	 */
+	public final EntityLocation getRelative(float rx, float ry, float rz)
+	{
+		return new EntityLocation(this.x + rx, this.y + ry, this.z + rz);
+	}
+
+	/**
+	 * Creates a new instance relative to the receiver.
+	 * 
+	 * @param r The location to add to the receiver.
+	 * @return The new instance relative to the receiver.
+	 */
+	public final EntityLocation getRelativeForLocation(EntityLocation r)
+	{
+		return new EntityLocation(this.x + r.x, this.y + r.y, this.z + r.z);
+	}
+
 
 	private static int _blockBase(float inBlock)
 	{

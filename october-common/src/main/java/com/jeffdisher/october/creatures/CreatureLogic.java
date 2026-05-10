@@ -1048,10 +1048,7 @@ public class CreatureLogic
 			
 			// We will apply the offset bias since this entity might be straddling blocks in a way which spills across more than usual.
 			EntityLocation blockBase = location.toEntityLocation();
-			EntityLocation adjustedBase = new EntityLocation(blockBase.x() + _offsetBias.x()
-				, blockBase.y() + _offsetBias.y()
-				, blockBase.z() + _offsetBias.z()
-			);
+			EntityLocation adjustedBase = blockBase.getRelativeForLocation(_offsetBias);
 			List<AbsoluteLocation> interior = VolumeIterator.getAllInVolume(adjustedBase, _volume);
 			Map<AbsoluteLocation, BlockProxy> proxies = _previousBlockLookUp.readBlockBatch(interior);
 			for (AbsoluteLocation loc : interior)

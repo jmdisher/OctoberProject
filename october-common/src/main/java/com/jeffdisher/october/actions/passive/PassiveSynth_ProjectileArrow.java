@@ -76,10 +76,7 @@ public class PassiveSynth_ProjectileArrow
 				, seconds * startVelocity.y()
 				, seconds * startVelocity.z()
 			);
-			EntityLocation endOfRay = new EntityLocation(startLocation.x() + vector.x()
-				, startLocation.y() + vector.y()
-				, startLocation.z() + vector.z()
-			);
+			EntityLocation endOfRay = startLocation.getRelativeForLocation(vector);
 			RayCastHelpers.RayBlock solidCollision = RayCastHelpers.findFirstCollision(startLocation, endOfRay, (AbsoluteLocation location) -> {
 				BlockProxy proxy = context.previousBlockLookUp.readBlock(location);
 				boolean shouldStop;
@@ -99,10 +96,7 @@ public class PassiveSynth_ProjectileArrow
 			if (null != solidCollision)
 			{
 				EntityLocation shortVelocity = startVelocity.makeScaledInstance(solidCollision.rayDistance() / startVelocity.getMagnitude());
-				endOfRay = new EntityLocation(startLocation.x() + shortVelocity.x()
-					, startLocation.y() + shortVelocity.y()
-					, startLocation.z() + shortVelocity.z()
-				);
+				endOfRay = startLocation.getRelativeForLocation(shortVelocity);
 			}
 			
 			// See if we hit an entity and either damage it and despawn or just move normally.

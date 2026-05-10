@@ -93,7 +93,7 @@ public class ViscosityReader
 				AbsoluteLocation loc = elt.getKey();
 				FacingDirection facing = proxy.getOrientation();
 				EntityLocation thisBase = loc.toEntityLocation();
-				EntityLocation thisBeyond = new EntityLocation(thisBase.x() + 0.99f, thisBase.y() + 0.99f, thisBase.z() + 0.99f);
+				EntityLocation thisBeyond = thisBase.getRelative(0.99f, 0.99f, 0.99f);
 				byte minX = SubBlock.oneAxis(Math.max(thisBase.x(), base.x()));
 				byte minY = SubBlock.oneAxis(Math.max(thisBase.y(), base.y()));
 				byte minZ = SubBlock.oneAxis(Math.max(thisBase.z(), base.z()));

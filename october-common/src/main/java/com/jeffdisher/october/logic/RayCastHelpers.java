@@ -405,7 +405,7 @@ public class RayCastHelpers
 		// -the "close" is a positive number (since otherwise we started "inside" the volume)
 		// NOTE:  "close" is not the physical distance, but a proportional one, so actually calculate the distance.
 		return ((close <= far) && (close >= 0.0f))
-				? SpatialHelpers.distanceFromLocationToVolume(new EntityLocation(start.x(), start.y(), start.z()), base, volume)
+				? SpatialHelpers.distanceFromLocationToVolume(start, base, volume)
 				: Float.MAX_VALUE
 		;
 	}

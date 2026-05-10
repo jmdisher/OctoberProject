@@ -170,7 +170,7 @@ public class EntityMovementHelpers
 				if (upZMove <= maxPopOutDistance)
 				{
 					// Up is in range but does it work?
-					EntityLocation newLocation = new EntityLocation(location.x(), location.y(), location.z() + upZMove);
+					EntityLocation newLocation = location.getRelative(0.0f, 0.0f, upZMove);
 					if (SpatialHelpers.canExistInLocation(reader, newLocation, volume))
 					{
 						poppedLocation = newLocation;
@@ -179,7 +179,7 @@ public class EntityMovementHelpers
 				if ((null == poppedLocation) && (downZMove <= maxPopOutDistance))
 				{
 					// Down is in range but does it work?
-					EntityLocation newLocation = new EntityLocation(location.x(), location.y(), location.z() - downZMove);
+					EntityLocation newLocation = location.getRelative(0.0f, 0.0f, -downZMove);
 					if (SpatialHelpers.canExistInLocation(reader, newLocation, volume))
 					{
 						poppedLocation = newLocation;
@@ -194,7 +194,7 @@ public class EntityMovementHelpers
 				if (northYMove <= maxPopOutDistance)
 				{
 					// Up is in range but does it work?
-					EntityLocation newLocation = new EntityLocation(location.x(), location.y() + northYMove, location.z());
+					EntityLocation newLocation = location.getRelative(0.0f, northYMove, 0.0f);
 					if (SpatialHelpers.canExistInLocation(reader, newLocation, volume))
 					{
 						poppedLocation = newLocation;
@@ -203,7 +203,7 @@ public class EntityMovementHelpers
 				if ((null == poppedLocation) && (southYMove <= maxPopOutDistance))
 				{
 					// Down is in range but does it work?
-					EntityLocation newLocation = new EntityLocation(location.x(), location.y() - southYMove, location.z());
+					EntityLocation newLocation = location.getRelative(0.0f, -southYMove, 0.0f);
 					if (SpatialHelpers.canExistInLocation(reader, newLocation, volume))
 					{
 						poppedLocation = newLocation;
@@ -218,7 +218,7 @@ public class EntityMovementHelpers
 				if (eastXMove <= maxPopOutDistance)
 				{
 					// Up is in range but does it work?
-					EntityLocation newLocation = new EntityLocation(location.x() + eastXMove, location.y(), location.z());
+					EntityLocation newLocation = location.getRelative(eastXMove, 0.0f, 0.0f);
 					if (SpatialHelpers.canExistInLocation(reader, newLocation, volume))
 					{
 						poppedLocation = newLocation;
@@ -227,7 +227,7 @@ public class EntityMovementHelpers
 				if ((null == poppedLocation) && (westXMove <= maxPopOutDistance))
 				{
 					// Down is in range but does it work?
-					EntityLocation newLocation = new EntityLocation(location.x() - westXMove, location.y(), location.z());
+					EntityLocation newLocation = location.getRelative(-westXMove, 0.0f, 0.0f);
 					if (SpatialHelpers.canExistInLocation(reader, newLocation, volume))
 					{
 						poppedLocation = newLocation;
@@ -386,7 +386,7 @@ public class EntityMovementHelpers
 			{
 			case X: {
 				float dirX = (effectiveX > 0.0f) ? POSITIVE_EDGE_COLLISION_FUDGE_FACTOR : -POSITIVE_EDGE_COLLISION_FUDGE_FACTOR;
-				EntityLocation adjacent = new EntityLocation(movingStart.x() + moveX + dirX, movingStart.y() + moveY, movingStart.z() + moveZ);
+				EntityLocation adjacent = movingStart.getRelative(moveX + dirX, moveY, moveZ);
 				if (_canOccupyLocation(adjacent, volume, helper, false))
 				{
 					moveX += dirX;
@@ -400,7 +400,7 @@ public class EntityMovementHelpers
 			}
 			case Y: {
 				float dirY = (effectiveY > 0.0f) ? POSITIVE_EDGE_COLLISION_FUDGE_FACTOR : -POSITIVE_EDGE_COLLISION_FUDGE_FACTOR;
-				EntityLocation adjacent = new EntityLocation(movingStart.x() + moveX, movingStart.y() + moveY + dirY, movingStart.z() + moveZ);
+				EntityLocation adjacent = movingStart.getRelative(moveX, moveY + dirY, moveZ);
 				if (_canOccupyLocation(adjacent, volume, helper, false))
 				{
 					moveY += dirY;
@@ -414,7 +414,7 @@ public class EntityMovementHelpers
 			}
 			case Z: {
 				float dirZ = (effectiveZ > 0.0f) ? POSITIVE_EDGE_COLLISION_FUDGE_FACTOR : -POSITIVE_EDGE_COLLISION_FUDGE_FACTOR;
-				EntityLocation adjacent = new EntityLocation(movingStart.x() + moveX, movingStart.y() + moveY, movingStart.z() + moveZ + dirZ);
+				EntityLocation adjacent = movingStart.getRelative(moveX, moveY, moveZ + dirZ);
 				boolean fromAbove = (dirZ < 0.0f);
 				if (_canOccupyLocation(adjacent, volume, helper, fromAbove))
 				{
@@ -449,8 +449,8 @@ public class EntityMovementHelpers
 				effectiveZ -= moveZ;
 			}
 			
-			movingStart = new EntityLocation(movingStart.x() + moveX, movingStart.y() + moveY, movingStart.z() + moveZ);
-			edgeLocation = new EntityLocation(edgeLocation.x() + moveX, edgeLocation.y() + moveY, edgeLocation.z() + moveZ);
+			movingStart = movingStart.getRelative(moveX, moveY, moveZ);
+			edgeLocation = edgeLocation.getRelative(moveX, moveY, moveZ);
 			Assert.assertTrue(volume.width() == EntityLocation.roundToHundredths(edgeLocation.y() - movingStart.y()));
 			
 			leadingPoint = new EntityLocation(leadingX, leadingY, leadingZ);
@@ -458,10 +458,7 @@ public class EntityMovementHelpers
 			collision = _runScaledCollision(leadingPoint, endOfVector);
 		}
 		// If we didn't collide, we must have reached the end of the vector (make sure we get the position).
-		movingStart = new EntityLocation(movingStart.x() + effectiveX
-			, movingStart.y() + effectiveY
-			, movingStart.z() + effectiveZ
-		);
+		movingStart = movingStart.getRelative(effectiveX, effectiveY, effectiveZ);
 		helper.setLocationAndCancelVelocity(movingStart, cancelX, cancelY, cancelZ);
 	}
 
