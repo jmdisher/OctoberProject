@@ -13,6 +13,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.actions.EntityActionPush;
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.CompositeRegistry;
@@ -23,6 +24,8 @@ import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.block_movement.MovableBlockData;
 import com.jeffdisher.october.block_movement.MutationBlockDeleteBlock;
 import com.jeffdisher.october.block_movement.MutationBlockOverwriteWithMove;
+import com.jeffdisher.october.block_movement.MutationBlockPushEntities;
+import com.jeffdisher.october.block_movement.PassiveActionPush;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.DeserializationContext;
@@ -36,6 +39,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CraftOperation;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EnchantingOperation;
 import com.jeffdisher.october.types.Entity;
@@ -58,6 +62,8 @@ import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
+import com.jeffdisher.october.utils.LazyEntityIndex;
+import com.jeffdisher.october.utils.LazyPassiveIndex;
 
 
 /**
@@ -2373,6 +2379,74 @@ public class TestCommonMutations
 		Assert.assertEquals(100L, outputCuboid.getDataSpecial(AspectRegistry.CRAFTING, craftingTableLocation.getBlockAddress()).completedMillis());
 		Assert.assertEquals(pedestalBlock.item().number(), outputCuboid.getData15(AspectRegistry.BLOCK, pedestalLocation.getBlockAddress()));
 		Assert.assertEquals(ItemSlot.fromStack(new Items(CHARCOAL_ITEM, 3)), outputCuboid.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, pedestalLocation.getBlockAddress()));
+	}
+
+	@SuppressWarnings("unchecked")
+	@Test
+	public void pushEntities() throws Throwable
+	{
+		AbsoluteLocation location = new AbsoluteLocation(5, 6, 7);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		
+		int playerId = 1;
+		int creatureId = -1;
+		int passiveId = 1;
+		MutableEntity mutable = MutableEntity.createForTest(playerId);
+		mutable.newLocation = new EntityLocation(4.9f, 5.8f, 6.5f);
+		CreatureEntity creature = CreatureEntity.create(creatureId, ENV.creatures.getTypeById("op.cow"), new EntityLocation(4.9f, 5.8f, 6.5f), 1000L);
+		ItemSlot itemSlot = ItemSlot.fromStack(new Items(STONE_ITEM, 2));
+		PassiveEntity passive = new PassiveEntity(passiveId, PassiveType.ITEM_SLOT, new EntityLocation(5.1f, 6.2f, 7.4f), new EntityLocation(0.0f, 0.0f, 0.0f), itemSlot, 1000L);
+		
+		LazyEntityIndex entityIndex = new LazyEntityIndex(Map.of(playerId, mutable.freeze()), Map.of(creature.id(), creature));
+		LazyPassiveIndex passiveIndex = new LazyPassiveIndex(Map.of(passive.id(), passive));
+		EntityActionPush<IMutablePlayerEntity>[] outPlayer = new EntityActionPush[1];
+		EntityActionPush<IMutableCreatureEntity>[] outCreature = new EntityActionPush[1];
+		PassiveActionPush[] outPassive = new PassiveActionPush[1];
+		TickProcessingContext.IChangeSink changeSink = new TickProcessingContext.IChangeSink() {
+			@Override
+			public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+			{
+				Assert.assertNull(outPlayer[0]);
+				Assert.assertEquals(playerId, targetEntityId);
+				outPlayer[0] = (EntityActionPush<IMutablePlayerEntity>) change;
+				return true;
+			}
+			@Override
+			public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+			{
+				throw new AssertionError("Not in test");
+			}
+			@Override
+			public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+			{
+				Assert.assertNull(outCreature[0]);
+				Assert.assertEquals(creatureId, targetCreatureId);
+				outCreature[0] = (EntityActionPush<IMutableCreatureEntity>) change;
+				return true;
+			}
+			@Override
+			public boolean passive(int targetPassiveId, IPassiveAction action)
+			{
+				Assert.assertNull(outPassive[0]);
+				Assert.assertEquals(passiveId, targetPassiveId);
+				outPassive[0] = (PassiveActionPush) action;
+				return true;
+			}
+		};
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups(null, entityIndex, passiveIndex)
+			.sinks(null, changeSink)
+			.finish()
+		;
+		
+		EntityLocation offset = new EntityLocation(1.0f, 0.0f, 0.0f);
+		MutationBlockPushEntities push = new MutationBlockPushEntities(location, offset);
+		MutableBlockProxy proxy = new MutableBlockProxy(location, cuboid);
+		push.applyMutation(context, proxy);
+		
+		Assert.assertNotNull(outPlayer[0]);
+		Assert.assertNotNull(outCreature[0]);
+		Assert.assertNotNull(outPassive[0]);
 	}
 
 
