@@ -108,6 +108,7 @@ import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TargetedAction;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
+import com.jeffdisher.october.utils.LazyEntityIndex;
 
 
 public class TestCommonChanges
@@ -694,7 +695,7 @@ public class TestCommonChanges
 		List<IEntityAction<IMutablePlayerEntity>> outChanges = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
-				.lookups(null, (int thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)), null)
+				.lookups(null, new LazyEntityIndex(targetsById, Map.of()), null)
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 						@Override
 						public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
@@ -870,7 +871,7 @@ public class TestCommonChanges
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
-				.lookups(null, (int thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)), null)
+				.lookups(null, new LazyEntityIndex(targetsById, Map.of()), null)
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 						@Override
 						public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
@@ -1390,10 +1391,7 @@ public class TestCommonChanges
 		CommonChangeSink changeSink = new CommonChangeSink(Set.of(attackerId), Set.of(targetId), Set.of());
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
-				.lookups(null, (int id) -> {
-						Assert.assertEquals(targetId, id);
-						return MinimalEntity.fromCreature(creature);
-					}, null)
+				.lookups(null, new _RequiredEntityIndex(Map.of(targetId, creature)), null)
 				.sinks(null, changeSink)
 				.finish()
 		;
@@ -1446,10 +1444,7 @@ public class TestCommonChanges
 		CommonChangeSink changeSink = new CommonChangeSink(Set.of(entityId), Set.of(targetId), Set.of());
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
-				.lookups(null, (int id) -> {
-						Assert.assertEquals(targetId, id);
-						return MinimalEntity.fromCreature(creature);
-					}, null)
+				.lookups(null, new _RequiredEntityIndex(Map.of(targetId, creature)), null)
 				.sinks(null, changeSink)
 				.finish()
 		;
@@ -2604,7 +2599,7 @@ public class TestCommonChanges
 		int[] eventCounter = new int[1];
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(5L)
-			.lookups(null, (int thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)), null)
+			.lookups(null, new LazyEntityIndex(targetsById, Map.of()), null)
 			.sinks(null, new TickProcessingContext.IChangeSink() {
 				@Override
 				public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
@@ -3060,10 +3055,7 @@ public class TestCommonChanges
 				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 					CuboidData cuboid = (location.z() >= 0) ? airCuboid : stoneCuboid;
 					return BlockProxy.load(location.getBlockAddress(), cuboid);
-				}), (int id) -> {
-					Assert.assertEquals(targetId, id);
-					return MinimalEntity.fromCreature(creature);
-				}, null)
+				}), new _RequiredEntityIndex(Map.of(targetId, creature)), null)
 				.sinks(null, changeSink)
 				.finish()
 		;
@@ -3455,19 +3447,7 @@ public class TestCommonChanges
 		CommonChangeSink changeSink = new CommonChangeSink(Set.of(entityId), Set.of(cowId), Set.of());
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(5L)
-			.lookups(null, (int id) -> {
-				MinimalEntity min;
-				if (cowId == id)
-				{
-					min = MinimalEntity.fromCreature(readyCow);
-				}
-				else
-				{
-					Assert.assertEquals(calfId, id);
-					min = MinimalEntity.fromCreature(calf);
-				}
-				return min;
-			}, null)
+			.lookups(null, new _RequiredEntityIndex(Map.of(cowId, readyCow, calfId, calf)), null)
 			.sinks(null, changeSink)
 			.finish()
 		;
@@ -4086,6 +4066,22 @@ public class TestCommonChanges
 		{
 			Assert.assertEquals(_expected, event);
 			_expected = null;
+		}
+	}
+
+	private static class _RequiredEntityIndex implements TickProcessingContext.IEntitySearch
+	{
+		private final Map<Integer, CreatureEntity> _required;
+		public _RequiredEntityIndex(Map<Integer, CreatureEntity> required)
+		{
+			_required = required;
+		}
+		@Override
+		public MinimalEntity getById(int id)
+		{
+			CreatureEntity creature = _required.get(id);
+			Assert.assertNotNull(creature);
+			return MinimalEntity.fromCreature(creature);
 		}
 	}
 }

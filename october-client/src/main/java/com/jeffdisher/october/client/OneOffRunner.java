@@ -163,13 +163,21 @@ public class OneOffRunner
 				return new PartialPassive[0];
 			}
 		};
+		TickProcessingContext.IEntitySearch entitySearch = new TickProcessingContext.IEntitySearch() {
+			@Override
+			public MinimalEntity getById(int id)
+			{
+				return (thisEntityId == id)
+					? MinimalEntity.fromEntity(state.thisEntity())
+					: MinimalEntity.fromPartialEntity(state.otherEntities.get(id))
+				;
+			}
+		};
 		// For local runs, we will just assume that all transactions are valid (server will correct us if we are wrong).
 		TickProcessingContext.ITransactionSupport transactions = (Collection<AbsoluteLocation> locations, int expectedMutations) -> true;
 		TickProcessingContext context = new TickProcessingContext(gameTick
 				, state.proxyLoader
-				, (int entityId) -> (thisEntityId == entityId)
-					? MinimalEntity.fromEntity(state.thisEntity())
-					: MinimalEntity.fromPartialEntity(state.otherEntities.get(entityId))
+				, entitySearch
 				, passiveSearch
 				, transactions
 				, null

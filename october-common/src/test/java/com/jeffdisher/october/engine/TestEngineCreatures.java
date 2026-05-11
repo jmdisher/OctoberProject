@@ -61,6 +61,7 @@ import com.jeffdisher.october.types.TickProcessingContext.IChangeSink;
 import com.jeffdisher.october.types.TickProcessingContext.IMutationSink;
 import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.Encoding;
+import com.jeffdisher.october.utils.LazyEntityIndex;
 
 
 public class TestEngineCreatures
@@ -742,7 +743,7 @@ public class TestEngineCreatures
 								? BlockProxy.load(location.getBlockAddress(), cuboid)
 								: null
 							;
-						}), (int id) -> minimalEntitiesById.get(id), null)
+						}), new _MinimalEntityIndex(minimalEntitiesById), null)
 					// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 					.fixedRandom(1)
 					.finish()
@@ -1140,7 +1141,7 @@ public class TestEngineCreatures
 		};
 		Map<Integer, MinimalEntity> minimal = creatures.stream().collect(Collectors.toMap((CreatureEntity creature) -> creature.id(), (CreatureEntity creature) -> MinimalEntity.fromCreature(creature)));
 		TickProcessingContext context = ContextBuilder.nextTick(existing, 1L)
-				.lookups(existing.previousBlockLookUp, (int id) -> minimal.get(id), null)
+				.lookups(existing.previousBlockLookUp, new _MinimalEntityIndex(minimal), null)
 				.sinks(null, newChangeSink)
 				.spawner(spawner)
 				.finish()
@@ -1150,25 +1151,13 @@ public class TestEngineCreatures
 
 	private static TickProcessingContext _updateContextWithPlayerAndCreatures(TickProcessingContext existing, Entity player, Map<Integer, CreatureEntity> creatures)
 	{
+		Map<Integer, Entity> players = (null != player) ? Map.of(player.id(), player) : Map.of();
+		LazyEntityIndex entityIndex = new LazyEntityIndex(players, creatures);
 		TickProcessingContext context = ContextBuilder.nextTick(existing, (CreatureLogic.MINIMUM_MILLIS_TO_ACTION / existing.millisPerTick))
-				.lookups(existing.previousBlockLookUp, (int id) -> {
-					MinimalEntity ret;
-					if ((null != player) && (id == player.id()))
-					{
-						ret = MinimalEntity.fromEntity(player);
-					}
-					else
-					{
-						ret = creatures.containsKey(id)
-								? MinimalEntity.fromCreature(creatures.get(id))
-								: null
-						;
-					}
-					return ret;
-				}, null)
-				.sinks(null, null)
-				.spawner(null)
-				.finish()
+			.lookups(existing.previousBlockLookUp, entityIndex, null)
+			.sinks(null, null)
+			.spawner(null)
+			.finish()
 		;
 		return context;
 	}
@@ -1305,6 +1294,20 @@ public class TestEngineCreatures
 		{
 			Assert.assertEquals(_expected, event);
 			_expected = null;
+		}
+	}
+
+	private static class _MinimalEntityIndex implements TickProcessingContext.IEntitySearch
+	{
+		private final Map<Integer, MinimalEntity> _minimal;
+		public _MinimalEntityIndex(Map<Integer, MinimalEntity> minimal)
+		{
+			_minimal = minimal;
+		}
+		@Override
+		public MinimalEntity getById(int id)
+		{
+			return _minimal.get(id);
 		}
 	}
 }

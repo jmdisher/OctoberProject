@@ -46,6 +46,7 @@ import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.CreatureEntity.Ephemeral;
 import com.jeffdisher.october.utils.CuboidGenerator;
+import com.jeffdisher.october.utils.LazyEntityIndex;
 
 
 public class TestCreatureLogic
@@ -223,7 +224,7 @@ public class TestCreatureLogic
 		EntityLocation orcLocation = new EntityLocation(2.0f, 2.0f, 1.0f);
 		CreatureEntity orc = CreatureEntity.create(-1, ORC, orcLocation, 0L);
 		EntityLocation playerLocation = new EntityLocation(5.0f, 1.0f, 1.0f);
-		Entity[] player = new Entity[] { new Entity(1
+		Entity player = new Entity(1
 				, false
 				, playerLocation
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
@@ -239,7 +240,7 @@ public class TestCreatureLogic
 				, MutableEntity.TESTING_LOCATION
 				, Entity.EMPTY_SHARED
 				, Entity.EMPTY_LOCAL
-		) };
+		);
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		_setLayer(input, (byte)0, "op.stone");
@@ -251,31 +252,16 @@ public class TestCreatureLogic
 					: null
 			;
 		});
-		TickProcessingContext.IEntitySearch previousEntityLookUp = (int id) -> {
-			MinimalEntity min;
-			switch (id)
-			{
-			case -1:
-				min = MinimalEntity.fromCreature(orc);
-				break;
-			case 1:
-				min = MinimalEntity.fromEntity(player[0]);
-				break;
-			default:
-				throw new AssertionError();
-			}
-			return min;
-		};
 		TickProcessingContext context = ContextBuilder.build()
-				.tick((CreatureLogic.MINIMUM_MILLIS_TO_ACTION / 100L) + 1L)
-				.lookups(previousBlockLookUp, previousEntityLookUp, null)
-				.finish()
+			.tick((CreatureLogic.MINIMUM_MILLIS_TO_ACTION / 100L) + 1L)
+			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
+			.finish()
 		;
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
 		
 		// First, choose the target.
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, EntityCollection.fromMaps(Map.of(player[0].id(), player[0]), Map.of(orc.id(), orc))
+				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
@@ -288,7 +274,7 @@ public class TestCreatureLogic
 		
 		// Now, move the entity and see that the special action updates it.
 		EntityLocation newPlayerLocation = new EntityLocation(2.0f, 5.0f, 1.0f);
-		player[0] = new Entity(1
+		player = new Entity(1
 				, false
 				, newPlayerLocation
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
@@ -306,8 +292,13 @@ public class TestCreatureLogic
 				, Entity.EMPTY_LOCAL
 		);
 		// Special action is where we account for this targeting update but it doesn't count as a special action.
+		context = ContextBuilder.build()
+			.tick((CreatureLogic.MINIMUM_MILLIS_TO_ACTION / 100L) + 1L)
+			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
+			.finish()
+		;
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, EntityCollection.fromMaps(Map.of(player[0].id(), player[0]), Map.of(orc.id(), orc))
+				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
@@ -336,7 +327,7 @@ public class TestCreatureLogic
 			;
 		});
 		// (we won't expose any of the entities since we don't expect targeting).
-		TickProcessingContext.IEntitySearch previousEntityLookUp = (int id) -> null;
+		_MinimalEntityIndex previousEntityLookUp = new _MinimalEntityIndex(Map.of());
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(startTick)
 				.lookups(previousBlockLookUp, previousEntityLookUp, null)
@@ -437,12 +428,7 @@ public class TestCreatureLogic
 						throw new AssertionError();
 					}
 				})
-				.lookups(null, (int entityId) -> {
-					return creatures.containsKey(entityId)
-							? MinimalEntity.fromCreature(creatures.get(entityId))
-							: null
-					;
-				}, null)
+				.lookups(null, new LazyEntityIndex(Map.of(), creatures), null)
 				.finish()
 		;
 		
@@ -542,21 +528,7 @@ public class TestCreatureLogic
 					: null
 			;
 		});
-		TickProcessingContext.IEntitySearch previousEntityLookUp = (int id) -> {
-			MinimalEntity min;
-			switch (id)
-			{
-			case -1:
-				min = MinimalEntity.fromCreature(orc);
-				break;
-			case 1:
-				min = MinimalEntity.fromEntity(player);
-				break;
-			default:
-				throw new AssertionError();
-			}
-			return min;
-		};
+		_PairEntityIndex previousEntityLookUp = new _PairEntityIndex(player, orc);
 		long millisPerTick = 100L;
 		TickProcessingContext context = ContextBuilder.build()
 				.millisPerTick(millisPerTick)
@@ -599,21 +571,7 @@ public class TestCreatureLogic
 					: null
 			;
 		});
-		TickProcessingContext.IEntitySearch previousEntityLookUp = (int id) -> {
-			MinimalEntity min;
-			switch (id)
-			{
-			case -1:
-				min = MinimalEntity.fromCreature(orc);
-				break;
-			case 1:
-				min = MinimalEntity.fromEntity(player);
-				break;
-			default:
-				throw new AssertionError();
-			}
-			return min;
-		};
+		_PairEntityIndex previousEntityLookUp = new _PairEntityIndex(player, orc);
 		List<IEntityAction<IMutablePlayerEntity>> outChanges = new ArrayList<>();
 		TickProcessingContext.IChangeSink changeSink = new TickProcessingContext.IChangeSink() {
 			@Override
@@ -732,7 +690,7 @@ public class TestCreatureLogic
 			;
 		});
 		Map<Integer, MinimalEntity> entities = new HashMap<>();
-		TickProcessingContext.IEntitySearch previousEntityLookUp = (int id) -> entities.get(id);
+		_MinimalEntityIndex previousEntityLookUp = new _MinimalEntityIndex(entities);
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(1000L)
 				.lookups(previousBlockLookUp, previousEntityLookUp, null)
@@ -821,7 +779,7 @@ public class TestCreatureLogic
 			;
 		});
 		Map<Integer, MinimalEntity> entities = new HashMap<>();
-		TickProcessingContext.IEntitySearch previousEntityLookUp = (int id) -> entities.get(id);
+		_MinimalEntityIndex previousEntityLookUp = new _MinimalEntityIndex(entities);
 		boolean[] out = new boolean[1];
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(1000L)
@@ -959,12 +917,9 @@ public class TestCreatureLogic
 					? BlockProxy.load(location.getBlockAddress(), input)
 					: null
 				;
-			}), (int entityId) -> {
-				return creatures.containsKey(entityId)
-					? MinimalEntity.fromCreature(creatures.get(entityId))
-					: null
-				;
-			}, null)
+				})
+				, new LazyEntityIndex(Map.of(), creatures)
+				, null)
 			.finish()
 		;
 		
@@ -1045,21 +1000,7 @@ public class TestCreatureLogic
 				: null
 			;
 		});
-		TickProcessingContext.IEntitySearch previousEntityLookUp = (int id) -> {
-			MinimalEntity min;
-			switch (id)
-			{
-			case -1:
-				min = MinimalEntity.fromCreature(skeleton);
-				break;
-			case 1:
-				min = MinimalEntity.fromEntity(player);
-				break;
-			default:
-				throw new AssertionError();
-			}
-			return min;
-		};
+		_PairEntityIndex previousEntityLookUp = new _PairEntityIndex(player, skeleton);
 		long millisPerTick = 100L;
 		PassiveEntity[] out = new PassiveEntity[1];
 		TickProcessingContext.IPassiveSpawner passiveSpawner = (PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
@@ -1314,5 +1255,48 @@ public class TestCreatureLogic
 				, original.ephemeral().lastDamageTakenMillis()
 			)
 		);
+	}
+
+	private static class _MinimalEntityIndex implements TickProcessingContext.IEntitySearch
+	{
+		private final Map<Integer, MinimalEntity> _minimal;
+		public _MinimalEntityIndex(Map<Integer, MinimalEntity> minimal)
+		{
+			_minimal = minimal;
+		}
+		@Override
+		public MinimalEntity getById(int id)
+		{
+			return _minimal.get(id);
+		}
+	}
+
+	private static class _PairEntityIndex implements TickProcessingContext.IEntitySearch
+	{
+		private final Entity _player;
+		private final CreatureEntity _creature;
+		public _PairEntityIndex(Entity player, CreatureEntity creature)
+		{
+			_player = player;
+			_creature = creature;
+		}
+		@Override
+		public MinimalEntity getById(int id)
+		{
+			MinimalEntity min;
+			if (id == _player.id())
+			{
+				min = MinimalEntity.fromEntity(_player);
+			}
+			else if (id == _creature.id())
+			{
+				min = MinimalEntity.fromCreature(_creature);
+			}
+			else
+			{
+				throw new AssertionError();
+			}
+			return min;
+		}
 	}
 }

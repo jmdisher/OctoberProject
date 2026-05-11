@@ -772,13 +772,21 @@ public class SpeculativeProjection
 				return new PartialPassive[0];
 			}
 		};
+		TickProcessingContext.IEntitySearch entitySearch = new TickProcessingContext.IEntitySearch() {
+			@Override
+			public MinimalEntity getById(int id)
+			{
+				return (_localEntityId == id)
+					? MinimalEntity.fromEntity(_entityContainer.getProjectedOrShadowLocalEntity())
+					: MinimalEntity.fromPartialEntity(_entityContainer.getPartialEntityById(id))
+				;
+			}
+		};
 		// For local runs, we will just assume that all transactions are valid (server will correct us if we are wrong).
 		TickProcessingContext.ITransactionSupport transactions = (Collection<AbsoluteLocation> locations, int expectedMutations) -> true;
 		TickProcessingContext context = new TickProcessingContext(gameTick
 				, cachingLoader
-				, (int entityId) -> (_localEntityId == entityId)
-					? MinimalEntity.fromEntity(_entityContainer.getProjectedOrShadowLocalEntity())
-					: MinimalEntity.fromPartialEntity(_entityContainer.getPartialEntityById(entityId))
+				, entitySearch
 				, passiveSearch
 				, transactions
 				, null

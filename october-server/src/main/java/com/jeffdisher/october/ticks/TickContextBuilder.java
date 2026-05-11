@@ -22,11 +22,11 @@ import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EventRecord;
-import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
+import com.jeffdisher.october.utils.LazyEntityIndex;
 import com.jeffdisher.october.utils.LazyPassiveIndex;
 
 
@@ -106,9 +106,7 @@ public class TickContextBuilder
 		
 		return new TickProcessingContext(gameTick
 			, blockFetcher
-			, (int entityId) -> (entityId > 0)
-				? MinimalEntity.fromEntity(_materials.completedEntities().get(entityId))
-				: MinimalEntity.fromCreature(_materials.completedCreatures().get(entityId))
+			, new LazyEntityIndex(_materials.completedEntities(), _materials.completedCreatures())
 			, _passiveSearch
 			, transactions
 			, (AbsoluteLocation blockLocation) -> {
