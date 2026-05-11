@@ -68,7 +68,7 @@ public class ContextBuilder
 
 	public long currentTick;
 	public TickProcessingContext.IBlockFetcher previousBlockLookUp;
-	public Function<Integer, MinimalEntity> previousEntityLookUp;
+	public TickProcessingContext.IEntitySearch previousEntityLookUp;
 	public TickProcessingContext.IPassiveSearch previousPassiveLookUp;
 	public TickProcessingContext.ITransactionSupport transactions;
 	public IByteLookup<AbsoluteLocation> skyLight;
@@ -101,7 +101,7 @@ public class ContextBuilder
 	}
 
 	public ContextBuilder lookups(TickProcessingContext.IBlockFetcher previousBlockLookUp
-		, Function<Integer, MinimalEntity> previousEntityLookUp
+		, TickProcessingContext.IEntitySearch previousEntityLookUp
 		, TickProcessingContext.IPassiveSearch previousPassiveLookUp
 	)
 	{

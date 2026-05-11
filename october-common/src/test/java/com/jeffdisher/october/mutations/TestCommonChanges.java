@@ -694,7 +694,7 @@ public class TestCommonChanges
 		List<IEntityAction<IMutablePlayerEntity>> outChanges = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
-				.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)), null)
+				.lookups(null, (int thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)), null)
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 						@Override
 						public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
@@ -870,7 +870,7 @@ public class TestCommonChanges
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
-				.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)), null)
+				.lookups(null, (int thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)), null)
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 						@Override
 						public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
@@ -1390,8 +1390,8 @@ public class TestCommonChanges
 		CommonChangeSink changeSink = new CommonChangeSink(Set.of(attackerId), Set.of(targetId), Set.of());
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
-				.lookups(null, (Integer id) -> {
-						Assert.assertEquals(targetId, id.intValue());
+				.lookups(null, (int id) -> {
+						Assert.assertEquals(targetId, id);
 						return MinimalEntity.fromCreature(creature);
 					}, null)
 				.sinks(null, changeSink)
@@ -1446,8 +1446,8 @@ public class TestCommonChanges
 		CommonChangeSink changeSink = new CommonChangeSink(Set.of(entityId), Set.of(targetId), Set.of());
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
-				.lookups(null, (Integer id) -> {
-						Assert.assertEquals(targetId, id.intValue());
+				.lookups(null, (int id) -> {
+						Assert.assertEquals(targetId, id);
 						return MinimalEntity.fromCreature(creature);
 					}, null)
 				.sinks(null, changeSink)
@@ -2604,7 +2604,7 @@ public class TestCommonChanges
 		int[] eventCounter = new int[1];
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(5L)
-			.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)), null)
+			.lookups(null, (int thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)), null)
 			.sinks(null, new TickProcessingContext.IChangeSink() {
 				@Override
 				public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
@@ -3060,8 +3060,8 @@ public class TestCommonChanges
 				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 					CuboidData cuboid = (location.z() >= 0) ? airCuboid : stoneCuboid;
 					return BlockProxy.load(location.getBlockAddress(), cuboid);
-				}), (Integer id) -> {
-					Assert.assertEquals(targetId, id.intValue());
+				}), (int id) -> {
+					Assert.assertEquals(targetId, id);
 					return MinimalEntity.fromCreature(creature);
 				}, null)
 				.sinks(null, changeSink)
@@ -3455,7 +3455,7 @@ public class TestCommonChanges
 		CommonChangeSink changeSink = new CommonChangeSink(Set.of(entityId), Set.of(cowId), Set.of());
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(5L)
-			.lookups(null, (Integer id) -> {
+			.lookups(null, (int id) -> {
 				MinimalEntity min;
 				if (cowId == id)
 				{
@@ -3463,7 +3463,7 @@ public class TestCommonChanges
 				}
 				else
 				{
-					Assert.assertEquals(calfId, id.intValue());
+					Assert.assertEquals(calfId, id);
 					min = MinimalEntity.fromCreature(calf);
 				}
 				return min;

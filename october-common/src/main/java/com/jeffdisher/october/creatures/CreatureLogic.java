@@ -599,7 +599,7 @@ public class CreatureLogic
 	private static void _updateValidPathIfTargetMoved(TickProcessingContext context, MutableCreature mutable)
 	{
 		// We know that the target is valid and in range when we get here so the exist and are in range.
-		MinimalEntity targetEntity = context.previousEntityLookUp.apply(mutable.newTargetEntityId);
+		MinimalEntity targetEntity = context.previousEntityLookUp.getById(mutable.newTargetEntityId);
 		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(mutable.newLocation, mutable.newType.volume());
 		EntityLocation targetLocation = targetEntity.location();
 		EntityVolume targetVolume = targetEntity.type().volume();
@@ -725,7 +725,7 @@ public class CreatureLogic
 		{
 			// We are in love mode, and have found a target, so see if we are close enough to impregnate our target.
 			// We have a target so see if we are in love mode and if they are in range to breed.
-			MinimalEntity targetEntity = context.previousEntityLookUp.apply(creature.newTargetEntityId);
+			MinimalEntity targetEntity = context.previousEntityLookUp.getById(creature.newTargetEntityId);
 			// If we got here, they must not have unloaded (we would have observed that in didUpdateTargetLocation.
 			Assert.assertTrue(null != targetEntity);
 			
@@ -766,7 +766,7 @@ public class CreatureLogic
 		{
 			// We are tracking a target so see if they have moved (since we would need to clear our existing targets and
 			// movement plans unless they are close enough for other actions).
-			MinimalEntity targetEntity = context.previousEntityLookUp.apply(creature.newTargetEntityId);
+			MinimalEntity targetEntity = context.previousEntityLookUp.getById(creature.newTargetEntityId);
 			// If we got here, they must not have unloaded (we would have observed that in didUpdateTargetLocation.
 			Assert.assertTrue(null != targetEntity);
 			
@@ -821,7 +821,7 @@ public class CreatureLogic
 		{
 			// We are tracking a target so see if they have moved (since we would need to clear our existing targets and
 			// movement plans unless they are close enough for other actions).
-			MinimalEntity targetEntity = context.previousEntityLookUp.apply(creature.newTargetEntityId);
+			MinimalEntity targetEntity = context.previousEntityLookUp.getById(creature.newTargetEntityId);
 			// If we got here, they must not have unloaded (we would have observed that in didUpdateTargetLocation.
 			Assert.assertTrue(null != targetEntity);
 			

@@ -106,7 +106,7 @@ public class TickContextBuilder
 		
 		return new TickProcessingContext(gameTick
 			, blockFetcher
-			, (Integer entityId) -> (entityId > 0)
+			, (int entityId) -> (entityId > 0)
 				? MinimalEntity.fromEntity(_materials.completedEntities().get(entityId))
 				: MinimalEntity.fromCreature(_materials.completedCreatures().get(entityId))
 			, _passiveSearch

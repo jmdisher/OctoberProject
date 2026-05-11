@@ -167,7 +167,7 @@ public class OneOffRunner
 		TickProcessingContext.ITransactionSupport transactions = (Collection<AbsoluteLocation> locations, int expectedMutations) -> true;
 		TickProcessingContext context = new TickProcessingContext(gameTick
 				, state.proxyLoader
-				, (Integer entityId) -> (thisEntityId == entityId)
+				, (int entityId) -> (thisEntityId == entityId)
 					? MinimalEntity.fromEntity(state.thisEntity())
 					: MinimalEntity.fromPartialEntity(state.otherEntities.get(entityId))
 				, passiveSearch

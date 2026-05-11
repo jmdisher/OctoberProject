@@ -74,7 +74,7 @@ public class EntityChangeUseSelectedItemOnEntity implements IEntitySubAction<IMu
 		boolean isReady = ((newEntity.getLastSpecialActionMillis() + COOLDOWN_MILLIS) <= context.currentTickTimeMillis);
 		
 		// We also want to make sure that this is in range.
-		MinimalEntity target = context.previousEntityLookUp.apply(_entityId);
+		MinimalEntity target = context.previousEntityLookUp.getById(_entityId);
 		EntityType entityType;
 		boolean isInRange;
 		if (null != target)

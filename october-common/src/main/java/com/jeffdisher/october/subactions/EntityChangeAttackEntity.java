@@ -63,7 +63,7 @@ public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayer
 		boolean isInRange;
 		EntityLocation targetBase;
 		EntityVolume targetVolume;
-		MinimalEntity targetEntity = context.previousEntityLookUp.apply(_targetEntityId);
+		MinimalEntity targetEntity = context.previousEntityLookUp.getById(_targetEntityId);
 		if (isReady && (null != targetEntity))
 		{
 			// Find the distance from the eye to the target.

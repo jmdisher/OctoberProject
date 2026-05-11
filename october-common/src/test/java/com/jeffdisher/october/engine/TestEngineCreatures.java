@@ -742,7 +742,7 @@ public class TestEngineCreatures
 								? BlockProxy.load(location.getBlockAddress(), cuboid)
 								: null
 							;
-						}), (Integer id) -> minimalEntitiesById.get(id), null)
+						}), (int id) -> minimalEntitiesById.get(id), null)
 					// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 					.fixedRandom(1)
 					.finish()
@@ -887,7 +887,7 @@ public class TestEngineCreatures
 					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
-			}), (Integer id) -> {
+			}), (int id) -> {
 				return MinimalEntity.fromEntity(indirect[0]);
 			}, null)
 			.finish()
@@ -1140,7 +1140,7 @@ public class TestEngineCreatures
 		};
 		Map<Integer, MinimalEntity> minimal = creatures.stream().collect(Collectors.toMap((CreatureEntity creature) -> creature.id(), (CreatureEntity creature) -> MinimalEntity.fromCreature(creature)));
 		TickProcessingContext context = ContextBuilder.nextTick(existing, 1L)
-				.lookups(existing.previousBlockLookUp, (Integer id) -> minimal.get(id), null)
+				.lookups(existing.previousBlockLookUp, (int id) -> minimal.get(id), null)
 				.sinks(null, newChangeSink)
 				.spawner(spawner)
 				.finish()
@@ -1151,7 +1151,7 @@ public class TestEngineCreatures
 	private static TickProcessingContext _updateContextWithPlayerAndCreatures(TickProcessingContext existing, Entity player, Map<Integer, CreatureEntity> creatures)
 	{
 		TickProcessingContext context = ContextBuilder.nextTick(existing, (CreatureLogic.MINIMUM_MILLIS_TO_ACTION / existing.millisPerTick))
-				.lookups(existing.previousBlockLookUp, (Integer id) -> {
+				.lookups(existing.previousBlockLookUp, (int id) -> {
 					MinimalEntity ret;
 					if ((null != player) && (id == player.id()))
 					{

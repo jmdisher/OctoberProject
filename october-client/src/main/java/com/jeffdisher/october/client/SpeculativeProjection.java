@@ -776,7 +776,7 @@ public class SpeculativeProjection
 		TickProcessingContext.ITransactionSupport transactions = (Collection<AbsoluteLocation> locations, int expectedMutations) -> true;
 		TickProcessingContext context = new TickProcessingContext(gameTick
 				, cachingLoader
-				, (Integer entityId) -> (_localEntityId == entityId)
+				, (int entityId) -> (_localEntityId == entityId)
 					? MinimalEntity.fromEntity(_entityContainer.getProjectedOrShadowLocalEntity())
 					: MinimalEntity.fromPartialEntity(_entityContainer.getPartialEntityById(entityId))
 				, passiveSearch

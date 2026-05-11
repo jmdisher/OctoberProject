@@ -251,7 +251,7 @@ public class TestCreatureLogic
 					: null
 			;
 		});
-		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> {
+		TickProcessingContext.IEntitySearch previousEntityLookUp = (int id) -> {
 			MinimalEntity min;
 			switch (id)
 			{
@@ -336,7 +336,7 @@ public class TestCreatureLogic
 			;
 		});
 		// (we won't expose any of the entities since we don't expect targeting).
-		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> null;
+		TickProcessingContext.IEntitySearch previousEntityLookUp = (int id) -> null;
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(startTick)
 				.lookups(previousBlockLookUp, previousEntityLookUp, null)
@@ -437,7 +437,7 @@ public class TestCreatureLogic
 						throw new AssertionError();
 					}
 				})
-				.lookups(null, (Integer entityId) -> {
+				.lookups(null, (int entityId) -> {
 					return creatures.containsKey(entityId)
 							? MinimalEntity.fromCreature(creatures.get(entityId))
 							: null
@@ -542,7 +542,7 @@ public class TestCreatureLogic
 					: null
 			;
 		});
-		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> {
+		TickProcessingContext.IEntitySearch previousEntityLookUp = (int id) -> {
 			MinimalEntity min;
 			switch (id)
 			{
@@ -599,7 +599,7 @@ public class TestCreatureLogic
 					: null
 			;
 		});
-		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> {
+		TickProcessingContext.IEntitySearch previousEntityLookUp = (int id) -> {
 			MinimalEntity min;
 			switch (id)
 			{
@@ -732,7 +732,7 @@ public class TestCreatureLogic
 			;
 		});
 		Map<Integer, MinimalEntity> entities = new HashMap<>();
-		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> entities.get(id);
+		TickProcessingContext.IEntitySearch previousEntityLookUp = (int id) -> entities.get(id);
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(1000L)
 				.lookups(previousBlockLookUp, previousEntityLookUp, null)
@@ -821,7 +821,7 @@ public class TestCreatureLogic
 			;
 		});
 		Map<Integer, MinimalEntity> entities = new HashMap<>();
-		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> entities.get(id);
+		TickProcessingContext.IEntitySearch previousEntityLookUp = (int id) -> entities.get(id);
 		boolean[] out = new boolean[1];
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(1000L)
@@ -959,7 +959,7 @@ public class TestCreatureLogic
 					? BlockProxy.load(location.getBlockAddress(), input)
 					: null
 				;
-			}), (Integer entityId) -> {
+			}), (int entityId) -> {
 				return creatures.containsKey(entityId)
 					? MinimalEntity.fromCreature(creatures.get(entityId))
 					: null
@@ -1045,7 +1045,7 @@ public class TestCreatureLogic
 				: null
 			;
 		});
-		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> {
+		TickProcessingContext.IEntitySearch previousEntityLookUp = (int id) -> {
 			MinimalEntity min;
 			switch (id)
 			{

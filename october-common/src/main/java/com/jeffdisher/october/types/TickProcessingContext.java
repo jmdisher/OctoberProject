@@ -3,7 +3,6 @@ package com.jeffdisher.october.types;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 
 import com.jeffdisher.october.data.BlockProxy;
@@ -28,11 +27,9 @@ public class TickProcessingContext
 	public final IBlockFetcher previousBlockLookUp;
 
 	/**
-	 * The view of the entire entity crowd, as of the beginning of this tick.  This will look up either entities or
-	 * creatures.
-	 * Returns null if the requested entity isn't loaded.
+	 * A helper to look up loaded players or creatures at the end of the previous tick.
 	 */
-	public final Function<Integer, MinimalEntity> previousEntityLookUp;
+	public final IEntitySearch previousEntityLookUp;
 
 	/**
 	 * A helper to look up loaded passive entities at the end of the previous tick.
@@ -108,7 +105,7 @@ public class TickProcessingContext
 
 	public TickProcessingContext(long currentTick
 			, IBlockFetcher previousBlockLookUp
-			, Function<Integer, MinimalEntity> previousEntityLookUp
+			, IEntitySearch previousEntityLookUp
 			, IPassiveSearch previousPassiveLookUp
 			, ITransactionSupport transactions
 			, IByteLookup<AbsoluteLocation> skyLight
@@ -302,5 +299,19 @@ public class TickProcessingContext
 		 * all loaded and have precisely expectedMutations scheduled, this will return true.
 		 */
 		boolean checkScheduledMutationCount(Collection<AbsoluteLocation> locations, int expectedMutations);
+	}
+
+	/**
+	 * The interface used to resolve entities (players or creatures).
+	 */
+	public static interface IEntitySearch
+	{
+		/**
+		 * Looks up players (positive ID) and creatures (negative ID) by the given ID.
+		 * 
+		 * @param id The ID of the entity (positive for players, negative for creatures).
+		 * @return The minimal representation of the entity or null if not loaded/known.
+		 */
+		MinimalEntity getById(int id);
 	}
 }
