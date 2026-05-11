@@ -10,6 +10,7 @@ import com.jeffdisher.october.actions.EntityActionOperatorSetCreative;
 import com.jeffdisher.october.actions.EntityActionOperatorSetLocation;
 import com.jeffdisher.october.actions.EntityActionOperatorSpawnCreature;
 import com.jeffdisher.october.actions.EntityActionPeriodic;
+import com.jeffdisher.october.actions.EntityActionPush;
 import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.actions.EntityActionNudge;
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
@@ -63,6 +64,7 @@ public class EntityActionCodec
 		_CODEC_TABLE[EntityActionSimpleMove.TYPE.ordinal()] = (DeserializationContext context) -> EntityActionSimpleMove.deserialize(context);
 		_CODEC_TABLE[EntityActionNudge.TYPE.ordinal()] = (DeserializationContext context) -> EntityActionNudge.deserialize(context);
 		_CODEC_TABLE[EntityActionCreativeFlight.TYPE.ordinal()] = (DeserializationContext context) -> EntityActionCreativeFlight.deserialize(context);
+		_CODEC_TABLE[EntityActionPush.TYPE.ordinal()] = (DeserializationContext context) -> EntityActionPush.deserialize(context);
 		_CODEC_TABLE[EntityActionType.TESTING_ONLY.ordinal()] = (DeserializationContext context) -> { throw Assert.unreachable(); };
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).

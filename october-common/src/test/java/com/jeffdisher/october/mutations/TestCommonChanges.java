@@ -21,6 +21,7 @@ import com.jeffdisher.october.actions.EntityActionOperatorSetCreative;
 import com.jeffdisher.october.actions.EntityActionOperatorSetLocation;
 import com.jeffdisher.october.actions.EntityActionOperatorSpawnCreature;
 import com.jeffdisher.october.actions.EntityActionPeriodic;
+import com.jeffdisher.october.actions.EntityActionPush;
 import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.actions.passive.PassiveActionPickUp;
@@ -3816,6 +3817,42 @@ public class TestCommonChanges
 		Assert.assertEquals((byte)7, newEntity.newYaw);
 		Assert.assertEquals((byte)8, newEntity.newPitch);
 		Assert.assertEquals(inventoryId, newEntity.getSelectedKey());
+	}
+
+	@Test
+	public void pushCreatureAndPlayer() throws Throwable
+	{
+		// Show what happens when we send a push action to a creature and player.
+		int playerId = 1;
+		MutableEntity mutable = MutableEntity.createForTest(playerId);
+		mutable.newLocation = new EntityLocation(7.0f, 8.5f, 6.1f);
+		int targetId = -1;
+		CreatureEntity creature = CreatureEntity.create(targetId
+			, COW
+			, new EntityLocation(9.0f, 8.0f, 7.0f)
+			, 0L
+		);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(5L)
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
+				return BlockProxy.load(location.getBlockAddress(), airCuboid);
+			}), null, null)
+			.finish()
+		;
+		
+		// Send a push to both the creature and the player.
+		EntityLocation direction = new EntityLocation(1.0f, 0.0f, 0.0f);
+		EntityActionPush<IMutableCreatureEntity> pushCreature = new EntityActionPush<>(direction);
+		EntityActionPush<IMutablePlayerEntity> pushPlayer = new EntityActionPush<>(direction);
+		
+		MutableCreature mutCreature = MutableCreature.existing(creature);
+		Assert.assertTrue(pushCreature.applyChange(context, mutCreature));
+		Assert.assertTrue(pushPlayer.applyChange(context, mutable));
+		Assert.assertEquals(new EntityLocation(10.0f, 8.0f, 7.0f), mutCreature.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutCreature.newVelocity);
+		Assert.assertEquals(new EntityLocation(8.0f, 8.5f, 6.1f), mutable.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutable.newVelocity);
 	}
 
 

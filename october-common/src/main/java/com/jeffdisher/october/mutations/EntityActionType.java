@@ -45,6 +45,7 @@ public enum EntityActionType
 	SIMPLE_MOVE,
 	NUDGE_ENTITY,
 	CREATIVE_FLIGHT,
+	PUSH_ENTITY,
 	
 	/**
 	 * This testing type is never serialized so it should be kept at the end of the list.
