@@ -1,4 +1,4 @@
-package com.jeffdisher.october.logic;
+package com.jeffdisher.october.utils;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -12,6 +12,7 @@ import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.utils.Assert;
+import com.jeffdisher.october.utils.SpatialIndex;
 
 
 /**

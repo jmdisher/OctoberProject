@@ -14,7 +14,6 @@ import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.PassiveIdAssigner;
 import com.jeffdisher.october.logic.PropagationHelpers;
-import com.jeffdisher.october.logic.SpatialIndex;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -24,11 +23,11 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.MinimalEntity;
-import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
+import com.jeffdisher.october.utils.LazyPassiveIndex;
 
 
 public class TickContextBuilder
@@ -70,43 +69,7 @@ public class TickContextBuilder
 		this.eventsPosted = new ArrayList<>();
 		this.cuboidsMarkedAliveInternally = new HashSet<>();
 		
-		_passiveSearch = new TickProcessingContext.IPassiveSearch() {
-			private SpatialIndex _passiveSpatialIndex;
-			@Override
-			public PartialPassive getById(int id)
-			{
-				PassiveEntity passive = materials.completedPassives().get(id);
-				return (null != passive)
-					? PartialPassive.fromPassive(passive)
-					: null
-				;
-			}
-			@Override
-			public PartialPassive[] findPassiveItemSlotsInRegion(EntityLocation base, EntityLocation edge)
-			{
-				// The _passiveSpatialIndex is lazily constructed since it is only used by hoppers and player entities.
-				if (null == _passiveSpatialIndex)
-				{
-					// NOTE:  We only expose passive entities in the interface since we only have a use-case for them, at the moment.
-					SpatialIndex.Builder builder = new SpatialIndex.Builder();
-					for (PassiveEntity passive : materials.completedPassives().values())
-					{
-						if (PassiveType.ITEM_SLOT == passive.type())
-						{
-							builder.add(passive.id(), passive.location());
-						}
-					}
-					_passiveSpatialIndex = builder.finish(PassiveType.ITEM_SLOT.volume());
-				}
-				return _passiveSpatialIndex.idsIntersectingRegion(base, edge).stream()
-					.map((Integer id) -> {
-						PassiveEntity passive = materials.completedPassives().get(id);
-						return PartialPassive.fromPassive(passive);
-					})
-					.toArray((int size) -> new PartialPassive[size])
-				;
-			}
-		};
+		_passiveSearch = new LazyPassiveIndex(materials.completedPassives());
 		
 		this.mutationSink = new CommonMutationSink(materials.completedCuboids().keySet());
 		this.changeSink = new CommonChangeSink(materials.completedEntities().keySet(), materials.completedCreatures().keySet(), materials.completedPassives().keySet());

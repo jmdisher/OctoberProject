@@ -33,11 +33,11 @@ import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
-import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
+import com.jeffdisher.october.utils.LazyPassiveIndex;
 
 
 public class TestHopperHelpers
@@ -176,28 +176,7 @@ public class TestHopperHelpers
 		map.put(8, _passiveAbove(8, fullHopper, fullWheat));
 		map.put(9, _passiveAbove(9, fullHopper, halfWheat));
 		
-		SpatialIndex.Builder builder = new SpatialIndex.Builder();
-		for (Map.Entry<Integer, PassiveEntity> elt : map.entrySet())
-		{
-			builder.add(elt.getKey(), elt.getValue().location());
-		}
-		SpatialIndex spatialIndex = builder.finish(PassiveType.ITEM_SLOT.volume());
-		
-		TickProcessingContext.IPassiveSearch previousPassiveLookUp = new TickProcessingContext.IPassiveSearch() {
-			@Override
-			public PartialPassive getById(int id)
-			{
-				throw new AssertionError("Not in test");
-			}
-			@Override
-			public PartialPassive[] findPassiveItemSlotsInRegion(EntityLocation base, EntityLocation edge)
-			{
-				return spatialIndex.idsIntersectingRegion(base, edge).stream()
-					.map((Integer id) -> PartialPassive.fromPassive(map.get(id)))
-					.toArray((int size) -> new PartialPassive[size])
-				;
-			}
-		};
+		LazyPassiveIndex previousPassiveLookUp = new LazyPassiveIndex(map);
 		Map<Integer, IPassiveAction> output = new HashMap<>();
 		TickProcessingContext.IChangeSink changeSink = new TickProcessingContext.IChangeSink() {
 			@Override
