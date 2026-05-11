@@ -64,4 +64,14 @@ public class MutationBlockTransactionWrapper implements IMutationBlock
 		// Transactions cannot be saved to disk.
 		return false;
 	}
+
+	/**
+	 * Intended for us in tests, only.
+	 * 
+	 * @return The number of mutations within this wrapper.
+	 */
+	public int test_getMutationCount()
+	{
+		return _directMutations.size();
+	}
 }

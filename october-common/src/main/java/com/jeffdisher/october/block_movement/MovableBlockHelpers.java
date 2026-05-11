@@ -9,6 +9,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.transactions.TransactionBuilder;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -91,10 +92,12 @@ public class MovableBlockHelpers
 		{
 			// This is valid so create the transaction.
 			TransactionBuilder builder = new TransactionBuilder();
+			EntityLocation pushVector = offset.toEntityLocation();
 			
 			// Create a block break mutation, first.
 			MutationBlockDeleteBlock delete = new MutationBlockDeleteBlock(locations.get(0));
 			builder.addMutation(delete);
+			builder.addMutation(new MutationBlockPushEntities(locations.get(0), pushVector));
 			
 			// Now, create the move mutations for the other blocks.
 			for (int i = 0; i < blocksToPush; ++i)
@@ -106,6 +109,7 @@ public class MovableBlockHelpers
 				boolean isFinal = (blocksToPush == moveTo);
 				MutationBlockOverwriteWithMove overwrite = new MutationBlockOverwriteWithMove(locations.get(moveTo), blockData, isFinal);
 				builder.addMutation(overwrite);
+				builder.addMutation(new MutationBlockPushEntities(locations.get(moveTo), pushVector));
 			}
 			
 			// If we failed to schedule this, we want to say that we were not able to push.

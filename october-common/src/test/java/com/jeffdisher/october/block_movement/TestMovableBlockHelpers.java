@@ -97,9 +97,13 @@ public class TestMovableBlockHelpers
 		Assert.assertTrue(didPush);
 		Assert.assertEquals(4, capture.mutations.size());
 		Assert.assertEquals(pushingBlockLocation.getRelative(1, 0, 0), capture.mutations.get(0).getAbsoluteLocation());
+		Assert.assertEquals(2, capture.mutations.get(0).test_getMutationCount());
 		Assert.assertEquals(pushingBlockLocation.getRelative(2, 0, 0), capture.mutations.get(1).getAbsoluteLocation());
+		Assert.assertEquals(2, capture.mutations.get(1).test_getMutationCount());
 		Assert.assertEquals(pushingBlockLocation.getRelative(3, 0, 0), capture.mutations.get(2).getAbsoluteLocation());
+		Assert.assertEquals(2, capture.mutations.get(2).test_getMutationCount());
 		Assert.assertEquals(pushingBlockLocation.getRelative(4, 0, 0), capture.mutations.get(3).getAbsoluteLocation());
+		Assert.assertEquals(2, capture.mutations.get(3).test_getMutationCount());
 	}
 
 	@Test
@@ -123,7 +127,9 @@ public class TestMovableBlockHelpers
 		Assert.assertTrue(didPull);
 		Assert.assertEquals(2, capture.mutations.size());
 		Assert.assertEquals(pushingBlockLocation.getRelative(1, 0, 0), capture.mutations.get(0).getAbsoluteLocation());
+		Assert.assertEquals(1, capture.mutations.get(0).test_getMutationCount());
 		Assert.assertEquals(pushingBlockLocation.getRelative(2, 0, 0), capture.mutations.get(1).getAbsoluteLocation());
+		Assert.assertEquals(1, capture.mutations.get(1).test_getMutationCount());
 	}
 
 	@Test
