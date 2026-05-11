@@ -2,6 +2,7 @@ package com.jeffdisher.october.transactions;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.List;
 
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.mutations.IMutationBlock;
@@ -13,21 +14,21 @@ import com.jeffdisher.october.utils.Assert;
 
 public class MutationBlockTransactionWrapper implements IMutationBlock
 {
-	private final IMutationBlock _thisMutation;
+	private final List<IMutationBlock> _directMutations;
 	private final Collection<AbsoluteLocation> _locationsInTransaction;
 
-	public MutationBlockTransactionWrapper(IMutationBlock thisMutation
+	public MutationBlockTransactionWrapper(List<IMutationBlock> directMutations
 		, Collection<AbsoluteLocation> locationsInTransaction
 	)
 	{
-		_thisMutation = thisMutation;
+		_directMutations = directMutations;
 		_locationsInTransaction = locationsInTransaction;
 	}
 
 	@Override
 	public AbsoluteLocation getAbsoluteLocation()
 	{
-		return _thisMutation.getAbsoluteLocation();
+		return _directMutations.get(0).getAbsoluteLocation();
 	}
 
 	@Override
@@ -36,7 +37,10 @@ public class MutationBlockTransactionWrapper implements IMutationBlock
 		// We know that all of these components have been scheduled for the same tick so we should see "1" as the max (note it returns -1 if any are unloaded so we check exactly).
 		if (context.transactions.checkScheduledMutationCount(_locationsInTransaction, 1))
 		{
-			_thisMutation.applyMutation(context, newBlock);
+			for (IMutationBlock mutation : _directMutations)
+			{
+				mutation.applyMutation(context, newBlock);
+			}
 		}
 	}
 

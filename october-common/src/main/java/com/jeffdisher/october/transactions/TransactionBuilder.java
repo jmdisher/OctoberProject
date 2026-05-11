@@ -1,9 +1,10 @@
 package com.jeffdisher.october.transactions;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -30,11 +31,18 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class TransactionBuilder
 {
-	private final List<IMutationBlock> _parts = new ArrayList<>();
+	private final Map<AbsoluteLocation, List<IMutationBlock>> _parts = new HashMap<>();
 
 	public void addMutation(IMutationBlock mutation)
 	{
-		_parts.add(mutation);
+		AbsoluteLocation location = mutation.getAbsoluteLocation();
+		List<IMutationBlock> list = _parts.get(location);
+		if (null == list)
+		{
+			list = new ArrayList<>();
+			_parts.put(location, list);
+		}
+		list.add(mutation);
 	}
 
 	public boolean didStartTransaction(TickProcessingContext context)
@@ -44,29 +52,22 @@ public class TransactionBuilder
 		// There must at least be something.
 		if (_parts.size() > 0)
 		{
-			// We need to make sure that none of these locations are duplicated.
-			Set<AbsoluteLocation> locations = _parts.stream()
-				.map((IMutationBlock mutation) -> mutation.getAbsoluteLocation())
-				.collect(Collectors.toSet())
-			;
+			Set<AbsoluteLocation> locations = _parts.keySet();
 			
-			if (locations.size() == _parts.size())
+			// We need to make sure that none of the locations were running mutations in this tick (as that could invalidate any checks performed by the caller).
+			if (context.transactions.checkScheduledMutationCount(locations, 0))
 			{
-				// We need to make sure that none of the locations were running mutations in this tick (as that could invalidate any checks performed by the caller).
-				if (context.transactions.checkScheduledMutationCount(locations, 0))
+				// Schedule all the mutations.
+				for (List<IMutationBlock> mutationList : _parts.values())
 				{
-					// Schedule all the mutations.
-					for (IMutationBlock mutation : _parts)
-					{
-						MutationBlockTransactionWrapper wrapper = new MutationBlockTransactionWrapper(mutation, locations);
-						boolean didSchedule = context.mutationSink.next(wrapper);
-						// We already checked that these are loaded.
-						Assert.assertTrue(didSchedule);
-					}
-					
-					// This phase of the transaction passed.
-					didStart = true;
+					MutationBlockTransactionWrapper wrapper = new MutationBlockTransactionWrapper(mutationList, locations);
+					boolean didSchedule = context.mutationSink.next(wrapper);
+					// We already checked that these are loaded.
+					Assert.assertTrue(didSchedule);
 				}
+				
+				// This phase of the transaction passed.
+				didStart = true;
 			}
 		}
 		return didStart;

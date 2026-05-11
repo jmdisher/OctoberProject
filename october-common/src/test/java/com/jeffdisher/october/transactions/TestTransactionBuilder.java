@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.AfterClass;
@@ -12,6 +13,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -21,11 +23,15 @@ import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
+import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EventRecord;
+import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
@@ -36,12 +42,14 @@ import com.jeffdisher.october.utils.CuboidGenerator;
 public class TestTransactionBuilder
 {
 	private static Environment ENV;
+	private static Item STONE_ITEM;
 	private static Block STONE;
 	@BeforeClass
 	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
-		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		STONE_ITEM = ENV.items.getItemById("op.stone");
+		STONE = ENV.blocks.fromItem(STONE_ITEM);
 	}
 	@AfterClass
 	public static void tearDown()
@@ -225,6 +233,61 @@ public class TestTransactionBuilder
 			mutation.applyMutation(context, proxy);
 			Assert.assertFalse(proxy.didChange());
 		}
+	}
+
+	@Test
+	public void duplicateLocations()
+	{
+		// Show that a transaction will accept multiple mutations to the same location.
+		Block chest = ENV.blocks.fromItem(ENV.items.getItemById("op.chest"));
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CommonMutationSink sink = new CommonMutationSink(Set.of(cuboid.getCuboidAddress()));
+		
+		_ContextBuilder contextBuilder = new _ContextBuilder();
+		contextBuilder.addCuboid(cuboid);
+		contextBuilder.setMutationSink(sink);
+		TickProcessingContext context = contextBuilder.finish();
+		
+		// We want to build a transaction to create a chest, store into it, and also update another location.
+		AbsoluteLocation chestLocation = new AbsoluteLocation(4, 5, 6);
+		AbsoluteLocation otherLocation = chestLocation.getRelative(1, 1, 1);
+		TransactionBuilder transactionBuilder = new TransactionBuilder();
+		transactionBuilder.addMutation(new MutationBlockOverwriteByEntity(chestLocation, chest, null, 1));
+		transactionBuilder.addMutation(new MutationBlockOverwriteByEntity(otherLocation, STONE, null, 1));
+		transactionBuilder.addMutation(new MutationBlockStoreItems(chestLocation, new Items(STONE_ITEM, 2), null, Inventory.INVENTORY_ASPECT_INVENTORY));
+		
+		boolean didStart = transactionBuilder.didStartTransaction(context);
+		Assert.assertTrue(didStart);
+		List<ScheduledMutation> mutations = sink.takeExportedMutations();
+		Assert.assertEquals(2, mutations.size());
+		
+		// Load the mutations into the scheduler so they appear as expected.
+		for (ScheduledMutation scheduled : mutations)
+		{
+			if (0L == scheduled.millisUntilReady())
+			{
+				contextBuilder.scheduleMutation(scheduled.mutation().getAbsoluteLocation());
+			}
+		}
+		contextBuilder.setMutationSink(null);
+		
+		// Run the mutations.
+		context = contextBuilder.finish();
+		for (ScheduledMutation scheduled : mutations)
+		{
+			Assert.assertEquals(0L, scheduled.millisUntilReady());
+			IMutationBlock mutation = scheduled.mutation();
+			AbsoluteLocation location = mutation.getAbsoluteLocation();
+			MutableBlockProxy proxy = new MutableBlockProxy(location, cuboid);
+			mutation.applyMutation(context, proxy);
+			Assert.assertTrue(proxy.didChange());
+			proxy.writeBack(cuboid);
+		}
+		
+		// Observe that all the changes of the transaction wrote-back.
+		Assert.assertEquals(chest.item().number(), cuboid.getData15(AspectRegistry.BLOCK, chestLocation.getBlockAddress()));
+		Assert.assertEquals(2, cuboid.getDataSpecial(AspectRegistry.INVENTORY, chestLocation.getBlockAddress()).getCount(STONE_ITEM));
+		Assert.assertEquals(STONE.item().number(), cuboid.getData15(AspectRegistry.BLOCK, otherLocation.getBlockAddress()));
 	}
 
 
