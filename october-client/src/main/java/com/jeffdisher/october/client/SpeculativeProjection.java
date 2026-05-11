@@ -781,6 +781,12 @@ public class SpeculativeProjection
 					: MinimalEntity.fromPartialEntity(_entityContainer.getPartialEntityById(id))
 				;
 			}
+			@Override
+			public int[] findEntityIdsInRegion(EntityLocation base, EntityLocation edge)
+			{
+				// Determine if, and how, to support this on the client.
+				throw Assert.unreachable();
+			}
 		};
 		// For local runs, we will just assume that all transactions are valid (server will correct us if we are wrong).
 		TickProcessingContext.ITransactionSupport transactions = (Collection<AbsoluteLocation> locations, int expectedMutations) -> true;

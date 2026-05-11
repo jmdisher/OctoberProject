@@ -313,5 +313,13 @@ public class TickProcessingContext
 		 * @return The minimal representation of the entity or null if not loaded/known.
 		 */
 		MinimalEntity getById(int id);
+		/**
+		 * Searches for player and creature entities in the given volume of space, returning their IDs as an array.
+		 * 
+		 * @param base The inclusive base (west, south, down) corner of the search volume.
+		 * @param edge The inclusive edge (east, north, up) corner of the search volume.
+		 * @return The IDs of players and creatures in this region (empty list if none found).
+		 */
+		int[] findEntityIdsInRegion(EntityLocation base, EntityLocation edge);
 	}
 }

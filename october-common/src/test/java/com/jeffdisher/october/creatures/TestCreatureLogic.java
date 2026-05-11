@@ -1269,6 +1269,11 @@ public class TestCreatureLogic
 		{
 			return _minimal.get(id);
 		}
+		@Override
+		public int[] findEntityIdsInRegion(EntityLocation base, EntityLocation edge)
+		{
+			throw new AssertionError("Not used in test");
+		}
 	}
 
 	private static class _PairEntityIndex implements TickProcessingContext.IEntitySearch
@@ -1297,6 +1302,11 @@ public class TestCreatureLogic
 				throw new AssertionError();
 			}
 			return min;
+		}
+		@Override
+		public int[] findEntityIdsInRegion(EntityLocation base, EntityLocation edge)
+		{
+			throw new AssertionError("Not used in test");
 		}
 	}
 }

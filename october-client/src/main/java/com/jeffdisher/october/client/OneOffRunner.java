@@ -30,6 +30,7 @@ import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -171,6 +172,12 @@ public class OneOffRunner
 					? MinimalEntity.fromEntity(state.thisEntity())
 					: MinimalEntity.fromPartialEntity(state.otherEntities.get(id))
 				;
+			}
+			@Override
+			public int[] findEntityIdsInRegion(EntityLocation base, EntityLocation edge)
+			{
+				// Determine if, and how, to support this on the client.
+				throw Assert.unreachable();
 			}
 		};
 		// For local runs, we will just assume that all transactions are valid (server will correct us if we are wrong).

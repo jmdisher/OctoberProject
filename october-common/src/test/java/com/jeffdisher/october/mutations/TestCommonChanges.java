@@ -4083,5 +4083,10 @@ public class TestCommonChanges
 			Assert.assertNotNull(creature);
 			return MinimalEntity.fromCreature(creature);
 		}
+		@Override
+		public int[] findEntityIdsInRegion(EntityLocation base, EntityLocation edge)
+		{
+			throw new AssertionError("Not used in test");
+		}
 	}
 }

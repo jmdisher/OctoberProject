@@ -882,15 +882,25 @@ public class TestEngineCreatures
 		creature = mutable.freeze();
 		
 		Entity[] indirect = new Entity[] { target };
+		TickProcessingContext.IEntitySearch entitySearch = new TickProcessingContext.IEntitySearch() {
+			@Override
+			public MinimalEntity getById(int id)
+			{
+				return MinimalEntity.fromEntity(indirect[0]);
+			}
+			@Override
+			public int[] findEntityIdsInRegion(EntityLocation base, EntityLocation edge)
+			{
+				throw new AssertionError("Not used in test");
+			}
+		};
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
 					? BlockProxy.load(location.getBlockAddress(), cuboid)
 					: null
 				;
-			}), (int id) -> {
-				return MinimalEntity.fromEntity(indirect[0]);
-			}, null)
+			}), entitySearch, null)
 			.finish()
 		;
 		boolean didChange = false;
@@ -1308,6 +1318,11 @@ public class TestEngineCreatures
 		public MinimalEntity getById(int id)
 		{
 			return _minimal.get(id);
+		}
+		@Override
+		public int[] findEntityIdsInRegion(EntityLocation base, EntityLocation edge)
+		{
+			throw new AssertionError("Not used in test");
 		}
 	}
 }
