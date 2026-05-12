@@ -3,13 +3,14 @@ package com.jeffdisher.october.subactions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.actions.EntityActionPeriodic;
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.FlagsAspect;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
+import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -32,13 +33,15 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IEntit
 	public static final EntitySubActionType TYPE = EntitySubActionType.SWIM;
 
 	public static boolean canSwim(TickProcessingContext.IBlockFetcher previousBlockLookUp
-			, EntityLocation location
-			, EntityLocation vector
+		, EntityLocation location
+		, EntityVolume volume
+		, EntityLocation vector
 	)
 	{
 		return _canSwim(previousBlockLookUp
-				, location
-				, vector
+			, location
+			, volume
+			, vector
 		);
 	}
 
@@ -56,8 +59,9 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IEntit
 		EntityLocation vector = newEntity.getVelocityVector();
 		EntityLocation location = newEntity.getLocation();
 		if (_canSwim(context.previousBlockLookUp
-				, location
-				, vector
+			, location
+			, newEntity.getType().volume()
+			, vector
 		))
 		{
 			float newZVector = vector.z() < 0.0f
@@ -103,18 +107,21 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IEntit
 
 
 	private static boolean _canSwim(TickProcessingContext.IBlockFetcher previousBlockLookUp
-			, EntityLocation location
-			, EntityLocation vector
+		, EntityLocation location
+		, EntityVolume volume
+		, EntityLocation vector
 	)
 	{
 		boolean canSwim = false;
-		// As long as we are sinking down in a swimmable block type, we will say that we can swim.
+		// Check that we aren't already drifting up.
 		if (vector.z() <= 0.0f)
 		{
-			BlockProxy footBlock = previousBlockLookUp.readBlock(location.getBlockLocation());
+			// Now, make sure that the viscosity we occupy is less than solid but enough to be swimmable.
 			Environment env = Environment.getShared();
-			boolean isActive = FlagsAspect.isSet(footBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
-			canSwim = env.blocks.canSwimInBlock(footBlock.getBlock(), isActive);
+			ViscosityReader reader = new ViscosityReader(env, previousBlockLookUp);
+			float maxViscosity = reader.getMaxStillViscosityInVolume(location, volume);
+			float swimmable = (float)BlockAspect.SWIMMABLE_VISCOSITY / 100.0f;
+			canSwim = (maxViscosity < 1.0f) && (maxViscosity >= swimmable);
 		}
 		return canSwim;
 	}

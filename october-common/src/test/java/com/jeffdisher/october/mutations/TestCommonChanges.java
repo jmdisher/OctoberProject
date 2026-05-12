@@ -3855,6 +3855,27 @@ public class TestCommonChanges
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutable.newVelocity);
 	}
 
+	@Test
+	public void swimThroughFloatingWater()
+	{
+		// Swim when only the player's head is in a water block.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(6, 6, 6), WATER_SOURCE.item().number());
+		TickProcessingContext context = _createSingleCuboidContext(cuboid);
+		
+		EntityLocation oldLocation = new EntityLocation(5.8f, 5.9f, 5.0f);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = oldLocation;
+		
+		EntityChangeSwim<IMutablePlayerEntity> swim = new EntityChangeSwim<>();
+		boolean didApply = swim.applyChange(context, newEntity);
+		Assert.assertTrue(didApply);
+		
+		// The swim doesn't move, just sets the vector.
+		Assert.assertEquals(EntityChangeSwim.SWIM_FORCE, newEntity.newVelocity.z(), 0.01f);
+		Assert.assertEquals(oldLocation, newEntity.newLocation);
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{
