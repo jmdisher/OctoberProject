@@ -291,6 +291,46 @@ public class TestCreativeFlightAccumulator
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 	}
 
+	@Test
+	public void doingNothing() throws Throwable
+	{
+		// This test is to show that we don't generate an action if the accumulator sees nothing happening for the tick.
+		long currentTimeMillis = 1000L;
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		_ProjectionListener listener = new _ProjectionListener();
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, MILLIS_PER_TICK);
+		CreativeFlightAccumulator accumulator = new CreativeFlightAccumulator(commonCache, currentTimeMillis);
+		
+		// Create the baseline data we need.
+		EntityLocation hoverLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = hoverLocation;
+		mutable.isCreativeMode = true;
+		Entity entity = mutable.freeze();
+		commonCache.setThisEntity(entity);
+		commonCache.setCuboid(airCuboid, Set.of());
+		listener.thisEntityDidLoad(entity);
+		
+		// Run the first move.
+		long millisPerMove = 60L;
+		currentTimeMillis += millisPerMove;
+		EntityActionCreativeFlight out = accumulator.hover(currentTimeMillis);
+		Assert.assertNull(out);
+		Assert.assertEquals(hoverLocation, listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(hoverLocation, listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
+		
+		// Run the second move and show nothing emitted.
+		currentTimeMillis += millisPerMove;
+		out = accumulator.hover(currentTimeMillis);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(hoverLocation, listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
+	}
+
 
 	private Entity _applyToEntity(long millisPerTick
 		, long currentTickTimeMillis

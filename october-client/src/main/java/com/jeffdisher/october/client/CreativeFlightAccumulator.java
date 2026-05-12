@@ -185,7 +185,7 @@ public class CreativeFlightAccumulator
 			}
 			
 			_accumulateMovement(addToExisting, vector);
-			toReturn = _moveFromAccumulation();
+			toReturn = _mutativeTotalMoveFromAccumulation(currentTimeMillis);
 			_discardAccumulation(currentTimeMillis);
 			
 			// Build what spilled into the next.
@@ -195,7 +195,7 @@ public class CreativeFlightAccumulator
 		{
 			// Add to the existing, finish it, and clear state.
 			_accumulateMovement(toAdd, vector);
-			toReturn = _moveFromAccumulation();
+			toReturn = _mutativeTotalMoveFromAccumulation(currentTimeMillis);
 			_discardAccumulation(currentTimeMillis);
 		}
 		else
@@ -237,6 +237,24 @@ public class CreativeFlightAccumulator
 			normalized = new EntityLocation(0.0f, 0.0f, elevationChange.z);
 		}
 		return normalized;
+	}
+
+	// Similar to _moveFromAccumulation() but will return null instead of a change which does nothing to the entity or world.
+	private EntityActionCreativeFlight _mutativeTotalMoveFromAccumulation(long currentTimeMillis)
+	{
+		EntityActionCreativeFlight toRun = _moveFromAccumulation();
+		if (null == _subAction)
+		{
+			// We always return actions with sub-actions so check those without to see if they can be dropped.
+			long millisToApply = _accumulationMillis;
+			Entity newEntity = _worldCache.localEntityAfterAction(toRun, millisToApply, currentTimeMillis);
+			if (newEntity == _worldCache.thisEntity)
+			{
+				// Nothing has changed so we can omit this and return nothing.
+				toRun = null;
+			}
+		}
+		return toRun;
 	}
 
 	private EntityActionCreativeFlight _moveFromAccumulation()
