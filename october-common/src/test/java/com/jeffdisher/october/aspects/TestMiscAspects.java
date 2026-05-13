@@ -81,7 +81,8 @@ public class TestMiscAspects
 		Assert.assertEquals(new AbsoluteLocation(-2, 1, 3), FacingDirection.WEST.rotateAboutZ(start));
 		Assert.assertEquals(new AbsoluteLocation(-1, -2, 3), FacingDirection.SOUTH.rotateAboutZ(start));
 		Assert.assertEquals(new AbsoluteLocation(2, -1, 3), FacingDirection.EAST.rotateAboutZ(start));
-		Assert.assertArrayEquals(new float[] { -2.4f, -1.1f }, FacingDirection.EAST.rotateXYTupleAboutZ(new float[] { 1.1f, -2.4f }), 0.01f);
+		Assert.assertArrayEquals(new float[] { -2.4f, -1.1f, 0.6f }, FacingDirection.EAST.rotateTripletAboutZ(new float[] { 1.1f, -2.4f, 0.6f }), 0.01f);
+		Assert.assertArrayEquals(new float[] { 1.1f, 0.6f, 2.4f }, FacingDirection.DOWN.rotateTripletAboutZ(new float[] { 1.1f, -2.4f, 0.6f }), 0.01f);
 	}
 
 	@Test

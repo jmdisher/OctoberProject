@@ -12,7 +12,10 @@ import com.jeffdisher.october.utils.Assert;
 public enum FacingDirection
 {
 	// North is the positive Y direction, which we consider the "default" orientation (hence 0).
-	NORTH(new int[] {1, 0, 0, 1}
+	NORTH(new int[] {1, 0, 0
+			, 0, 1, 0
+			, 0, 0, 1
+		}
 		, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(0, 1, 0)
 		, new byte[] {1, 0, 0
 			, 0, 1, 0
@@ -20,7 +23,10 @@ public enum FacingDirection
 		}
 	),
 	// West is the negative X direction.
-	WEST(new int[] {0, -1, 1, 0}
+	WEST(new int[] {0, -1, 0
+			, 1, 0, 0
+			, 0, 0, 1
+		}
 		, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(-1, 0, 0)
 		, new byte[] {0, 1, 0
 			, -1, 0, 0
@@ -28,7 +34,10 @@ public enum FacingDirection
 		}
 	),
 	// South is the negative Y direction.
-	SOUTH(new int[] {-1, 0, 0, -1}
+	SOUTH(new int[] {-1, 0, 0
+			, 0, -1, 0
+			, 0, 0, 1
+		}
 		, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(0, -1, 0)
 		, new byte[] {-1, 0, 0
 			, 0, -1, 0
@@ -36,7 +45,10 @@ public enum FacingDirection
 		}
 	),
 	// East is the positive X direction.
-	EAST(new int[] {0, 1, -1, 0}
+	EAST(new int[] {0, 1, 0
+			, -1, 0, 0
+			, 0, 0, 1
+		}
 		, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(1, 0, 0)
 		, new byte[] {0, -1, 0
 			, 1, 0, 0
@@ -44,7 +56,10 @@ public enum FacingDirection
 		}
 	),
 	// Down is the negative Z direction but 2D rotation doesn't make sense for this direction.
-	DOWN(null
+	DOWN(new int[] {1, 0, 0
+			, 0, 0, 1
+			, 0, -1, 0
+		}
 		, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(0, 0, -1)
 		, new byte[] {1, 0, 0
 			, 0, 0, -1
@@ -52,7 +67,10 @@ public enum FacingDirection
 		}
 	),
 	// Up is the positive Z direction but 2D rotation doesn't make sense for this direction.
-	UP(null
+	UP(new int[] {1, 0, 0
+			, 0, 0, -1
+			, 0, 1, 0
+		}
 		, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(0, 0, 1)
 		, new byte[] {1, 0, 0
 			, 0, 0, 1
@@ -134,16 +152,19 @@ public enum FacingDirection
 	}
 
 
-	private final int[] _twoDRotationMatrix;
+	private final int[] _threeDRotationMatrix;
 	private final Function<AbsoluteLocation, AbsoluteLocation> _sinkLocation;
 	private final byte[] _inverse3DRotationMatrix;
 
-	private FacingDirection(int[] twoDRotationMatrix
+	private FacingDirection(int[] threeDRotationMatrix
 		, Function<AbsoluteLocation, AbsoluteLocation> sinkLocation
 		, byte[] inverse3DRotationMatrix
 	)
 	{
-		_twoDRotationMatrix = twoDRotationMatrix;
+		Assert.assertTrue(9 == threeDRotationMatrix.length);
+		Assert.assertTrue(9 == inverse3DRotationMatrix.length);
+		
+		_threeDRotationMatrix = threeDRotationMatrix;
 		_sinkLocation = sinkLocation;
 		_inverse3DRotationMatrix = inverse3DRotationMatrix;
 	}
@@ -157,23 +178,24 @@ public enum FacingDirection
 	 */
 	public AbsoluteLocation rotateAboutZ(AbsoluteLocation in)
 	{
-		int x = _twoDRotationMatrix[0] * in.x() + _twoDRotationMatrix[1] * in.y();
-		int y = _twoDRotationMatrix[2] * in.x() + _twoDRotationMatrix[3] * in.y();
+		int x = _threeDRotationMatrix[0] * in.x() + _threeDRotationMatrix[1] * in.y();
+		int y = _threeDRotationMatrix[3] * in.x() + _threeDRotationMatrix[4] * in.y();
 		return new AbsoluteLocation(x, y, in.z());
 	}
 
 	/**
-	 * Given an "in" X/Y tuple in the NORTH orientation, this will rotate that position, about the Z-axis and origin,
-	 * into the orientation of the receiver.
+	 * Rotates an XYZ triplet of floats from the NORTH (default) orientation, about the origin, into the position of the
+	 * receiver.
 	 * 
 	 * @param in The input orientation in NORTH orientation (default).
 	 * @return The rotated orientation.
 	 */
-	public float[] rotateXYTupleAboutZ(float[] in)
+	public float[] rotateTripletAboutZ(float[] in)
 	{
-		float x = (float)_twoDRotationMatrix[0] * in[0] + (float)_twoDRotationMatrix[1] * in[1];
-		float y = (float)_twoDRotationMatrix[2] * in[0] + (float)_twoDRotationMatrix[3] * in[1];
-		return new float[] { x, y };
+		float x = (float)_threeDRotationMatrix[0] * in[0] + (float)_threeDRotationMatrix[1] * in[1] + (float)_threeDRotationMatrix[2] * in[2];
+		float y = (float)_threeDRotationMatrix[3] * in[0] + (float)_threeDRotationMatrix[4] * in[1] + (float)_threeDRotationMatrix[5] * in[2];
+		float z = (float)_threeDRotationMatrix[6] * in[0] + (float)_threeDRotationMatrix[7] * in[1] + (float)_threeDRotationMatrix[8] * in[2];
+		return new float[] { x, y, z };
 	}
 
 	public AbsoluteLocation getOutputBlockLocation(AbsoluteLocation thisLocation)
