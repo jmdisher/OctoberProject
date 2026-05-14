@@ -10,12 +10,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.jeffdisher.october.actions.IEntityActionFromClient;
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
@@ -42,7 +40,6 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
-import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.Pair;
@@ -720,37 +717,6 @@ public class SpeculativeProjection
 			, long currentTickTimeMillis 
 	)
 	{
-		Function<AbsoluteLocation, BlockProxy> projectionBlockLoader = (AbsoluteLocation location) -> {
-			CuboidAddress address = location.getCuboidAddress();
-			IReadOnlyCuboidData cuboid = _worldContainer.getProjectedOrShadowCuboid(address);
-			return (null != cuboid)
-					? BlockProxy.load(location.getBlockAddress(), cuboid)
-					: null
-			;
-		};
-		LazyLocationCache<BlockProxy> lazyCache = new LazyLocationCache<>(projectionBlockLoader);
-		TickProcessingContext.IBlockFetcher cachingLoader = new TickProcessingContext.IBlockFetcher() {
-			@Override
-			public BlockProxy readBlock(AbsoluteLocation location)
-			{
-				return lazyCache.apply(location);
-			}
-			@Override
-			public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
-			{
-				// It isn't clear if we need to use the underlying batching mechanism for this class so just use the lazyCache, for now.
-				Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
-				for (AbsoluteLocation location : locations)
-				{
-					BlockProxy proxy = lazyCache.apply(location);
-					if (null != proxy)
-					{
-						completed.put(location, proxy);
-					}
-				}
-				return completed;
-			}
-		};
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
 			if (shouldSendEvents)
 			{
@@ -791,7 +757,7 @@ public class SpeculativeProjection
 		// For local runs, we will just assume that all transactions are valid (server will correct us if we are wrong).
 		TickProcessingContext.ITransactionSupport transactions = (Collection<AbsoluteLocation> locations, int expectedMutations) -> true;
 		TickProcessingContext context = new TickProcessingContext(gameTick
-				, cachingLoader
+				, _worldContainer.blockFetcher
 				, entitySearch
 				, passiveSearch
 				, transactions
