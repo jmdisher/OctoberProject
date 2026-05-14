@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.engine.EnginePlayers;
@@ -59,12 +58,13 @@ public class OneOffRunner
 	{
 		// Setup components.
 		Set<CuboidAddress> loadedCuboids = state.world.keySet();
-		Set<Integer> allPlayerIds = new HashSet<>(state.otherEntities.keySet().stream().filter((Integer i) -> i > 0).toList());
-		allPlayerIds.add(state.thisEntity.id());
-		Set<Integer> allCreatureIds = state.otherEntities.keySet().stream().filter((Integer i) -> i < 0).collect(Collectors.toSet());
-		Set<Integer> allPassiveIds = state.passives.keySet();
 		CommonMutationSink newMutationSink = new CommonMutationSink(loadedCuboids);
-		CommonChangeSink newChangeSink = new CommonChangeSink(allPlayerIds, allCreatureIds, allPassiveIds);
+		
+		// The sets we pass in to the CommonChangeSink are only used for filtering so pass the same set for both, to avoid pre-splitting them (the splitting was causing perf overhead).
+		Set<Integer> combinedPlayerCreatureIds = new HashSet<>(state.otherEntities.keySet());
+		combinedPlayerCreatureIds.add(state.thisEntity.id());
+		Set<Integer> allPassiveIds = state.passives.keySet();
+		CommonChangeSink newChangeSink = new CommonChangeSink(combinedPlayerCreatureIds, combinedPlayerCreatureIds, allPassiveIds);
 		TickProcessingContext context = _createContext(state, newMutationSink, newChangeSink, eventSink, millisPerTick, currentTickTimeMillis);
 		
 		// Run initial change.
@@ -100,7 +100,7 @@ public class OneOffRunner
 				splitMutations.get(address).add(imm);
 			}
 			// Note that we will need to capture output mutations from these sinks if there is an interest in running multiple ticks in advance here.
-			CommonChangeSink innerChangeSink = new CommonChangeSink(allPlayerIds, allCreatureIds, allPassiveIds);
+			CommonChangeSink innerChangeSink = new CommonChangeSink(combinedPlayerCreatureIds, combinedPlayerCreatureIds, allPassiveIds);
 			TickProcessingContext innerContext = _createContext(state, new CommonMutationSink(loadedCuboids), innerChangeSink, eventSink, millisPerTick, currentTickTimeMillis);
 			changedCuboids = new HashMap<>();
 			optionalBlockChanges = new HashMap<>();

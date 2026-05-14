@@ -25,6 +25,15 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 	private List<TargetedAction<IEntityAction<IMutableCreatureEntity>>> _exportedCreatureChanges;
 	private List<TargetedAction<IPassiveAction>> _exportedPassiveActions;
 
+	/**
+	 * Creates a change sink implementation to filter incoming change validity by the sets provided here.  Note that
+	 * these sets are ONLY used for filtering these entities so they can be aliased or faked, if that makes sense for
+	 * the use-case.
+	 * 
+	 * @param loadedEntities The player entities which are considered valid targets for scheduling actions.
+	 * @param loadedCreatures The creature entities which are considered valid targets for scheduling actions.
+	 * @param loadedPassives The passive entities which are considered valid targets for scheduling actions.
+	 */
 	public CommonChangeSink(Set<Integer> loadedEntities, Set<Integer> loadedCreatures, Set<Integer> loadedPassives)
 	{
 		_loadedEntities = loadedEntities;
