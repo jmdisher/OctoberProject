@@ -1,27 +1,27 @@
 package com.jeffdisher.october.client;
 
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import com.jeffdisher.october.actions.IEntityActionFromClient;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.ViscosityReader;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.Pair;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
+import com.jeffdisher.october.utils.CommonBlockFetcher;
 
 
 /**
@@ -39,8 +39,8 @@ public class CommonClientWorldCache
 	private final Map<CuboidAddress, IReadOnlyCuboidData> _world;
 	private final Map<Integer, PartialEntity> _otherEntities;
 	private final Map<Integer, PartialPassive> _passives;
-	private final Map<AbsoluteLocation, BlockProxy> _proxyCache;
-	private final TickProcessingContext.IBlockFetcher _proxyLookup;
+	private final Map<CuboidAddress, Map<BlockAddress, BlockProxy>> _proxyCache;
+	private final CommonBlockFetcher _proxyLookup;
 	public final ViscosityReader reader;
 
 	public CommonClientWorldCache(Environment env
@@ -58,42 +58,7 @@ public class CommonClientWorldCache
 		_passives = new HashMap<>();
 		
 		_proxyCache = new HashMap<>();
-		_proxyLookup = new TickProcessingContext.IBlockFetcher() {
-			@Override
-			public BlockProxy readBlock(AbsoluteLocation location)
-			{
-				return _readOneBlock(location);
-			}
-			@Override
-			public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
-			{
-				// TODO:  Make this call a batching mechanism in the lower level.
-				Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
-				for (AbsoluteLocation location : locations)
-				{
-					BlockProxy proxy = _readOneBlock(location);
-					if (null != proxy)
-					{
-						completed.put(location, proxy);
-					}
-				}
-				return completed;
-			}
-			private BlockProxy _readOneBlock(AbsoluteLocation location)
-			{
-				BlockProxy proxy = _proxyCache.get(location);
-				if (null == proxy)
-				{
-					IReadOnlyCuboidData cuboid = _world.get(location.getCuboidAddress());
-					if (null != cuboid)
-					{
-						proxy = BlockProxy.load(location.getBlockAddress(), cuboid);
-						_proxyCache.put(location, proxy);
-					}
-				}
-				return proxy;
-			}
-		};
+		_proxyLookup = new CommonBlockFetcher(new _DataFetcher());
 		this.reader = new ViscosityReader(env, _proxyLookup);
 	}
 
@@ -117,14 +82,7 @@ public class CommonClientWorldCache
 	{
 		CuboidAddress address = cuboid.getCuboidAddress();
 		_world.put(address, cuboid);
-		
-		// Invalidate any caching of the changed blocks.
-		AbsoluteLocation base = address.getBase();
-		for (BlockAddress block: changedBlocks)
-		{
-			AbsoluteLocation loc = base.relativeForBlock(block);
-			_proxyCache.remove(loc);
-		}
+		_proxyCache.remove(address);
 	}
 
 	/**
@@ -135,17 +93,7 @@ public class CommonClientWorldCache
 	public void removeCuboid(CuboidAddress address)
 	{
 		Assert.assertTrue(null != _world.remove(address));
-		
-		// Clean up the proxy cache.
-		Iterator<AbsoluteLocation> iter = _proxyCache.keySet().iterator();
-		while (iter.hasNext())
-		{
-			AbsoluteLocation location = iter.next();
-			if (address.equals(location.getCuboidAddress()))
-			{
-				iter.remove();
-			}
-		}
+		_proxyCache.remove(address);
 	}
 
 	/**
@@ -261,5 +209,28 @@ public class CommonClientWorldCache
 			toReturn = null;
 		}
 		return toReturn;
+	}
+
+
+	private class _DataFetcher implements Function<CuboidAddress, Pair<IReadOnlyCuboidData, Map<BlockAddress, BlockProxy>>>
+	{
+		@Override
+		public Pair<IReadOnlyCuboidData, Map<BlockAddress, BlockProxy>> apply(CuboidAddress cuboidAddress)
+		{
+			Pair<IReadOnlyCuboidData, Map<BlockAddress, BlockProxy>> pair = null;
+			IReadOnlyCuboidData cuboid = _world.get(cuboidAddress);
+			
+			if (null != cuboid)
+			{
+				Map<BlockAddress, BlockProxy> cache = _proxyCache.get(cuboidAddress);
+				if (null == cache)
+				{
+					cache = new HashMap<>();
+					_proxyCache.put(cuboidAddress, cache);
+				}
+				pair = new Pair<>(cuboid, cache);
+			}
+			return pair;
+		}
 	}
 }
