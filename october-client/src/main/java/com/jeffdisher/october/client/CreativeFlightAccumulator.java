@@ -35,7 +35,7 @@ public class CreativeFlightAccumulator
 	)
 	{
 		_worldCache = worldCache;
-		_flightBlocksPerSecond = 2.0f * worldCache.env.creatures.PLAYER.blocksPerSecond();
+		_flightBlocksPerSecond = 2.0f * worldCache.playerBlocksPerSecond;
 		
 		_lastSampleMillis = currentTimeMillis;
 	}

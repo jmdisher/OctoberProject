@@ -258,7 +258,7 @@ public class MovementAccumulator
 		float yawRadians = orientationRadians + relativeDirection.yawRadians;
 		float xComponent = OrientationHelpers.getEastYawComponent(yawRadians);
 		float yComponent = OrientationHelpers.getNorthYawComponent(yawRadians);
-		float maxSpeed = _worldCache.env.creatures.PLAYER.blocksPerSecond() * intensity.speedMultipler * speedMultiplier;
+		float maxSpeed = _worldCache.playerBlocksPerSecond * intensity.speedMultipler * speedMultiplier;
 		float speed = maxSpeed * relativeDirection.speedMultiplier;
 		float seconds = (float)millisMoving / 1000.0f;
 		

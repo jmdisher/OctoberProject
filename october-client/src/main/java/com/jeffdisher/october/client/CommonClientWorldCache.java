@@ -30,17 +30,17 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CommonClientWorldCache
 {
-	public final Environment env;
 	public final IProjectionListener listener;
 	public final long millisPerTick;
 	public final EntityVolume playerVolume;
+	public final float playerBlocksPerSecond;
 
 	public Entity thisEntity;
-	public final Map<CuboidAddress, IReadOnlyCuboidData> world;
-	public final Map<Integer, PartialEntity> otherEntities;
-	public final Map<Integer, PartialPassive> passives;
-	public final Map<AbsoluteLocation, BlockProxy> proxyCache;
-	public final TickProcessingContext.IBlockFetcher proxyLookup;
+	private final Map<CuboidAddress, IReadOnlyCuboidData> _world;
+	private final Map<Integer, PartialEntity> _otherEntities;
+	private final Map<Integer, PartialPassive> _passives;
+	private final Map<AbsoluteLocation, BlockProxy> _proxyCache;
+	private final TickProcessingContext.IBlockFetcher _proxyLookup;
 	public final ViscosityReader reader;
 
 	public CommonClientWorldCache(Environment env
@@ -48,17 +48,17 @@ public class CommonClientWorldCache
 		, long millisPerTick
 	)
 	{
-		this.env = env;
 		this.listener = listener;
 		this.millisPerTick = millisPerTick;
 		this.playerVolume = env.creatures.PLAYER.volume();
+		this.playerBlocksPerSecond = env.creatures.PLAYER.blocksPerSecond();
 		
-		this.world = new HashMap<>();
-		this.otherEntities = new HashMap<>();
-		this.passives = new HashMap<>();
+		_world = new HashMap<>();
+		_otherEntities = new HashMap<>();
+		_passives = new HashMap<>();
 		
-		this.proxyCache = new HashMap<>();
-		this.proxyLookup = new TickProcessingContext.IBlockFetcher() {
+		_proxyCache = new HashMap<>();
+		_proxyLookup = new TickProcessingContext.IBlockFetcher() {
 			@Override
 			public BlockProxy readBlock(AbsoluteLocation location)
 			{
@@ -81,20 +81,20 @@ public class CommonClientWorldCache
 			}
 			private BlockProxy _readOneBlock(AbsoluteLocation location)
 			{
-				BlockProxy proxy = CommonClientWorldCache.this.proxyCache.get(location);
+				BlockProxy proxy = _proxyCache.get(location);
 				if (null == proxy)
 				{
-					IReadOnlyCuboidData cuboid = CommonClientWorldCache.this.world.get(location.getCuboidAddress());
+					IReadOnlyCuboidData cuboid = _world.get(location.getCuboidAddress());
 					if (null != cuboid)
 					{
 						proxy = BlockProxy.load(location.getBlockAddress(), cuboid);
-						CommonClientWorldCache.this.proxyCache.put(location, proxy);
+						_proxyCache.put(location, proxy);
 					}
 				}
 				return proxy;
 			}
 		};
-		this.reader = new ViscosityReader(this.env, this.proxyLookup);
+		this.reader = new ViscosityReader(env, _proxyLookup);
 	}
 
 	/**
@@ -116,14 +116,14 @@ public class CommonClientWorldCache
 	public void setCuboid(IReadOnlyCuboidData cuboid, Set<BlockAddress> changedBlocks)
 	{
 		CuboidAddress address = cuboid.getCuboidAddress();
-		this.world.put(address, cuboid);
+		_world.put(address, cuboid);
 		
 		// Invalidate any caching of the changed blocks.
 		AbsoluteLocation base = address.getBase();
 		for (BlockAddress block: changedBlocks)
 		{
 			AbsoluteLocation loc = base.relativeForBlock(block);
-			this.proxyCache.remove(loc);
+			_proxyCache.remove(loc);
 		}
 	}
 
@@ -134,10 +134,10 @@ public class CommonClientWorldCache
 	 */
 	public void removeCuboid(CuboidAddress address)
 	{
-		Assert.assertTrue(null != this.world.remove(address));
+		Assert.assertTrue(null != _world.remove(address));
 		
 		// Clean up the proxy cache.
-		Iterator<AbsoluteLocation> iter = this.proxyCache.keySet().iterator();
+		Iterator<AbsoluteLocation> iter = _proxyCache.keySet().iterator();
 		while (iter.hasNext())
 		{
 			AbsoluteLocation location = iter.next();
@@ -156,7 +156,7 @@ public class CommonClientWorldCache
 	public void setOtherEntity(PartialEntity entity)
 	{
 		int id = entity.id();
-		this.otherEntities.put(id, entity);
+		_otherEntities.put(id, entity);
 	}
 
 	/**
@@ -166,7 +166,7 @@ public class CommonClientWorldCache
 	 */
 	public void removeOtherEntity(int id)
 	{
-		Assert.assertTrue(null != this.otherEntities.remove(id));
+		Assert.assertTrue(null != _otherEntities.remove(id));
 	}
 
 	/**
@@ -176,7 +176,7 @@ public class CommonClientWorldCache
 	 */
 	public void addPassive(PartialPassive passive)
 	{
-		Object old = this.passives.put(passive.id(), passive);
+		Object old = _passives.put(passive.id(), passive);
 		Assert.assertTrue(null == old);
 	}
 
@@ -187,9 +187,9 @@ public class CommonClientWorldCache
 	 */
 	public void updatePassive(PartialPassive entity)
 	{
-		PartialPassive old = this.passives.get(entity.id());
+		PartialPassive old = _passives.get(entity.id());
 		Assert.assertTrue(null != old);
-		this.passives.put(entity.id(), entity);
+		_passives.put(entity.id(), entity);
 	}
 
 	/**
@@ -199,7 +199,7 @@ public class CommonClientWorldCache
 	 */
 	public void removePassive(int entityId)
 	{
-		Assert.assertTrue(null != this.passives.remove(entityId));
+		Assert.assertTrue(null != _passives.remove(entityId));
 	}
 
 	/**
@@ -215,10 +215,10 @@ public class CommonClientWorldCache
 	public Entity localEntityAfterAction(IEntityActionFromClient<IMutablePlayerEntity> toRun, long millisToApply, long currentTimeMillis)
 	{
 		OneOffRunner.InputState input = new OneOffRunner.InputState(this.thisEntity
-			, this.world
-			, this.otherEntities
-			, this.passives
-			, this.proxyLookup
+			, _world
+			, _otherEntities
+			, _passives
+			, _proxyLookup
 		);
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
 			// We can probably ignore events in this path since they will either be entity-related (hence sent by the
