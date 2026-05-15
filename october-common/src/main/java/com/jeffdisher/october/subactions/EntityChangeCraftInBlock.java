@@ -48,7 +48,6 @@ public class EntityChangeCraftInBlock implements IEntitySubAction<IMutablePlayer
 		else
 		{
 			Craft craft = CodecHelpers.readCraft(buffer);
-			buffer.getLong();
 			return new EntityChangeCraftInBlock(targetBlock, craft);
 		}
 		return toReturn;
@@ -112,7 +111,6 @@ public class EntityChangeCraftInBlock implements IEntitySubAction<IMutablePlayer
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _targetBlock);
 		CodecHelpers.writeCraft(buffer, _craft);
-		buffer.putLong(0L); // millis no longer stored.
 	}
 
 	@Override
