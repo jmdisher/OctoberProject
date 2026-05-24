@@ -1,5 +1,6 @@
 package com.jeffdisher.october.logic;
 
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.FacingDirection;
 
 
@@ -32,9 +33,7 @@ public class OrientationHelpers
 
 	public static byte yawFromRadians(float radians)
 	{
-		float portionOfCircle = (float) (radians / (2.0 * Math.PI));
-		float yawFloat = 256.0f * portionOfCircle;
-		return (byte)(int)Math.round(yawFloat);
+		return _yawFromRadians(radians);
 	}
 
 	public static byte pitchFromRadians(float radians)
@@ -80,6 +79,41 @@ public class OrientationHelpers
 		return direction;
 	}
 
+	/**
+	 * Determines the yaw byte to describe an entity looking from source to target.
+	 * 
+	 * @param source The source of the ray.
+	 * @param target The end of the ray.
+	 * @return The yaw byte for this facing direction.
+	 */
+	public static byte getYawBetweenPoints(EntityLocation source, EntityLocation target)
+	{
+		float deltaX = target.x() - source.x();
+		float deltaY = target.y() - source.y();
+		
+		byte yaw;
+		if (0.0f == deltaY)
+		{
+			yaw = (deltaX > 0.0f)
+				? YAW_EAST
+				: YAW_WEST
+			;
+		}
+		else
+		{
+			// NOTE:  The ratio is expected to be from the north to the west, so invert the X delta.
+			float ratio = -deltaX / deltaY;
+			float radians = (float)Math.atan(ratio);
+			if (deltaY < 0.0f)
+			{
+				// If the delta Y shows it is facing south, add half a rotation so we get an answer from the south half of the circle.
+				radians += Math.PI;
+			}
+			yaw = _yawFromRadians(radians);
+		}
+		return yaw;
+	}
+
 
 	private static float _positiveRadians(float radians)
 	{
@@ -88,5 +122,12 @@ public class OrientationHelpers
 			radians += (float)(2.0 * Math.PI);
 		}
 		return radians;
+	}
+
+	private static byte _yawFromRadians(float radians)
+	{
+		float portionOfCircle = (float) (radians / (2.0 * Math.PI));
+		float yawFloat = 256.0f * portionOfCircle;
+		return (byte)(int)Math.round(yawFloat);
 	}
 }

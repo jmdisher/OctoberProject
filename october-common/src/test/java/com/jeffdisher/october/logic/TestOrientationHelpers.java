@@ -3,6 +3,7 @@ package com.jeffdisher.october.logic;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.FacingDirection;
 
 
@@ -94,5 +95,27 @@ public class TestOrientationHelpers
 		Assert.assertEquals(FacingDirection.WEST, OrientationHelpers.getYawDirection((byte)50));
 		Assert.assertEquals(FacingDirection.SOUTH, OrientationHelpers.getYawDirection((byte)140));
 		Assert.assertEquals(FacingDirection.EAST, OrientationHelpers.getYawDirection((byte)200));
+	}
+
+	@Test
+	public void yawBetweenPoints()
+	{
+		EntityLocation source = new EntityLocation(1.2f, -2.3f, 0.5f);
+		
+		// Show cardinal directions.
+		Assert.assertEquals(OrientationHelpers.YAW_NORTH, OrientationHelpers.getYawBetweenPoints(source, new EntityLocation(1.2f, 5.6f, 0.5f)));
+		Assert.assertEquals(OrientationHelpers.YAW_WEST, OrientationHelpers.getYawBetweenPoints(source, new EntityLocation(0.2f, -2.3f, 0.5f)));
+		Assert.assertEquals(OrientationHelpers.YAW_SOUTH, OrientationHelpers.getYawBetweenPoints(source, new EntityLocation(1.2f, -2.4f, 0.5f)));
+		Assert.assertEquals(OrientationHelpers.YAW_EAST, OrientationHelpers.getYawBetweenPoints(source, new EntityLocation(15.2f, -2.3f, 0.5f)));
+		
+		// Show slight deviations from cardinal directions to show the limits are expected.
+		Assert.assertEquals((byte)1, OrientationHelpers.getYawBetweenPoints(source, new EntityLocation(1.1f, 5.6f, 0.5f)));
+		Assert.assertEquals((byte)-1, OrientationHelpers.getYawBetweenPoints(source, new EntityLocation(1.3f, 5.6f, 0.5f)));
+		Assert.assertEquals((byte)68, OrientationHelpers.getYawBetweenPoints(source, new EntityLocation(0.2f, -2.4f, 0.5f)));
+		Assert.assertEquals((byte)60, OrientationHelpers.getYawBetweenPoints(source, new EntityLocation(0.2f, -2.2f, 0.5f)));
+		Assert.assertEquals((byte)96, OrientationHelpers.getYawBetweenPoints(source, new EntityLocation(1.1f, -2.4f, 0.5f)));
+		Assert.assertEquals((byte)-96, OrientationHelpers.getYawBetweenPoints(source, new EntityLocation(1.3f, -2.4f, 0.5f)));
+		Assert.assertEquals((byte)-65, OrientationHelpers.getYawBetweenPoints(source, new EntityLocation(15.2f, -2.6f, 0.5f)));
+		Assert.assertEquals((byte)-63, OrientationHelpers.getYawBetweenPoints(source, new EntityLocation(15.2f, -2.0f, 0.5f)));
 	}
 }
