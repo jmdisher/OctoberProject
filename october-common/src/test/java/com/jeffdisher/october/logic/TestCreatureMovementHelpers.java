@@ -1,11 +1,14 @@
 package com.jeffdisher.october.logic;
 
+import java.util.List;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -346,6 +349,50 @@ public class TestCreatureMovementHelpers
 		Assert.assertTrue(didApply);
 		Assert.assertEquals(new EntityLocation(-60.41f, -215.41f, -0.98f), mutable.newLocation);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.3f), mutable.newVelocity);
+	}
+
+	@Test
+	public void walkDiagonalOnFlat()
+	{
+		EntityLocation location = new EntityLocation(1.1f, 1.2f, 0.0f);
+		List<AbsoluteLocation> path = List.of(new AbsoluteLocation(1, 2, 0)
+			, new AbsoluteLocation(1, 3, 0)
+			, new AbsoluteLocation(1, 4, 0)
+			, new AbsoluteLocation(1, 5, 0)
+			, new AbsoluteLocation(2, 5, 0)
+			, new AbsoluteLocation(3, 5, 0)
+			, new AbsoluteLocation(4, 5, 0)
+			, new AbsoluteLocation(5, 5, 0)
+			, new AbsoluteLocation(5, 5, 1)
+		);
+		ViscosityReader reader = _getSplitBlockReader(ENV.special.AIR, STONE);
+		EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, location, COW, path);
+		Assert.assertEquals(new EntityLocation(5.1f, 5.2f, 0.0f), directLocation);
+	}
+
+	@Test
+	public void walkDiagonalAroundHole()
+	{
+		EntityLocation location = new EntityLocation(1.1f, 1.2f, 1.0f);
+		List<AbsoluteLocation> path = List.of(new AbsoluteLocation(1, 2, 1)
+			, new AbsoluteLocation(1, 3, 1)
+			, new AbsoluteLocation(1, 4, 1)
+			, new AbsoluteLocation(1, 5, 1)
+			, new AbsoluteLocation(2, 5, 1)
+			, new AbsoluteLocation(3, 5, 1)
+			, new AbsoluteLocation(4, 5, 1)
+			, new AbsoluteLocation(5, 5, 1)
+		);
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		cuboid.setData15(AspectRegistry.BLOCK, new AbsoluteLocation(3, 5, 0).getBlockAddress(), (short)0);
+		
+		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
+			return BlockProxy.load(l.getBlockAddress(), cuboid);
+		}));
+		EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, location, COW, path);
+		Assert.assertEquals(new EntityLocation(2.1f, 5.2f, 1.0f), directLocation);
 	}
 
 

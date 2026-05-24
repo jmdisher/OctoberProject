@@ -1,11 +1,15 @@
 package com.jeffdisher.october.logic;
 
+import java.util.List;
+
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
+import com.jeffdisher.october.logic.EntityMovementHelpers.IInteractiveHelper;
 import com.jeffdisher.october.subactions.EntityChangeJump;
 import com.jeffdisher.october.subactions.EntityChangeSwim;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 
@@ -263,6 +267,73 @@ public class CreatureMovementHelpers
 		return change;
 	}
 
+	/**
+	 * Finds an EntityLocation on the same z-level as the current creatureLocation which is somewhere along the path
+	 * described by fullPath.  The returned location will be as far along the fullPath as the creature could walk
+	 * without needing to walk around a hole or barrier.
+	 * 
+	 * @param supplier Looks up the viscosity of various blocks.
+	 * @param creatureLocation The creature's location.
+	 * @param creatureType The type of creature.
+	 * @param fullPath The full planned path (cannot be null but can be empty).
+	 * @return A direct target location along the fullPath, null if the fullPath is empty, none of the path is on the
+	 * creatureLocation's z-level, or none of the blocks on the z-level are on solid blocks, a non-colliding location
+	 * was not found.
+	 */
+	public static EntityLocation findDirectTarget(ViscosityReader supplier
+		, EntityLocation creatureLocation
+		, EntityType creatureType
+		, List<AbsoluteLocation> fullPath
+	)
+	{
+		// We just want to find the furthest-away block on the same z-level.
+		AbsoluteLocation startBlock = creatureLocation.getBlockLocation();
+		AbsoluteLocation furthestBlock = null;
+		for (AbsoluteLocation next : fullPath)
+		{
+			if (startBlock.z() != next.z())
+			{
+				break;
+			}
+			else
+			{
+				// Check that the block under this is solid.
+				if (supplier.isSolidBlockInVolume(next.getRelative(0, 0, -1).toEntityLocation(), new EntityVolume(0.01f, 0.01f), true))
+				{
+					furthestBlock = next;
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+		
+		EntityLocation directTarget;
+		if (null != furthestBlock)
+		{
+			// For now, just keep us where we are in the block and walk to the new block.
+			EntityVolume volume = creatureType.volume();
+			// (we recreate the start so we can determine the distance as a whole number)
+			EntityLocation entityStart = startBlock.toEntityLocation();
+			EntityLocation entityEnd = furthestBlock.toEntityLocation();
+			float distanceX = entityEnd.x() - entityStart.x();
+			float distanceY = entityEnd.y() - entityStart.y();
+			EntityLocation totalDistanceToMove = new EntityLocation(distanceX, distanceY, 0.0f);
+			
+			// Run the move (helper.result is null if colliding).
+			_NoCollideHelper helper = new _NoCollideHelper(supplier);
+			EntityMovementHelpers.interactiveEntityMove(creatureLocation, volume, totalDistanceToMove, helper);
+			directTarget = helper.result;
+		}
+		else
+		{
+			// No target.
+			directTarget = null;
+		}
+		return directTarget;
+	}
+
 
 	private static EntityActionSimpleMove<IMutableCreatureEntity> _moveByX(EntityLocation location, long timeLimitMillis, float currentCreatureSpeed, float viscosityFraction, float targetX, float passiveVelocityX)
 	{
@@ -330,5 +401,31 @@ public class CreatureMovementHelpers
 		float distanceToMove = rawDistanceInTime * fractionToMove;
 		float activeDistance = Math.signum(movementSum) * distanceToMove;
 		return activeDistance;
+	}
+
+
+	private static class _NoCollideHelper implements IInteractiveHelper
+	{
+		private final ViscosityReader _reader;
+		public EntityLocation result;
+		
+		public _NoCollideHelper(ViscosityReader reader)
+		{
+			_reader = reader;
+		}
+		@Override
+		public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
+		{
+			// We only store the result if there were no collisions.
+			if (!cancelX && !cancelY && !cancelZ)
+			{
+				this.result = finalLocation;
+			}
+		}
+		@Override
+		public boolean isSolid(EntityLocation base, EntityVolume volume, boolean fromAbove)
+		{
+			return _reader.isSolidBlockInVolume(base, volume, fromAbove);
+		}
 	}
 }
