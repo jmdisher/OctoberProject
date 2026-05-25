@@ -395,6 +395,165 @@ public class TestCreatureMovementHelpers
 		Assert.assertEquals(new EntityLocation(2.1f, 5.2f, 1.0f), directLocation);
 	}
 
+	@Test
+	public void directWalkNoMove()
+	{
+		EntityLocation location = new EntityLocation(1.02f, 1.2f, 1.0f);
+		EntityLocation end = new EntityLocation(1.0f, 1.21f, 1.0f);
+		long millisPerTick = 50L;
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		
+		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
+			return BlockProxy.load(l.getBlockAddress(), cuboid);
+		}));
+		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureMovementHelpers.moveAlongDiagonalPath(reader
+			, location
+			, (byte)5
+			, (byte)6
+			, COW
+			, end
+			, millisPerTick
+			, 0.0f
+			, false
+		);
+		Assert.assertNull(change);
+	}
+
+	@Test
+	public void directWalkCollide()
+	{
+		EntityLocation location = new EntityLocation(1.00f, 1.2f, 1.0f);
+		EntityLocation end = new EntityLocation(0.98f, 1.21f, 1.0f);
+		long millisPerTick = 50L;
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		cuboid.setData15(AspectRegistry.BLOCK, end.getBlockLocation().getBlockAddress(), STONE.item().number());
+		
+		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
+			return BlockProxy.load(l.getBlockAddress(), cuboid);
+		}));
+		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureMovementHelpers.moveAlongDiagonalPath(reader
+			, location
+			, (byte)5
+			, (byte)6
+			, COW
+			, end
+			, millisPerTick
+			, 0.0f
+			, false
+		);
+		Assert.assertNull(change);
+	}
+
+	@Test
+	public void directWalkFall()
+	{
+		EntityLocation location = new EntityLocation(1.99f, 1.99f, 1.0f);
+		EntityLocation end = new EntityLocation(2.01f, 2.01f, 1.0f);
+		long millisPerTick = 50L;
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, location.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), STONE.item().number());
+		
+		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
+			return BlockProxy.load(l.getBlockAddress(), cuboid);
+		}));
+		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureMovementHelpers.moveAlongDiagonalPath(reader
+			, location
+			, (byte)5
+			, (byte)6
+			, COW
+			, end
+			, millisPerTick
+			, 0.0f
+			, false
+		);
+		Assert.assertNull(change);
+	}
+
+	@Test
+	public void directWalkShort()
+	{
+		EntityLocation location = new EntityLocation(1.00f, 1.2f, 1.0f);
+		EntityLocation end = new EntityLocation(0.98f, 1.21f, 1.0f);
+		long millisPerTick = 50L;
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		
+		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
+			return BlockProxy.load(l.getBlockAddress(), cuboid);
+		}));
+		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureMovementHelpers.moveAlongDiagonalPath(reader
+			, location
+			, (byte)5
+			, (byte)6
+			, COW
+			, end
+			, millisPerTick
+			, 0.0f
+			, false
+		);
+		Assert.assertEquals("SimpleMove(WALKING), by -0.02, 0.01, Sub: null", change.toString());
+		
+		// Make sure that this actually applies correctly.
+		TickProcessingContext context = ContextBuilder.build()
+			.millisPerTick(millisPerTick)
+			.lookups(ContextBuilder.buildFetcher(
+				(AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid)
+			), null, null)
+			.finish()
+		;
+		MutableCreature mutable = MutableCreature.existing(_createCow(location));
+		boolean didApply = change.applyChange(context, mutable);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(end, mutable.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutable.newVelocity);
+	}
+
+	@Test
+	public void directWalkLong()
+	{
+		EntityLocation location = new EntityLocation(1.00f, 1.2f, 1.0f);
+		EntityLocation end = new EntityLocation(-2.5f, 3.21f, 1.0f);
+		long millisPerTick = 50L;
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		
+		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
+			return BlockProxy.load(l.getBlockAddress(), cuboid);
+		}));
+		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureMovementHelpers.moveAlongDiagonalPath(reader
+			, location
+			, (byte)5
+			, (byte)6
+			, COW
+			, end
+			, millisPerTick
+			, 0.0f
+			, false
+		);
+		Assert.assertEquals("SimpleMove(WALKING), by -0.04, 0.02, Sub: null", change.toString());
+		
+		// Make sure that this actually applies correctly.
+		TickProcessingContext context = ContextBuilder.build()
+			.millisPerTick(millisPerTick)
+			.lookups(ContextBuilder.buildFetcher(
+				(AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid)
+			), null, null)
+			.finish()
+		;
+		MutableCreature mutable = MutableCreature.existing(_createCow(location));
+		boolean didApply = change.applyChange(context, mutable);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(new EntityLocation(0.96f, 1.22f, 1.0f), mutable.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutable.newVelocity);
+	}
+
 
 	private static CreatureEntity _createCow(EntityLocation location)
 	{

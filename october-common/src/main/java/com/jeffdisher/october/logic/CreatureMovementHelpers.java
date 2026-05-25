@@ -12,6 +12,7 @@ import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -332,6 +333,114 @@ public class CreatureMovementHelpers
 			directTarget = null;
 		}
 		return directTarget;
+	}
+
+	/**
+	 * Creates the changes required for the given creature to move to targetBase.  This will move in a straight line,
+	 * returning null only if there is nothing left to do (it already there) or the path isn't valid (would hit
+	 * something or fall).
+	 * 
+	 * @param supplier Looks up the viscosity of various blocks.
+	 * @param creatureBaseLocation The creature's location.
+	 * @param yaw The creature's existing yaw.
+	 * @param pitch The creature's existing pitch.
+	 * @param creatureType The type of creature.
+	 * @param targetBase The target location.
+	 * @param timeLimitMillis The number of milliseconds left in the tick.
+	 * @param viscosityFraction The viscosity of the current location ([0.0 .. 1.0]) where 1.0 is solid.
+	 * @param isIdleMovement True if this movement is just idle and not one with a specific goal.
+	 * @return The next move toward targetBase (null if the creature is already there, would hit an obstacle or fall).
+	 */
+	public static EntityActionSimpleMove<IMutableCreatureEntity> moveAlongDiagonalPath(ViscosityReader supplier
+		, EntityLocation creatureBaseLocation
+		, byte yaw
+		, byte pitch
+		, EntityType creatureType
+		, EntityLocation targetBase
+		, long timeLimitMillis
+		, float viscosityFraction
+		, boolean isIdleMovement
+	)
+	{
+		AbsoluteLocation creatureBlock = creatureBaseLocation.getBlockLocation();
+		AbsoluteLocation targetBlock = targetBase.getBlockLocation();
+		
+		EntityActionSimpleMove<IMutableCreatureEntity> change;
+		if (creatureBlock.equals(targetBlock))
+		{
+			// If we already reached the destination, just return null.
+			change = null;
+		}
+		else
+		{
+			// We assume that our current location and target location are on the same Z-level so verify that.
+			Assert.assertTrue(creatureBlock.z() == targetBlock.z());
+			
+			EntityLocation pathRemaining = new EntityLocation(targetBase.x() - creatureBaseLocation.x()
+				, targetBase.y() - creatureBaseLocation.y()
+				, targetBase.z() - creatureBaseLocation.z()
+			);
+			float distanceRemaining = pathRemaining.getMagnitude();
+			float speed = creatureType.blocksPerSecond();
+			float inverseViscosity = (1.0f - viscosityFraction);
+			float effectiveSpeed = inverseViscosity * speed;
+			float speedMultiplier = isIdleMovement
+				? 0.5f
+				: 1.0f
+			;
+			float secondsToMove = ((float)timeLimitMillis) / 1000.0f;
+			float blockDistanceInMove = secondsToMove * effectiveSpeed * speedMultiplier;
+			
+			// If the remaining distance fits, do it all, otherwise, just part of it.
+			float xToMove;
+			float yToMove;
+			if (blockDistanceInMove >= distanceRemaining)
+			{
+				xToMove = pathRemaining.x();
+				yToMove = pathRemaining.y();
+			}
+			else
+			{
+				float scale = blockDistanceInMove / distanceRemaining;
+				EntityLocation scaledDistance = pathRemaining.makeScaledInstance(scale);
+				xToMove = scaledDistance.x();
+				yToMove = scaledDistance.y();
+			}
+			
+			// We can now create the move but we first want to verify it won't fail since that means we should return null.
+			EntityLocation totalDistanceToMove = new EntityLocation(xToMove, yToMove, 0.0f);
+			EntityVolume volume = creatureType.volume();
+			_NoCollideHelper helper = new _NoCollideHelper(supplier);
+			EntityMovementHelpers.interactiveEntityMove(creatureBaseLocation, volume, totalDistanceToMove, helper);
+			
+			if (null == helper.result)
+			{
+				// We hit something so we want to fail out.
+				change = null;
+			}
+			else
+			{
+				// We didn't hit anything but make sure that we can stand there.
+				EntityLocation expectedLocation = creatureBaseLocation.getRelativeForLocation(totalDistanceToMove);
+				if (!SpatialHelpers.isStandingOnGround(supplier, expectedLocation, volume))
+				{
+					// We would fall, so no.
+					change = null;
+				}
+				else
+				{
+					// This is a valid step.
+					change = new EntityActionSimpleMove<>(xToMove
+						, yToMove
+						, EntityActionSimpleMove.Intensity.WALKING
+						, yaw
+						, pitch
+						, null
+					);
+				}
+			}
+		}
+		return change;
 	}
 
 
