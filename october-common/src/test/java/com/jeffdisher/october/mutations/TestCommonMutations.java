@@ -48,7 +48,6 @@ import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.IEntityAction;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.Infusion;
@@ -56,6 +55,7 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.PassiveEntity;
@@ -703,7 +703,7 @@ public class TestCommonMutations
 						throw new AssertionError("Not expected in test");
 					}
 					@Override
-					public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+					public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
 					{
 						throw new AssertionError("Not expected in test");
 					}
@@ -2193,7 +2193,7 @@ public class TestCommonMutations
 					throw new AssertionError("Not in test");
 				}
 				@Override
-				public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+				public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
 				{
 					throw new AssertionError("Not in test");
 				}
@@ -2400,7 +2400,7 @@ public class TestCommonMutations
 		LazyEntityIndex entityIndex = new LazyEntityIndex(Map.of(playerId, mutable.freeze()), Map.of(creature.id(), creature));
 		LazyPassiveIndex passiveIndex = new LazyPassiveIndex(Map.of(passive.id(), passive));
 		EntityActionPush<IMutablePlayerEntity>[] outPlayer = new EntityActionPush[1];
-		EntityActionPush<IMutableCreatureEntity>[] outCreature = new EntityActionPush[1];
+		EntityActionPush<MutableCreature>[] outCreature = new EntityActionPush[1];
 		PassiveActionPush[] outPassive = new PassiveActionPush[1];
 		TickProcessingContext.IChangeSink changeSink = new TickProcessingContext.IChangeSink() {
 			@Override
@@ -2417,11 +2417,11 @@ public class TestCommonMutations
 				throw new AssertionError("Not in test");
 			}
 			@Override
-			public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+			public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
 			{
 				Assert.assertNull(outCreature[0]);
 				Assert.assertEquals(creatureId, targetCreatureId);
-				outCreature[0] = (EntityActionPush<IMutableCreatureEntity>) change;
+				outCreature[0] = (EntityActionPush<MutableCreature>) change;
 				return true;
 			}
 			@Override
@@ -2515,7 +2515,7 @@ public class TestCommonMutations
 								throw new AssertionError("Not expected in test");
 							}
 							@Override
-							public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+							public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
 							{
 								throw new AssertionError("Not expected in test");
 							}

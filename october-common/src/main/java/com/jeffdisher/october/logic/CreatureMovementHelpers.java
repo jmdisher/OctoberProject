@@ -11,7 +11,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IEntitySubAction;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -39,7 +39,7 @@ public class CreatureMovementHelpers
 	 * @param isIdleMovement True if this movement is just idle and not one with a specific goal.
 	 * @return The next move to make to centre in the block toward directionHint (null if there is no useful action).
 	 */
-	public static EntityActionSimpleMove<IMutableCreatureEntity> prepareForMove(EntityLocation creatureLocation
+	public static EntityActionSimpleMove<MutableCreature> prepareForMove(EntityLocation creatureLocation
 		, EntityLocation creatureVelocity
 		, EntityType creatureType
 		, AbsoluteLocation directionHint
@@ -144,7 +144,7 @@ public class CreatureMovementHelpers
 				? 0.5f
 				: 1.0f
 		;
-		EntityActionSimpleMove<IMutableCreatureEntity> move = _moveByX(creatureLocation, timeLimitMillis, speed * speedMultiplier, viscosityFraction, targetX, creatureVelocity.x());
+		EntityActionSimpleMove<MutableCreature> move = _moveByX(creatureLocation, timeLimitMillis, speed * speedMultiplier, viscosityFraction, targetX, creatureVelocity.x());
 		if (null == move)
 		{
 			move = _moveByY(creatureLocation, timeLimitMillis, speed * speedMultiplier, viscosityFraction, targetY, creatureVelocity.y());
@@ -169,7 +169,7 @@ public class CreatureMovementHelpers
 	 * @return The next move toward targetBlock (null if there is no useful action at this time - usually just pass
 	 * time).
 	 */
-	public static EntityActionSimpleMove<IMutableCreatureEntity> moveToNextLocation(ViscosityReader supplier
+	public static EntityActionSimpleMove<MutableCreature> moveToNextLocation(ViscosityReader supplier
 			, EntityLocation creatureLocation
 			, EntityLocation creatureVelocity
 			, byte yaw
@@ -184,11 +184,11 @@ public class CreatureMovementHelpers
 	{
 		// We might need to jump, walk, or do nothing.
 		// If the target is above us and we are on the ground, 
-		EntityActionSimpleMove<IMutableCreatureEntity> change;
+		EntityActionSimpleMove<MutableCreature> change;
 		if (targetBlock.z() > creatureLocation.z())
 		{
 			// We need to go up so see if we should jump, swim, or hope our momentum will get us there.
-			IEntitySubAction<IMutableCreatureEntity> subAction;
+			IEntitySubAction<MutableCreature> subAction;
 			if (EntityChangeJump.canJumpWithReader(supplier, creatureLocation, creatureType.volume(), creatureVelocity))
 			{
 				// Jump.
@@ -351,7 +351,7 @@ public class CreatureMovementHelpers
 	 * @param isIdleMovement True if this movement is just idle and not one with a specific goal.
 	 * @return The next move toward targetBase (null if the creature is already there, would hit an obstacle or fall).
 	 */
-	public static EntityActionSimpleMove<IMutableCreatureEntity> moveAlongDiagonalPath(ViscosityReader supplier
+	public static EntityActionSimpleMove<MutableCreature> moveAlongDiagonalPath(ViscosityReader supplier
 		, EntityLocation creatureBaseLocation
 		, byte yaw
 		, byte pitch
@@ -365,7 +365,7 @@ public class CreatureMovementHelpers
 		AbsoluteLocation creatureBlock = creatureBaseLocation.getBlockLocation();
 		AbsoluteLocation targetBlock = targetBase.getBlockLocation();
 		
-		EntityActionSimpleMove<IMutableCreatureEntity> change;
+		EntityActionSimpleMove<MutableCreature> change;
 		if (creatureBlock.equals(targetBlock))
 		{
 			// If we already reached the destination, just return null.
@@ -444,12 +444,12 @@ public class CreatureMovementHelpers
 	}
 
 
-	private static EntityActionSimpleMove<IMutableCreatureEntity> _moveByX(EntityLocation location, long timeLimitMillis, float currentCreatureSpeed, float viscosityFraction, float targetX, float passiveVelocityX)
+	private static EntityActionSimpleMove<MutableCreature> _moveByX(EntityLocation location, long timeLimitMillis, float currentCreatureSpeed, float viscosityFraction, float targetX, float passiveVelocityX)
 	{
 		// NOTE:  This call assumes that moving in X is possible (on solid ground or swimming).
 		float moveX = targetX - location.x();
 		float absoluteMove = Math.abs(moveX);
-		EntityActionSimpleMove<IMutableCreatureEntity> move = null;
+		EntityActionSimpleMove<MutableCreature> move = null;
 		if (absoluteMove > FLOAT_THRESHOLD)
 		{
 			// Note that we use viscosity to estimate how far we will move but the actual units of movement are just in terms of our basic speed.
@@ -466,12 +466,12 @@ public class CreatureMovementHelpers
 		return move;
 	}
 
-	private static EntityActionSimpleMove<IMutableCreatureEntity> _moveByY(EntityLocation location, long timeLimitMillis, float currentCreatureSpeed, float viscosityFraction, float targetY, float passiveVelocityY)
+	private static EntityActionSimpleMove<MutableCreature> _moveByY(EntityLocation location, long timeLimitMillis, float currentCreatureSpeed, float viscosityFraction, float targetY, float passiveVelocityY)
 	{
 		// NOTE:  This call assumes that moving in Y is possible (on solid ground or swimming).
 		float moveY = targetY - location.y();
 		float absoluteMove = Math.abs(moveY);
-		EntityActionSimpleMove<IMutableCreatureEntity> move = null;
+		EntityActionSimpleMove<MutableCreature> move = null;
 		if (absoluteMove > FLOAT_THRESHOLD)
 		{
 			// Note that we use viscosity to estimate how far we will move but the actual units of movement are just in terms of our basic speed.

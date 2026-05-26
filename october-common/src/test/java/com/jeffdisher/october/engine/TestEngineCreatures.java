@@ -42,7 +42,6 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntityAction;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.Inventory;
@@ -101,7 +100,7 @@ public class TestEngineCreatures
 		_Events events = new _Events();
 		TickProcessingContext context = _createContextWithEvents(events);
 		int sourceId = 1;
-		EntityActionTakeDamageFromEntity<IMutableCreatureEntity> change = new EntityActionTakeDamageFromEntity<>(BodyPart.FEET, 10, sourceId);
+		EntityActionTakeDamageFromEntity<MutableCreature> change = new EntityActionTakeDamageFromEntity<>(BodyPart.FEET, 10, sourceId);
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
 			, EntityCollection.emptyCollection()
@@ -151,7 +150,7 @@ public class TestEngineCreatures
 				.finish()
 		;
 		int sourceId = 1;
-		EntityActionTakeDamageFromEntity<IMutableCreatureEntity> change = new EntityActionTakeDamageFromEntity<>(BodyPart.FEET, 120, sourceId);
+		EntityActionTakeDamageFromEntity<MutableCreature> change = new EntityActionTakeDamageFromEntity<>(BodyPart.FEET, 120, sourceId);
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_KILLED, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
 			, EntityCollection.emptyCollection()
@@ -570,7 +569,7 @@ public class TestEngineCreatures
 		Assert.assertEquals(cowId1, creaturesById.get(cowId2).ephemeral().targetEntityId());
 		
 		// Nothing should have happened yet, as they just found their mating partners so run the next tick.
-		Map<Integer, IEntityAction<IMutableCreatureEntity>> changes = new HashMap<>();
+		Map<Integer, IEntityAction<MutableCreature>> changes = new HashMap<>();
 		context = _updateContextWithCreatures(context, creaturesById.values(), new IChangeSink() {
 			@Override
 			public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
@@ -583,7 +582,7 @@ public class TestEngineCreatures
 				throw new AssertionError("Not in test");
 			}
 			@Override
-			public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+			public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
 			{
 				Assert.assertFalse(changes.containsKey(targetCreatureId));
 				changes.put(targetCreatureId, change);
@@ -962,7 +961,7 @@ public class TestEngineCreatures
 						throw new AssertionError("Not in test");
 					}
 					@Override
-					public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+					public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
 					{
 						Assert.assertEquals(-1, targetCreatureId);
 						Assert.assertTrue(change instanceof EntityActionNudge);
@@ -983,7 +982,7 @@ public class TestEngineCreatures
 		// We will just run this against the cow, manually, to show the velocity change.
 		MutableCreature mutable = MutableCreature.existing(cow1);
 		@SuppressWarnings("unchecked")
-		EntityActionNudge<IMutableCreatureEntity> nudge = (EntityActionNudge<IMutableCreatureEntity>) out[0];
+		EntityActionNudge<MutableCreature> nudge = (EntityActionNudge<MutableCreature>) out[0];
 		Assert.assertTrue(nudge.applyChange(context, mutable));
 		Assert.assertEquals(new EntityLocation(-2.0f, 2.5f, -2.5f), mutable.newVelocity);
 	}
@@ -1066,7 +1065,7 @@ public class TestEngineCreatures
 			.finish()
 		;
 		int sourceId = 1;
-		EntityActionTakeDamageFromEntity<IMutableCreatureEntity> action = new EntityActionTakeDamageFromEntity<>(BodyPart.FEET, 120, sourceId);
+		EntityActionTakeDamageFromEntity<MutableCreature> action = new EntityActionTakeDamageFromEntity<>(BodyPart.FEET, 120, sourceId);
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_KILLED, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
 			, EntityCollection.emptyCollection()
@@ -1256,7 +1255,7 @@ public class TestEngineCreatures
 	private static Map<Integer, CreatureEntity> _runGroup(TickProcessingContext context
 		, List<Entity> players
 		, Map<Integer, CreatureEntity> creatures
-		, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> changesToRun
+		, Map<Integer, List<IEntityAction<MutableCreature>>> changesToRun
 	)
 	{
 		Map<Integer, Entity> playerMap = new HashMap<>();
@@ -1268,7 +1267,7 @@ public class TestEngineCreatures
 		Map<Integer, CreatureEntity> updated = new HashMap<>(creatures);
 		for (Integer key : creatures.keySet())
 		{
-			List<IEntityAction<IMutableCreatureEntity>> toRun = changesToRun.get(key);
+			List<IEntityAction<MutableCreature>> toRun = changesToRun.get(key);
 			if (null == toRun)
 			{
 				toRun = List.of();

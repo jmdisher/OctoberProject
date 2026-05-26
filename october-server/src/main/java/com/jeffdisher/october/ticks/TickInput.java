@@ -14,8 +14,8 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IEntityAction;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IPassiveAction;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.PassiveEntity;
 
 
@@ -51,7 +51,7 @@ public record TickInput(List<ColumnInput> columns
 	) {}
 
 	public static record CreatureInput(CreatureEntity creature
-		, List<IEntityAction<IMutableCreatureEntity>> actions
+		, List<IEntityAction<MutableCreature>> actions
 	) {}
 
 	public static record PassiveInput(PassiveEntity passive

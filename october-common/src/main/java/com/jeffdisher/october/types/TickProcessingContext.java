@@ -200,7 +200,7 @@ public class TickProcessingContext
 		 * scheduled.  Note that creature actions can still return true here but NEVER be run if the creature is
 		 * unloaded on the next tick (as they aren't stored).
 		 */
-		boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change);
+		boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change);
 		/**
 		 * Requests that the given action be scheduled on the target passive in the next tick.
 		 * 

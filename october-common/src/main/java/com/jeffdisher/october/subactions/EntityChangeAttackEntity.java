@@ -16,10 +16,10 @@ import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IEntitySubAction;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -111,7 +111,7 @@ public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayer
 			}
 			else
 			{
-				EntityActionTakeDamageFromEntity<IMutableCreatureEntity> takeDamage = new EntityActionTakeDamageFromEntity<>(target, damageToApply, sourceEntityId);
+				EntityActionTakeDamageFromEntity<MutableCreature> takeDamage = new EntityActionTakeDamageFromEntity<>(target, damageToApply, sourceEntityId);
 				context.newChangeSink.creature(_targetEntityId, takeDamage);
 			}
 			NudgeHelpers.nudgeFromMelee(context

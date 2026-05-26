@@ -5,8 +5,8 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.types.IEntityAction;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -16,7 +16,7 @@ import com.jeffdisher.october.utils.Assert;
  * The item should be checked that this is valid before creating the change object so this will fail if it has become
  * invalid in the interim (doesn't attempt to return the item, for example).
  */
-public class EntityActionApplyItemToCreature implements IEntityAction<IMutableCreatureEntity>
+public class EntityActionApplyItemToCreature implements IEntityAction<MutableCreature>
 {
 	private final Item _itemType;
 
@@ -26,7 +26,7 @@ public class EntityActionApplyItemToCreature implements IEntityAction<IMutableCr
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, IMutableCreatureEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, MutableCreature newEntity)
 	{
 		// We will say that this worked if the logic helper says it applied.
 		return CreatureLogic.applyItemToCreature(_itemType, newEntity, context.currentTickTimeMillis);

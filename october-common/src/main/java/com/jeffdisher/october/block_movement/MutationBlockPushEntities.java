@@ -8,8 +8,8 @@ import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockType;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -55,7 +55,7 @@ public class MutationBlockPushEntities implements IMutationBlock
 		}
 		
 		int[] entities = context.previousEntityLookUp.findEntityIdsInRegion(base, edge);
-		EntityActionPush<IMutableCreatureEntity> creaturePush = new EntityActionPush<>(_pushVector);
+		EntityActionPush<MutableCreature> creaturePush = new EntityActionPush<>(_pushVector);
 		EntityActionPush<IMutablePlayerEntity> playerPush = new EntityActionPush<>(_pushVector);
 		for (int id : entities)
 		{

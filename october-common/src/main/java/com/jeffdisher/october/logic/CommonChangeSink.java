@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Set;
 
 import com.jeffdisher.october.types.IEntityAction;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.IPassiveAction;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TargetedAction;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -22,7 +22,7 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 	private final Set<Integer> _loadedCreatures;
 	private final Set<Integer> _loadedPassives;
 	private List<TargetedAction<ScheduledChange>> _exportedEntityChanges;
-	private List<TargetedAction<IEntityAction<IMutableCreatureEntity>>> _exportedCreatureChanges;
+	private List<TargetedAction<IEntityAction<MutableCreature>>> _exportedCreatureChanges;
 	private List<TargetedAction<IPassiveAction>> _exportedPassiveActions;
 
 	/**
@@ -75,14 +75,14 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 	}
 
 	@Override
-	public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+	public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
 	{
 		Assert.assertTrue(targetCreatureId < 0);
 		boolean didSchedule = false;
 		
 		if (_loadedCreatures.contains(targetCreatureId))
 		{
-			TargetedAction<IEntityAction<IMutableCreatureEntity>> targeted = new TargetedAction<>(targetCreatureId, change);
+			TargetedAction<IEntityAction<MutableCreature>> targeted = new TargetedAction<>(targetCreatureId, change);
 			_exportedCreatureChanges.add(targeted);
 			didSchedule = true;
 		}
@@ -127,7 +127,7 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 	 * 
 	 * @return The mutable change list, now owned by the caller.
 	 */
-	public final List<TargetedAction<IEntityAction<IMutableCreatureEntity>>> takeExportedCreatureChanges()
+	public final List<TargetedAction<IEntityAction<MutableCreature>>> takeExportedCreatureChanges()
 	{
 		try
 		{

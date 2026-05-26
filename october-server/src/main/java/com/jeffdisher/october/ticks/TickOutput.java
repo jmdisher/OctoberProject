@@ -21,8 +21,8 @@ import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntityAction;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IPassiveAction;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.TargetedAction;
 
@@ -41,7 +41,7 @@ public record TickOutput(WorldOutput world
 	, List<PassiveEntity> spawnedPassives
 	, List<ScheduledMutation> newlyScheduledMutations
 	, List<TargetedAction<ScheduledChange>> newlyScheduledChanges
-	, List<TargetedAction<IEntityAction<IMutableCreatureEntity>>> newlyScheduledCreatureChanges
+	, List<TargetedAction<IEntityAction<MutableCreature>>> newlyScheduledCreatureChanges
 	, List<TargetedAction<IPassiveAction>> newlyScheduledPassiveActions
 	, List<EventRecord> postedEvents
 	, Set<CuboidAddress> internallyMarkedAlive
@@ -161,7 +161,7 @@ public record TickOutput(WorldOutput world
 		List<PassiveEntity> spawnedPassives = new ArrayList<>();
 		List<ScheduledMutation> newlyScheduledMutations = new ArrayList<>();
 		List<TargetedAction<ScheduledChange>> newlyScheduledChanges = new ArrayList<>();
-		List<TargetedAction<IEntityAction<IMutableCreatureEntity>>> newlyScheduledCreatureChanges = new ArrayList<>();
+		List<TargetedAction<IEntityAction<MutableCreature>>> newlyScheduledCreatureChanges = new ArrayList<>();
 		List<TargetedAction<IPassiveAction>> newlyScheduledPassiveActions = new ArrayList<>();
 		List<EventRecord> postedEvents = new ArrayList<>();
 		Set<CuboidAddress> internallyMarkedAlive = new HashSet<>();

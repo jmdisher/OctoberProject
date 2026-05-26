@@ -25,13 +25,13 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IEntityAction;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
@@ -190,7 +190,7 @@ public class TestHopperHelpers
 				throw new AssertionError("Not in test");
 			}
 			@Override
-			public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+			public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
 			{
 				throw new AssertionError("Not in test");
 			}

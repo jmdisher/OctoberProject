@@ -14,7 +14,7 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * A short-lived mutable version of an creature to allow for parallel tick processing.
  */
-public class MutableCreature implements IMutableCreatureEntity
+public class MutableCreature implements IMutableMinimalEntity
 {
 	/**
 	 * Create a mutable entity from the elements of an existing creature.
@@ -209,7 +209,11 @@ public class MutableCreature implements IMutableCreatureEntity
 		return canUpdate;
 	}
 
-	@Override
+	/**
+	 * An accessor for the read-only movement plan in the instance.
+	 * 
+	 * @return A read-only view of the current movement plan (could be null).
+	 */
 	public List<AbsoluteLocation> getMovementPlan()
 	{
 		// The caller shouldn't change this.
@@ -219,7 +223,11 @@ public class MutableCreature implements IMutableCreatureEntity
 		;
 	}
 
-	@Override
+	/**
+	 * Updates the movement plan to a copy of the one given.
+	 * 
+	 * @param movementPlan The movement plan (could be null).
+	 */
 	public void setMovementPlan(List<AbsoluteLocation> movementPlan)
 	{
 		// This can be null but never empty.
@@ -236,25 +244,13 @@ public class MutableCreature implements IMutableCreatureEntity
 		}
 	}
 
-	@Override
-	public void setReadyForAction()
-	{
-		this.newShouldTakeAction = true;
-	}
-
-	@Override
-	public Object getExtendedData()
-	{
-		return this.newExtendedData;
-	}
-
-	@Override
-	public void setExtendedData(Object extendedData)
-	{
-		this.newExtendedData = extendedData;
-	}
-
-	@Override
+	/**
+	 * Changes the receiver's type, resetting its health and extended data to defaults for this type.  This is typically
+	 * used for cases such as livestock growing from a baby to adult but there is no internal check on usage.
+	 * 
+	 * @param newType The new type to assign to the receiver.
+	 * @param gameTimeMillis The most recent game time, in case the instance needs to track relative timeouts, etc.
+	 */
 	public void changeEntityType(EntityType newType, long gameTimeMillis)
 	{
 		// We set the type but also set the health and extended data to the defaults for this type.

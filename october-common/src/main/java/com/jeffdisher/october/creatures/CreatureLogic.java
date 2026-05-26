@@ -32,7 +32,6 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
@@ -86,7 +85,7 @@ public class CreatureLogic
 	 * @param gameTimeMillis The current game time, in milliseconds.
 	 * @return True if the creature state changed or false if it had no effect.
 	 */
-	public static boolean applyItemToCreature(Item itemType, IMutableCreatureEntity creature, long gameTimeMillis)
+	public static boolean applyItemToCreature(Item itemType, MutableCreature creature, long gameTimeMillis)
 	{
 		boolean didApply = false;
 		EntityType creatureType = creature.getType();
@@ -94,7 +93,7 @@ public class CreatureLogic
 		if (creatureType.breedingItem() == itemType)
 		{
 			// If this has a breeding item, it must be livestock.
-			CreatureExtendedData.LivestockData safe = (CreatureExtendedData.LivestockData)creature.getExtendedData();
+			CreatureExtendedData.LivestockData safe = (CreatureExtendedData.LivestockData)creature.newExtendedData;
 			// Don't redundantly enter love mode.
 			// We can't enter love mode if already pregnant (although that would only remain the case for a single tick).
 			if (!safe.inLoveMode() && (null == safe.offspringLocation()) && (safe.breedingReadyMillis() <= gameTimeMillis))
@@ -105,9 +104,9 @@ public class CreatureLogic
 					, null
 					, 0L
 				);
-				creature.setExtendedData(updated);
+				creature.newExtendedData = updated;
 				creature.setMovementPlan(null);
-				creature.setReadyForAction();
+				creature.newShouldTakeAction = true;
 				didApply = true;
 			}
 		}
@@ -124,12 +123,12 @@ public class CreatureLogic
 	 * @param timeLimitMillis The number of milliseconds left in the tick.
 	 * @return The next action to take (null if there is nothing to do).
 	 */
-	public static EntityActionSimpleMove<IMutableCreatureEntity> planNextAction(TickProcessingContext context
+	public static EntityActionSimpleMove<MutableCreature> planNextAction(TickProcessingContext context
 			, MutableCreature mutable
 			, long timeLimitMillis
 	)
 	{
-		EntityActionSimpleMove<IMutableCreatureEntity> action;
+		EntityActionSimpleMove<MutableCreature> action;
 		if (null != mutable.newMovementPlan)
 		{
 			// If we have a movement plan, we want to try to advance it and then produce the next action.
@@ -158,7 +157,7 @@ public class CreatureLogic
 	 * @param gameTimeMillis The current game time, in milliseconds.
 	 * @return True if the entity became pregnant.
 	 */
-	public static boolean setCreaturePregnant(IMutableCreatureEntity creature, EntityLocation sireLocation, long gameTimeMillis)
+	public static boolean setCreaturePregnant(MutableCreature creature, EntityLocation sireLocation, long gameTimeMillis)
 	{
 		boolean didBecomePregnant = false;
 		EntityType creatureType = creature.getType();
@@ -166,7 +165,7 @@ public class CreatureLogic
 		if (creatureType.isLivestock())
 		{
 			// We can only do this if already in love mode.
-			CreatureExtendedData.LivestockData extendedData = (CreatureExtendedData.LivestockData) creature.getExtendedData();
+			CreatureExtendedData.LivestockData extendedData = (CreatureExtendedData.LivestockData) creature.newExtendedData;
 			if (extendedData.inLoveMode())
 			{
 				// Average the locations.
@@ -182,9 +181,9 @@ public class CreatureLogic
 					, spawnLocation
 					, breedingReadyMillis
 				);
-				creature.setExtendedData(updated);
+				creature.newExtendedData = updated;
 				creature.setMovementPlan(null);
-				creature.setReadyForAction();
+				creature.newShouldTakeAction = true;
 				didBecomePregnant = true;
 			}
 		}
@@ -232,7 +231,7 @@ public class CreatureLogic
 				{
 					// The target is invalid so clear our state.
 					_clearTargetAndPlan(mutable);
-					mutable.setReadyForAction();
+					mutable.newShouldTakeAction = true;
 				}
 				// If there is no plan, just skip movement.
 				isDone = (null == mutable.newMovementPlan);
@@ -334,7 +333,7 @@ public class CreatureLogic
 		mutable.newMovementPlan = movementPlan;
 	}
 
-	private static EntityActionSimpleMove<IMutableCreatureEntity> _produceNextAction(TickProcessingContext context
+	private static EntityActionSimpleMove<MutableCreature> _produceNextAction(TickProcessingContext context
 			, Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
 			, MutableCreature mutable
 			, List<AbsoluteLocation> existingPlan
@@ -354,7 +353,7 @@ public class CreatureLogic
 			// This means we are jumping so choose the next place where we want to go for direction hint.
 			directionHint = existingPlan.get(1);
 		}
-		EntityActionSimpleMove<IMutableCreatureEntity> actionProduced = CreatureMovementHelpers.prepareForMove(mutable.getLocation(), mutable.getVelocityVector(), mutable.getType(), directionHint, timeLimitMillis, viscosity, isIdleMovement);
+		EntityActionSimpleMove<MutableCreature> actionProduced = CreatureMovementHelpers.prepareForMove(mutable.getLocation(), mutable.getVelocityVector(), mutable.getType(), directionHint, timeLimitMillis, viscosity, isIdleMovement);
 		if (null == actionProduced)
 		{
 			// If we are already in a reasonable location, proceed to move.
@@ -377,7 +376,7 @@ public class CreatureLogic
 		if (type.isLivestock())
 		{
 			// This is livestock so choose our target based on whether we are looking for a partner or food.
-			if (((CreatureExtendedData.LivestockData)mutable.getExtendedData()).inLoveMode())
+			if (((CreatureExtendedData.LivestockData)mutable.newExtendedData).inLoveMode())
 			{
 				// Find another of this type in breeding mode.
 				newTarget = _findBreedable(entityCollection, mutable);
@@ -532,7 +531,7 @@ public class CreatureLogic
 		mutable.newMovementPlan = updatedPlan;
 	}
 
-	private static EntityActionSimpleMove<IMutableCreatureEntity> _planNextStep(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
+	private static EntityActionSimpleMove<MutableCreature> _planNextStep(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
 			, ViscosityReader reader
 			, EntityLocation entityLocation
 			, EntityLocation entityVelocity
@@ -704,7 +703,7 @@ public class CreatureLogic
 	{
 		boolean isDone = false;
 		EntityType creatureType = creature.getType();
-		CreatureExtendedData.LivestockData extendedData = (CreatureExtendedData.LivestockData)creature.getExtendedData();
+		CreatureExtendedData.LivestockData extendedData = (CreatureExtendedData.LivestockData)creature.newExtendedData;
 		// See if we are pregnant or searching for our mate.
 		if (null != extendedData.offspringLocation())
 		{
@@ -717,7 +716,7 @@ public class CreatureLogic
 				, null
 				, extendedData.breedingReadyMillis()
 			);
-			creature.setExtendedData(updated);
+			creature.newExtendedData = updated;
 			_clearTargetAndPlan(creature);
 			isDone = true;
 		}
@@ -748,7 +747,7 @@ public class CreatureLogic
 					, null
 					, breedingReadyMillis
 				);
-				creature.setExtendedData(updated);
+				creature.newExtendedData = updated;
 				_clearTargetAndPlan(creature);
 				isDone = true;
 			}
@@ -899,7 +898,7 @@ public class CreatureLogic
 		boolean isDone = false;
 		
 		// The only special action a baby can take is growing up, so see if that is ready.
-		CreatureExtendedData.BabyData extendedData = (CreatureExtendedData.BabyData)creature.getExtendedData();
+		CreatureExtendedData.BabyData extendedData = (CreatureExtendedData.BabyData)creature.newExtendedData;
 		if (context.currentTickTimeMillis >= extendedData.maturityMillis())
 		{
 			// We will change the type to the corresponding adult.
@@ -941,7 +940,7 @@ public class CreatureLogic
 		if (creatureType.isLivestock())
 		{
 			// This may be a player or a partner creature, depending on state.
-			CreatureExtendedData.LivestockData extendedData = (CreatureExtendedData.LivestockData)mutable.getExtendedData();
+			CreatureExtendedData.LivestockData extendedData = (CreatureExtendedData.LivestockData)mutable.newExtendedData;
 			if (extendedData.inLoveMode())
 			{
 				// We must be looking at a partner so make sure that they are here and still in breeding mode.

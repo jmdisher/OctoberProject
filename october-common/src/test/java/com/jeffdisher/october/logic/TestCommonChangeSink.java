@@ -9,9 +9,9 @@ import org.junit.Test;
 import com.jeffdisher.october.actions.EntityActionNudge;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntityAction;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.IPassiveAction;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.TargetedAction;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -29,7 +29,7 @@ public class TestCommonChangeSink
 		
 		EntityActionNudge<IMutablePlayerEntity> next = new EntityActionNudge<>(new EntityLocation(1.0f, 2.0f, 3.0f));
 		EntityActionNudge<IMutablePlayerEntity> future = new EntityActionNudge<>(new EntityLocation(1.0f, 2.0f, 3.0f));
-		EntityActionNudge<IMutableCreatureEntity> creature = new EntityActionNudge<>(new EntityLocation(1.0f, 2.0f, 3.0f));
+		EntityActionNudge<MutableCreature> creature = new EntityActionNudge<>(new EntityLocation(1.0f, 2.0f, 3.0f));
 		
 		Assert.assertTrue(sink.future(1, future, 1000L));
 		Assert.assertTrue(sink.next(1, next));
@@ -45,7 +45,7 @@ public class TestCommonChangeSink
 		Assert.assertEquals(0L, playerChanges.get(1).action().millisUntilReady());
 		Assert.assertEquals(next, playerChanges.get(1).action().change());
 		
-		List<TargetedAction<IEntityAction<IMutableCreatureEntity>>> creatureChanges = sink.takeExportedCreatureChanges();
+		List<TargetedAction<IEntityAction<MutableCreature>>> creatureChanges = sink.takeExportedCreatureChanges();
 		Assert.assertEquals(1, creatureChanges.size());
 		Assert.assertEquals(creature, creatureChanges.get(0).action());
 	}

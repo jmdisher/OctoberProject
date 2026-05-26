@@ -26,8 +26,8 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IEntityAction;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IPassiveAction;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.TargetedAction;
 import com.jeffdisher.october.utils.Assert;
@@ -57,7 +57,7 @@ public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeight
 	, Map<Integer, PassiveEntity> passivesById
 	
 	, Map<Integer, List<ScheduledChange>> entityActionsById
-	, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureActionsById
+	, Map<Integer, List<IEntityAction<MutableCreature>>> creatureActionsById
 	, Map<Integer, List<IPassiveAction>> passiveActionsById
 )
 {
@@ -242,8 +242,8 @@ public record FlatResults(Map<CuboidColumnAddress, ColumnHeightMap> columnHeight
 		}
 		
 		// Extract creature actions which were scheduled.
-		Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureActionsById = new HashMap<>();
-		for (TargetedAction<IEntityAction<IMutableCreatureEntity>> targeted : masterFragment.newlyScheduledCreatureChanges())
+		Map<Integer, List<IEntityAction<MutableCreature>>> creatureActionsById = new HashMap<>();
+		for (TargetedAction<IEntityAction<MutableCreature>> targeted : masterFragment.newlyScheduledCreatureChanges())
 		{
 			_scheduleChangesForEntity(creatureActionsById, targeted.targetId(), targeted.action());
 		}

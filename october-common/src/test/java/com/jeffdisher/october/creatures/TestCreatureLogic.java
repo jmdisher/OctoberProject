@@ -33,7 +33,6 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IEntityAction;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.Inventory;
@@ -182,7 +181,7 @@ public class TestCreatureLogic
 				, mutable
 		);
 		Assert.assertFalse(didTakeAction);
-		IEntityAction<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
+		IEntityAction<MutableCreature> action = CreatureLogic.planNextAction(context
 				, mutable
 				, 100L
 		);
@@ -265,7 +264,7 @@ public class TestCreatureLogic
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
-		IEntityAction<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
+		IEntityAction<MutableCreature> action = CreatureLogic.planNextAction(context
 				, mutableOrc
 				, 100L
 		);
@@ -375,7 +374,7 @@ public class TestCreatureLogic
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
 		CreatureLogic.applyItemToCreature(WHEAT, mutable, 1000L);
-		Assert.assertTrue(((CreatureExtendedData.LivestockData)mutable.getExtendedData()).inLoveMode());
+		Assert.assertTrue(((CreatureExtendedData.LivestockData)mutable.newExtendedData).inLoveMode());
 	}
 
 	@Test
@@ -389,11 +388,11 @@ public class TestCreatureLogic
 		// Start with them both in a love mode.
 		MutableCreature mutable = MutableCreature.existing(father);
 		mutable.newTargetEntityId = mother.id();
-		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null, 0L));
+		mutable.newExtendedData = new CreatureExtendedData.LivestockData(true, null, 0L);
 		father = mutable.freeze();
 		mutable = MutableCreature.existing(mother);
 		mutable.newTargetEntityId = father.id();
-		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null, 0L));
+		mutable.newExtendedData = new CreatureExtendedData.LivestockData(true, null, 0L);
 		mother = mutable.freeze();
 		Map<Integer, CreatureEntity> creatures = new HashMap<>();
 		creatures.put(father.id(), father);
@@ -414,7 +413,7 @@ public class TestCreatureLogic
 						throw new AssertionError();
 					}
 					@Override
-					public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+					public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
 					{
 						Assert.assertEquals(0, targetId[0]);
 						Assert.assertNull(message[0]);
@@ -470,14 +469,14 @@ public class TestCreatureLogic
 		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(mother);
-		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null, 0L));
+		mutable.newExtendedData = new CreatureExtendedData.LivestockData(true, null, 0L);
 		
 		long gameTimeMillis = 1000L;
 		boolean didBecomePregnant = CreatureLogic.setCreaturePregnant(mutable, fatherLocation, gameTimeMillis);
 		Assert.assertTrue(didBecomePregnant);
-		Assert.assertFalse(((CreatureExtendedData.LivestockData)mutable.getExtendedData()).inLoveMode());
-		Assert.assertEquals(new EntityLocation(0.4f, 0.0f, 0.0f), ((CreatureExtendedData.LivestockData)mutable.getExtendedData()).offspringLocation());
-		Assert.assertEquals(gameTimeMillis + CreatureLogic.MILLIS_BREEDING_COOLDOWN, ((CreatureExtendedData.LivestockData)mutable.getExtendedData()).breedingReadyMillis());
+		Assert.assertFalse(((CreatureExtendedData.LivestockData)mutable.newExtendedData).inLoveMode());
+		Assert.assertEquals(new EntityLocation(0.4f, 0.0f, 0.0f), ((CreatureExtendedData.LivestockData)mutable.newExtendedData).offspringLocation());
+		Assert.assertEquals(gameTimeMillis + CreatureLogic.MILLIS_BREEDING_COOLDOWN, ((CreatureExtendedData.LivestockData)mutable.newExtendedData).breedingReadyMillis());
 	}
 
 	@Test
@@ -488,7 +487,7 @@ public class TestCreatureLogic
 		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(mother);
-		mutable.setExtendedData(new CreatureExtendedData.LivestockData(false, offspringLocation, 0L));
+		mutable.newExtendedData = new CreatureExtendedData.LivestockData(false, offspringLocation, 0L);
 		
 		CreatureEntity[] offspring = new CreatureEntity[1];
 		TickProcessingContext.ICreatureSpawner creatureSpawner = (EntityType type, EntityLocation location) -> {
@@ -504,7 +503,7 @@ public class TestCreatureLogic
 				, mutable
 		);
 		Assert.assertTrue(didTakeAction);
-		Assert.assertNull(((CreatureExtendedData.LivestockData)mutable.getExtendedData()).offspringLocation());
+		Assert.assertNull(((CreatureExtendedData.LivestockData)mutable.newExtendedData).offspringLocation());
 		Assert.assertEquals(offspringLocation, offspring[0].location());
 	}
 
@@ -542,7 +541,7 @@ public class TestCreatureLogic
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
-		EntityActionSimpleMove<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
+		EntityActionSimpleMove<MutableCreature> action = CreatureLogic.planNextAction(context
 				, mutableOrc
 				, 100L
 		);
@@ -587,7 +586,7 @@ public class TestCreatureLogic
 				throw new AssertionError();
 			}
 			@Override
-			public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+			public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
 			{
 				throw new AssertionError();
 			}
@@ -614,7 +613,7 @@ public class TestCreatureLogic
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
-		EntityActionSimpleMove<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
+		EntityActionSimpleMove<MutableCreature> action = CreatureLogic.planNextAction(context
 				, mutableOrc
 				, 100L
 		);
@@ -798,7 +797,7 @@ public class TestCreatureLogic
 						throw new AssertionError();
 					}
 					@Override
-					public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+					public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
 					{
 						throw new AssertionError();
 					}
@@ -857,7 +856,7 @@ public class TestCreatureLogic
 		;
 		
 		// Make sure that the movement is correct.
-		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
+		EntityActionSimpleMove<MutableCreature> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
 		Assert.assertTrue(change.applyChange(context, mutable));
 		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 1.54f), mutable.newLocation);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 1.37f), mutable.newVelocity);
@@ -878,10 +877,10 @@ public class TestCreatureLogic
 		
 		// Start with them both in a love mode but not yet targeting each other.
 		MutableCreature mutable = MutableCreature.existing(father);
-		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null, 0L));
+		mutable.newExtendedData = new CreatureExtendedData.LivestockData(true, null, 0L);
 		father = mutable.freeze();
 		mutable = MutableCreature.existing(mother);
-		mutable.setExtendedData(new CreatureExtendedData.LivestockData(true, null, 0L));
+		mutable.newExtendedData = new CreatureExtendedData.LivestockData(true, null, 0L);
 		mother = mutable.freeze();
 		Map<Integer, CreatureEntity> creatures = new HashMap<>();
 		creatures.put(father.id(), father);
@@ -902,7 +901,7 @@ public class TestCreatureLogic
 					throw new AssertionError();
 				}
 				@Override
-				public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+				public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
 				{
 					throw new AssertionError();
 				}
@@ -948,11 +947,11 @@ public class TestCreatureLogic
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
 		long nextReadyMillis = 2000L;
-		mutable.setExtendedData(new CreatureExtendedData.LivestockData(false, null, nextReadyMillis));
+		mutable.newExtendedData = new CreatureExtendedData.LivestockData(false, null, nextReadyMillis);
 		Assert.assertFalse(CreatureLogic.applyItemToCreature(WHEAT, mutable, nextReadyMillis - 1L));
-		Assert.assertFalse(((CreatureExtendedData.LivestockData)mutable.getExtendedData()).inLoveMode());
+		Assert.assertFalse(((CreatureExtendedData.LivestockData)mutable.newExtendedData).inLoveMode());
 		Assert.assertTrue(CreatureLogic.applyItemToCreature(WHEAT, mutable, nextReadyMillis));
-		Assert.assertTrue(((CreatureExtendedData.LivestockData)mutable.getExtendedData()).inLoveMode());
+		Assert.assertTrue(((CreatureExtendedData.LivestockData)mutable.newExtendedData).inLoveMode());
 	}
 
 	@Test
@@ -1147,7 +1146,7 @@ public class TestCreatureLogic
 		;
 		
 		// Make sure that the movement is correct.
-		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
+		EntityActionSimpleMove<MutableCreature> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
 		Assert.assertEquals("SimpleMove(WALKING), by 0.00, 0.04, Sub: null", change.toString());
 		Assert.assertTrue(change.applyChange(context, mutable));
 		Assert.assertEquals(new EntityLocation(4.7f, 5.01f, 1.0f), mutable.newLocation);
@@ -1179,7 +1178,7 @@ public class TestCreatureLogic
 		;
 		
 		// We should detect that we are intersecting with a solid block, clear our plan, and take no action.
-		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
+		EntityActionSimpleMove<MutableCreature> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
 		Assert.assertNull(change);
 		Assert.assertNull(mutable.getMovementPlan());
 	}
@@ -1209,7 +1208,7 @@ public class TestCreatureLogic
 		;
 		
 		// We should detect that we are intersecting with a solid block, clear our plan, and take no action.
-		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
+		EntityActionSimpleMove<MutableCreature> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
 		Assert.assertNull(change);
 		Assert.assertNull(mutable.getMovementPlan());
 	}

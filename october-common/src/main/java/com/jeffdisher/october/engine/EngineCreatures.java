@@ -16,7 +16,6 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntityAction;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -44,7 +43,7 @@ public class EngineCreatures
 	public static SingleCreatureResult processOneCreature(TickProcessingContext context
 		, EntityCollection entityCollection
 		, CreatureEntity creature
-		, List<IEntityAction<IMutableCreatureEntity>> changesToRun
+		, List<IEntityAction<MutableCreature>> changesToRun
 	)
 	{
 		MutableCreature mutable = MutableCreature.existing(creature);
@@ -66,7 +65,7 @@ public class EngineCreatures
 		boolean didSpecial = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutable);
 		if (didSpecial)
 		{
-			EntityActionSimpleMove<IMutableCreatureEntity> change = _createStandingChange(context, mutable);
+			EntityActionSimpleMove<MutableCreature> change = _createStandingChange(context, mutable);
 			boolean didApply = change.applyChange(context, mutable);
 			// We just asked to create this so failure doesn't make sense.
 			Assert.assertTrue(didApply);
@@ -101,10 +100,10 @@ public class EngineCreatures
 
 	private static void _runExternalChanges(TickProcessingContext context
 		, MutableCreature mutable
-		, List<IEntityAction<IMutableCreatureEntity>> changes
+		, List<IEntityAction<MutableCreature>> changes
 	)
 	{
-		for (IEntityAction<IMutableCreatureEntity> change : changes)
+		for (IEntityAction<MutableCreature> change : changes)
 		{
 			// Note that we ignore this response since it can fail.
 			change.applyChange(context, mutable);
@@ -117,7 +116,7 @@ public class EngineCreatures
 	)
 	{
 		// Note that this may still return a null list of next steps if there is nothing to do.
-		EntityActionSimpleMove<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, mutable, millisAtEndOfTick);
+		EntityActionSimpleMove<MutableCreature> change = CreatureLogic.planNextAction(context, mutable, millisAtEndOfTick);
 		if (null == change)
 		{
 			// In this case, we just want to synthesize a "do nothing" standing action so that we fall, etc.
@@ -128,12 +127,12 @@ public class EngineCreatures
 		Assert.assertTrue(didApply);
 	}
 
-	private static EntityActionSimpleMove<IMutableCreatureEntity> _createStandingChange(TickProcessingContext context
+	private static EntityActionSimpleMove<MutableCreature> _createStandingChange(TickProcessingContext context
 			, MutableCreature mutable
 	)
 	{
 		// In this case, we will also check to see if we need to "pop out" of a block.
-		EntitySubActionPopOutOfBlock<IMutableCreatureEntity> subAction = null;
+		EntitySubActionPopOutOfBlock<MutableCreature> subAction = null;
 		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
 		EntityLocation popOut = EntityMovementHelpers.popOutLocation(reader, mutable.newLocation, mutable.getType().volume(), EntitySubActionPopOutOfBlock.POP_OUT_MAX_DISTANCE);
 		if (null != popOut)

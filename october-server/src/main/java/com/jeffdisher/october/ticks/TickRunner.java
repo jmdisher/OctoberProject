@@ -44,9 +44,9 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IEntityAction;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.IPassiveAction;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
@@ -634,7 +634,7 @@ public class TickRunner
 			for (TickInput.CreatureInput creatureUnit : subUnit.creatures())
 			{
 				CreatureEntity creature = creatureUnit.creature();
-				List<IEntityAction<IMutableCreatureEntity>> changes = creatureUnit.actions();
+				List<IEntityAction<MutableCreature>> changes = creatureUnit.actions();
 				processor.creaturesProcessed += 1;
 				processor.creatureActionsProcessed += changes.size();
 				EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
@@ -930,7 +930,7 @@ public class TickRunner
 				
 				// Convert this raw next tick action accumulation into the CrowdProcessor input.
 				// The corresponding actions for the creatures and passives only originate from inside the tick so just pass those through.
-				Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> nextCreatureChanges = flatResults.creatureActionsById();
+				Map<Integer, List<IEntityAction<MutableCreature>>> nextCreatureChanges = flatResults.creatureActionsById();
 				Map<Integer, List<IPassiveAction>> nextPassiveActions = flatResults.passiveActionsById();
 				Set<AbsoluteLocation> changedBlocksInPreviousTick = flatResults.allChangedBlockLocations();
 				long nanosAfterPreamblePreTick = System.nanoTime();
@@ -1186,7 +1186,7 @@ public class TickRunner
 		, Map<Integer, PassiveEntity> completedPassives
 		, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
 		, Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationMillis
-		, Map<Integer, List<IEntityAction<IMutableCreatureEntity>>> creatureChanges
+		, Map<Integer, List<IEntityAction<MutableCreature>>> creatureChanges
 		, Map<Integer, List<IPassiveAction>> passiveActions
 		, Map<CuboidColumnAddress, Map<AbsoluteLocation, BlockProxy>> columnProxyCaches
 	)
@@ -1237,7 +1237,7 @@ public class TickRunner
 			{
 				workingCreatureList.put(thisAddress, new ArrayList<>());
 			}
-			List<IEntityAction<IMutableCreatureEntity>> actions = creatureChanges.get(entity.id());
+			List<IEntityAction<MutableCreature>> actions = creatureChanges.get(entity.id());
 			if (null == actions)
 			{
 				actions = List.of();

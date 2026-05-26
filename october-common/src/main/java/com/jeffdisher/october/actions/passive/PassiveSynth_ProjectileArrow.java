@@ -14,10 +14,10 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -115,7 +115,7 @@ public class PassiveSynth_ProjectileArrow
 			{
 				// Hit a creature.
 				BodyPart target = BodyPart.values()[context.randomInt.applyAsInt(BodyPart.values().length)];
-				EntityActionTakeDamageFromEntity<IMutableCreatureEntity> damage = new EntityActionTakeDamageFromEntity<>(target, DAMAGE_ARROW, 0);
+				EntityActionTakeDamageFromEntity<MutableCreature> damage = new EntityActionTakeDamageFromEntity<>(target, DAMAGE_ARROW, 0);
 				context.newChangeSink.creature(targetId, damage);
 				NudgeHelpers.nudgeFromArrow(context, targetId, startVelocity);
 				

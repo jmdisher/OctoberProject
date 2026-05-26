@@ -6,7 +6,7 @@ import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntityAction;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -15,7 +15,7 @@ import com.jeffdisher.october.utils.Assert;
  * Tells a creature that it should enter a "pregnant" mode if in love mode and not already pregnant.  The location of
  * the "sire" is also passed for consideration in where the offspring should spawn.
  */
-public class EntityActionImpregnateCreature implements IEntityAction<IMutableCreatureEntity>
+public class EntityActionImpregnateCreature implements IEntityAction<MutableCreature>
 {
 	private final EntityLocation _sireLocation;
 
@@ -25,7 +25,7 @@ public class EntityActionImpregnateCreature implements IEntityAction<IMutableCre
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, IMutableCreatureEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, MutableCreature newEntity)
 	{
 		// We will say that this worked if the logic helper says they were set pregnant.
 		return CreatureLogic.setCreaturePregnant(newEntity, _sireLocation, context.currentTickTimeMillis);

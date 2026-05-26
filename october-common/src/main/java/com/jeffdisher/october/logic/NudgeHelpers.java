@@ -6,9 +6,9 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -133,7 +133,7 @@ public class NudgeHelpers
 			else
 			{
 				Assert.assertTrue(targetId < 0);
-				EntityActionNudge<IMutableCreatureEntity> knockback = new EntityActionNudge<>(knockbackVector);
+				EntityActionNudge<MutableCreature> knockback = new EntityActionNudge<>(knockbackVector);
 				context.newChangeSink.creature(targetId, knockback);
 			}
 		}
@@ -161,7 +161,7 @@ public class NudgeHelpers
 		else
 		{
 			Assert.assertTrue(targetId < 0);
-			EntityActionNudge<IMutableCreatureEntity> knockback = new EntityActionNudge<>(knockbackPower);
+			EntityActionNudge<MutableCreature> knockback = new EntityActionNudge<>(knockbackPower);
 			context.newChangeSink.creature(targetId, knockback);
 		}
 	}
@@ -188,7 +188,7 @@ public class NudgeHelpers
 			, (CreatureEntity data, EntityLocation centre, float radius) -> {
 				if (check != data)
 				{
-					EntityActionNudge<IMutableCreatureEntity> nudge = _createNudge(inCentre, centre, inRadius);
+					EntityActionNudge<MutableCreature> nudge = _createNudge(inCentre, centre, inRadius);
 					context.newChangeSink.creature(data.id(), nudge);
 				}
 			}

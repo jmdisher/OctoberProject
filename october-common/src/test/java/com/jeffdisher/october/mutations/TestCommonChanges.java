@@ -89,7 +89,6 @@ import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IEntityAction;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.Inventory;
@@ -711,7 +710,7 @@ public class TestCommonChanges
 							throw new AssertionError("Not in test");
 						}
 						@Override
-						public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+						public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
 						{
 							throw new AssertionError("Not in test");
 						}
@@ -887,7 +886,7 @@ public class TestCommonChanges
 							throw new AssertionError("Not in test");
 						}
 						@Override
-						public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+						public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
 						{
 							throw new AssertionError("Not in test");
 						}
@@ -1399,7 +1398,7 @@ public class TestCommonChanges
 		
 		// Attack and verify that we see damage come through the creature path.
 		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, attacker));
-		List<TargetedAction<IEntityAction<IMutableCreatureEntity>>> creatureChanges = changeSink.takeExportedCreatureChanges();
+		List<TargetedAction<IEntityAction<MutableCreature>>> creatureChanges = changeSink.takeExportedCreatureChanges();
 		Assert.assertEquals(2, creatureChanges.size());
 		Assert.assertTrue(creatureChanges.get(0).action() instanceof EntityActionTakeDamageFromEntity);
 		Assert.assertTrue(creatureChanges.get(1).action() instanceof EntityActionNudge);
@@ -1454,9 +1453,9 @@ public class TestCommonChanges
 		Assert.assertTrue(new EntityChangeUseSelectedItemOnEntity(targetId).applyChange(context, entity));
 		Entity updatedEntty = entity.freeze();
 		Assert.assertEquals(0, updatedEntty.inventory().currentEncumbrance);
-		List<TargetedAction<IEntityAction<IMutableCreatureEntity>>> creatureChanges = changeSink.takeExportedCreatureChanges();
+		List<TargetedAction<IEntityAction<MutableCreature>>> creatureChanges = changeSink.takeExportedCreatureChanges();
 		Assert.assertEquals(1, creatureChanges.size());
-		IEntityAction<IMutableCreatureEntity> change = creatureChanges.get(0).action();
+		IEntityAction<MutableCreature> change = creatureChanges.get(0).action();
 		Assert.assertTrue(change instanceof EntityActionApplyItemToCreature);
 		
 		// Verify that the apply works.
@@ -2054,7 +2053,7 @@ public class TestCommonChanges
 					return true;
 				}
 				@Override
-				public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+				public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
 				{
 					throw new AssertionError("Not in test");
 				}
@@ -2228,7 +2227,7 @@ public class TestCommonChanges
 						throw new AssertionError("Not in test");
 					}
 					@Override
-					public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+					public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
 					{
 						throw new AssertionError("Not in test");
 					}
@@ -2615,7 +2614,7 @@ public class TestCommonChanges
 					throw new AssertionError("Not in test");
 				}
 				@Override
-				public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+				public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
 				{
 					throw new AssertionError("Not in test");
 				}
@@ -3063,14 +3062,14 @@ public class TestCommonChanges
 		
 		// Send a nudge to them and see that they move.
 		EntityLocation force = new EntityLocation(1.0f, 1.0f, 0.0f);
-		EntityActionNudge<IMutableCreatureEntity> nudge = new EntityActionNudge<>(force);
+		EntityActionNudge<MutableCreature> nudge = new EntityActionNudge<>(force);
 		MutableCreature mutable = MutableCreature.existing(creature);
 		Assert.assertTrue(nudge.applyChange(context, mutable));
 		Assert.assertEquals(new EntityLocation(9.0f, 9.0f, 0.0f), mutable.newLocation);
 		Assert.assertEquals(new EntityLocation(1.0f, 1.0f, 0.0f), mutable.newVelocity);
 		
 		// Send a stand to see how we account for this.
-		EntityActionSimpleMove<IMutableCreatureEntity> stand = new EntityActionSimpleMove<>(0.0f
+		EntityActionSimpleMove<MutableCreature> stand = new EntityActionSimpleMove<>(0.0f
 			, 0.0f
 			, EntityActionSimpleMove.Intensity.STANDING
 			, (byte)0
@@ -3233,7 +3232,7 @@ public class TestCommonChanges
 					throw new AssertionError("Not in test");
 				}
 				@Override
-				public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+				public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
 				{
 					throw new AssertionError("Not in test");
 				}
@@ -3462,9 +3461,9 @@ public class TestCommonChanges
 		updatedEntity = entity.freeze();
 		Assert.assertEquals(0, updatedEntity.inventory().currentEncumbrance);
 		
-		List<TargetedAction<IEntityAction<IMutableCreatureEntity>>> creatureChanges = changeSink.takeExportedCreatureChanges();
+		List<TargetedAction<IEntityAction<MutableCreature>>> creatureChanges = changeSink.takeExportedCreatureChanges();
 		Assert.assertEquals(1, creatureChanges.size());
-		IEntityAction<IMutableCreatureEntity> change = creatureChanges.get(0).action();
+		IEntityAction<MutableCreature> change = creatureChanges.get(0).action();
 		Assert.assertTrue(change instanceof EntityActionApplyItemToCreature);
 		
 		// Verify that the apply fails since this creature isn't ready.
@@ -3843,7 +3842,7 @@ public class TestCommonChanges
 		
 		// Send a push to both the creature and the player.
 		EntityLocation direction = new EntityLocation(1.0f, 0.0f, 0.0f);
-		EntityActionPush<IMutableCreatureEntity> pushCreature = new EntityActionPush<>(direction);
+		EntityActionPush<MutableCreature> pushCreature = new EntityActionPush<>(direction);
 		EntityActionPush<IMutablePlayerEntity> pushPlayer = new EntityActionPush<>(direction);
 		
 		MutableCreature mutCreature = MutableCreature.existing(creature);
@@ -4081,7 +4080,7 @@ public class TestCommonChanges
 								throw new AssertionError("Not in test");
 							}
 							@Override
-							public boolean creature(int targetCreatureId, IEntityAction<IMutableCreatureEntity> change)
+							public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
 							{
 								throw new AssertionError("Not in test");
 							}
