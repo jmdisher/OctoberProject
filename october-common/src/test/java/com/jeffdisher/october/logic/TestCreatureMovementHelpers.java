@@ -553,6 +553,15 @@ public class TestCreatureMovementHelpers
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutable.newVelocity);
 	}
 
+	@Test
+	public void walkDirectly()
+	{
+		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
+		EntityLocation target = new EntityLocation(1.5f, 2.2f, 1.0f);
+		IEntityAction<MutableCreature> change = CreatureMovementHelpers.moveDirectly(location, new EntityLocation(0.1f, -0.2f, 0.0f), COW, target, 100L, 0.5f);
+		Assert.assertEquals("SimpleMove(WALKING), by 0.00, 0.10, Sub: null", change.toString());
+	}
+
 
 	private static CreatureEntity _createCow(EntityLocation location)
 	{

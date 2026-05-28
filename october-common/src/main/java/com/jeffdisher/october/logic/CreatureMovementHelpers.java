@@ -269,6 +269,48 @@ public class CreatureMovementHelpers
 	}
 
 	/**
+	 * Creates a single movement directly toward targetBaseLocation, not requiring a plan (this is either the same block
+	 * or is otherwise known to be directly reachable).  We assume that this move is never idle (always full speed).
+	 * NOTE:  The distance from creatureLocation to targetBaseLocation must be at least 0.01f.
+	 * 
+	 * @param creatureLocation The creature's location.
+	 * @param creatureVelocity The creature's velocity.
+	 * @param creatureType The type of creature.
+	 * @param targetBaseLocation The location we want to reach.
+	 * @param timeLimitMillis The number of milliseconds left in the tick.
+	 * @param viscosityFraction The viscosity of the current block ([0.0 .. 1.0]) where 1.0 is solid.
+	 * @return The next move toward the target (never null).
+	 */
+	public static EntityActionSimpleMove<MutableCreature> moveDirectly(EntityLocation creatureLocation
+		, EntityLocation creatureVelocity
+		, EntityType creatureType
+		, EntityLocation targetBaseLocation
+		, long timeLimitMillis
+		, float viscosityFraction
+	)
+	{
+		// As a stop-gap, just use the existing X-or-Y movement approach.
+		// TODO:  Make this diagonal, later.
+		
+		float xToMove = targetBaseLocation.x() - creatureLocation.x();
+		float yToMove = targetBaseLocation.y() - creatureLocation.y();
+		float xAbs = Math.abs(xToMove);
+		float yAbs = Math.abs(yToMove);
+		
+		// Make sure that this is a sensible distance.
+		Assert.assertTrue((xAbs >= FLOAT_THRESHOLD) || (yAbs >= FLOAT_THRESHOLD));
+		
+		// Find the speed of the move.
+		float speed = creatureType.blocksPerSecond();
+		
+		EntityActionSimpleMove<MutableCreature> move = (xAbs > yAbs)
+			? _moveByX(creatureLocation, timeLimitMillis, speed, viscosityFraction, targetBaseLocation.x(), creatureVelocity.x())
+			: _moveByY(creatureLocation, timeLimitMillis, speed, viscosityFraction, targetBaseLocation.y(), creatureVelocity.y())
+		;
+		return move;
+	}
+
+	/**
 	 * Finds an EntityLocation on the same z-level as the current creatureLocation which is somewhere along the path
 	 * described by fullPath.  The returned location will be as far along the fullPath as the creature could walk
 	 * without needing to walk around a hole or barrier.
