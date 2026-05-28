@@ -141,6 +141,20 @@ public class CreatureLogic
 					: null
 			;
 		}
+		else if (null != mutable.newTargetPreviousLocation)
+		{
+			// This is the degenerate case where we are too close to the target to keep walking.
+			// This either happens because we are within the action range or we are within the same physical block
+			// (melee ranges are often short enough for the entity and target to both share a block while being out of
+			// range).
+			MinimalEntity targetEntity = context.previousEntityLookUp.getById(mutable.newTargetEntityId);
+			EntityLocation targetLocation = targetEntity.location();
+			
+			ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
+			float viscosity = reader.getMaxStillViscosityInVolume(mutable.newLocation, mutable.getType().volume());
+			
+			action = CreatureMovementHelpers.moveDirectly(mutable.newLocation, mutable.newVelocity, mutable.newType, targetLocation, timeLimitMillis, viscosity);
+		}
 		else
 		{
 			// We have no plan so do nothing.
@@ -226,15 +240,25 @@ public class CreatureLogic
 				{
 					// The target is valid so we want to see if we should update our plan of just drop it, if close enough.
 					_updateValidPathIfTargetMoved(context, mutable);
+					
+					if ((CreatureEntity.NO_TARGET_ENTITY_ID != mutable.newTargetEntityId) && (null == mutable.newMovementPlan))
+					{
+						// We will end up here if the target is too close to pursue (in the same block) but too far to use special action.
+						// Therefore, we want to fall through to the move path to make that move.
+					}
+					else
+					{
+						// If there is no plan, just skip movement.
+						isDone = (null == mutable.newMovementPlan);
+					}
 				}
 				else
 				{
 					// The target is invalid so clear our state.
 					_clearTargetAndPlan(mutable);
 					mutable.newShouldTakeAction = true;
+					isDone = true;
 				}
-				// If there is no plan, just skip movement.
-				isDone = (null == mutable.newMovementPlan);
 			}
 			else if (null == mutable.newMovementPlan)
 			{

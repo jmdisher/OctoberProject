@@ -762,52 +762,27 @@ public class TestCreatureLogic
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		_setLayer(input, (byte)0, "op.stone");
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
-		EntityLocation location = new EntityLocation(-16.2f, 7.63f, 0.0f);
+		EntityLocation location = new EntityLocation(-16.0f, 7.0f, 1.0f);
 		int entityId = 1;
 		MutableEntity mutablePlayer = MutableEntity.createForTest(entityId);
 		mutablePlayer.newLocation = location;
 		Entity player = mutablePlayer.freeze();
-		EntityLocation orcLocation = new EntityLocation(-16.99f, 7.93f, 0.0f);
+		EntityLocation orcLocation = new EntityLocation(-16.99f, 7.99f, 1.0f);
 		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, 0L);
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
 		
 		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
 			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-					? BlockProxy.load(blockLocation.getBlockAddress(), input)
-					: null
+				? BlockProxy.load(blockLocation.getBlockAddress(), input)
+				: null
 			;
 		});
 		Map<Integer, MinimalEntity> entities = new HashMap<>();
 		_MinimalEntityIndex previousEntityLookUp = new _MinimalEntityIndex(entities);
-		boolean[] out = new boolean[1];
 		TickProcessingContext context = ContextBuilder.build()
-				.tick(1000L)
-				.lookups(previousBlockLookUp, previousEntityLookUp, null)
-				.sinks(null, new TickProcessingContext.IChangeSink() {
-					@Override
-					public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
-					{
-						Assert.assertEquals(entityId, targetEntityId);
-						out[0] = true;
-						return true;
-					}
-					@Override
-					public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
-					{
-						throw new AssertionError();
-					}
-					@Override
-					public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
-					{
-						throw new AssertionError();
-					}
-					@Override
-					public boolean passive(int targetPassiveId, IPassiveAction action)
-					{
-						throw new AssertionError();
-					}
-				})
-				.finish()
+			.tick(1000L)
+			.lookups(previousBlockLookUp, previousEntityLookUp, null)
+			.finish()
 		;
 		
 		// In the bug, the orc had the entity as a target but no movement plan.
@@ -816,13 +791,27 @@ public class TestCreatureLogic
 		entities.put(player.id(), MinimalEntity.fromEntity(player));
 		entities.put(orc.id(), MinimalEntity.fromCreature(orc));
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
-				, mutableOrc
+			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
+			, mutableOrc
 		);
-		// We should have taken no action but created a plan.
-		Assert.assertTrue(didTakeAction);
+		
+		// Since they are out of range, they should have taken no action and, since they are in the same block, produced no full path to move.
+		Assert.assertFalse(didTakeAction);
 		Assert.assertNull(mutableOrc.newMovementPlan);
-		Assert.assertTrue(out[0]);
+		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
+		Assert.assertNotNull(mutableOrc.newTargetPreviousLocation);
+		
+		// Now, if we try to move, we should see them move toward the target, even though there is no planned path.
+		EntityActionSimpleMove<MutableCreature> change = CreatureLogic.planNextAction(context, mutableOrc, context.millisPerTick);
+		Assert.assertEquals("SimpleMove(WALKING), by 0.00, -0.20, Sub: null", change.toString());
+		Assert.assertNull(mutableOrc.newMovementPlan);
+		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
+		Assert.assertNotNull(mutableOrc.newTargetPreviousLocation);
+		
+		// This should apply cleanly.
+		boolean didApply = change.applyChange(context, mutableOrc);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(new EntityLocation(-16.99f, 7.79f, 1.0f), mutableOrc.newLocation);
 	}
 
 	@Test
