@@ -1,9 +1,5 @@
 package com.jeffdisher.october.types;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.logic.MiscHelpers;
@@ -41,12 +37,11 @@ public class MutableCreature implements IMutableMinimalEntity
 	public byte newBreath;
 	public Object newExtendedData;
 
-	public List<AbsoluteLocation> newMovementPlan;
+	// Data related to the Ephemeral sub-structure.
+	public CreatureEntity.MovementPlan movementPlan;
 	public long newLastActionMillis;
 	public boolean newShouldTakeAction;
 	public long newDespawnKeepAliveMillis;
-	public int newTargetEntityId;
-	public AbsoluteLocation newTargetPreviousLocation;
 	public long newLastAttackMillis;
 	public long newLastDamageTakenMillis;
 
@@ -62,12 +57,10 @@ public class MutableCreature implements IMutableMinimalEntity
 		this.newBreath = creature.breath();
 		this.newExtendedData = creature.extendedData();
 		
-		this.newMovementPlan = creature.ephemeral().movementPlan();
+		this.movementPlan = creature.ephemeral().movementPlan();
 		this.newLastActionMillis = creature.ephemeral().lastActionMillis();
 		this.newShouldTakeAction = creature.ephemeral().shouldTakeImmediateAction();
 		this.newDespawnKeepAliveMillis = creature.ephemeral().despawnKeepAliveMillis();
-		this.newTargetEntityId = creature.ephemeral().targetEntityId();
-		this.newTargetPreviousLocation = creature.ephemeral().targetPreviousLocation();
 		this.newLastAttackMillis = creature.ephemeral().lastAttackMillis();
 		this.newLastDamageTakenMillis = creature.ephemeral().lastDamageTakenMillis();
 	}
@@ -142,7 +135,7 @@ public class MutableCreature implements IMutableMinimalEntity
 		
 		// Whenever a creature's health changes, we will wipe its AI state.
 		// TODO:  In the future, we should make this about taking damage from a specific source.
-		this.newMovementPlan = null;
+		this.movementPlan = null;
 		this.newShouldTakeAction = true;
 	}
 
@@ -210,41 +203,6 @@ public class MutableCreature implements IMutableMinimalEntity
 	}
 
 	/**
-	 * An accessor for the read-only movement plan in the instance.
-	 * 
-	 * @return A read-only view of the current movement plan (could be null).
-	 */
-	public List<AbsoluteLocation> getMovementPlan()
-	{
-		// The caller shouldn't change this.
-		return (null != this.newMovementPlan)
-				? Collections.unmodifiableList(this.newMovementPlan)
-				: null
-		;
-	}
-
-	/**
-	 * Updates the movement plan to a copy of the one given.
-	 * 
-	 * @param movementPlan The movement plan (could be null).
-	 */
-	public void setMovementPlan(List<AbsoluteLocation> movementPlan)
-	{
-		// This can be null but never empty.
-		Assert.assertTrue((null == movementPlan) || !movementPlan.isEmpty());
-		this.newMovementPlan = (null != movementPlan)
-				? new ArrayList<>(movementPlan)
-				: null
-		;
-		if (null == movementPlan)
-		{
-			// If we are clearing the plan, clear the target.
-			this.newTargetEntityId = CreatureEntity.NO_TARGET_ENTITY_ID;
-			this.newTargetPreviousLocation = null;
-		}
-	}
-
-	/**
 	 * Changes the receiver's type, resetting its health and extended data to defaults for this type.  This is typically
 	 * used for cases such as livestock growing from a baby to adult but there is no internal check on usage.
 	 * 
@@ -271,16 +229,13 @@ public class MutableCreature implements IMutableMinimalEntity
 		CreatureEntity newInstance;
 		if (this.newHealth > 0)
 		{
-			Assert.assertTrue((null == this.newMovementPlan) || !this.newMovementPlan.isEmpty());
 			CreatureEntity.Ephemeral ephemeral = new CreatureEntity.Ephemeral(
-					(null != this.newMovementPlan) ? Collections.unmodifiableList(this.newMovementPlan) : null
-							, this.newLastActionMillis
-							, this.newShouldTakeAction
-							, this.newDespawnKeepAliveMillis
-							, this.newTargetEntityId
-							, this.newTargetPreviousLocation
-							, this.newLastAttackMillis
-							, this.newLastDamageTakenMillis
+				this.movementPlan
+				, this.newLastActionMillis
+				, this.newShouldTakeAction
+				, this.newDespawnKeepAliveMillis
+				, this.newLastAttackMillis
+				, this.newLastDamageTakenMillis
 			);
 			CreatureEntity immutable = new CreatureEntity(_creature.id()
 					, this.newType

@@ -200,8 +200,11 @@ public class TestEngineCreatures
 	{
 		EntityLocation startLocation = new EntityLocation(0.0f, 1.0f, 0.0f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
-		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
-			, new AbsoluteLocation(0, 1, 1)
+		CreatureEntity.MovementPlan movementPlan = new CreatureEntity.MovementPlan(List.of(new AbsoluteLocation(0, 1, 0)
+				, new AbsoluteLocation(0, 1, 1)
+			)
+			, CreatureEntity.NO_TARGET_ENTITY_ID
+			, null
 		);
 		CreatureEntity creature = new CreatureEntity(-1
 				, COW
@@ -218,8 +221,6 @@ public class TestEngineCreatures
 					, 0L
 					, false
 					, 0L
-					, CreatureEntity.NO_TARGET_ENTITY_ID
-					, null
 					, 0L
 					, 0L
 				)
@@ -234,7 +235,7 @@ public class TestEngineCreatures
 		CreatureEntity updated = result.updatedEntity();
 		Assert.assertNotEquals(startLocation, updated.location());
 		Assert.assertEquals(4.9f, updated.velocity().z(), 0.001f);
-		Assert.assertEquals(1, updated.ephemeral().movementPlan().size());
+		Assert.assertEquals(1, updated.ephemeral().movementPlan().fullPlan().size());
 	}
 
 	@Test
@@ -243,7 +244,9 @@ public class TestEngineCreatures
 		// In this test, we should just be waiting for a jump to have an effect.
 		EntityLocation startLocation = new EntityLocation(0.0f, 1.0f, 0.441f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 3.92f);
-		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 1)
+		CreatureEntity.MovementPlan movementPlan = new CreatureEntity.MovementPlan(List.of(new AbsoluteLocation(0, 1, 1))
+			, CreatureEntity.NO_TARGET_ENTITY_ID
+			, null
 		);
 		CreatureEntity creature = new CreatureEntity(-1
 				, COW
@@ -260,8 +263,6 @@ public class TestEngineCreatures
 					, 0L
 					, false
 					, 0L
-					, CreatureEntity.NO_TARGET_ENTITY_ID
-					, null
 					, 0L
 					, 0L
 				)
@@ -276,7 +277,7 @@ public class TestEngineCreatures
 		CreatureEntity updated = result.updatedEntity();
 		Assert.assertNotEquals(startLocation, updated.location());
 		Assert.assertEquals(2.94f, updated.velocity().z(), 0.001f);
-		Assert.assertEquals(1, updated.ephemeral().movementPlan().size());
+		Assert.assertEquals(1, updated.ephemeral().movementPlan().fullPlan().size());
 	}
 
 	@Test
@@ -284,8 +285,11 @@ public class TestEngineCreatures
 	{
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 1.2f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
-		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 0, 1)
-			, new AbsoluteLocation(0, 1, 1)
+		CreatureEntity.MovementPlan movementPlan = new CreatureEntity.MovementPlan(List.of(new AbsoluteLocation(0, 0, 1)
+				, new AbsoluteLocation(0, 1, 1)
+			)
+			, CreatureEntity.NO_TARGET_ENTITY_ID
+			, null
 		);
 		int creatureId = -1;
 		CreatureEntity creature = new CreatureEntity(creatureId
@@ -303,8 +307,6 @@ public class TestEngineCreatures
 					, 0L
 					, false
 					, 0L
-					, CreatureEntity.NO_TARGET_ENTITY_ID
-					, null
 					, 0L
 					, 0L
 				)
@@ -400,7 +402,7 @@ public class TestEngineCreatures
 		Assert.assertNotEquals(startLocation, updated.location());
 		
 		// Make sure that the movement plan ends at the close wheat.
-		List<AbsoluteLocation> movementPlan = updated.ephemeral().movementPlan();
+		List<AbsoluteLocation> movementPlan = updated.ephemeral().movementPlan().fullPlan();
 		AbsoluteLocation endPoint = movementPlan.get(movementPlan.size() - 1);
 		Assert.assertEquals(closeWheat.location().getBlockLocation(), endPoint);
 		
@@ -419,7 +421,7 @@ public class TestEngineCreatures
 		Assert.assertNotNull(updated);
 		
 		// Make sure that the movement plan ends at the NEW close wheat location.
-		movementPlan = updated.ephemeral().movementPlan();
+		movementPlan = updated.ephemeral().movementPlan().fullPlan();
 		endPoint = movementPlan.get(movementPlan.size() - 1);
 		Assert.assertEquals(closeWheat.location().getBlockLocation(), endPoint);
 	}
@@ -443,10 +445,10 @@ public class TestEngineCreatures
 		// We should see that the orc has targeted the player and started moving toward them.
 		CreatureEntity updated = result.updatedEntity();
 		Assert.assertNotEquals(startLocation, updated.location());
-		Assert.assertEquals(1, updated.ephemeral().targetEntityId());
+		Assert.assertEquals(1, updated.ephemeral().movementPlan().targetEntityId());
 		
 		// Make sure that the movement plan ends at the player.
-		List<AbsoluteLocation> movementPlan = updated.ephemeral().movementPlan();
+		List<AbsoluteLocation> movementPlan = updated.ephemeral().movementPlan().fullPlan();
 		AbsoluteLocation endPoint = movementPlan.get(movementPlan.size() - 1);
 		Assert.assertEquals(player.location().getBlockLocation(), endPoint);
 		
@@ -465,7 +467,7 @@ public class TestEngineCreatures
 		Assert.assertNotNull(updated);
 		
 		// Make sure that the movement plan ends at the NEW player location.
-		movementPlan = updated.ephemeral().movementPlan();
+		movementPlan = updated.ephemeral().movementPlan().fullPlan();
 		endPoint = movementPlan.get(movementPlan.size() - 1);
 		Assert.assertEquals(player.location().getBlockLocation(), endPoint);
 	}
@@ -500,7 +502,7 @@ public class TestEngineCreatures
 		Assert.assertNotEquals(startLocation, updated.location());
 		
 		// Make sure that the movement plan ends at the close target cow.
-		List<AbsoluteLocation> movementPlan = updated.ephemeral().movementPlan();
+		List<AbsoluteLocation> movementPlan = updated.ephemeral().movementPlan().fullPlan();
 		AbsoluteLocation endPoint = movementPlan.get(movementPlan.size() - 1);
 		Assert.assertEquals(targetCow.location().getBlockLocation(), endPoint);
 	}
@@ -534,8 +536,8 @@ public class TestEngineCreatures
 		);
 		
 		// Verify that they have set the targets.
-		Assert.assertEquals(player.id(), creaturesById.get(cowId1).ephemeral().targetEntityId());
-		Assert.assertEquals(player.id(), creaturesById.get(cowId2).ephemeral().targetEntityId());
+		Assert.assertEquals(player.id(), creaturesById.get(cowId1).ephemeral().movementPlan().targetEntityId());
+		Assert.assertEquals(player.id(), creaturesById.get(cowId2).ephemeral().movementPlan().targetEntityId());
 		
 		// Now, feed them using the mutations we would expect.
 		context = _updateContextWithPlayerAndCreatures(context, player, creaturesById);
@@ -549,9 +551,9 @@ public class TestEngineCreatures
 		
 		// The feeding will reset them but they can't yet see each other so they will pick an idle wander.
 		Assert.assertFalse(creaturesById.get(cowId1).ephemeral().shouldTakeImmediateAction());
-		Assert.assertFalse(creaturesById.get(cowId1).ephemeral().movementPlan().isEmpty());
+		Assert.assertFalse(creaturesById.get(cowId1).ephemeral().movementPlan().fullPlan().isEmpty());
 		Assert.assertFalse(creaturesById.get(cowId2).ephemeral().shouldTakeImmediateAction());
-		Assert.assertFalse(creaturesById.get(cowId2).ephemeral().movementPlan().isEmpty());
+		Assert.assertFalse(creaturesById.get(cowId2).ephemeral().movementPlan().fullPlan().isEmpty());
 		// We want to clear this to observe the rest of the behaviour (otherwise, we would need to wait for them to move).
 		creaturesById.put(cowId1, _takeAction(creaturesById.get(cowId1)));
 		creaturesById.put(cowId2, _takeAction(creaturesById.get(cowId2)));
@@ -565,8 +567,8 @@ public class TestEngineCreatures
 		);
 		
 		// Verify that they now target each other.
-		Assert.assertEquals(cowId2, creaturesById.get(cowId1).ephemeral().targetEntityId());
-		Assert.assertEquals(cowId1, creaturesById.get(cowId2).ephemeral().targetEntityId());
+		Assert.assertEquals(cowId2, creaturesById.get(cowId1).ephemeral().movementPlan().targetEntityId());
+		Assert.assertEquals(cowId1, creaturesById.get(cowId2).ephemeral().movementPlan().targetEntityId());
 		
 		// Nothing should have happened yet, as they just found their mating partners so run the next tick.
 		Map<Integer, IEntityAction<MutableCreature>> changes = new HashMap<>();
@@ -672,7 +674,7 @@ public class TestEngineCreatures
 		Assert.assertNotEquals(0.0f, updated.velocity().z());
 		
 		// Verify that the movement plan is the one we expected (since we depend on knowing which direction we are moving for the test).
-		List<AbsoluteLocation> movementPlan = updated.ephemeral().movementPlan();
+		List<AbsoluteLocation> movementPlan = updated.ephemeral().movementPlan().fullPlan();
 		Assert.assertEquals(3, movementPlan.size());
 		Assert.assertEquals(new AbsoluteLocation(8, 8, 2), movementPlan.get(0));
 		Assert.assertEquals(new AbsoluteLocation(7, 8, 2), movementPlan.get(1));
@@ -812,7 +814,7 @@ public class TestEngineCreatures
 			}
 			else
 			{
-				Assert.assertNull(creature.ephemeral().movementPlan());
+				Assert.assertNull(creature.ephemeral().movementPlan().fullPlan());
 			}
 		}
 		// We should be in the same column but higher.
@@ -874,10 +876,12 @@ public class TestEngineCreatures
 		EntityLocation startLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
 		CreatureEntity creature = CreatureEntity.create(-1, COW, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(creature);
-		mutable.newMovementPlan = List.of(new AbsoluteLocation(15, 16, 1)
-			, new AbsoluteLocation(14, 16, 1)
+		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(new AbsoluteLocation(15, 16, 1)
+				, new AbsoluteLocation(14, 16, 1)
+			)
+			, target.id()
+			, null
 		);
-		mutable.newTargetEntityId = target.id();
 		creature = mutable.freeze();
 		
 		Entity[] indirect = new Entity[] { target };
@@ -903,7 +907,7 @@ public class TestEngineCreatures
 			.finish()
 		;
 		boolean didChange = false;
-		while (null != creature.ephemeral().movementPlan())
+		while (null != creature.ephemeral().movementPlan().fullPlan())
 		{
 			AbsoluteLocation blockLocation = creature.location().getBlockLocation();
 			if (!didChange && blockLocation.equals(new AbsoluteLocation(15, 16, 1)))
@@ -1224,10 +1228,11 @@ public class TestEngineCreatures
 
 	private static CreatureEntity _takeAction(CreatureEntity entity)
 	{
-		List<AbsoluteLocation> movementPlan = null;
+		CreatureEntity.MovementPlan movementPlan = new CreatureEntity.MovementPlan(null
+			, CreatureEntity.NO_TARGET_ENTITY_ID
+			, null
+		);
 		boolean shouldTakeImmediateAction = true;
-		int targetEntityId = CreatureEntity.NO_TARGET_ENTITY_ID;
-		AbsoluteLocation targetPreviousLocation = null;
 		
 		return new CreatureEntity(entity.id()
 				, entity.type()
@@ -1244,8 +1249,6 @@ public class TestEngineCreatures
 					, entity.ephemeral().lastActionMillis()
 					, shouldTakeImmediateAction
 					, entity.ephemeral().despawnKeepAliveMillis()
-					, targetEntityId
-					, targetPreviousLocation
 					, entity.ephemeral().lastAttackMillis()
 					, entity.ephemeral().lastDamageTakenMillis()
 				)

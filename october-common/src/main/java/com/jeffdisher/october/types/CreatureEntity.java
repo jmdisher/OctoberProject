@@ -41,8 +41,6 @@ public record CreatureEntity(int id
 			, 0L
 			, false
 			, gameTimeMillis
-			, NO_TARGET_ENTITY_ID
-			, null
 			, 0L
 			, 0L
 		);
@@ -52,22 +50,30 @@ public record CreatureEntity(int id
 	 * All data stored in this class is considered ephemeral and local:  It is not persisted, nor sent over the network.
 	 */
 	public static record Ephemeral(
-			// The current plan of steps to the creature should be following.
-			List<AbsoluteLocation> movementPlan
+			MovementPlan movementPlan
 			// The last game millisecond when this creature's AI made a decision or did something.
 			, long lastActionMillis
 			// If something special happens, we want to force a new deliberate action, no matter lastActionTick.
 			, boolean shouldTakeImmediateAction
 			// The last game millisecond where some action was taken to stop this creature from despawning (if it is a despawning type).
 			, long despawnKeepAliveMillis
-			// The ID of the entity this creature is currently targeting (or NO_TARGET_ENTITY_ID if none).
-			, int targetEntityId
-			// The last block location of the target which was used to determine the movementPlan.
-			, AbsoluteLocation targetPreviousLocation
 			// The last game millisecond when this creature last sent an attack.
 			, long lastAttackMillis
 			// The millisecond time when this creature last took damage.
 			, long lastDamageTakenMillis
+	) {}
+
+	/**
+	 * Contains information related to the movement plan the creature is following.  This includes representations of
+	 * the planned path but also information related to the target (if there is one).
+	 */
+	public static record MovementPlan(
+		// The full plan, starting with the next step the creature must enter.  Can be null but never empty.
+		List<AbsoluteLocation> fullPlan
+		// The ID of the entity this creature is currently targeting (or NO_TARGET_ENTITY_ID if none).
+		, int targetEntityId
+		// The last block location of the target which was used to determine the movementPlan (can be null).
+		, AbsoluteLocation targetPreviousLocation
 	) {}
 
 	/**

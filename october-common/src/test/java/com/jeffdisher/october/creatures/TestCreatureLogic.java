@@ -186,7 +186,7 @@ public class TestCreatureLogic
 				, 100L
 		);
 		Assert.assertNotNull(action);
-		List<AbsoluteLocation> plan = mutable.newMovementPlan;
+		List<AbsoluteLocation> plan = mutable.movementPlan.fullPlan();
 		Assert.assertEquals(2, plan.get(plan.size() - 1).z());
 	}
 
@@ -269,7 +269,7 @@ public class TestCreatureLogic
 				, 100L
 		);
 		Assert.assertNotNull(action);
-		Assert.assertEquals(playerLocation.getBlockLocation(), mutableOrc.newMovementPlan.get(mutableOrc.newMovementPlan.size() - 1));
+		Assert.assertEquals(playerLocation.getBlockLocation(), mutableOrc.movementPlan.fullPlan().get(mutableOrc.movementPlan.fullPlan().size() - 1));
 		
 		// Now, move the entity and see that the special action updates it.
 		EntityLocation newPlayerLocation = new EntityLocation(2.0f, 5.0f, 1.0f);
@@ -302,7 +302,7 @@ public class TestCreatureLogic
 		);
 		Assert.assertFalse(didTakeAction);
 		// We should now see the updated movement plan.
-		Assert.assertEquals(newPlayerLocation.getBlockLocation(), mutableOrc.newMovementPlan.get(mutableOrc.newMovementPlan.size() - 1));
+		Assert.assertEquals(newPlayerLocation.getBlockLocation(), mutableOrc.movementPlan.fullPlan().get(mutableOrc.movementPlan.fullPlan().size() - 1));
 	}
 
 	@Test
@@ -387,11 +387,17 @@ public class TestCreatureLogic
 		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, 0L);
 		// Start with them both in a love mode.
 		MutableCreature mutable = MutableCreature.existing(father);
-		mutable.newTargetEntityId = mother.id();
+		mutable.movementPlan = new CreatureEntity.MovementPlan(null
+			, mother.id()
+			, null
+		);
 		mutable.newExtendedData = new CreatureExtendedData.LivestockData(true, null, 0L);
 		father = mutable.freeze();
 		mutable = MutableCreature.existing(mother);
-		mutable.newTargetEntityId = father.id();
+		mutable.movementPlan = new CreatureEntity.MovementPlan(null
+			, father.id()
+			, null
+		);
 		mutable.newExtendedData = new CreatureExtendedData.LivestockData(true, null, 0L);
 		mother = mutable.freeze();
 		Map<Integer, CreatureEntity> creatures = new HashMap<>();
@@ -546,8 +552,8 @@ public class TestCreatureLogic
 				, 100L
 		);
 		Assert.assertNotNull(action);
-		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
-		Assert.assertNotNull(mutableOrc.newMovementPlan);
+		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
+		Assert.assertNotNull(mutableOrc.movementPlan.fullPlan());
 	}
 
 	@Test
@@ -607,7 +613,10 @@ public class TestCreatureLogic
 		
 		// Start with the orc targeting the player.
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
-		mutableOrc.newTargetEntityId = player.id();
+		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(null
+			, player.id()
+			, null
+		);
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
 				, mutableOrc
@@ -619,8 +628,8 @@ public class TestCreatureLogic
 		);
 		// We will try to walk toward them still.
 		Assert.assertNotNull(action);
-		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
-		Assert.assertEquals(player.location().getBlockLocation(), mutableOrc.newTargetPreviousLocation);
+		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
+		Assert.assertEquals(player.location().getBlockLocation(), mutableOrc.movementPlan.targetPreviousLocation());
 		
 		// Update the player to be close enough.
 		Assert.assertTrue(action.applyChange(context, mutableOrc));
@@ -631,7 +640,7 @@ public class TestCreatureLogic
 				, mutableOrc
 		);
 		Assert.assertTrue(didTakeAction);
-		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
+		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
 		Assert.assertEquals(2, outChanges.size());
 		Assert.assertTrue(outChanges.get(0) instanceof EntityActionTakeDamageFromEntity);
 		Assert.assertTrue(outChanges.get(1) instanceof EntityActionNudge);
@@ -643,7 +652,7 @@ public class TestCreatureLogic
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
-		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
+		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
 		Assert.assertEquals(0, outChanges.size());
 		
 		// But will work if we advance tick number further.
@@ -658,7 +667,7 @@ public class TestCreatureLogic
 				, mutableOrc
 		);
 		Assert.assertTrue(didTakeAction);
-		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
+		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
 		Assert.assertEquals(2, outChanges.size());
 		Assert.assertTrue(outChanges.get(0) instanceof EntityActionTakeDamageFromEntity);
 		Assert.assertTrue(outChanges.get(1) instanceof EntityActionNudge);
@@ -704,9 +713,9 @@ public class TestCreatureLogic
 				, mutableCow
 		);
 		Assert.assertFalse(didTakeAction);
-		Assert.assertEquals(player.id(), mutableCow.newTargetEntityId);
-		Assert.assertEquals(player.location().getBlockLocation(), mutableCow.newTargetPreviousLocation);
-		Assert.assertNotNull(mutableCow.newMovementPlan);
+		Assert.assertEquals(player.id(), mutableCow.movementPlan.targetEntityId());
+		Assert.assertEquals(player.location().getBlockLocation(), mutableCow.movementPlan.targetPreviousLocation());
+		Assert.assertNotNull(mutableCow.movementPlan.fullPlan());
 		
 		// Move close.
 		mutablePlayer.newLocation = new EntityLocation(0.8f, 0.0f, 1.0f);
@@ -719,9 +728,9 @@ public class TestCreatureLogic
 				, mutableCow
 		);
 		Assert.assertFalse(didTakeAction);
-		Assert.assertEquals(player.id(), mutableCow.newTargetEntityId);
-		Assert.assertNull(mutableCow.newTargetPreviousLocation);
-		Assert.assertNull(mutableCow.newMovementPlan);
+		Assert.assertEquals(player.id(), mutableCow.movementPlan.targetEntityId());
+		Assert.assertNull(mutableCow.movementPlan.targetPreviousLocation());
+		Assert.assertNull(mutableCow.movementPlan.fullPlan());
 		
 		// Move far.
 		mutablePlayer.newLocation = new EntityLocation(5.0f, 0.0f, 1.0f);
@@ -734,9 +743,9 @@ public class TestCreatureLogic
 				, mutableCow
 		);
 		Assert.assertFalse(didTakeAction);
-		Assert.assertEquals(player.id(), mutableCow.newTargetEntityId);
-		Assert.assertEquals(player.location().getBlockLocation(), mutableCow.newTargetPreviousLocation);
-		Assert.assertNotNull(mutableCow.newMovementPlan);
+		Assert.assertEquals(player.id(), mutableCow.movementPlan.targetEntityId());
+		Assert.assertEquals(player.location().getBlockLocation(), mutableCow.movementPlan.targetPreviousLocation());
+		Assert.assertNotNull(mutableCow.movementPlan.fullPlan());
 		
 		// Switch out wheat.
 		mutablePlayer.setSelectedKey(Entity.NO_SELECTION);
@@ -749,9 +758,7 @@ public class TestCreatureLogic
 				, mutableCow
 		);
 		Assert.assertFalse(didTakeAction);
-		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, mutableCow.newTargetEntityId);
-		Assert.assertNull(mutableCow.newTargetPreviousLocation);
-		Assert.assertNull(mutableCow.newMovementPlan);
+		Assert.assertNull(mutableCow.movementPlan);
 	}
 
 	@Test
@@ -786,8 +793,10 @@ public class TestCreatureLogic
 		;
 		
 		// In the bug, the orc had the entity as a target but no movement plan.
-		mutableOrc.newTargetEntityId = entityId;
-		mutableOrc.newTargetPreviousLocation = location.getBlockLocation();
+		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(null
+			, entityId
+			, location.getBlockLocation()
+		);
 		entities.put(player.id(), MinimalEntity.fromEntity(player));
 		entities.put(orc.id(), MinimalEntity.fromCreature(orc));
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
@@ -797,16 +806,16 @@ public class TestCreatureLogic
 		
 		// Since they are out of range, they should have taken no action and, since they are in the same block, produced no full path to move.
 		Assert.assertFalse(didTakeAction);
-		Assert.assertNull(mutableOrc.newMovementPlan);
-		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
-		Assert.assertNotNull(mutableOrc.newTargetPreviousLocation);
+		Assert.assertNull(mutableOrc.movementPlan.fullPlan());
+		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
+		Assert.assertNotNull(mutableOrc.movementPlan.targetPreviousLocation());
 		
 		// Now, if we try to move, we should see them move toward the target, even though there is no planned path.
 		EntityActionSimpleMove<MutableCreature> change = CreatureLogic.planNextAction(context, mutableOrc, context.millisPerTick);
 		Assert.assertEquals("SimpleMove(WALKING), by 0.00, -0.20, Sub: null", change.toString());
-		Assert.assertNull(mutableOrc.newMovementPlan);
-		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
-		Assert.assertNotNull(mutableOrc.newTargetPreviousLocation);
+		Assert.assertNull(mutableOrc.movementPlan.fullPlan());
+		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
+		Assert.assertNotNull(mutableOrc.movementPlan.targetPreviousLocation());
 		
 		// This should apply cleanly.
 		boolean didApply = change.applyChange(context, mutableOrc);
@@ -835,7 +844,10 @@ public class TestCreatureLogic
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
 		mutable.newVelocity = startVelocity;
-		mutable.newMovementPlan = List.of(waterLocation.getRelative(0, 0, 1), waterLocation.getRelative(-1, 0, 1));
+		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(waterLocation.getRelative(0, 0, 1), waterLocation.getRelative(-1, 0, 1))
+			, CreatureEntity.NO_TARGET_ENTITY_ID
+			, null
+		);
 		
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
@@ -918,7 +930,7 @@ public class TestCreatureLogic
 			, mutable
 		);
 		Assert.assertFalse(didTakeAction);
-		Assert.assertEquals(mother.id(), mutable.newTargetEntityId);
+		Assert.assertEquals(mother.id(), mutable.movementPlan.targetEntityId());
 		
 		mutable = MutableCreature.existing(mother);
 		CreatureLogic.didTakeSpecialActions(context
@@ -926,7 +938,7 @@ public class TestCreatureLogic
 			, mutable
 		);
 		Assert.assertFalse(didTakeAction);
-		Assert.assertEquals(father.id(), mutable.newTargetEntityId);
+		Assert.assertEquals(father.id(), mutable.movementPlan.targetEntityId());
 	}
 
 	@Test
@@ -1011,14 +1023,17 @@ public class TestCreatureLogic
 		
 		// Start with the skeleton targeting the player.
 		MutableCreature mutableSkeleton = MutableCreature.existing(skeleton);
-		mutableSkeleton.newTargetEntityId = player.id();
+		mutableSkeleton.movementPlan = new CreatureEntity.MovementPlan(null
+			, player.id()
+			, null
+		);
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(skeleton.id(), skeleton))
 			, mutableSkeleton
 		);
 		// They should attack since they are ranged.
 		Assert.assertTrue(didTakeAction);
-		Assert.assertEquals(player.id(), mutableSkeleton.newTargetEntityId);
+		Assert.assertEquals(player.id(), mutableSkeleton.movementPlan.targetEntityId());
 		Assert.assertNotNull(out[0]);
 		Assert.assertEquals(PassiveType.PROJECTILE_ARROW, out[0].type());
 		Assert.assertEquals(new EntityLocation(0.3f, 0.3f, 2.62f), out[0].location());
@@ -1031,7 +1046,7 @@ public class TestCreatureLogic
 			, mutableSkeleton
 		);
 		Assert.assertFalse(didTakeAction);
-		Assert.assertEquals(player.id(), mutableSkeleton.newTargetEntityId);
+		Assert.assertEquals(player.id(), mutableSkeleton.movementPlan.targetEntityId());
 		Assert.assertNull(out[0]);
 		
 		// But will work if we advance tick number further.
@@ -1046,7 +1061,7 @@ public class TestCreatureLogic
 			, mutableSkeleton
 		);
 		Assert.assertTrue(didTakeAction);
-		Assert.assertEquals(player.id(), mutableSkeleton.newTargetEntityId);
+		Assert.assertEquals(player.id(), mutableSkeleton.movementPlan.targetEntityId());
 		Assert.assertNotNull(out[0]);
 		Assert.assertEquals(PassiveType.PROJECTILE_ARROW, out[0].type());
 		Assert.assertEquals(new EntityLocation(0.3f, 0.3f, 2.62f), out[0].location());
@@ -1098,7 +1113,7 @@ public class TestCreatureLogic
 			, mutableCalf
 		);
 		Assert.assertFalse(didTakeAction);
-		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, mutableCalf.newTargetEntityId);
+		Assert.assertNull(mutableCalf.movementPlan);
 		// Run this again to make sure we didn't change state which caused confusion.
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
 			, collection
@@ -1125,7 +1140,10 @@ public class TestCreatureLogic
 		EntityLocation startLocation = new EntityLocation(4.7f, 4.99f, 1.0f);
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
-		mutable.newMovementPlan = List.of(new AbsoluteLocation(4, 5, 1));
+		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(new AbsoluteLocation(4, 5, 1))
+			, CreatureEntity.NO_TARGET_ENTITY_ID
+			, null
+		);
 		
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
@@ -1157,7 +1175,10 @@ public class TestCreatureLogic
 		EntityLocation startLocation = new EntityLocation(2.79f, 3.01f, 1.0f);
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
-		mutable.newMovementPlan = List.of(new AbsoluteLocation(2, 3, 1), new AbsoluteLocation(3, 3, 1));
+		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(new AbsoluteLocation(2, 3, 1), new AbsoluteLocation(3, 3, 1))
+			, CreatureEntity.NO_TARGET_ENTITY_ID
+			, null
+		);
 		
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
@@ -1169,7 +1190,7 @@ public class TestCreatureLogic
 		// We should detect that we are intersecting with a solid block, clear our plan, and take no action.
 		EntityActionSimpleMove<MutableCreature> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
 		Assert.assertNull(change);
-		Assert.assertNull(mutable.getMovementPlan());
+		Assert.assertNull(mutable.movementPlan.fullPlan());
 	}
 
 	@Test
@@ -1184,7 +1205,10 @@ public class TestCreatureLogic
 		EntityLocation startLocation = new EntityLocation(30.9f, 0.0f, 1.0f);
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
-		mutable.newMovementPlan = List.of(new AbsoluteLocation(30, 0, 1), new AbsoluteLocation(30, 1, 1));
+		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(new AbsoluteLocation(30, 0, 1), new AbsoluteLocation(30, 1, 1))
+			, CreatureEntity.NO_TARGET_ENTITY_ID
+			, null
+		);
 		
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
@@ -1199,7 +1223,7 @@ public class TestCreatureLogic
 		// We should detect that we are intersecting with a solid block, clear our plan, and take no action.
 		EntityActionSimpleMove<MutableCreature> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
 		Assert.assertNull(change);
-		Assert.assertNull(mutable.getMovementPlan());
+		Assert.assertNull(mutable.movementPlan.fullPlan());
 	}
 
 
@@ -1237,8 +1261,6 @@ public class TestCreatureLogic
 				, original.ephemeral().lastActionMillis()
 				, original.ephemeral().shouldTakeImmediateAction()
 				, gameMillis
-				, original.ephemeral().targetEntityId()
-				, original.ephemeral().targetPreviousLocation()
 				, original.ephemeral().lastAttackMillis()
 				, original.ephemeral().lastDamageTakenMillis()
 			)
