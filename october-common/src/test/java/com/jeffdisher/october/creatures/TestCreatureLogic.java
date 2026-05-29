@@ -1226,6 +1226,54 @@ public class TestCreatureLogic
 		Assert.assertNull(mutable.movementPlan.fullPlan());
 	}
 
+	@Test
+	public void trackUnreachableTarget()
+	{
+		// Show that we handle the case where a target we are tracking becomes unreachable.
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		EntityLocation playerLocation = new EntityLocation(4.0f, 4.0f, 4.0f);
+		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
+		
+		short blockNumber = ENV.items.getItemById("op.stone").number();
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		input.setData15(AspectRegistry.BLOCK, playerLocation.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), blockNumber);
+		input.setData15(AspectRegistry.BLOCK, orcLocation.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), blockNumber);
+		
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = playerLocation;
+		Entity player = mutable.freeze();
+		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, 0L);
+		
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
+			return blockLocation.getCuboidAddress().equals(cuboidAddress)
+				? BlockProxy.load(blockLocation.getBlockAddress(), input)
+				: null
+			;
+		});
+		_PairEntityIndex previousEntityLookUp = new _PairEntityIndex(player, orc);
+		long millisPerTick = 100L;
+		TickProcessingContext context = ContextBuilder.build()
+			.millisPerTick(millisPerTick)
+			.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
+			.lookups(previousBlockLookUp, previousEntityLookUp, null)
+			.finish()
+		;
+		MutableCreature mutableOrc = MutableCreature.existing(orc);
+		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(orcLocation.getBlockLocation().getRelative(1, 0, 0))
+			, player.id()
+			, playerLocation.getBlockLocation().getRelative(1, 0, 0)
+		);
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
+			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
+			, mutableOrc
+		);
+		
+		// They should have taken no action but dropped the tracking since the target is unreachable.
+		Assert.assertFalse(didTakeAction);
+		Assert.assertNull(mutableOrc.movementPlan);
+	}
+
 
 	private static TickProcessingContext _createContext(Function<AbsoluteLocation, BlockProxy> function, int random)
 	{

@@ -681,7 +681,8 @@ public class CreatureLogic
 		float pathDistance = creatureType.getPathDistance();
 		Assert.assertTrue(distance <= pathDistance);
 		
-		CreatureEntity.MovementPlan newPlan = null;
+		// We default to just using the original but we can override this.
+		CreatureEntity.MovementPlan newPlan = original;
 		if (distance < creatureType.actionDistance())
 		{
 			// They are close enough that we don't need to bother with the movement plan but still keep the target ID.
@@ -700,16 +701,22 @@ public class CreatureLogic
 				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, location.getOffsetIntoBlock(), creatureVolume);
 				List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockKindLookup, location, targetLocation, pathDistance);
 				
-				newPlan = new CreatureEntity.MovementPlan(path
-					, targetId
-					, newLocation
-				);
+				// It is possible that we dropped the path if they become unreachable so forget about them.
+				if (null != path)
+				{
+					newPlan = new CreatureEntity.MovementPlan(path
+						, targetId
+						, newLocation
+					);
+				}
+				else
+				{
+					// We just to drop the plan.
+					newPlan = null;
+				}
 			}
 		}
-		return (null != newPlan)
-			? newPlan
-			: original
-		;
+		return newPlan;
 	}
 
 	private static _TargetEntity _findBreedable(EntityCollection entityCollection, IMutableMinimalEntity creature)
