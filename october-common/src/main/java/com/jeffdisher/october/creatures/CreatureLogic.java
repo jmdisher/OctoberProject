@@ -135,7 +135,7 @@ public class CreatureLogic
 		{
 			// If we have a movement plan, we want to try to advance it and then produce the next action.
 			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), mutable.getType().volume());
-			_advanceMovementPlan(blockKindLookup, mutable);
+			mutable.movementPlan = _advanceMovementPlan(blockKindLookup, mutable.newLocation, mutable.movementPlan);
 			// We never want to leave an empty movement plan so we expect that has been addressed before we got here.
 			if (null != mutable.movementPlan)
 			{
@@ -255,7 +255,7 @@ public class CreatureLogic
 				if (isTargetValid)
 				{
 					// The target is valid so we want to see if we should update our plan of just drop it, if close enough.
-					_updateValidPathIfTargetMoved(context, mutable);
+					mutable.movementPlan = _updateValidPathIfTargetMoved(context, mutable.newType, mutable.newLocation, mutable.movementPlan);
 					
 					if ((null != mutable.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId()) && (null == mutable.movementPlan.fullPlan()))
 					{
@@ -280,12 +280,28 @@ public class CreatureLogic
 			{
 				// We have no plan so make a new one.
 				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), mutable.getType().volume());
-				_makeMovementPlan(context, blockKindLookup, entityCollection, mutable);
+				mutable.movementPlan = _makeMovementPlan(context, blockKindLookup, entityCollection, mutable);
 			}
 			
 			if (creatureType.isLivestock())
 			{
-				isDone = _didTakeLivestockAction(context, mutable);
+				CreatureExtendedData.LivestockData changedData = _newExtendedDataAfterLivestockAction(context
+					, mutable.getId()
+					, mutable.newType
+					, mutable.newLocation
+					, (CreatureExtendedData.LivestockData)mutable.newExtendedData
+					, (null != mutable.movementPlan) ? mutable.movementPlan.targetEntityId() : CreatureEntity.NO_TARGET_ENTITY_ID
+				);
+				if (null != changedData)
+				{
+					mutable.newExtendedData = changedData;
+					mutable.movementPlan = null;
+					isDone = true;
+				}
+				else
+				{
+					isDone = false;
+				}
 			}
 			else if (creatureType.isHostileMelee())
 			{
@@ -323,7 +339,7 @@ public class CreatureLogic
 	}
 
 
-	private static void _makeMovementPlan(TickProcessingContext context
+	private static CreatureEntity.MovementPlan _makeMovementPlan(TickProcessingContext context
 			, Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
 			, EntityCollection entityCollection
 			, MutableCreature mutable
@@ -370,7 +386,7 @@ public class CreatureLogic
 		{
 			movementPlan = null;
 		}
-		mutable.movementPlan = movementPlan;
+		return movementPlan;
 	}
 
 	private static EntityActionSimpleMove<MutableCreature> _produceNextAction(TickProcessingContext context
@@ -516,15 +532,13 @@ public class CreatureLogic
 		return plannedPath;
 	}
 
-	// Note:  This will update mutable.newMovementPlan
-	private static void _advanceMovementPlan(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
-			, MutableCreature mutable
+	private static CreatureEntity.MovementPlan _advanceMovementPlan(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
+		, EntityLocation entityLocation
+		, CreatureEntity.MovementPlan original
 	)
 	{
-		CreatureEntity.MovementPlan original = mutable.movementPlan;
 		List<AbsoluteLocation> existingPlan = original.fullPlan();
 		AbsoluteLocation thisStep = existingPlan.get(0);
-		EntityLocation entityLocation = mutable.getLocation();
 		AbsoluteLocation currentLocation = entityLocation.getBlockLocation();
 		PathFinder.BlockKind currentKind = blockKindLookup.apply(currentLocation);
 		
@@ -577,13 +591,13 @@ public class CreatureLogic
 				updatedPlan = null;
 			}
 		}
-		if (existingPlan != updatedPlan)
-		{
-			mutable.movementPlan = new CreatureEntity.MovementPlan(updatedPlan
+		return (existingPlan != updatedPlan)
+			? new CreatureEntity.MovementPlan(updatedPlan
 				, original.targetEntityId()
 				, original.targetPreviousLocation()
-			);
-		}
+			)
+			: original
+		;
 	}
 
 	private static EntityActionSimpleMove<MutableCreature> _planNextStep(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
@@ -650,22 +664,28 @@ public class CreatureLogic
 		return goodTargets;
 	}
 
-	private static void _updateValidPathIfTargetMoved(TickProcessingContext context, MutableCreature mutable)
+	private static CreatureEntity.MovementPlan _updateValidPathIfTargetMoved(TickProcessingContext context
+		, EntityType creatureType
+		, EntityLocation location
+		, CreatureEntity.MovementPlan original
+	)
 	{
 		// We know that the target is valid and in range when we get here so the exist and are in range.
-		int targetId = mutable.movementPlan.targetEntityId();
+		int targetId = original.targetEntityId();
 		MinimalEntity targetEntity = context.previousEntityLookUp.getById(targetId);
-		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(mutable.newLocation, mutable.newType.volume());
+		EntityVolume creatureVolume = creatureType.volume();
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(location, creatureVolume);
 		EntityLocation targetLocation = targetEntity.location();
 		EntityVolume targetVolume = targetEntity.type().volume();
 		float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, targetLocation, targetVolume);
-		EntityType creatureType = mutable.getType();
 		float pathDistance = creatureType.getPathDistance();
 		Assert.assertTrue(distance <= pathDistance);
+		
+		CreatureEntity.MovementPlan newPlan = null;
 		if (distance < creatureType.actionDistance())
 		{
 			// They are close enough that we don't need to bother with the movement plan but still keep the target ID.
-			mutable.movementPlan = new CreatureEntity.MovementPlan(null
+			newPlan = new CreatureEntity.MovementPlan(null
 				, targetId
 				, null
 			);
@@ -674,19 +694,22 @@ public class CreatureLogic
 		{
 			// We can keep this but see if we need to update their location.
 			AbsoluteLocation newLocation = targetLocation.getBlockLocation();
-			if (!newLocation.equals(mutable.movementPlan.targetPreviousLocation()))
+			if (!newLocation.equals(original.targetPreviousLocation()))
 			{
 				// They moved by at least a block so update their location and build a new path.
-				EntityVolume volume = mutable.getType().volume();
-				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), volume);
-				List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockKindLookup, mutable.getLocation(), targetLocation, pathDistance);
+				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, location.getOffsetIntoBlock(), creatureVolume);
+				List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockKindLookup, location, targetLocation, pathDistance);
 				
-				mutable.movementPlan = new CreatureEntity.MovementPlan(path
+				newPlan = new CreatureEntity.MovementPlan(path
 					, targetId
 					, newLocation
 				);
 			}
 		}
+		return (null != newPlan)
+			? newPlan
+			: original
+		;
 	}
 
 	private static _TargetEntity _findBreedable(EntityCollection entityCollection, IMutableMinimalEntity creature)
@@ -761,11 +784,17 @@ public class CreatureLogic
 		return target[0];
 	}
 
-	private static boolean _didTakeLivestockAction(TickProcessingContext context, MutableCreature creature)
+	// Returns null if there was no livestock action taken.
+	private static CreatureExtendedData.LivestockData _newExtendedDataAfterLivestockAction(TickProcessingContext context
+		, int creatureId
+		, EntityType creatureType
+		, EntityLocation location
+		, CreatureExtendedData.LivestockData extendedData
+		, int targetEntityId
+	)
 	{
-		boolean isDone = false;
-		EntityType creatureType = creature.getType();
-		CreatureExtendedData.LivestockData extendedData = (CreatureExtendedData.LivestockData)creature.newExtendedData;
+		CreatureExtendedData.LivestockData changedData = null;
+		
 		// See if we are pregnant or searching for our mate.
 		if (null != extendedData.offspringLocation())
 		{
@@ -778,29 +807,27 @@ public class CreatureLogic
 				, null
 				, extendedData.breedingReadyMillis()
 			);
-			creature.newExtendedData = updated;
-			creature.movementPlan = null;
-			isDone = true;
+			changedData = updated;
 		}
-		else if (extendedData.inLoveMode() && (null != creature.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != creature.movementPlan.targetEntityId()))
+		else if (extendedData.inLoveMode() && (CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId))
 		{
 			// We are in love mode, and have found a target, so see if we are close enough to impregnate our target.
 			// We have a target so see if we are in love mode and if they are in range to breed.
-			MinimalEntity targetEntity = context.previousEntityLookUp.getById(creature.movementPlan.targetEntityId());
+			MinimalEntity targetEntity = context.previousEntityLookUp.getById(targetEntityId);
 			// If we got here, they must not have unloaded (we would have observed that in didUpdateTargetLocation.
 			Assert.assertTrue(null != targetEntity);
 			
 			// See if they are within mating distance and we are the father.
-			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), creatureType.volume());
+			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(location, creatureType.volume());
 			EntityLocation targetBase = targetEntity.location();
 			EntityVolume targetVolume = targetEntity.type().volume();
 			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, targetBase, targetVolume);
 			float matingDistance = creatureType.actionDistance();
-			if ((distance <= matingDistance) && (targetEntity.id() < creature.getId()))
+			if ((distance <= matingDistance) && (targetEntity.id() < creatureId))
 			{
 				// Send the message to impregnate them.
-				EntityActionImpregnateCreature sperm = new EntityActionImpregnateCreature(creature.newLocation);
-				context.newChangeSink.creature(creature.movementPlan.targetEntityId(), sperm);
+				EntityActionImpregnateCreature sperm = new EntityActionImpregnateCreature(location);
+				context.newChangeSink.creature(targetEntityId, sperm);
 				// We can also now clear our plans since we are done with them.
 				// However, we exited love mode so record when we should re-enter it.
 				long breedingReadyMillis = context.currentTickTimeMillis + MILLIS_BREEDING_COOLDOWN;
@@ -809,12 +836,10 @@ public class CreatureLogic
 					, null
 					, breedingReadyMillis
 				);
-				creature.newExtendedData = updated;
-				creature.movementPlan = null;
-				isDone = true;
+				changedData = updated;
 			}
 		}
-		return isDone;
+		return changedData;
 	}
 
 	private static boolean _didTakeHostileMeleeAction(TickProcessingContext context, MutableCreature creature)
