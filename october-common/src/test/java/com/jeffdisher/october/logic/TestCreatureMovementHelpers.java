@@ -558,8 +558,25 @@ public class TestCreatureMovementHelpers
 	{
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		EntityLocation target = new EntityLocation(1.5f, 2.2f, 1.0f);
-		IEntityAction<MutableCreature> change = CreatureMovementHelpers.moveDirectly(location, new EntityLocation(0.1f, -0.2f, 0.0f), COW, target, 100L, 0.5f);
-		Assert.assertEquals("SimpleMove(WALKING), by 0.00, 0.10, Sub: null", change.toString());
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
+			return BlockProxy.load(l.getBlockAddress(), cuboid);
+		}));
+		
+		byte yaw = OrientationHelpers.getYawBetweenPoints(location, target);
+		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(reader
+			, location
+			, yaw
+			, (byte)6
+			, COW
+			, target
+			, 100L
+			, 0.5f
+			, false
+		);
+		Assert.assertEquals("SimpleMove(WALKING), by 0.02, 0.05, Sub: null", change.toString());
 	}
 
 

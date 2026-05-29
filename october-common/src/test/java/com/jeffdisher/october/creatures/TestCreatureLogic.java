@@ -812,7 +812,7 @@ public class TestCreatureLogic
 		
 		// Now, if we try to move, we should see them move toward the target, even though there is no planned path.
 		EntityActionSimpleMove<MutableCreature> change = CreatureLogic.planNextAction(context, mutableOrc, context.millisPerTick);
-		Assert.assertEquals("SimpleMove(WALKING), by 0.00, -0.20, Sub: null", change.toString());
+		Assert.assertEquals("SimpleMove(WALKING), by 0.14, -0.14, Sub: null", change.toString());
 		Assert.assertNull(mutableOrc.movementPlan.fullPlan());
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
 		Assert.assertNotNull(mutableOrc.movementPlan.targetPreviousLocation());
@@ -820,7 +820,7 @@ public class TestCreatureLogic
 		// This should apply cleanly.
 		boolean didApply = change.applyChange(context, mutableOrc);
 		Assert.assertTrue(didApply);
-		Assert.assertEquals(new EntityLocation(-16.99f, 7.79f, 1.0f), mutableOrc.newLocation);
+		Assert.assertEquals(new EntityLocation(-16.85f, 7.85f, 1.0f), mutableOrc.newLocation);
 	}
 
 	@Test

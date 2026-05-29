@@ -18,6 +18,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.CreatureMovementHelpers;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.NudgeHelpers;
+import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.PathFinder;
 import com.jeffdisher.october.logic.RayCastHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
@@ -157,7 +158,18 @@ public class CreatureLogic
 			ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
 			float viscosity = reader.getMaxStillViscosityInVolume(mutable.newLocation, mutable.getType().volume());
 			
-			action = CreatureMovementHelpers.moveDirectly(mutable.newLocation, mutable.newVelocity, mutable.newType, targetLocation, timeLimitMillis, viscosity);
+			byte yaw = OrientationHelpers.getYawBetweenPoints(mutable.newLocation, targetLocation);
+			boolean isIdleMovement = (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.movementPlan.targetEntityId());
+			action = CreatureMovementHelpers.moveAlongDiagonalPath(reader
+				, mutable.newLocation
+				, yaw
+				, (byte)0
+				, mutable.newType
+				, targetLocation
+				, timeLimitMillis
+				, viscosity
+				, isIdleMovement
+			);
 		}
 		else
 		{
