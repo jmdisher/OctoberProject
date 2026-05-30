@@ -373,10 +373,18 @@ public class CreatureLogic
 					// We can't plan an empty path.
 					Assert.assertTrue((null == steps) || !steps.isEmpty());
 					
-					movementPlan = new CreatureEntity.MovementPlan(steps
-						, CreatureEntity.NO_TARGET_ENTITY_ID
-						, null
-					);
+					if (null != steps)
+					{
+						movementPlan = new CreatureEntity.MovementPlan(steps
+							, CreatureEntity.NO_TARGET_ENTITY_ID
+							, null
+						);
+					}
+					else
+					{
+						// There is nothing here so return null.
+						movementPlan = null;
+					}
 				}
 			}
 			mutable.newLastActionMillis = context.currentTickTimeMillis;
@@ -468,18 +476,7 @@ public class CreatureLogic
 			List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockPermitsPassage, creatureLocation, targetLocation, type.getPathDistance());
 			if (null != path)
 			{
-				// We want to strip away the first step, since it is the current location.
-				path.remove(0);
-				
-				// We need to store a movement plan whether this path is reduced to nothing, or not.
-				List<AbsoluteLocation> pathToStore = (path.size() > 0)
-					? Collections.unmodifiableList(path)
-					: null
-				;
-				plan = new CreatureEntity.MovementPlan(pathToStore
-					, newTarget.id()
-					, targetLocation.getBlockLocation()
-				);
+				plan = _pruneAndStoreFreshTargetPlan(path, newTarget.id(), targetLocation.getBlockLocation());
 				
 				// Even if the path was empty, this counts as a decision and reset despawn timeout.
 				mutable.newDespawnKeepAliveMillis = context.currentTickTimeMillis;
@@ -591,13 +588,41 @@ public class CreatureLogic
 				updatedPlan = null;
 			}
 		}
-		return (existingPlan != updatedPlan)
-			? new CreatureEntity.MovementPlan(updatedPlan
-				, original.targetEntityId()
-				, original.targetPreviousLocation()
-			)
-			: original
-		;
+		
+		CreatureEntity.MovementPlan planToReturn;
+		if (existingPlan == updatedPlan)
+		{
+			// Nothing changed so return the original.
+			planToReturn = original;
+		}
+		else
+		{
+			int targetId = original.targetEntityId();
+			AbsoluteLocation targetLocation = original.targetPreviousLocation();
+			if (null != updatedPlan)
+			{
+				planToReturn = new CreatureEntity.MovementPlan(updatedPlan
+					, targetId
+					, targetLocation
+				);
+			}
+			else
+			{
+				if (CreatureEntity.NO_TARGET_ENTITY_ID == targetId)
+				{
+					Assert.assertTrue(null == targetLocation);
+					planToReturn = null;
+				}
+				else
+				{
+					planToReturn = new CreatureEntity.MovementPlan(null
+						, targetId
+						, targetLocation
+					);
+				}
+			}
+		}
+		return planToReturn;
 	}
 
 	private static EntityActionSimpleMove<MutableCreature> _planNextStep(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
@@ -704,10 +729,7 @@ public class CreatureLogic
 				// It is possible that we dropped the path if they become unreachable so forget about them.
 				if (null != path)
 				{
-					newPlan = new CreatureEntity.MovementPlan(path
-						, targetId
-						, newLocation
-					);
+					newPlan = _pruneAndStoreFreshTargetPlan(path, targetId, newLocation);
 				}
 				else
 				{
@@ -1107,6 +1129,33 @@ public class CreatureLogic
 			}
 		}
 		return didDespawn;
+	}
+
+	private static CreatureEntity.MovementPlan _pruneAndStoreFreshTargetPlan(List<AbsoluteLocation> path
+		, int targetEntityId
+		, AbsoluteLocation targetPreviousLocation
+	)
+	{
+		// We want to strip away the first step, since it is the current location.
+		path.remove(0);
+		
+		// We need to store a movement plan whether this path is reduced to nothing, or not.
+		CreatureEntity.MovementPlan plan;
+		if (path.size() > 0)
+		{
+			plan = new CreatureEntity.MovementPlan(Collections.unmodifiableList(path)
+				, targetEntityId
+				, targetPreviousLocation
+			);
+		}
+		else
+		{
+			plan = new CreatureEntity.MovementPlan(null
+				, targetEntityId
+				, targetPreviousLocation
+			);
+		}
+		return plan;
 	}
 
 

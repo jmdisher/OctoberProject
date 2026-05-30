@@ -814,7 +814,7 @@ public class TestEngineCreatures
 			}
 			else
 			{
-				Assert.assertNull(creature.ephemeral().movementPlan().fullPlan());
+				Assert.assertNull(creature.ephemeral().movementPlan());
 			}
 		}
 		// We should be in the same column but higher.
@@ -1228,10 +1228,6 @@ public class TestEngineCreatures
 
 	private static CreatureEntity _takeAction(CreatureEntity entity)
 	{
-		CreatureEntity.MovementPlan movementPlan = new CreatureEntity.MovementPlan(null
-			, CreatureEntity.NO_TARGET_ENTITY_ID
-			, null
-		);
 		boolean shouldTakeImmediateAction = true;
 		
 		return new CreatureEntity(entity.id()
@@ -1245,7 +1241,7 @@ public class TestEngineCreatures
 				, entity.extendedData()
 				
 				, new CreatureEntity.Ephemeral(
-					movementPlan
+					null
 					, entity.ephemeral().lastActionMillis()
 					, shouldTakeImmediateAction
 					, entity.ephemeral().despawnKeepAliveMillis()

@@ -1190,7 +1190,7 @@ public class TestCreatureLogic
 		// We should detect that we are intersecting with a solid block, clear our plan, and take no action.
 		EntityActionSimpleMove<MutableCreature> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
 		Assert.assertNull(change);
-		Assert.assertNull(mutable.movementPlan.fullPlan());
+		Assert.assertNull(mutable.movementPlan);
 	}
 
 	@Test
@@ -1223,7 +1223,7 @@ public class TestCreatureLogic
 		// We should detect that we are intersecting with a solid block, clear our plan, and take no action.
 		EntityActionSimpleMove<MutableCreature> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
 		Assert.assertNull(change);
-		Assert.assertNull(mutable.movementPlan.fullPlan());
+		Assert.assertNull(mutable.movementPlan);
 	}
 
 	@Test
