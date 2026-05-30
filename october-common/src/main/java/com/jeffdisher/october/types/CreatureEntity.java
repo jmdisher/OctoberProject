@@ -72,8 +72,9 @@ public record CreatureEntity(int id
 		List<AbsoluteLocation> fullPlan
 		// The ID of the entity this creature is currently targeting (or NO_TARGET_ENTITY_ID if none).
 		, int targetEntityId
-		// The last block location of the target which was used to determine the movementPlan (can be null).
-		, AbsoluteLocation targetPreviousLocation
+		// The last location of the target which was used to determine the movementPlan (can be null if we have no
+		// target or aren't tracking the current one).
+		, EntityLocation targetPreviousLocation
 	) {}
 
 	/**

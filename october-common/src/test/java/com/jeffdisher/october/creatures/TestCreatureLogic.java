@@ -629,7 +629,7 @@ public class TestCreatureLogic
 		// We will try to walk toward them still.
 		Assert.assertNotNull(action);
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
-		Assert.assertEquals(player.location().getBlockLocation(), mutableOrc.movementPlan.targetPreviousLocation());
+		Assert.assertEquals(player.location().getBlockLocation(), mutableOrc.movementPlan.targetPreviousLocation().getBlockLocation());
 		
 		// Update the player to be close enough.
 		Assert.assertTrue(action.applyChange(context, mutableOrc));
@@ -714,7 +714,7 @@ public class TestCreatureLogic
 		);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals(player.id(), mutableCow.movementPlan.targetEntityId());
-		Assert.assertEquals(player.location().getBlockLocation(), mutableCow.movementPlan.targetPreviousLocation());
+		Assert.assertEquals(player.location().getBlockLocation(), mutableCow.movementPlan.targetPreviousLocation().getBlockLocation());
 		Assert.assertNotNull(mutableCow.movementPlan.fullPlan());
 		
 		// Move close.
@@ -744,7 +744,7 @@ public class TestCreatureLogic
 		);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals(player.id(), mutableCow.movementPlan.targetEntityId());
-		Assert.assertEquals(player.location().getBlockLocation(), mutableCow.movementPlan.targetPreviousLocation());
+		Assert.assertEquals(player.location().getBlockLocation(), mutableCow.movementPlan.targetPreviousLocation().getBlockLocation());
 		Assert.assertNotNull(mutableCow.movementPlan.fullPlan());
 		
 		// Switch out wheat.
@@ -795,7 +795,7 @@ public class TestCreatureLogic
 		// In the bug, the orc had the entity as a target but no movement plan.
 		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(null
 			, entityId
-			, location.getBlockLocation()
+			, location
 		);
 		entities.put(player.id(), MinimalEntity.fromEntity(player));
 		entities.put(orc.id(), MinimalEntity.fromCreature(orc));
@@ -1262,7 +1262,7 @@ public class TestCreatureLogic
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
 		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(orcLocation.getBlockLocation().getRelative(1, 0, 0))
 			, player.id()
-			, playerLocation.getBlockLocation().getRelative(1, 0, 0)
+			, playerLocation.getRelative(1.0f, 0.0f, 0.0f)
 		);
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))

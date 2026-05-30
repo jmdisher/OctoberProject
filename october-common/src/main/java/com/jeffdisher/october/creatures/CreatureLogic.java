@@ -473,7 +473,7 @@ public class CreatureLogic
 			List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockPermitsPassage, creatureLocation, targetLocation, type.getPathDistance());
 			if (null != path)
 			{
-				plan = _pruneAndStoreFreshTargetPlan(path, newTarget.id(), targetLocation.getBlockLocation());
+				plan = _pruneAndStoreFreshTargetPlan(path, newTarget.id(), targetLocation);
 				
 				// Even if the path was empty, this counts as a decision and reset despawn timeout.
 				mutable.newDespawnKeepAliveMillis = context.currentTickTimeMillis;
@@ -595,7 +595,7 @@ public class CreatureLogic
 		else
 		{
 			int targetId = original.targetEntityId();
-			AbsoluteLocation targetLocation = original.targetPreviousLocation();
+			EntityLocation targetLocation = original.targetPreviousLocation();
 			if (null != updatedPlan)
 			{
 				if (CreatureEntity.NO_TARGET_ENTITY_ID == targetId)
@@ -714,9 +714,15 @@ public class CreatureLogic
 		}
 		else
 		{
-			// We can keep this but see if we need to update their location.
-			AbsoluteLocation newLocation = targetLocation.getBlockLocation();
-			if (!newLocation.equals(original.targetPreviousLocation()))
+			// We can keep this but see if we need to update their location - we compare on the precision of the block.
+			EntityLocation originalLocation = original.targetPreviousLocation();
+			AbsoluteLocation previousBlockLocation = (null != originalLocation)
+				? originalLocation.getBlockLocation()
+				: null
+			;
+			AbsoluteLocation currentBlockLocation = targetLocation.getBlockLocation();
+			boolean didTargetMove = !currentBlockLocation.equals(previousBlockLocation);
+			if (didTargetMove)
 			{
 				// They moved by at least a block so update their location and build a new path.
 				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, location.getOffsetIntoBlock(), creatureVolume);
@@ -725,7 +731,7 @@ public class CreatureLogic
 				// It is possible that we dropped the path if they become unreachable so forget about them.
 				if (null != path)
 				{
-					newPlan = _pruneAndStoreFreshTargetPlan(path, targetId, newLocation);
+					newPlan = _pruneAndStoreFreshTargetPlan(path, targetId, targetLocation);
 				}
 				else
 				{
@@ -1129,7 +1135,7 @@ public class CreatureLogic
 
 	private static CreatureEntity.MovementPlan _pruneAndStoreFreshTargetPlan(List<AbsoluteLocation> path
 		, int targetEntityId
-		, AbsoluteLocation targetPreviousLocation
+		, EntityLocation targetPreviousLocation
 	)
 	{
 		// We want to strip away the first step, since it is the current location.
@@ -1165,7 +1171,7 @@ public class CreatureLogic
 
 	private static CreatureEntity.MovementPlan _planWithDistantTarget(List<AbsoluteLocation> path
 		, int targetEntityId
-		, AbsoluteLocation targetPreviousLocation
+		, EntityLocation targetPreviousLocation
 	)
 	{
 		Assert.assertTrue(!path.isEmpty());
@@ -1179,7 +1185,7 @@ public class CreatureLogic
 	}
 
 	private static CreatureEntity.MovementPlan _planWithNearTarget(int targetEntityId
-		, AbsoluteLocation targetPreviousLocation
+		, EntityLocation targetPreviousLocation
 	)
 	{
 		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId);
