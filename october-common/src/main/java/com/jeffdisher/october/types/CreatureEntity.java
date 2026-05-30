@@ -75,6 +75,9 @@ public record CreatureEntity(int id
 		// The last location of the target which was used to determine the movementPlan (can be null if we have no
 		// target or aren't tracking the current one).
 		, EntityLocation targetPreviousLocation
+		// In the cases where we need a very short walk, or where we are going to take a short-cut through fullPlan, we
+		// use this location.
+		, EntityLocation directLocation
 	) {}
 
 	/**

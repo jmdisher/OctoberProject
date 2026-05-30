@@ -131,29 +131,10 @@ public class CreatureLogic
 	)
 	{
 		EntityActionSimpleMove<MutableCreature> action;
-		if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
+		if ((null != mutable.movementPlan) && (null != mutable.movementPlan.directLocation()))
 		{
-			// If we have a movement plan, we want to try to advance it and then produce the next action.
-			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), mutable.getType().volume());
-			mutable.movementPlan = _advanceMovementPlan(blockKindLookup, mutable.newLocation, mutable.movementPlan);
-			// We never want to leave an empty movement plan so we expect that has been addressed before we got here.
-			if (null != mutable.movementPlan)
-			{
-				Assert.assertTrue((null == mutable.movementPlan.fullPlan()) || !mutable.movementPlan.fullPlan().isEmpty());
-			}
-			action = ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
-				? _produceNextAction(context, blockKindLookup, mutable, mutable.movementPlan, timeLimitMillis)
-				: null
-			;
-		}
-		else if ((null != mutable.movementPlan) && (null != mutable.movementPlan.targetPreviousLocation()))
-		{
-			// This is the degenerate case where we are too close to the target to keep walking.
-			// This either happens because we are within the action range or we are within the same physical block
-			// (melee ranges are often short enough for the entity and target to both share a block while being out of
-			// range).
-			MinimalEntity targetEntity = context.previousEntityLookUp.getById(mutable.movementPlan.targetEntityId());
-			EntityLocation targetLocation = targetEntity.location();
+			// We prioritize walking "directly" before following the conventional plan.
+			EntityLocation targetLocation = mutable.movementPlan.directLocation();
 			
 			ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
 			float viscosity = reader.getMaxStillViscosityInVolume(mutable.newLocation, mutable.getType().volume());
@@ -170,6 +151,21 @@ public class CreatureLogic
 				, viscosity
 				, isIdleMovement
 			);
+		}
+		else if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
+		{
+			// If we have a movement plan, we want to try to advance it and then produce the next action.
+			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), mutable.getType().volume());
+			mutable.movementPlan = _advanceMovementPlan(blockKindLookup, mutable.newLocation, mutable.movementPlan);
+			// We never want to leave an empty movement plan so we expect that has been addressed before we got here.
+			if (null != mutable.movementPlan)
+			{
+				Assert.assertTrue((null == mutable.movementPlan.fullPlan()) || !mutable.movementPlan.fullPlan().isEmpty());
+			}
+			action = ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
+				? _produceNextAction(context, blockKindLookup, mutable, mutable.movementPlan, timeLimitMillis)
+				: null
+			;
 		}
 		else
 		{
@@ -1163,9 +1159,12 @@ public class CreatureLogic
 	{
 		Assert.assertTrue(!path.isEmpty());
 		
+		// TODO:  Find if we can collapse any of the path and walk directly.
+		EntityLocation directLocation = null;
 		return new CreatureEntity.MovementPlan(path
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
+			, directLocation
 		);
 	}
 
@@ -1178,9 +1177,12 @@ public class CreatureLogic
 		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId);
 		Assert.assertTrue(null != targetPreviousLocation);
 		
+		// TODO:  Find if we can collapse any of the path and walk directly.
+		EntityLocation directLocation = null;
 		return new CreatureEntity.MovementPlan(path
 			, targetEntityId
 			, targetPreviousLocation
+			, directLocation
 		);
 	}
 
@@ -1191,9 +1193,12 @@ public class CreatureLogic
 		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId);
 		Assert.assertTrue(null != targetPreviousLocation);
 		
+		// Switch modes to use the previous location as the direct location since this is "near".
+		EntityLocation directLocation = targetPreviousLocation;
 		return new CreatureEntity.MovementPlan(null
 			, targetEntityId
 			, targetPreviousLocation
+			, directLocation
 		);
 	}
 
@@ -1203,6 +1208,7 @@ public class CreatureLogic
 		
 		return new CreatureEntity.MovementPlan(null
 			, targetEntityId
+			, null
 			, null
 		);
 	}

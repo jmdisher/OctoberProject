@@ -205,6 +205,7 @@ public class TestEngineCreatures
 			)
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
+			, null
 		);
 		CreatureEntity creature = new CreatureEntity(-1
 				, COW
@@ -246,6 +247,7 @@ public class TestEngineCreatures
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 3.92f);
 		CreatureEntity.MovementPlan movementPlan = new CreatureEntity.MovementPlan(List.of(new AbsoluteLocation(0, 1, 1))
 			, CreatureEntity.NO_TARGET_ENTITY_ID
+			, null
 			, null
 		);
 		CreatureEntity creature = new CreatureEntity(-1
@@ -289,6 +291,7 @@ public class TestEngineCreatures
 				, new AbsoluteLocation(0, 1, 1)
 			)
 			, CreatureEntity.NO_TARGET_ENTITY_ID
+			, null
 			, null
 		);
 		int creatureId = -1;
@@ -880,6 +883,7 @@ public class TestEngineCreatures
 				, new AbsoluteLocation(14, 16, 1)
 			)
 			, target.id()
+			, null
 			, null
 		);
 		creature = mutable.freeze();

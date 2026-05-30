@@ -390,12 +390,14 @@ public class TestCreatureLogic
 		mutable.movementPlan = new CreatureEntity.MovementPlan(null
 			, mother.id()
 			, null
+			, null
 		);
 		mutable.newExtendedData = new CreatureExtendedData.LivestockData(true, null, 0L);
 		father = mutable.freeze();
 		mutable = MutableCreature.existing(mother);
 		mutable.movementPlan = new CreatureEntity.MovementPlan(null
 			, father.id()
+			, null
 			, null
 		);
 		mutable.newExtendedData = new CreatureExtendedData.LivestockData(true, null, 0L);
@@ -616,6 +618,7 @@ public class TestCreatureLogic
 		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(null
 			, player.id()
 			, null
+			, null
 		);
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
@@ -796,6 +799,7 @@ public class TestCreatureLogic
 		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(null
 			, entityId
 			, location
+			, location
 		);
 		entities.put(player.id(), MinimalEntity.fromEntity(player));
 		entities.put(orc.id(), MinimalEntity.fromCreature(orc));
@@ -846,6 +850,7 @@ public class TestCreatureLogic
 		mutable.newVelocity = startVelocity;
 		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(waterLocation.getRelative(0, 0, 1), waterLocation.getRelative(-1, 0, 1))
 			, CreatureEntity.NO_TARGET_ENTITY_ID
+			, null
 			, null
 		);
 		
@@ -1026,6 +1031,7 @@ public class TestCreatureLogic
 		mutableSkeleton.movementPlan = new CreatureEntity.MovementPlan(null
 			, player.id()
 			, null
+			, null
 		);
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(skeleton.id(), skeleton))
@@ -1143,6 +1149,7 @@ public class TestCreatureLogic
 		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(new AbsoluteLocation(4, 5, 1))
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
+			, null
 		);
 		
 		TickProcessingContext context = ContextBuilder.build()
@@ -1178,6 +1185,7 @@ public class TestCreatureLogic
 		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(new AbsoluteLocation(2, 3, 1), new AbsoluteLocation(3, 3, 1))
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
+			, null
 		);
 		
 		TickProcessingContext context = ContextBuilder.build()
@@ -1207,6 +1215,7 @@ public class TestCreatureLogic
 		MutableCreature mutable = MutableCreature.existing(cow);
 		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(new AbsoluteLocation(30, 0, 1), new AbsoluteLocation(30, 1, 1))
 			, CreatureEntity.NO_TARGET_ENTITY_ID
+			, null
 			, null
 		);
 		
@@ -1263,6 +1272,7 @@ public class TestCreatureLogic
 		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(orcLocation.getBlockLocation().getRelative(1, 0, 0))
 			, player.id()
 			, playerLocation.getRelative(1.0f, 0.0f, 0.0f)
+			, null
 		);
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
