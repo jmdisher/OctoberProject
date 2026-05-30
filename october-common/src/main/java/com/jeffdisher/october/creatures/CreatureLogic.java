@@ -375,10 +375,7 @@ public class CreatureLogic
 					
 					if (null != steps)
 					{
-						movementPlan = new CreatureEntity.MovementPlan(steps
-							, CreatureEntity.NO_TARGET_ENTITY_ID
-							, null
-						);
+						movementPlan = _planWithoutTarget(steps);
 					}
 					else
 					{
@@ -601,10 +598,15 @@ public class CreatureLogic
 			AbsoluteLocation targetLocation = original.targetPreviousLocation();
 			if (null != updatedPlan)
 			{
-				planToReturn = new CreatureEntity.MovementPlan(updatedPlan
-					, targetId
-					, targetLocation
-				);
+				if (CreatureEntity.NO_TARGET_ENTITY_ID == targetId)
+				{
+					Assert.assertTrue(null == targetLocation);
+					planToReturn = _planWithoutTarget(updatedPlan);
+				}
+				else
+				{
+					planToReturn = _planWithDistantTarget(updatedPlan, targetId, targetLocation);
+				}
 			}
 			else
 			{
@@ -615,10 +617,7 @@ public class CreatureLogic
 				}
 				else
 				{
-					planToReturn = new CreatureEntity.MovementPlan(null
-						, targetId
-						, targetLocation
-					);
+					planToReturn = _planWithNearTarget(targetId, targetLocation);
 				}
 			}
 		}
@@ -711,10 +710,7 @@ public class CreatureLogic
 		if (distance < creatureType.actionDistance())
 		{
 			// They are close enough that we don't need to bother with the movement plan but still keep the target ID.
-			newPlan = new CreatureEntity.MovementPlan(null
-				, targetId
-				, null
-			);
+			newPlan = _planWithInRangeTarget(targetId);
 		}
 		else
 		{
@@ -1143,19 +1139,66 @@ public class CreatureLogic
 		CreatureEntity.MovementPlan plan;
 		if (path.size() > 0)
 		{
-			plan = new CreatureEntity.MovementPlan(Collections.unmodifiableList(path)
+			plan = _planWithDistantTarget(Collections.unmodifiableList(path)
 				, targetEntityId
 				, targetPreviousLocation
 			);
 		}
 		else
 		{
-			plan = new CreatureEntity.MovementPlan(null
-				, targetEntityId
+			plan = _planWithNearTarget(targetEntityId
 				, targetPreviousLocation
 			);
 		}
 		return plan;
+	}
+
+	private static CreatureEntity.MovementPlan _planWithoutTarget(List<AbsoluteLocation> path)
+	{
+		Assert.assertTrue(!path.isEmpty());
+		
+		return new CreatureEntity.MovementPlan(path
+			, CreatureEntity.NO_TARGET_ENTITY_ID
+			, null
+		);
+	}
+
+	private static CreatureEntity.MovementPlan _planWithDistantTarget(List<AbsoluteLocation> path
+		, int targetEntityId
+		, AbsoluteLocation targetPreviousLocation
+	)
+	{
+		Assert.assertTrue(!path.isEmpty());
+		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId);
+		Assert.assertTrue(null != targetPreviousLocation);
+		
+		return new CreatureEntity.MovementPlan(path
+			, targetEntityId
+			, targetPreviousLocation
+		);
+	}
+
+	private static CreatureEntity.MovementPlan _planWithNearTarget(int targetEntityId
+		, AbsoluteLocation targetPreviousLocation
+	)
+	{
+		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId);
+		Assert.assertTrue(null != targetPreviousLocation);
+		
+		return new CreatureEntity.MovementPlan(null
+			, targetEntityId
+			, targetPreviousLocation
+		);
+	}
+
+	private static CreatureEntity.MovementPlan _planWithInRangeTarget(int targetEntityId)
+	{
+		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId);
+		
+		return new CreatureEntity.MovementPlan(null
+			, targetEntityId
+			, null
+		);
 	}
 
 
