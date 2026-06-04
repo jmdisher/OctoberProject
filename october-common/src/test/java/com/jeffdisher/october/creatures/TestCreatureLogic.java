@@ -254,6 +254,7 @@ public class TestCreatureLogic
 		TickProcessingContext context = ContextBuilder.build()
 			.tick((CreatureLogic.MINIMUM_MILLIS_TO_ACTION / 100L) + 1L)
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
+			.fixedRandom(2)
 			.finish()
 		;
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
@@ -294,6 +295,7 @@ public class TestCreatureLogic
 		context = ContextBuilder.build()
 			.tick((CreatureLogic.MINIMUM_MILLIS_TO_ACTION / 100L) + 1L)
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
+			.fixedRandom(2)
 			.finish()
 		;
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
@@ -328,9 +330,10 @@ public class TestCreatureLogic
 		// (we won't expose any of the entities since we don't expect targeting).
 		_MinimalEntityIndex previousEntityLookUp = new _MinimalEntityIndex(Map.of());
 		TickProcessingContext context = ContextBuilder.build()
-				.tick(startTick)
-				.lookups(previousBlockLookUp, previousEntityLookUp, null)
-				.finish()
+			.tick(startTick)
+			.lookups(previousBlockLookUp, previousEntityLookUp, null)
+			.fixedRandom(2)
+			.finish()
 		;
 		MutableCreature mutableCow = MutableCreature.existing(cow);
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
@@ -349,9 +352,10 @@ public class TestCreatureLogic
 		
 		// Now, advance time and do the same, seeing the despawn of the orc but not the cow.
 		context = ContextBuilder.build()
-				.tick(startTick + (CreatureLogic.MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick))
-				.lookups(previousBlockLookUp, previousEntityLookUp, null)
-				.finish()
+			.tick(startTick + (CreatureLogic.MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick))
+			.lookups(previousBlockLookUp, previousEntityLookUp, null)
+			.fixedRandom(2)
+			.finish()
 		;
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, EntityCollection.fromMaps(Map.of(), Map.of(cow.id(), cow, orc.id(), orc))
@@ -436,6 +440,7 @@ public class TestCreatureLogic
 					}
 				})
 				.lookups(null, new LazyEntityIndex(Map.of(), creatures), null)
+				.fixedRandom(2)
 				.finish()
 		;
 		
@@ -503,8 +508,9 @@ public class TestCreatureLogic
 			offspring[0] = CreatureEntity.create(assigner.next(), type, location, 0L);
 		};
 		TickProcessingContext context = ContextBuilder.build()
-				.spawner(creatureSpawner)
-				.finish()
+			.spawner(creatureSpawner)
+			.fixedRandom(2)
+			.finish()
 		;
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, EntityCollection.fromMaps(Map.of(), Map.of(mother.id(), mother))
@@ -538,10 +544,11 @@ public class TestCreatureLogic
 		_PairEntityIndex previousEntityLookUp = new _PairEntityIndex(player, orc);
 		long millisPerTick = 100L;
 		TickProcessingContext context = ContextBuilder.build()
-				.millisPerTick(millisPerTick)
-				.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
-				.lookups(previousBlockLookUp, previousEntityLookUp, null)
-				.finish()
+			.millisPerTick(millisPerTick)
+			.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
+			.lookups(previousBlockLookUp, previousEntityLookUp, null)
+			.fixedRandom(2)
+			.finish()
 		;
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
@@ -606,11 +613,12 @@ public class TestCreatureLogic
 		};
 		long millisPerTick = 100L;
 		TickProcessingContext context = ContextBuilder.build()
-				.millisPerTick(millisPerTick)
-				.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
-				.sinks(null, changeSink)
-				.lookups(previousBlockLookUp, previousEntityLookUp, null)
-				.finish()
+			.millisPerTick(millisPerTick)
+			.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
+			.sinks(null, changeSink)
+			.lookups(previousBlockLookUp, previousEntityLookUp, null)
+			.fixedRandom(2)
+			.finish()
 		;
 		
 		// Start with the orc targeting the player.
@@ -660,10 +668,11 @@ public class TestCreatureLogic
 		
 		// But will work if we advance tick number further.
 		context = ContextBuilder.build()
-				.tick(context.currentTick + CreatureLogic.MILLIS_ATTACK_COOLDOWN / context.millisPerTick)
-				.sinks(null, changeSink)
-				.lookups(previousBlockLookUp, previousEntityLookUp, null)
-				.finish()
+			.tick(context.currentTick + CreatureLogic.MILLIS_ATTACK_COOLDOWN / context.millisPerTick)
+			.sinks(null, changeSink)
+			.lookups(previousBlockLookUp, previousEntityLookUp, null)
+			.fixedRandom(2)
+			.finish()
 		;
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
@@ -703,9 +712,10 @@ public class TestCreatureLogic
 		Map<Integer, MinimalEntity> entities = new HashMap<>();
 		_MinimalEntityIndex previousEntityLookUp = new _MinimalEntityIndex(entities);
 		TickProcessingContext context = ContextBuilder.build()
-				.tick(1000L)
-				.lookups(previousBlockLookUp, previousEntityLookUp, null)
-				.finish()
+			.tick(1000L)
+			.lookups(previousBlockLookUp, previousEntityLookUp, null)
+			.fixedRandom(2)
+			.finish()
 		;
 		
 		// Acquire target.
@@ -792,6 +802,7 @@ public class TestCreatureLogic
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(1000L)
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
+			.fixedRandom(2)
 			.finish()
 		;
 		
@@ -858,6 +869,7 @@ public class TestCreatureLogic
 			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return BlockProxy.load(location.getBlockAddress(), input);
 			}), null, null)
+			.fixedRandom(2)
 			.finish()
 		;
 		
@@ -925,6 +937,7 @@ public class TestCreatureLogic
 				})
 				, new LazyEntityIndex(Map.of(), creatures)
 				, null)
+			.fixedRandom(2)
 			.finish()
 		;
 		
@@ -1023,6 +1036,7 @@ public class TestCreatureLogic
 			.tick(CreatureLogic.MILLIS_RANGED_ATTACK_COOLDOWN / millisPerTick)
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
 			.passive(passiveSpawner)
+			.fixedRandom(2)
 			.finish()
 		;
 		
@@ -1060,6 +1074,7 @@ public class TestCreatureLogic
 			.tick(context.currentTick + CreatureLogic.MILLIS_RANGED_ATTACK_COOLDOWN / context.millisPerTick)
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
 			.passive(passiveSpawner)
+			.fixedRandom(2)
 			.finish()
 		;
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
@@ -1110,6 +1125,7 @@ public class TestCreatureLogic
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(1000L)
 			.lookups(previousBlockLookUp, null, null)
+			.fixedRandom(2)
 			.finish()
 		;
 		MutableCreature mutableCalf = MutableCreature.existing(calf);
@@ -1156,6 +1172,7 @@ public class TestCreatureLogic
 			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return BlockProxy.load(location.getBlockAddress(), input);
 			}), null, null)
+			.fixedRandom(2)
 			.finish()
 		;
 		
@@ -1192,6 +1209,7 @@ public class TestCreatureLogic
 			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 				return BlockProxy.load(location.getBlockAddress(), input);
 			}), null, null)
+			.fixedRandom(2)
 			.finish()
 		;
 		
@@ -1233,6 +1251,7 @@ public class TestCreatureLogic
 					: null
 				;
 			}), null, null)
+			.fixedRandom(2)
 			.finish()
 		;
 		
@@ -1280,6 +1299,7 @@ public class TestCreatureLogic
 			.millisPerTick(millisPerTick)
 			.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
+			.fixedRandom(2)
 			.finish()
 		;
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
@@ -1338,6 +1358,7 @@ public class TestCreatureLogic
 		);
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
+			.fixedRandom(2)
 			.finish()
 		;
 		CreatureLogic.test_updateExistingMovementPlanState(context
@@ -1360,6 +1381,7 @@ public class TestCreatureLogic
 		);
 		context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(movedPlayer, orc), null)
+			.fixedRandom(2)
 			.finish()
 		;
 		CreatureLogic.test_updateExistingMovementPlanState(context
@@ -1382,6 +1404,7 @@ public class TestCreatureLogic
 		);
 		context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(null, orc), null)
+			.fixedRandom(2)
 			.finish()
 		;
 		CreatureLogic.test_updateExistingMovementPlanState(context
