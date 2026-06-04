@@ -154,18 +154,9 @@ public class CreatureLogic
 		}
 		else if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
 		{
-			// If we have a movement plan, we want to try to advance it and then produce the next action.
+			// We can derive the action directly from this plan.
 			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), mutable.getType().volume());
-			mutable.movementPlan = _advanceMovementPlan(blockKindLookup, mutable.newLocation, mutable.movementPlan);
-			// We never want to leave an empty movement plan so we expect that has been addressed before we got here.
-			if (null != mutable.movementPlan)
-			{
-				Assert.assertTrue((null == mutable.movementPlan.fullPlan()) || !mutable.movementPlan.fullPlan().isEmpty());
-			}
-			action = ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
-				? _produceNextAction(context, blockKindLookup, mutable, mutable.movementPlan, timeLimitMillis)
-				: null
-			;
+			action = _produceNextAction(context, blockKindLookup, mutable, mutable.movementPlan, timeLimitMillis);
 		}
 		else
 		{
@@ -1234,6 +1225,12 @@ public class CreatureLogic
 				mutable.movementPlan = null;
 				mutable.newShouldTakeAction = true;
 			}
+		}
+		
+		if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
+		{
+			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), mutable.getType().volume());
+			mutable.movementPlan = _advanceMovementPlan(blockKindLookup, mutable.newLocation, mutable.movementPlan);
 		}
 	}
 

@@ -1195,6 +1195,13 @@ public class TestCreatureLogic
 			.finish()
 		;
 		
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
+			, EntityCollection.fromMaps(Map.of(), Map.of(cow.id(), cow))
+			, mutable
+		);
+		Assert.assertFalse(didTakeAction);
+		Assert.assertNull(mutable.movementPlan);
+		
 		// We should detect that we are intersecting with a solid block, clear our plan, and take no action.
 		EntityActionSimpleMove<MutableCreature> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
 		Assert.assertNull(change);
@@ -1228,6 +1235,13 @@ public class TestCreatureLogic
 			}), null, null)
 			.finish()
 		;
+		
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
+			, EntityCollection.fromMaps(Map.of(), Map.of(cow.id(), cow))
+			, mutable
+		);
+		Assert.assertFalse(didTakeAction);
+		Assert.assertNull(mutable.movementPlan);
 		
 		// We should detect that we are intersecting with a solid block, clear our plan, and take no action.
 		EntityActionSimpleMove<MutableCreature> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
