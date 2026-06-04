@@ -220,7 +220,7 @@ public class CreatureLogic
 	 * Called by CreatureProcessor at the beginning of each tick for each creature so that they can take special
 	 * actions.
 	 * This includes despawning if hostile in a peaceful world or if the mob is a despawning type and is idle.
-	 * Normally, however, it involves finding a target and/or creating a movement plan.
+	 * Normally, however, it involves finding a target and/or creating/updating a movement plan.
 	 * 
 	 * @param context The context of the current tick.
 	 * @param entityCollection The read-only collection of entities in the world.
@@ -241,44 +241,21 @@ public class CreatureLogic
 		}
 		else
 		{
-			EntityType creatureType = mutable.getType();
-			// We want to update our state so check the relevant variables.
-			if ((null != mutable.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId()))
+			// We want to update the state of the general movement plan before taking any other special action (which may update it again).
+			if (null != mutable.movementPlan)
 			{
-				// We have some target so see if they are still valid and update our path to them.
-				boolean isTargetValid = _isTargetValid(entityCollection, mutable);
-				
-				if (isTargetValid)
-				{
-					// The target is valid so we want to see if we should update our plan of just drop it, if close enough.
-					mutable.movementPlan = _updateValidPathIfTargetMoved(context, mutable.newType, mutable.newLocation, mutable.movementPlan);
-					
-					if ((null != mutable.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId()) && (null == mutable.movementPlan.fullPlan()))
-					{
-						// We will end up here if the target is too close to pursue (in the same block) but too far to use special action.
-						// Therefore, we want to fall through to the move path to make that move.
-					}
-					else
-					{
-						// If there is no plan, just skip movement.
-						isDone = (null == mutable.movementPlan) || (null == mutable.movementPlan.fullPlan());
-					}
-				}
-				else
-				{
-					// The target is invalid so clear our state.
-					mutable.movementPlan = null;
-					mutable.newShouldTakeAction = true;
-					isDone = true;
-				}
+				_updateExistingMovementPlanState(context, entityCollection, mutable);
 			}
-			else if ((null == mutable.movementPlan) || (null == mutable.movementPlan.fullPlan()))
+			
+			// If we have no plan, try to create a new one.
+			if (null == mutable.movementPlan)
 			{
 				// We have no plan so make a new one.
 				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), mutable.getType().volume());
 				mutable.movementPlan = _makeMovementPlan(context, blockKindLookup, entityCollection, mutable);
 			}
 			
+			EntityType creatureType = mutable.getType();
 			if (creatureType.isLivestock())
 			{
 				CreatureExtendedData.LivestockData changedData = _newExtendedDataAfterLivestockAction(context
@@ -332,6 +309,21 @@ public class CreatureLogic
 				, blockKindLookup
 				, location
 		);
+	}
+
+	/**
+	 * Just a testing entry-point for showing how existing movement plans are updated.
+	 * 
+	 * @param context The testing context.
+	 * @param entityCollection The read-only collection of entities in the world.
+	 * @param mutable The mutable creature object currently being evaluated.
+	 */
+	public static void test_updateExistingMovementPlanState(TickProcessingContext context
+		, EntityCollection entityCollection
+		, MutableCreature mutable
+	)
+	{
+		_updateExistingMovementPlanState(context, entityCollection, mutable);
 	}
 
 
@@ -1211,6 +1203,38 @@ public class CreatureLogic
 			, null
 			, null
 		);
+	}
+
+	private static void _updateExistingMovementPlanState(TickProcessingContext context
+		, EntityCollection entityCollection
+		, MutableCreature mutable
+	)
+	{
+		// This can only be called if there IS a movement plan.
+		Assert.assertTrue(null != mutable.movementPlan);
+		
+		if (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId())
+		{
+			// We have some target so see if they are still valid and update our path to them.
+			boolean isTargetValid = _isTargetValid(entityCollection, mutable);
+			
+			if (isTargetValid)
+			{
+				// The target is valid so we want to see if we should update our plan of just drop it, if close enough.
+				mutable.movementPlan = _updateValidPathIfTargetMoved(context, mutable.newType, mutable.newLocation, mutable.movementPlan);
+				
+				if ((null != mutable.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId()) && (null == mutable.movementPlan.fullPlan()))
+				{
+					// We will end up here if the target is too close to pursue (in the same block) but too far to use special action.
+				}
+			}
+			else
+			{
+				// The target is invalid so clear our state.
+				mutable.movementPlan = null;
+				mutable.newShouldTakeAction = true;
+			}
+		}
 	}
 
 

@@ -1284,6 +1284,99 @@ public class TestCreatureLogic
 		Assert.assertNull(mutableOrc.movementPlan);
 	}
 
+	@Test
+	public void updateMovementPlanWithTarget()
+	{
+		// Show how we handle updates to a movement plan when there is a target:  Unchanged, moved, despawned.
+		EntityLocation playerLocation = new EntityLocation(2.0f, 1.0f, 1.0f);
+		EntityLocation movedPlayerLocation = playerLocation.getRelative(0.1f, 1.1f, 0.0f);
+		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
+		AbsoluteLocation orcStartLocation = orcLocation.getBlockLocation();
+		
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		_setLayer(input, (byte)0, "op.stone");
+		
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = playerLocation;
+		Entity player = mutable.freeze();
+		mutable.newLocation = movedPlayerLocation;
+		Entity movedPlayer = mutable.freeze();
+		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, 0L);
+		
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
+			return blockLocation.getCuboidAddress().equals(cuboidAddress)
+				? BlockProxy.load(blockLocation.getBlockAddress(), input)
+				: null
+			;
+		});
+		
+		// If the player did NOT move - change nothing.
+		MutableCreature mutableOrc = MutableCreature.existing(orc);
+		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(orcStartLocation.getRelative(1, 0, 0)
+				, orcStartLocation.getRelative(2, 0, 0)
+				, orcStartLocation.getRelative(2, 1, 0)
+			)
+			, player.id()
+			, playerLocation
+			, null
+		);
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
+			.finish()
+		;
+		CreatureLogic.test_updateExistingMovementPlanState(context
+			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
+			, mutableOrc
+		);
+		Assert.assertEquals(3, mutableOrc.movementPlan.fullPlan().size());
+		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
+		Assert.assertEquals(playerLocation, mutableOrc.movementPlan.targetPreviousLocation());
+		
+		// If the player DID move - change path.
+		mutableOrc = MutableCreature.existing(orc);
+		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(orcStartLocation.getRelative(1, 0, 0)
+				, orcStartLocation.getRelative(2, 0, 0)
+				, orcStartLocation.getRelative(2, 1, 0)
+			)
+			, player.id()
+			, playerLocation
+			, null
+		);
+		context = ContextBuilder.build()
+			.lookups(previousBlockLookUp, new _PairEntityIndex(movedPlayer, orc), null)
+			.finish()
+		;
+		CreatureLogic.test_updateExistingMovementPlanState(context
+			, EntityCollection.fromMaps(Map.of(player.id(), movedPlayer), Map.of(orc.id(), orc))
+			, mutableOrc
+		);
+		Assert.assertEquals(4, mutableOrc.movementPlan.fullPlan().size());
+		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
+		Assert.assertEquals(movedPlayerLocation, mutableOrc.movementPlan.targetPreviousLocation());
+		
+		// If the player DID disappear - clear path.
+		mutableOrc = MutableCreature.existing(orc);
+		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(orcStartLocation.getRelative(1, 0, 0)
+				, orcStartLocation.getRelative(2, 0, 0)
+				, orcStartLocation.getRelative(2, 1, 0)
+			)
+			, player.id()
+			, playerLocation
+			, null
+		);
+		context = ContextBuilder.build()
+			.lookups(previousBlockLookUp, new _PairEntityIndex(null, orc), null)
+			.finish()
+		;
+		CreatureLogic.test_updateExistingMovementPlanState(context
+			, EntityCollection.fromMaps(Map.of(), Map.of(orc.id(), orc))
+			, mutableOrc
+		);
+		Assert.assertNull(mutableOrc.movementPlan);
+	}
+
 
 	private static TickProcessingContext _createContext(Function<AbsoluteLocation, BlockProxy> function, int random)
 	{
@@ -1357,7 +1450,7 @@ public class TestCreatureLogic
 		public MinimalEntity getById(int id)
 		{
 			MinimalEntity min;
-			if (id == _player.id())
+			if ((null != _player) && (id == _player.id()))
 			{
 				min = MinimalEntity.fromEntity(_player);
 			}
