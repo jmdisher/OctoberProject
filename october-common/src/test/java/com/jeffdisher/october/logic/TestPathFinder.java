@@ -304,6 +304,28 @@ public class TestPathFinder
 		Assert.assertEquals(1 + xSteps + ySteps + zSteps, path.size());
 	}
 
+	@Test
+	public void startStuckInBlock()
+	{
+		// Show that we can't do any path creation if we are stuck in a block.
+		EntityLocation source = new EntityLocation(-10.5f, -6.5f, 5.0f);
+		EntityLocation target = new EntityLocation(4.5f, 6.5f, 5.0f);
+		AbsoluteLocation startLocation = source.getBlockLocation();
+		int floor = 4;
+		Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsUser = (AbsoluteLocation location) -> ((floor == location.z()) || location.equals(startLocation))
+			? PathFinder.BlockKind.SOLID
+			: PathFinder.BlockKind.WALKABLE
+		;
+		
+		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, source, target);
+		Assert.assertNull(path);
+		
+		Map<AbsoluteLocation, AbsoluteLocation> possiblePaths = PathFinder.findPlacesWithinLimit(blockPermitsUser, source, 50);
+		Assert.assertEquals(1, possiblePaths.size());
+		Assert.assertTrue(possiblePaths.containsKey(startLocation));
+		Assert.assertNull(possiblePaths.get(startLocation));
+	}
+
 
 	private static void _printMap2D(int x, int y, Collection<AbsoluteLocation> path)
 	{

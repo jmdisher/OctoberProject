@@ -150,7 +150,12 @@ public class PathFinder
 			return signum;
 		});
 		walkBackward.put(start, null);
-		workQueue.add(new Spot(start, initialDistance));
+		
+		// We only want to start this if the starting location isn't solid.
+		if (BlockKind.SOLID != blockKind.apply(start))
+		{
+			workQueue.add(new Spot(start, initialDistance));
+		}
 		Spot targetSpot = null;
 		while ((null == targetSpot) && !workQueue.isEmpty())
 		{
