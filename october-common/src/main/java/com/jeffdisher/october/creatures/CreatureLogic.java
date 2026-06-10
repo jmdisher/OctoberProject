@@ -505,104 +505,6 @@ public class CreatureLogic
 		return plannedPath;
 	}
 
-	private static CreatureEntity.MovementPlan _advanceMovementPlan(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
-		, EntityLocation entityLocation
-		, CreatureEntity.MovementPlan original
-	)
-	{
-		List<AbsoluteLocation> existingPlan = original.fullPlan();
-		AbsoluteLocation thisStep = existingPlan.get(0);
-		AbsoluteLocation currentLocation = entityLocation.getBlockLocation();
-		PathFinder.BlockKind currentKind = blockKindLookup.apply(currentLocation);
-		
-		List<AbsoluteLocation> updatedPlan;
-		// First, check to see if we are already in our next location, but also make sure that where we currently stand is ok.
-		if (PathFinder.BlockKind.SOLID == currentKind)
-		{
-			// This typically happens if a block drops on us or if a block was placed on us due to a race condition.
-			updatedPlan = null;
-		}
-		else if (currentLocation.equals(thisStep))
-		{
-			// If we are, that means that we can remove this from the path and plan to move to the next step.
-			if (existingPlan.size() > 1)
-			{
-				updatedPlan = new ArrayList<>(existingPlan);
-				updatedPlan.remove(0);
-			}
-			else
-			{
-				updatedPlan = null;
-			}
-		}
-		else
-		{
-			// We just need to see if the plan is still valid.  This means that the next step must be adjacent and both our current and next locations can be entered.
-			int distanceToNext = Math.abs(currentLocation.x() - thisStep.x())
-					+ Math.abs(currentLocation.y() - thisStep.y())
-					+ Math.abs(currentLocation.z() - thisStep.z())
-			;
-			boolean isAdjacent = (1 == distanceToNext);
-			if (isAdjacent)
-			{
-				// Just make sure we can move in both of these.
-				PathFinder.BlockKind nextKind = blockKindLookup.apply(thisStep);
-				if (PathFinder.BlockKind.SOLID == nextKind)
-				{
-					// Something is blocked so clear the plan.
-					updatedPlan = null;
-				}
-				else
-				{
-					// We can continue along this path.
-					updatedPlan = existingPlan;
-				}
-			}
-			else
-			{
-				// We must have fallen or been pushed so clear the plan.
-				updatedPlan = null;
-			}
-		}
-		
-		CreatureEntity.MovementPlan planToReturn;
-		if (existingPlan == updatedPlan)
-		{
-			// Nothing changed so return the original.
-			planToReturn = original;
-		}
-		else
-		{
-			int targetId = original.targetEntityId();
-			EntityLocation targetLocation = original.targetPreviousLocation();
-			if (null != updatedPlan)
-			{
-				if (CreatureEntity.NO_TARGET_ENTITY_ID == targetId)
-				{
-					Assert.assertTrue(null == targetLocation);
-					planToReturn = _planWithoutTarget(updatedPlan);
-				}
-				else
-				{
-					planToReturn = _planWithDistantTarget(updatedPlan, targetId, targetLocation);
-				}
-			}
-			else
-			{
-				if (CreatureEntity.NO_TARGET_ENTITY_ID == targetId)
-				{
-					Assert.assertTrue(null == targetLocation);
-					planToReturn = null;
-				}
-				else
-				{
-					planToReturn = _planWithNearTarget(targetId, targetLocation);
-				}
-			}
-		}
-		return planToReturn;
-	}
-
 	private static EntityActionSimpleMove<MutableCreature> _planNextStep(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
 			, ViscosityReader reader
 			, EntityLocation entityLocation
@@ -1204,6 +1106,8 @@ public class CreatureLogic
 		// This can only be called if there IS a movement plan.
 		Assert.assertTrue(null != mutable.movementPlan);
 		
+		// First, we will handle the target moving or becoming invalid (if we have a target).
+		CreatureEntity.MovementPlan planToAdvance = null;
 		if (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId())
 		{
 			// We have some target so see if they are still valid and update our path to them.
@@ -1211,12 +1115,26 @@ public class CreatureLogic
 			
 			if (isTargetValid)
 			{
-				// The target is valid so we want to see if we should update our plan of just drop it, if close enough.
-				mutable.movementPlan = _updateValidPathIfTargetMoved(context, mutable.newType, mutable.newLocation, mutable.movementPlan);
+				// The target is still valid for our current state so see if the plan should be updated, cleared, or left unchanged.
+				CreatureEntity.MovementPlan updatedPlan = _updateValidPathIfTargetMoved(context, mutable.newType, mutable.newLocation, mutable.movementPlan);
 				
-				if ((null != mutable.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId()) && (null == mutable.movementPlan.fullPlan()))
+				if (mutable.movementPlan != updatedPlan)
 				{
-					// We will end up here if the target is too close to pursue (in the same block) but too far to use special action.
+					// In this case, we can set it directly since the updated plan comes pre-advanced (or null).
+					mutable.movementPlan = updatedPlan;
+				}
+				else
+				{
+					// This is the original plan so use the advancing logic so long as it still has a full plan.
+					if (null != updatedPlan.fullPlan())
+					{
+						planToAdvance = updatedPlan;
+					}
+					else
+					{
+						// This is probably a "too close" plan so just leave it unchanged.
+						mutable.movementPlan = updatedPlan;
+					}
 				}
 			}
 			else
@@ -1226,11 +1144,98 @@ public class CreatureLogic
 				mutable.newShouldTakeAction = true;
 			}
 		}
-		
-		if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
+		else if (null != mutable.movementPlan.fullPlan())
 		{
+			// In this default case, we just want to advance the plan.
+			planToAdvance = mutable.movementPlan;
+		}
+		
+		if (null != planToAdvance)
+		{
+			// Our plan needs to be checked for validity and advancing.
 			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), mutable.getType().volume());
-			mutable.movementPlan = _advanceMovementPlan(blockKindLookup, mutable.newLocation, mutable.movementPlan);
+			EntityLocation entityLocation = mutable.newLocation;
+			
+			int targetId = planToAdvance.targetEntityId();
+			EntityLocation targetLocation = planToAdvance.targetPreviousLocation();
+			List<AbsoluteLocation> existingPlan = planToAdvance.fullPlan();
+			AbsoluteLocation thisStep = existingPlan.get(0);
+			AbsoluteLocation currentLocation = entityLocation.getBlockLocation();
+			PathFinder.BlockKind currentKind = blockKindLookup.apply(currentLocation);
+			
+			CreatureEntity.MovementPlan planToReturn;
+			if (PathFinder.BlockKind.SOLID == currentKind)
+			{
+				// This typically happens if a block drops on us or if a block was placed on us due to a race condition.
+				// Clear the plan since we can't move.
+				planToReturn = null;
+			}
+			else if (currentLocation.equals(thisStep))
+			{
+				// We are in the next part of the plan so remove this step.
+				if (existingPlan.size() > 1)
+				{
+					// Remove this one element and stay in the same plan.
+					List<AbsoluteLocation> updatedPlan = new ArrayList<>(existingPlan);
+					updatedPlan.remove(0);
+					
+					if (CreatureEntity.NO_TARGET_ENTITY_ID == targetId)
+					{
+						Assert.assertTrue(null == targetLocation);
+						planToReturn = _planWithoutTarget(Collections.unmodifiableList(updatedPlan));
+					}
+					else
+					{
+						planToReturn = _planWithDistantTarget(Collections.unmodifiableList(updatedPlan), targetId, targetLocation);
+					}
+				}
+				else
+				{
+					// The movement plan is complete so determine if we enter a near target state or no plan.
+					if (CreatureEntity.NO_TARGET_ENTITY_ID == targetId)
+					{
+						// This means clear the plan since we must have been idling.
+						Assert.assertTrue(null == targetLocation);
+						planToReturn = null;
+					}
+					else
+					{
+						// We assume that they are in range as a near target.
+						planToReturn = _planWithNearTarget(targetId, targetLocation);
+					}
+				}
+			}
+			else
+			{
+				// We just need to see if the plan is still valid.  This means that the next step must be adjacent and both our current and next locations can be entered.
+				int distanceToNext = Math.abs(currentLocation.x() - thisStep.x())
+						+ Math.abs(currentLocation.y() - thisStep.y())
+						+ Math.abs(currentLocation.z() - thisStep.z())
+				;
+				boolean isAdjacent = (1 == distanceToNext);
+				if (isAdjacent)
+				{
+					// Just make sure we can move in both of these.
+					PathFinder.BlockKind nextKind = blockKindLookup.apply(thisStep);
+					if (PathFinder.BlockKind.SOLID == nextKind)
+					{
+						// Something is blocked so clear the plan.
+						planToReturn = null;
+					}
+					else
+					{
+						// Common case:  The path is still valid so just continue.
+						planToReturn = planToAdvance;
+					}
+				}
+				else
+				{
+					// We must have fallen or been pushed so clear the plan.
+					planToReturn = null;
+				}
+			}
+			
+			mutable.movementPlan = planToReturn;
 		}
 	}
 
