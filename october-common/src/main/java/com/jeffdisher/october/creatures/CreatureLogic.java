@@ -354,7 +354,7 @@ public class CreatureLogic
 					
 					if (null != steps)
 					{
-						movementPlan = _planWithoutTarget(steps);
+						movementPlan = _decidePlanWithoutTarget(context, mutable, steps);
 					}
 					else
 					{
@@ -452,7 +452,7 @@ public class CreatureLogic
 			List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockPermitsPassage, creatureLocation, targetLocation, type.getPathDistance());
 			if (null != path)
 			{
-				plan = _pruneAndStoreFreshTargetPlan(path, newTarget.id(), targetLocation);
+				plan = _pruneAndStoreFreshTargetPlan(context, mutable.newLocation, mutable.newType, path, newTarget.id(), targetLocation);
 				
 				// Even if the path was empty, this counts as a decision and reset despawn timeout.
 				mutable.newDespawnKeepAliveMillis = context.currentTickTimeMillis;
@@ -612,7 +612,7 @@ public class CreatureLogic
 				// It is possible that we dropped the path if they become unreachable so forget about them.
 				if (null != path)
 				{
-					newPlan = _pruneAndStoreFreshTargetPlan(path, targetId, targetLocation);
+					newPlan = _pruneAndStoreFreshTargetPlan(context, location, creatureType, path, targetId, targetLocation);
 				}
 				else
 				{
@@ -1014,7 +1014,10 @@ public class CreatureLogic
 		return didDespawn;
 	}
 
-	private static CreatureEntity.MovementPlan _pruneAndStoreFreshTargetPlan(List<AbsoluteLocation> path
+	private static CreatureEntity.MovementPlan _pruneAndStoreFreshTargetPlan(TickProcessingContext context
+		, EntityLocation location
+		, EntityType type
+		, List<AbsoluteLocation> path
 		, int targetEntityId
 		, EntityLocation targetPreviousLocation
 	)
@@ -1026,10 +1029,7 @@ public class CreatureLogic
 		CreatureEntity.MovementPlan plan;
 		if (path.size() > 0)
 		{
-			plan = _planWithDistantTarget(Collections.unmodifiableList(path)
-				, targetEntityId
-				, targetPreviousLocation
-			);
+			plan = _decidePlanWithDistantTarget(context, location, type, targetEntityId, targetPreviousLocation, path);
 		}
 		else
 		{
@@ -1044,7 +1044,6 @@ public class CreatureLogic
 	{
 		Assert.assertTrue(!path.isEmpty());
 		
-		// TODO:  Find if we can collapse any of the path and walk directly.
 		EntityLocation directLocation = null;
 		return new CreatureEntity.MovementPlan(path
 			, CreatureEntity.NO_TARGET_ENTITY_ID
@@ -1062,7 +1061,6 @@ public class CreatureLogic
 		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId);
 		Assert.assertTrue(null != targetPreviousLocation);
 		
-		// TODO:  Find if we can collapse any of the path and walk directly.
 		EntityLocation directLocation = null;
 		return new CreatureEntity.MovementPlan(path
 			, targetEntityId
@@ -1095,6 +1093,33 @@ public class CreatureLogic
 			, targetEntityId
 			, null
 			, null
+		);
+	}
+
+	private static CreatureEntity.MovementPlan _planDirectWithoutTarget(EntityLocation directLocation)
+	{
+		Assert.assertTrue(null != directLocation);
+		
+		return new CreatureEntity.MovementPlan(null
+			, CreatureEntity.NO_TARGET_ENTITY_ID
+			, null
+			, directLocation
+		);
+	}
+
+	private static CreatureEntity.MovementPlan _planDirectWithDistantTarget(int targetEntityId
+		, EntityLocation targetPreviousLocation
+		, EntityLocation directLocation
+	)
+	{
+		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId);
+		Assert.assertTrue(null != targetPreviousLocation);
+		Assert.assertTrue(null != directLocation);
+		
+		return new CreatureEntity.MovementPlan(null
+			, targetEntityId
+			, targetPreviousLocation
+			, directLocation
 		);
 	}
 
@@ -1182,11 +1207,11 @@ public class CreatureLogic
 					if (CreatureEntity.NO_TARGET_ENTITY_ID == targetId)
 					{
 						Assert.assertTrue(null == targetLocation);
-						planToReturn = _planWithoutTarget(Collections.unmodifiableList(updatedPlan));
+						planToReturn = _decidePlanWithoutTarget(context, mutable, Collections.unmodifiableList(updatedPlan));
 					}
 					else
 					{
-						planToReturn = _planWithDistantTarget(Collections.unmodifiableList(updatedPlan), targetId, targetLocation);
+						planToReturn = _decidePlanWithDistantTarget(context, mutable.newLocation, mutable.newType, targetId, targetLocation, updatedPlan);
 					}
 				}
 				else
@@ -1237,6 +1262,46 @@ public class CreatureLogic
 			
 			mutable.movementPlan = planToReturn;
 		}
+	}
+
+	private static CreatureEntity.MovementPlan _decidePlanWithoutTarget(TickProcessingContext context, MutableCreature mutable, List<AbsoluteLocation> steps)
+	{
+		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
+		EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, mutable.newLocation, mutable.newType, steps);
+		
+		CreatureEntity.MovementPlan movementPlan;
+		if (null != directLocation)
+		{
+			movementPlan = _planDirectWithoutTarget(directLocation);
+		}
+		else
+		{
+			movementPlan = _planWithoutTarget(steps);
+		}
+		return movementPlan;
+	}
+
+	private static CreatureEntity.MovementPlan _decidePlanWithDistantTarget(TickProcessingContext context
+		, EntityLocation location
+		, EntityType type
+		, int targetId
+		, EntityLocation targetLocation
+		, List<AbsoluteLocation> updatedPlan
+	)
+	{
+		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
+		EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, location, type, updatedPlan);
+		
+		CreatureEntity.MovementPlan movementPlan;
+		if (null != directLocation)
+		{
+			movementPlan = _planDirectWithDistantTarget(targetId, targetLocation, directLocation);
+		}
+		else
+		{
+			movementPlan = _planWithDistantTarget(Collections.unmodifiableList(updatedPlan), targetId, targetLocation);
+		}
+		return movementPlan;
 	}
 
 
