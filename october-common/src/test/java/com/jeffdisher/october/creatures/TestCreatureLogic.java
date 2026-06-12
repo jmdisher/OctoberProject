@@ -186,8 +186,10 @@ public class TestCreatureLogic
 				, 100L
 		);
 		Assert.assertNotNull(action);
-		List<AbsoluteLocation> plan = mutable.movementPlan.fullPlan();
-		Assert.assertEquals(2, plan.get(plan.size() - 1).z());
+		Assert.assertNotNull(mutable.movementPlan.fullPlan());
+		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, mutable.movementPlan.targetEntityId());
+		Assert.assertEquals(null, mutable.movementPlan.targetPreviousLocation());
+		Assert.assertNull(mutable.movementPlan.directLocation());
 	}
 
 	@Test
@@ -270,7 +272,10 @@ public class TestCreatureLogic
 				, 100L
 		);
 		Assert.assertNotNull(action);
-		Assert.assertEquals(playerLocation.getBlockLocation(), mutableOrc.movementPlan.fullPlan().get(mutableOrc.movementPlan.fullPlan().size() - 1));
+		Assert.assertNotNull(mutableOrc.movementPlan.fullPlan());
+		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
+		Assert.assertEquals(player.location(), mutableOrc.movementPlan.targetPreviousLocation());
+		Assert.assertNull(mutableOrc.movementPlan.directLocation());
 		
 		// Now, move the entity and see that the special action updates it.
 		EntityLocation newPlayerLocation = new EntityLocation(2.0f, 5.0f, 1.0f);
@@ -304,7 +309,10 @@ public class TestCreatureLogic
 		);
 		Assert.assertFalse(didTakeAction);
 		// We should now see the updated movement plan.
-		Assert.assertEquals(newPlayerLocation.getBlockLocation(), mutableOrc.movementPlan.fullPlan().get(mutableOrc.movementPlan.fullPlan().size() - 1));
+		Assert.assertNotNull(mutableOrc.movementPlan.fullPlan());
+		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
+		Assert.assertEquals(player.location(), mutableOrc.movementPlan.targetPreviousLocation());
+		Assert.assertNull(mutableOrc.movementPlan.directLocation());
 	}
 
 	@Test
@@ -561,8 +569,10 @@ public class TestCreatureLogic
 				, 100L
 		);
 		Assert.assertNotNull(action);
-		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
 		Assert.assertNotNull(mutableOrc.movementPlan.fullPlan());
+		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
+		Assert.assertEquals(player.location(), mutableOrc.movementPlan.targetPreviousLocation());
+		Assert.assertNull(mutableOrc.movementPlan.directLocation());
 	}
 
 	@Test
@@ -726,9 +736,10 @@ public class TestCreatureLogic
 				, mutableCow
 		);
 		Assert.assertFalse(didTakeAction);
-		Assert.assertEquals(player.id(), mutableCow.movementPlan.targetEntityId());
-		Assert.assertEquals(player.location().getBlockLocation(), mutableCow.movementPlan.targetPreviousLocation().getBlockLocation());
 		Assert.assertNotNull(mutableCow.movementPlan.fullPlan());
+		Assert.assertEquals(player.id(), mutableCow.movementPlan.targetEntityId());
+		Assert.assertEquals(player.location(), mutableCow.movementPlan.targetPreviousLocation());
+		Assert.assertNull(mutableCow.movementPlan.directLocation());
 		
 		// Move close.
 		mutablePlayer.newLocation = new EntityLocation(0.8f, 0.0f, 1.0f);
@@ -756,9 +767,10 @@ public class TestCreatureLogic
 				, mutableCow
 		);
 		Assert.assertFalse(didTakeAction);
-		Assert.assertEquals(player.id(), mutableCow.movementPlan.targetEntityId());
-		Assert.assertEquals(player.location().getBlockLocation(), mutableCow.movementPlan.targetPreviousLocation().getBlockLocation());
 		Assert.assertNotNull(mutableCow.movementPlan.fullPlan());
+		Assert.assertEquals(player.id(), mutableCow.movementPlan.targetEntityId());
+		Assert.assertEquals(player.location(), mutableCow.movementPlan.targetPreviousLocation());
+		Assert.assertNull(mutableCow.movementPlan.directLocation());
 		
 		// Switch out wheat.
 		mutablePlayer.setSelectedKey(Entity.NO_SELECTION);
@@ -1331,6 +1343,10 @@ public class TestCreatureLogic
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		_setLayer(input, (byte)0, "op.stone");
 		
+		// Put an obstacle in the way to avoid the path being changed to direct.
+		short stoneNumber = ENV.items.getItemById("op.stone").number();
+		input.setData15(AspectRegistry.BLOCK, orcStartLocation.getRelative(1, 1, 0).getBlockAddress(), stoneNumber);
+		
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = playerLocation;
@@ -1412,6 +1428,113 @@ public class TestCreatureLogic
 			, mutableOrc
 		);
 		Assert.assertNull(mutableOrc.movementPlan);
+	}
+
+	@Test
+	public void specialActionDirectTargets()
+	{
+		// Show how requesting a special action changes the movement plans:
+		// -no change
+		// -update existing plan:
+		//  -target moved
+		//  -enter next step
+		// -create new plan
+		EntityLocation playerLocation = new EntityLocation(3.0f, 1.0f, 1.0f);
+		EntityLocation movedPlayerLocation = new EntityLocation(3.0f, 2.0f, 1.0f);
+		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
+		AbsoluteLocation orcStartLocation = orcLocation.getBlockLocation();
+		
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		_setLayer(input, (byte)0, "op.stone");
+		
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = playerLocation;
+		Entity player = mutable.freeze();
+		mutable.newLocation = movedPlayerLocation;
+		Entity movedPlayer = mutable.freeze();
+		CreatureEntity orc = CreatureEntity.create(-1, ORC, orcLocation, 0L);
+		
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
+			return blockLocation.getCuboidAddress().equals(cuboidAddress)
+				? BlockProxy.load(blockLocation.getBlockAddress(), input)
+				: null
+			;
+		});
+		
+		// Create the movement plan for the orc to move toward the player but show that they take no special action when at distance.
+		MutableCreature mutableOrc = MutableCreature.existing(orc);
+		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(orcStartLocation.getRelative(1, 0, 0)
+				, orcStartLocation.getRelative(2, 0, 0)
+				, orcStartLocation.getRelative(2, 1, 0)
+				, orcStartLocation.getRelative(3, 1, 0)
+			)
+			, player.id()
+			, playerLocation
+			, null
+		);
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
+			.finish()
+		;
+		boolean didAct = CreatureLogic.didTakeSpecialActions(context, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc)), mutableOrc);
+		Assert.assertFalse(didAct);
+		Assert.assertEquals(4, mutableOrc.movementPlan.fullPlan().size());
+		Assert.assertNull(mutableOrc.movementPlan.directLocation());
+		
+		// Show that the target moved.
+		mutableOrc = MutableCreature.existing(orc);
+		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(orcStartLocation.getRelative(1, 0, 0)
+				, orcStartLocation.getRelative(2, 0, 0)
+				, orcStartLocation.getRelative(2, 1, 0)
+				, orcStartLocation.getRelative(3, 1, 0)
+			)
+			, player.id()
+			, playerLocation
+			, null
+		);
+		context = ContextBuilder.build()
+			.lookups(previousBlockLookUp, new _PairEntityIndex(movedPlayer, orc), null)
+			.finish()
+		;
+		didAct = CreatureLogic.didTakeSpecialActions(context, EntityCollection.fromMaps(Map.of(movedPlayer.id(), player), Map.of(orc.id(), orc)), mutableOrc);
+		Assert.assertFalse(didAct);
+		Assert.assertEquals(5, mutableOrc.movementPlan.fullPlan().size());
+		Assert.assertNull(mutableOrc.movementPlan.directLocation());
+		
+		// Show that we entered the next step.
+		mutableOrc = MutableCreature.existing(orc);
+		mutableOrc.newLocation = new EntityLocation(1.0f, 0.0f, 1.0f);
+		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(orcStartLocation.getRelative(1, 0, 0)
+				, orcStartLocation.getRelative(2, 0, 0)
+				, orcStartLocation.getRelative(2, 1, 0)
+				, orcStartLocation.getRelative(3, 1, 0)
+			)
+			, player.id()
+			, playerLocation
+			, null
+		);
+		context = ContextBuilder.build()
+			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
+			.finish()
+		;
+		didAct = CreatureLogic.didTakeSpecialActions(context, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc)), mutableOrc);
+		Assert.assertFalse(didAct);
+		Assert.assertEquals(3, mutableOrc.movementPlan.fullPlan().size());
+		Assert.assertNull(mutableOrc.movementPlan.directLocation());
+		
+		// Create a new plan from scratch.
+		mutableOrc = MutableCreature.existing(orc);
+		mutableOrc.movementPlan = null;
+		mutableOrc.newShouldTakeAction = true;
+		context = ContextBuilder.build()
+			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
+			.finish()
+		;
+		didAct = CreatureLogic.didTakeSpecialActions(context, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc)), mutableOrc);
+		Assert.assertFalse(didAct);
+		Assert.assertEquals(4, mutableOrc.movementPlan.fullPlan().size());
+		Assert.assertNull(mutableOrc.movementPlan.directLocation());
 	}
 
 

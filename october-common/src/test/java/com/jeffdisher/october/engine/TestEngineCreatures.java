@@ -405,9 +405,11 @@ public class TestEngineCreatures
 		Assert.assertNotEquals(startLocation, updated.location());
 		
 		// Make sure that the movement plan ends at the close wheat.
-		List<AbsoluteLocation> movementPlan = updated.ephemeral().movementPlan().fullPlan();
-		AbsoluteLocation endPoint = movementPlan.get(movementPlan.size() - 1);
-		Assert.assertEquals(closeWheat.location().getBlockLocation(), endPoint);
+		CreatureEntity.MovementPlan movementPlan = updated.ephemeral().movementPlan();
+		Assert.assertNotNull(movementPlan.fullPlan());
+		Assert.assertEquals(closeWheat.id(), movementPlan.targetEntityId());
+		Assert.assertEquals(closeWheat.location(), movementPlan.targetPreviousLocation());
+		Assert.assertNull(movementPlan.directLocation());
 		
 		// Move the target entity and observe that the plan changes.
 		closeWheat = _createEntity(closeWheat.id(), new EntityLocation(2.0f, 1.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
@@ -424,9 +426,11 @@ public class TestEngineCreatures
 		Assert.assertNotNull(updated);
 		
 		// Make sure that the movement plan ends at the NEW close wheat location.
-		movementPlan = updated.ephemeral().movementPlan().fullPlan();
-		endPoint = movementPlan.get(movementPlan.size() - 1);
-		Assert.assertEquals(closeWheat.location().getBlockLocation(), endPoint);
+		movementPlan = updated.ephemeral().movementPlan();
+		Assert.assertNotNull(movementPlan.fullPlan());
+		Assert.assertEquals(closeWheat.id(), movementPlan.targetEntityId());
+		Assert.assertEquals(closeWheat.location(), movementPlan.targetPreviousLocation());
+		Assert.assertNull(movementPlan.directLocation());
 	}
 
 	@Test
@@ -451,9 +455,11 @@ public class TestEngineCreatures
 		Assert.assertEquals(1, updated.ephemeral().movementPlan().targetEntityId());
 		
 		// Make sure that the movement plan ends at the player.
-		List<AbsoluteLocation> movementPlan = updated.ephemeral().movementPlan().fullPlan();
-		AbsoluteLocation endPoint = movementPlan.get(movementPlan.size() - 1);
-		Assert.assertEquals(player.location().getBlockLocation(), endPoint);
+		CreatureEntity.MovementPlan movementPlan = updated.ephemeral().movementPlan();
+		Assert.assertNotNull(movementPlan.fullPlan());
+		Assert.assertEquals(player.id(), movementPlan.targetEntityId());
+		Assert.assertEquals(player.location(), movementPlan.targetPreviousLocation());
+		Assert.assertNull(movementPlan.directLocation());
 		
 		// Move the player and observe that the plan changes.
 		player = _createEntity(1, new EntityLocation(3.0f, 3.0f, 0.0f), null, null);
@@ -470,9 +476,11 @@ public class TestEngineCreatures
 		Assert.assertNotNull(updated);
 		
 		// Make sure that the movement plan ends at the NEW player location.
-		movementPlan = updated.ephemeral().movementPlan().fullPlan();
-		endPoint = movementPlan.get(movementPlan.size() - 1);
-		Assert.assertEquals(player.location().getBlockLocation(), endPoint);
+		movementPlan = updated.ephemeral().movementPlan();
+		Assert.assertNotNull(movementPlan.fullPlan());
+		Assert.assertEquals(player.id(), movementPlan.targetEntityId());
+		Assert.assertEquals(player.location(), movementPlan.targetPreviousLocation());
+		Assert.assertNull(movementPlan.directLocation());
 	}
 
 	@Test
@@ -505,9 +513,11 @@ public class TestEngineCreatures
 		Assert.assertNotEquals(startLocation, updated.location());
 		
 		// Make sure that the movement plan ends at the close target cow.
-		List<AbsoluteLocation> movementPlan = updated.ephemeral().movementPlan().fullPlan();
-		AbsoluteLocation endPoint = movementPlan.get(movementPlan.size() - 1);
-		Assert.assertEquals(targetCow.location().getBlockLocation(), endPoint);
+		CreatureEntity.MovementPlan movementPlan = updated.ephemeral().movementPlan();
+		Assert.assertNotNull(movementPlan.fullPlan());
+		Assert.assertEquals(targetCow.id(), movementPlan.targetEntityId());
+		Assert.assertEquals(targetCow.location(), movementPlan.targetPreviousLocation());
+		Assert.assertNull(movementPlan.directLocation());
 	}
 
 	@Test
@@ -704,12 +714,8 @@ public class TestEngineCreatures
 		}
 		
 		// By this point we should be on the ground, in the right block, with no plan.
-		Assert.assertEquals(7.5f, updated.location().x(), 0.01f);
-		Assert.assertEquals(9.01f, updated.location().y(), 0.01f);
-		Assert.assertEquals(2.0f, updated.location().z(), 0.01f);
-		Assert.assertEquals(0.0f, updated.velocity().x(), 0.01f);
-		Assert.assertEquals(0.0f, updated.velocity().y(), 0.01f);
-		Assert.assertEquals(0.0f, updated.velocity().z(), 0.01f);
+		Assert.assertEquals(new EntityLocation(7.5f, 9.01f, 2.0f), updated.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), updated.velocity());
 		Assert.assertEquals(new AbsoluteLocation(7, 9, 2), updated.location().getBlockLocation());
 	}
 
@@ -911,7 +917,7 @@ public class TestEngineCreatures
 			.finish()
 		;
 		boolean didChange = false;
-		while (null != creature.ephemeral().movementPlan().fullPlan())
+		while ((null != creature.ephemeral().movementPlan().fullPlan()) || (null != creature.ephemeral().movementPlan().directLocation()))
 		{
 			AbsoluteLocation blockLocation = creature.location().getBlockLocation();
 			if (!didChange && blockLocation.equals(new AbsoluteLocation(15, 16, 1)))
@@ -928,9 +934,16 @@ public class TestEngineCreatures
 			creature = result.updatedEntity();
 		}
 		
-		// At this point, we will be close enough that we have stopped moving but we still see some "coasting" residual velocity.
+		// We should have changed target at one point, and still be targeting them, but nothing else in plan.
+		Assert.assertTrue(didChange);
+		CreatureEntity.MovementPlan movementPlan = creature.ephemeral().movementPlan();
+		Assert.assertNull(movementPlan.fullPlan());
+		Assert.assertEquals(target.id(), movementPlan.targetEntityId());
+		Assert.assertNull(movementPlan.targetPreviousLocation());
+		Assert.assertNull(movementPlan.directLocation());
+		
+		// We should now see us close enough to the new target.
 		Assert.assertEquals(new EntityLocation(16.5f, 16.0f, 1.0f), creature.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), creature.velocity());
 	}
 
 	@Test

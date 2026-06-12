@@ -423,9 +423,9 @@ public class CreatureMovementHelpers
 			}
 			else
 			{
-				// We didn't hit anything but make sure that we can stand there.
+				// We didn't hit anything but make sure that we can stand there (unless we were already not on the ground).
 				EntityLocation expectedLocation = creatureBaseLocation.getRelativeForLocation(totalDistanceToMove);
-				if (!SpatialHelpers.isStandingOnGround(supplier, expectedLocation, volume))
+				if (SpatialHelpers.isStandingOnGround(supplier, creatureBaseLocation, volume) && !SpatialHelpers.isStandingOnGround(supplier, expectedLocation, volume))
 				{
 					// We would fall, so no.
 					change = null;
