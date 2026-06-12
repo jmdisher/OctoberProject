@@ -376,20 +376,23 @@ public class CreatureMovementHelpers
 			// We assume that our current location and target location are on the same Z-level so verify that.
 			Assert.assertTrue(creatureBlock.z() == targetBlock.z());
 			
-			EntityLocation pathRemaining = new EntityLocation(targetBase.x() - creatureBaseLocation.x()
-				, targetBase.y() - creatureBaseLocation.y()
-				, targetBase.z() - creatureBaseLocation.z()
+			// Since viscosity will directly impede our motion, we use it to determine our adjusted remaining distance.
+			float viscosityScaling = (viscosityFraction > 0.0f)
+				? (1.0f / viscosityFraction)
+				: 1.0f
+			;
+			EntityLocation pathRemaining = new EntityLocation(viscosityScaling * (targetBase.x() - creatureBaseLocation.x())
+				, viscosityScaling * (targetBase.y() - creatureBaseLocation.y())
+				, 0.0f
 			);
 			float distanceRemaining = pathRemaining.getMagnitude();
 			float speed = creatureType.blocksPerSecond();
-			float inverseViscosity = (1.0f - viscosityFraction);
-			float effectiveSpeed = inverseViscosity * speed;
 			float speedMultiplier = isIdleMovement
 				? 0.5f
 				: 1.0f
 			;
 			float secondsToMove = ((float)timeLimitMillis) / 1000.0f;
-			float blockDistanceInMove = secondsToMove * effectiveSpeed * speedMultiplier;
+			float blockDistanceInMove = secondsToMove * speed * speedMultiplier;
 			
 			// If the remaining distance fits, do it all, otherwise, just part of it.
 			float xToMove;

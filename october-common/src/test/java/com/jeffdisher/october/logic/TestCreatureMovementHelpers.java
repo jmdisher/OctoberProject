@@ -576,7 +576,52 @@ public class TestCreatureMovementHelpers
 			, 0.5f
 			, false
 		);
-		Assert.assertEquals("SimpleMove(WALKING), by 0.02, 0.05, Sub: null", change.toString());
+		Assert.assertEquals("SimpleMove(WALKING), by 0.04, 0.09, Sub: null", change.toString());
+	}
+
+	@Test
+	public void walkCompare()
+	{
+		// Compare moveToNextLocation and moveAlongDiagonalPath.
+		EntityLocation location = new EntityLocation(1.2f, 1.2f, 0.0f);
+		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		ViscosityReader reader = _getSplitBlockReader(ENV.special.AIR, STONE);
+		byte yaw = 0;
+		byte pitch = 0;
+		float airViscosity = 0.0f;
+		float waterViscosity = 0.5f;
+		EntityLocation east = location.getRelative(2.5f, 0.0f, 0.0f);
+		EntityLocation west = location.getRelative(-2.5f, 0.0f, 0.0f);
+		
+		// Check movement through air.
+		EntityActionSimpleMove<MutableCreature> next = CreatureMovementHelpers.moveToNextLocation(reader, location, velocity, yaw, pitch, COW, east.getBlockLocation(), 100L, airViscosity, false, false);
+		EntityActionSimpleMove<MutableCreature> diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(reader, location, yaw, pitch, COW, east, 100L, airViscosity, false);
+		Assert.assertEquals("SimpleMove(WALKING), by 0.10, 0.00, Sub: null", next.toString());
+		Assert.assertEquals(next.toString(), diagonal.toString());
+		
+		next = CreatureMovementHelpers.moveToNextLocation(reader, location, velocity, yaw, pitch, COW, west.getBlockLocation(), 100L, airViscosity, false, false);
+		diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(reader, location, yaw, pitch, COW, west, 100L, airViscosity, false);
+		Assert.assertEquals("SimpleMove(WALKING), by -0.10, 0.00, Sub: null", next.toString());
+		Assert.assertEquals(next.toString(), diagonal.toString());
+		
+		// Check movement through water.
+		next = CreatureMovementHelpers.moveToNextLocation(reader, location, velocity, yaw, pitch, COW, east.getBlockLocation(), 100L, waterViscosity, false, false);
+		diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(reader, location, yaw, pitch, COW, east, 100L, waterViscosity, false);
+		Assert.assertEquals("SimpleMove(WALKING), by 0.10, 0.00, Sub: null", next.toString());
+		Assert.assertEquals(next.toString(), diagonal.toString());
+		
+		next = CreatureMovementHelpers.moveToNextLocation(reader, location, velocity, yaw, pitch, COW, west.getBlockLocation(), 100L, waterViscosity, false, false);
+		diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(reader, location, yaw, pitch, COW, west, 100L, waterViscosity, false);
+		Assert.assertEquals("SimpleMove(WALKING), by -0.10, 0.00, Sub: null", next.toString());
+		Assert.assertEquals(next.toString(), diagonal.toString());
+		
+		// Check a close location in water.
+		EntityLocation closeLocation = new EntityLocation(1.95f, 1.2f, 0.0f);
+		EntityLocation closeEast = closeLocation.getRelative(0.05f, 0.0f, 0.0f);
+		next = CreatureMovementHelpers.moveToNextLocation(reader, closeLocation, velocity, yaw, pitch, COW, closeEast.getBlockLocation(), 100L, waterViscosity, false, false);
+		diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(reader, closeLocation, yaw, pitch, COW, closeEast, 100L, waterViscosity, false);
+		Assert.assertEquals("SimpleMove(WALKING), by 0.10, 0.00, Sub: null", next.toString());
+		Assert.assertEquals(next.toString(), diagonal.toString());
 	}
 
 
