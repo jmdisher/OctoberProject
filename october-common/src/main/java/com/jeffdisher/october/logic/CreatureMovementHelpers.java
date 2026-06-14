@@ -24,6 +24,10 @@ public class CreatureMovementHelpers
 	 * We use this as a "reasonably close" threshold since we can't reasonably compare against 0.0f in floats.
 	 */
 	public static final float FLOAT_THRESHOLD = 0.01f;
+	/**
+	 * We use this to determine how much we can increase the movement distance by before rounding down.
+	 */
+	public static final float SQUARE_ROOT_MOVE_FUDGE_FACTOR = (float) Math.sqrt(EntityActionSimpleMove.FUDGE_FACTOR);
 
 	/**
 	 * Creates a list of movements to position the creature within its current block such that it can move in the
@@ -381,11 +385,8 @@ public class CreatureMovementHelpers
 				? (1.0f / viscosityFraction)
 				: 1.0f
 			;
-			EntityLocation pathRemaining = new EntityLocation(viscosityScaling * (targetBase.x() - creatureBaseLocation.x())
-				, viscosityScaling * (targetBase.y() - creatureBaseLocation.y())
-				, 0.0f
-			);
-			float distanceRemaining = pathRemaining.getMagnitude();
+			float effectiveXRemaining = viscosityScaling * (targetBase.x() - creatureBaseLocation.x());
+			float effectiveYRemaining = viscosityScaling * (targetBase.y() - creatureBaseLocation.y());
 			float speed = creatureType.blocksPerSecond();
 			float speedMultiplier = isIdleMovement
 				? 0.5f
@@ -397,17 +398,18 @@ public class CreatureMovementHelpers
 			// If the remaining distance fits, do it all, otherwise, just part of it.
 			float xToMove;
 			float yToMove;
-			if (blockDistanceInMove >= distanceRemaining)
+			float effectiveMagnitudeRemaining = (float)Math.sqrt(effectiveXRemaining * effectiveXRemaining + effectiveYRemaining * effectiveYRemaining);
+			if (blockDistanceInMove >= effectiveMagnitudeRemaining)
 			{
-				xToMove = pathRemaining.x();
-				yToMove = pathRemaining.y();
+				xToMove = effectiveXRemaining;
+				yToMove = effectiveYRemaining;
 			}
 			else
 			{
-				float scale = blockDistanceInMove / distanceRemaining;
-				EntityLocation scaledDistance = pathRemaining.makeScaledInstance(scale);
-				xToMove = scaledDistance.x();
-				yToMove = scaledDistance.y();
+				float scaleOnEffective = (SQUARE_ROOT_MOVE_FUDGE_FACTOR * blockDistanceInMove / effectiveMagnitudeRemaining);
+				// We can't use EntityLocation.roundToHundredths since we don't want to round over our speed.
+				xToMove = _absFloorHundredths(scaleOnEffective * effectiveXRemaining);
+				yToMove = _absFloorHundredths(scaleOnEffective * effectiveYRemaining);
 			}
 			
 			// We can now create the move but we first want to verify it won't fail since that means we should return null.
@@ -513,6 +515,14 @@ public class CreatureMovementHelpers
 		float distanceToMove = rawDistanceInTime * fractionToMove;
 		float activeDistance = Math.signum(movementSum) * distanceToMove;
 		return activeDistance;
+	}
+
+	private static float _absFloorHundredths(float input)
+	{
+		// We will cast to int to get a truncating conversion, instead of a round.
+		int i = (int)(100.0f * input);
+		float f = (float)i / 100.0f;
+		return f;
 	}
 
 
