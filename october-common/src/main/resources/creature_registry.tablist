@@ -46,3 +46,18 @@ op.skeleton	Skeleton
 	action_distance	7.0
 	drops	10	op.bow
 	attack_damage	-1
+op.villager	Villager
+	volume	1.7	0.4
+	blocks_per_second	2.0
+	max_health	50
+	view_distance	8.0
+	action_distance	1.0
+	drops	100	op.coin	100	op.coin	100	op.coin	100	op.coin	100	op.coin
+op.villager_baby	Young Villager
+	volume	1.1	0.3
+	blocks_per_second	1.0
+	max_health	30
+	view_distance	6.0
+	action_distance	1.0
+	drops	100	op.coin
+	adult_type	op.villager

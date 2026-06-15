@@ -275,11 +275,14 @@ public class CreatureLogic
 			{
 				isDone = _didTakeHostileRangedAction(context, mutable);
 			}
+			else if (creatureType.isBaby())
+			{
+				isDone = _didTakeBabyAction(context, mutable);
+			}
 			else
 			{
-				// Something neither hostile nor livestock is probably a baby of what will change in to a livestock animal, later.
-				Assert.assertTrue(creatureType.isBaby());
-				isDone = _didTakeBabyAction(context, mutable);
+				// If this isn't hostile, livestock, or a baby, it must be a villager.
+				isDone = false;
 			}
 		}
 		return isDone;
@@ -435,8 +438,7 @@ public class CreatureLogic
 		}
 		else
 		{
-			// If this isn't livestock or hostile, it must be a baby and they never target anything.
-			Assert.assertTrue(type.isBaby());
+			// If this isn't livestock or hostile, it must be a baby or villager and they don't currently target anything.
 			newTarget = null;
 		}
 		

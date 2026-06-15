@@ -55,6 +55,8 @@ public class TestCreatureLogic
 	private static EntityType COW;
 	private static EntityType ORC;
 	private static EntityType COW_BABY;
+	private static EntityType VILLAGER;
+	private static EntityType VILLAGER_BABY;
 	@BeforeClass
 	public static void setup() throws Throwable
 	{
@@ -63,6 +65,8 @@ public class TestCreatureLogic
 		COW = ENV.creatures.getTypeById("op.cow");
 		ORC = ENV.creatures.getTypeById("op.orc");
 		COW_BABY = ENV.creatures.getTypeById("op.cow_baby");
+		VILLAGER = ENV.creatures.getTypeById("op.villager");
+		VILLAGER_BABY = ENV.creatures.getTypeById("op.villager_baby");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -1632,6 +1636,74 @@ public class TestCreatureLogic
 			, 50L
 		);
 		Assert.assertNull(action);
+	}
+
+	@Test
+	public void villagersIdle()
+	{
+		// Show that the villager types will ignore nearby players and just make idle movements.
+		EntityLocation playerLocation = new EntityLocation(5.0f, 5.0f, 1.0f);
+		EntityLocation villagerLocation = playerLocation.getRelative(2.0f, 0.0f, 0.0f);
+		EntityLocation villagerBabyLocation = playerLocation.getRelative(0.0f, 2.0f, 0.0f);
+		
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		_setLayer(input, (byte)0, "op.stone");
+		
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = playerLocation;
+		Entity player = mutable.freeze();
+		
+		CreatureEntity villager = CreatureEntity.create(-1, VILLAGER, villagerLocation, 0L);
+		CreatureEntity villagerBaby = CreatureEntity.create(-2, VILLAGER_BABY, villagerBabyLocation, 0L);
+		
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
+			return blockLocation.getCuboidAddress().equals(cuboidAddress)
+				? BlockProxy.load(blockLocation.getBlockAddress(), input)
+				: null
+			;
+		});
+		_MinimalEntityIndex previousEntityLookUp = new _MinimalEntityIndex(Map.of(player.id(), MinimalEntity.fromEntity(player)
+			, villager.id(), MinimalEntity.fromCreature(villager)
+			, villagerBaby.id(), MinimalEntity.fromCreature(villagerBaby)
+		));
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(100L)
+			.lookups(previousBlockLookUp, previousEntityLookUp, null)
+			.fixedRandom(1)
+			.finish()
+		;
+		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(villager.id(), villager, villagerBaby.id(), villagerBaby));
+		
+		// Show basic idle movement of the villager.
+		MutableCreature mutableVillager = MutableCreature.existing(villager);
+		boolean didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableVillager);
+		Assert.assertFalse(didAct);
+		Assert.assertNull(mutableVillager.movementPlan.fullPlan());
+		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, mutableVillager.movementPlan.targetEntityId());
+		Assert.assertNull(mutableVillager.movementPlan.targetPreviousLocation());
+		Assert.assertEquals(new EntityLocation(7.0f, 8.0f, 1.0f), mutableVillager.movementPlan.directLocation());
+		
+		EntityActionSimpleMove<MutableCreature> action = CreatureLogic.planNextAction(context
+			, mutableVillager
+			, 50L
+		);
+		Assert.assertNotNull(action);
+		
+		// Show basic idle movement of the villager baby.
+		MutableCreature mutableVillagerBaby = MutableCreature.existing(villagerBaby);
+		didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableVillagerBaby);
+		Assert.assertFalse(didAct);
+		Assert.assertNull(mutableVillagerBaby.movementPlan.fullPlan());
+		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, mutableVillagerBaby.movementPlan.targetEntityId());
+		Assert.assertNull(mutableVillagerBaby.movementPlan.targetPreviousLocation());
+		Assert.assertEquals(new EntityLocation(7.0f, 8.0f, 1.0f), mutableVillagerBaby.movementPlan.directLocation());
+		
+		action = CreatureLogic.planNextAction(context
+			, mutableVillagerBaby
+			, 50L
+		);
+		Assert.assertNotNull(action);
 	}
 
 
