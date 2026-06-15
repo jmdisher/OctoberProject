@@ -1131,9 +1131,25 @@ public class CreatureLogic
 		// This can only be called if there IS a movement plan.
 		Assert.assertTrue(null != mutable.movementPlan);
 		
+		// Handle the uncommon case where we are in direct mode but are no longer on the same z-level.
+		if ((null != mutable.movementPlan.directLocation()) && (mutable.newLocation.getBlockLocation().z() != mutable.movementPlan.directLocation().getBlockLocation().z()))
+		{
+			// To avoid over-complicating this, we will reset the movement plan to only have the target or delete it, entirely.
+			if (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId())
+			{
+				// This is not technically "in range" but it will allow us to fall into the common target update case, below.
+				mutable.movementPlan = _planWithInRangeTarget(mutable.movementPlan.targetEntityId());
+			}
+			else
+			{
+				// We were just idly moving and must have fallen or been pushed into a different z-level so just clear it.
+				mutable.movementPlan = null;
+			}
+		}
+		
 		// First, we will handle the target moving or becoming invalid (if we have a target).
 		CreatureEntity.MovementPlan planToAdvance = null;
-		if (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId())
+		if ((null != mutable.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId()))
 		{
 			// We have some target so see if they are still valid and update our path to them.
 			boolean isTargetValid = _isTargetValid(entityCollection, mutable);
@@ -1169,7 +1185,7 @@ public class CreatureLogic
 				mutable.newShouldTakeAction = true;
 			}
 		}
-		else if (null != mutable.movementPlan.fullPlan())
+		else if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
 		{
 			// In this default case, we just want to advance the plan.
 			planToAdvance = mutable.movementPlan;

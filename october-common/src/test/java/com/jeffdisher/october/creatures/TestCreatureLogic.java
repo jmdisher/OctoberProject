@@ -1563,6 +1563,77 @@ public class TestCreatureLogic
 		Assert.assertEquals(playerLocation, mutableOrc.movementPlan.directLocation());
 	}
 
+	@Test
+	public void handleDirectChangesZLevel()
+	{
+		// Handle the case where we are in direct mode but have fallen from the same z-level since last planning.
+		EntityLocation playerLocation = new EntityLocation(3.0f, 1.0f, 2.6f);
+		EntityLocation idleLocation = new EntityLocation(3.0f, 1.0f, 2.0f);
+		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 1.9f);
+		
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		_setLayer(input, (byte)0, "op.stone");
+		
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = playerLocation;
+		Entity player = mutable.freeze();
+		
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
+			return blockLocation.getCuboidAddress().equals(cuboidAddress)
+				? BlockProxy.load(blockLocation.getBlockAddress(), input)
+				: null
+			;
+		});
+		
+		// Try this for the case where there is a target.
+		MutableCreature mutableOrc = MutableCreature.existing(CreatureEntity.create(-1, ORC, orcLocation, 0L));
+		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(null
+			, player.id()
+			, playerLocation
+			, playerLocation
+		);
+		CreatureEntity orc = mutableOrc.freeze();
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
+			.finish()
+		;
+		boolean didAct = CreatureLogic.didTakeSpecialActions(context, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc)), mutableOrc);
+		Assert.assertFalse(didAct);
+		Assert.assertNull(mutableOrc.movementPlan.fullPlan());
+		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
+		Assert.assertEquals(playerLocation, mutableOrc.movementPlan.targetPreviousLocation());
+		Assert.assertEquals(new EntityLocation(3.0f, 1.0f, 1.9f), mutableOrc.movementPlan.directLocation());
+		
+		EntityActionSimpleMove<MutableCreature> action = CreatureLogic.planNextAction(context
+			, mutableOrc
+			, 50L
+		);
+		Assert.assertNotNull(action);
+		
+		// Try the case where we are idly moving (no target).
+		mutableOrc = MutableCreature.existing(CreatureEntity.create(-1, ORC, orcLocation, 0L));
+		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(null
+			, CreatureEntity.NO_TARGET_ENTITY_ID
+			, null
+			, idleLocation
+		);
+		orc = mutableOrc.freeze();
+		context = ContextBuilder.build()
+			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
+			.finish()
+		;
+		didAct = CreatureLogic.didTakeSpecialActions(context, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc)), mutableOrc);
+		Assert.assertFalse(didAct);
+		Assert.assertNull(mutableOrc.movementPlan);
+		
+		action = CreatureLogic.planNextAction(context
+			, mutableOrc
+			, 50L
+		);
+		Assert.assertNull(action);
+	}
+
 
 	private static TickProcessingContext _createContext(Function<AbsoluteLocation, BlockProxy> function, int random)
 	{
