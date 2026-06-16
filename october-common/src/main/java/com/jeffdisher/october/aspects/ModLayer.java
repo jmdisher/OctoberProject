@@ -34,6 +34,7 @@ public class ModLayer
 	public static final String FILE_ARMOUR_REGISTRY = "armour_registry.tablist";
 	public static final String FILE_STATION_REGISTRY = "station_registry.tablist";
 	public static final String FILE_LOGIC = "logic.tablist";
+	public static final String FILE_TRADING_REGISTRY = "trading.tablist";
 	public static final String FILE_CREATURE_REGISTRY = "creature_registry.tablist";
 	public static final String FILE_MULTI_BLOCK_REGISTRY = "multi_block_registry.tablist";
 	public static final String FILE_COMPOSITE_REGISTRY = "composite_registry.tablist";
@@ -65,6 +66,7 @@ public class ModLayer
 		set.add(FILE_ARMOUR_REGISTRY);
 		set.add(FILE_STATION_REGISTRY);
 		set.add(FILE_LOGIC);
+		set.add(FILE_TRADING_REGISTRY);
 		set.add(FILE_CREATURE_REGISTRY);
 		set.add(FILE_MULTI_BLOCK_REGISTRY);
 		set.add(FILE_COMPOSITE_REGISTRY);

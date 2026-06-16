@@ -1,6 +1,7 @@
 package com.jeffdisher.october.aspects;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -263,5 +264,77 @@ public class TestMiscAspects
 		Assert.assertEquals(expectedMask, bits);
 		Assert.assertNotEquals(0L, bits | SubBlock.fromInt(0, 1, 2).getMask());
 		Assert.assertNotEquals(0L, bits | FacingDirection.SOUTH.inverseRotateInSubBlock(SubBlock.fromInt(0, 2, 2)).getMask());
+	}
+
+	@Test
+	public void farmerOccupation() throws Throwable
+	{
+		// The farmer occupation is probably the most complex so we use it for this basic test of examining it.
+		TradingRegistry.Profession profession = ENV.trading.getProfessionById("op.farmer");
+		Assert.assertEquals("op.farmer", profession.id());
+		Assert.assertEquals("Farmer", profession.name());
+		Assert.assertEquals(4, profession.buyOffers().size());
+		Assert.assertEquals(20, profession.buyOffers().get(ENV.items.getItemById("op.stone_hoe")).intValue());
+		Assert.assertEquals(3, profession.buyOffers().get(ENV.items.getItemById("op.fertilizer")).intValue());
+		Assert.assertEquals(1, profession.buyOffers().get(ENV.items.getItemById("op.wheat_seed")).intValue());
+		Assert.assertEquals(1, profession.buyOffers().get(ENV.items.getItemById("op.carrot_seed")).intValue());
+		Assert.assertEquals(2, profession.sellOffers().size());
+		Assert.assertEquals(3, profession.sellOffers().get(ENV.items.getItemById("op.wheat_item")).intValue());
+		Assert.assertEquals(3, profession.sellOffers().get(ENV.items.getItemById("op.carrot_item")).intValue());
+		Assert.assertEquals(2, profession.crafts().size());
+		
+		TradingRegistry.TradeCraft wheat = profession.crafts().get(0);
+		Assert.assertEquals(3, wheat.inputs().size());
+		Assert.assertEquals(1, wheat.outputs().size());
+		Assert.assertEquals(1, wheat.inputs().get(ENV.items.getItemById("op.stone_hoe")).intValue());
+		Assert.assertEquals(8, wheat.inputs().get(ENV.items.getItemById("op.fertilizer")).intValue());
+		Assert.assertEquals(16, wheat.inputs().get(ENV.items.getItemById("op.wheat_seed")).intValue());
+		Assert.assertEquals(32, wheat.outputs().get(ENV.items.getItemById("op.wheat_item")).intValue());
+		
+		TradingRegistry.TradeCraft carrot = profession.crafts().get(1);
+		Assert.assertEquals(3, carrot.inputs().size());
+		Assert.assertEquals(1, carrot.outputs().size());
+		Assert.assertEquals(1, carrot.inputs().get(ENV.items.getItemById("op.stone_hoe")).intValue());
+		Assert.assertEquals(8, carrot.inputs().get(ENV.items.getItemById("op.fertilizer")).intValue());
+		Assert.assertEquals(16, carrot.inputs().get(ENV.items.getItemById("op.carrot_seed")).intValue());
+		Assert.assertEquals(32, carrot.outputs().get(ENV.items.getItemById("op.carrot_item")).intValue());
+		
+		Assert.assertEquals(6, profession.targetInventory().size());
+		Assert.assertEquals(1, profession.targetInventory().get(ENV.items.getItemById("op.stone_hoe")).intValue());
+		Assert.assertEquals(8, profession.targetInventory().get(ENV.items.getItemById("op.fertilizer")).intValue());
+		Assert.assertEquals(16, profession.targetInventory().get(ENV.items.getItemById("op.wheat_seed")).intValue());
+		Assert.assertEquals(16, profession.targetInventory().get(ENV.items.getItemById("op.carrot_seed")).intValue());
+		Assert.assertEquals(1, profession.targetInventory().get(ENV.items.getItemById("op.wheat_item")).intValue());
+		Assert.assertEquals(1, profession.targetInventory().get(ENV.items.getItemById("op.carrot_item")).intValue());
+	}
+
+	@Test
+	public void checkOccupationsProfitable() throws Throwable
+	{
+		// The occupations should be profitable for the villagers (the outputs of a craft are worth more than inputs).
+		int validatedCount = 0;
+		for (TradingRegistry.Profession profession : ENV.trading.getAllProfessions())
+		{
+			for(TradingRegistry.TradeCraft craft : profession.crafts())
+			{
+				int inputCost = 0;
+				for (Map.Entry<Item, Integer> input : craft.inputs().entrySet())
+				{
+					int unit = profession.buyOffers().get(input.getKey());
+					int total = unit * input.getValue();
+					inputCost += total;
+				}
+				int outputValue = 0;
+				for (Map.Entry<Item, Integer> output : craft.outputs().entrySet())
+				{
+					int unit = profession.sellOffers().get(output.getKey());
+					int total = unit * output.getValue();
+					outputValue += total;
+				}
+				Assert.assertTrue(outputValue > inputCost);
+			}
+			validatedCount += 1;
+		}
+		Assert.assertEquals(6, validatedCount);
 	}
 }

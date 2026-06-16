@@ -1,0 +1,49 @@
+# Entries here have the form:
+# profession_id<TAB>name
+# <TAB>sell<TAB>coins<TAB>item_id
+# <TAB>buy<TAB>coins<TAB>item_id
+# <TAB>craft[<TAB>in<TAB>count<TAB>item_id]+[<TAB>out<TAB>count<TAB>item_id]+
+#
+# The entries here are used by villagers to support the trading mechanic.  Each villager has a set profession which
+# determines what trades they offer and internal crafting recipes they can apply.
+# The profession_id is a stable ID used for serialization but also future localization needs.
+# Non-stackable items will only be purchased by the villager if they are full durability.
+# Note that coins are created/destroyed by villagers as needed.
+# Villagers can respond to trade requests from players but also other villagers.
+
+op.forester	Forester
+	buy	20	op.stone_hatchet
+	buy	1	op.sapling
+	sell	4	op.log
+	sell	1	op.stick
+	sell	3	op.apple
+	craft	in	1	op.stone_hatchet	in	4	op.sapling	out	4	op.stick	out	8	op.log	out	1	op.apple
+op.farmer	Farmer
+	buy	20	op.stone_hoe
+	buy	3	op.fertilizer
+	buy	1	op.wheat_seed
+	buy	1	op.carrot_seed
+	sell	3	op.wheat_item
+	sell	3	op.carrot_item
+	craft	in	1	op.stone_hoe	in	16	op.wheat_seed	in	8	op.fertilizer	out	32	op.wheat_item
+	craft	in	1	op.stone_hoe	in	16	op.carrot_seed	in	8	op.fertilizer	out	32	op.carrot_item
+op.miller	Miller
+	buy	2	op.wheat_item
+	sell	3	op.flour
+	craft	in	1	op.wheat_item	out	1	op.flour
+op.baker	Baker
+	buy	2	op.flour
+	buy	4	op.charcoal
+	sell	4	op.bread
+	craft	in	16	op.flour	in	1	op.charcoal	out	16	op.bread
+op.charcoal_maker	Charcoal Maker
+	buy	2	op.log
+	sell	4	op.charcoal
+	craft	in	16	op.log	out	12	op.charcoal
+op.tool_smith	Tool Smith
+	buy	1	op.stick
+	buy	2	op.stone
+	sell	7	op.stone_hatchet
+	sell	8	op.stone_hoe
+	craft	in	1	op.stick	in	1	op.stone	out	1	op.stone_hatchet
+	craft	in	2	op.stick	in	1	op.stone	out	1	op.stone_hoe

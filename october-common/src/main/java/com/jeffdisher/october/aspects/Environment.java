@@ -88,6 +88,7 @@ public class Environment
 	public final ArmourRegistry armour;
 	public final StationRegistry stations;
 	public final LogicAspect logic;
+	public final TradingRegistry trading;
 	public final CreatureRegistry creatures;
 	public final MultiBlockRegistry multiBlocks;
 	public final CompositeRegistry composites;
@@ -204,6 +205,12 @@ public class Environment
 			this.logic = LogicAspect.load(this.items
 				, this.blocks
 				, logicStream
+			);
+		}
+		try (InputStream tradingStream = _openModded(loader, mods, ModLayer.FILE_TRADING_REGISTRY))
+		{
+			this.trading = TradingRegistry.load(this.items
+				, tradingStream
 			);
 		}
 		try (InputStream creatureStream = _openModded(loader, mods, ModLayer.FILE_CREATURE_REGISTRY))
