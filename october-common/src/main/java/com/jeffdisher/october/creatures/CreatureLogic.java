@@ -7,8 +7,6 @@ import java.util.Map;
 import java.util.function.Function;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
-import com.jeffdisher.october.actions.EntityActionImpregnateCreature;
-import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.Environment;
@@ -17,30 +15,21 @@ import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.CreatureMovementHelpers;
 import com.jeffdisher.october.logic.EntityCollection;
-import com.jeffdisher.october.logic.NudgeHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.PathFinder;
-import com.jeffdisher.october.logic.RayCastHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.logic.VolumeIterator;
-import com.jeffdisher.october.subactions.EntitySubActionReleaseWeapon;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
-import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Difficulty;
-import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
-import com.jeffdisher.october.types.IMutableMinimalEntity;
-import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
-import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -65,18 +54,6 @@ public class CreatureLogic
 	 * minutes).
 	 */
 	public static final long MILLIS_UNTIL_NO_ACTION_DESPAWN = 5L * 60L * 1_000L;
-	/**
-	 * A creature will wait one second between attacks.
-	 */
-	public static final long MILLIS_ATTACK_COOLDOWN = 1000L;
-	/**
-	 * A creature will wait 5 seconds between ranged attacks.
-	 */
-	public static final long MILLIS_RANGED_ATTACK_COOLDOWN = 5000L;
-	/**
-	 * The timeout from exiting love mode until it can be entered again.
-	 */
-	public static final long MILLIS_BREEDING_COOLDOWN = 5L * 60L * 1000L;
 
 
 	/**
@@ -176,35 +153,8 @@ public class CreatureLogic
 	 */
 	public static boolean setCreaturePregnant(MutableCreature creature, EntityLocation sireLocation, long gameTimeMillis)
 	{
-		boolean didBecomePregnant = false;
 		EntityType creatureType = creature.getType();
-		// This only applies to livestock.
-		if (creatureType.isLivestock())
-		{
-			// We can only do this if already in love mode.
-			CreatureExtendedData.LivestockData extendedData = (CreatureExtendedData.LivestockData) creature.newExtendedData;
-			if (extendedData.inLoveMode())
-			{
-				// Average the locations.
-				EntityLocation parentLocation = creature.getLocation();
-				EntityLocation spawnLocation = new EntityLocation((sireLocation.x() + parentLocation.x()) / 2.0f
-						, (sireLocation.y() + parentLocation.y()) / 2.0f
-						, (sireLocation.z() + parentLocation.z()) / 2.0f
-				);
-				// Clear the love mode, set the spawn location, and clear existing plans.
-				long breedingReadyMillis = gameTimeMillis + MILLIS_BREEDING_COOLDOWN;
-				CreatureExtendedData.LivestockData updated = new CreatureExtendedData.LivestockData(
-					false
-					, spawnLocation
-					, breedingReadyMillis
-				);
-				creature.newExtendedData = updated;
-				creature.movementPlan = null;
-				creature.newShouldTakeAction = true;
-				didBecomePregnant = true;
-			}
-		}
-		return didBecomePregnant;
+		return creatureType.template().setCreaturePregnant(creature, sireLocation, gameTimeMillis);
 	}
 
 	/**
@@ -247,43 +197,7 @@ public class CreatureLogic
 			}
 			
 			EntityType creatureType = mutable.getType();
-			if (creatureType.isLivestock())
-			{
-				CreatureExtendedData.LivestockData changedData = _newExtendedDataAfterLivestockAction(context
-					, mutable.getId()
-					, mutable.newType
-					, mutable.newLocation
-					, (CreatureExtendedData.LivestockData)mutable.newExtendedData
-					, (null != mutable.movementPlan) ? mutable.movementPlan.targetEntityId() : CreatureEntity.NO_TARGET_ENTITY_ID
-				);
-				if (null != changedData)
-				{
-					mutable.newExtendedData = changedData;
-					mutable.movementPlan = null;
-					isDone = true;
-				}
-				else
-				{
-					isDone = false;
-				}
-			}
-			else if (creatureType.isHostileMelee())
-			{
-				isDone = _didTakeHostileMeleeAction(context, mutable);
-			}
-			else if (creatureType.isHostileRanged())
-			{
-				isDone = _didTakeHostileRangedAction(context, mutable);
-			}
-			else if (creatureType.isBaby())
-			{
-				isDone = _didTakeBabyAction(context, mutable);
-			}
-			else
-			{
-				// If this isn't hostile, livestock, or a baby, it must be a villager.
-				isDone = false;
-			}
+			isDone = creatureType.template().didTakeSpecialAction(mutable, context);
 		}
 		return isDone;
 	}
@@ -416,31 +330,7 @@ public class CreatureLogic
 	{
 		EntityType type = mutable.getType();
 		
-		_TargetEntity newTarget;
-		if (type.isLivestock())
-		{
-			// This is livestock so choose our target based on whether we are looking for a partner or food.
-			if (((CreatureExtendedData.LivestockData)mutable.newExtendedData).inLoveMode())
-			{
-				// Find another of this type in breeding mode.
-				newTarget = _findBreedable(entityCollection, mutable);
-			}
-			else
-			{
-				// We will keep this simple:  Find the closest player holding our breeding item, up to our limit.
-				newTarget = _findFeedingTarget(entityCollection, mutable);
-			}
-		}
-		else if (type.isHostileMelee() || type.isHostileRanged())
-		{
-			// This is hostile so just search for a player.
-			newTarget = _findPlayerInRange(entityCollection, mutable);
-		}
-		else
-		{
-			// If this isn't livestock or hostile, it must be a baby or villager and they don't currently target anything.
-			newTarget = null;
-		}
+		EntityType.TargetEntity newTarget = type.template().findDeliberateTarget(mutable, entityCollection);
 		
 		// Determine the path if we found a target.
 		CreatureEntity.MovementPlan plan = null;
@@ -626,373 +516,6 @@ public class CreatureLogic
 		return newPlan;
 	}
 
-	private static _TargetEntity _findBreedable(EntityCollection entityCollection, IMutableMinimalEntity creature)
-	{
-		_TargetEntity[] target = new _TargetEntity[1];
-		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
-		EntityType thisType = creature.getType();
-		EntityVolume thisVolume = thisType.volume();
-		int thisCreatureId = creature.getId();
-		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), thisVolume);
-		entityCollection.walkCreaturesInViewDistance(creature, (CreatureEntity check) -> {
-			// Ignore ourselves and make sure that they are the same type and in love mode.
-			if ((thisCreatureId != check.id()) && (thisType == check.type()))
-			{
-				CreatureExtendedData.LivestockData safe = (CreatureExtendedData.LivestockData)check.extendedData();
-				if (safe.inLoveMode())
-				{
-					// See how far away they are so we choose the closest.
-					EntityLocation end = check.location();
-					float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, end, thisVolume);
-					if (distance < distanceToTarget[0])
-					{
-						target[0] = new _TargetEntity(check.id(), end);
-						distanceToTarget[0] = distance;
-					}
-				}
-			}
-		});
-		return target[0];
-	}
-
-	private static _TargetEntity _findFeedingTarget(EntityCollection entityCollection, IMutableMinimalEntity creature)
-	{
-		_TargetEntity[] target = new _TargetEntity[1];
-		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
-		EntityType thisType = creature.getType();
-		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), thisType.volume());
-		EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
-		entityCollection.walkPlayersInViewDistance(creature, (Entity player) -> {
-			// See if this player has the breeding item in their hand.
-			if (thisType.breedingItem() == _itemInPlayerHand(player))
-			{
-				// See how far away they are so we choose the closest.
-				EntityLocation end = player.location();
-				float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, end, playerVolume);
-				if (distance < distanceToTarget[0])
-				{
-					target[0] = new _TargetEntity(player.id(), end);
-					distanceToTarget[0] = distance;
-				}
-			}
-		});
-		return target[0];
-	}
-
-	private static _TargetEntity _findPlayerInRange(EntityCollection entityCollection, IMutableMinimalEntity creature)
-	{
-		_TargetEntity[] target = new _TargetEntity[1];
-		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
-		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), creature.getType().volume());
-		EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
-		entityCollection.walkPlayersInViewDistance(creature, (Entity player) -> {
-			// We are looking for any player so just choose the closest.
-			EntityLocation end = player.location();
-			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, end, playerVolume);
-			if (distance < distanceToTarget[0])
-			{
-				target[0] = new _TargetEntity(player.id(), end);
-				distanceToTarget[0] = distance;
-			}
-		});
-		return target[0];
-	}
-
-	// Returns null if there was no livestock action taken.
-	private static CreatureExtendedData.LivestockData _newExtendedDataAfterLivestockAction(TickProcessingContext context
-		, int creatureId
-		, EntityType creatureType
-		, EntityLocation location
-		, CreatureExtendedData.LivestockData extendedData
-		, int targetEntityId
-	)
-	{
-		CreatureExtendedData.LivestockData changedData = null;
-		
-		// See if we are pregnant or searching for our mate.
-		if (null != extendedData.offspringLocation())
-		{
-			// Spawn the creature and clear our offspring location.
-			Environment env = Environment.getShared();
-			EntityType offspringType = env.creatures.getOffspringType(creatureType);
-			context.creatureSpawner.spawnCreature(offspringType, extendedData.offspringLocation());
-			CreatureExtendedData.LivestockData updated = new CreatureExtendedData.LivestockData(
-				false
-				, null
-				, extendedData.breedingReadyMillis()
-			);
-			changedData = updated;
-		}
-		else if (extendedData.inLoveMode() && (CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId))
-		{
-			// We are in love mode, and have found a target, so see if we are close enough to impregnate our target.
-			// We have a target so see if we are in love mode and if they are in range to breed.
-			MinimalEntity targetEntity = context.previousEntityLookUp.getById(targetEntityId);
-			// If we got here, they must not have unloaded (we would have observed that in didUpdateTargetLocation.
-			Assert.assertTrue(null != targetEntity);
-			
-			// See if they are within mating distance and we are the father.
-			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(location, creatureType.volume());
-			EntityLocation targetBase = targetEntity.location();
-			EntityVolume targetVolume = targetEntity.type().volume();
-			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, targetBase, targetVolume);
-			float matingDistance = creatureType.actionDistance();
-			if ((distance <= matingDistance) && (targetEntity.id() < creatureId))
-			{
-				// Send the message to impregnate them.
-				EntityActionImpregnateCreature sperm = new EntityActionImpregnateCreature(location);
-				context.newChangeSink.creature(targetEntityId, sperm);
-				// We can also now clear our plans since we are done with them.
-				// However, we exited love mode so record when we should re-enter it.
-				long breedingReadyMillis = context.currentTickTimeMillis + MILLIS_BREEDING_COOLDOWN;
-				CreatureExtendedData.LivestockData updated = new CreatureExtendedData.LivestockData(
-					false
-					, null
-					, breedingReadyMillis
-				);
-				changedData = updated;
-			}
-		}
-		return changedData;
-	}
-
-	private static boolean _didTakeHostileMeleeAction(TickProcessingContext context, MutableCreature creature)
-	{
-		boolean isDone;
-		// The only special action we will take is attacking but this path will also reset our tracking if the target moves.
-		// We don't have an objective measurement of time but the tick rate is considered constant within a server instance so we will estimate time passed.
-		long millisSinceLastAttack = context.currentTickTimeMillis - creature.newLastAttackMillis;
-		if ((null != creature.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != creature.movementPlan.targetEntityId()) && (millisSinceLastAttack >= MILLIS_ATTACK_COOLDOWN))
-		{
-			// We are tracking a target so see if they have moved (since we would need to clear our existing targets and
-			// movement plans unless they are close enough for other actions).
-			MinimalEntity targetEntity = context.previousEntityLookUp.getById(creature.movementPlan.targetEntityId());
-			// If we got here, they must not have unloaded (we would have observed that in didUpdateTargetLocation.
-			Assert.assertTrue(null != targetEntity);
-			
-			// See if they are in attack range.
-			EntityType creatureType = creature.getType();
-			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), creatureType.volume());
-			EntityLocation targetBase = targetEntity.location();
-			EntityVolume targetVolume = targetEntity.type().volume();
-			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, targetBase, targetVolume);
-			float attackDistance = creatureType.actionDistance();
-			if (distance <= attackDistance)
-			{
-				// We can attack them so choose the target.
-				int index = context.randomInt.applyAsInt(BodyPart.values().length);
-				BodyPart target = BodyPart.values()[index];
-				EntityActionTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityActionTakeDamageFromEntity<>(target, creatureType.attackDamage(), creature.getId());
-				context.newChangeSink.next(creature.movementPlan.targetEntityId(), takeDamage);
-				NudgeHelpers.nudgeFromMelee(context
-					, creature.movementPlan.targetEntityId()
-					, creature.newLocation
-					, creature.getType().volume()
-					, targetBase
-					, targetVolume
-				);
-				
-				// Since we sent the attack, put us on attack cooldown.
-				creature.newLastAttackMillis = context.currentTickTimeMillis;
-				// We only count a successful attack as an "action".
-				isDone = true;
-			}
-			else
-			{
-				// Too far away.
-				isDone = false;
-			}
-		}
-		else
-		{
-			// Nothing to do.
-			isDone = false;
-		}
-		return isDone;
-	}
-
-	private static boolean _didTakeHostileRangedAction(TickProcessingContext context, MutableCreature creature)
-	{
-		boolean isDone;
-		// The only special action we will take is attacking but this path will also reset our tracking if the target moves.
-		// We don't have an objective measurement of time but the tick rate is considered constant within a server instance so we will estimate time passed.
-		long millisSinceLastAttack = context.currentTickTimeMillis - creature.newLastAttackMillis;
-		if ((null != creature.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != creature.movementPlan.targetEntityId()) && (millisSinceLastAttack >= MILLIS_RANGED_ATTACK_COOLDOWN))
-		{
-			// We are tracking a target so see if they have moved (since we would need to clear our existing targets and
-			// movement plans unless they are close enough for other actions).
-			MinimalEntity targetEntity = context.previousEntityLookUp.getById(creature.movementPlan.targetEntityId());
-			// If we got here, they must not have unloaded (we would have observed that in didUpdateTargetLocation.
-			Assert.assertTrue(null != targetEntity);
-			
-			// See if they are in attack range - we will aim for the centre of the entity, since that will give us a large target.
-			EntityType creatureType = creature.getType();
-			EntityLocation sourceEye = SpatialHelpers.getEyeLocation(creature.getLocation(), creatureType.volume());
-			EntityLocation targetBase = targetEntity.location();
-			EntityVolume targetVolume = targetEntity.type().volume();
-			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEye, targetBase, targetVolume);
-			float attackDistance = creatureType.actionDistance();
-			if (distance <= attackDistance)
-			{
-				// We are in range so find the vector which will fire in an arc toward the centre of the target.
-				EntityLocation targetCentre = SpatialHelpers.getCentreOfRegion(targetBase, targetVolume);
-				
-				// Make sure that we can see them.
-				Environment env = Environment.getShared();
-				RayCastHelpers.RayBlock solidCollision = RayCastHelpers.findFirstCollision(sourceEye, targetCentre, (AbsoluteLocation location) -> {
-					BlockProxy proxy = context.previousBlockLookUp.readBlock(location);
-					boolean shouldStop;
-					if (null != proxy)
-					{
-						boolean isActive = FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE);
-						shouldStop = env.blocks.isSolid(proxy.getBlock(), isActive);
-					}
-					else
-					{
-						shouldStop = true;
-					}
-					return shouldStop;
-				});
-				
-				if (null == solidCollision)
-				{
-					// Nothing in the way so see if there is a ballistic trajectory to satisfy this.
-					EntityLocation startVector = SpatialHelpers.getBallisticVector(sourceEye, targetCentre, EntitySubActionReleaseWeapon.PROJECTILE_POWER_MULTIPLIER);
-					if (null != startVector)
-					{
-						// Create the arrow.
-						context.passiveSpawner.spawnPassive(PassiveType.PROJECTILE_ARROW, sourceEye, startVector, null);
-						
-						// We only count a successful attack as an "action".
-						isDone = true;
-					}
-					else
-					{
-						// There is no way to hit there from here.
-						isDone = false;
-					}
-				}
-				else
-				{
-					// There is something in the way.
-					isDone = false;
-				}
-				// Since we at least tried to find a valid attack, put us on attack cooldown.
-				creature.newLastAttackMillis = context.currentTickTimeMillis;
-			}
-			else
-			{
-				// Too far away.
-				isDone = false;
-			}
-		}
-		else
-		{
-			// Nothing to do.
-			isDone = false;
-		}
-		return isDone;
-	}
-
-	private static boolean _didTakeBabyAction(TickProcessingContext context, MutableCreature creature)
-	{
-		boolean isDone = false;
-		
-		// The only special action a baby can take is growing up, so see if that is ready.
-		CreatureExtendedData.BabyData extendedData = (CreatureExtendedData.BabyData)creature.newExtendedData;
-		if (context.currentTickTimeMillis >= extendedData.maturityMillis())
-		{
-			// We will change the type to the corresponding adult.
-			EntityType currentType = creature.getType();
-			EntityType adultType = currentType.adultType();
-			Assert.assertTrue(null != adultType);
-			creature.changeEntityType(adultType, context.currentTickTimeMillis);
-			isDone = true;
-		}
-		return isDone;
-	}
-
-	private static Item _itemInPlayerHand(Entity player)
-	{
-		int itemKey = player.hotbarItems()[player.hotbarIndex()];
-		Items itemsInHand = player.inventory().getStackForKey(itemKey);
-		return (null != itemsInHand)
-				? itemsInHand.type()
-				: null
-		;
-	}
-
-	private static boolean _isTargetValid(EntityCollection entityCollection, MutableCreature mutable)
-	{
-		// We can only call this if there is a target.
-		int targetId = mutable.movementPlan.targetEntityId();
-		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetId);
-		
-		// How we look at the target depends on our type and state.
-		EntityType creatureType = mutable.getType();
-		boolean isValid = false;
-		if (creatureType.isLivestock())
-		{
-			// This may be a player or a partner creature, depending on state.
-			CreatureExtendedData.LivestockData extendedData = (CreatureExtendedData.LivestockData)mutable.newExtendedData;
-			if (extendedData.inLoveMode())
-			{
-				// We must be looking at a partner so make sure that they are here and still in breeding mode.
-				CreatureEntity partner = entityCollection.getCreatureById(targetId);
-				if (null != partner)
-				{
-					CreatureExtendedData.LivestockData safe = (CreatureExtendedData.LivestockData)partner.extendedData();
-					isValid = safe.inLoveMode();
-				}
-				else
-				{
-					isValid = false;
-				}
-			}
-			else
-			{
-				// We must be looking at a player so make sure they still have food.
-				isValid = _isPlayerVisibleAndHoldingFeed(entityCollection, mutable, targetId);
-			}
-		}
-		else
-		{
-			// We currently must be one of these.
-			Assert.assertTrue(creatureType.isHostileMelee() || creatureType.isHostileRanged());
-			
-			// Make sure that they still exist, are in range.
-			Entity player = entityCollection.getPlayerById(targetId);
-			if (null != player)
-			{
-				EntityLocation sourceEye = SpatialHelpers.getEyeLocation(mutable.newLocation, creatureType.volume());
-				EntityLocation playerBase = player.location();
-				EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
-				float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEye, playerBase, playerVolume);
-				isValid = (distance <= creatureType.viewDistance());
-			}
-		}
-		return isValid;
-	}
-
-	private static boolean _isPlayerVisibleAndHoldingFeed(EntityCollection entityCollection, IMutableMinimalEntity creature, int targetId)
-	{
-		boolean isValid = false;
-		Entity player = entityCollection.getPlayerById(targetId);
-		if (null != player)
-		{
-			EntityLocation sourceEye = SpatialHelpers.getEyeLocation(creature.getLocation(), creature.getType().volume());
-			EntityLocation playerBase = player.location();
-			EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
-			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEye, playerBase, playerVolume);
-			EntityType creatureType = creature.getType();
-			if (distance <= creatureType.viewDistance())
-			{
-				isValid = (creatureType.breedingItem() == _itemInPlayerHand(player));
-			}
-		}
-		return isValid;
-	}
-
 	private static boolean _didDespawn(TickProcessingContext context, MutableCreature mutable)
 	{
 		boolean didDespawn = false;
@@ -1154,7 +677,7 @@ public class CreatureLogic
 		if ((null != mutable.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId()))
 		{
 			// We have some target so see if they are still valid and update our path to them.
-			boolean isTargetValid = _isTargetValid(entityCollection, mutable);
+			boolean isTargetValid = mutable.getType().template().isTargetValid(mutable, entityCollection);
 			
 			if (isTargetValid)
 			{
@@ -1322,8 +845,6 @@ public class CreatureLogic
 		return movementPlan;
 	}
 
-
-	private static record _TargetEntity(int id, EntityLocation location) {}
 
 	private static class _LookupHelper implements Function<AbsoluteLocation, PathFinder.BlockKind>
 	{

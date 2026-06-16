@@ -415,19 +415,42 @@ public class CreatureRegistry
 			, EntityType.IExtendedCodec extendedCodec
 	)
 	{
+		// TODO:  Eventually, these templates need to be part of the data but we just carry-forward their old heuristics, here, for now.
+		EntityType.IBehaviourTemplate template;
+		if (null != breedingItem)
+		{
+			template = new CreatureBehaviourTemplates.LivestockTemplate();
+		}
+		else if (null != adultType)
+		{
+			template = new CreatureBehaviourTemplates.LivestockBabyTemplate();
+		}
+		else if (attackDamage > 0)
+		{
+			template = new CreatureBehaviourTemplates.HostileMeleeTemplate();
+		}
+		else if (-1 == attackDamage)
+		{
+			template = new CreatureBehaviourTemplates.HostileRangedTemplate();
+		}
+		else
+		{
+			template = new CreatureBehaviourTemplates.VillagerTemplate();
+		}
 		return new EntityType(number
-				, id
-				, name
-				, volume
-				, blocksPerSecond
-				, maxHealth
-				, viewDistance
-				, actionDistance
-				, attackDamage
-				, drops
-				, breedingItem
-				, adultType
-				, extendedCodec
+			, id
+			, name
+			, volume
+			, blocksPerSecond
+			, maxHealth
+			, viewDistance
+			, actionDistance
+			, attackDamage
+			, drops
+			, breedingItem
+			, adultType
+			, extendedCodec
+			, template
 		);
 	}
 }

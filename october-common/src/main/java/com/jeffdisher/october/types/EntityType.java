@@ -2,23 +2,26 @@ package com.jeffdisher.october.types;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.logic.EntityCollection;
+
 
 /**
  * This is used closely by CreatureRegistry to determine server-side behaviour but also client-side audio, etc.
  */
 public record EntityType(byte number
-		, String id
-		, String name
-		, EntityVolume volume
-		, float blocksPerSecond
-		, byte maxHealth
-		, float viewDistance
-		, float actionDistance
-		, byte attackDamage
-		, DropChance[] drops
-		, Item breedingItem
-		, EntityType adultType
-		, IExtendedCodec extendedCodec
+	, String id
+	, String name
+	, EntityVolume volume
+	, float blocksPerSecond
+	, byte maxHealth
+	, float viewDistance
+	, float actionDistance
+	, byte attackDamage
+	, DropChance[] drops
+	, Item breedingItem
+	, EntityType adultType
+	, IExtendedCodec extendedCodec
+	, IBehaviourTemplate template
 )
 {
 	/**
@@ -40,15 +43,6 @@ public record EntityType(byte number
 	}
 
 	/**
-	 * @return True if this is a livestock type (ie:  can be bread).
-	 */
-	public boolean isLivestock()
-	{
-		// Anything which has a breedable item is considered livestock.
-		return (null != this.breedingItem);
-	}
-
-	/**
 	 * @return True if this is a hostile creature which does melee damage.
 	 */
 	public boolean isHostileMelee()
@@ -62,14 +56,6 @@ public record EntityType(byte number
 	public boolean isHostileRanged()
 	{
 		return (-1 == this.attackDamage);
-	}
-
-	/**
-	 * @return True if this is the baby version of an adult creature.
-	 */
-	public boolean isBaby()
-	{
-		return (null != this.adultType);
 	}
 
 
@@ -102,4 +88,50 @@ public record EntityType(byte number
 		 */
 		public void write(ByteBuffer buffer, Object extendedData, long gameTimeMillis);
 	}
+
+	/**
+	 * The common interface implemented by templates of specific behaviours which can be attached to an EntityType.
+	 */
+	public static interface IBehaviourTemplate
+	{
+		/**
+		 * Finds a target for deliberate path creation, returning null if one couldn't be found.
+		 * 
+		 * @param creature The MutableCreature instance.
+		 * @param entityCollection The current entities in the world.
+		 * @return The target entity.
+		 */
+		public TargetEntity findDeliberateTarget(MutableCreature creature, EntityCollection entityCollection);
+		/**
+		 * Checks if the current target entity is valid (the implementation can assume one is selected).
+		 * 
+		 * @param creature The MutableCreature instance.
+		 * @param entityCollection The current entities in the world.
+		 * @return True if the target is valid or false if it doesn't exist or is no longer a valid target.
+		 */
+		public boolean isTargetValid(MutableCreature creature, EntityCollection entityCollection);
+		/**
+		 * Called at the beginning of a tick to allow the creature to validate its plan and target, potentially taking
+		 * a special action instead of continuing with the normal movement attempt.
+		 * 
+		 * @param creature The MutableCreature instance.
+		 * @param context The current tick context.
+		 * @return True if a special action was taken (or if normal movement should be skipped for any reason).
+		 */
+		public boolean didTakeSpecialAction(MutableCreature creature, TickProcessingContext context);
+		/**
+		 * Called when a livestock animal is being set pregnant, returning whether the animal's state changed.
+		 * 
+		 * @param creature The MutableCreature instance.
+		 * @param sireLocation The base location of the entity which sent the request.
+		 * @param gameTimeMillis The current game millisecond time.
+		 * @return True if the creature became pregnant.
+		 */
+		public boolean setCreaturePregnant(MutableCreature creature, EntityLocation sireLocation, long gameTimeMillis);
+	}
+
+	/**
+	 * A special tuple type used by IBehaviourTemplate.
+	 */
+	public static record TargetEntity(int id, EntityLocation location) {}
 }

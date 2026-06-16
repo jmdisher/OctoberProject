@@ -16,6 +16,7 @@ import com.jeffdisher.october.actions.EntityActionImpregnateCreature;
 import com.jeffdisher.october.actions.EntityActionNudge;
 import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.CreatureBehaviourTemplates;
 import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
@@ -501,7 +502,7 @@ public class TestCreatureLogic
 		Assert.assertTrue(didBecomePregnant);
 		Assert.assertFalse(((CreatureExtendedData.LivestockData)mutable.newExtendedData).inLoveMode());
 		Assert.assertEquals(new EntityLocation(0.4f, 0.0f, 0.0f), ((CreatureExtendedData.LivestockData)mutable.newExtendedData).offspringLocation());
-		Assert.assertEquals(gameTimeMillis + CreatureLogic.MILLIS_BREEDING_COOLDOWN, ((CreatureExtendedData.LivestockData)mutable.newExtendedData).breedingReadyMillis());
+		Assert.assertEquals(gameTimeMillis + CreatureBehaviourTemplates.MILLIS_BREEDING_COOLDOWN, ((CreatureExtendedData.LivestockData)mutable.newExtendedData).breedingReadyMillis());
 	}
 
 	@Test
@@ -682,7 +683,7 @@ public class TestCreatureLogic
 		
 		// But will work if we advance tick number further.
 		context = ContextBuilder.build()
-			.tick(context.currentTick + CreatureLogic.MILLIS_ATTACK_COOLDOWN / context.millisPerTick)
+			.tick(context.currentTick + CreatureBehaviourTemplates.MILLIS_ATTACK_COOLDOWN / context.millisPerTick)
 			.sinks(null, changeSink)
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
 			.fixedRandom(2)
@@ -1049,7 +1050,7 @@ public class TestCreatureLogic
 		};
 		TickProcessingContext context = ContextBuilder.build()
 			.millisPerTick(millisPerTick)
-			.tick(CreatureLogic.MILLIS_RANGED_ATTACK_COOLDOWN / millisPerTick)
+			.tick(CreatureBehaviourTemplates.MILLIS_RANGED_ATTACK_COOLDOWN / millisPerTick)
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
 			.passive(passiveSpawner)
 			.fixedRandom(2)
@@ -1087,7 +1088,7 @@ public class TestCreatureLogic
 		
 		// But will work if we advance tick number further.
 		context = ContextBuilder.build()
-			.tick(context.currentTick + CreatureLogic.MILLIS_RANGED_ATTACK_COOLDOWN / context.millisPerTick)
+			.tick(context.currentTick + CreatureBehaviourTemplates.MILLIS_RANGED_ATTACK_COOLDOWN / context.millisPerTick)
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
 			.passive(passiveSpawner)
 			.fixedRandom(2)
