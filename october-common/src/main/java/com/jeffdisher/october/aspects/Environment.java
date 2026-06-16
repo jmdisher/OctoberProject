@@ -206,7 +206,7 @@ public class Environment
 				, logicStream
 			);
 		}
-		try (InputStream creatureStream = _openModded(loader, mods, ModLayer.FILE_CRETURE_REGISTRY))
+		try (InputStream creatureStream = _openModded(loader, mods, ModLayer.FILE_CREATURE_REGISTRY))
 		{
 			this.creatures = CreatureRegistry.loadRegistry(this.items
 				, creatureStream

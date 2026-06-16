@@ -15,6 +15,13 @@ public class LayeredInputStream extends InputStream
 
 	public LayeredInputStream(InputStream head, InputStream[] tails)
 	{
+		// None of the inputs can be null.
+		Assert.assertTrue(null != head);
+		for (InputStream tail : tails)
+		{
+			Assert.assertTrue(null != tail);
+		}
+		
 		_layers = new InputStream[1 + tails.length];
 		_layers[0] = head;
 		System.arraycopy(tails, 0, _layers, 1, tails.length);
