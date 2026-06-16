@@ -11,6 +11,7 @@ import com.jeffdisher.october.subactions.EntitySubActionReleaseWeapon;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.CreatureEntity;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -43,6 +44,11 @@ public class CreatureBehaviourTemplates
 	 * The timeout from exiting love mode until it can be entered again.
 	 */
 	public static final long MILLIS_BREEDING_COOLDOWN = 5L * 60L * 1000L;
+	/**
+	 * The amount of time a hostile mob will continue to live if not taking any deliberate action before despawn (5
+	 * minutes).
+	 */
+	public static final long MILLIS_UNTIL_NO_ACTION_DESPAWN = 5L * 60L * 1_000L;
 
 	public static class LivestockTemplate implements EntityType.IBehaviourTemplate
 	{
@@ -201,6 +207,12 @@ public class CreatureBehaviourTemplates
 			}
 			return didBecomePregnant;
 		}
+		@Override
+		public boolean shouldDespawn(MutableCreature creature, TickProcessingContext context)
+		{
+			// Livestock doesn't automatically despawn.
+			return false;
+		}
 		
 		// Returns null if there was no livestock action taken.
 		private static CreatureExtendedData.LivestockData _newExtendedDataAfterLivestockAction(TickProcessingContext context
@@ -297,6 +309,12 @@ public class CreatureBehaviourTemplates
 		{
 			throw Assert.unreachable();
 		}
+		@Override
+		public boolean shouldDespawn(MutableCreature creature, TickProcessingContext context)
+		{
+			// Livestock babies never automatically despawn.
+			return false;
+		}
 	}
 
 	public static class HostileMeleeTemplate implements EntityType.IBehaviourTemplate
@@ -370,6 +388,11 @@ public class CreatureBehaviourTemplates
 		public boolean setCreaturePregnant(MutableCreature creature, EntityLocation sireLocation, long gameTimeMillis)
 		{
 			throw Assert.unreachable();
+		}
+		@Override
+		public boolean shouldDespawn(MutableCreature creature, TickProcessingContext context)
+		{
+			return _shouldHostileDespawn(context, creature);
 		}
 	}
 
@@ -473,6 +496,11 @@ public class CreatureBehaviourTemplates
 		{
 			throw Assert.unreachable();
 		}
+		@Override
+		public boolean shouldDespawn(MutableCreature creature, TickProcessingContext context)
+		{
+			return _shouldHostileDespawn(context, creature);
+		}
 	}
 
 	public static class VillagerTemplate implements EntityType.IBehaviourTemplate
@@ -498,6 +526,12 @@ public class CreatureBehaviourTemplates
 		public boolean setCreaturePregnant(MutableCreature creature, EntityLocation sireLocation, long gameTimeMillis)
 		{
 			throw Assert.unreachable();
+		}
+		@Override
+		public boolean shouldDespawn(MutableCreature creature, TickProcessingContext context)
+		{
+			// Villagers never automatically despawn.
+			return false;
 		}
 	}
 
@@ -552,5 +586,22 @@ public class CreatureBehaviourTemplates
 			isValid = (distance <= creatureType.viewDistance());
 		}
 		return isValid;
+	}
+
+	private static boolean _shouldHostileDespawn(TickProcessingContext context, MutableCreature mutable)
+	{
+		boolean shouldDespawn;
+		if (Difficulty.PEACEFUL == context.config.difficulty)
+		{
+			// If we are peaceful, we want to despawn any creatures which are hostile.
+			shouldDespawn = true;
+		}
+		else
+		{
+			// See if this should despawn due to a timeout.
+			long despawnMillis = mutable.newDespawnKeepAliveMillis + MILLIS_UNTIL_NO_ACTION_DESPAWN;
+			shouldDespawn = (despawnMillis <= context.currentTickTimeMillis);
+		}
+		return shouldDespawn;
 	}
 }

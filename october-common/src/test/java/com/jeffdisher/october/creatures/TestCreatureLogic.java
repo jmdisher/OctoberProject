@@ -365,7 +365,7 @@ public class TestCreatureLogic
 		
 		// Now, advance time and do the same, seeing the despawn of the orc but not the cow.
 		context = ContextBuilder.build()
-			.tick(startTick + (CreatureLogic.MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick))
+			.tick(startTick + (CreatureBehaviourTemplates.MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick))
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
 			.fixedRandom(2)
 			.finish()

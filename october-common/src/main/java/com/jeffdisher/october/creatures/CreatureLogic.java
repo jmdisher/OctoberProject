@@ -23,7 +23,6 @@ import com.jeffdisher.october.logic.VolumeIterator;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CreatureEntity;
-import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
@@ -49,11 +48,6 @@ public class CreatureLogic
 	 * The chance of making an idle action instead, of we fail to make a deliberate action when acting.
 	 */
 	public static final int IDLE_ACTION_DENOMINATOR = 30;
-	/**
-	 * The amount of time a hostile mob will continue to live if not taking any deliberate action before despawn (5
-	 * minutes).
-	 */
-	public static final long MILLIS_UNTIL_NO_ACTION_DESPAWN = 5L * 60L * 1_000L;
 
 
 	/**
@@ -174,10 +168,13 @@ public class CreatureLogic
 			, MutableCreature mutable
 	)
 	{
+		EntityType creatureType = mutable.getType();
+		
 		boolean isDone;
-		if (_didDespawn(context, mutable))
+		if (creatureType.template().shouldDespawn(mutable, context))
 		{
 			// This counts as being "done" since we should skip any walking.
+			mutable.setHealth((byte)0);
 			isDone = true;
 		}
 		else
@@ -192,11 +189,10 @@ public class CreatureLogic
 			if (null == mutable.movementPlan)
 			{
 				// We have no plan so make a new one.
-				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), mutable.getType().volume());
+				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), creatureType.volume());
 				mutable.movementPlan = _makeMovementPlan(context, blockKindLookup, entityCollection, mutable);
 			}
 			
-			EntityType creatureType = mutable.getType();
 			isDone = creatureType.template().didTakeSpecialAction(mutable, context);
 		}
 		return isDone;
@@ -514,29 +510,6 @@ public class CreatureLogic
 			}
 		}
 		return newPlan;
-	}
-
-	private static boolean _didDespawn(TickProcessingContext context, MutableCreature mutable)
-	{
-		boolean didDespawn = false;
-		EntityType creatureType = mutable.getType();
-		if ((creatureType.isHostileMelee() || creatureType.isHostileRanged()) && (Difficulty.PEACEFUL == context.config.difficulty))
-		{
-			// If we are peaceful, we want to despawn any creatures which are hostile.
-			mutable.newHealth = (byte)0;
-			didDespawn = true;
-		}
-		else
-		{
-			// See if this should despawn due to a timeout.
-			long despawnMillis = mutable.newDespawnKeepAliveMillis + MILLIS_UNTIL_NO_ACTION_DESPAWN;
-			if (creatureType.canDespawn() && (despawnMillis <= context.currentTickTimeMillis))
-			{
-				mutable.setHealth((byte)0);
-				didDespawn = true;
-			}
-		}
-		return didDespawn;
 	}
 
 	private static CreatureEntity.MovementPlan _pruneAndStoreFreshTargetPlan(TickProcessingContext context

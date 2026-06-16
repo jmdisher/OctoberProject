@@ -33,31 +33,6 @@ public record EntityType(byte number
 		return 2.0f * this.viewDistance;
 	}
 
-	/**
-	 * @return True if this kind of creature can passively despawn when inactive (ie:  not a livestock type).
-	 */
-	public boolean canDespawn()
-	{
-		// Anything which can't breed can despawn.
-		return (null == this.breedingItem) && (null == this.adultType);
-	}
-
-	/**
-	 * @return True if this is a hostile creature which does melee damage.
-	 */
-	public boolean isHostileMelee()
-	{
-		return (this.attackDamage > 0);
-	}
-
-	/**
-	 * @return True if this is a hostile creature which does ranged damage using a bow and arrow.
-	 */
-	public boolean isHostileRanged()
-	{
-		return (-1 == this.attackDamage);
-	}
-
 
 	/**
 	 * The codec used by the type-specific extendedData since it is persisted and passed over the network.
@@ -128,6 +103,15 @@ public record EntityType(byte number
 		 * @return True if the creature became pregnant.
 		 */
 		public boolean setCreaturePregnant(MutableCreature creature, EntityLocation sireLocation, long gameTimeMillis);
+		/**
+		 * Called to check if the given creature should despawn within the current tick.  Note that despawning doesn't
+		 * drop inventory/loot.
+		 * 
+		 * @param creature The MutableCreature instance.
+		 * @param context The current tick context.
+		 * @return True if creature should be despawned within the current tick.
+		 */
+		public boolean shouldDespawn(MutableCreature creature, TickProcessingContext context);
 	}
 
 	/**
