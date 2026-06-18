@@ -35,9 +35,14 @@ public class CreatureRegistry
 	private static final String SUB_VIEW_DISTANCE = "view_distance";
 	private static final String SUB_ACTION_DISTANCE = "action_distance";
 	private static final String SUB_DROPS = "drops";
-	private static final String SUB_OPT_ATTACK_DAMAGE = "attack_damage";
-	private static final String SUB_OPT_BREEDING_ITEM = "breeding_item";
-	private static final String SUB_OPT_ADULT_TYPE = "adult_type";
+	private static final String SUB_EXTENSION = "extension";
+
+	// These are the valid values for SUB_EXTENSION.
+	private static final String EXTENSION_NAME_LIVESTOCK = "livestock";
+	private static final String EXTENSION_NAME_LIVESTOCK_BABY = "livestock_baby";
+	private static final String EXTENSION_NAME_HOSTILE_MELEE = "hostile_melee";
+	private static final String EXTENSION_NAME_HOSTILE_RANGED = "hostile_ranged";
+	private static final String EXTENSION_NAME_VILLAGER = "villager";
 
 	private static final String FAKE_PLAYER_ID = "op.player";
 
@@ -70,10 +75,11 @@ public class CreatureRegistry
 			private byte _maxHealth = -1;
 			private float _viewDistance = -1.0f;
 			private float _actionDistance = -1.0f;
-			private byte _attackDamage = 0;
 			private DropChance[] _drops = null;
-			private Item _breedingItem = null;
-			private EntityType _adultType = null;
+			private EntityType.IExtension _extension = null;
+			private boolean _canSpawnDynamically = false;
+			private boolean _isBreedable = false;
+			private EntityType _adultToValidate = null;
 			
 			@Override
 			public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
@@ -100,41 +106,13 @@ public class CreatureRegistry
 				_assert(SUB_MAX_HEALTH, _maxHealth > 0);
 				_assert(SUB_VIEW_DISTANCE, _viewDistance > 0.0f);
 				_assert(SUB_ACTION_DISTANCE, _actionDistance > 0.0f);
-				// optional _attackDamage
 				_assert(SUB_DROPS, null != _drops);
-				// optional _breedingItem
+				_assert(SUB_EXTENSION, null != _extension);
 				
 				// Add 2 to the number since 0 is reserved as an error and 1 is for the player.
 				Assert.assertTrue(creatures.size() < 253);
 				byte number = (byte)(creatures.size() + 2);
 				
-				// TODO:  Eventually, these extensions need to be part of the data but we just carry-forward their old heuristics, here, for now.
-				boolean canSpawnDynamically = false;
-				EntityType.IExtension extension;
-				if (null != _breedingItem)
-				{
-					// If this can breed, we will treat it as livestock.
-					extension = new ExtensionLivestock(_breedingItem);
-				}
-				else if (null != _adultType)
-				{
-					// If this has an adult type, we assume it is a baby.
-					extension = new ExtensionLivestockBaby(_adultType);
-				}
-				else if (_attackDamage > 0)
-				{
-					extension = new ExtensionHostileMelee(_attackDamage);
-					canSpawnDynamically = true;
-				}
-				else if (-1 == _attackDamage)
-				{
-					extension = new ExtensionHostileRanged();
-					canSpawnDynamically = true;
-				}
-				else
-				{
-					extension = new ExtensionVillager();
-				}
 				EntityType type = new EntityType(number
 						, _id
 						, _name
@@ -144,22 +122,21 @@ public class CreatureRegistry
 						, _viewDistance
 						, _actionDistance
 						, _drops
-						, extension
+						, _extension
 				);
 				typesById.put(_id, type);
-				if (null != _breedingItem)
+				if (_isBreedable)
 				{
 					// If this has a breeding item, it better have offspring (described later in the file).
 					breedableTypesToVerify.add(type);
 				}
-				if (null != _adultType)
+				if (null != _adultToValidate)
 				{
 					// Note that a type cannot be both adult and baby at the same time.
-					Assert.assertTrue(null == _breedingItem);
-					babyTypeByAdultType.put(_adultType, type);
+					babyTypeByAdultType.put(_adultToValidate, type);
 				}
 				creatures.add(type);
-				if (canSpawnDynamically)
+				if (_canSpawnDynamically)
 				{
 					dynamicSpawns.add(type);
 				}
@@ -171,10 +148,11 @@ public class CreatureRegistry
 				_maxHealth = -1;
 				_viewDistance = -1.0f;
 				_actionDistance = -1.0f;
-				_attackDamage = 0;
 				_drops = null;
-				_breedingItem = null;
-				_adultType = null;
+				_extension = null;
+				_canSpawnDynamically = false;
+				_isBreedable = false;
+				_adultToValidate = null;
 			}
 			@Override
 			public void processSubRecord(String name, String[] parameters) throws TabListReader.TabListException
@@ -241,34 +219,66 @@ public class CreatureRegistry
 					}
 					_drops = drops;
 				}
-				else if (SUB_OPT_ATTACK_DAMAGE.equals(name))
+				else if (SUB_EXTENSION.equals(name))
 				{
-					if (1 != parameters.length)
+					// The extension requires that we parse each special-type as a logical white-list with special parameters.
+					if (0 == parameters.length)
 					{
-						throw new TabListReader.TabListException(_id + ": Expected 1 parameter for " + SUB_OPT_ATTACK_DAMAGE);
+						throw new TabListReader.TabListException(_id + ": Extension name missing");
 					}
-					_attackDamage = _getByte(parameters[0]);
-				}
-				else if (SUB_OPT_BREEDING_ITEM.equals(name))
-				{
-					if (1 != parameters.length)
+					String extensionName = parameters[0];
+					if (extensionName.equals(EXTENSION_NAME_LIVESTOCK))
 					{
-						throw new TabListReader.TabListException(_id + ": Expected 1 parameter for " + SUB_OPT_BREEDING_ITEM);
+						if (2 != parameters.length)
+						{
+							throw new TabListReader.TabListException(_id + ": livestock extension requires breeding item, only");
+						}
+						Item breedingItem = _getItem(parameters[1]);
+						_extension = new ExtensionLivestock(breedingItem);
+						_isBreedable = true;
 					}
-					_breedingItem = _getItem(parameters[0]);
-				}
-				else if (SUB_OPT_ADULT_TYPE.equals(name))
-				{
-					if (1 != parameters.length)
+					else if (extensionName.equals(EXTENSION_NAME_LIVESTOCK_BABY))
 					{
-						throw new TabListReader.TabListException(_id + ": Expected 1 parameter for " + SUB_OPT_BREEDING_ITEM);
+						if (2 != parameters.length)
+						{
+							throw new TabListReader.TabListException(_id + ": livestock_baby extension requires adult type, only");
+						}
+						EntityType adultType = typesById.get(parameters[1]);
+						_extension = new ExtensionLivestockBaby(adultType);
+						_adultToValidate = adultType;
 					}
-					String adultType = parameters[0];
-					if (!typesById.containsKey(adultType))
+					else if (extensionName.equals(EXTENSION_NAME_HOSTILE_MELEE))
 					{
-						throw new TabListReader.TabListException(_id + ": Adult type does not exist \"" + adultType + "\"");
+						if (2 != parameters.length)
+						{
+							throw new TabListReader.TabListException(_id + ": hostile_melee extension requires attack damage, only");
+						}
+						byte attackDamage = _getByte(parameters[1]);
+						_extension = new ExtensionHostileMelee(attackDamage);
+						_canSpawnDynamically = true;
 					}
-					_adultType = typesById.get(adultType);
+					else if (extensionName.equals(EXTENSION_NAME_HOSTILE_RANGED))
+					{
+						if (1 != parameters.length)
+						{
+							throw new TabListReader.TabListException(_id + ": hostile_ranged extension has no parameter");
+						}
+						_extension = new ExtensionHostileRanged();
+						_canSpawnDynamically = true;
+					}
+					else if (extensionName.equals(EXTENSION_NAME_VILLAGER))
+					{
+						if (1 != parameters.length)
+						{
+							throw new TabListReader.TabListException(_id + ": villager extension has no parameter");
+						}
+						_extension = new ExtensionVillager();
+						_isBreedable = true;
+					}
+					else
+					{
+						throw new TabListReader.TabListException(_id + ": unknown extension type: \"" + extensionName + "\"");
+					}
 				}
 				else
 				{

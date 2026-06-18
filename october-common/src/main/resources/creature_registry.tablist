@@ -6,13 +6,12 @@
 # <TAB>view_distance<TAB>float
 # <TAB>action_distance<TAB>float
 # <TAB>drops<TAB>[probability item]*
-# [<TAB>attack_damage<TAB>byte]
-# [<TAB>breeding_item<TAB>item_id]
+# <TAB>extension<TAB>extension_name[<TAB>parameter]*
 #
 # Note that all entries listed here will be numbered in order, starting at 2 (as 1 is hard-coded as "PLAYER" and 0 is a
 # reserved error value.
-# "attack_damage" defaults to 0 (non-hostile) when omitted but -1 is a special value meaning a ranged bow and arrow.
-# "breeding_item" presence means that the creature can be bread.
+# "extension" must reference an IExtension implementation by name listed in CreatureRegistry.  Its parameters depend on
+# its type.
 
 op.cow	Cow
 	volume	0.9	1.2
@@ -21,7 +20,7 @@ op.cow	Cow
 	view_distance	7.0
 	action_distance	1.0
 	drops	100	op.beef	100	op.beef	100	op.beef	100	op.beef	50	op.beef
-	breeding_item	op.wheat_item
+	extension	livestock	op.wheat_item
 op.orc	Orc
 	volume	0.7	0.4
 	blocks_per_second	2.0
@@ -29,7 +28,7 @@ op.orc	Orc
 	view_distance	8.0
 	action_distance	1.0
 	drops	20	op.iron_dust
-	attack_damage	5
+	extension	hostile_melee	5
 op.cow_baby	Calf
 	volume	0.4	0.6
 	blocks_per_second	0.8
@@ -37,7 +36,7 @@ op.cow_baby	Calf
 	view_distance	5.0
 	action_distance	1.0
 	drops	100	op.beef
-	adult_type	op.cow
+	extension	livestock_baby	op.cow
 op.skeleton	Skeleton
 	volume	1.8	0.6
 	blocks_per_second	1.0
@@ -45,7 +44,7 @@ op.skeleton	Skeleton
 	view_distance	8.0
 	action_distance	7.0
 	drops	10	op.bow
-	attack_damage	-1
+	extension	hostile_ranged
 op.villager	Villager
 	volume	1.7	0.4
 	blocks_per_second	2.0
@@ -53,6 +52,7 @@ op.villager	Villager
 	view_distance	8.0
 	action_distance	1.0
 	drops	100	op.coin	100	op.coin	100	op.coin	100	op.coin	100	op.coin
+	extension	villager
 op.villager_baby	Young Villager
 	volume	1.1	0.3
 	blocks_per_second	1.0
@@ -60,4 +60,4 @@ op.villager_baby	Young Villager
 	view_distance	6.0
 	action_distance	1.0
 	drops	100	op.coin
-	adult_type	op.villager
+	extension	livestock_baby	op.villager
