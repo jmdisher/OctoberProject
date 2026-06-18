@@ -17,7 +17,6 @@ import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
-import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -156,7 +155,7 @@ public class ExtensionHostileRanged implements EntityType.IExtension
 		return CommonExtensionHelpers.shouldHostileDespawn(context, creature);
 	}
 	@Override
-	public boolean canApplyItemToCreature(PartialEntity creature, Item itemType, long gameTimeMillis)
+	public boolean canApplyItemToCreature(MinimalEntity creature, Item itemType, long gameTimeMillis)
 	{
 		// We don't do direct item application to hostiles.
 		return false;

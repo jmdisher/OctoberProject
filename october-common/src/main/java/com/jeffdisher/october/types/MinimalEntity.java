@@ -9,9 +9,11 @@ import com.jeffdisher.october.aspects.Environment;
  * This type purely exists for read-only actions within IMutationEntity objects.
  */
 public record MinimalEntity(int id
-		, EntityType type
-		// Note that the location is the bottom, south-west corner of the space occupied by the entity and the volume extends from there.
-		, EntityLocation location
+	, EntityType type
+	// Note that the location is the bottom, south-west corner of the space occupied by the entity and the volume extends from there.
+	, EntityLocation location
+	// The extended data is based on type.
+	, Object extendedData
 )
 {
 	public static MinimalEntity fromEntity(Entity entity)
@@ -21,8 +23,9 @@ public record MinimalEntity(int id
 		{
 			Environment env = Environment.getShared();
 			result = new MinimalEntity(entity.id()
-					, env.creatures.PLAYER
-					, entity.location()
+				, env.creatures.PLAYER
+				, entity.location()
+				, env.creatures.PLAYER.extension().buildDefaultExtendedData(0L)
 			);
 		}
 		return result;
@@ -34,8 +37,9 @@ public record MinimalEntity(int id
 		if (null != creature)
 		{
 			result = new MinimalEntity(creature.id()
-					, creature.type()
-					, creature.location()
+				, creature.type()
+				, creature.location()
+				, creature.extendedData()
 			);
 		}
 		return result;
@@ -47,8 +51,9 @@ public record MinimalEntity(int id
 		if (null != entity)
 		{
 			result = new MinimalEntity(entity.id()
-					, entity.type()
-					, entity.location()
+				, entity.type()
+				, entity.location()
+				, entity.extendedData()
 			);
 		}
 		return result;

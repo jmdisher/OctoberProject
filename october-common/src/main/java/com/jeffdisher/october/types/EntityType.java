@@ -16,10 +16,7 @@ public record EntityType(byte number
 	, byte maxHealth
 	, float viewDistance
 	, float actionDistance
-	, byte attackDamage
 	, DropChance[] drops
-	, Item breedingItem
-	, EntityType adultType
 	, IExtension extension
 )
 {
@@ -109,12 +106,12 @@ public record EntityType(byte number
 		/**
 		 * Checks if an item can be directly applied to a creature without modifying it.
 		 * 
-		 * @param creature The read-only partial instance.
+		 * @param creature The read-only minimal instance.
 		 * @param itemType The item type to apply.
 		 * @param gameTimeMillis The current game millisecond time.
 		 * @return True if this item can be applied to the given creature.
 		 */
-		public boolean canApplyItemToCreature(PartialEntity creature, Item itemType, long gameTimeMillis);
+		public boolean canApplyItemToCreature(MinimalEntity creature, Item itemType, long gameTimeMillis);
 		/**
 		 * Applies an item directly to the creature, returning whether was successfully applied.
 		 * 

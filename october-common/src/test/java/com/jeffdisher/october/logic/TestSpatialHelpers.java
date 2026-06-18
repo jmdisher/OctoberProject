@@ -107,7 +107,7 @@ public class TestSpatialHelpers
 		EntityLocation location1 = new EntityLocation(1.0f, -1.0f, 12.0f);
 		MutableEntity entity1 = MutableEntity.createWithLocation(1, location1, location1);
 		EntityLocation location2 = new EntityLocation(1.8f, -1.8f, 12.6f);
-		MinimalEntity entity2 = new MinimalEntity(2, COW, location2);
+		MinimalEntity entity2 = new MinimalEntity(2, COW, location2, COW.extension().buildDefaultExtendedData(0L));
 		AbsoluteLocation block1 = new AbsoluteLocation(-3, 2, -1);
 		
 		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(entity1.newLocation, ENV.creatures.PLAYER.volume());

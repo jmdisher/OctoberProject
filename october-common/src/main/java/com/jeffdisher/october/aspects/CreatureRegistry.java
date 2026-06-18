@@ -60,6 +60,7 @@ public class CreatureRegistry
 		List<EntityType> creatures = new ArrayList<>();
 		Map<EntityType, EntityType> babyTypeByAdultType = new HashMap<>();
 		Set<EntityType> breedableTypesToVerify = new HashSet<>();
+		List<EntityType> dynamicSpawns = new ArrayList<>();
 		
 		TabListReader.readEntireFile(new TabListReader.IParseCallbacks() {
 			private String _id = null;
@@ -108,24 +109,27 @@ public class CreatureRegistry
 				byte number = (byte)(creatures.size() + 2);
 				
 				// TODO:  Eventually, these extensions need to be part of the data but we just carry-forward their old heuristics, here, for now.
+				boolean canSpawnDynamically = false;
 				EntityType.IExtension extension;
 				if (null != _breedingItem)
 				{
 					// If this can breed, we will treat it as livestock.
-					extension = new ExtensionLivestock();
+					extension = new ExtensionLivestock(_breedingItem);
 				}
 				else if (null != _adultType)
 				{
 					// If this has an adult type, we assume it is a baby.
-					extension = new ExtensionLivestockBaby();
+					extension = new ExtensionLivestockBaby(_adultType);
 				}
 				else if (_attackDamage > 0)
 				{
-					extension = new ExtensionHostileMelee();
+					extension = new ExtensionHostileMelee(_attackDamage);
+					canSpawnDynamically = true;
 				}
 				else if (-1 == _attackDamage)
 				{
 					extension = new ExtensionHostileRanged();
+					canSpawnDynamically = true;
 				}
 				else
 				{
@@ -139,10 +143,7 @@ public class CreatureRegistry
 						, _maxHealth
 						, _viewDistance
 						, _actionDistance
-						, _attackDamage
 						, _drops
-						, _breedingItem
-						, _adultType
 						, extension
 				);
 				typesById.put(_id, type);
@@ -158,6 +159,10 @@ public class CreatureRegistry
 					babyTypeByAdultType.put(_adultType, type);
 				}
 				creatures.add(type);
+				if (canSpawnDynamically)
+				{
+					dynamicSpawns.add(type);
+				}
 				
 				_id = null;
 				_name = null;
@@ -336,7 +341,12 @@ public class CreatureRegistry
 			}
 		}
 		
-		return new CreatureRegistry(items, typesById, creatures, babyTypeByAdultType);
+		return new CreatureRegistry(items
+			, typesById
+			, creatures
+			, babyTypeByAdultType
+			, dynamicSpawns
+		);
 	}
 
 
@@ -351,7 +361,12 @@ public class CreatureRegistry
 	 */
 	public final EntityType[] HOSTILE_MOBS;
 
-	private CreatureRegistry(ItemRegistry items, Map<String, EntityType> mapByIds, List<EntityType> creatures, Map<EntityType, EntityType> babyTypeByAdultType)
+	private CreatureRegistry(ItemRegistry items
+		, Map<String, EntityType> mapByIds
+		, List<EntityType> creatures
+		, Map<EntityType, EntityType> babyTypeByAdultType
+		, List<EntityType> dynamicSpawns
+	)
 	{
 		this.PLAYER = new EntityType((byte)1
 				, FAKE_PLAYER_ID
@@ -361,9 +376,6 @@ public class CreatureRegistry
 				, (byte)100
 				, 0.0f
 				, 0.0f
-				, (byte)0
-				, null
-				, null
 				, null
 				, new ExtensionPlayer()
 		);
@@ -383,8 +395,7 @@ public class CreatureRegistry
 		
 		_mapByIds = Collections.unmodifiableMap(mapByIds);
 		_babyTypeByAdultType = Collections.unmodifiableMap(babyTypeByAdultType);
-		this.HOSTILE_MOBS = _mapByIds.values().stream()
-			.filter((EntityType type) -> (type.attackDamage() != 0))
+		this.HOSTILE_MOBS = dynamicSpawns.stream()
 			.toArray((int size) -> new EntityType[size])
 		;
 	}

@@ -6,8 +6,8 @@ import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
-import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -71,7 +71,7 @@ public class ExtensionPlayer implements EntityType.IExtension
 	}
 
 	@Override
-	public boolean canApplyItemToCreature(PartialEntity creature, Item itemType, long gameTimeMillis)
+	public boolean canApplyItemToCreature(MinimalEntity creature, Item itemType, long gameTimeMillis)
 	{
 		throw Assert.unreachable();
 	}

@@ -3443,20 +3443,33 @@ public class TestCommonChanges
 		Assert.assertTrue(EntityChangeUseSelectedItemOnEntity.canUseOnEntity(wheatItem, PartialEntity.fromCreature(mut.freeze()), gameTimeMilils));
 		
 		mut.newExtendedData = new ExtensionLivestock.LivestockData(true, null, 0L);
-		CreatureEntity readyCow = mut.freeze();
-		CommonChangeSink changeSink = new CommonChangeSink(Set.of(entityId), Set.of(cowId), Set.of());
+		CreatureEntity loveModeCow = mut.freeze();
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(5L)
-			.lookups(null, new _RequiredEntityIndex(Map.of(cowId, readyCow, calfId, calf)), null)
-			.sinks(null, changeSink)
+			.lookups(null, new _RequiredEntityIndex(Map.of(cowId, loveModeCow, calfId, calf)), null)
 			.finish()
 		;
 		
-		// Show that we do NOT send when using the calf but DO with the COW, even though it is in love mode (since we can't tell).
+		// Show that we don't send the change to the calf (since it is a baby)
 		Assert.assertFalse(new EntityChangeUseSelectedItemOnEntity(calfId).applyChange(context, entity));
 		Entity updatedEntity = entity.freeze();
 		Assert.assertEquals(2, updatedEntity.inventory().currentEncumbrance);
 		
+		// Show that we don't send the change to the cow (since it is in love mode).
+		Assert.assertFalse(new EntityChangeUseSelectedItemOnEntity(cowId).applyChange(context, entity));
+		updatedEntity = entity.freeze();
+		Assert.assertEquals(2, updatedEntity.inventory().currentEncumbrance);
+		
+		// Show that we DO send the change to the cow once we reset its love mode.
+		mut.newExtendedData = new ExtensionLivestock.LivestockData(false, null, 0L);
+		CreatureEntity normalCow = mut.freeze();
+		CommonChangeSink changeSink = new CommonChangeSink(Set.of(entityId), Set.of(cowId), Set.of());
+		context = ContextBuilder.build()
+			.tick(5L)
+			.lookups(null, new _RequiredEntityIndex(Map.of(cowId, normalCow, calfId, calf)), null)
+			.sinks(null, changeSink)
+			.finish()
+		;
 		Assert.assertTrue(new EntityChangeUseSelectedItemOnEntity(cowId).applyChange(context, entity));
 		updatedEntity = entity.freeze();
 		Assert.assertEquals(0, updatedEntity.inventory().currentEncumbrance);
@@ -3468,9 +3481,12 @@ public class TestCommonChanges
 		
 		// Verify that the apply fails since this creature isn't ready.
 		// (the wheat is lost in this case).
-		MutableCreature mutable = MutableCreature.existing(readyCow);
+		MutableCreature mutable = MutableCreature.existing(loveModeCow);
 		Assert.assertFalse(change.applyChange(context, mutable));
-		mutable.freeze();
+		
+		// But does apply if given the normal cow.
+		mutable = MutableCreature.existing(normalCow);
+		Assert.assertTrue(change.applyChange(context, mutable));
 	}
 
 	@Test

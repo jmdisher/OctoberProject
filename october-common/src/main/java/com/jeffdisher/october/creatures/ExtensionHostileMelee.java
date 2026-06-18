@@ -15,7 +15,6 @@ import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
-import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -26,6 +25,13 @@ public class ExtensionHostileMelee implements EntityType.IExtension
 	 * A creature will wait one second between attacks.
 	 */
 	public static final long MILLIS_ATTACK_COOLDOWN = 1000L;
+
+	private final byte _attackDamage;
+
+	public ExtensionHostileMelee(byte attackDamage)
+	{
+		_attackDamage = attackDamage;
+	}
 
 	@Override
 	public Object buildDefaultExtendedData(long gameTimeMillis)
@@ -86,7 +92,7 @@ public class ExtensionHostileMelee implements EntityType.IExtension
 				// We can attack them so choose the target.
 				int index = context.randomInt.applyAsInt(BodyPart.values().length);
 				BodyPart target = BodyPart.values()[index];
-				EntityActionTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityActionTakeDamageFromEntity<>(target, creatureType.attackDamage(), creature.getId());
+				EntityActionTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityActionTakeDamageFromEntity<>(target, _attackDamage, creature.getId());
 				context.newChangeSink.next(creature.movementPlan.targetEntityId(), takeDamage);
 				NudgeHelpers.nudgeFromMelee(context
 					, creature.movementPlan.targetEntityId()
@@ -125,7 +131,7 @@ public class ExtensionHostileMelee implements EntityType.IExtension
 		return CommonExtensionHelpers.shouldHostileDespawn(context, creature);
 	}
 	@Override
-	public boolean canApplyItemToCreature(PartialEntity creature, Item itemType, long gameTimeMillis)
+	public boolean canApplyItemToCreature(MinimalEntity creature, Item itemType, long gameTimeMillis)
 	{
 		// We don't do direct item application to hostiles.
 		return false;

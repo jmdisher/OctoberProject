@@ -16,7 +16,6 @@ import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
-import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -27,6 +26,13 @@ public class ExtensionLivestock implements EntityType.IExtension
 	 * The timeout from exiting love mode until it can be entered again.
 	 */
 	public static final long MILLIS_BREEDING_COOLDOWN = 5L * 60L * 1000L;
+
+	private final Item _breedingItem;
+
+	public ExtensionLivestock(Item breedingItem)
+	{
+		_breedingItem = breedingItem;
+	}
 
 	@Override
 	public Object buildDefaultExtendedData(long gameTimeMillis)
@@ -84,6 +90,8 @@ public class ExtensionLivestock implements EntityType.IExtension
 	@Override
 	public EntityType.TargetEntity findDeliberateTarget(MutableCreature creature, EntityCollection entityCollection)
 	{
+		EntityType thisType = creature.getType();
+		
 		// This is livestock so choose our target based on whether we are looking for a partner or food.
 		EntityType.TargetEntity newTarget;
 		if (((LivestockData)creature.newExtendedData).inLoveMode())
@@ -91,7 +99,6 @@ public class ExtensionLivestock implements EntityType.IExtension
 			// Find another of this type in breeding mode.
 			EntityType.TargetEntity[] target = new EntityType.TargetEntity[1];
 			float[] distanceToTarget = new float[] { Float.MAX_VALUE };
-			EntityType thisType = creature.getType();
 			EntityVolume thisVolume = thisType.volume();
 			int thisCreatureId = creature.getId();
 			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), thisVolume);
@@ -120,12 +127,11 @@ public class ExtensionLivestock implements EntityType.IExtension
 			// We will keep this simple:  Find the closest player holding our breeding item, up to our limit.
 			EntityType.TargetEntity[] target = new EntityType.TargetEntity[1];
 			float[] distanceToTarget = new float[] { Float.MAX_VALUE };
-			EntityType thisType = creature.getType();
 			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), thisType.volume());
 			EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
 			entityCollection.walkPlayersInViewDistance(creature, (Entity player) -> {
 				// See if this player has the breeding item in their hand.
-				if (thisType.breedingItem() == _itemInPlayerHand(player))
+				if (_breedingItem == _itemInPlayerHand(player))
 				{
 					// See how far away they are so we choose the closest.
 					EntityLocation end = player.location();
@@ -180,7 +186,7 @@ public class ExtensionLivestock implements EntityType.IExtension
 				float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEye, playerBase, playerVolume);
 				if (distance <= creatureType.viewDistance())
 				{
-					isValid = (creatureType.breedingItem() == _itemInPlayerHand(player));
+					isValid = (_breedingItem == _itemInPlayerHand(player));
 				}
 			}
 		}
@@ -248,12 +254,11 @@ public class ExtensionLivestock implements EntityType.IExtension
 	}
 
 	@Override
-	public boolean canApplyItemToCreature(PartialEntity creature, Item itemType, long gameTimeMillis)
+	public boolean canApplyItemToCreature(MinimalEntity creature, Item itemType, long gameTimeMillis)
 	{
 		boolean canUse = false;
-		EntityType creatureType = creature.type();
 		// Currently, the only use for this mutation is to feed animals to put them into a love mode.
-		if (creatureType.breedingItem() == itemType)
+		if (_breedingItem == itemType)
 		{
 			// This is the correct item but we need to see if the entity can be put into love mode.
 			LivestockData extended = (LivestockData) creature.extendedData();
@@ -266,9 +271,8 @@ public class ExtensionLivestock implements EntityType.IExtension
 	public boolean applyItemToCreature(MutableCreature creature, Item itemType, long gameTimeMillis)
 	{
 		boolean didApply = false;
-		EntityType creatureType = creature.getType();
 		// The only item application case which currently exists is breeding items so make sure that is the case.
-		if (creatureType.breedingItem() == itemType)
+		if (_breedingItem == itemType)
 		{
 			// If this has a breeding item, it must be livestock.
 			LivestockData safe = (LivestockData)creature.newExtendedData;

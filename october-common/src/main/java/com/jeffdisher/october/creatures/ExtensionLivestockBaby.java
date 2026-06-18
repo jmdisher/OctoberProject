@@ -6,8 +6,8 @@ import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
-import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -18,6 +18,15 @@ public class ExtensionLivestockBaby implements EntityType.IExtension
 	 * The time it takes for a newly spawned baby animal to grow to an adult.
 	 */
 	public static final long MILLIS_TO_MATURITY = 20L * 60L * 1000L;
+
+	private final EntityType _adultType;
+
+	public ExtensionLivestockBaby(EntityType adultType)
+	{
+		Assert.assertTrue(null != adultType);
+		
+		_adultType = adultType;
+	}
 
 	@Override
 	public Object buildDefaultExtendedData(long gameTimeMillis)
@@ -71,10 +80,7 @@ public class ExtensionLivestockBaby implements EntityType.IExtension
 		if (context.currentTickTimeMillis >= extendedData.maturityMillis())
 		{
 			// We will change the type to the corresponding adult.
-			EntityType currentType = creature.getType();
-			EntityType adultType = currentType.adultType();
-			Assert.assertTrue(null != adultType);
-			creature.changeEntityType(adultType, context.currentTickTimeMillis);
+			creature.changeEntityType(_adultType, context.currentTickTimeMillis);
 			isDone = true;
 		}
 		return isDone;
@@ -94,7 +100,7 @@ public class ExtensionLivestockBaby implements EntityType.IExtension
 	}
 
 	@Override
-	public boolean canApplyItemToCreature(PartialEntity creature, Item itemType, long gameTimeMillis)
+	public boolean canApplyItemToCreature(MinimalEntity creature, Item itemType, long gameTimeMillis)
 	{
 		// We don't do direct item application to babies.
 		return false;

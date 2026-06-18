@@ -47,8 +47,9 @@ public class EntityChangeUseSelectedItemOnEntity implements IEntitySubAction<IMu
 	 */
 	public static boolean canUseOnEntity(Item item, PartialEntity entity, long gameTimeMillis)
 	{
+		MinimalEntity minimal = MinimalEntity.fromPartialEntity(entity);
 		EntityType creatureType = entity.type();
-		return creatureType.extension().canApplyItemToCreature(entity, item, gameTimeMillis);
+		return creatureType.extension().canApplyItemToCreature(minimal, item, gameTimeMillis);
 	}
 
 
@@ -90,7 +91,7 @@ public class EntityChangeUseSelectedItemOnEntity implements IEntitySubAction<IMu
 		Item itemType = (null != selectedStack) ? selectedStack.type() : null;
 		
 		boolean didApply = false;
-		if (isReady && isInRange && (itemType == entityType.breedingItem()))
+		if (isReady && isInRange && entityType.extension().canApplyItemToCreature(target, itemType, context.currentTickTimeMillis))
 		{
 			// Remove the wheat item and apply it to the entity.
 			// Note that we don't bother with racy conditions where we might need to pass it back since that is a rare case and of minimal impact.
