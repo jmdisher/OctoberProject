@@ -22,6 +22,7 @@ import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
+import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -213,6 +214,48 @@ public class CreatureBehaviourTemplates
 			// Livestock doesn't automatically despawn.
 			return false;
 		}
+		@Override
+		public boolean canApplyItemToCreature(PartialEntity creature, Item itemType, long gameTimeMillis)
+		{
+			boolean canUse = false;
+			EntityType creatureType = creature.type();
+			// Currently, the only use for this mutation is to feed animals to put them into a love mode.
+			if (creatureType.breedingItem() == itemType)
+			{
+				// This is the correct item but we need to see if the entity can be put into love mode.
+				CreatureExtendedData.LivestockData extended = (CreatureExtendedData.LivestockData) creature.extendedData();
+				canUse = !extended.inLoveMode() && (gameTimeMillis >= extended.breedingReadyMillis());
+			}
+			return canUse;
+		}
+		@Override
+		public boolean applyItemToCreature(MutableCreature creature, Item itemType, long gameTimeMillis)
+		{
+			boolean didApply = false;
+			EntityType creatureType = creature.getType();
+			// The only item application case which currently exists is breeding items so make sure that is the case.
+			if (creatureType.breedingItem() == itemType)
+			{
+				// If this has a breeding item, it must be livestock.
+				CreatureExtendedData.LivestockData safe = (CreatureExtendedData.LivestockData)creature.newExtendedData;
+				// Don't redundantly enter love mode.
+				// We can't enter love mode if already pregnant (although that would only remain the case for a single tick).
+				if (!safe.inLoveMode() && (null == safe.offspringLocation()) && (safe.breedingReadyMillis() <= gameTimeMillis))
+				{
+					// If we applied this, put us into love mode and clear other plans.
+					CreatureExtendedData.LivestockData updated = new CreatureExtendedData.LivestockData(
+						true
+						, null
+						, 0L
+					);
+					creature.newExtendedData = updated;
+					creature.movementPlan = null;
+					creature.newShouldTakeAction = true;
+					didApply = true;
+				}
+			}
+			return didApply;
+		}
 		
 		// Returns null if there was no livestock action taken.
 		private static CreatureExtendedData.LivestockData _newExtendedDataAfterLivestockAction(TickProcessingContext context
@@ -315,6 +358,18 @@ public class CreatureBehaviourTemplates
 			// Livestock babies never automatically despawn.
 			return false;
 		}
+		@Override
+		public boolean canApplyItemToCreature(PartialEntity creature, Item itemType, long gameTimeMillis)
+		{
+			// We don't do direct item application to babies.
+			return false;
+		}
+		@Override
+		public boolean applyItemToCreature(MutableCreature creature, Item itemType, long gameTimeMillis)
+		{
+			// We don't do direct item application to babies.
+			return false;
+		}
 	}
 
 	public static class HostileMeleeTemplate implements EntityType.IBehaviourTemplate
@@ -393,6 +448,18 @@ public class CreatureBehaviourTemplates
 		public boolean shouldDespawn(MutableCreature creature, TickProcessingContext context)
 		{
 			return _shouldHostileDespawn(context, creature);
+		}
+		@Override
+		public boolean canApplyItemToCreature(PartialEntity creature, Item itemType, long gameTimeMillis)
+		{
+			// We don't do direct item application to hostiles.
+			return false;
+		}
+		@Override
+		public boolean applyItemToCreature(MutableCreature creature, Item itemType, long gameTimeMillis)
+		{
+			// We don't do direct item application to hostiles.
+			return false;
 		}
 	}
 
@@ -501,6 +568,18 @@ public class CreatureBehaviourTemplates
 		{
 			return _shouldHostileDespawn(context, creature);
 		}
+		@Override
+		public boolean canApplyItemToCreature(PartialEntity creature, Item itemType, long gameTimeMillis)
+		{
+			// We don't do direct item application to hostiles.
+			return false;
+		}
+		@Override
+		public boolean applyItemToCreature(MutableCreature creature, Item itemType, long gameTimeMillis)
+		{
+			// We don't do direct item application to hostiles.
+			return false;
+		}
 	}
 
 	public static class VillagerTemplate implements EntityType.IBehaviourTemplate
@@ -531,6 +610,18 @@ public class CreatureBehaviourTemplates
 		public boolean shouldDespawn(MutableCreature creature, TickProcessingContext context)
 		{
 			// Villagers never automatically despawn.
+			return false;
+		}
+		@Override
+		public boolean canApplyItemToCreature(PartialEntity creature, Item itemType, long gameTimeMillis)
+		{
+			// We don't do direct item application to villagers.
+			return false;
+		}
+		@Override
+		public boolean applyItemToCreature(MutableCreature creature, Item itemType, long gameTimeMillis)
+		{
+			// We don't do direct item application to villagers.
 			return false;
 		}
 	}

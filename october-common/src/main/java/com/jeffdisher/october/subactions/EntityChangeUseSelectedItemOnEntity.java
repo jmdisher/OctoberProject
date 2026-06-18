@@ -3,7 +3,6 @@ package com.jeffdisher.october.subactions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.actions.EntityActionApplyItemToCreature;
-import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
@@ -48,15 +47,8 @@ public class EntityChangeUseSelectedItemOnEntity implements IEntitySubAction<IMu
 	 */
 	public static boolean canUseOnEntity(Item item, PartialEntity entity, long gameTimeMillis)
 	{
-		boolean canUse = false;
-		// Currently, the only use for this mutation is to feed animals to put them into a love mode.
-		if (item == entity.type().breedingItem())
-		{
-			// This is the correct item but we need to see if the entity can be put into love mode.
-			CreatureExtendedData.LivestockData extended = (CreatureExtendedData.LivestockData) entity.extendedData();
-			canUse = !extended.inLoveMode() && (gameTimeMillis >= extended.breedingReadyMillis());
-		}
-		return canUse;
+		EntityType creatureType = entity.type();
+		return creatureType.template().canApplyItemToCreature(entity, item, gameTimeMillis);
 	}
 
 

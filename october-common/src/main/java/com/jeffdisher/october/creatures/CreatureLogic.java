@@ -8,7 +8,6 @@ import java.util.function.Function;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.BlockAspect;
-import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
@@ -60,30 +59,8 @@ public class CreatureLogic
 	 */
 	public static boolean applyItemToCreature(Item itemType, MutableCreature creature, long gameTimeMillis)
 	{
-		boolean didApply = false;
 		EntityType creatureType = creature.getType();
-		// The only item application case which currently exists is breeding items so make sure that is the case.
-		if (creatureType.breedingItem() == itemType)
-		{
-			// If this has a breeding item, it must be livestock.
-			CreatureExtendedData.LivestockData safe = (CreatureExtendedData.LivestockData)creature.newExtendedData;
-			// Don't redundantly enter love mode.
-			// We can't enter love mode if already pregnant (although that would only remain the case for a single tick).
-			if (!safe.inLoveMode() && (null == safe.offspringLocation()) && (safe.breedingReadyMillis() <= gameTimeMillis))
-			{
-				// If we applied this, put us into love mode and clear other plans.
-				CreatureExtendedData.LivestockData updated = new CreatureExtendedData.LivestockData(
-					true
-					, null
-					, 0L
-				);
-				creature.newExtendedData = updated;
-				creature.movementPlan = null;
-				creature.newShouldTakeAction = true;
-				didApply = true;
-			}
-		}
-		return didApply;
+		return creatureType.template().applyItemToCreature(creature, itemType, gameTimeMillis);
 	}
 
 	/**

@@ -112,6 +112,24 @@ public record EntityType(byte number
 		 * @return True if creature should be despawned within the current tick.
 		 */
 		public boolean shouldDespawn(MutableCreature creature, TickProcessingContext context);
+		/**
+		 * Checks if an item can be directly applied to a creature without modifying it.
+		 * 
+		 * @param creature The read-only partial instance.
+		 * @param itemType The item type to apply.
+		 * @param gameTimeMillis The current game millisecond time.
+		 * @return True if this item can be applied to the given creature.
+		 */
+		public boolean canApplyItemToCreature(PartialEntity creature, Item itemType, long gameTimeMillis);
+		/**
+		 * Applies an item directly to the creature, returning whether was successfully applied.
+		 * 
+		 * @param creature The MutableCreature instance.
+		 * @param itemType The item type to apply.
+		 * @param gameTimeMillis The current game millisecond time.
+		 * @return True if this item was applied successfully.
+		 */
+		public boolean applyItemToCreature(MutableCreature creature, Item itemType, long gameTimeMillis);
 	}
 
 	/**
