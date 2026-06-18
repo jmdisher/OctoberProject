@@ -106,7 +106,7 @@ public record CreatureEntity(int id
 				, (byte)0
 				, type.maxHealth()
 				, MiscConstants.MAX_BREATH
-				, type.extendedCodec().buildDefault(gameTimeMillis)
+				, type.extension().buildDefaultExtendedData(gameTimeMillis)
 				
 				, createEmptyEphemeral(gameTimeMillis)
 		);

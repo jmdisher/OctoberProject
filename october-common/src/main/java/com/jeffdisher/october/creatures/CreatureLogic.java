@@ -60,7 +60,7 @@ public class CreatureLogic
 	public static boolean applyItemToCreature(Item itemType, MutableCreature creature, long gameTimeMillis)
 	{
 		EntityType creatureType = creature.getType();
-		return creatureType.template().applyItemToCreature(creature, itemType, gameTimeMillis);
+		return creatureType.extension().applyItemToCreature(creature, itemType, gameTimeMillis);
 	}
 
 	/**
@@ -125,7 +125,7 @@ public class CreatureLogic
 	public static boolean setCreaturePregnant(MutableCreature creature, EntityLocation sireLocation, long gameTimeMillis)
 	{
 		EntityType creatureType = creature.getType();
-		return creatureType.template().setCreaturePregnant(creature, sireLocation, gameTimeMillis);
+		return creatureType.extension().setCreaturePregnant(creature, sireLocation, gameTimeMillis);
 	}
 
 	/**
@@ -148,7 +148,7 @@ public class CreatureLogic
 		EntityType creatureType = mutable.getType();
 		
 		boolean isDone;
-		if (creatureType.template().shouldDespawn(mutable, context))
+		if (creatureType.extension().shouldDespawn(mutable, context))
 		{
 			// This counts as being "done" since we should skip any walking.
 			mutable.setHealth((byte)0);
@@ -170,7 +170,7 @@ public class CreatureLogic
 				mutable.movementPlan = _makeMovementPlan(context, blockKindLookup, entityCollection, mutable);
 			}
 			
-			isDone = creatureType.template().didTakeSpecialAction(mutable, context);
+			isDone = creatureType.extension().didTakeSpecialAction(mutable, context);
 		}
 		return isDone;
 	}
@@ -303,7 +303,7 @@ public class CreatureLogic
 	{
 		EntityType type = mutable.getType();
 		
-		EntityType.TargetEntity newTarget = type.template().findDeliberateTarget(mutable, entityCollection);
+		EntityType.TargetEntity newTarget = type.extension().findDeliberateTarget(mutable, entityCollection);
 		
 		// Determine the path if we found a target.
 		CreatureEntity.MovementPlan plan = null;
@@ -627,7 +627,7 @@ public class CreatureLogic
 		if ((null != mutable.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId()))
 		{
 			// We have some target so see if they are still valid and update our path to them.
-			boolean isTargetValid = mutable.getType().template().isTargetValid(mutable, entityCollection);
+			boolean isTargetValid = mutable.getType().extension().isTargetValid(mutable, entityCollection);
 			
 			if (isTargetValid)
 			{

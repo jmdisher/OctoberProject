@@ -32,7 +32,7 @@ public record PartialEntity(int id
 				, entity.yaw()
 				, entity.pitch()
 				, entity.health()
-				, env.creatures.PLAYER.extendedCodec().buildDefault(gameTimeMillis)
+				, env.creatures.PLAYER.extension().buildDefaultExtendedData(gameTimeMillis)
 		);
 	}
 

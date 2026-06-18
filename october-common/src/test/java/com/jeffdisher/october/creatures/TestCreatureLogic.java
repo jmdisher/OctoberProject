@@ -16,8 +16,6 @@ import com.jeffdisher.october.actions.EntityActionImpregnateCreature;
 import com.jeffdisher.october.actions.EntityActionNudge;
 import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.CreatureBehaviourTemplates;
-import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
@@ -365,7 +363,7 @@ public class TestCreatureLogic
 		
 		// Now, advance time and do the same, seeing the despawn of the orc but not the cow.
 		context = ContextBuilder.build()
-			.tick(startTick + (CreatureBehaviourTemplates.MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick))
+			.tick(startTick + (CommonExtensionHelpers.MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick))
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
 			.fixedRandom(2)
 			.finish()
@@ -391,7 +389,7 @@ public class TestCreatureLogic
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
 		CreatureLogic.applyItemToCreature(WHEAT, mutable, 1000L);
-		Assert.assertTrue(((CreatureExtendedData.LivestockData)mutable.newExtendedData).inLoveMode());
+		Assert.assertTrue(((ExtensionLivestock.LivestockData)mutable.newExtendedData).inLoveMode());
 	}
 
 	@Test
@@ -409,7 +407,7 @@ public class TestCreatureLogic
 			, null
 			, null
 		);
-		mutable.newExtendedData = new CreatureExtendedData.LivestockData(true, null, 0L);
+		mutable.newExtendedData = new ExtensionLivestock.LivestockData(true, null, 0L);
 		father = mutable.freeze();
 		mutable = MutableCreature.existing(mother);
 		mutable.movementPlan = new CreatureEntity.MovementPlan(null
@@ -417,7 +415,7 @@ public class TestCreatureLogic
 			, null
 			, null
 		);
-		mutable.newExtendedData = new CreatureExtendedData.LivestockData(true, null, 0L);
+		mutable.newExtendedData = new ExtensionLivestock.LivestockData(true, null, 0L);
 		mother = mutable.freeze();
 		Map<Integer, CreatureEntity> creatures = new HashMap<>();
 		creatures.put(father.id(), father);
@@ -483,8 +481,8 @@ public class TestCreatureLogic
 		creatures.put(mother.id(), mother);
 		
 		// The father should no longer be in love mode but the mother should be.
-		Assert.assertFalse(((CreatureExtendedData.LivestockData)father.extendedData()).inLoveMode());
-		Assert.assertTrue(((CreatureExtendedData.LivestockData)mother.extendedData()).inLoveMode());
+		Assert.assertFalse(((ExtensionLivestock.LivestockData)father.extendedData()).inLoveMode());
+		Assert.assertTrue(((ExtensionLivestock.LivestockData)mother.extendedData()).inLoveMode());
 	}
 
 	@Test
@@ -495,14 +493,14 @@ public class TestCreatureLogic
 		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(mother);
-		mutable.newExtendedData = new CreatureExtendedData.LivestockData(true, null, 0L);
+		mutable.newExtendedData = new ExtensionLivestock.LivestockData(true, null, 0L);
 		
 		long gameTimeMillis = 1000L;
 		boolean didBecomePregnant = CreatureLogic.setCreaturePregnant(mutable, fatherLocation, gameTimeMillis);
 		Assert.assertTrue(didBecomePregnant);
-		Assert.assertFalse(((CreatureExtendedData.LivestockData)mutable.newExtendedData).inLoveMode());
-		Assert.assertEquals(new EntityLocation(0.4f, 0.0f, 0.0f), ((CreatureExtendedData.LivestockData)mutable.newExtendedData).offspringLocation());
-		Assert.assertEquals(gameTimeMillis + CreatureBehaviourTemplates.MILLIS_BREEDING_COOLDOWN, ((CreatureExtendedData.LivestockData)mutable.newExtendedData).breedingReadyMillis());
+		Assert.assertFalse(((ExtensionLivestock.LivestockData)mutable.newExtendedData).inLoveMode());
+		Assert.assertEquals(new EntityLocation(0.4f, 0.0f, 0.0f), ((ExtensionLivestock.LivestockData)mutable.newExtendedData).offspringLocation());
+		Assert.assertEquals(gameTimeMillis + ExtensionLivestock.MILLIS_BREEDING_COOLDOWN, ((ExtensionLivestock.LivestockData)mutable.newExtendedData).breedingReadyMillis());
 	}
 
 	@Test
@@ -513,7 +511,7 @@ public class TestCreatureLogic
 		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(mother);
-		mutable.newExtendedData = new CreatureExtendedData.LivestockData(false, offspringLocation, 0L);
+		mutable.newExtendedData = new ExtensionLivestock.LivestockData(false, offspringLocation, 0L);
 		
 		CreatureEntity[] offspring = new CreatureEntity[1];
 		TickProcessingContext.ICreatureSpawner creatureSpawner = (EntityType type, EntityLocation location) -> {
@@ -530,7 +528,7 @@ public class TestCreatureLogic
 				, mutable
 		);
 		Assert.assertTrue(didTakeAction);
-		Assert.assertNull(((CreatureExtendedData.LivestockData)mutable.newExtendedData).offspringLocation());
+		Assert.assertNull(((ExtensionLivestock.LivestockData)mutable.newExtendedData).offspringLocation());
 		Assert.assertEquals(offspringLocation, offspring[0].location());
 	}
 
@@ -683,7 +681,7 @@ public class TestCreatureLogic
 		
 		// But will work if we advance tick number further.
 		context = ContextBuilder.build()
-			.tick(context.currentTick + CreatureBehaviourTemplates.MILLIS_ATTACK_COOLDOWN / context.millisPerTick)
+			.tick(context.currentTick + ExtensionHostileMelee.MILLIS_ATTACK_COOLDOWN / context.millisPerTick)
 			.sinks(null, changeSink)
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
 			.fixedRandom(2)
@@ -912,10 +910,10 @@ public class TestCreatureLogic
 		
 		// Start with them both in a love mode but not yet targeting each other.
 		MutableCreature mutable = MutableCreature.existing(father);
-		mutable.newExtendedData = new CreatureExtendedData.LivestockData(true, null, 0L);
+		mutable.newExtendedData = new ExtensionLivestock.LivestockData(true, null, 0L);
 		father = mutable.freeze();
 		mutable = MutableCreature.existing(mother);
-		mutable.newExtendedData = new CreatureExtendedData.LivestockData(true, null, 0L);
+		mutable.newExtendedData = new ExtensionLivestock.LivestockData(true, null, 0L);
 		mother = mutable.freeze();
 		Map<Integer, CreatureEntity> creatures = new HashMap<>();
 		creatures.put(father.id(), father);
@@ -983,11 +981,11 @@ public class TestCreatureLogic
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
 		long nextReadyMillis = 2000L;
-		mutable.newExtendedData = new CreatureExtendedData.LivestockData(false, null, nextReadyMillis);
+		mutable.newExtendedData = new ExtensionLivestock.LivestockData(false, null, nextReadyMillis);
 		Assert.assertFalse(CreatureLogic.applyItemToCreature(WHEAT, mutable, nextReadyMillis - 1L));
-		Assert.assertFalse(((CreatureExtendedData.LivestockData)mutable.newExtendedData).inLoveMode());
+		Assert.assertFalse(((ExtensionLivestock.LivestockData)mutable.newExtendedData).inLoveMode());
 		Assert.assertTrue(CreatureLogic.applyItemToCreature(WHEAT, mutable, nextReadyMillis));
-		Assert.assertTrue(((CreatureExtendedData.LivestockData)mutable.newExtendedData).inLoveMode());
+		Assert.assertTrue(((ExtensionLivestock.LivestockData)mutable.newExtendedData).inLoveMode());
 	}
 
 	@Test
@@ -1000,7 +998,7 @@ public class TestCreatureLogic
 		MutableCreature mutableCow = MutableCreature.existing(cow);
 		
 		TickProcessingContext context = ContextBuilder.build()
-				.tick(CreatureExtendedData.BabyCodec.MILLIS_TO_MATURITY / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
+				.tick(ExtensionLivestockBaby.MILLIS_TO_MATURITY / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
 				.fixedRandom(0)
 				.finish()
 		;
@@ -1011,7 +1009,7 @@ public class TestCreatureLogic
 		Assert.assertTrue(didTakeAction);
 		CreatureEntity output = mutableCow.freeze();
 		Assert.assertEquals(COW, output.type());
-		Assert.assertTrue(output.extendedData() instanceof CreatureExtendedData.LivestockData);
+		Assert.assertTrue(output.extendedData() instanceof ExtensionLivestock.LivestockData);
 	}
 
 	@Test
@@ -1050,7 +1048,7 @@ public class TestCreatureLogic
 		};
 		TickProcessingContext context = ContextBuilder.build()
 			.millisPerTick(millisPerTick)
-			.tick(CreatureBehaviourTemplates.MILLIS_RANGED_ATTACK_COOLDOWN / millisPerTick)
+			.tick(ExtensionHostileRanged.MILLIS_RANGED_ATTACK_COOLDOWN / millisPerTick)
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
 			.passive(passiveSpawner)
 			.fixedRandom(2)
@@ -1088,7 +1086,7 @@ public class TestCreatureLogic
 		
 		// But will work if we advance tick number further.
 		context = ContextBuilder.build()
-			.tick(context.currentTick + CreatureBehaviourTemplates.MILLIS_RANGED_ATTACK_COOLDOWN / context.millisPerTick)
+			.tick(context.currentTick + ExtensionHostileRanged.MILLIS_RANGED_ATTACK_COOLDOWN / context.millisPerTick)
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
 			.passive(passiveSpawner)
 			.fixedRandom(2)
@@ -1161,7 +1159,7 @@ public class TestCreatureLogic
 		Assert.assertFalse(didTakeAction);
 		CreatureEntity output = mutableCalf.freeze();
 		Assert.assertEquals(COW_BABY, output.type());
-		Assert.assertTrue(output.extendedData() instanceof CreatureExtendedData.BabyData);
+		Assert.assertTrue(output.extendedData() instanceof ExtensionLivestockBaby.BabyData);
 	}
 
 	@Test

@@ -455,11 +455,13 @@ public class TestServerStateManager
 		
 		// Load in the cuboids and creatures.
 		CreatureEntity nearCreature = new CreatureEntity(-1, COW, near.newLocation, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)0, (byte)0, (byte)1, (byte)100
-				, COW.extendedCodec().buildDefault(0L)
-				, CreatureEntity.createEmptyEphemeral(0L));
+			, COW.extension().buildDefaultExtendedData(0L)
+			, CreatureEntity.createEmptyEphemeral(0L)
+		);
 		CreatureEntity farCreature = new CreatureEntity(-2, COW, far.newLocation, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)0, (byte)0, (byte)1, (byte)100
-				, COW.extendedCodec().buildDefault(0L)
-				, CreatureEntity.createEmptyEphemeral(0L));
+			, COW.extension().buildDefaultExtendedData(0L)
+			, CreatureEntity.createEmptyEphemeral(0L)
+		);
 		
 		CuboidData nearCuboid = CuboidGenerator.createFilledCuboid(near.newLocation.getBlockLocation().getCuboidAddress(), ENV.special.AIR);
 		CuboidData farCuboid = CuboidGenerator.createFilledCuboid(far.newLocation.getBlockLocation().getCuboidAddress(), ENV.special.AIR);
@@ -1485,13 +1487,13 @@ public class TestServerStateManager
 			EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 			
 			CreatureEntity creature0 = new CreatureEntity(creatureId, COW, location0, velocity, (byte)0, (byte)0, (byte)1, (byte)100
-				, COW.extendedCodec().buildDefault(0L)
-				, CreatureEntity.createEmptyEphemeral(0L))
-			;
+				, COW.extension().buildDefaultExtendedData(0L)
+				, CreatureEntity.createEmptyEphemeral(0L)
+			);
 			CreatureEntity creature1 = new CreatureEntity(creatureId, COW, location1, velocity, (byte)0, (byte)0, (byte)1, (byte)100
-				, COW.extendedCodec().buildDefault(0L)
-				, CreatureEntity.createEmptyEphemeral(0L))
-			;
+				, COW.extension().buildDefaultExtendedData(0L)
+				, CreatureEntity.createEmptyEphemeral(0L)
+			);
 			completedCreatures0.put(creatureId, new TickSnapshot.SnapshotCreature(creature0, null));
 			completedCreatures1.put(creatureId, new TickSnapshot.SnapshotCreature(creature1, null));
 			
@@ -1607,7 +1609,7 @@ public class TestServerStateManager
 						, (byte)0
 						, (byte)100
 						, (byte)100
-						, COW.extendedCodec().buildDefault(1000L)
+						, COW.extension().buildDefaultExtendedData(1000L)
 						, CreatureEntity.createEmptyEphemeral(1000L)
 					);
 					_nextCreatureId -= 1;

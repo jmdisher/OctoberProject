@@ -48,7 +48,7 @@ public class EntityChangeUseSelectedItemOnEntity implements IEntitySubAction<IMu
 	public static boolean canUseOnEntity(Item item, PartialEntity entity, long gameTimeMillis)
 	{
 		EntityType creatureType = entity.type();
-		return creatureType.template().canApplyItemToCreature(entity, item, gameTimeMillis);
+		return creatureType.extension().canApplyItemToCreature(entity, item, gameTimeMillis);
 	}
 
 

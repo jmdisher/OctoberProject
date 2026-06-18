@@ -5,9 +5,10 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
+import com.jeffdisher.october.creatures.ExtensionLivestock;
+import com.jeffdisher.october.creatures.ExtensionLivestockBaby;
 
 
 public class TestMutableCreature
@@ -47,7 +48,7 @@ public class TestMutableCreature
 				, (byte)0
 				, (byte)50
 				, MiscConstants.MAX_BREATH
-				, COW.extendedCodec().buildDefault(0L)
+				, COW.extension().buildDefaultExtendedData(0L)
 				
 				, CreatureEntity.createEmptyEphemeral(0L)
 		);
@@ -68,7 +69,7 @@ public class TestMutableCreature
 			, 0L
 		);
 		Assert.assertEquals(cowBaby.maxHealth(), input.health());
-		Assert.assertTrue(input.extendedData() instanceof CreatureExtendedData.BabyData);
+		Assert.assertTrue(input.extendedData() instanceof ExtensionLivestockBaby.BabyData);
 		
 		MutableCreature mutable = MutableCreature.existing(input);
 		mutable.changeEntityType(COW, 0L);
@@ -76,7 +77,7 @@ public class TestMutableCreature
 		
 		Assert.assertEquals(COW, output.type());
 		Assert.assertEquals(COW.maxHealth(), output.health());
-		Assert.assertTrue(output.extendedData() instanceof CreatureExtendedData.LivestockData);
+		Assert.assertTrue(output.extendedData() instanceof ExtensionLivestock.LivestockData);
 	}
 
 

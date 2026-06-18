@@ -215,7 +215,7 @@ public class TestEngineCreatures
 				, (byte)0
 				, (byte)100
 				, MiscConstants.MAX_BREATH
-				, COW.extendedCodec().buildDefault(0L)
+				, COW.extension().buildDefaultExtendedData(0L)
 				
 				, new CreatureEntity.Ephemeral(
 					movementPlan
@@ -258,7 +258,7 @@ public class TestEngineCreatures
 				, (byte)0
 				, (byte)100
 				, MiscConstants.MAX_BREATH
-				, COW.extendedCodec().buildDefault(0L)
+				, COW.extension().buildDefaultExtendedData(0L)
 				
 				, new CreatureEntity.Ephemeral(
 					movementPlan
@@ -303,7 +303,7 @@ public class TestEngineCreatures
 				, (byte)0
 				, (byte)100
 				, MiscConstants.MAX_BREATH
-				, COW.extendedCodec().buildDefault(0L)
+				, COW.extension().buildDefaultExtendedData(0L)
 				
 				, new CreatureEntity.Ephemeral(
 					movementPlan

@@ -24,8 +24,8 @@ import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.creatures.ExtensionLivestock;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IObjectCodec;
@@ -773,7 +773,7 @@ public class TestResourceLoader
 		Assert.assertEquals(-1, entity.id());
 		Assert.assertEquals((byte)0, entity.yaw());
 		Assert.assertEquals(loadingGameMillis, entity.ephemeral().despawnKeepAliveMillis());
-		Assert.assertFalse(((CreatureExtendedData.LivestockData)entity.extendedData()).inLoveMode());
+		Assert.assertFalse(((ExtensionLivestock.LivestockData)entity.extendedData()).inLoveMode());
 		
 		loader.writeBackToDiskAndRetire(List.of(new PackagedCuboid(result.cuboid(), List.of(), List.of(), Map.of(), List.of())), List.of(), 0L);
 		loader.shutdown();

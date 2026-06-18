@@ -11,6 +11,12 @@ import java.util.Map;
 import java.util.Set;
 
 import com.jeffdisher.october.config.TabListReader;
+import com.jeffdisher.october.creatures.ExtensionHostileMelee;
+import com.jeffdisher.october.creatures.ExtensionHostileRanged;
+import com.jeffdisher.october.creatures.ExtensionLivestock;
+import com.jeffdisher.october.creatures.ExtensionLivestockBaby;
+import com.jeffdisher.october.creatures.ExtensionPlayer;
+import com.jeffdisher.october.creatures.ExtensionVillager;
 import com.jeffdisher.october.types.DropChance;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
@@ -100,23 +106,32 @@ public class CreatureRegistry
 				// Add 2 to the number since 0 is reserved as an error and 1 is for the player.
 				Assert.assertTrue(creatures.size() < 253);
 				byte number = (byte)(creatures.size() + 2);
-				EntityType.IExtendedCodec codec;
+				
+				// TODO:  Eventually, these extensions need to be part of the data but we just carry-forward their old heuristics, here, for now.
+				EntityType.IExtension extension;
 				if (null != _breedingItem)
 				{
 					// If this can breed, we will treat it as livestock.
-					codec = new CreatureExtendedData.LivestockCodec();
+					extension = new ExtensionLivestock();
 				}
 				else if (null != _adultType)
 				{
 					// If this has an adult type, we assume it is a baby.
-					codec = new CreatureExtendedData.BabyCodec();
+					extension = new ExtensionLivestockBaby();
+				}
+				else if (_attackDamage > 0)
+				{
+					extension = new ExtensionHostileMelee();
+				}
+				else if (-1 == _attackDamage)
+				{
+					extension = new ExtensionHostileRanged();
 				}
 				else
 				{
-					// This has no specific codec.
-					codec = new CreatureExtendedData.NullCodec();
+					extension = new ExtensionVillager();
 				}
-				EntityType type = _packageEntity(number
+				EntityType type = new EntityType(number
 						, _id
 						, _name
 						, _volume
@@ -128,7 +143,7 @@ public class CreatureRegistry
 						, _drops
 						, _breedingItem
 						, _adultType
-						, codec
+						, extension
 				);
 				typesById.put(_id, type);
 				if (null != _breedingItem)
@@ -338,7 +353,7 @@ public class CreatureRegistry
 
 	private CreatureRegistry(ItemRegistry items, Map<String, EntityType> mapByIds, List<EntityType> creatures, Map<EntityType, EntityType> babyTypeByAdultType)
 	{
-		this.PLAYER = _packageEntity((byte)1
+		this.PLAYER = new EntityType((byte)1
 				, FAKE_PLAYER_ID
 				, "PLAYER"
 				, new EntityVolume(1.7f, 0.4f)
@@ -350,7 +365,7 @@ public class CreatureRegistry
 				, null
 				, null
 				, null
-				, new CreatureExtendedData.NullCodec()
+				, new ExtensionPlayer()
 		);
 		ENTITY_BY_NUMBER = new EntityType[creatures.size() + 2];
 		ENTITY_BY_NUMBER[1] = this.PLAYER;
@@ -397,60 +412,5 @@ public class CreatureRegistry
 		// We should only be calling this if it can be a parent.
 		Assert.assertTrue(_babyTypeByAdultType.containsKey(parentType));
 		return _babyTypeByAdultType.get(parentType);
-	}
-
-
-	private static EntityType _packageEntity(byte number
-			, String id
-			, String name
-			, EntityVolume volume
-			, float blocksPerSecond
-			, byte maxHealth
-			, float viewDistance
-			, float actionDistance
-			, byte attackDamage
-			, DropChance[] drops
-			, Item breedingItem
-			, EntityType adultType
-			, EntityType.IExtendedCodec extendedCodec
-	)
-	{
-		// TODO:  Eventually, these templates need to be part of the data but we just carry-forward their old heuristics, here, for now.
-		EntityType.IBehaviourTemplate template;
-		if (null != breedingItem)
-		{
-			template = new CreatureBehaviourTemplates.LivestockTemplate();
-		}
-		else if (null != adultType)
-		{
-			template = new CreatureBehaviourTemplates.LivestockBabyTemplate();
-		}
-		else if (attackDamage > 0)
-		{
-			template = new CreatureBehaviourTemplates.HostileMeleeTemplate();
-		}
-		else if (-1 == attackDamage)
-		{
-			template = new CreatureBehaviourTemplates.HostileRangedTemplate();
-		}
-		else
-		{
-			template = new CreatureBehaviourTemplates.VillagerTemplate();
-		}
-		return new EntityType(number
-			, id
-			, name
-			, volume
-			, blocksPerSecond
-			, maxHealth
-			, viewDistance
-			, actionDistance
-			, attackDamage
-			, drops
-			, breedingItem
-			, adultType
-			, extendedCodec
-			, template
-		);
 	}
 }

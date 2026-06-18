@@ -214,7 +214,7 @@ public class MutableCreature implements IMutableMinimalEntity
 		// We set the type but also set the health and extended data to the defaults for this type.
 		this.newType = newType;
 		this.newHealth = newType.maxHealth();
-		this.newExtendedData = newType.extendedCodec().buildDefault(gameTimeMillis);
+		this.newExtendedData = newType.extension().buildDefaultExtendedData(gameTimeMillis);
 	}
 
 	/**

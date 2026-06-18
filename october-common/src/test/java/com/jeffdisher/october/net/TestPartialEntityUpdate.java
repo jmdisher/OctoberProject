@@ -7,8 +7,8 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.creatures.ExtensionLivestock;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -100,9 +100,9 @@ public class TestPartialEntityUpdate
 		MutableCreature mutable = MutableCreature.existing(initial);
 		CreatureEntity unchanged = mutable.freeze();
 		
-		CreatureExtendedData.LivestockData oldData = (CreatureExtendedData.LivestockData) initial.extendedData();
+		ExtensionLivestock.LivestockData oldData = (ExtensionLivestock.LivestockData) initial.extendedData();
 		boolean inLoveMode = true;
-		mutable.newExtendedData = new CreatureExtendedData.LivestockData(inLoveMode
+		mutable.newExtendedData = new ExtensionLivestock.LivestockData(inLoveMode
 			, oldData.offspringLocation()
 			, oldData.breedingReadyMillis()
 		);
@@ -123,6 +123,6 @@ public class TestPartialEntityUpdate
 		read.applyToEntity(toUpdate);
 		PartialEntity output = toUpdate.freeze();
 		
-		Assert.assertTrue(((CreatureExtendedData.LivestockData)output.extendedData()).inLoveMode());
+		Assert.assertTrue(((ExtensionLivestock.LivestockData)output.extendedData()).inLoveMode());
 	}
 }

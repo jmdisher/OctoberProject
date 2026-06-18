@@ -20,8 +20,7 @@ public record EntityType(byte number
 	, DropChance[] drops
 	, Item breedingItem
 	, EntityType adultType
-	, IExtendedCodec extendedCodec
-	, IBehaviourTemplate template
+	, IExtension extension
 )
 {
 	/**
@@ -35,9 +34,10 @@ public record EntityType(byte number
 
 
 	/**
-	 * The codec used by the type-specific extendedData since it is persisted and passed over the network.
+	 * An interface which exposes mechanisms for serializing the per-type extended data but also handles the per-type
+	 * special logic.
 	 */
-	public static interface IExtendedCodec
+	public static interface IExtension
 	{
 		/**
 		 * Used to create a default/empty instance of the extended data.
@@ -45,7 +45,7 @@ public record EntityType(byte number
 		 * @param gameTimeMillis The most recent game time, in case the instance needs to track relative timeouts, etc.
 		 * @return A reasonable default extended data instance.
 		 */
-		public Object buildDefault(long gameTimeMillis);
+		public Object buildDefaultExtendedData(long gameTimeMillis);
 		/**
 		 * Reads the extended data from the given buffer.
 		 * 
@@ -53,7 +53,7 @@ public record EntityType(byte number
 		 * @param gameTimeMillis The most recent game time, in case the instance needs to track relative timeouts, etc.
 		 * @return The deserialized extended data instance.
 		 */
-		public Object read(ByteBuffer buffer, long gameTimeMillis);
+		public Object readExtendedData(ByteBuffer buffer, long gameTimeMillis);
 		/**
 		 * Writes the extended data to the given buffer.
 		 * 
@@ -61,14 +61,8 @@ public record EntityType(byte number
 		 * @param extendedData The extended data instance to serialize.
 		 * @param gameTimeMillis The most recent game time, in case the instance needs to store relative timeouts, etc.
 		 */
-		public void write(ByteBuffer buffer, Object extendedData, long gameTimeMillis);
-	}
-
-	/**
-	 * The common interface implemented by templates of specific behaviours which can be attached to an EntityType.
-	 */
-	public static interface IBehaviourTemplate
-	{
+		public void writeExtendedData(ByteBuffer buffer, Object extendedData, long gameTimeMillis);
+		
 		/**
 		 * Finds a target for deliberate path creation, returning null if one couldn't be found.
 		 * 

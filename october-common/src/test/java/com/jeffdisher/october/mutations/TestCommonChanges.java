@@ -26,11 +26,11 @@ import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.actions.passive.PassiveActionPickUp;
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.CreatureExtendedData;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.aspects.StationRegistry;
+import com.jeffdisher.october.creatures.ExtensionLivestock;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -3435,14 +3435,14 @@ public class TestCommonChanges
 		Assert.assertTrue(EntityChangeUseSelectedItemOnEntity.canUseOnEntity(wheatItem, PartialEntity.fromCreature(cow), gameTimeMilils));
 		Assert.assertFalse(EntityChangeUseSelectedItemOnEntity.canUseOnEntity(wheatItem, PartialEntity.fromCreature(calf), gameTimeMilils));
 		MutableCreature mut = MutableCreature.existing(cow);
-		mut.newExtendedData = new CreatureExtendedData.LivestockData(true, null, 0L);
+		mut.newExtendedData = new ExtensionLivestock.LivestockData(true, null, 0L);
 		Assert.assertFalse(EntityChangeUseSelectedItemOnEntity.canUseOnEntity(wheatItem, PartialEntity.fromCreature(mut.freeze()), gameTimeMilils));
-		mut.newExtendedData = new CreatureExtendedData.LivestockData(false, null, 1000L);
+		mut.newExtendedData = new ExtensionLivestock.LivestockData(false, null, 1000L);
 		Assert.assertFalse(EntityChangeUseSelectedItemOnEntity.canUseOnEntity(wheatItem, PartialEntity.fromCreature(mut.freeze()), gameTimeMilils));
 		gameTimeMilils = 1000L;
 		Assert.assertTrue(EntityChangeUseSelectedItemOnEntity.canUseOnEntity(wheatItem, PartialEntity.fromCreature(mut.freeze()), gameTimeMilils));
 		
-		mut.newExtendedData = new CreatureExtendedData.LivestockData(true, null, 0L);
+		mut.newExtendedData = new ExtensionLivestock.LivestockData(true, null, 0L);
 		CreatureEntity readyCow = mut.freeze();
 		CommonChangeSink changeSink = new CommonChangeSink(Set.of(entityId), Set.of(cowId), Set.of());
 		TickProcessingContext context = ContextBuilder.build()
