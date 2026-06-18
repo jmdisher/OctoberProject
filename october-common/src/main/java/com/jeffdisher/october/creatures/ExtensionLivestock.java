@@ -194,7 +194,7 @@ public class ExtensionLivestock implements EntityType.IExtension
 	}
 
 	@Override
-	public boolean didTakeSpecialAction(MutableCreature creature, TickProcessingContext context)
+	public boolean didTakeSpecialAction(MutableCreature creature, TickProcessingContext context, EntityCollection entityCollection)
 	{
 		LivestockData changedData = _newExtendedDataAfterLivestockAction(context
 			, creature.getId()

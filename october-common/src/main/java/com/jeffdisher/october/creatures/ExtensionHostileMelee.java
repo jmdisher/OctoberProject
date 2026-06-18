@@ -66,7 +66,7 @@ public class ExtensionHostileMelee implements EntityType.IExtension
 		return CommonExtensionHelpers.isHostileTargetValid(entityCollection, creature);
 	}
 	@Override
-	public boolean didTakeSpecialAction(MutableCreature creature, TickProcessingContext context)
+	public boolean didTakeSpecialAction(MutableCreature creature, TickProcessingContext context, EntityCollection entityCollection)
 	{
 		boolean isDone;
 		// The only special action we will take is attacking but this path will also reset our tracking if the target moves.

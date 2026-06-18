@@ -1674,9 +1674,16 @@ public class TestCreatureLogic
 		;
 		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(villager.id(), villager, villagerBaby.id(), villagerBaby));
 		
-		// Show basic idle movement of the villager.
+		// Note that the villager will choose its profession on the first didTakeSpecialActions call.
 		MutableCreature mutableVillager = MutableCreature.existing(villager);
 		boolean didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableVillager);
+		Assert.assertTrue(didAct);
+		ExtensionVillager.Data internal = (ExtensionVillager.Data) mutableVillager.newExtendedData;
+		Assert.assertEquals(ENV.trading.getProfessionById("op.tool_smith"), internal.profession());
+		Assert.assertEquals(0, internal.inventory().size());
+		
+		// Show basic idle movement of the villager.
+		didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableVillager);
 		Assert.assertFalse(didAct);
 		Assert.assertNull(mutableVillager.movementPlan.fullPlan());
 		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, mutableVillager.movementPlan.targetEntityId());

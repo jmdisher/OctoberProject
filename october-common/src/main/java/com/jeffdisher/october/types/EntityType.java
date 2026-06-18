@@ -82,9 +82,10 @@ public record EntityType(byte number
 		 * 
 		 * @param creature The MutableCreature instance.
 		 * @param context The current tick context.
+		 * @param entityCollection The read-only collection of entities in the world.
 		 * @return True if a special action was taken (or if normal movement should be skipped for any reason).
 		 */
-		public boolean didTakeSpecialAction(MutableCreature creature, TickProcessingContext context);
+		public boolean didTakeSpecialAction(MutableCreature creature, TickProcessingContext context, EntityCollection entityCollection);
 		/**
 		 * Called when a livestock animal is being set pregnant, returning whether the animal's state changed.
 		 * 

@@ -71,7 +71,7 @@ public class ExtensionLivestockBaby implements EntityType.IExtension
 	}
 
 	@Override
-	public boolean didTakeSpecialAction(MutableCreature creature, TickProcessingContext context)
+	public boolean didTakeSpecialAction(MutableCreature creature, TickProcessingContext context, EntityCollection entityCollection)
 	{
 		boolean isDone = false;
 		

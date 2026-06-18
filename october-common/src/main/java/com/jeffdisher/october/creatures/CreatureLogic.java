@@ -170,7 +170,7 @@ public class CreatureLogic
 				mutable.movementPlan = _makeMovementPlan(context, blockKindLookup, entityCollection, mutable);
 			}
 			
-			isDone = creatureType.extension().didTakeSpecialAction(mutable, context);
+			isDone = creatureType.extension().didTakeSpecialAction(mutable, context, entityCollection);
 		}
 		return isDone;
 	}
