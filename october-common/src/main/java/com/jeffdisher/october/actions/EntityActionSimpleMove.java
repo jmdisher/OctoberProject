@@ -64,6 +64,7 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 		EntitySubActionType.CHARGE_WEAPON,
 		EntitySubActionType.TRIGGER_CHARGED_WEAPON,
 		EntitySubActionType.STEP_UP,
+		EntitySubActionType.SEND_TRADE,
 		EntitySubActionType.TESTING_ONLY,
 	}).collect(Collectors.toSet());
 

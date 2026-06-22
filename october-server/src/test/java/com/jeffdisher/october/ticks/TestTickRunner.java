@@ -20,6 +20,8 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
+import com.jeffdisher.october.aspects.TradingRegistry;
+import com.jeffdisher.october.creatures.ExtensionVillager;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
@@ -54,6 +56,7 @@ import com.jeffdisher.october.subactions.EntityChangeAttackEntity;
 import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.subactions.EntityChangeSendItem;
 import com.jeffdisher.october.subactions.EntityChangeSetBlockLogicState;
+import com.jeffdisher.october.subactions.EntitySubActionSendTrade;
 import com.jeffdisher.october.subactions.MutationEntityPushItems;
 import com.jeffdisher.october.subactions.MutationEntityRequestItemPickUp;
 import com.jeffdisher.october.subactions.MutationPlaceSelectedBlock;
@@ -3028,6 +3031,68 @@ public class TestTickRunner
 		Assert.assertEquals(new EntityLocation(3.27f, -3.27f, 6.53f), newEntity.velocity());
 		Assert.assertEquals((byte)5, newEntity.yaw());
 		Assert.assertEquals((byte)6, newEntity.pitch());
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void tradeWithVillager()
+	{
+		// Load a cuboid containing a villager and place the entity in it.  Show that the round trip of actions resulting from a successful trade happens correctly.
+		CuboidData cuboid = _zeroAirCuboidWithBase();
+		Item sapling = ENV.items.getItemById("op.sapling");
+		Item coin = ENV.items.getItemById("op.coin");
+		EntityType villagerType = ENV.creatures.getTypeById("op.villager");
+		TradingRegistry.Profession profession = ENV.trading.getProfessionById("op.forester");
+		
+		int entityId = 1;
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		mutable.newLocation = new EntityLocation(10.0f, 10.0f, 1.0f);
+		mutable.newInventory.addAllItems(sapling, 1);
+		mutable.setSelectedKey(1);
+		Entity entity = mutable.freeze();
+		
+		int villagerId = -1;
+		MutableCreature mutCreature = MutableCreature.existing(CreatureEntity.create(villagerId, villagerType, new EntityLocation(11.0f, 10.0f, 1.0f), 0L));
+		mutCreature.newExtendedData = new ExtensionVillager.Data(profession, Map.of());
+		CreatureEntity villager = mutCreature.freeze();
+		
+		Consumer<TickSnapshot> snapshotListener = (TickSnapshot completed) -> {};
+		TickRunner runner = new TickRunner(TICK_RUNNER_THREAD_COUNT
+				, MILLIS_PER_TICK
+				, null
+				, null
+				, (int bound) -> 0
+				, snapshotListener
+				, new WorldConfig()
+		);
+		
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(villager), List.of(), Map.of(), List.of())
+			)
+			, null
+			, List.of(new SuspendedEntity(entity, List.of()))
+			, null
+		);
+		runner.start();
+		
+		// Request that we sell the sapling to the villager (this will take 3 ticks - send, receive, respond).
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntitySubActionSendTrade(1, villagerId, coin)), 1L);
+		runner.startNextTick();
+		TickSnapshot snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0, snapshot.entities().get(entityId).completed().inventory().currentEncumbrance);
+		Assert.assertEquals(0, ((ExtensionVillager.Data)snapshot.creatures().get(villagerId).completed().extendedData()).inventory().size());
+		
+		// See the receive.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0, snapshot.entities().get(entityId).completed().inventory().currentEncumbrance);
+		Assert.assertEquals(1, ((ExtensionVillager.Data)snapshot.creatures().get(villagerId).completed().extendedData()).inventory().get(sapling).intValue());
+		
+		// See the respond.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.entities().get(entityId).completed().inventory().getCount(coin));
+		Assert.assertEquals(1, ((ExtensionVillager.Data)snapshot.creatures().get(villagerId).completed().extendedData()).inventory().get(sapling).intValue());
 		
 		runner.shutdown();
 	}

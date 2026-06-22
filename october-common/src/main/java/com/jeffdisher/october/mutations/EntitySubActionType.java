@@ -48,6 +48,7 @@ public enum EntitySubActionType
 	CHARGE_WEAPON,
 	TRIGGER_CHARGED_WEAPON,
 	STEP_UP,
+	SEND_TRADE,
 	
 	/**
 	 * This testing type is never serialized so it should be kept at the end of the list.

@@ -30,7 +30,9 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.aspects.StationRegistry;
+import com.jeffdisher.october.aspects.TradingRegistry;
 import com.jeffdisher.october.creatures.ExtensionLivestock;
+import com.jeffdisher.october.creatures.ExtensionVillager;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -67,6 +69,7 @@ import com.jeffdisher.october.subactions.EntitySubActionPickUpPassive;
 import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
 import com.jeffdisher.october.subactions.EntitySubActionReleaseWeapon;
 import com.jeffdisher.october.subactions.EntitySubActionRequestSwapSpecialSlot;
+import com.jeffdisher.october.subactions.EntitySubActionSendTrade;
 import com.jeffdisher.october.subactions.EntitySubActionStepUp;
 import com.jeffdisher.october.subactions.EntitySubActionTravelViaBlock;
 import com.jeffdisher.october.subactions.MutationEntityPushItems;
@@ -3889,6 +3892,83 @@ public class TestCommonChanges
 		// The swim doesn't move, just sets the vector.
 		Assert.assertEquals(EntityChangeSwim.SWIM_FORCE, newEntity.newVelocity.z(), 0.01f);
 		Assert.assertEquals(oldLocation, newEntity.newLocation);
+	}
+
+	@Test
+	public void sendTrade()
+	{
+		// Test a bunch of the cases related to initiating trades with villagers:
+		// -too far
+		// -unknown trade
+		// -not enough coins
+		// -villager buy hatchet
+		// -villager buy sapling
+		// -villager sell log
+		EntityLocation playerLocation = new EntityLocation(5.0f, 5.0f, 1.0f);
+		EntityLocation closeLocation = playerLocation.getRelative(1.0f, 0.0f, 0.0f);
+		EntityLocation farLocation = playerLocation.getRelative(10.0f, 0.0f, 0.0f);
+		EntityType villager = ENV.creatures.getTypeById("op.villager");
+		TradingRegistry.Profession forester = ENV.trading.getProfessionById("op.forester");
+		Item hatchet = ENV.items.getItemById("op.stone_hatchet");
+		Item sapling = ENV.items.getItemById("op.sapling");
+		Item coin = ENV.items.getItemById("op.coin");
+		
+		MutableCreature mutFarVillager = MutableCreature.existing(CreatureEntity.create(-1, villager, farLocation, 1000L));
+		mutFarVillager.newExtendedData = new ExtensionVillager.Data(forester, null);
+		MutableCreature mutSellLogVillager = MutableCreature.existing(CreatureEntity.create(-2, villager, closeLocation, 1000L));
+		mutSellLogVillager.newExtendedData = new ExtensionVillager.Data(forester, Map.of(LOG_ITEM, 2));
+		MutableCreature mutBuyOrdersVillager = MutableCreature.existing(CreatureEntity.create(-3, villager, closeLocation, 1000L));
+		mutBuyOrdersVillager.newExtendedData = new ExtensionVillager.Data(forester, null);
+		
+		CreatureEntity farVillager = mutFarVillager.freeze();
+		CreatureEntity sellLogVillager = mutSellLogVillager.freeze();
+		CreatureEntity buyOrderVillager = mutBuyOrdersVillager.freeze();
+		LazyEntityIndex entitySearch = new LazyEntityIndex(null, Map.of(farVillager.id(), farVillager
+			, sellLogVillager.id(), sellLogVillager
+			, buyOrderVillager.id(), buyOrderVillager
+		));
+		CommonChangeSink sink = new CommonChangeSink(null, Set.of(farVillager.id()
+			, sellLogVillager.id()
+			, buyOrderVillager.id()
+		), null);
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups(null, entitySearch, null)
+			.sinks(null, sink)
+			.finish()
+		;
+		
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = playerLocation;
+		newEntity.newInventory.addAllItems(sapling, 2);
+		newEntity.newInventory.addNonStackableAllowingOverflow(PropertyHelpers.newItemWithDefaults(ENV, hatchet));
+		newEntity.newInventory.addAllItems(coin, 10);
+		
+		// Too far.
+		Assert.assertFalse(new EntitySubActionSendTrade(3, farVillager.id(), LOG_ITEM).applyChange(context, newEntity));
+		// Invalid trade.
+		Assert.assertFalse(new EntitySubActionSendTrade(3, sellLogVillager.id(), STONE_ITEM).applyChange(context, newEntity));
+		// Not enough coins.
+		Assert.assertFalse(new EntitySubActionSendTrade(3, buyOrderVillager.id(), hatchet).applyChange(context, newEntity));
+		// Buy hatchet.
+		newEntity.newInventory.addAllItems(coin, 20);
+		Assert.assertTrue(new EntitySubActionSendTrade(2, buyOrderVillager.id(), coin).applyChange(context, newEntity));
+		// Buy sapling.
+		Assert.assertTrue(new EntitySubActionSendTrade(1, buyOrderVillager.id(), coin).applyChange(context, newEntity));
+		// Sell log.
+		Assert.assertTrue(new EntitySubActionSendTrade(3, sellLogVillager.id(), LOG_ITEM).applyChange(context, newEntity));
+		
+		// Verify that the expected follow-up actions appeared.
+		Assert.assertEquals(0, sink.takeExportedChanges().size());
+		List<TargetedAction<IEntityAction<MutableCreature>>> actions = sink.takeExportedCreatureChanges();
+		Assert.assertEquals(3, actions.size());
+		Assert.assertEquals(0, sink.takeExportedPassiveActions().size());
+		
+		Assert.assertEquals(buyOrderVillager.id(), actions.get(0).targetId());
+		Assert.assertEquals("Villager receive trade Item[id=op.stone_hatchet, name=Stone Hatchet, number=63], requesting Item[id=op.coin, name=Coin, number=119]", actions.get(0).action().toString());
+		Assert.assertEquals(buyOrderVillager.id(), actions.get(1).targetId());
+		Assert.assertEquals("Villager receive trade Item[id=op.sapling, name=Sapling, number=16](1), requesting Item[id=op.coin, name=Coin, number=119]", actions.get(1).action().toString());
+		Assert.assertEquals(sellLogVillager.id(), actions.get(2).targetId());
+		Assert.assertEquals("Villager receive trade Item[id=op.coin, name=Coin, number=119](4), requesting Item[id=op.log, name=Log, number=2]", actions.get(2).action().toString());
 	}
 
 
