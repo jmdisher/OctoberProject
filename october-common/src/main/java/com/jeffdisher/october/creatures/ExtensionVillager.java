@@ -154,9 +154,11 @@ public class ExtensionVillager implements EntityType.IExtension
 		TradingRegistry.Profession profession = data.profession();
 		Item itemTypeToBuy = itemSlotForVillagerToBuy.getType();
 		
-		// Make sure that this is a valid buy offer.
+		// Make sure that this is a valid buy offer and that we have inventory space for it.
 		boolean canBuy = false;
-		if (profession.buyOffers().containsKey(itemTypeToBuy))
+		if (profession.buyOffers().containsKey(itemTypeToBuy)
+			&& (data.inventory().getOrDefault(itemTypeToBuy, 0) < 2 * profession.targetInventory().get(itemTypeToBuy))
+		)
 		{
 			// Make sure that this is valid (either a stack or full durability).
 			if ((null == itemSlotForVillagerToBuy.nonStackable)
@@ -183,8 +185,13 @@ public class ExtensionVillager implements EntityType.IExtension
 		ExtensionVillager.Data data = (ExtensionVillager.Data) villager.extendedData();
 		TradingRegistry.Profession profession = data.profession();
 		
-		// Make sure that this is a valid sell offer (return 0 if not valid).
-		return profession.sellOffers().getOrDefault(itemToRequest, 0);
+		// Make sure that this is a valid sell offer and that we have the item in stock (return 0 if not valid).
+		int coinCost = 0;
+		if (profession.sellOffers().containsKey(itemToRequest) && data.inventory.containsKey(itemToRequest))
+		{
+			coinCost = profession.sellOffers().get(itemToRequest);
+		}
+		return coinCost;
 	}
 
 	/**

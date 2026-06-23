@@ -3914,11 +3914,11 @@ public class TestCommonChanges
 		Item coin = ENV.items.getItemById("op.coin");
 		
 		MutableCreature mutFarVillager = MutableCreature.existing(CreatureEntity.create(-1, villager, farLocation, 1000L));
-		mutFarVillager.newExtendedData = new ExtensionVillager.Data(forester, null);
+		mutFarVillager.newExtendedData = new ExtensionVillager.Data(forester, Map.of());
 		MutableCreature mutSellLogVillager = MutableCreature.existing(CreatureEntity.create(-2, villager, closeLocation, 1000L));
 		mutSellLogVillager.newExtendedData = new ExtensionVillager.Data(forester, Map.of(LOG_ITEM, 2));
 		MutableCreature mutBuyOrdersVillager = MutableCreature.existing(CreatureEntity.create(-3, villager, closeLocation, 1000L));
-		mutBuyOrdersVillager.newExtendedData = new ExtensionVillager.Data(forester, null);
+		mutBuyOrdersVillager.newExtendedData = new ExtensionVillager.Data(forester, Map.of());
 		
 		CreatureEntity farVillager = mutFarVillager.freeze();
 		CreatureEntity sellLogVillager = mutSellLogVillager.freeze();

@@ -246,8 +246,7 @@ public class TestVillagerActions
 		// Show when the inventory is full.
 		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER, Map.of(STONE_HATCHET, 2));
 		MinimalEntity fullMinimal = MinimalEntity.fromCreature(mutable.freeze());
-		// TODO:  We should probably make this say that they CANNOT buy when their inventory is full.
-		Assert.assertTrue(extension.canVillagerBuyItem(ENV, fullMinimal, hatchetToBuy));
+		Assert.assertFalse(extension.canVillagerBuyItem(ENV, fullMinimal, hatchetToBuy));
 		Assert.assertEquals(0, extension.coinsToReturnForVillagerBuyTrade(ENV, mutable, hatchetToBuy));
 		Assert.assertEquals(2, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(STONE_HATCHET).intValue());
 	}
@@ -269,8 +268,7 @@ public class TestVillagerActions
 		// Show when the inventory is empty.
 		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER, Map.of());
 		MinimalEntity emptyMinimal = MinimalEntity.fromCreature(mutable.freeze());
-		// TODO:  We should probably make this say that they CANNOT sell when their inventory is empty.
-		Assert.assertEquals(4, extension.coinCostOfVillagerTrade(ENV, emptyMinimal, LOG));
+		Assert.assertEquals(0, extension.coinCostOfVillagerTrade(ENV, emptyMinimal, LOG));
 		Assert.assertEquals(null, extension.purchaseToReturnForVillagerSellTrade(ENV, mutable, LOG, 4));
 	}
 
