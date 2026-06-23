@@ -65,19 +65,31 @@ public class TradingRegistry
 					throw new TabListReader.TabListException("There must be at least one trade offered: \"" + _name + "\"");
 				}
 				
-				// We determine our target inventory by being the max or 1 for each item sold and the input to each crafting operation.
+				// We also want to determine a target inventory level for each item we buy or sell.  We will use a basic
+				// rule where we try to craft or buy more as long as the inventory a villager has is below this target.
+				// If the level is greater than or equal to the target, no crafting will be attempted and buy orders
+				// will be rejected.
+				// We will base this target around the crafting system:  Each item will have a target to support the max
+				// of the 2 most expensive or productive crafting operations.
 				Map<Item, Integer> targetInventory = new HashMap<>();
-				for (Item sell : _sellOffers.keySet())
-				{
-					targetInventory.put(sell, 1);
-				}
 				for (TradeCraft craft : _crafts)
 				{
 					for (Map.Entry<Item, Integer> input : craft.inputs.entrySet())
 					{
 						Item item = input.getKey();
+						int requiredNumber = input.getValue();
+						int targetNumber = 2 * requiredNumber;
 						int existing = targetInventory.getOrDefault(item, 0);
-						int updated = Math.max(existing, input.getValue());
+						int updated = Math.max(existing, targetNumber);
+						targetInventory.put(item, updated);
+					}
+					for (Map.Entry<Item, Integer> input : craft.outputs.entrySet())
+					{
+						Item item = input.getKey();
+						int requiredNumber = input.getValue();
+						int targetNumber = 2 * requiredNumber;
+						int existing = targetInventory.getOrDefault(item, 0);
+						int updated = Math.max(existing, targetNumber);
 						targetInventory.put(item, updated);
 					}
 				}
@@ -252,5 +264,24 @@ public class TradingRegistry
 		, Map<Item, Integer> sellOffers
 		, List<TradeCraft> crafts
 		, Map<Item, Integer> targetInventory
-	) {}
+	)
+	{
+		@Override
+		public boolean equals(Object arg0)
+		{
+			// These are always expected to be interned in the Environment.
+			return (this == arg0);
+		}
+		@Override
+		public int hashCode()
+		{
+			// We only base this on the ID.
+			return this.id.hashCode();
+		}
+		@Override
+		public String toString()
+		{
+			return String.format("Profession(%s)", this.id);
+		}
+	}
 }

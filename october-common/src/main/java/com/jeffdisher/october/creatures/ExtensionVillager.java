@@ -157,7 +157,7 @@ public class ExtensionVillager implements EntityType.IExtension
 		// Make sure that this is a valid buy offer and that we have inventory space for it.
 		boolean canBuy = false;
 		if (profession.buyOffers().containsKey(itemTypeToBuy)
-			&& (data.inventory().getOrDefault(itemTypeToBuy, 0) < 2 * profession.targetInventory().get(itemTypeToBuy))
+			&& (data.inventory().getOrDefault(itemTypeToBuy, 0) < profession.targetInventory().get(itemTypeToBuy))
 		)
 		{
 			// Make sure that this is valid (either a stack or full durability).
@@ -212,8 +212,8 @@ public class ExtensionVillager implements EntityType.IExtension
 		// This is only called from an internal action, so it must be a valid buy offer.
 		Assert.assertTrue(profession.buyOffers().containsKey(itemTypeToBuy));
 		
-		// Just check that we are within limits (2x target).
-		int inventoryLimit = 2 * profession.targetInventory().get(itemTypeToBuy);
+		// Just check that we are within limits.
+		int inventoryLimit = profession.targetInventory().get(itemTypeToBuy);
 		int currentCount = data.inventory().getOrDefault(itemTypeToBuy, 0);
 		int coinsToReturn;
 		if (currentCount < inventoryLimit)

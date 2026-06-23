@@ -300,12 +300,12 @@ public class TestMiscAspects
 		Assert.assertEquals(32, carrot.outputs().get(ENV.items.getItemById("op.carrot_item")).intValue());
 		
 		Assert.assertEquals(6, profession.targetInventory().size());
-		Assert.assertEquals(1, profession.targetInventory().get(ENV.items.getItemById("op.stone_hoe")).intValue());
-		Assert.assertEquals(8, profession.targetInventory().get(ENV.items.getItemById("op.fertilizer")).intValue());
-		Assert.assertEquals(16, profession.targetInventory().get(ENV.items.getItemById("op.wheat_seed")).intValue());
-		Assert.assertEquals(16, profession.targetInventory().get(ENV.items.getItemById("op.carrot_seed")).intValue());
-		Assert.assertEquals(1, profession.targetInventory().get(ENV.items.getItemById("op.wheat_item")).intValue());
-		Assert.assertEquals(1, profession.targetInventory().get(ENV.items.getItemById("op.carrot_item")).intValue());
+		Assert.assertEquals(2, profession.targetInventory().get(ENV.items.getItemById("op.stone_hoe")).intValue());
+		Assert.assertEquals(16, profession.targetInventory().get(ENV.items.getItemById("op.fertilizer")).intValue());
+		Assert.assertEquals(32, profession.targetInventory().get(ENV.items.getItemById("op.wheat_seed")).intValue());
+		Assert.assertEquals(32, profession.targetInventory().get(ENV.items.getItemById("op.carrot_seed")).intValue());
+		Assert.assertEquals(64, profession.targetInventory().get(ENV.items.getItemById("op.wheat_item")).intValue());
+		Assert.assertEquals(64, profession.targetInventory().get(ENV.items.getItemById("op.carrot_item")).intValue());
 	}
 
 	@Test

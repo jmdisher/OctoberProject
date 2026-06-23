@@ -1679,7 +1679,7 @@ public class TestCreatureLogic
 		boolean didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableVillager);
 		Assert.assertTrue(didAct);
 		ExtensionVillager.Data internal = (ExtensionVillager.Data) mutableVillager.newExtendedData;
-		Assert.assertEquals(ENV.trading.getProfessionById("op.tool_smith"), internal.profession());
+		Assert.assertEquals(ENV.trading.getProfessionById("op.baker"), internal.profession());
 		Assert.assertEquals(0, internal.inventory().size());
 		
 		// Show basic idle movement of the villager.
