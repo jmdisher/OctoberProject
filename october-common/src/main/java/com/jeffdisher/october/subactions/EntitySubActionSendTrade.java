@@ -5,10 +5,8 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.actions.EntityActionReceiveTrade;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
-import com.jeffdisher.october.aspects.TradingRegistry;
 import com.jeffdisher.october.creatures.ExtensionVillager;
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -99,45 +97,39 @@ public class EntitySubActionSendTrade implements IEntitySubAction<IMutablePlayer
 			if ((villagerType == villager.type()) && isInRange)
 			{
 				// We are trading with a villager in range.
-				// TODO:  Move this into IExtension.
-				ExtensionVillager.Data data = (ExtensionVillager.Data) villager.extendedData();
-				TradingRegistry.Profession profession = data.profession();
+				
+				// Note that we down-cast the IExtension here since we already know the type and there isn't a reason to generalize this.
+				ExtensionVillager extension = (ExtensionVillager)villagerType.extension();
 				
 				// If the villager is buying something from us, make sure that they are buying something we send.
 				// If the villager is selling something to us, make sure they are selling what we are requesting.
-				if (isBuy && profession.buyOffers().containsKey(typeToSend))
+				if (isBuy && extension.canVillagerBuyItem(env, villager, localSlot))
 				{
-					// Make sure that this is valid (either a stack or full durability).
-					if ((null == localSlot.nonStackable)
-						|| (env.durability.getDurability(typeToSend) == PropertyHelpers.getDurability(localSlot.nonStackable))
-					)
+					// Remove this and send it.
+					if (null != localSlot.nonStackable)
 					{
-						// Remove this and send it.
-						if (null != localSlot.nonStackable)
+						inventory.removeNonStackableItems(_localInventoryId);
+						newEntity.clearHotBarWithKey(_localInventoryId);
+						
+						toSend = localSlot;
+					}
+					else
+					{
+						inventory.removeStackableItems(typeToSend, 1);
+						if (0 == inventory.getCount(typeToSend))
 						{
-							inventory.removeNonStackableItems(_localInventoryId);
 							newEntity.clearHotBarWithKey(_localInventoryId);
-							
-							toSend = localSlot;
 						}
-						else
-						{
-							inventory.removeStackableItems(typeToSend, 1);
-							if (0 == inventory.getCount(typeToSend))
-							{
-								newEntity.clearHotBarWithKey(_localInventoryId);
-							}
-							
-							toSend = ItemSlot.fromStack(new Items(typeToSend, 1));
-						}
+						
+						toSend = ItemSlot.fromStack(new Items(typeToSend, 1));
 					}
 				}
-				else if (isSell && profession.sellOffers().containsKey(_itemToRequest))
+				else if (isSell)
 				{
 					// Is what we are requesting something that they sell and do we have enough coins?
-					int cost = profession.sellOffers().get(_itemToRequest);
+					int cost = extension.coinCostOfVillagerTrade(env, villager, _itemToRequest);
 					int currentMoney = localSlot.getCount();
-					if (currentMoney >= cost)
+					if ((cost > 0) && (currentMoney >= cost))
 					{
 						// This is valid so remove the money and send the trade.
 						inventory.removeStackableItems(coinType, cost);
@@ -148,6 +140,10 @@ public class EntitySubActionSendTrade implements IEntitySubAction<IMutablePlayer
 						
 						Items coinsToSend = new Items(coinType, cost);
 						toSend = ItemSlot.fromStack(coinsToSend);
+					}
+					else
+					{
+						// It isn't valid or we can't afford it.
 					}
 				}
 				else

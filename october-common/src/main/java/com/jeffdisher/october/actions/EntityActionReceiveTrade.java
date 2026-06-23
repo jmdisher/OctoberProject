@@ -1,14 +1,9 @@
 package com.jeffdisher.october.actions;
 
 import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.TradingRegistry;
 import com.jeffdisher.october.creatures.ExtensionVillager;
-import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.Item;
@@ -54,30 +49,18 @@ public class EntityActionReceiveTrade implements IEntityAction<MutableCreature>
 		if (coinType == _requestedType)
 		{
 			// They are requesting coins from us so that means we are buying what they are sending.
-			// TODO:  Move this into IExtension.
-			ExtensionVillager.Data data = (ExtensionVillager.Data)newEntity.newExtendedData;
-			TradingRegistry.Profession profession = data.profession();
 			
 			// We only move a single item at a time (unless coins).
 			Assert.assertTrue(1 == _sentItems.getCount());
 			
-			Item itemWeAreBuying = _sentItems.getType();
+			// Note that we down-cast the IExtension here since we already know the type and there isn't a reason to generalize this.
+			ExtensionVillager extension = (ExtensionVillager)newEntity.newType.extension();
 			
-			// The caller should have validated that the receiver could buy this.
-			Assert.assertTrue(profession.buyOffers().containsKey(itemWeAreBuying));
-			
-			// Just check that we are within limits (2x target).
-			int inventoryLimit = 2 * profession.targetInventory().get(itemWeAreBuying);
-			int currentCount = data.inventory().getOrDefault(itemWeAreBuying, 0);
-			if (currentCount < inventoryLimit)
+			// Check that we can satisfy this trade.
+			int coinCount = extension.coinsToReturnForVillagerBuyTrade(env, newEntity, _sentItems);
+			if (coinCount > 0)
 			{
-				// Update our inventory.
-				Map<Item, Integer> newInventory = new HashMap<>(data.inventory());
-				newInventory.put(itemWeAreBuying, currentCount + 1);
-				newEntity.newExtendedData = new ExtensionVillager.Data(profession, Collections.unmodifiableMap(newInventory));
-				
-				// Send back the coins.
-				int coinCount = profession.buyOffers().get(itemWeAreBuying);
+				// Success, so send the coins back.
 				Items coins = new Items(coinType, coinCount);
 				_sendBackToTrader(context, coins, null);
 				
@@ -97,46 +80,15 @@ public class EntityActionReceiveTrade implements IEntityAction<MutableCreature>
 			Assert.assertTrue(coinType == _sentItems.getType());
 			
 			// They are requesting an item so that means that we are selling what they requested.
-			// TODO:  Move this into IExtension.
-			ExtensionVillager.Data data = (ExtensionVillager.Data)newEntity.newExtendedData;
-			TradingRegistry.Profession profession = data.profession();
 			
-			// The caller should have validated that the receiver is selling this.
-			Assert.assertTrue(profession.sellOffers().containsKey(_requestedType));
+			// Note that we down-cast the IExtension here since we already know the type and there isn't a reason to generalize this.
+			ExtensionVillager extension = (ExtensionVillager)newEntity.newType.extension();
 			
-			// The caller should have validated that they sent the right number of coins.
-			Assert.assertTrue(_sentItems.getCount() == profession.sellOffers().get(_requestedType));
-			
-			// Just check that we have one to sell.
-			int currentCount = data.inventory().getOrDefault(_requestedType, 0);
-			if (currentCount > 0)
+			// See if this was a success.
+			ItemSlot success = extension.purchaseToReturnForVillagerSellTrade(env, newEntity, _requestedType, _sentItems.getCount());
+			if (null != success)
 			{
-				int newCount = currentCount - 1;
-				Map<Item, Integer> newInventory = new HashMap<>(data.inventory());
-				if (newCount > 0)
-				{
-					newInventory.put(_requestedType, currentCount - 1);
-				}
-				else
-				{
-					newInventory.remove(_requestedType);
-				}
-				newEntity.newExtendedData = new ExtensionVillager.Data(profession, Collections.unmodifiableMap(newInventory));
-				
-				// Send the item.
-				Items stack;
-				NonStackableItem nonStack;
-				if (env.durability.isStackable(_requestedType))
-				{
-					stack = new Items(_requestedType, 1);
-					nonStack = null;
-				}
-				else
-				{
-					stack = null;
-					nonStack = PropertyHelpers.newItemWithDefaults(env, _requestedType);
-				}
-				_sendBackToTrader(context, stack, nonStack);
+				_sendBackToTrader(context, success.stack, success.nonStackable);
 				
 				didApply = true;
 			}

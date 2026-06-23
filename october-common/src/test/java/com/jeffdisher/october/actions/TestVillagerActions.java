@@ -23,6 +23,7 @@ import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TargetedAction;
@@ -225,5 +226,71 @@ public class TestVillagerActions
 		list = changes.takeExportedCreatureChanges();
 		Assert.assertEquals(1, list.size());
 		Assert.assertEquals("Store to creature inventory: Item[id=op.coin, name=Coin, number=119](4)", list.get(0).action().toString());
+	}
+
+	@Test
+	public void extensionBuyHelpers()
+	{
+		// Show that the special helpers added for buy trades in ExtensionVillager work.
+		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 5.0f, 5.0f), 1000L));
+		ExtensionVillager extension = (ExtensionVillager)mutable.getType().extension();
+		ItemSlot hatchetToBuy = ItemSlot.fromNonStack(PropertyHelpers.newItemWithDefaults(ENV, STONE_HATCHET));
+		
+		// Show when the inventory is empty.
+		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER, Map.of());
+		MinimalEntity emptyMinimal = MinimalEntity.fromCreature(mutable.freeze());
+		Assert.assertTrue(extension.canVillagerBuyItem(ENV, emptyMinimal, hatchetToBuy));
+		Assert.assertEquals(20, extension.coinsToReturnForVillagerBuyTrade(ENV, mutable, hatchetToBuy));
+		Assert.assertEquals(1, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(STONE_HATCHET).intValue());
+		
+		// Show when the inventory is full.
+		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER, Map.of(STONE_HATCHET, 2));
+		MinimalEntity fullMinimal = MinimalEntity.fromCreature(mutable.freeze());
+		// TODO:  We should probably make this say that they CANNOT buy when their inventory is full.
+		Assert.assertTrue(extension.canVillagerBuyItem(ENV, fullMinimal, hatchetToBuy));
+		Assert.assertEquals(0, extension.coinsToReturnForVillagerBuyTrade(ENV, mutable, hatchetToBuy));
+		Assert.assertEquals(2, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(STONE_HATCHET).intValue());
+	}
+
+	@Test
+	public void extensionSellHelpers()
+	{
+		// Show that the special helpers added for sell trades in ExtensionVillager work.
+		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 5.0f, 5.0f), 1000L));
+		ExtensionVillager extension = (ExtensionVillager)mutable.getType().extension();
+		
+		// Show when the inventory has items.
+		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER, Map.of(LOG, 2));
+		MinimalEntity itemMinimal = MinimalEntity.fromCreature(mutable.freeze());
+		Assert.assertEquals(4, extension.coinCostOfVillagerTrade(ENV, itemMinimal, LOG));
+		Assert.assertEquals(ItemSlot.fromStack(new Items(LOG, 1)), extension.purchaseToReturnForVillagerSellTrade(ENV, mutable, LOG, 4));
+		Assert.assertEquals(1, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(LOG).intValue());
+		
+		// Show when the inventory is empty.
+		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER, Map.of());
+		MinimalEntity emptyMinimal = MinimalEntity.fromCreature(mutable.freeze());
+		// TODO:  We should probably make this say that they CANNOT sell when their inventory is empty.
+		Assert.assertEquals(4, extension.coinCostOfVillagerTrade(ENV, emptyMinimal, LOG));
+		Assert.assertEquals(null, extension.purchaseToReturnForVillagerSellTrade(ENV, mutable, LOG, 4));
+	}
+
+	@Test
+	public void storeToInventory()
+	{
+		// Show that the special helper to store to an inventory works.
+		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 5.0f, 5.0f), 1000L));
+		ExtensionVillager extension = (ExtensionVillager)mutable.getType().extension();
+		
+		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER, Map.of());
+		
+		extension.storeItemsToVillagerInventory(ENV, mutable, STONE_HATCHET);
+		Assert.assertEquals(1, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(STONE_HATCHET).intValue());
+		
+		extension.storeItemsToVillagerInventory(ENV, mutable, STONE_HATCHET);
+		Assert.assertEquals(2, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(STONE_HATCHET).intValue());
+		
+		extension.storeItemsToVillagerInventory(ENV, mutable, SAPLING);
+		Assert.assertEquals(2, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(STONE_HATCHET).intValue());
+		Assert.assertEquals(1, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(SAPLING).intValue());
 	}
 }

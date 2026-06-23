@@ -1,12 +1,8 @@
 package com.jeffdisher.october.actions;
 
 import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.TradingRegistry;
 import com.jeffdisher.october.creatures.ExtensionVillager;
 import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.types.IEntityAction;
@@ -44,28 +40,22 @@ public class EntityActionStoreToCreatureInventory implements IEntityAction<Mutab
 		Item slotType = _itemSlot.getType();
 		if (env.items.getItemById("op.coin") == slotType)
 		{
+			// We should only store coins if we got a refund due to a target villager running out of what they were selling.
+			
 			// Coins are created/destroyed by villagers so just drop these.
 		}
 		else
 		{
 			// The trade was a success so this better be something we need as a trade input.
-			// TODO:  Move this into IExtension.
-			ExtensionVillager.Data data = (ExtensionVillager.Data)newEntity.newExtendedData;
-			TradingRegistry.Profession profession = data.profession();
 			
-			// This must be something we are trying to buy if we bought it from another villager.
-			Assert.assertTrue(profession.buyOffers().containsKey(slotType));
+			// We only ever trade for a single item at a time.
+			Assert.assertTrue(1 == _itemSlot.getCount());
 			
-			// Store it in our inventory (note that we drop non-stackable properties at this point).
-			Map<Item, Integer> inventory = data.inventory();
-			int oldCount = inventory.getOrDefault(slotType, 0);
-			int newCount = oldCount + _itemSlot.getCount();
+			// Note that we down-cast the IExtension here since we already know the type and there isn't a reason to generalize this.
+			ExtensionVillager extension = (ExtensionVillager)newEntity.newType.extension();
 			
-			// The profession is read-only so rebuild its map.
-			Map<Item, Integer> newMap = new HashMap<>(inventory);
-			newMap.put(slotType, newCount);
-			
-			newEntity.newExtendedData = new ExtensionVillager.Data(profession, Collections.unmodifiableMap(newMap));
+			// Store this an update our extended data (note that we drop non-stackable properties at this point).
+			extension.storeItemsToVillagerInventory(env, newEntity, slotType);
 		}
 		
 		// Both of these are valid since we assert that the sender only talked to possibly-valid targets,
