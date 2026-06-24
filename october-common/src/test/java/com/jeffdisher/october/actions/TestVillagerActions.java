@@ -41,6 +41,8 @@ public class TestVillagerActions
 	private static Item SAPLING;
 	private static Item STONE_HATCHET;
 	private static Item LOG;
+	private static Item STICK;
+	private static Item APPLE;
 	private static EntityType VILLAGER;
 	private static TradingRegistry.Profession FORESTER;
 	private static TradingRegistry.Profession TOOL_SMITH;
@@ -53,6 +55,8 @@ public class TestVillagerActions
 		SAPLING = ENV.items.getItemById("op.sapling");
 		STONE_HATCHET = ENV.items.getItemById("op.stone_hatchet");
 		LOG = ENV.items.getItemById("op.log");
+		STICK = ENV.items.getItemById("op.stick");
+		APPLE = ENV.items.getItemById("op.apple");
 		VILLAGER = ENV.creatures.getTypeById("op.villager");
 		FORESTER = ENV.trading.getProfessionById("op.forester");
 		TOOL_SMITH = ENV.trading.getProfessionById("op.tool_smith");
@@ -68,7 +72,7 @@ public class TestVillagerActions
 	{
 		// Show that a villager's buy response will correctly update its inventory.
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 5.0f, 5.0f), 1000L));
-		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER, Map.of());
+		mutable.newExtendedData = _emptyData(FORESTER);
 		
 		// We show both the stackable and non-stackable examples.
 		NonStackableItem hatchetItem = PropertyHelpers.newItemWithDefaults(ENV, STONE_HATCHET);
@@ -98,7 +102,7 @@ public class TestVillagerActions
 	{
 		// Show how the villager handles receiving a trade for one of its buy offers.
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 5.0f, 5.0f), 1000L));
-		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER, Map.of(STONE_HATCHET, 1));
+		mutable.newExtendedData = _data(FORESTER, Map.of(STONE_HATCHET, 1));
 		
 		// Only players can fulfil the buy orders (villagers may satisfy their own buy orders by asking for another villager's sell orders).
 		int playerId = 1;
@@ -146,9 +150,9 @@ public class TestVillagerActions
 		// Show how the villager handles receiving a trade for one of its sell offers from a player.
 		// This requires that we have a forester and a tool maker, so we can test both stackable and non-stackable.
 		MutableCreature forester = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 5.0f, 5.0f), 1000L));
-		forester.newExtendedData = new ExtensionVillager.Data(FORESTER, Map.of(LOG, 1));
+		forester.newExtendedData = _data(FORESTER, Map.of(LOG, 1));
 		MutableCreature toolSmith = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 5.0f, 5.0f), 1000L));
-		toolSmith.newExtendedData = new ExtensionVillager.Data(TOOL_SMITH, Map.of(STONE_HATCHET, 2));
+		toolSmith.newExtendedData = _data(TOOL_SMITH, Map.of(STONE_HATCHET, 2));
 		
 		int playerId = 1;
 		
@@ -190,9 +194,9 @@ public class TestVillagerActions
 		// Show how the villager handles receiving a trade for one of its sell offers from another villager.
 		// This requires that we have a forester and a tool maker, so we can test both stackable and non-stackable.
 		MutableCreature forester = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 5.0f, 5.0f), 1000L));
-		forester.newExtendedData = new ExtensionVillager.Data(FORESTER, Map.of(LOG, 1));
+		forester.newExtendedData = _data(FORESTER, Map.of(LOG, 1));
 		MutableCreature toolSmith = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 5.0f, 5.0f), 1000L));
-		toolSmith.newExtendedData = new ExtensionVillager.Data(TOOL_SMITH, Map.of(STONE_HATCHET, 2));
+		toolSmith.newExtendedData = _data(TOOL_SMITH, Map.of(STONE_HATCHET, 2));
 		
 		int villagerId = -2;
 		
@@ -237,14 +241,14 @@ public class TestVillagerActions
 		ItemSlot hatchetToBuy = ItemSlot.fromNonStack(PropertyHelpers.newItemWithDefaults(ENV, STONE_HATCHET));
 		
 		// Show when the inventory is empty.
-		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER, Map.of());
+		mutable.newExtendedData = _emptyData(FORESTER);
 		MinimalEntity emptyMinimal = MinimalEntity.fromCreature(mutable.freeze());
 		Assert.assertTrue(extension.canVillagerBuyItem(ENV, emptyMinimal, hatchetToBuy));
 		Assert.assertEquals(20, extension.coinsToReturnForVillagerBuyTrade(ENV, mutable, hatchetToBuy));
 		Assert.assertEquals(1, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(STONE_HATCHET).intValue());
 		
 		// Show when the inventory is full.
-		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER, Map.of(STONE_HATCHET, 2));
+		mutable.newExtendedData = _data(FORESTER, Map.of(STONE_HATCHET, 2));
 		MinimalEntity fullMinimal = MinimalEntity.fromCreature(mutable.freeze());
 		Assert.assertFalse(extension.canVillagerBuyItem(ENV, fullMinimal, hatchetToBuy));
 		Assert.assertEquals(0, extension.coinsToReturnForVillagerBuyTrade(ENV, mutable, hatchetToBuy));
@@ -259,14 +263,14 @@ public class TestVillagerActions
 		ExtensionVillager extension = (ExtensionVillager)mutable.getType().extension();
 		
 		// Show when the inventory has items.
-		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER, Map.of(LOG, 2));
+		mutable.newExtendedData = _data(FORESTER, Map.of(LOG, 2));
 		MinimalEntity itemMinimal = MinimalEntity.fromCreature(mutable.freeze());
 		Assert.assertEquals(4, extension.coinCostOfVillagerTrade(ENV, itemMinimal, LOG));
 		Assert.assertEquals(ItemSlot.fromStack(new Items(LOG, 1)), extension.purchaseToReturnForVillagerSellTrade(ENV, mutable, LOG, 4));
 		Assert.assertEquals(1, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(LOG).intValue());
 		
 		// Show when the inventory is empty.
-		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER, Map.of());
+		mutable.newExtendedData = _emptyData(FORESTER);
 		MinimalEntity emptyMinimal = MinimalEntity.fromCreature(mutable.freeze());
 		Assert.assertEquals(0, extension.coinCostOfVillagerTrade(ENV, emptyMinimal, LOG));
 		Assert.assertEquals(null, extension.purchaseToReturnForVillagerSellTrade(ENV, mutable, LOG, 4));
@@ -279,7 +283,7 @@ public class TestVillagerActions
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 5.0f, 5.0f), 1000L));
 		ExtensionVillager extension = (ExtensionVillager)mutable.getType().extension();
 		
-		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER, Map.of());
+		mutable.newExtendedData = _emptyData(FORESTER);
 		
 		extension.storeItemsToVillagerInventory(ENV, mutable, STONE_HATCHET);
 		Assert.assertEquals(1, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(STONE_HATCHET).intValue());
@@ -290,5 +294,58 @@ public class TestVillagerActions
 		extension.storeItemsToVillagerInventory(ENV, mutable, SAPLING);
 		Assert.assertEquals(2, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(STONE_HATCHET).intValue());
 		Assert.assertEquals(1, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(SAPLING).intValue());
+	}
+
+	@Test
+	public void craftAndCooldown()
+	{
+		// Show that we will craft a required object so long as we aren't on cooldown.
+		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 5.0f, 5.0f), 1000L));
+		ExtensionVillager extension = (ExtensionVillager)mutable.getType().extension();
+		
+		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER
+			, Map.of(STONE_HATCHET, 1
+				, SAPLING, 5
+			)
+			, 2L * ContextBuilder.DEFAULT_MILLIS_PER_TICK
+		);
+		
+		// This should fail when still on cooldown.
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(1L)
+			.finish()
+		;
+		Assert.assertFalse(extension.didTakeSpecialAction(mutable, context, null));
+		Assert.assertEquals(1, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(STONE_HATCHET).intValue());
+		Assert.assertEquals(5, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(SAPLING).intValue());
+		
+		// This should succeed after time has passed.
+		context = ContextBuilder.build()
+			.tick(2L)
+			.finish()
+		;
+		Assert.assertTrue(extension.didTakeSpecialAction(mutable, context, null));
+		Assert.assertEquals(0, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().getOrDefault(STONE_HATCHET, 0).intValue());
+		Assert.assertEquals(1, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(SAPLING).intValue());
+		Assert.assertEquals(4, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(STICK).intValue());
+		Assert.assertEquals(8, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(LOG).intValue());
+		Assert.assertEquals(1, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(APPLE).intValue());
+	}
+
+
+	private static ExtensionVillager.Data _emptyData(TradingRegistry.Profession profession)
+	{
+		return new ExtensionVillager.Data(profession
+			, Map.of()
+			, 0L
+		);
+	}
+
+	private static ExtensionVillager.Data _data(TradingRegistry.Profession profession, Map<Item, Integer> inventory)
+	{
+		return new ExtensionVillager.Data(profession
+			, inventory
+			, 0L
+		);
 	}
 }

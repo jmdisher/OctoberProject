@@ -25,11 +25,16 @@ import com.jeffdisher.october.utils.Assert;
 
 public class ExtensionVillager implements EntityType.IExtension
 {
+	/**
+	 * The timeout between attempts at crafting operations (10s).
+	 */
+	public static final long MILLIS_CRAFTING_COOLDOWN = 10L * 1000L;
+
 	@Override
 	public Object buildDefaultExtendedData(long gameTimeMillis)
 	{
 		// By default, the profession is null since we base it on our surroundings.
-		return new Data(null, Map.of());
+		return new Data(null, Map.of(), 0L);
 	}
 
 	@Override
@@ -56,8 +61,10 @@ public class ExtensionVillager implements EntityType.IExtension
 			Object old = map.put(item, count);
 			Assert.assertTrue(null == old);
 		}
+		long craftingCooldownRelativeMillis = buffer.getLong();
 		return new Data(profession
 			, Collections.unmodifiableMap(map)
+			, craftingCooldownRelativeMillis + gameTimeMillis
 		);
 	}
 
@@ -80,6 +87,13 @@ public class ExtensionVillager implements EntityType.IExtension
 			Assert.assertTrue(count > 0);
 			buffer.putInt(count);
 		}
+		
+		long craftingCooldownRelativeMillis = safe.craftingReadyMillis - gameTimeMillis;
+		if (craftingCooldownRelativeMillis < 0L)
+		{
+			craftingCooldownRelativeMillis = 0L;
+		}
+		buffer.putLong(craftingCooldownRelativeMillis);
 	}
 
 	@Override
@@ -105,8 +119,36 @@ public class ExtensionVillager implements EntityType.IExtension
 		if (null == data.profession)
 		{
 			TradingRegistry.Profession choice = _selectDefaultProfession(entityCollection, creature.newType, creature.newLocation);
-			creature.newExtendedData = new Data(choice, data.inventory);
+			creature.newExtendedData = new Data(choice
+				, data.inventory
+				, data.craftingReadyMillis
+			);
 			didTakeAction = true;
+		}
+		
+		if (!didTakeAction)
+		{
+			// See if we can craft something.
+			if (data.craftingReadyMillis <= context.currentTickTimeMillis)
+			{
+				TradingRegistry.Profession profession = data.profession;
+				Map<Item, Integer> inventory = data.inventory;
+				
+				// Check the profession's crafting recipes and see if we can and should complete any of them (we will only choose one).
+				TradingRegistry.TradeCraft chosenCraft = _findCraftToRun(profession, inventory);
+				if (null != chosenCraft)
+				{
+					inventory = _applyCraftToInventory(chosenCraft, inventory);
+				}
+				
+				// Whether we chose something or not, we want to update our timeout.
+				long nextReadyMillis = context.currentTickTimeMillis + MILLIS_CRAFTING_COOLDOWN;
+				creature.newExtendedData = new Data(profession
+					, inventory
+					, nextReadyMillis
+				);
+				didTakeAction = (null != chosenCraft);
+			}
 		}
 		
 		return didTakeAction;
@@ -221,7 +263,10 @@ public class ExtensionVillager implements EntityType.IExtension
 			// Update our inventory.
 			Map<Item, Integer> newInventory = new HashMap<>(data.inventory());
 			newInventory.put(itemTypeToBuy, currentCount + 1);
-			villager.newExtendedData = new ExtensionVillager.Data(profession, Collections.unmodifiableMap(newInventory));
+			villager.newExtendedData = new ExtensionVillager.Data(profession
+				, Collections.unmodifiableMap(newInventory)
+				, data.craftingReadyMillis
+			);
 			
 			// Send back the coins.
 			coinsToReturn = profession.buyOffers().get(itemTypeToBuy);
@@ -270,7 +315,10 @@ public class ExtensionVillager implements EntityType.IExtension
 			{
 				newInventory.remove(itemToRequest);
 			}
-			villager.newExtendedData = new ExtensionVillager.Data(profession, Collections.unmodifiableMap(newInventory));
+			villager.newExtendedData = new ExtensionVillager.Data(profession
+				, Collections.unmodifiableMap(newInventory)
+				, data.craftingReadyMillis
+			);
 			
 			// Package up what we should send them.
 			if (env.durability.isStackable(itemToRequest))
@@ -316,7 +364,10 @@ public class ExtensionVillager implements EntityType.IExtension
 		Map<Item, Integer> newMap = new HashMap<>(inventory);
 		newMap.put(itemType, newCount);
 		
-		villager.newExtendedData = new ExtensionVillager.Data(profession, Collections.unmodifiableMap(newMap));
+		villager.newExtendedData = new ExtensionVillager.Data(profession
+			, Collections.unmodifiableMap(newMap)
+			, data.craftingReadyMillis
+		);
 	}
 
 
@@ -367,10 +418,81 @@ public class ExtensionVillager implements EntityType.IExtension
 		return choice;
 	}
 
+	private TradingRegistry.TradeCraft _findCraftToRun(TradingRegistry.Profession profession
+		, Map<Item, Integer> inventory
+	)
+	{
+		TradingRegistry.TradeCraft chosenCraft = null;
+		Map<Item, Integer> target = profession.targetInventory();
+		for (TradingRegistry.TradeCraft craft : profession.crafts())
+		{
+			// If none of the outputs are currently full, we can try this one.
+			boolean shouldTry = true;
+			for (Item output : craft.outputs().keySet())
+			{
+				if (inventory.getOrDefault(output, 0) >= target.get(output))
+				{
+					shouldTry = false;
+					break;
+				}
+			}
+			if (shouldTry)
+			{
+				// So long as none of the requirements are missing, we will choose this one.
+				for (Map.Entry<Item, Integer> elt : craft.inputs().entrySet())
+				{
+					Item key = elt.getKey();
+					int requirement = elt.getValue();
+					if (inventory.getOrDefault(key, 0) < requirement)
+					{
+						// We can't do this one.
+						shouldTry = false;
+						break;
+					}
+				}
+				if (shouldTry)
+				{
+					chosenCraft = craft;
+					break;
+				}
+			}
+		}
+		return chosenCraft;
+	}
+
+	private Map<Item, Integer> _applyCraftToInventory(TradingRegistry.TradeCraft chosenCraft
+		, Map<Item, Integer> inventory
+	)
+	{
+		Map<Item, Integer> mutable = new HashMap<>(inventory);
+		for (Map.Entry<Item, Integer> elt : chosenCraft.inputs().entrySet())
+		{
+			Item key = elt.getKey();
+			int count = mutable.get(key) - elt.getValue();
+			if (count > 0)
+			{
+				mutable.put(key, count);
+			}
+			else
+			{
+				mutable.remove(key);
+			}
+		}
+		for (Map.Entry<Item, Integer> elt : chosenCraft.outputs().entrySet())
+		{
+			Item key = elt.getKey();
+			int count = mutable.getOrDefault(key, 0) + elt.getValue();
+			mutable.put(key, count);
+		}
+		return Collections.unmodifiableMap(mutable);
+	}
+
 
 	// Note that the profession defaults to null, since it is late-bound based on the surroundings.
 	// The inventory is just a map since it doesn't care about non-stackable properties, just the total number of items.
 	public static record Data(TradingRegistry.Profession profession
 		, Map<Item, Integer> inventory
+		// The gameTimeMillis when crafting becomes available again (cooldown).
+		, long craftingReadyMillis
 	) {}
 }
