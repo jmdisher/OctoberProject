@@ -3,12 +3,17 @@ package com.jeffdisher.october.creatures;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import com.jeffdisher.october.actions.EntityActionReceiveTrade;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.TradingRegistry;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.PropertyHelpers;
+import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -37,6 +42,7 @@ public class ExtensionVillager implements EntityType.IExtension
 		return new Data(null
 			, Map.of()
 			, 0L
+			, null
 		);
 	}
 
@@ -65,9 +71,12 @@ public class ExtensionVillager implements EntityType.IExtension
 			Assert.assertTrue(null == old);
 		}
 		long craftingCooldownRelativeMillis = buffer.getLong();
+		// We never store the item we want to purchase since it depends on the movement plan.
+		Item itemToPurchase = null;
 		return new Data(profession
 			, Collections.unmodifiableMap(map)
 			, craftingCooldownRelativeMillis + gameTimeMillis
+			, itemToPurchase
 		);
 	}
 
@@ -102,14 +111,97 @@ public class ExtensionVillager implements EntityType.IExtension
 	@Override
 	public EntityType.TargetEntity findDeliberateTarget(MutableCreature creature, EntityCollection entityCollection)
 	{
-		// These never have deliberate paths.
-		return null;
+		// We will choose a deliberate path if there is something we want to buy from another villager, and we find one selling it.
+		// Note that "want to buy" is defined in a somewhat complex way:
+		// -we have 0 of something we normally sell
+		// -we don't have all of the ingredients required to craft it
+		// -there is a villager in view distance who sells one of the missing ingredients and has some
+		Data safe = (Data)creature.newExtendedData;
+		
+		// Check if we are missing anything we want to sell (profession can be null if not initialized).
+		TradingRegistry.Profession profession = safe.profession;
+		Map<Item, Integer> inventory = safe.inventory;
+		Set<Item> itemsForSale = (null != profession)
+			? profession.sellOffers().keySet()
+			: Set.of()
+		;
+		List<TradingRegistry.TradeCraft> crafts = (null != profession)
+			? profession.crafts()
+			: List.of()
+		;
+		
+		Set<Item> itemsWeCouldRequest = new HashSet<>();
+		for (Item forSale : itemsForSale)
+		{
+			if (!inventory.containsKey(forSale))
+			{
+				// We are missing this item so see what we need to craft it.
+				for (TradingRegistry.TradeCraft craft : crafts)
+				{
+					for (Map.Entry<Item, Integer> elt : craft.inputs().entrySet())
+					{
+						Item requirement = elt.getKey();
+						if (inventory.getOrDefault(requirement, 0) < elt.getValue())
+						{
+							// We don't have enough of these to craft so see if we can buy one.
+							itemsWeCouldRequest.add(requirement);
+						}
+					}
+				}
+			}
+		}
+		
+		EntityType.TargetEntity target = null;
+		if (!itemsWeCouldRequest.isEmpty())
+		{
+			EntityType type = creature.newType;
+			Item[] itemToBuy = new Item[1];
+			EntityType.TargetEntity[] out = new EntityType.TargetEntity[1];
+			entityCollection.walkCreaturesInViewDistance(creature, (CreatureEntity entity) -> {
+				if ((null == out[0]) && (type == entity.type()))
+				{
+					// This is a villager so see if they are selling any of the objects we need and if they have them in stock.
+					Data data = (Data)entity.extendedData();
+					Set<Item> otherInventoryItems = data.inventory.keySet();
+					Set<Item> otherSales = data.profession.sellOffers().keySet();
+					for (Item item : otherSales)
+					{
+						if (itemsWeCouldRequest.contains(item) && otherInventoryItems.contains(item))
+						{
+							itemToBuy[0] = item;
+							out[0] = new EntityType.TargetEntity(entity.id(), entity.location());
+						}
+					}
+				}
+			});
+			if (null != itemToBuy[0])
+			{
+				creature.newExtendedData = new Data(safe.profession
+					, safe.inventory
+					, safe.craftingReadyMillis
+					, itemToBuy[0]
+				);
+			}
+			target = out[0];
+		}
+		
+		return target;
 	}
 
 	@Override
 	public boolean isTargetValid(MutableCreature creature, EntityCollection entityCollection)
 	{
-		throw Assert.unreachable();
+		boolean isValid = false;
+		CreatureEntity target = entityCollection.getCreatureById(creature.movementPlan.targetEntityId());
+		if (null != target)
+		{
+			// It is still valid if it still has the item we want to buy.
+			Data safe = (Data)creature.newExtendedData;
+			Data other = (Data)target.extendedData();
+			Set<Item> otherInventoryItems = other.inventory.keySet();
+			isValid = otherInventoryItems.contains(safe.itemToPurchase);
+		}
+		return isValid;
 	}
 
 	@Override
@@ -125,6 +217,7 @@ public class ExtensionVillager implements EntityType.IExtension
 			creature.newExtendedData = new Data(choice
 				, data.inventory
 				, data.craftingReadyMillis
+				, data.itemToPurchase
 			);
 			didTakeAction = true;
 		}
@@ -149,8 +242,68 @@ public class ExtensionVillager implements EntityType.IExtension
 				creature.newExtendedData = new Data(profession
 					, inventory
 					, nextReadyMillis
+					, data.itemToPurchase
 				);
 				didTakeAction = (null != chosenCraft);
+			}
+		}
+		
+		if (!didTakeAction)
+		{
+			// See if we wanted to buy something from another villager.
+			if (null != data.itemToPurchase)
+			{
+				// If they are no longer our target, drop the purchase plan.
+				int targetId = creature.movementPlan.targetEntityId();
+				if (CreatureEntity.NO_TARGET_ENTITY_ID != targetId)
+				{
+					// If we are close enough to send the purchase request, do that and clear the purchase plan.
+					CreatureEntity target = entityCollection.getCreatureById(targetId);
+					EntityType thisType = creature.getType();
+					
+					EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), thisType.volume());
+					float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, target.location(), target.type().volume());
+					float actionDistance = thisType.actionDistance();
+					
+					if (distance <= actionDistance)
+					{
+						// Send the trade request.
+						Data other = (Data) target.extendedData();
+						int coins = 0;
+						for (Map.Entry<Item, Integer> elt : other.profession.sellOffers().entrySet())
+						{
+							if (data.itemToPurchase == elt.getKey())
+							{
+								coins = elt.getValue();
+								break;
+							}
+						}
+						// We already decided they could sell us this item.
+						Assert.assertTrue(coins > 0);
+						Item coin = Environment.getShared().items.getItemById("op.coin");
+						ItemSlot sentItems = ItemSlot.fromStack(new Items(coin, coins));
+						EntityActionReceiveTrade action = new EntityActionReceiveTrade(sentItems, data.itemToPurchase, creature.getId());
+						context.newChangeSink.creature(targetId, action);
+						
+						// We can now clear the target and crafting purchase plan.
+						creature.movementPlan = null;
+						creature.newLastActionMillis = context.currentTickTimeMillis;
+						creature.newExtendedData = new Data(data.profession
+							, data.inventory
+							, data.craftingReadyMillis
+							, null
+						);
+						didTakeAction = true;
+					}
+				}
+				else
+				{
+					creature.newExtendedData = new Data(data.profession
+						, data.inventory
+						, data.craftingReadyMillis
+						, null
+					);
+				}
 			}
 		}
 		
@@ -269,6 +422,7 @@ public class ExtensionVillager implements EntityType.IExtension
 			villager.newExtendedData = new ExtensionVillager.Data(profession
 				, Collections.unmodifiableMap(newInventory)
 				, data.craftingReadyMillis
+				, data.itemToPurchase
 			);
 			
 			// Send back the coins.
@@ -321,6 +475,7 @@ public class ExtensionVillager implements EntityType.IExtension
 			villager.newExtendedData = new ExtensionVillager.Data(profession
 				, Collections.unmodifiableMap(newInventory)
 				, data.craftingReadyMillis
+				, data.itemToPurchase
 			);
 			
 			// Package up what we should send them.
@@ -367,9 +522,11 @@ public class ExtensionVillager implements EntityType.IExtension
 		Map<Item, Integer> newMap = new HashMap<>(inventory);
 		newMap.put(itemType, newCount);
 		
+		// If this is a response to a buy request, we would have already cleared that when we sent it.
 		villager.newExtendedData = new ExtensionVillager.Data(profession
 			, Collections.unmodifiableMap(newMap)
 			, data.craftingReadyMillis
+			, data.itemToPurchase
 		);
 	}
 
@@ -386,6 +543,7 @@ public class ExtensionVillager implements EntityType.IExtension
 		return new Data(profession
 			, inventory
 			, 0L
+			, null
 		);
 	}
 
@@ -458,17 +616,7 @@ public class ExtensionVillager implements EntityType.IExtension
 			if (shouldTry)
 			{
 				// So long as none of the requirements are missing, we will choose this one.
-				for (Map.Entry<Item, Integer> elt : craft.inputs().entrySet())
-				{
-					Item key = elt.getKey();
-					int requirement = elt.getValue();
-					if (inventory.getOrDefault(key, 0) < requirement)
-					{
-						// We can't do this one.
-						shouldTry = false;
-						break;
-					}
-				}
+				shouldTry = _canCraft(inventory, craft);
 				if (shouldTry)
 				{
 					chosenCraft = craft;
@@ -506,6 +654,23 @@ public class ExtensionVillager implements EntityType.IExtension
 		return Collections.unmodifiableMap(mutable);
 	}
 
+	private boolean _canCraft(Map<Item, Integer> inventory, TradingRegistry.TradeCraft craft)
+	{
+		boolean canCraft = true;
+		for (Map.Entry<Item, Integer> elt : craft.inputs().entrySet())
+		{
+			Item key = elt.getKey();
+			int requirement = elt.getValue();
+			if (inventory.getOrDefault(key, 0) < requirement)
+			{
+				// We can't do this one.
+				canCraft = false;
+				break;
+			}
+		}
+		return canCraft;
+	}
+
 
 	// Note that the profession defaults to null, since it is late-bound based on the surroundings.
 	// The inventory is just a map since it doesn't care about non-stackable properties, just the total number of items.
@@ -513,5 +678,7 @@ public class ExtensionVillager implements EntityType.IExtension
 		, Map<Item, Integer> inventory
 		// The gameTimeMillis when crafting becomes available again (cooldown).
 		, long craftingReadyMillis
+		// The item we want to purchase from our target villager.
+		, Item itemToPurchase
 	) {}
 }

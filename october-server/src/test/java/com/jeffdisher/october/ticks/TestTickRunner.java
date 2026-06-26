@@ -21,6 +21,7 @@ import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.aspects.TradingRegistry;
+import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.creatures.ExtensionVillager;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
@@ -3093,6 +3094,66 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.entities().get(entityId).completed().inventory().getCount(coin));
 		Assert.assertEquals(1, ((ExtensionVillager.Data)snapshot.creatures().get(villagerId).completed().extendedData()).inventory().get(sapling).intValue());
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void tradeBetweenVillagers()
+	{
+		// Load a cuboid containing 2 villagers and show that they will trade with each other, where needed.
+		CuboidData cuboid = _zeroAirCuboidWithBase();
+		Item hatchet = ENV.items.getItemById("op.stone_hatchet");
+		EntityType villagerType = ENV.creatures.getTypeById("op.villager");
+		TradingRegistry.Profession foresterProfession = ENV.trading.getProfessionById("op.forester");
+		TradingRegistry.Profession toolSmithProfession = ENV.trading.getProfessionById("op.tool_smith");
+		
+		int foresterId = -1;
+		MutableCreature mutCreature = MutableCreature.existing(CreatureEntity.create(foresterId, villagerType, new EntityLocation(5.0f, 5.0f, 1.0f), 0L));
+		mutCreature.newExtendedData = ExtensionVillager.test_createData(foresterProfession, Map.of());
+		// (set the time to action so we move immediately)
+		mutCreature.newLastActionMillis = -CreatureLogic.MINIMUM_MILLIS_TO_ACTION;
+		CreatureEntity forester = mutCreature.freeze();
+		
+		int toolSmithId = -2;
+		mutCreature = MutableCreature.existing(CreatureEntity.create(toolSmithId, villagerType, new EntityLocation(5.5f, 5.5f, 1.0f), 0L));
+		mutCreature.newExtendedData = ExtensionVillager.test_createData(toolSmithProfession, Map.of(hatchet, 1));
+		CreatureEntity toolSmith = mutCreature.freeze();
+		
+		Consumer<TickSnapshot> snapshotListener = (TickSnapshot completed) -> {};
+		TickRunner runner = new TickRunner(TICK_RUNNER_THREAD_COUNT
+			, MILLIS_PER_TICK
+			, null
+			, null
+			, (int bound) -> 0
+			, snapshotListener
+			, new WorldConfig()
+		);
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(forester, toolSmith), List.of(), Map.of(), List.of())
+			)
+			, null
+			, null
+			, null
+		);
+		runner.start();
+		
+		// In the first tick, the forester should find the target and send the trade request.
+		runner.startNextTick();
+		TickSnapshot snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0, ((ExtensionVillager.Data)snapshot.creatures().get(foresterId).completed().extendedData()).inventory().size());
+		Assert.assertEquals(1, ((ExtensionVillager.Data)snapshot.creatures().get(toolSmithId).completed().extendedData()).inventory().size());
+		
+		// The tool smith receives the trade request and sends a response.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0, ((ExtensionVillager.Data)snapshot.creatures().get(foresterId).completed().extendedData()).inventory().size());
+		Assert.assertEquals(0, ((ExtensionVillager.Data)snapshot.creatures().get(toolSmithId).completed().extendedData()).inventory().size());
+		
+		// The original forester receives the hatchet.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, ((ExtensionVillager.Data)snapshot.creatures().get(foresterId).completed().extendedData()).inventory().size());
+		Assert.assertEquals(0, ((ExtensionVillager.Data)snapshot.creatures().get(toolSmithId).completed().extendedData()).inventory().size());
 		
 		runner.shutdown();
 	}

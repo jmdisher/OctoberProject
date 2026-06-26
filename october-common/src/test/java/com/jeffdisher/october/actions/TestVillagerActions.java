@@ -13,6 +13,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.TradingRegistry;
 import com.jeffdisher.october.creatures.ExtensionVillager;
 import com.jeffdisher.october.logic.CommonChangeSink;
+import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.types.ContextBuilder;
@@ -308,6 +309,7 @@ public class TestVillagerActions
 				, SAPLING, 5
 			)
 			, 2L * ContextBuilder.DEFAULT_MILLIS_PER_TICK
+			, null
 		);
 		
 		// This should fail when still on cooldown.
@@ -330,6 +332,63 @@ public class TestVillagerActions
 		Assert.assertEquals(4, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(STICK).intValue());
 		Assert.assertEquals(8, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(LOG).intValue());
 		Assert.assertEquals(1, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(APPLE).intValue());
+	}
+
+	@Test
+	public void findPurchaseTarget()
+	{
+		// Show that a villager will find a nearby villager who is selling something they need, if they don't have any of a recipe's crafted outputs.
+		MutableCreature toolMutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(7.0f, 7.0f, 5.0f), 1000L));
+		toolMutable.newExtendedData = ExtensionVillager.test_createData(TOOL_SMITH, Map.of(STONE_HATCHET, 1));
+		
+		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-2, VILLAGER, new EntityLocation(5.0f, 5.0f, 5.0f), 1000L));
+		mutable.newExtendedData = ExtensionVillager.test_createData(FORESTER, Map.of(SAPLING, 5));
+		
+		// Show that the forester will enter this mode to purchase a tool when asked to find a target.
+		ExtensionVillager extension = (ExtensionVillager) mutable.newType.extension();
+		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(), Map.of(-1, toolMutable.freeze(), -2, mutable.freeze()));
+		
+		EntityType.TargetEntity target = extension.findDeliberateTarget(mutable, entityCollection);
+		Assert.assertEquals(toolMutable.getId(), target.id());
+		Assert.assertEquals(toolMutable.getLocation(), target.location());
+		Assert.assertEquals(STONE_HATCHET, ((ExtensionVillager.Data)mutable.newExtendedData).itemToPurchase());
+	}
+
+	@Test
+	public void sendBuyOrderWhenClose()
+	{
+		// Show that a villager targeting another will send the buy order for its goods when it is within range.
+		MutableCreature toolMutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(6.0f, 6.0f, 5.0f), 1000L));
+		toolMutable.newExtendedData = ExtensionVillager.test_createData(TOOL_SMITH, Map.of(STONE_HATCHET, 1));
+		
+		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-2, VILLAGER, new EntityLocation(5.5f, 5.5f, 5.0f), 1000L));
+		mutable.movementPlan = new CreatureEntity.MovementPlan(null
+			, -1
+			, toolMutable.newLocation
+			, toolMutable.newLocation
+		);
+		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER
+			, Map.of(SAPLING, 5)
+			, 0L
+			, STONE_HATCHET
+		);
+		
+		// We should see the action sent to the tool smith and the purchase plan disappear.
+		ExtensionVillager extension = (ExtensionVillager) mutable.newType.extension();
+		CommonChangeSink changeSink = new CommonChangeSink(Set.of(), Set.of(-1, -2), Set.of());
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(1L)
+			.sinks(null, changeSink)
+			.finish()
+		;
+		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(), Map.of(-1, toolMutable.freeze(), -2, mutable.freeze()));
+		Assert.assertTrue(extension.didTakeSpecialAction(mutable, context, entityCollection));
+		Assert.assertEquals(null, mutable.movementPlan);
+		Assert.assertEquals(null, ((ExtensionVillager.Data)mutable.newExtendedData).itemToPurchase());
+		
+		List<TargetedAction<IEntityAction<MutableCreature>>> changes = changeSink.takeExportedCreatureChanges();
+		Assert.assertEquals(1, changes.size());
+		Assert.assertEquals("TargetedAction[targetId=-1, action=Villager receive trade Item[id=op.coin, name=Coin, number=119](7), requesting Item[id=op.stone_hatchet, name=Stone Hatchet, number=63]]", changes.get(0).toString());
 	}
 
 
