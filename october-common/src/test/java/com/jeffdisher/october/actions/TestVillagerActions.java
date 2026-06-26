@@ -335,17 +335,11 @@ public class TestVillagerActions
 
 	private static ExtensionVillager.Data _emptyData(TradingRegistry.Profession profession)
 	{
-		return new ExtensionVillager.Data(profession
-			, Map.of()
-			, 0L
-		);
+		return ExtensionVillager.test_createData(profession, Map.of());
 	}
 
 	private static ExtensionVillager.Data _data(TradingRegistry.Profession profession, Map<Item, Integer> inventory)
 	{
-		return new ExtensionVillager.Data(profession
-			, inventory
-			, 0L
-		);
+		return ExtensionVillager.test_createData(profession, inventory);
 	}
 }

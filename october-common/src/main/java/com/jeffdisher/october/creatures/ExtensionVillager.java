@@ -34,7 +34,10 @@ public class ExtensionVillager implements EntityType.IExtension
 	public Object buildDefaultExtendedData(long gameTimeMillis)
 	{
 		// By default, the profession is null since we base it on our surroundings.
-		return new Data(null, Map.of(), 0L);
+		return new Data(null
+			, Map.of()
+			, 0L
+		);
 	}
 
 	@Override
@@ -367,6 +370,22 @@ public class ExtensionVillager implements EntityType.IExtension
 		villager.newExtendedData = new ExtensionVillager.Data(profession
 			, Collections.unmodifiableMap(newMap)
 			, data.craftingReadyMillis
+		);
+	}
+
+	/**
+	 * A utility method so that tests can instantiate a Data object for the common cases without needing to be updated
+	 * whenever new data is added to the structure.
+	 * 
+	 * @param profession The profession of store.
+	 * @param inventory The inventory to store.
+	 * @return The new Data object.
+	 */
+	public static Data test_createData(TradingRegistry.Profession profession, Map<Item, Integer> inventory)
+	{
+		return new Data(profession
+			, inventory
+			, 0L
 		);
 	}
 

@@ -3054,7 +3054,7 @@ public class TestTickRunner
 		
 		int villagerId = -1;
 		MutableCreature mutCreature = MutableCreature.existing(CreatureEntity.create(villagerId, villagerType, new EntityLocation(11.0f, 10.0f, 1.0f), 0L));
-		mutCreature.newExtendedData = new ExtensionVillager.Data(profession, Map.of(), 0L);
+		mutCreature.newExtendedData = ExtensionVillager.test_createData(profession, Map.of());
 		CreatureEntity villager = mutCreature.freeze();
 		
 		Consumer<TickSnapshot> snapshotListener = (TickSnapshot completed) -> {};
