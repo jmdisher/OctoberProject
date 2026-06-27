@@ -35,6 +35,16 @@ public class ExtensionVillager implements EntityType.IExtension
 	 */
 	public static final long MILLIS_CRAFTING_COOLDOWN = 10L * 1000L;
 
+	private final CommonBreedingLogic _breeding;
+
+	public ExtensionVillager()
+	{
+		_breeding = new CommonBreedingLogic((Object embeddedData) -> {
+			Data data = (Data)embeddedData;
+			return data.breeding;
+		});
+	}
+	
 	@Override
 	public Object buildDefaultExtendedData(long gameTimeMillis)
 	{
@@ -43,6 +53,7 @@ public class ExtensionVillager implements EntityType.IExtension
 			, Map.of()
 			, 0L
 			, null
+			, _breeding.buildDefault()
 		);
 	}
 
@@ -71,12 +82,17 @@ public class ExtensionVillager implements EntityType.IExtension
 			Assert.assertTrue(null == old);
 		}
 		long craftingCooldownRelativeMillis = buffer.getLong();
+		
 		// We never store the item we want to purchase since it depends on the movement plan.
 		Item itemToPurchase = null;
+		
+		// We do store the breeding data, but that is a common external type.
+		CommonBreedingLogic.Data breeding = _breeding.readData(buffer, gameTimeMillis);
 		return new Data(profession
 			, Collections.unmodifiableMap(map)
 			, craftingCooldownRelativeMillis + gameTimeMillis
 			, itemToPurchase
+			, breeding
 		);
 	}
 
@@ -106,118 +122,97 @@ public class ExtensionVillager implements EntityType.IExtension
 			craftingCooldownRelativeMillis = 0L;
 		}
 		buffer.putLong(craftingCooldownRelativeMillis);
+		
+		// We never store the item we want to purchase since it depends on the movement plan.
+		
+		// We do store the common breeding data, though.
+		_breeding.writeData(buffer, safe.breeding, gameTimeMillis);
 	}
 
 	@Override
 	public EntityType.TargetEntity findDeliberateTarget(MutableCreature creature, EntityCollection entityCollection)
 	{
-		// We will choose a deliberate path if there is something we want to buy from another villager, and we find one selling it.
-		// Note that "want to buy" is defined in a somewhat complex way:
-		// -we have 0 of something we normally sell
-		// -we don't have all of the ingredients required to craft it
-		// -there is a villager in view distance who sells one of the missing ingredients and has some
-		Data safe = (Data)creature.newExtendedData;
+		// Check the common breeding mode, first.
+		EntityType.TargetEntity newTarget = _breeding.findBreedingPartner(creature, entityCollection);
 		
-		// Check if we are missing anything we want to sell (profession can be null if not initialized).
-		TradingRegistry.Profession profession = safe.profession;
-		Map<Item, Integer> inventory = safe.inventory;
-		Set<Item> itemsForSale = (null != profession)
-			? profession.sellOffers().keySet()
-			: Set.of()
-		;
-		List<TradingRegistry.TradeCraft> crafts = (null != profession)
-			? profession.crafts()
-			: List.of()
-		;
-		
-		Set<Item> itemsWeCouldRequest = new HashSet<>();
-		for (Item forSale : itemsForSale)
+		if (null == newTarget)
 		{
-			if (!inventory.containsKey(forSale))
-			{
-				// We are missing this item so see what we need to craft it.
-				for (TradingRegistry.TradeCraft craft : crafts)
-				{
-					for (Map.Entry<Item, Integer> elt : craft.inputs().entrySet())
-					{
-						Item requirement = elt.getKey();
-						if (inventory.getOrDefault(requirement, 0) < elt.getValue())
-						{
-							// We don't have enough of these to craft so see if we can buy one.
-							itemsWeCouldRequest.add(requirement);
-						}
-					}
-				}
-			}
+			// NOTE:  This will update the internal data object if non-null.
+			newTarget = _findTradingTarget(creature, entityCollection);
 		}
 		
-		EntityType.TargetEntity target = null;
-		if (!itemsWeCouldRequest.isEmpty())
-		{
-			EntityType type = creature.newType;
-			Item[] itemToBuy = new Item[1];
-			EntityType.TargetEntity[] out = new EntityType.TargetEntity[1];
-			entityCollection.walkCreaturesInViewDistance(creature, (CreatureEntity entity) -> {
-				if ((null == out[0]) && (type == entity.type()))
-				{
-					// This is a villager so see if they are selling any of the objects we need and if they have them in stock.
-					Data data = (Data)entity.extendedData();
-					Set<Item> otherInventoryItems = data.inventory.keySet();
-					Set<Item> otherSales = data.profession.sellOffers().keySet();
-					for (Item item : otherSales)
-					{
-						if (itemsWeCouldRequest.contains(item) && otherInventoryItems.contains(item))
-						{
-							itemToBuy[0] = item;
-							out[0] = new EntityType.TargetEntity(entity.id(), entity.location());
-						}
-					}
-				}
-			});
-			if (null != itemToBuy[0])
-			{
-				creature.newExtendedData = new Data(safe.profession
-					, safe.inventory
-					, safe.craftingReadyMillis
-					, itemToBuy[0]
-				);
-			}
-			target = out[0];
-		}
-		
-		return target;
+		return newTarget;
 	}
 
 	@Override
 	public boolean isTargetValid(MutableCreature creature, EntityCollection entityCollection)
 	{
+		int targetId = creature.movementPlan.targetEntityId();
+		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetId);
+		
 		boolean isValid = false;
-		CreatureEntity target = entityCollection.getCreatureById(creature.movementPlan.targetEntityId());
-		if (null != target)
+		if (_breeding.isMutableInLoveMode(creature))
 		{
-			// It is still valid if it still has the item we want to buy.
-			Data safe = (Data)creature.newExtendedData;
-			Data other = (Data)target.extendedData();
-			Set<Item> otherInventoryItems = other.inventory.keySet();
-			isValid = otherInventoryItems.contains(safe.itemToPurchase);
+			// We must be looking at a partner so make sure that they are here and still in breeding mode.
+			CreatureEntity partner = entityCollection.getCreatureById(targetId);
+			if (null != partner)
+			{
+				isValid = _breeding.isCreatureInLoveMode(partner);
+			}
+			else
+			{
+				isValid = false;
+			}
 		}
+		else
+		{
+			CreatureEntity target = entityCollection.getCreatureById(targetId);
+			if (null != target)
+			{
+				// It is still valid if it still has the item we want to buy.
+				Data safe = (Data)creature.newExtendedData;
+				Data other = (Data)target.extendedData();
+				Set<Item> otherInventoryItems = other.inventory.keySet();
+				isValid = otherInventoryItems.contains(safe.itemToPurchase);
+			}
+		}
+		
 		return isValid;
 	}
 
 	@Override
 	public boolean didTakeSpecialAction(MutableCreature creature, TickProcessingContext context, EntityCollection entityCollection)
 	{
-		boolean didTakeAction = false;
+		// First, try any common breeding actions.
+		CommonBreedingLogic.Data ifChanged = _breeding.spawnOffspring(context, creature);
+		if (null == ifChanged)
+		{
+			ifChanged = _breeding.impregnateTarget(context, creature);
+		}
 		Data data = (Data) creature.newExtendedData;
+		if (null != ifChanged)
+		{
+			creature.newExtendedData = new Data(data.profession
+				, data.inventory
+				, data.craftingReadyMillis
+				, data.itemToPurchase
+				, ifChanged
+			);
+		}
+		boolean didTakeAction = (null != ifChanged);
 		
-		// The only special action we will take is choosing an occupation if we don't already have one.
+		// Handle that special start-up case where the profession is selected late.
 		if (null == data.profession)
 		{
+			// We can't have taken breeding actions if we have no profession.
+			Assert.assertTrue(!didTakeAction);
+			
 			TradingRegistry.Profession choice = _selectDefaultProfession(entityCollection, creature.newType, creature.newLocation);
 			creature.newExtendedData = new Data(choice
 				, data.inventory
 				, data.craftingReadyMillis
 				, data.itemToPurchase
+				, data.breeding
 			);
 			didTakeAction = true;
 		}
@@ -243,6 +238,7 @@ public class ExtensionVillager implements EntityType.IExtension
 					, inventory
 					, nextReadyMillis
 					, data.itemToPurchase
+					, data.breeding
 				);
 				didTakeAction = (null != chosenCraft);
 			}
@@ -292,6 +288,7 @@ public class ExtensionVillager implements EntityType.IExtension
 							, data.inventory
 							, data.craftingReadyMillis
 							, null
+							, data.breeding
 						);
 						didTakeAction = true;
 					}
@@ -302,6 +299,7 @@ public class ExtensionVillager implements EntityType.IExtension
 						, data.inventory
 						, data.craftingReadyMillis
 						, null
+						, data.breeding
 					);
 				}
 			}
@@ -313,7 +311,20 @@ public class ExtensionVillager implements EntityType.IExtension
 	@Override
 	public boolean setCreaturePregnant(MutableCreature creature, EntityLocation sireLocation, long gameTimeMillis)
 	{
-		throw Assert.unreachable();
+		boolean didBecomePregnant = false;
+		CommonBreedingLogic.Data dataIfChanged = _breeding.setCreaturePregnant(creature, sireLocation, gameTimeMillis);
+		if (null != dataIfChanged)
+		{
+			Data data = (Data) creature.newExtendedData;
+			creature.newExtendedData = new Data(data.profession
+				, data.inventory
+				, data.craftingReadyMillis
+				, data.itemToPurchase
+				, dataIfChanged
+			);
+			didBecomePregnant = true;
+		}
+		return didBecomePregnant;
 	}
 
 	@Override
@@ -423,6 +434,7 @@ public class ExtensionVillager implements EntityType.IExtension
 				, Collections.unmodifiableMap(newInventory)
 				, data.craftingReadyMillis
 				, data.itemToPurchase
+				, data.breeding
 			);
 			
 			// Send back the coins.
@@ -476,6 +488,7 @@ public class ExtensionVillager implements EntityType.IExtension
 				, Collections.unmodifiableMap(newInventory)
 				, data.craftingReadyMillis
 				, data.itemToPurchase
+				, data.breeding
 			);
 			
 			// Package up what we should send them.
@@ -527,6 +540,7 @@ public class ExtensionVillager implements EntityType.IExtension
 			, Collections.unmodifiableMap(newMap)
 			, data.craftingReadyMillis
 			, data.itemToPurchase
+			, data.breeding
 		);
 	}
 
@@ -544,6 +558,7 @@ public class ExtensionVillager implements EntityType.IExtension
 			, inventory
 			, 0L
 			, null
+			, new CommonBreedingLogic(null).buildDefault()
 		);
 	}
 
@@ -671,6 +686,86 @@ public class ExtensionVillager implements EntityType.IExtension
 		return canCraft;
 	}
 
+	private EntityType.TargetEntity _findTradingTarget(MutableCreature creature, EntityCollection entityCollection)
+	{
+		// We will choose a deliberate path if there is something we want to buy from another villager, and we find one selling it.
+		// Note that "want to buy" is defined in a somewhat complex way:
+		// -we have 0 of something we normally sell
+		// -we don't have all of the ingredients required to craft it
+		// -there is a villager in view distance who sells one of the missing ingredients and has some
+		Data safe = (Data)creature.newExtendedData;
+		
+		// Check if we are missing anything we want to sell (profession can be null if not initialized).
+		TradingRegistry.Profession profession = safe.profession;
+		Map<Item, Integer> inventory = safe.inventory;
+		Set<Item> itemsForSale = (null != profession)
+			? profession.sellOffers().keySet()
+			: Set.of()
+		;
+		List<TradingRegistry.TradeCraft> crafts = (null != profession)
+			? profession.crafts()
+			: List.of()
+		;
+		
+		Set<Item> itemsWeCouldRequest = new HashSet<>();
+		for (Item forSale : itemsForSale)
+		{
+			if (!inventory.containsKey(forSale))
+			{
+				// We are missing this item so see what we need to craft it.
+				for (TradingRegistry.TradeCraft craft : crafts)
+				{
+					for (Map.Entry<Item, Integer> elt : craft.inputs().entrySet())
+					{
+						Item requirement = elt.getKey();
+						if (inventory.getOrDefault(requirement, 0) < elt.getValue())
+						{
+							// We don't have enough of these to craft so see if we can buy one.
+							itemsWeCouldRequest.add(requirement);
+						}
+					}
+				}
+			}
+		}
+		
+		EntityType.TargetEntity target = null;
+		if (!itemsWeCouldRequest.isEmpty())
+		{
+			EntityType type = creature.newType;
+			Item[] itemToBuy = new Item[1];
+			EntityType.TargetEntity[] out = new EntityType.TargetEntity[1];
+			entityCollection.walkCreaturesInViewDistance(creature, (CreatureEntity entity) -> {
+				if ((null == out[0]) && (type == entity.type()))
+				{
+					// This is a villager so see if they are selling any of the objects we need and if they have them in stock.
+					Data data = (Data)entity.extendedData();
+					Set<Item> otherInventoryItems = data.inventory.keySet();
+					Set<Item> otherSales = data.profession.sellOffers().keySet();
+					for (Item item : otherSales)
+					{
+						if (itemsWeCouldRequest.contains(item) && otherInventoryItems.contains(item))
+						{
+							itemToBuy[0] = item;
+							out[0] = new EntityType.TargetEntity(entity.id(), entity.location());
+						}
+					}
+				}
+			});
+			if (null != itemToBuy[0])
+			{
+				creature.newExtendedData = new Data(safe.profession
+					, safe.inventory
+					, safe.craftingReadyMillis
+					, itemToBuy[0]
+					, safe.breeding
+				);
+			}
+			target = out[0];
+		}
+		
+		return target;
+	}
+
 
 	// Note that the profession defaults to null, since it is late-bound based on the surroundings.
 	// The inventory is just a map since it doesn't care about non-stackable properties, just the total number of items.
@@ -680,5 +775,7 @@ public class ExtensionVillager implements EntityType.IExtension
 		, long craftingReadyMillis
 		// The item we want to purchase from our target villager.
 		, Item itemToPurchase
+		// Villagers can breed so we also use embed related data here.
+		, CommonBreedingLogic.Data breeding
 	) {}
 }
