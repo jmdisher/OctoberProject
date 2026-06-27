@@ -31,6 +31,7 @@ import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.aspects.TradingRegistry;
+import com.jeffdisher.october.creatures.CommonBreedingLogic;
 import com.jeffdisher.october.creatures.ExtensionLivestock;
 import com.jeffdisher.october.creatures.ExtensionVillager;
 import com.jeffdisher.october.data.BlockProxy;
@@ -3438,14 +3439,14 @@ public class TestCommonChanges
 		Assert.assertTrue(EntityChangeUseSelectedItemOnEntity.canUseOnEntity(wheatItem, PartialEntity.fromCreature(cow), gameTimeMilils));
 		Assert.assertFalse(EntityChangeUseSelectedItemOnEntity.canUseOnEntity(wheatItem, PartialEntity.fromCreature(calf), gameTimeMilils));
 		MutableCreature mut = MutableCreature.existing(cow);
-		mut.newExtendedData = new ExtensionLivestock.LivestockData(true, null, 0L);
+		mut.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(true, null, 0L));
 		Assert.assertFalse(EntityChangeUseSelectedItemOnEntity.canUseOnEntity(wheatItem, PartialEntity.fromCreature(mut.freeze()), gameTimeMilils));
-		mut.newExtendedData = new ExtensionLivestock.LivestockData(false, null, 1000L);
+		mut.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(false, null, 1000L));
 		Assert.assertFalse(EntityChangeUseSelectedItemOnEntity.canUseOnEntity(wheatItem, PartialEntity.fromCreature(mut.freeze()), gameTimeMilils));
 		gameTimeMilils = 1000L;
 		Assert.assertTrue(EntityChangeUseSelectedItemOnEntity.canUseOnEntity(wheatItem, PartialEntity.fromCreature(mut.freeze()), gameTimeMilils));
 		
-		mut.newExtendedData = new ExtensionLivestock.LivestockData(true, null, 0L);
+		mut.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(true, null, 0L));
 		CreatureEntity loveModeCow = mut.freeze();
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(5L)
@@ -3464,7 +3465,7 @@ public class TestCommonChanges
 		Assert.assertEquals(2, updatedEntity.inventory().currentEncumbrance);
 		
 		// Show that we DO send the change to the cow once we reset its love mode.
-		mut.newExtendedData = new ExtensionLivestock.LivestockData(false, null, 0L);
+		mut.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(false, null, 0L));
 		CreatureEntity normalCow = mut.freeze();
 		CommonChangeSink changeSink = new CommonChangeSink(Set.of(entityId), Set.of(cowId), Set.of());
 		context = ContextBuilder.build()

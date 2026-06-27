@@ -8,6 +8,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.creatures.CommonBreedingLogic;
 import com.jeffdisher.october.creatures.ExtensionLivestock;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
@@ -102,10 +103,10 @@ public class TestPartialEntityUpdate
 		
 		ExtensionLivestock.LivestockData oldData = (ExtensionLivestock.LivestockData) initial.extendedData();
 		boolean inLoveMode = true;
-		mutable.newExtendedData = new ExtensionLivestock.LivestockData(inLoveMode
-			, oldData.offspringLocation()
-			, oldData.breedingReadyMillis()
-		);
+		mutable.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(inLoveMode
+			, oldData.breeding().offspringLocation()
+			, oldData.breeding().breedingReadyMillis()
+		));
 		CreatureEntity changed = mutable.freeze();
 		Assert.assertTrue(PartialEntityUpdate.canDescribeCreatureChange(initial, changed));
 		Assert.assertFalse(PartialEntityUpdate.canDescribeCreatureChange(initial, unchanged));
@@ -123,6 +124,6 @@ public class TestPartialEntityUpdate
 		read.applyToEntity(toUpdate);
 		PartialEntity output = toUpdate.freeze();
 		
-		Assert.assertTrue(((ExtensionLivestock.LivestockData)output.extendedData()).inLoveMode());
+		Assert.assertTrue(((ExtensionLivestock.LivestockData)output.extendedData()).breeding().inLoveMode());
 	}
 }

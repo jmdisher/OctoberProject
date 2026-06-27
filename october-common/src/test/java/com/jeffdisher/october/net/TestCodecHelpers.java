@@ -10,6 +10,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.creatures.CommonBreedingLogic;
 import com.jeffdisher.october.creatures.ExtensionLivestock;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.PropertyHelpers;
@@ -446,16 +447,16 @@ public class TestCodecHelpers
 			, (byte)0
 			, (byte)50
 			, (byte)100
-			, new ExtensionLivestock.LivestockData(false, null, 50L)
+			, new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(false, null, 50L))
 			, null
 		);
 		CodecHelpers.writeCreatureEntity(buffer, cow, 0L);
 		buffer.flip();
 		CreatureEntity mid = CodecHelpers.readCreatureEntity(-2, buffer, 100L);
 		
-		Assert.assertEquals(false, ((ExtensionLivestock.LivestockData)mid.extendedData()).inLoveMode());
-		Assert.assertEquals(null, ((ExtensionLivestock.LivestockData)mid.extendedData()).offspringLocation());
-		Assert.assertEquals(150L, ((ExtensionLivestock.LivestockData)mid.extendedData()).breedingReadyMillis());
+		Assert.assertEquals(false, ((ExtensionLivestock.LivestockData)mid.extendedData()).breeding().inLoveMode());
+		Assert.assertEquals(null, ((ExtensionLivestock.LivestockData)mid.extendedData()).breeding().offspringLocation());
+		Assert.assertEquals(150L, ((ExtensionLivestock.LivestockData)mid.extendedData()).breeding().breedingReadyMillis());
 	}
 
 	@Test

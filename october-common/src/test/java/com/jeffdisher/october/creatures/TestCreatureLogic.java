@@ -389,7 +389,7 @@ public class TestCreatureLogic
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
 		CreatureLogic.applyItemToCreature(WHEAT, mutable, 1000L);
-		Assert.assertTrue(((ExtensionLivestock.LivestockData)mutable.newExtendedData).inLoveMode());
+		Assert.assertTrue(((ExtensionLivestock.LivestockData)mutable.newExtendedData).breeding().inLoveMode());
 	}
 
 	@Test
@@ -407,7 +407,7 @@ public class TestCreatureLogic
 			, null
 			, null
 		);
-		mutable.newExtendedData = new ExtensionLivestock.LivestockData(true, null, 0L);
+		mutable.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(true, null, 0L));
 		father = mutable.freeze();
 		mutable = MutableCreature.existing(mother);
 		mutable.movementPlan = new CreatureEntity.MovementPlan(null
@@ -415,7 +415,7 @@ public class TestCreatureLogic
 			, null
 			, null
 		);
-		mutable.newExtendedData = new ExtensionLivestock.LivestockData(true, null, 0L);
+		mutable.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(true, null, 0L));
 		mother = mutable.freeze();
 		Map<Integer, CreatureEntity> creatures = new HashMap<>();
 		creatures.put(father.id(), father);
@@ -481,8 +481,8 @@ public class TestCreatureLogic
 		creatures.put(mother.id(), mother);
 		
 		// The father should no longer be in love mode but the mother should be.
-		Assert.assertFalse(((ExtensionLivestock.LivestockData)father.extendedData()).inLoveMode());
-		Assert.assertTrue(((ExtensionLivestock.LivestockData)mother.extendedData()).inLoveMode());
+		Assert.assertFalse(((ExtensionLivestock.LivestockData)father.extendedData()).breeding().inLoveMode());
+		Assert.assertTrue(((ExtensionLivestock.LivestockData)mother.extendedData()).breeding().inLoveMode());
 	}
 
 	@Test
@@ -493,14 +493,14 @@ public class TestCreatureLogic
 		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(mother);
-		mutable.newExtendedData = new ExtensionLivestock.LivestockData(true, null, 0L);
+		mutable.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(true, null, 0L));
 		
 		long gameTimeMillis = 1000L;
 		boolean didBecomePregnant = CreatureLogic.setCreaturePregnant(mutable, fatherLocation, gameTimeMillis);
 		Assert.assertTrue(didBecomePregnant);
-		Assert.assertFalse(((ExtensionLivestock.LivestockData)mutable.newExtendedData).inLoveMode());
-		Assert.assertEquals(new EntityLocation(0.4f, 0.0f, 0.0f), ((ExtensionLivestock.LivestockData)mutable.newExtendedData).offspringLocation());
-		Assert.assertEquals(gameTimeMillis + ExtensionLivestock.MILLIS_BREEDING_COOLDOWN, ((ExtensionLivestock.LivestockData)mutable.newExtendedData).breedingReadyMillis());
+		Assert.assertFalse(((ExtensionLivestock.LivestockData)mutable.newExtendedData).breeding().inLoveMode());
+		Assert.assertEquals(new EntityLocation(0.4f, 0.0f, 0.0f), ((ExtensionLivestock.LivestockData)mutable.newExtendedData).breeding().offspringLocation());
+		Assert.assertEquals(gameTimeMillis + CommonBreedingLogic.MILLIS_BREEDING_COOLDOWN, ((ExtensionLivestock.LivestockData)mutable.newExtendedData).breeding().breedingReadyMillis());
 	}
 
 	@Test
@@ -511,7 +511,7 @@ public class TestCreatureLogic
 		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(mother);
-		mutable.newExtendedData = new ExtensionLivestock.LivestockData(false, offspringLocation, 0L);
+		mutable.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(false, offspringLocation, 0L));
 		
 		CreatureEntity[] offspring = new CreatureEntity[1];
 		TickProcessingContext.ICreatureSpawner creatureSpawner = (EntityType type, EntityLocation location) -> {
@@ -528,7 +528,7 @@ public class TestCreatureLogic
 				, mutable
 		);
 		Assert.assertTrue(didTakeAction);
-		Assert.assertNull(((ExtensionLivestock.LivestockData)mutable.newExtendedData).offspringLocation());
+		Assert.assertNull(((ExtensionLivestock.LivestockData)mutable.newExtendedData).breeding().offspringLocation());
 		Assert.assertEquals(offspringLocation, offspring[0].location());
 	}
 
@@ -910,10 +910,10 @@ public class TestCreatureLogic
 		
 		// Start with them both in a love mode but not yet targeting each other.
 		MutableCreature mutable = MutableCreature.existing(father);
-		mutable.newExtendedData = new ExtensionLivestock.LivestockData(true, null, 0L);
+		mutable.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(true, null, 0L));
 		father = mutable.freeze();
 		mutable = MutableCreature.existing(mother);
-		mutable.newExtendedData = new ExtensionLivestock.LivestockData(true, null, 0L);
+		mutable.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(true, null, 0L));
 		mother = mutable.freeze();
 		Map<Integer, CreatureEntity> creatures = new HashMap<>();
 		creatures.put(father.id(), father);
@@ -981,11 +981,11 @@ public class TestCreatureLogic
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
 		long nextReadyMillis = 2000L;
-		mutable.newExtendedData = new ExtensionLivestock.LivestockData(false, null, nextReadyMillis);
+		mutable.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(false, null, nextReadyMillis));
 		Assert.assertFalse(CreatureLogic.applyItemToCreature(WHEAT, mutable, nextReadyMillis - 1L));
-		Assert.assertFalse(((ExtensionLivestock.LivestockData)mutable.newExtendedData).inLoveMode());
+		Assert.assertFalse(((ExtensionLivestock.LivestockData)mutable.newExtendedData).breeding().inLoveMode());
 		Assert.assertTrue(CreatureLogic.applyItemToCreature(WHEAT, mutable, nextReadyMillis));
-		Assert.assertTrue(((ExtensionLivestock.LivestockData)mutable.newExtendedData).inLoveMode());
+		Assert.assertTrue(((ExtensionLivestock.LivestockData)mutable.newExtendedData).breeding().inLoveMode());
 	}
 
 	@Test
