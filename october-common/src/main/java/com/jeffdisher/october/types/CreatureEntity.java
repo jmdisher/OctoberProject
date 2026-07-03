@@ -39,7 +39,6 @@ public record CreatureEntity(int id
 	{
 		return new Ephemeral(null
 			, 0L
-			, false
 			, gameTimeMillis
 			, 0L
 			, 0L
@@ -53,8 +52,6 @@ public record CreatureEntity(int id
 			MovementPlan movementPlan
 			// The last game millisecond when this creature's AI made a decision or did something.
 			, long lastActionMillis
-			// If something special happens, we want to force a new deliberate action, no matter lastActionTick.
-			, boolean shouldTakeImmediateAction
 			// The last game millisecond where some action was taken to stop this creature from despawning (if it is a despawning type).
 			, long despawnKeepAliveMillis
 			// The last game millisecond when this creature last sent an attack.

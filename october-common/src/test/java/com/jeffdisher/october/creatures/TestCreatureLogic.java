@@ -353,12 +353,14 @@ public class TestCreatureLogic
 				, mutableCow
 		);
 		Assert.assertFalse(didTakeAction);
+		Assert.assertFalse(mutableCow.shouldTakeActionInTick);
 		Assert.assertEquals((byte)40, mutableCow.newHealth);
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, EntityCollection.fromMaps(Map.of(), Map.of(cow.id(), cow, orc.id(), orc))
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
+		Assert.assertFalse(mutableCow.shouldTakeActionInTick);
 		Assert.assertEquals((byte)20, mutableOrc.newHealth);
 		
 		// Now, advance time and do the same, seeing the despawn of the orc but not the cow.
@@ -373,12 +375,14 @@ public class TestCreatureLogic
 				, mutableCow
 		);
 		Assert.assertFalse(didTakeAction);
+		Assert.assertFalse(mutableCow.shouldTakeActionInTick);
 		Assert.assertEquals((byte)40, mutableCow.newHealth);
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, EntityCollection.fromMaps(Map.of(), Map.of(cow.id(), cow, orc.id(), orc))
 				, mutableOrc
 		);
 		Assert.assertTrue(didTakeAction);
+		Assert.assertFalse(mutableCow.shouldTakeActionInTick);
 		Assert.assertEquals((byte)0,mutableOrc.newHealth);
 	}
 
@@ -390,6 +394,7 @@ public class TestCreatureLogic
 		MutableCreature mutable = MutableCreature.existing(cow);
 		CreatureLogic.applyItemToCreature(WHEAT, mutable, 1000L);
 		Assert.assertTrue(((ExtensionLivestock.LivestockData)mutable.newExtendedData).breeding().inLoveMode());
+		Assert.assertTrue(mutable.shouldTakeActionInTick);
 	}
 
 	@Test
@@ -462,6 +467,7 @@ public class TestCreatureLogic
 				, mutable
 		);
 		Assert.assertTrue(didTakeAction);
+		Assert.assertFalse(mutable.shouldTakeActionInTick);
 		Assert.assertEquals(mother.id(), targetId[0]);
 		targetId[0] = 0;
 		Assert.assertTrue(message[0] instanceof EntityActionImpregnateCreature);
@@ -476,6 +482,7 @@ public class TestCreatureLogic
 				, mutable
 		);
 		Assert.assertFalse(didTakeAction);
+		Assert.assertFalse(mutable.shouldTakeActionInTick);
 		Assert.assertNull(message[0]);
 		mother = mutable.freeze();
 		creatures.put(mother.id(), mother);
@@ -498,6 +505,7 @@ public class TestCreatureLogic
 		long gameTimeMillis = 1000L;
 		boolean didBecomePregnant = CreatureLogic.setCreaturePregnant(mutable, fatherLocation, gameTimeMillis);
 		Assert.assertTrue(didBecomePregnant);
+		Assert.assertTrue(mutable.shouldTakeActionInTick);
 		Assert.assertFalse(((ExtensionLivestock.LivestockData)mutable.newExtendedData).breeding().inLoveMode());
 		Assert.assertEquals(new EntityLocation(0.4f, 0.0f, 0.0f), ((ExtensionLivestock.LivestockData)mutable.newExtendedData).breeding().offspringLocation());
 		Assert.assertEquals(gameTimeMillis + CommonBreedingLogic.MILLIS_BREEDING_COOLDOWN, ((ExtensionLivestock.LivestockData)mutable.newExtendedData).breeding().breedingReadyMillis());
@@ -528,6 +536,7 @@ public class TestCreatureLogic
 				, mutable
 		);
 		Assert.assertTrue(didTakeAction);
+		Assert.assertFalse(mutable.shouldTakeActionInTick);
 		Assert.assertNull(((ExtensionLivestock.LivestockData)mutable.newExtendedData).breeding().offspringLocation());
 		Assert.assertEquals(offspringLocation, offspring[0].location());
 	}
@@ -1555,7 +1564,7 @@ public class TestCreatureLogic
 		// Create a new plan from scratch.
 		mutableOrc = MutableCreature.existing(orc);
 		mutableOrc.movementPlan = null;
-		mutableOrc.newShouldTakeAction = true;
+		mutableOrc.shouldTakeActionInTick = true;
 		context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
 			.finish()
@@ -1745,7 +1754,6 @@ public class TestCreatureLogic
 			, new Ephemeral(
 				original.ephemeral().movementPlan()
 				, original.ephemeral().lastActionMillis()
-				, original.ephemeral().shouldTakeImmediateAction()
 				, gameMillis
 				, original.ephemeral().lastAttackMillis()
 				, original.ephemeral().lastDamageTakenMillis()

@@ -220,7 +220,6 @@ public class TestEngineCreatures
 				, new CreatureEntity.Ephemeral(
 					movementPlan
 					, 0L
-					, false
 					, 0L
 					, 0L
 					, 0L
@@ -263,7 +262,6 @@ public class TestEngineCreatures
 				, new CreatureEntity.Ephemeral(
 					movementPlan
 					, 0L
-					, false
 					, 0L
 					, 0L
 					, 0L
@@ -308,7 +306,6 @@ public class TestEngineCreatures
 				, new CreatureEntity.Ephemeral(
 					movementPlan
 					, 0L
-					, false
 					, 0L
 					, 0L
 					, 0L
@@ -563,9 +560,7 @@ public class TestEngineCreatures
 		);
 		
 		// The feeding will reset them but they can't yet see each other so they will pick an idle wander.
-		Assert.assertFalse(creaturesById.get(cowId1).ephemeral().shouldTakeImmediateAction());
 		Assert.assertNotNull(creaturesById.get(cowId1).ephemeral().movementPlan().directLocation());
-		Assert.assertFalse(creaturesById.get(cowId2).ephemeral().shouldTakeImmediateAction());
 		Assert.assertNotNull(creaturesById.get(cowId2).ephemeral().movementPlan().directLocation());
 		// We want to clear this to observe the rest of the behaviour (otherwise, we would need to wait for them to move).
 		creaturesById.put(cowId1, _takeAction(creaturesById.get(cowId1)));
@@ -1245,8 +1240,6 @@ public class TestEngineCreatures
 
 	private static CreatureEntity _takeAction(CreatureEntity entity)
 	{
-		boolean shouldTakeImmediateAction = true;
-		
 		return new CreatureEntity(entity.id()
 				, entity.type()
 				, entity.location()
@@ -1260,7 +1253,6 @@ public class TestEngineCreatures
 				, new CreatureEntity.Ephemeral(
 					null
 					, entity.ephemeral().lastActionMillis()
-					, shouldTakeImmediateAction
 					, entity.ephemeral().despawnKeepAliveMillis()
 					, entity.ephemeral().lastAttackMillis()
 					, entity.ephemeral().lastDamageTakenMillis()

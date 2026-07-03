@@ -216,7 +216,7 @@ public class CreatureLogic
 	{
 		// We will first see if they can make a deliberate plan.
 		long nextDeliberateActionMillis = mutable.newLastActionMillis + MINIMUM_MILLIS_TO_ACTION;
-		boolean canMakeAction = mutable.newShouldTakeAction || ( context.currentTickTimeMillis >= nextDeliberateActionMillis);
+		boolean canMakeAction = mutable.shouldTakeActionInTick || ( context.currentTickTimeMillis >= nextDeliberateActionMillis);
 		CreatureEntity.MovementPlan movementPlan;
 		if (canMakeAction)
 		{
@@ -254,7 +254,7 @@ public class CreatureLogic
 				}
 			}
 			mutable.newLastActionMillis = context.currentTickTimeMillis;
-			mutable.newShouldTakeAction = false;
+			mutable.shouldTakeActionInTick = false;
 		}
 		else
 		{
@@ -657,7 +657,7 @@ public class CreatureLogic
 			{
 				// The target is invalid so clear our state.
 				mutable.movementPlan = null;
-				mutable.newShouldTakeAction = true;
+				mutable.shouldTakeActionInTick = true;
 			}
 		}
 		else if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))

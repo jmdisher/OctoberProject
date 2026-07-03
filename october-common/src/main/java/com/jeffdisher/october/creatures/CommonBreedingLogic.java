@@ -198,7 +198,7 @@ public class CommonBreedingLogic
 				, 0L
 			);
 			creature.movementPlan = null;
-			creature.newShouldTakeAction = true;
+			creature.shouldTakeActionInTick = true;
 		}
 		return ifChanged;
 	}
@@ -236,7 +236,7 @@ public class CommonBreedingLogic
 				, breedingReadyMillis
 			);
 			creature.movementPlan = null;
-			creature.newShouldTakeAction = true;
+			creature.shouldTakeActionInTick = true;
 		}
 		return newAfterSetPregnant;
 	}

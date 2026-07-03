@@ -40,10 +40,12 @@ public class MutableCreature implements IMutableMinimalEntity
 	// Data related to the Ephemeral sub-structure.
 	public CreatureEntity.MovementPlan movementPlan;
 	public long newLastActionMillis;
-	public boolean newShouldTakeAction;
 	public long newDespawnKeepAliveMillis;
 	public long newLastAttackMillis;
 	public long newLastDamageTakenMillis;
+
+	// This data is only kept within this instance and discarded when it is (only useful within this one tick).
+	public boolean shouldTakeActionInTick;
 
 	private MutableCreature(CreatureEntity creature)
 	{
@@ -59,7 +61,6 @@ public class MutableCreature implements IMutableMinimalEntity
 		
 		this.movementPlan = creature.ephemeral().movementPlan();
 		this.newLastActionMillis = creature.ephemeral().lastActionMillis();
-		this.newShouldTakeAction = creature.ephemeral().shouldTakeImmediateAction();
 		this.newDespawnKeepAliveMillis = creature.ephemeral().despawnKeepAliveMillis();
 		this.newLastAttackMillis = creature.ephemeral().lastAttackMillis();
 		this.newLastDamageTakenMillis = creature.ephemeral().lastDamageTakenMillis();
@@ -136,7 +137,7 @@ public class MutableCreature implements IMutableMinimalEntity
 		// Whenever a creature's health changes, we will wipe its AI state.
 		// TODO:  In the future, we should make this about taking damage from a specific source.
 		this.movementPlan = null;
-		this.newShouldTakeAction = true;
+		this.shouldTakeActionInTick = true;
 	}
 
 	@Override
@@ -232,7 +233,6 @@ public class MutableCreature implements IMutableMinimalEntity
 			CreatureEntity.Ephemeral ephemeral = new CreatureEntity.Ephemeral(
 				this.movementPlan
 				, this.newLastActionMillis
-				, this.newShouldTakeAction
 				, this.newDespawnKeepAliveMillis
 				, this.newLastAttackMillis
 				, this.newLastDamageTakenMillis
