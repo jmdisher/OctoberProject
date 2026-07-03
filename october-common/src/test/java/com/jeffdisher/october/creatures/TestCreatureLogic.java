@@ -348,6 +348,7 @@ public class TestCreatureLogic
 		;
 		MutableCreature mutableCow = MutableCreature.existing(cow);
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
+		mutableOrc.despawnMillis = startTick * context.millisPerTick + CreatureEntity.MILLIS_UNTIL_NO_ACTION_DESPAWN;
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, EntityCollection.fromMaps(Map.of(), Map.of(cow.id(), cow, orc.id(), orc))
 				, mutableCow
@@ -365,7 +366,7 @@ public class TestCreatureLogic
 		
 		// Now, advance time and do the same, seeing the despawn of the orc but not the cow.
 		context = ContextBuilder.build()
-			.tick(startTick + (CommonExtensionHelpers.MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick))
+			.tick(startTick + (CreatureEntity.MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick))
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
 			.fixedRandom(2)
 			.finish()
@@ -663,6 +664,7 @@ public class TestCreatureLogic
 		Assert.assertNotNull(action);
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
 		Assert.assertEquals(player.location().getBlockLocation(), mutableOrc.movementPlan.targetPreviousLocation().getBlockLocation());
+		Assert.assertEquals(0L, mutableOrc.nextAttackMillis);
 		
 		// Update the player to be close enough.
 		Assert.assertTrue(action.applyChange(context, mutableOrc));
@@ -674,6 +676,7 @@ public class TestCreatureLogic
 		);
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
+		Assert.assertEquals(context.currentTickTimeMillis + ExtensionHostileMelee.MILLIS_ATTACK_COOLDOWN, mutableOrc.nextAttackMillis);
 		Assert.assertEquals(2, outChanges.size());
 		Assert.assertTrue(outChanges.get(0) instanceof EntityActionTakeDamageFromEntity);
 		Assert.assertTrue(outChanges.get(1) instanceof EntityActionNudge);
@@ -1078,6 +1081,7 @@ public class TestCreatureLogic
 		// They should attack since they are ranged.
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(player.id(), mutableSkeleton.movementPlan.targetEntityId());
+		Assert.assertEquals(context.currentTickTimeMillis + ExtensionHostileRanged.MILLIS_RANGED_ATTACK_COOLDOWN, mutableSkeleton.nextAttackMillis);
 		Assert.assertNotNull(out[0]);
 		Assert.assertEquals(PassiveType.PROJECTILE_ARROW, out[0].type());
 		Assert.assertEquals(new EntityLocation(0.3f, 0.3f, 2.62f), out[0].location());
@@ -1085,12 +1089,21 @@ public class TestCreatureLogic
 		out[0] = null;
 		
 		// A second attack on the following tick should fail since we are on cooldown.
+		long previousTickTime = context.currentTickTimeMillis;
+		context = ContextBuilder.build()
+			.tick(context.currentTick + 1L)
+			.lookups(previousBlockLookUp, previousEntityLookUp, null)
+			.passive(passiveSpawner)
+			.fixedRandom(2)
+			.finish()
+		;
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
 			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(skeleton.id(), skeleton))
 			, mutableSkeleton
 		);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals(player.id(), mutableSkeleton.movementPlan.targetEntityId());
+		Assert.assertEquals(previousTickTime + ExtensionHostileRanged.MILLIS_RANGED_ATTACK_COOLDOWN, mutableSkeleton.nextAttackMillis);
 		Assert.assertNull(out[0]);
 		
 		// But will work if we advance tick number further.
@@ -1107,6 +1120,7 @@ public class TestCreatureLogic
 		);
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(player.id(), mutableSkeleton.movementPlan.targetEntityId());
+		Assert.assertEquals(context.currentTickTimeMillis + ExtensionHostileRanged.MILLIS_RANGED_ATTACK_COOLDOWN, mutableSkeleton.nextAttackMillis);
 		Assert.assertNotNull(out[0]);
 		Assert.assertEquals(PassiveType.PROJECTILE_ARROW, out[0].type());
 		Assert.assertEquals(new EntityLocation(0.3f, 0.3f, 2.62f), out[0].location());
@@ -1630,6 +1644,7 @@ public class TestCreatureLogic
 			, null
 			, idleLocation
 		);
+		mutableOrc.nextMovementPlanMillis = CreatureLogic.MINIMUM_MILLIS_TO_ACTION;
 		orc = mutableOrc.freeze();
 		context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
@@ -1753,10 +1768,10 @@ public class TestCreatureLogic
 			
 			, new Ephemeral(
 				original.ephemeral().movementPlan()
-				, original.ephemeral().lastActionMillis()
+				, original.ephemeral().nextMovementPlanMillis()
 				, gameMillis
-				, original.ephemeral().lastAttackMillis()
-				, original.ephemeral().lastDamageTakenMillis()
+				, original.ephemeral().nextAttackMillis()
+				, original.ephemeral().nextTakeDamageMillis()
 			)
 		);
 	}

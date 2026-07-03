@@ -363,7 +363,7 @@ public class TestEngineCreatures
 		Assert.assertEquals(startHealth, updated.health());
 		Assert.assertNotEquals(startLocation, updated.location());
 		Assert.assertNotNull(updated.ephemeral().movementPlan());
-		Assert.assertEquals(context.currentTickTimeMillis, updated.ephemeral().lastActionMillis());
+		Assert.assertEquals(context.currentTickTimeMillis + CreatureLogic.MINIMUM_MILLIS_TO_ACTION, updated.ephemeral().nextMovementPlanMillis());
 		
 		// Now, hit them and see this clears their movement plan so we should see a plan with new timers.
 		context = _updateContextForTick(context);
@@ -378,7 +378,8 @@ public class TestEngineCreatures
 		
 		updated = result.updatedEntity();
 		Assert.assertEquals(startHealth - damage, updated.health());
-		Assert.assertEquals(context.currentTickTimeMillis, updated.ephemeral().lastActionMillis());
+		Assert.assertEquals(context.currentTickTimeMillis + CreatureLogic.MINIMUM_MILLIS_TO_ACTION, updated.ephemeral().nextMovementPlanMillis());
+		Assert.assertEquals(context.currentTickTimeMillis + MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS, updated.ephemeral().nextTakeDamageMillis());
 	}
 
 	@Test
@@ -834,6 +835,7 @@ public class TestEngineCreatures
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 15), STONE.item().number());
 		
+		long tickNumber = MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK;
 		float fallingVelocity = TickUtils.DECELERATION_DAMAGE_THRESHOLD + (TickUtils.DECELERATION_DAMAGE_RANGE / 2.0f);
 		EntityLocation startLocation = new EntityLocation(16.8f, 16.8f, 16.1f);
 		EntityLocation startVelocity = new EntityLocation(0.0f, 0.0f, fallingVelocity);
@@ -841,19 +843,20 @@ public class TestEngineCreatures
 		MutableCreature mutable = MutableCreature.existing(creature);
 		mutable.newVelocity = startVelocity;
 		mutable.newHealth = (byte)100;
+		mutable.nextMovementPlanMillis = (tickNumber * ContextBuilder.DEFAULT_MILLIS_PER_TICK) + CreatureLogic.MINIMUM_MILLIS_TO_ACTION;
 		creature = mutable.freeze();
 		
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
-				.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-						return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
-							? BlockProxy.load(location.getBlockAddress(), cuboid)
-							: null
-						;
-					}), null, null)
-				.eventSink(events)
-				.finish()
+			.tick(tickNumber)
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
+				return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
+					? BlockProxy.load(location.getBlockAddress(), cuboid)
+					: null
+				;
+			}), null, null)
+			.eventSink(events)
+			.finish()
 		;
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.FALL, creature.location().getBlockLocation(), creature.id(), 0));
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
@@ -1100,6 +1103,41 @@ public class TestEngineCreatures
 		Assert.assertEquals(ENV.durability.getDurability(bow), nonStack.properties().get(PropertyRegistry.DURABILITY));
 	}
 
+	@Test
+	public void damageCooldown()
+	{
+		// Show that a creature can't take damage too soon after already taking damage.
+		CreatureEntity creature = CreatureEntity.create(-1, COW, new EntityLocation(0.0f, 0.0f, 0.0f), 0L);
+		_Events events = new _Events();
+		TickProcessingContext context = _createContextWithEvents(events);
+		int sourceId = 1;
+		EntityActionTakeDamageFromEntity<MutableCreature> change = new EntityActionTakeDamageFromEntity<>(BodyPart.FEET, 10, sourceId);
+		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
+		
+		long firstContextMillis = context.currentTickTimeMillis;
+		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
+			, EntityCollection.emptyCollection()
+			, creature
+			, List.of(change)
+		);
+		CreatureEntity updated = result.updatedEntity();
+		Assert.assertEquals((byte)30, updated.health());
+		Assert.assertEquals(firstContextMillis + MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS, updated.ephemeral().nextTakeDamageMillis());
+		
+		// We will advance by a single tick to show that damage is NOT taken (although the creature is still moving so it changed).
+		context = ContextBuilder.nextTick(context, 1L)
+			.finish()
+		;
+		result = EngineCreatures.processOneCreature(context
+			, EntityCollection.emptyCollection()
+			, updated
+			, List.of(change)
+		);
+		CreatureEntity unchanged = result.updatedEntity();
+		Assert.assertEquals((byte)30, unchanged.health());
+		Assert.assertEquals(firstContextMillis + MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS, unchanged.ephemeral().nextTakeDamageMillis());
+	}
+
 
 	private static TickProcessingContext _createContext()
 	{
@@ -1252,10 +1290,10 @@ public class TestEngineCreatures
 				
 				, new CreatureEntity.Ephemeral(
 					null
-					, entity.ephemeral().lastActionMillis()
-					, entity.ephemeral().despawnKeepAliveMillis()
-					, entity.ephemeral().lastAttackMillis()
-					, entity.ephemeral().lastDamageTakenMillis()
+					, entity.ephemeral().nextMovementPlanMillis()
+					, entity.ephemeral().despawnMillis()
+					, entity.ephemeral().nextAttackMillis()
+					, entity.ephemeral().nextTakeDamageMillis()
 				)
 		);
 	}

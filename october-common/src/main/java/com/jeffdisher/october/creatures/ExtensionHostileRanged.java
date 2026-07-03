@@ -67,8 +67,10 @@ public class ExtensionHostileRanged implements EntityType.IExtension
 		boolean isDone;
 		// The only special action we will take is attacking but this path will also reset our tracking if the target moves.
 		// We don't have an objective measurement of time but the tick rate is considered constant within a server instance so we will estimate time passed.
-		long millisSinceLastAttack = context.currentTickTimeMillis - creature.newLastAttackMillis;
-		if ((null != creature.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != creature.movementPlan.targetEntityId()) && (millisSinceLastAttack >= MILLIS_RANGED_ATTACK_COOLDOWN))
+		if ((null != creature.movementPlan)
+			&& (CreatureEntity.NO_TARGET_ENTITY_ID != creature.movementPlan.targetEntityId())
+			&& (creature.nextAttackMillis <= context.currentTickTimeMillis)
+		)
 		{
 			// We are tracking a target so see if they have moved (since we would need to clear our existing targets and
 			// movement plans unless they are close enough for other actions).
@@ -129,7 +131,7 @@ public class ExtensionHostileRanged implements EntityType.IExtension
 					isDone = false;
 				}
 				// Since we at least tried to find a valid attack, put us on attack cooldown.
-				creature.newLastAttackMillis = context.currentTickTimeMillis;
+				creature.nextAttackMillis = context.currentTickTimeMillis + MILLIS_RANGED_ATTACK_COOLDOWN;
 			}
 			else
 			{

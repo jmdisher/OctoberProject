@@ -39,10 +39,10 @@ public class MutableCreature implements IMutableMinimalEntity
 
 	// Data related to the Ephemeral sub-structure.
 	public CreatureEntity.MovementPlan movementPlan;
-	public long newLastActionMillis;
-	public long newDespawnKeepAliveMillis;
-	public long newLastAttackMillis;
-	public long newLastDamageTakenMillis;
+	public long nextMovementPlanMillis;
+	public long despawnMillis;
+	public long nextAttackMillis;
+	public long nextTakeDamageMillis;
 
 	// This data is only kept within this instance and discarded when it is (only useful within this one tick).
 	public boolean shouldTakeActionInTick;
@@ -60,10 +60,10 @@ public class MutableCreature implements IMutableMinimalEntity
 		this.newExtendedData = creature.extendedData();
 		
 		this.movementPlan = creature.ephemeral().movementPlan();
-		this.newLastActionMillis = creature.ephemeral().lastActionMillis();
-		this.newDespawnKeepAliveMillis = creature.ephemeral().despawnKeepAliveMillis();
-		this.newLastAttackMillis = creature.ephemeral().lastAttackMillis();
-		this.newLastDamageTakenMillis = creature.ephemeral().lastDamageTakenMillis();
+		this.nextMovementPlanMillis = creature.ephemeral().nextMovementPlanMillis();
+		this.despawnMillis = creature.ephemeral().despawnMillis();
+		this.nextAttackMillis = creature.ephemeral().nextAttackMillis();
+		this.nextTakeDamageMillis = creature.ephemeral().nextTakeDamageMillis();
 	}
 
 	@Override
@@ -194,11 +194,10 @@ public class MutableCreature implements IMutableMinimalEntity
 	@Override
 	public boolean updateDamageTimeoutIfValid(long currentTickMillis)
 	{
-		long nextValidTime = this.newLastDamageTakenMillis + MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS;
-		boolean canUpdate = (currentTickMillis >= nextValidTime);
+		boolean canUpdate = (this.nextTakeDamageMillis <= currentTickMillis);
 		if (canUpdate)
 		{
-			this.newLastDamageTakenMillis = currentTickMillis;
+			this.nextTakeDamageMillis = currentTickMillis + MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS;
 		}
 		return canUpdate;
 	}
@@ -232,10 +231,10 @@ public class MutableCreature implements IMutableMinimalEntity
 		{
 			CreatureEntity.Ephemeral ephemeral = new CreatureEntity.Ephemeral(
 				this.movementPlan
-				, this.newLastActionMillis
-				, this.newDespawnKeepAliveMillis
-				, this.newLastAttackMillis
-				, this.newLastDamageTakenMillis
+				, this.nextMovementPlanMillis
+				, this.despawnMillis
+				, this.nextAttackMillis
+				, this.nextTakeDamageMillis
 			);
 			CreatureEntity immutable = new CreatureEntity(_creature.id()
 					, this.newType

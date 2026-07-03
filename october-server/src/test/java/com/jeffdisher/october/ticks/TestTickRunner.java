@@ -21,7 +21,6 @@ import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.aspects.TradingRegistry;
-import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.creatures.ExtensionVillager;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
@@ -3112,7 +3111,7 @@ public class TestTickRunner
 		MutableCreature mutCreature = MutableCreature.existing(CreatureEntity.create(foresterId, villagerType, new EntityLocation(5.0f, 5.0f, 1.0f), 0L));
 		mutCreature.newExtendedData = ExtensionVillager.test_createData(foresterProfession, Map.of());
 		// (set the time to action so we move immediately)
-		mutCreature.newLastActionMillis = -CreatureLogic.MINIMUM_MILLIS_TO_ACTION;
+		mutCreature.nextMovementPlanMillis = 0L;
 		CreatureEntity forester = mutCreature.freeze();
 		
 		int toolSmithId = -2;

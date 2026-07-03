@@ -34,14 +34,19 @@ public record CreatureEntity(int id
 )
 {
 	public static final int NO_TARGET_ENTITY_ID = 0;
+	/**
+	 * The amount of time a hostile mob will continue to live if not taking any deliberate action before despawn (5
+	 * minutes).
+	 */
+	public static final long MILLIS_UNTIL_NO_ACTION_DESPAWN = 5L * 60L * 1_000L;
 
 	public static final Ephemeral createEmptyEphemeral(long gameTimeMillis)
 	{
 		return new Ephemeral(null
-			, 0L
 			, gameTimeMillis
-			, 0L
-			, 0L
+			, gameTimeMillis + MILLIS_UNTIL_NO_ACTION_DESPAWN
+			, gameTimeMillis
+			, gameTimeMillis + MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS
 		);
 	}
 
@@ -49,15 +54,15 @@ public record CreatureEntity(int id
 	 * All data stored in this class is considered ephemeral and local:  It is not persisted, nor sent over the network.
 	 */
 	public static record Ephemeral(
-			MovementPlan movementPlan
-			// The last game millisecond when this creature's AI made a decision or did something.
-			, long lastActionMillis
-			// The last game millisecond where some action was taken to stop this creature from despawning (if it is a despawning type).
-			, long despawnKeepAliveMillis
-			// The last game millisecond when this creature last sent an attack.
-			, long lastAttackMillis
-			// The millisecond time when this creature last took damage.
-			, long lastDamageTakenMillis
+		MovementPlan movementPlan
+		// The next millisecond time when the creature should choose a target (location or entity).
+		, long nextMovementPlanMillis
+		// The millisecond time when the creature should despawn (if it is a despawning type).
+		, long despawnMillis
+		// The next millisecond time when the creature can issue an attack (or related action).
+		, long nextAttackMillis
+		// The next millisecond time when the creature can take damage.
+		, long nextTakeDamageMillis
 	) {}
 
 	/**

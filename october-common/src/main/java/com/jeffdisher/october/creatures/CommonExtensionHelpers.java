@@ -20,12 +20,6 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CommonExtensionHelpers
 {
-	/**
-	 * The amount of time a hostile mob will continue to live if not taking any deliberate action before despawn (5
-	 * minutes).
-	 */
-	public static final long MILLIS_UNTIL_NO_ACTION_DESPAWN = 5L * 60L * 1_000L;
-
 	public static EntityType.TargetEntity findPlayerInRange(EntityCollection entityCollection, IMutableMinimalEntity creature)
 	{
 		EntityType.TargetEntity[] target = new EntityType.TargetEntity[1];
@@ -79,8 +73,7 @@ public class CommonExtensionHelpers
 		else
 		{
 			// See if this should despawn due to a timeout.
-			long despawnMillis = mutable.newDespawnKeepAliveMillis + MILLIS_UNTIL_NO_ACTION_DESPAWN;
-			shouldDespawn = (despawnMillis <= context.currentTickTimeMillis);
+			shouldDespawn = (mutable.despawnMillis <= context.currentTickTimeMillis);
 		}
 		return shouldDespawn;
 	}

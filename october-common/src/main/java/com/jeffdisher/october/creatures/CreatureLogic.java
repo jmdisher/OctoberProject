@@ -215,8 +215,7 @@ public class CreatureLogic
 	)
 	{
 		// We will first see if they can make a deliberate plan.
-		long nextDeliberateActionMillis = mutable.newLastActionMillis + MINIMUM_MILLIS_TO_ACTION;
-		boolean canMakeAction = mutable.shouldTakeActionInTick || ( context.currentTickTimeMillis >= nextDeliberateActionMillis);
+		boolean canMakeAction = mutable.shouldTakeActionInTick || (context.currentTickTimeMillis >= mutable.nextMovementPlanMillis);
 		CreatureEntity.MovementPlan movementPlan;
 		if (canMakeAction)
 		{
@@ -253,7 +252,7 @@ public class CreatureLogic
 					}
 				}
 			}
-			mutable.newLastActionMillis = context.currentTickTimeMillis;
+			mutable.nextMovementPlanMillis = context.currentTickTimeMillis + MINIMUM_MILLIS_TO_ACTION;
 			mutable.shouldTakeActionInTick = false;
 		}
 		else
@@ -320,7 +319,7 @@ public class CreatureLogic
 				plan = _pruneAndStoreFreshTargetPlan(context, mutable.newLocation, mutable.newType, path, newTarget.id(), targetLocation);
 				
 				// Even if the path was empty, this counts as a decision and reset despawn timeout.
-				mutable.newDespawnKeepAliveMillis = context.currentTickTimeMillis;
+				mutable.despawnMillis = context.currentTickTimeMillis + CreatureEntity.MILLIS_UNTIL_NO_ACTION_DESPAWN;
 			}
 		}
 		return plan;

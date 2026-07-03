@@ -772,7 +772,7 @@ public class TestResourceLoader
 		CreatureEntity entity = creatures.get(0);
 		Assert.assertEquals(-1, entity.id());
 		Assert.assertEquals((byte)0, entity.yaw());
-		Assert.assertEquals(loadingGameMillis, entity.ephemeral().despawnKeepAliveMillis());
+		Assert.assertEquals(loadingGameMillis + CreatureEntity.MILLIS_UNTIL_NO_ACTION_DESPAWN, entity.ephemeral().despawnMillis());
 		Assert.assertFalse(((ExtensionLivestock.LivestockData)entity.extendedData()).breeding().inLoveMode());
 		
 		loader.writeBackToDiskAndRetire(List.of(new PackagedCuboid(result.cuboid(), List.of(), List.of(), Map.of(), List.of())), List.of(), 0L);

@@ -77,7 +77,7 @@ public class TestEngineSpawner
 		
 		Assert.assertEquals(SKELETON, out[0].type());
 		Assert.assertEquals(2.0f, out[0].location().z(), 0.01f);
-		Assert.assertEquals(900_000L, out[0].ephemeral().despawnKeepAliveMillis());
+		Assert.assertEquals(900_000L + CreatureEntity.MILLIS_UNTIL_NO_ACTION_DESPAWN, out[0].ephemeral().despawnMillis());
 	}
 
 	@Test
