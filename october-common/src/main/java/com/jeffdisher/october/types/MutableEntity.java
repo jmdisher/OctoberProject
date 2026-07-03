@@ -97,7 +97,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	public boolean isCreativeMode;
 	public EntityLocation newSpawn;
 	public long ephemeral_lastSpecialActionMillis;
-	public long ephemeral_newLastDamageTakenMillis;
+	public long ephemeral_nextTakeDamageMillis;
 	public int chargeMillis;
 
 	private MutableEntity(Entity original)
@@ -119,7 +119,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		this.isCreativeMode = original.isCreativeMode();
 		this.newSpawn = original.spawnLocation();
 		this.ephemeral_lastSpecialActionMillis = original.ephemeralLocal().lastSpecialActionMillis();
-		this.ephemeral_newLastDamageTakenMillis = original.ephemeralLocal().lastDamageTakenMillis();
+		this.ephemeral_nextTakeDamageMillis = original.ephemeralLocal().nextTakeDamageMillis();
 		this.chargeMillis = original.ephemeralShared().chargeMillis();
 	}
 
@@ -383,11 +383,10 @@ public class MutableEntity implements IMutablePlayerEntity
 	@Override
 	public boolean updateDamageTimeoutIfValid(long currentTickMillis)
 	{
-		long nextValidTime = this.ephemeral_newLastDamageTakenMillis + MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS;
-		boolean canUpdate = (currentTickMillis >= nextValidTime);
+		boolean canUpdate = (this.ephemeral_nextTakeDamageMillis <= currentTickMillis);
 		if (canUpdate)
 		{
-			this.ephemeral_newLastDamageTakenMillis = currentTickMillis;
+			this.ephemeral_nextTakeDamageMillis = currentTickMillis + MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS;
 		}
 		return canUpdate;
 	}
@@ -463,7 +462,7 @@ public class MutableEntity implements IMutablePlayerEntity
 			, this.chargeMillis
 		);
 		Entity.Ephemeral_Local ephemeralLocal = new Entity.Ephemeral_Local(this.ephemeral_lastSpecialActionMillis
-			, this.ephemeral_newLastDamageTakenMillis
+			, this.ephemeral_nextTakeDamageMillis
 			, this.newEnergyDeficit
 		);
 		Entity newInstance = new Entity(_original.id()

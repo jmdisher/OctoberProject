@@ -77,10 +77,11 @@ public record Entity(int id
 	 * All data stored in this class is considered ephemeral and local:  It is not persisted, nor sent over the network.
 	 */
 	public static record Ephemeral_Local(
-		// The last millisecond when the entity took a special action.
+		// The last millisecond when the entity took a special action (this has to be the "last" and not the "next"
+		// since we use the same special action timer for multiple actions and they have very different cooldowns).
 		long lastSpecialActionMillis
-		// The millisecond time when this entity last took damage.
-		, long lastDamageTakenMillis
+		// The next millisecond time when the entity can take damage.
+		, long nextTakeDamageMillis
 		// The energy deficit is used as an intermediary to decide when to consume food.  It changes in response to many actions.
 		, int energyDeficit
 	) {}
