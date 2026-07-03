@@ -437,7 +437,7 @@ public class CodecHelpers
 				, breath
 				, extendedData
 				
-				, CreatureEntity.createEmptyEphemeral(gameTimeMillis)
+				, CreatureEntity.createEmptyEphemeral(id, gameTimeMillis)
 		);
 	}
 

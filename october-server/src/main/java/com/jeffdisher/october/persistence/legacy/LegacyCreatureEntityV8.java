@@ -61,7 +61,7 @@ public record LegacyCreatureEntityV8(int id
 			, this.breath
 			, this.type.extension().buildDefaultExtendedData(currentGameMillis)
 			
-			, CreatureEntity.createEmptyEphemeral(currentGameMillis)
+			, CreatureEntity.createEmptyEphemeral(this.id, currentGameMillis)
 		);
 	}
 }

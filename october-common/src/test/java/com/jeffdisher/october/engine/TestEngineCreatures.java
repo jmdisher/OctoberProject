@@ -726,8 +726,14 @@ public class TestEngineCreatures
 		
 		EntityLocation waterStart = new EntityLocation(2.0f, 2.0f, 1.0f);
 		EntityLocation airStart = new EntityLocation(2.0f, 2.0f, 17.0f);
-		CreatureEntity waterCreature = CreatureEntity.create(-1, ORC, waterStart, 0L);
-		CreatureEntity airCreature = CreatureEntity.create(-2, ORC, airStart, 0L);
+		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, ORC, waterStart, 0L));
+		Assert.assertEquals(1000L, mutable.nextMovementPlanMillis);
+		mutable.nextMovementPlanMillis = 0L;
+		CreatureEntity waterCreature = mutable.freeze();
+		mutable = MutableCreature.existing(CreatureEntity.create(-2, ORC, airStart, 0L));
+		Assert.assertEquals(2000L, mutable.nextMovementPlanMillis);
+		mutable.nextMovementPlanMillis = 0L;
+		CreatureEntity airCreature = mutable.freeze();
 		float targetDistance = 4.0f;
 		Entity waterTarget = _createEntity(1, new EntityLocation(waterStart.x() + targetDistance, waterStart.y(), waterStart.z()), null, null);
 		Entity airTarget = _createEntity(2, new EntityLocation(airStart.x() + targetDistance, airStart.y(), airStart.z()), null, null);

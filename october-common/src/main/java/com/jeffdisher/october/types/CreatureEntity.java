@@ -39,11 +39,16 @@ public record CreatureEntity(int id
 	 * minutes).
 	 */
 	public static final long MILLIS_UNTIL_NO_ACTION_DESPAWN = 5L * 60L * 1_000L;
+	/**
+	 * We try to distribute the time to first move, after load, into this many seconds (we use the ID to distribute).
+	 */
+	public static final int LIMIT_SECONDS_TO_FIRST_MOVE = 10;
 
-	public static final Ephemeral createEmptyEphemeral(long gameTimeMillis)
+	public static final Ephemeral createEmptyEphemeral(int id, long gameTimeMillis)
 	{
+		int secondsToAdd = Math.abs(id) % LIMIT_SECONDS_TO_FIRST_MOVE;
 		return new Ephemeral(null
-			, gameTimeMillis
+			, gameTimeMillis + (1000L * (long)secondsToAdd)
 			, gameTimeMillis + MILLIS_UNTIL_NO_ACTION_DESPAWN
 			, gameTimeMillis
 			, gameTimeMillis + MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS
@@ -110,7 +115,7 @@ public record CreatureEntity(int id
 				, MiscConstants.MAX_BREATH
 				, type.extension().buildDefaultExtendedData(gameTimeMillis)
 				
-				, createEmptyEphemeral(gameTimeMillis)
+				, createEmptyEphemeral(id, gameTimeMillis)
 		);
 	}
 }
