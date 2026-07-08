@@ -41,7 +41,7 @@ public class MutableCreature implements IMutableMinimalEntity
 	public CreatureEntity.MovementPlan movementPlan;
 	public long nextMovementPlanMillis;
 	public long despawnMillis;
-	public long nextAttackMillis;
+	public long nextActionMillis;
 	public long nextTakeDamageMillis;
 
 	// This data is only kept within this instance and discarded when it is (only useful within this one tick).
@@ -62,7 +62,7 @@ public class MutableCreature implements IMutableMinimalEntity
 		this.movementPlan = creature.ephemeral().movementPlan();
 		this.nextMovementPlanMillis = creature.ephemeral().nextMovementPlanMillis();
 		this.despawnMillis = creature.ephemeral().despawnMillis();
-		this.nextAttackMillis = creature.ephemeral().nextAttackMillis();
+		this.nextActionMillis = creature.ephemeral().nextActionMillis();
 		this.nextTakeDamageMillis = creature.ephemeral().nextTakeDamageMillis();
 	}
 
@@ -233,7 +233,7 @@ public class MutableCreature implements IMutableMinimalEntity
 				this.movementPlan
 				, this.nextMovementPlanMillis
 				, this.despawnMillis
-				, this.nextAttackMillis
+				, this.nextActionMillis
 				, this.nextTakeDamageMillis
 			);
 			CreatureEntity immutable = new CreatureEntity(_creature.id()

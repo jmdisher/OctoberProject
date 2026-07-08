@@ -51,7 +51,6 @@ public class ExtensionVillager implements EntityType.IExtension
 		// By default, the profession is null since we base it on our surroundings.
 		return new Data(null
 			, Map.of()
-			, 0L
 			, null
 			, _breeding.buildDefault()
 		);
@@ -81,7 +80,6 @@ public class ExtensionVillager implements EntityType.IExtension
 			Object old = map.put(item, count);
 			Assert.assertTrue(null == old);
 		}
-		long craftingCooldownRelativeMillis = buffer.getLong();
 		
 		// We never store the item we want to purchase since it depends on the movement plan.
 		Item itemToPurchase = null;
@@ -90,7 +88,6 @@ public class ExtensionVillager implements EntityType.IExtension
 		CommonBreedingLogic.Data breeding = _breeding.readData(buffer, gameTimeMillis);
 		return new Data(profession
 			, Collections.unmodifiableMap(map)
-			, craftingCooldownRelativeMillis + gameTimeMillis
 			, itemToPurchase
 			, breeding
 		);
@@ -115,13 +112,6 @@ public class ExtensionVillager implements EntityType.IExtension
 			Assert.assertTrue(count > 0);
 			buffer.putInt(count);
 		}
-		
-		long craftingCooldownRelativeMillis = safe.craftingReadyMillis - gameTimeMillis;
-		if (craftingCooldownRelativeMillis < 0L)
-		{
-			craftingCooldownRelativeMillis = 0L;
-		}
-		buffer.putLong(craftingCooldownRelativeMillis);
 		
 		// We never store the item we want to purchase since it depends on the movement plan.
 		
@@ -194,7 +184,6 @@ public class ExtensionVillager implements EntityType.IExtension
 		{
 			creature.newExtendedData = new Data(data.profession
 				, data.inventory
-				, data.craftingReadyMillis
 				, data.itemToPurchase
 				, ifChanged
 			);
@@ -210,7 +199,6 @@ public class ExtensionVillager implements EntityType.IExtension
 			TradingRegistry.Profession choice = _selectDefaultProfession(entityCollection, creature.newType, creature.newLocation);
 			creature.newExtendedData = new Data(choice
 				, data.inventory
-				, data.craftingReadyMillis
 				, data.itemToPurchase
 				, data.breeding
 			);
@@ -220,7 +208,7 @@ public class ExtensionVillager implements EntityType.IExtension
 		if (!didTakeAction)
 		{
 			// See if we can craft something.
-			if (data.craftingReadyMillis <= context.currentTickTimeMillis)
+			if (creature.nextActionMillis <= context.currentTickTimeMillis)
 			{
 				TradingRegistry.Profession profession = data.profession;
 				Map<Item, Integer> inventory = data.inventory;
@@ -233,10 +221,9 @@ public class ExtensionVillager implements EntityType.IExtension
 				}
 				
 				// Whether we chose something or not, we want to update our timeout.
-				long nextReadyMillis = context.currentTickTimeMillis + MILLIS_CRAFTING_COOLDOWN;
+				creature.nextActionMillis = context.currentTickTimeMillis + MILLIS_CRAFTING_COOLDOWN;
 				creature.newExtendedData = new Data(profession
 					, inventory
-					, nextReadyMillis
 					, data.itemToPurchase
 					, data.breeding
 				);
@@ -287,7 +274,6 @@ public class ExtensionVillager implements EntityType.IExtension
 						creature.nextMovementPlanMillis = context.currentTickTimeMillis + CreatureLogic.MINIMUM_MILLIS_TO_ACTION;
 						creature.newExtendedData = new Data(data.profession
 							, data.inventory
-							, data.craftingReadyMillis
 							, null
 							, data.breeding
 						);
@@ -298,7 +284,6 @@ public class ExtensionVillager implements EntityType.IExtension
 				{
 					creature.newExtendedData = new Data(data.profession
 						, data.inventory
-						, data.craftingReadyMillis
 						, null
 						, data.breeding
 					);
@@ -319,7 +304,6 @@ public class ExtensionVillager implements EntityType.IExtension
 			Data data = (Data) creature.newExtendedData;
 			creature.newExtendedData = new Data(data.profession
 				, data.inventory
-				, data.craftingReadyMillis
 				, data.itemToPurchase
 				, dataIfChanged
 			);
@@ -433,7 +417,6 @@ public class ExtensionVillager implements EntityType.IExtension
 			newInventory.put(itemTypeToBuy, currentCount + 1);
 			villager.newExtendedData = new ExtensionVillager.Data(profession
 				, Collections.unmodifiableMap(newInventory)
-				, data.craftingReadyMillis
 				, data.itemToPurchase
 				, data.breeding
 			);
@@ -487,7 +470,6 @@ public class ExtensionVillager implements EntityType.IExtension
 			}
 			villager.newExtendedData = new ExtensionVillager.Data(profession
 				, Collections.unmodifiableMap(newInventory)
-				, data.craftingReadyMillis
 				, data.itemToPurchase
 				, data.breeding
 			);
@@ -539,7 +521,6 @@ public class ExtensionVillager implements EntityType.IExtension
 		// If this is a response to a buy request, we would have already cleared that when we sent it.
 		villager.newExtendedData = new ExtensionVillager.Data(profession
 			, Collections.unmodifiableMap(newMap)
-			, data.craftingReadyMillis
 			, data.itemToPurchase
 			, data.breeding
 		);
@@ -557,7 +538,6 @@ public class ExtensionVillager implements EntityType.IExtension
 	{
 		return new Data(profession
 			, inventory
-			, 0L
 			, null
 			, new CommonBreedingLogic(null).buildDefault()
 		);
@@ -756,7 +736,6 @@ public class ExtensionVillager implements EntityType.IExtension
 			{
 				creature.newExtendedData = new Data(safe.profession
 					, safe.inventory
-					, safe.craftingReadyMillis
 					, itemToBuy[0]
 					, safe.breeding
 				);
@@ -772,8 +751,6 @@ public class ExtensionVillager implements EntityType.IExtension
 	// The inventory is just a map since it doesn't care about non-stackable properties, just the total number of items.
 	public static record Data(TradingRegistry.Profession profession
 		, Map<Item, Integer> inventory
-		// The gameTimeMillis when crafting becomes available again (cooldown).
-		, long craftingReadyMillis
 		// The item we want to purchase from our target villager.
 		, Item itemToPurchase
 		// Villagers can breed so we also use embed related data here.

@@ -664,7 +664,7 @@ public class TestCreatureLogic
 		Assert.assertNotNull(action);
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
 		Assert.assertEquals(player.location().getBlockLocation(), mutableOrc.movementPlan.targetPreviousLocation().getBlockLocation());
-		Assert.assertEquals(0L, mutableOrc.nextAttackMillis);
+		Assert.assertEquals(0L, mutableOrc.nextActionMillis);
 		
 		// Update the player to be close enough.
 		Assert.assertTrue(action.applyChange(context, mutableOrc));
@@ -676,7 +676,7 @@ public class TestCreatureLogic
 		);
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
-		Assert.assertEquals(context.currentTickTimeMillis + ExtensionHostileMelee.MILLIS_ATTACK_COOLDOWN, mutableOrc.nextAttackMillis);
+		Assert.assertEquals(context.currentTickTimeMillis + ExtensionHostileMelee.MILLIS_ATTACK_COOLDOWN, mutableOrc.nextActionMillis);
 		Assert.assertEquals(2, outChanges.size());
 		Assert.assertTrue(outChanges.get(0) instanceof EntityActionTakeDamageFromEntity);
 		Assert.assertTrue(outChanges.get(1) instanceof EntityActionNudge);
@@ -1081,7 +1081,7 @@ public class TestCreatureLogic
 		// They should attack since they are ranged.
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(player.id(), mutableSkeleton.movementPlan.targetEntityId());
-		Assert.assertEquals(context.currentTickTimeMillis + ExtensionHostileRanged.MILLIS_RANGED_ATTACK_COOLDOWN, mutableSkeleton.nextAttackMillis);
+		Assert.assertEquals(context.currentTickTimeMillis + ExtensionHostileRanged.MILLIS_RANGED_ATTACK_COOLDOWN, mutableSkeleton.nextActionMillis);
 		Assert.assertNotNull(out[0]);
 		Assert.assertEquals(PassiveType.PROJECTILE_ARROW, out[0].type());
 		Assert.assertEquals(new EntityLocation(0.3f, 0.3f, 2.62f), out[0].location());
@@ -1103,7 +1103,7 @@ public class TestCreatureLogic
 		);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals(player.id(), mutableSkeleton.movementPlan.targetEntityId());
-		Assert.assertEquals(previousTickTime + ExtensionHostileRanged.MILLIS_RANGED_ATTACK_COOLDOWN, mutableSkeleton.nextAttackMillis);
+		Assert.assertEquals(previousTickTime + ExtensionHostileRanged.MILLIS_RANGED_ATTACK_COOLDOWN, mutableSkeleton.nextActionMillis);
 		Assert.assertNull(out[0]);
 		
 		// But will work if we advance tick number further.
@@ -1120,7 +1120,7 @@ public class TestCreatureLogic
 		);
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(player.id(), mutableSkeleton.movementPlan.targetEntityId());
-		Assert.assertEquals(context.currentTickTimeMillis + ExtensionHostileRanged.MILLIS_RANGED_ATTACK_COOLDOWN, mutableSkeleton.nextAttackMillis);
+		Assert.assertEquals(context.currentTickTimeMillis + ExtensionHostileRanged.MILLIS_RANGED_ATTACK_COOLDOWN, mutableSkeleton.nextActionMillis);
 		Assert.assertNotNull(out[0]);
 		Assert.assertEquals(PassiveType.PROJECTILE_ARROW, out[0].type());
 		Assert.assertEquals(new EntityLocation(0.3f, 0.3f, 2.62f), out[0].location());
@@ -1770,7 +1770,7 @@ public class TestCreatureLogic
 				original.ephemeral().movementPlan()
 				, original.ephemeral().nextMovementPlanMillis()
 				, gameMillis
-				, original.ephemeral().nextAttackMillis()
+				, original.ephemeral().nextActionMillis()
 				, original.ephemeral().nextTakeDamageMillis()
 			)
 		);

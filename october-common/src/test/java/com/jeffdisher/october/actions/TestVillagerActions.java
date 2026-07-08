@@ -305,11 +305,11 @@ public class TestVillagerActions
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 5.0f, 5.0f), 1000L));
 		ExtensionVillager extension = (ExtensionVillager)mutable.getType().extension();
 		
+		mutable.nextActionMillis = 2L * ContextBuilder.DEFAULT_MILLIS_PER_TICK;
 		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER
 			, Map.of(STONE_HATCHET, 1
 				, SAPLING, 5
 			)
-			, 2L * ContextBuilder.DEFAULT_MILLIS_PER_TICK
 			, null
 			, new CommonBreedingLogic(null).buildDefault()
 		);
@@ -371,7 +371,6 @@ public class TestVillagerActions
 		);
 		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER
 			, Map.of(SAPLING, 5)
-			, 0L
 			, STONE_HATCHET
 			, new CommonBreedingLogic(null).buildDefault()
 		);
@@ -402,14 +401,12 @@ public class TestVillagerActions
 		MutableCreature toolMutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(6.0f, 6.0f, 5.0f), 1000L));
 		toolMutable.newExtendedData = new ExtensionVillager.Data(TOOL_SMITH
 			, Map.of()
-			, 0L
 			, null
 			, new CommonBreedingLogic.Data(true, null, 0L)
 		);
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-2, VILLAGER, new EntityLocation(5.5f, 5.5f, 5.0f), 1000L));
 		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER
 			, Map.of()
-			, 0L
 			, null
 			, new CommonBreedingLogic.Data(true, null, 0L)
 		);

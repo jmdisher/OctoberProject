@@ -1298,7 +1298,7 @@ public class TestEngineCreatures
 					null
 					, entity.ephemeral().nextMovementPlanMillis()
 					, entity.ephemeral().despawnMillis()
-					, entity.ephemeral().nextAttackMillis()
+					, entity.ephemeral().nextActionMillis()
 					, entity.ephemeral().nextTakeDamageMillis()
 				)
 		);

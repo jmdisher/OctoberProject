@@ -64,8 +64,8 @@ public record CreatureEntity(int id
 		, long nextMovementPlanMillis
 		// The millisecond time when the creature should despawn (if it is a despawning type).
 		, long despawnMillis
-		// The next millisecond time when the creature can issue an attack (or related action).
-		, long nextAttackMillis
+		// The next millisecond time when the creature can issue a special action.
+		, long nextActionMillis
 		// The next millisecond time when the creature can take damage.
 		, long nextTakeDamageMillis
 	) {}
