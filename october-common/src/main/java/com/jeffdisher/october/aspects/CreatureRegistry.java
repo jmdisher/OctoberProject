@@ -34,6 +34,7 @@ public class CreatureRegistry
 	private static final String SUB_MAX_HEALTH = "max_health";
 	private static final String SUB_VIEW_DISTANCE = "view_distance";
 	private static final String SUB_ACTION_DISTANCE = "action_distance";
+	private static final String SUB_ACTION_COOLDOWN_MILLIS = "action_cooldown_millis";
 	private static final String SUB_DROPS = "drops";
 	private static final String SUB_EXTENSION = "extension";
 
@@ -75,6 +76,7 @@ public class CreatureRegistry
 			private byte _maxHealth = -1;
 			private float _viewDistance = -1.0f;
 			private float _actionDistance = -1.0f;
+			private int _actionCooldownMillis = 0;
 			private DropChance[] _drops = null;
 			private EntityType.IExtension _extension = null;
 			private boolean _canSpawnDynamically = false;
@@ -106,6 +108,7 @@ public class CreatureRegistry
 				_assert(SUB_MAX_HEALTH, _maxHealth > 0);
 				_assert(SUB_VIEW_DISTANCE, _viewDistance > 0.0f);
 				_assert(SUB_ACTION_DISTANCE, _actionDistance > 0.0f);
+				_assert(SUB_ACTION_COOLDOWN_MILLIS, _actionCooldownMillis > 0);
 				_assert(SUB_DROPS, null != _drops);
 				_assert(SUB_EXTENSION, null != _extension);
 				
@@ -121,6 +124,7 @@ public class CreatureRegistry
 						, _maxHealth
 						, _viewDistance
 						, _actionDistance
+						, _actionCooldownMillis
 						, _drops
 						, _extension
 				);
@@ -148,6 +152,7 @@ public class CreatureRegistry
 				_maxHealth = -1;
 				_viewDistance = -1.0f;
 				_actionDistance = -1.0f;
+				_actionCooldownMillis = 0;
 				_drops = null;
 				_extension = null;
 				_canSpawnDynamically = false;
@@ -200,6 +205,14 @@ public class CreatureRegistry
 						throw new TabListReader.TabListException(_id + ": Expected 1 parameter for " + SUB_ACTION_DISTANCE);
 					}
 					_actionDistance = _getFloat(parameters[0]);
+				}
+				else if (SUB_ACTION_COOLDOWN_MILLIS.equals(name))
+				{
+					if (1 != parameters.length)
+					{
+						throw new TabListReader.TabListException(_id + ": Expected 1 parameter for " + SUB_ACTION_COOLDOWN_MILLIS);
+					}
+					_actionCooldownMillis = _getInt(parameters[0]);
 				}
 				else if (SUB_DROPS.equals(name))
 				{
@@ -386,6 +399,7 @@ public class CreatureRegistry
 				, (byte)100
 				, 0.0f
 				, 0.0f
+				, 0
 				, null
 				, new ExtensionPlayer()
 		);

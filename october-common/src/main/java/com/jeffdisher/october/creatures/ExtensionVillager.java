@@ -30,11 +30,6 @@ import com.jeffdisher.october.utils.Assert;
 
 public class ExtensionVillager implements EntityType.IExtension
 {
-	/**
-	 * The timeout between attempts at crafting operations (10s).
-	 */
-	public static final long MILLIS_CRAFTING_COOLDOWN = 10L * 1000L;
-
 	private final CommonBreedingLogic _breeding;
 
 	public ExtensionVillager()
@@ -221,7 +216,7 @@ public class ExtensionVillager implements EntityType.IExtension
 				}
 				
 				// Whether we chose something or not, we want to update our timeout.
-				creature.nextActionMillis = context.currentTickTimeMillis + MILLIS_CRAFTING_COOLDOWN;
+				creature.nextActionMillis = context.currentTickTimeMillis + creature.newType.actionCooldownMillis();
 				creature.newExtendedData = new Data(profession
 					, inventory
 					, data.itemToPurchase

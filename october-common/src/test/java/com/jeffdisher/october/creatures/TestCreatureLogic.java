@@ -591,6 +591,7 @@ public class TestCreatureLogic
 	@Test
 	public void sendAttack()
 	{
+		long attackCooldownMillis = ORC.actionCooldownMillis();
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		_setLayer(input, (byte)0, "op.stone");
@@ -676,7 +677,7 @@ public class TestCreatureLogic
 		);
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
-		Assert.assertEquals(context.currentTickTimeMillis + ExtensionHostileMelee.MILLIS_ATTACK_COOLDOWN, mutableOrc.nextActionMillis);
+		Assert.assertEquals(context.currentTickTimeMillis + attackCooldownMillis, mutableOrc.nextActionMillis);
 		Assert.assertEquals(2, outChanges.size());
 		Assert.assertTrue(outChanges.get(0) instanceof EntityActionTakeDamageFromEntity);
 		Assert.assertTrue(outChanges.get(1) instanceof EntityActionNudge);
@@ -693,7 +694,7 @@ public class TestCreatureLogic
 		
 		// But will work if we advance tick number further.
 		context = ContextBuilder.build()
-			.tick(context.currentTick + ExtensionHostileMelee.MILLIS_ATTACK_COOLDOWN / context.millisPerTick)
+			.tick(context.currentTick + attackCooldownMillis / context.millisPerTick)
 			.sinks(null, changeSink)
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
 			.fixedRandom(2)
@@ -1036,6 +1037,7 @@ public class TestCreatureLogic
 		mutable.newLocation = playerLocation;
 		Entity player = mutable.freeze();
 		EntityType skeletonType = ENV.creatures.getTypeById("op.skeleton");
+		long attackCooldownMillis = skeletonType.actionCooldownMillis();
 		EntityLocation skeletonLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
 		CreatureEntity skeleton = CreatureEntity.create(assigner.next(), skeletonType, skeletonLocation, 0L);
 		
@@ -1060,7 +1062,7 @@ public class TestCreatureLogic
 		};
 		TickProcessingContext context = ContextBuilder.build()
 			.millisPerTick(millisPerTick)
-			.tick(ExtensionHostileRanged.MILLIS_RANGED_ATTACK_COOLDOWN / millisPerTick)
+			.tick(attackCooldownMillis / millisPerTick)
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
 			.passive(passiveSpawner)
 			.fixedRandom(2)
@@ -1081,7 +1083,7 @@ public class TestCreatureLogic
 		// They should attack since they are ranged.
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(player.id(), mutableSkeleton.movementPlan.targetEntityId());
-		Assert.assertEquals(context.currentTickTimeMillis + ExtensionHostileRanged.MILLIS_RANGED_ATTACK_COOLDOWN, mutableSkeleton.nextActionMillis);
+		Assert.assertEquals(context.currentTickTimeMillis + attackCooldownMillis, mutableSkeleton.nextActionMillis);
 		Assert.assertNotNull(out[0]);
 		Assert.assertEquals(PassiveType.PROJECTILE_ARROW, out[0].type());
 		Assert.assertEquals(new EntityLocation(0.3f, 0.3f, 2.62f), out[0].location());
@@ -1103,12 +1105,12 @@ public class TestCreatureLogic
 		);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals(player.id(), mutableSkeleton.movementPlan.targetEntityId());
-		Assert.assertEquals(previousTickTime + ExtensionHostileRanged.MILLIS_RANGED_ATTACK_COOLDOWN, mutableSkeleton.nextActionMillis);
+		Assert.assertEquals(previousTickTime + attackCooldownMillis, mutableSkeleton.nextActionMillis);
 		Assert.assertNull(out[0]);
 		
 		// But will work if we advance tick number further.
 		context = ContextBuilder.build()
-			.tick(context.currentTick + ExtensionHostileRanged.MILLIS_RANGED_ATTACK_COOLDOWN / context.millisPerTick)
+			.tick(context.currentTick + attackCooldownMillis / context.millisPerTick)
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
 			.passive(passiveSpawner)
 			.fixedRandom(2)
@@ -1120,7 +1122,7 @@ public class TestCreatureLogic
 		);
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(player.id(), mutableSkeleton.movementPlan.targetEntityId());
-		Assert.assertEquals(context.currentTickTimeMillis + ExtensionHostileRanged.MILLIS_RANGED_ATTACK_COOLDOWN, mutableSkeleton.nextActionMillis);
+		Assert.assertEquals(context.currentTickTimeMillis + attackCooldownMillis, mutableSkeleton.nextActionMillis);
 		Assert.assertNotNull(out[0]);
 		Assert.assertEquals(PassiveType.PROJECTILE_ARROW, out[0].type());
 		Assert.assertEquals(new EntityLocation(0.3f, 0.3f, 2.62f), out[0].location());

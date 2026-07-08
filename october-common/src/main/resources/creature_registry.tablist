@@ -5,6 +5,7 @@
 # <TAB>max_health<TAB>byte
 # <TAB>view_distance<TAB>float
 # <TAB>action_distance<TAB>float
+# <TAB>action_cooldown_millis<TAB>int
 # <TAB>drops<TAB>[probability item]*
 # <TAB>extension<TAB>extension_name[<TAB>parameter]*
 #
@@ -19,6 +20,7 @@ op.cow	Cow
 	max_health	40
 	view_distance	7.0
 	action_distance	1.0
+	action_cooldown_millis	1000
 	drops	100	op.beef	100	op.beef	100	op.beef	100	op.beef	50	op.beef
 	extension	livestock	op.wheat_item
 op.orc	Orc
@@ -27,6 +29,7 @@ op.orc	Orc
 	max_health	20
 	view_distance	8.0
 	action_distance	1.0
+	action_cooldown_millis	1000
 	drops	20	op.iron_dust
 	extension	hostile_melee	5
 op.cow_baby	Calf
@@ -35,6 +38,7 @@ op.cow_baby	Calf
 	max_health	20
 	view_distance	5.0
 	action_distance	1.0
+	action_cooldown_millis	1000
 	drops	100	op.beef
 	extension	livestock_baby	op.cow
 op.skeleton	Skeleton
@@ -43,6 +47,7 @@ op.skeleton	Skeleton
 	max_health	30
 	view_distance	8.0
 	action_distance	7.0
+	action_cooldown_millis	5000
 	drops	10	op.bow
 	extension	hostile_ranged
 op.villager	Villager
@@ -51,6 +56,7 @@ op.villager	Villager
 	max_health	50
 	view_distance	8.0
 	action_distance	1.0
+	action_cooldown_millis	10000
 	drops	100	op.coin	100	op.coin	100	op.coin	100	op.coin	100	op.coin
 	extension	villager
 op.villager_baby	Young Villager
@@ -59,5 +65,6 @@ op.villager_baby	Young Villager
 	max_health	30
 	view_distance	6.0
 	action_distance	1.0
+	action_cooldown_millis	1000
 	drops	100	op.coin
 	extension	livestock_baby	op.villager

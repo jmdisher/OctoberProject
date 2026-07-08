@@ -21,11 +21,6 @@ import com.jeffdisher.october.utils.Assert;
 
 public class ExtensionHostileMelee implements EntityType.IExtension
 {
-	/**
-	 * A creature will wait one second between attacks.
-	 */
-	public static final long MILLIS_ATTACK_COOLDOWN = 1000L;
-
 	private final byte _attackDamage;
 
 	public ExtensionHostileMelee(byte attackDamage)
@@ -105,7 +100,7 @@ public class ExtensionHostileMelee implements EntityType.IExtension
 				);
 				
 				// Since we sent the attack, put us on attack cooldown.
-				creature.nextActionMillis = context.currentTickTimeMillis + MILLIS_ATTACK_COOLDOWN;
+				creature.nextActionMillis = context.currentTickTimeMillis + creature.newType.actionCooldownMillis();
 				// We only count a successful attack as an "action".
 				isDone = true;
 			}

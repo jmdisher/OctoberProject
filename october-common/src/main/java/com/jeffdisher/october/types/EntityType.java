@@ -16,6 +16,7 @@ public record EntityType(byte number
 	, byte maxHealth
 	, float viewDistance
 	, float actionDistance
+	, int actionCooldownMillis
 	, DropChance[] drops
 	, IExtension extension
 )

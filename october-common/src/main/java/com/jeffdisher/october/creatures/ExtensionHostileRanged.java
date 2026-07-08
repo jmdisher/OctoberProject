@@ -24,11 +24,6 @@ import com.jeffdisher.october.utils.Assert;
 
 public class ExtensionHostileRanged implements EntityType.IExtension
 {
-	/**
-	 * A creature will wait 5 seconds between ranged attacks.
-	 */
-	public static final long MILLIS_RANGED_ATTACK_COOLDOWN = 5000L;
-
 	@Override
 	public Object buildDefaultExtendedData(long gameTimeMillis)
 	{
@@ -131,7 +126,7 @@ public class ExtensionHostileRanged implements EntityType.IExtension
 					isDone = false;
 				}
 				// Since we at least tried to find a valid attack, put us on attack cooldown.
-				creature.nextActionMillis = context.currentTickTimeMillis + MILLIS_RANGED_ATTACK_COOLDOWN;
+				creature.nextActionMillis = context.currentTickTimeMillis + creature.newType.actionCooldownMillis();
 			}
 			else
 			{
