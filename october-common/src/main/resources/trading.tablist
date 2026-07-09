@@ -9,6 +9,7 @@
 # The profession_id is a stable ID used for serialization but also future localization needs.
 # Non-stackable items will only be purchased by the villager if they are full durability.
 # Note that coins are created/destroyed by villagers as needed.
+# The food items are added after the "craft" stanzas just to make that meaning more obvious.
 # Villagers can respond to trade requests from players but also other villagers.
 
 op.forester	Forester
@@ -18,6 +19,8 @@ op.forester	Forester
 	sell	1	op.stick
 	sell	3	op.apple
 	craft	in	1	op.stone_hatchet	in	4	op.sapling	out	4	op.stick	out	8	op.log	out	1	op.apple
+	buy	4	op.bread
+	buy	3	op.carrot_item
 op.farmer	Farmer
 	buy	20	op.stone_hoe
 	buy	3	op.fertilizer
@@ -27,19 +30,29 @@ op.farmer	Farmer
 	sell	3	op.carrot_item
 	craft	in	1	op.stone_hoe	in	16	op.wheat_seed	in	8	op.fertilizer	out	32	op.wheat_item
 	craft	in	1	op.stone_hoe	in	16	op.carrot_seed	in	8	op.fertilizer	out	32	op.carrot_item
+	buy	4	op.bread
+	buy	2	op.apple
 op.miller	Miller
 	buy	2	op.wheat_item
 	sell	3	op.flour
 	craft	in	1	op.wheat_item	out	1	op.flour
+	buy	4	op.bread
+	buy	3	op.carrot_item
+	buy	2	op.apple
 op.baker	Baker
 	buy	2	op.flour
 	buy	4	op.charcoal
 	sell	4	op.bread
 	craft	in	16	op.flour	in	1	op.charcoal	out	16	op.bread
+	buy	3	op.carrot_item
+	buy	2	op.apple
 op.charcoal_maker	Charcoal Maker
 	buy	2	op.log
 	sell	4	op.charcoal
 	craft	in	16	op.log	out	12	op.charcoal
+	buy	4	op.bread
+	buy	3	op.carrot_item
+	buy	2	op.apple
 op.tool_smith	Tool Smith
 	buy	1	op.stick
 	buy	2	op.stone
@@ -47,3 +60,6 @@ op.tool_smith	Tool Smith
 	sell	8	op.stone_hoe
 	craft	in	1	op.stick	in	1	op.stone	out	1	op.stone_hatchet
 	craft	in	2	op.stick	in	1	op.stone	out	1	op.stone_hoe
+	buy	4	op.bread
+	buy	3	op.carrot_item
+	buy	2	op.apple

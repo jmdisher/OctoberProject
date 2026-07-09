@@ -6,8 +6,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Item;
@@ -19,6 +21,19 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class TradingRegistry
 {
+	/**
+	 * The multiplier on the target of all craft outputs to keep in the inventory.
+	 */
+	public static final int TARGET_CRAFT_INPUT_MULTIPLIER = 2;
+	/**
+	 * The multiplier on the target of all craft inputs to keep in the inventory.
+	 */
+	public static final int TARGET_CRAFT_OUTPUT_MULTIPLIER = 2;
+	/**
+	 * The target of all additional buy offers to keep in the inventory.
+	 */
+	public static final int TARGET_BUY_INVENTORY = 2;
+
 	/**
 	 * Loads the trading registry from the tablist in the given stream, sourcing Items from the given items registry.
 	 * 
@@ -65,6 +80,14 @@ public class TradingRegistry
 					throw new TabListReader.TabListException("There must be at least one trade offered: \"" + _name + "\"");
 				}
 				
+				// Verify that there is no overlap in buy/sell orders.
+				Set<Item> overlap = new HashSet<>(_buyOffers.keySet());
+				overlap.retainAll(_sellOffers.keySet());
+				if (!overlap.isEmpty())
+				{
+					throw new TabListReader.TabListException("Buy and sell orders cannot overlap: \"" + _name + "\"");
+				}
+				
 				// We also want to determine a target inventory level for each item we buy or sell.  We will use a basic
 				// rule where we try to craft or buy more as long as the inventory a villager has is below this target.
 				// If the level is greater than or equal to the target, no crafting will be attempted and buy orders
@@ -78,7 +101,7 @@ public class TradingRegistry
 					{
 						Item item = input.getKey();
 						int requiredNumber = input.getValue();
-						int targetNumber = 2 * requiredNumber;
+						int targetNumber = TARGET_CRAFT_INPUT_MULTIPLIER * requiredNumber;
 						int existing = targetInventory.getOrDefault(item, 0);
 						int updated = Math.max(existing, targetNumber);
 						targetInventory.put(item, updated);
@@ -87,11 +110,20 @@ public class TradingRegistry
 					{
 						Item item = input.getKey();
 						int requiredNumber = input.getValue();
-						int targetNumber = 2 * requiredNumber;
+						int targetNumber = TARGET_CRAFT_OUTPUT_MULTIPLIER * requiredNumber;
 						int existing = targetInventory.getOrDefault(item, 0);
 						int updated = Math.max(existing, targetNumber);
 						targetInventory.put(item, updated);
 					}
+				}
+				
+				// We also now include additional buy offers for food so work those into the target inventory.
+				for (Item buy : _buyOffers.keySet())
+				{
+					int targetNumber = TARGET_BUY_INVENTORY;
+					int existing = targetInventory.getOrDefault(buy, 0);
+					int updated = Math.max(existing, targetNumber);
+					targetInventory.put(buy, updated);
 				}
 				
 				Profession profession = new Profession(_id
