@@ -605,6 +605,7 @@ public class TestEngineCreatures
 				throw new AssertionError();
 			}
 		}, null, null);
+		creaturesById = _resetNextActionCooldown(creaturesById);
 		creaturesById = _runGroup(context
 			, List.of(player)
 			, creaturesById
@@ -618,6 +619,7 @@ public class TestEngineCreatures
 		// Run another tick to see the mother receive this request and spawn the offspring.
 		CreatureEntity[] out = new CreatureEntity[1];
 		context = _updateContextWithCreatures(context, creaturesById.values(), null, out, idAssigner);
+		creaturesById = _resetNextActionCooldown(creaturesById);
 		creaturesById = _runGroup(context
 			, List.of()
 			, creaturesById
@@ -1341,6 +1343,22 @@ public class TestEngineCreatures
 		}
 		return updated;
 	}
+
+	private static Map<Integer, CreatureEntity> _resetNextActionCooldown(Map<Integer, CreatureEntity> creaturesById)
+	{
+		// We just want to set the next action millis back to 0L for all of these creatures.
+		Map<Integer, CreatureEntity> updated = new HashMap<>();
+		for (Map.Entry<Integer, CreatureEntity> ent : creaturesById.entrySet())
+		{
+			CreatureEntity previous = ent.getValue();
+			MutableCreature mutable = MutableCreature.existing(previous);
+			mutable.nextActionMillis = 0L;
+			CreatureEntity changed = mutable.freeze();
+			updated.put(ent.getKey(), changed);
+		}
+		return updated;
+	}
+
 
 	private static class _Events implements TickProcessingContext.IEventSink
 	{

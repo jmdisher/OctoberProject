@@ -64,7 +64,6 @@ public class ExtensionHostileRanged implements EntityType.IExtension
 		// We don't have an objective measurement of time but the tick rate is considered constant within a server instance so we will estimate time passed.
 		if ((null != creature.movementPlan)
 			&& (CreatureEntity.NO_TARGET_ENTITY_ID != creature.movementPlan.targetEntityId())
-			&& (creature.nextActionMillis <= context.currentTickTimeMillis)
 		)
 		{
 			// We are tracking a target so see if they have moved (since we would need to clear our existing targets and
@@ -125,8 +124,6 @@ public class ExtensionHostileRanged implements EntityType.IExtension
 					// There is something in the way.
 					isDone = false;
 				}
-				// Since we at least tried to find a valid attack, put us on attack cooldown.
-				creature.nextActionMillis = context.currentTickTimeMillis + creature.newType.actionCooldownMillis();
 			}
 			else
 			{

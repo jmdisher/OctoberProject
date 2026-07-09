@@ -129,7 +129,8 @@ public class CreatureLogic
 	}
 
 	/**
-	 * Called by CreatureProcessor at the beginning of each tick for each creature so that they can take special
+	 * Called by CreatureProcessor on each creature in each tick, after any externally-originating actions have been run
+	 * but before any movement/standing-related actions are synthesized and run to allow the creature to take special
 	 * actions.
 	 * This includes despawning if hostile in a peaceful world or if the mob is a despawning type and is idle.
 	 * Normally, however, it involves finding a target and/or creating/updating a movement plan.
@@ -147,14 +148,29 @@ public class CreatureLogic
 	{
 		EntityType creatureType = mutable.getType();
 		
-		boolean isDone;
-		if (creatureType.extension().shouldDespawn(mutable, context))
+		// We will only consider special actions or despawning if we are no longer on cooldown.
+		boolean isDone = false;
+		if (mutable.nextActionMillis <= context.currentTickTimeMillis)
 		{
-			// This counts as being "done" since we should skip any walking.
-			mutable.setHealth((byte)0);
-			isDone = true;
+			EntityType.IExtension extension = creatureType.extension();
+			if (extension.shouldDespawn(mutable, context))
+			{
+				// This counts as being "done" since we should skip any walking.
+				mutable.setHealth((byte)0);
+				isDone = true;
+			}
+			else
+			{
+				isDone = extension.didTakeSpecialAction(mutable, context, entityCollection);
+				
+				// Whether we did something or not, we want to go onto cooldown.
+				mutable.nextActionMillis = context.currentTickTimeMillis + creatureType.actionCooldownMillis();
+			}
 		}
-		else
+		
+		// If we didn't do anything special, we will update our movement plan, potentially creating a new one (only
+		// worth doing if we didn't take an action since we skip movement actions if we return true from here).
+		if (!isDone)
 		{
 			// We want to update the state of the general movement plan before taking any other special action (which may update it again).
 			if (null != mutable.movementPlan)
@@ -169,8 +185,6 @@ public class CreatureLogic
 				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), creatureType.volume());
 				mutable.movementPlan = _makeMovementPlan(context, blockKindLookup, entityCollection, mutable);
 			}
-			
-			isDone = creatureType.extension().didTakeSpecialAction(mutable, context, entityCollection);
 		}
 		return isDone;
 	}

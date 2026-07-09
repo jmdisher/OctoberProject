@@ -203,27 +203,22 @@ public class ExtensionVillager implements EntityType.IExtension
 		if (!didTakeAction)
 		{
 			// See if we can craft something.
-			if (creature.nextActionMillis <= context.currentTickTimeMillis)
+			TradingRegistry.Profession profession = data.profession;
+			Map<Item, Integer> inventory = data.inventory;
+			
+			// Check the profession's crafting recipes and see if we can and should complete any of them (we will only choose one).
+			TradingRegistry.TradeCraft chosenCraft = _findCraftToRun(profession, inventory);
+			if (null != chosenCraft)
 			{
-				TradingRegistry.Profession profession = data.profession;
-				Map<Item, Integer> inventory = data.inventory;
-				
-				// Check the profession's crafting recipes and see if we can and should complete any of them (we will only choose one).
-				TradingRegistry.TradeCraft chosenCraft = _findCraftToRun(profession, inventory);
-				if (null != chosenCraft)
-				{
-					inventory = _applyCraftToInventory(chosenCraft, inventory);
-				}
-				
-				// Whether we chose something or not, we want to update our timeout.
-				creature.nextActionMillis = context.currentTickTimeMillis + creature.newType.actionCooldownMillis();
-				creature.newExtendedData = new Data(profession
-					, inventory
-					, data.itemToPurchase
-					, data.breeding
-				);
-				didTakeAction = (null != chosenCraft);
+				inventory = _applyCraftToInventory(chosenCraft, inventory);
 			}
+			
+			creature.newExtendedData = new Data(profession
+				, inventory
+				, data.itemToPurchase
+				, data.breeding
+			);
+			didTakeAction = (null != chosenCraft);
 		}
 		
 		if (!didTakeAction)
@@ -716,7 +711,11 @@ public class ExtensionVillager implements EntityType.IExtension
 					// This is a villager so see if they are selling any of the objects we need and if they have them in stock.
 					Data data = (Data)entity.extendedData();
 					Set<Item> otherInventoryItems = data.inventory.keySet();
-					Set<Item> otherSales = data.profession.sellOffers().keySet();
+					// If this entity is new, it might not have a profession yet.
+					Set<Item> otherSales = (null != data.profession)
+						? data.profession.sellOffers().keySet()
+						: Set.of()
+					;
 					for (Item item : otherSales)
 					{
 						if (itemsWeCouldRequest.contains(item) && otherInventoryItems.contains(item))

@@ -299,9 +299,9 @@ public class TestVillagerActions
 	}
 
 	@Test
-	public void craftAndCooldown()
+	public void craft()
 	{
-		// Show that we will craft a required object so long as we aren't on cooldown.
+		// Show that we will craft a required object (we rely on CreatureLogic to impose any kind of common cooldown logic).
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 5.0f, 5.0f), 1000L));
 		ExtensionVillager extension = (ExtensionVillager)mutable.getType().extension();
 		
@@ -317,15 +317,6 @@ public class TestVillagerActions
 		// This should fail when still on cooldown.
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(1L)
-			.finish()
-		;
-		Assert.assertFalse(extension.didTakeSpecialAction(mutable, context, null));
-		Assert.assertEquals(1, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(STONE_HATCHET).intValue());
-		Assert.assertEquals(5, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(SAPLING).intValue());
-		
-		// This should succeed after time has passed.
-		context = ContextBuilder.build()
-			.tick(2L)
 			.finish()
 		;
 		Assert.assertTrue(extension.didTakeSpecialAction(mutable, context, null));

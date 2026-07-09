@@ -3136,11 +3136,31 @@ public class TestTickRunner
 		);
 		runner.start();
 		
-		// In the first tick, the forester should find the target and send the trade request.
+		// In the first tick, the forester should find the target but won't be able to send the trade request until action cooldown.
 		runner.startNextTick();
 		TickSnapshot snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(0, ((ExtensionVillager.Data)snapshot.creatures().get(foresterId).completed().extendedData()).inventory().size());
+		Assert.assertEquals(10020L, snapshot.creatures().get(foresterId).completed().ephemeral().nextActionMillis());
 		Assert.assertEquals(1, ((ExtensionVillager.Data)snapshot.creatures().get(toolSmithId).completed().extendedData()).inventory().size());
+		Assert.assertEquals(10020L, snapshot.creatures().get(toolSmithId).completed().ephemeral().nextActionMillis());
+		
+		// Wait for the cooldown to expire, verifying that nothing changes.
+		long readyTickNumber = snapshot.tickNumber() + ((villagerType.actionCooldownMillis() + MILLIS_PER_TICK - 1L) / MILLIS_PER_TICK);
+		while (snapshot.tickNumber() < (readyTickNumber - 1L))
+		{
+			runner.startNextTick();
+			snapshot = runner.waitForPreviousTick();
+			Assert.assertEquals(0, ((ExtensionVillager.Data)snapshot.creatures().get(foresterId).completed().extendedData()).inventory().size());
+			Assert.assertEquals(1, ((ExtensionVillager.Data)snapshot.creatures().get(toolSmithId).completed().extendedData()).inventory().size());
+		}
+		
+		// After the cooldown has run, the forester will send the trade request.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0, ((ExtensionVillager.Data)snapshot.creatures().get(foresterId).completed().extendedData()).inventory().size());
+		Assert.assertEquals(20020L, snapshot.creatures().get(foresterId).completed().ephemeral().nextActionMillis());
+		Assert.assertEquals(1, ((ExtensionVillager.Data)snapshot.creatures().get(toolSmithId).completed().extendedData()).inventory().size());
+		Assert.assertEquals(20020L, snapshot.creatures().get(toolSmithId).completed().ephemeral().nextActionMillis());
 		
 		// The tool smith receives the trade request and sends a response.
 		runner.startNextTick();

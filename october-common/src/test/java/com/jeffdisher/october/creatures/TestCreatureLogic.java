@@ -652,23 +652,27 @@ public class TestCreatureLogic
 			, null
 			, null
 		);
+		
+		// The first attempt to attack should fail since we are still out of range.
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
-				, mutableOrc
+			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
+			, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
 		EntityActionSimpleMove<MutableCreature> action = CreatureLogic.planNextAction(context
-				, mutableOrc
-				, 100L
+			, mutableOrc
+			, 100L
 		);
 		// We will try to walk toward them still.
 		Assert.assertNotNull(action);
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
 		Assert.assertEquals(player.location().getBlockLocation(), mutableOrc.movementPlan.targetPreviousLocation().getBlockLocation());
-		Assert.assertEquals(0L, mutableOrc.nextActionMillis);
+		Assert.assertEquals(context.currentTickTimeMillis + ORC.actionCooldownMillis(), mutableOrc.nextActionMillis);
 		
 		// Update the player to be close enough.
 		Assert.assertTrue(action.applyChange(context, mutableOrc));
+		// Also, update our next action millis so we can try.
+		mutableOrc.nextActionMillis = context.currentTickTimeMillis;
 		
 		// Now, allow it to perform the attack.
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
