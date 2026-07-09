@@ -574,6 +574,37 @@ public class TestVillagerActions
 		Assert.assertFalse(data.breeding().inLoveMode());
 	}
 
+	@Test
+	public void decayWhenNotBusy()
+	{
+		// Show that a villager will decay one of its crafting outputs, if high enough in quantity, and if they have nothing else to do.
+		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 5.0f, 5.0f), 1000L));
+		mutable.newExtendedData = ExtensionVillager.test_createData(FORESTER, Map.of(LOG, 10, STICK, 4, SAPLING, 8));
+		
+		// We should decay the log until it reaches our output level, but never touch the stick or sapling.
+		ExtensionVillager extension = (ExtensionVillager) mutable.newType.extension();
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(1L)
+			.finish()
+		;
+		EntityCollection entityCollection = EntityCollection.emptyCollection();
+		
+		Assert.assertTrue(extension.didTakeSpecialAction(mutable, context, entityCollection));
+		Assert.assertEquals(9, ((ExtensionVillager.Data)mutable.newExtendedData).inventory().get(LOG).intValue());
+		Assert.assertEquals(4, ((ExtensionVillager.Data)mutable.newExtendedData).inventory().get(STICK).intValue());
+		Assert.assertEquals(8, ((ExtensionVillager.Data)mutable.newExtendedData).inventory().get(SAPLING).intValue());
+		
+		Assert.assertTrue(extension.didTakeSpecialAction(mutable, context, entityCollection));
+		Assert.assertEquals(8, ((ExtensionVillager.Data)mutable.newExtendedData).inventory().get(LOG).intValue());
+		Assert.assertEquals(4, ((ExtensionVillager.Data)mutable.newExtendedData).inventory().get(STICK).intValue());
+		Assert.assertEquals(8, ((ExtensionVillager.Data)mutable.newExtendedData).inventory().get(SAPLING).intValue());
+		
+		Assert.assertFalse(extension.didTakeSpecialAction(mutable, context, entityCollection));
+		Assert.assertEquals(8, ((ExtensionVillager.Data)mutable.newExtendedData).inventory().get(LOG).intValue());
+		Assert.assertEquals(4, ((ExtensionVillager.Data)mutable.newExtendedData).inventory().get(STICK).intValue());
+		Assert.assertEquals(8, ((ExtensionVillager.Data)mutable.newExtendedData).inventory().get(SAPLING).intValue());
+	}
+
 
 	private static ExtensionVillager.Data _emptyData(TradingRegistry.Profession profession)
 	{

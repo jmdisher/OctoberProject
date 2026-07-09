@@ -206,6 +206,12 @@ public class ExtensionVillager implements EntityType.IExtension
 			didTakeAction = _tryBuySpecialAction(creature, context, entityCollection);
 		}
 		
+		if (!didTakeAction)
+		{
+			// If we have nothing better to do, and our next action cooldown is done, see if we should decay anything we over-produced.
+			didTakeAction = _tryDecaySpecialAction(creature);
+		}
+		
 		return didTakeAction;
 	}
 
@@ -886,6 +892,55 @@ public class ExtensionVillager implements EntityType.IExtension
 					, data.foodValueInStomach
 				);
 			}
+		}
+		return didTakeAction;
+	}
+
+	private boolean _tryDecaySpecialAction(MutableCreature creature)
+	{
+		Data data = (Data) creature.newExtendedData;
+		TradingRegistry.Profession profession = data.profession;
+		Map<Item, Integer> inventory = data.inventory;
+		
+		// Check if we have more than the sale unit of any of our crafting outputs and decay it.
+		// (this is to avoid an economic problem where the villagers would eventually fill and their inventories but,
+		// due to their profit, would also control all the coins - essentially a liquidity crisis)
+		Item toDecay = null;
+		for (TradingRegistry.TradeCraft craft : profession.crafts())
+		{
+			for (Map.Entry<Item, Integer> craftOutput : craft.outputs().entrySet())
+			{
+				Item item = craftOutput.getKey();
+				if (inventory.getOrDefault(item, 0) > craftOutput.getValue())
+				{
+					// We can decay this one.
+					toDecay = item;
+					break;
+				}
+			}
+			if (null != toDecay)
+			{
+				break;
+			}
+		}
+		
+		boolean didTakeAction = false;
+		if (null != toDecay)
+		{
+			Map<Item, Integer> mutable = new HashMap<>(inventory);
+			
+			// Get the existing value, knowing that it must be greater than 1, since there must be at least one output and we we will never decay to 0.
+			int count = inventory.get(toDecay);
+			Assert.assertTrue(count > 1);
+			
+			mutable.put(toDecay, count - 1);
+			creature.newExtendedData = new Data(profession
+				, Collections.unmodifiableMap(mutable)
+				, data.itemToPurchase
+				, data.breeding
+				, data.foodValueInStomach
+			);
+			didTakeAction = true;
 		}
 		return didTakeAction;
 	}
