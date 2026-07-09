@@ -320,7 +320,8 @@ public class TestVillagerActions
 			.tick(1L)
 			.finish()
 		;
-		Assert.assertTrue(extension.didTakeSpecialAction(mutable, context, null));
+		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(), Map.of(mutable.getId(), mutable.freeze()));
+		Assert.assertTrue(extension.didTakeSpecialAction(mutable, context, entityCollection));
 		Assert.assertEquals(0, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().getOrDefault(STONE_HATCHET, 0).intValue());
 		Assert.assertEquals(1, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(SAPLING).intValue());
 		Assert.assertEquals(4, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(STICK).intValue());
@@ -470,6 +471,107 @@ public class TestVillagerActions
 		Assert.assertFalse(extension.didTakeSpecialAction(toolMutable, context, entityCollection));
 		Assert.assertTrue(extension.didTakeSpecialAction(mutable, context, entityCollection));
 		Assert.assertEquals(new EntityLocation(5.75f, 5.75f, 5.0f), out_spawn[0]);
+	}
+
+	@Test
+	public void checkEatingToBreed()
+	{
+		// Show that an entity will eat food in its inventory to enter love mode if not crowded.
+		Item bread = ENV.items.getItemById("op.bread");
+		MutableCreature noFoodMutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(6.0f, 6.0f, 5.0f), 1000L));
+		noFoodMutable.newExtendedData = new ExtensionVillager.Data(TOOL_SMITH
+			, Map.of()
+			, null
+			, new CommonBreedingLogic.Data(false, null, 0L)
+			, 0
+		);
+		MutableCreature someFoodMutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 6.0f, 5.0f), 1000L));
+		someFoodMutable.newExtendedData = new ExtensionVillager.Data(TOOL_SMITH
+			, Map.of(bread, 1
+				, APPLE, 2
+			)
+			, null
+			, new CommonBreedingLogic.Data(false, null, 0L)
+			, 0
+		);
+		MutableCreature muchFoodMutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(6.0f, 5.0f, 5.0f), 1000L));
+		muchFoodMutable.newExtendedData = new ExtensionVillager.Data(TOOL_SMITH
+			, Map.of(bread, 9
+				, APPLE, 8
+			)
+			, null
+			, new CommonBreedingLogic.Data(false, null, 0L)
+			, 0
+		);
+		
+		ExtensionVillager extension = (ExtensionVillager) noFoodMutable.newType.extension();
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(1L)
+			.finish()
+		;
+		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(), Map.of(-1, noFoodMutable.freeze()
+			, -2, someFoodMutable.freeze()
+			, -3, muchFoodMutable.freeze()
+		));
+		
+		// Show how these will all handle the situation when considering breeding.
+		Assert.assertFalse(extension.didTakeSpecialAction(noFoodMutable, context, entityCollection));
+		Assert.assertTrue(extension.didTakeSpecialAction(someFoodMutable, context, entityCollection));
+		Assert.assertTrue(extension.didTakeSpecialAction(muchFoodMutable, context, entityCollection));
+		
+		ExtensionVillager.Data noFood = (ExtensionVillager.Data)noFoodMutable.newExtendedData;
+		Assert.assertEquals(0, noFood.inventory().size());
+		Assert.assertEquals(0, noFood.foodValueInStomach());
+		Assert.assertFalse(noFood.breeding().inLoveMode());
+		ExtensionVillager.Data someFood = (ExtensionVillager.Data)someFoodMutable.newExtendedData;
+		Assert.assertEquals(0, someFood.inventory().size());
+		Assert.assertEquals(40, someFood.foodValueInStomach());
+		Assert.assertFalse(someFood.breeding().inLoveMode());
+		ExtensionVillager.Data muchFood = (ExtensionVillager.Data)muchFoodMutable.newExtendedData;
+		Assert.assertEquals(1, muchFood.inventory().size());
+		Assert.assertEquals(0, muchFood.foodValueInStomach());
+		Assert.assertTrue(muchFood.breeding().inLoveMode());
+	}
+
+	@Test
+	public void noBreedingIfCrowded()
+	{
+		// Show that an entity will not begin to eat anything in its inventory if there are too many villagers and babies around them.
+		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 6.0f, 5.0f), 1000L));
+		mutable.newExtendedData = new ExtensionVillager.Data(TOOL_SMITH
+			, Map.of(APPLE, 2
+			)
+			, null
+			, new CommonBreedingLogic.Data(false, null, 0L)
+			, 10
+		);
+		EntityType babyType = ENV.creatures.getTypeById("op.villager_baby");
+		CreatureEntity baby = CreatureEntity.create(-1, babyType, new EntityLocation(6.0f, 6.0f, 5.0f), 1000L);
+		
+		ExtensionVillager extension = (ExtensionVillager) mutable.newType.extension();
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(1L)
+			.finish()
+		;
+		// (note that we will just cheat the entity collection with redundant entries since it only counds)
+		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(), Map.of(-1, mutable.freeze()
+			, -2, mutable.freeze()
+			, -3, mutable.freeze()
+			, -4, baby
+			, -5, baby
+			, -6, mutable.freeze()
+			, -7, mutable.freeze()
+			, -8, baby
+			, -9, baby
+			, -10, mutable.freeze()
+		));
+		
+		Assert.assertFalse(extension.didTakeSpecialAction(mutable, context, entityCollection));
+		
+		ExtensionVillager.Data data = (ExtensionVillager.Data)mutable.newExtendedData;
+		Assert.assertEquals(1, data.inventory().size());
+		Assert.assertEquals(10, data.foodValueInStomach());
+		Assert.assertFalse(data.breeding().inLoveMode());
 	}
 
 

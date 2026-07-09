@@ -30,6 +30,17 @@ import com.jeffdisher.october.utils.Assert;
 
 public class ExtensionVillager implements EntityType.IExtension
 {
+	/**
+	 * When deciding whether or not to attempt entering love mode, this is the village size which a villager will
+	 * consider "full" and not needing any more.
+	 */
+	public static final int MINIMUM_VILLAGE_SIZE = 10;
+	/**
+	 * When a villager is trying to enter love mode, it needs to eat food.  This is the food value threshold required to
+	 * trigger love mode.
+	 */
+	public static final int FOOD_VALUE_TO_LOVE_MODE = 200;
+
 	private final CommonBreedingLogic _breeding;
 
 	public ExtensionVillager()
@@ -688,6 +699,11 @@ public class ExtensionVillager implements EntityType.IExtension
 		, EntityCollection entityCollection
 	)
 	{
+		// Breeding logic requires a few checks:
+		// 1) Default checks from the common breeding idioms around spawning and potentially impregnation.
+		// 2) If not in love mode but able to enter love mode and the villager population in view is low, try to eat something.
+		
+		// Check the usual idioms.
 		CommonBreedingLogic.Data ifChanged = _breeding.spawnOffspring(context, creature);
 		if (null == ifChanged)
 		{
@@ -704,6 +720,81 @@ public class ExtensionVillager implements EntityType.IExtension
 			);
 		}
 		boolean didTakeAction = (null != ifChanged);
+		
+		if (!didTakeAction)
+		{
+			// Check if we need to apply some villager-specific logic here to check local population and try to eat.
+			if (_breeding.canEnterLoveMode(MinimalEntity.fromCreature(creature.freeze()), context.currentTickTimeMillis))
+			{
+				Environment env = Environment.getShared();
+				EntityType type = creature.newType;
+				EntityType offspringType = env.creatures.getOffspringType(type);
+				int[] outVillagerCount = new int[1];
+				entityCollection.walkCreaturesInViewDistance(creature, (CreatureEntity entity) -> {
+					// We just want to count the villagers (babies and adults).
+					if ((type == entity.type()) || (offspringType == entity.type()))
+					{
+						outVillagerCount[0] += 1;
+					}
+				});
+				
+				// If the population is too low, try to eat.
+				if (outVillagerCount[0] < MINIMUM_VILLAGE_SIZE)
+				{
+					// If we have any food in our inventory, eat until we enter love mode or run out.
+					Data data = (Data) creature.newExtendedData;
+					Map<Item, Integer> inventory = data.inventory;
+					Map<Item, Integer> newInventory = new HashMap<>();
+					
+					int foodValueInStomach = data.foodValueInStomach;
+					CommonBreedingLogic.Data updated = null;
+					for (Map.Entry<Item, Integer> elt : inventory.entrySet())
+					{
+						Item key = elt.getKey();
+						int itemCount = elt.getValue();
+						if (null == updated)
+						{
+							int foodValue = env.foods.foodValue(key);
+							if (foodValue > 0)
+							{
+								while ((itemCount > 0) && (null == updated))
+								{
+									foodValueInStomach += foodValue;
+									itemCount -= 1;
+									
+									if (foodValueInStomach >= FOOD_VALUE_TO_LOVE_MODE)
+									{
+										foodValueInStomach -= FOOD_VALUE_TO_LOVE_MODE;
+										updated = _breeding.enterLoveMode(creature, context.currentTickTimeMillis);
+										Assert.assertTrue(null != updated);
+									}
+								}
+							}
+						}
+						if (itemCount > 0)
+						{
+							newInventory.put(key, itemCount);
+						}
+					}
+					
+					// If we changed anything, write this back.
+					if ((null != updated) || (foodValueInStomach > data.foodValueInStomach))
+					{
+						CommonBreedingLogic.Data breeding = (null != updated)
+							? updated
+							: data.breeding
+						;
+						creature.newExtendedData = new Data(data.profession
+							, Collections.unmodifiableMap(newInventory)
+							, data.itemToPurchase
+							, breeding
+							, foodValueInStomach
+						);
+						didTakeAction = true;
+					}
+				}
+			}
+		}
 		return didTakeAction;
 	}
 
