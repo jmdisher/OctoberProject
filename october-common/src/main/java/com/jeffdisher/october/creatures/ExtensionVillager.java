@@ -48,6 +48,7 @@ public class ExtensionVillager implements EntityType.IExtension
 			, Map.of()
 			, null
 			, _breeding.buildDefault()
+			, 0
 		);
 	}
 
@@ -81,10 +82,14 @@ public class ExtensionVillager implements EntityType.IExtension
 		
 		// We do store the breeding data, but that is a common external type.
 		CommonBreedingLogic.Data breeding = _breeding.readData(buffer, gameTimeMillis);
+		
+		int foodValueInStomach = buffer.getInt();
+		
 		return new Data(profession
 			, Collections.unmodifiableMap(map)
 			, itemToPurchase
 			, breeding
+			, foodValueInStomach
 		);
 	}
 
@@ -112,6 +117,8 @@ public class ExtensionVillager implements EntityType.IExtension
 		
 		// We do store the common breeding data, though.
 		_breeding.writeData(buffer, safe.breeding, gameTimeMillis);
+		
+		buffer.putInt(safe.foodValueInStomach);
 	}
 
 	@Override
@@ -203,6 +210,7 @@ public class ExtensionVillager implements EntityType.IExtension
 				, data.inventory
 				, data.itemToPurchase
 				, dataIfChanged
+				, data.foodValueInStomach
 			);
 			didBecomePregnant = true;
 		}
@@ -316,6 +324,7 @@ public class ExtensionVillager implements EntityType.IExtension
 				, Collections.unmodifiableMap(newInventory)
 				, data.itemToPurchase
 				, data.breeding
+				, data.foodValueInStomach
 			);
 			
 			// Send back the coins.
@@ -369,6 +378,7 @@ public class ExtensionVillager implements EntityType.IExtension
 				, Collections.unmodifiableMap(newInventory)
 				, data.itemToPurchase
 				, data.breeding
+				, data.foodValueInStomach
 			);
 			
 			// Package up what we should send them.
@@ -420,6 +430,7 @@ public class ExtensionVillager implements EntityType.IExtension
 			, Collections.unmodifiableMap(newMap)
 			, data.itemToPurchase
 			, data.breeding
+			, data.foodValueInStomach
 		);
 	}
 
@@ -437,6 +448,7 @@ public class ExtensionVillager implements EntityType.IExtension
 			, inventory
 			, null
 			, new CommonBreedingLogic(null).buildDefault()
+			, 0
 		);
 	}
 
@@ -639,6 +651,7 @@ public class ExtensionVillager implements EntityType.IExtension
 					, safe.inventory
 					, itemToBuy[0]
 					, safe.breeding
+					, safe.foodValueInStomach
 				);
 			}
 			target = out[0];
@@ -663,6 +676,7 @@ public class ExtensionVillager implements EntityType.IExtension
 				, data.inventory
 				, data.itemToPurchase
 				, data.breeding
+				, data.foodValueInStomach
 			);
 			didTakeAction = true;
 		}
@@ -686,6 +700,7 @@ public class ExtensionVillager implements EntityType.IExtension
 				, data.inventory
 				, data.itemToPurchase
 				, ifChanged
+				, data.foodValueInStomach
 			);
 		}
 		boolean didTakeAction = (null != ifChanged);
@@ -709,6 +724,7 @@ public class ExtensionVillager implements EntityType.IExtension
 			, inventory
 			, data.itemToPurchase
 			, data.breeding
+			, data.foodValueInStomach
 		);
 		
 		boolean didTakeAction = (null != chosenCraft);
@@ -765,6 +781,7 @@ public class ExtensionVillager implements EntityType.IExtension
 						, data.inventory
 						, null
 						, data.breeding
+						, data.foodValueInStomach
 					);
 					didTakeAction = true;
 				}
@@ -775,6 +792,7 @@ public class ExtensionVillager implements EntityType.IExtension
 					, data.inventory
 					, null
 					, data.breeding
+					, data.foodValueInStomach
 				);
 			}
 		}
@@ -790,5 +808,8 @@ public class ExtensionVillager implements EntityType.IExtension
 		, Item itemToPurchase
 		// Villagers can breed so we also use embed related data here.
 		, CommonBreedingLogic.Data breeding
+		// When entering love mode, the villager needs to eat and this is that accumulated food value (reduced when love
+		// mode triggered).
+		, int foodValueInStomach
 	) {}
 }

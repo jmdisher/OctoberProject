@@ -312,6 +312,7 @@ public class TestVillagerActions
 			)
 			, null
 			, new CommonBreedingLogic(null).buildDefault()
+			, 0
 		);
 		
 		// This should fail when still on cooldown.
@@ -364,6 +365,7 @@ public class TestVillagerActions
 			, Map.of(SAPLING, 5)
 			, STONE_HATCHET
 			, new CommonBreedingLogic(null).buildDefault()
+			, 0
 		);
 		
 		// We should see the action sent to the tool smith and the purchase plan disappear.
@@ -394,12 +396,14 @@ public class TestVillagerActions
 			, Map.of()
 			, null
 			, new CommonBreedingLogic.Data(true, null, 0L)
+			, 0
 		);
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-2, VILLAGER, new EntityLocation(5.5f, 5.5f, 5.0f), 1000L));
 		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER
 			, Map.of()
 			, null
 			, new CommonBreedingLogic.Data(true, null, 0L)
+			, 0
 		);
 		
 		// Show that they both target each other.
