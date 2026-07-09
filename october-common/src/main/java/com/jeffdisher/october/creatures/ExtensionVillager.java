@@ -168,117 +168,24 @@ public class ExtensionVillager implements EntityType.IExtension
 	@Override
 	public boolean didTakeSpecialAction(MutableCreature creature, TickProcessingContext context, EntityCollection entityCollection)
 	{
-		// First, try any common breeding actions.
-		CommonBreedingLogic.Data ifChanged = _breeding.spawnOffspring(context, creature);
-		if (null == ifChanged)
-		{
-			ifChanged = _breeding.impregnateTarget(context, creature);
-		}
-		Data data = (Data) creature.newExtendedData;
-		if (null != ifChanged)
-		{
-			creature.newExtendedData = new Data(data.profession
-				, data.inventory
-				, data.itemToPurchase
-				, ifChanged
-			);
-		}
-		boolean didTakeAction = (null != ifChanged);
+		boolean didTakeAction = _handleLateBoundProfession(creature, entityCollection);
 		
-		// Handle that special start-up case where the profession is selected late.
-		if (null == data.profession)
+		if (!didTakeAction)
 		{
-			// We can't have taken breeding actions if we have no profession.
-			Assert.assertTrue(!didTakeAction);
-			
-			TradingRegistry.Profession choice = _selectDefaultProfession(entityCollection, creature.newType, creature.newLocation);
-			creature.newExtendedData = new Data(choice
-				, data.inventory
-				, data.itemToPurchase
-				, data.breeding
-			);
-			didTakeAction = true;
+			// Try any breeding-related actions.
+			didTakeAction = _tryBreedingSpecialAction(creature, context, entityCollection);
 		}
 		
 		if (!didTakeAction)
 		{
 			// See if we can craft something.
-			TradingRegistry.Profession profession = data.profession;
-			Map<Item, Integer> inventory = data.inventory;
-			
-			// Check the profession's crafting recipes and see if we can and should complete any of them (we will only choose one).
-			TradingRegistry.TradeCraft chosenCraft = _findCraftToRun(profession, inventory);
-			if (null != chosenCraft)
-			{
-				inventory = _applyCraftToInventory(chosenCraft, inventory);
-			}
-			
-			creature.newExtendedData = new Data(profession
-				, inventory
-				, data.itemToPurchase
-				, data.breeding
-			);
-			didTakeAction = (null != chosenCraft);
+			didTakeAction = _tryCraftSpecialAction(creature);
 		}
 		
 		if (!didTakeAction)
 		{
 			// See if we wanted to buy something from another villager.
-			if (null != data.itemToPurchase)
-			{
-				// If they are no longer our target, drop the purchase plan.
-				int targetId = creature.movementPlan.targetEntityId();
-				if (CreatureEntity.NO_TARGET_ENTITY_ID != targetId)
-				{
-					// If we are close enough to send the purchase request, do that and clear the purchase plan.
-					CreatureEntity target = entityCollection.getCreatureById(targetId);
-					EntityType thisType = creature.getType();
-					
-					EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), thisType.volume());
-					float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, target.location(), target.type().volume());
-					float actionDistance = thisType.actionDistance();
-					
-					if (distance <= actionDistance)
-					{
-						// Send the trade request.
-						Data other = (Data) target.extendedData();
-						int coins = 0;
-						for (Map.Entry<Item, Integer> elt : other.profession.sellOffers().entrySet())
-						{
-							if (data.itemToPurchase == elt.getKey())
-							{
-								coins = elt.getValue();
-								break;
-							}
-						}
-						// We already decided they could sell us this item.
-						Assert.assertTrue(coins > 0);
-						Item coin = Environment.getShared().items.getItemById("op.coin");
-						ItemSlot sentItems = ItemSlot.fromStack(new Items(coin, coins));
-						EntityActionReceiveTrade action = new EntityActionReceiveTrade(sentItems, data.itemToPurchase, creature.getId());
-						context.newChangeSink.creature(targetId, action);
-						
-						// We can now clear the target and crafting purchase plan.
-						creature.movementPlan = null;
-						// TODO:  Remove this reset of the movement plan once the call into this is split into a different path.
-						creature.nextMovementPlanMillis = context.currentTickTimeMillis + CreatureLogic.MINIMUM_MILLIS_TO_ACTION;
-						creature.newExtendedData = new Data(data.profession
-							, data.inventory
-							, null
-							, data.breeding
-						);
-						didTakeAction = true;
-					}
-				}
-				else
-				{
-					creature.newExtendedData = new Data(data.profession
-						, data.inventory
-						, null
-						, data.breeding
-					);
-				}
-			}
+			didTakeAction = _tryBuySpecialAction(creature, context, entityCollection);
 		}
 		
 		return didTakeAction;
@@ -738,6 +645,140 @@ public class ExtensionVillager implements EntityType.IExtension
 		}
 		
 		return target;
+	}
+
+	private boolean _handleLateBoundProfession(MutableCreature creature, EntityCollection entityCollection)
+	{
+		boolean didTakeAction = false;
+		
+		// Handle that special start-up case where the profession is selected late.
+		Data data = (Data) creature.newExtendedData;
+		if (null == data.profession)
+		{
+			// We can't have taken breeding actions if we have no profession.
+			Assert.assertTrue(!didTakeAction);
+			
+			TradingRegistry.Profession choice = _selectDefaultProfession(entityCollection, creature.newType, creature.newLocation);
+			creature.newExtendedData = new Data(choice
+				, data.inventory
+				, data.itemToPurchase
+				, data.breeding
+			);
+			didTakeAction = true;
+		}
+		return didTakeAction;
+	}
+
+	private boolean _tryBreedingSpecialAction(MutableCreature creature
+		, TickProcessingContext context
+		, EntityCollection entityCollection
+	)
+	{
+		CommonBreedingLogic.Data ifChanged = _breeding.spawnOffspring(context, creature);
+		if (null == ifChanged)
+		{
+			ifChanged = _breeding.impregnateTarget(context, creature);
+		}
+		if (null != ifChanged)
+		{
+			Data data = (Data) creature.newExtendedData;
+			creature.newExtendedData = new Data(data.profession
+				, data.inventory
+				, data.itemToPurchase
+				, ifChanged
+			);
+		}
+		boolean didTakeAction = (null != ifChanged);
+		return didTakeAction;
+	}
+
+	private boolean _tryCraftSpecialAction(MutableCreature creature)
+	{
+		Data data = (Data) creature.newExtendedData;
+		TradingRegistry.Profession profession = data.profession;
+		Map<Item, Integer> inventory = data.inventory;
+		
+		// Check the profession's crafting recipes and see if we can and should complete any of them (we will only choose one).
+		TradingRegistry.TradeCraft chosenCraft = _findCraftToRun(profession, inventory);
+		if (null != chosenCraft)
+		{
+			inventory = _applyCraftToInventory(chosenCraft, inventory);
+		}
+		
+		creature.newExtendedData = new Data(profession
+			, inventory
+			, data.itemToPurchase
+			, data.breeding
+		);
+		
+		boolean didTakeAction = (null != chosenCraft);
+		return didTakeAction;
+	}
+
+	private boolean _tryBuySpecialAction(MutableCreature creature
+		, TickProcessingContext context
+		, EntityCollection entityCollection
+	)
+	{
+		boolean didTakeAction = false;
+		
+		Data data = (Data) creature.newExtendedData;
+		if (null != data.itemToPurchase)
+		{
+			// If they are no longer our target, drop the purchase plan.
+			int targetId = creature.movementPlan.targetEntityId();
+			if (CreatureEntity.NO_TARGET_ENTITY_ID != targetId)
+			{
+				// If we are close enough to send the purchase request, do that and clear the purchase plan.
+				CreatureEntity target = entityCollection.getCreatureById(targetId);
+				EntityType thisType = creature.getType();
+				
+				EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), thisType.volume());
+				float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, target.location(), target.type().volume());
+				float actionDistance = thisType.actionDistance();
+				
+				if (distance <= actionDistance)
+				{
+					// Send the trade request.
+					Data other = (Data) target.extendedData();
+					int coins = 0;
+					for (Map.Entry<Item, Integer> elt : other.profession.sellOffers().entrySet())
+					{
+						if (data.itemToPurchase == elt.getKey())
+						{
+							coins = elt.getValue();
+							break;
+						}
+					}
+					// We already decided they could sell us this item.
+					Assert.assertTrue(coins > 0);
+					Item coin = Environment.getShared().items.getItemById("op.coin");
+					ItemSlot sentItems = ItemSlot.fromStack(new Items(coin, coins));
+					EntityActionReceiveTrade action = new EntityActionReceiveTrade(sentItems, data.itemToPurchase, creature.getId());
+					context.newChangeSink.creature(targetId, action);
+					
+					// We can now clear the target and crafting purchase plan.
+					creature.movementPlan = null;
+					// TODO:  Remove this reset of the movement plan once the call into this is split into a different path.
+					creature.nextMovementPlanMillis = context.currentTickTimeMillis + CreatureLogic.MINIMUM_MILLIS_TO_ACTION;
+					creature.newExtendedData = new Data(data.profession
+						, data.inventory
+						, null
+						, data.breeding
+					);
+					didTakeAction = true;
+				}
+			}
+			else
+			{
+				creature.newExtendedData = new Data(data.profession
+					, data.inventory
+					, null
+					, data.breeding
+				);
+			}
+		}
+		return didTakeAction;
 	}
 
 
