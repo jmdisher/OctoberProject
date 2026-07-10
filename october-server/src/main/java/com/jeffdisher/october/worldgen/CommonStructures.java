@@ -62,6 +62,7 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 	public final Structure copperNode;
 	public final Structure ironNode;
 	public final Structure diamondNode;
+	public final Structure villagerHouse;
 
 	private final Environment _env;
 	private final Map<String, NonStackableItem> _namedItems;
@@ -87,6 +88,7 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 		this.copperNode = _loadStructureResource(classLoader, loader, "copper_node.structure");
 		this.ironNode = _loadStructureResource(classLoader, loader, "iron_node.structure");
 		this.diamondNode = _loadStructureResource(classLoader, loader, "diamond_node.structure");
+		this.villagerHouse = _loadStructureResource(classLoader, loader, "villager_house.structure");
 	}
 
 	private String _mode;

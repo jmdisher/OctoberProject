@@ -479,6 +479,21 @@ public class TestBasicWorldGenerator
 		Assert.assertEquals(0, cuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(4, 0, 0)));
 	}
 
+	@Test
+	public void villagerHouse() throws Throwable
+	{
+		// Show that a villager house is generated here.
+		int seed = 42;
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
+		
+		CuboidAddress highAddress = CuboidAddress.fromInt(-3, 1, 0);
+		CuboidData highData = generator.generateCuboid(null, highAddress, 0L).cuboid();
+		
+		// Verify that the villager house was generated.
+		AbsoluteLocation root = new AbsoluteLocation(-73, 40, 8);
+		Assert.assertEquals(ENV.items.getItemById("op.stone_brick").number(), highData.getData15(AspectRegistry.BLOCK, root.getBlockAddress()));
+	}
+
 
 	private static void _checkBlockTypes(CuboidData data
 		, int stone

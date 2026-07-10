@@ -91,6 +91,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 	public static final int RANDOM_FAUNA_DENOMINATOR = 20;
 	public static final int CAVERN_LIMIT_RADIUS = 7;
 	public static final int RANDOM_CAVERN_DENOMINATOR = 4;
+	public static final int VILLAGE_IN_FIELD_DENOMINATOR = 32;
 
 	private final int _seed;
 	private final Block _blockAir;
@@ -110,6 +111,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 	private final Structure _ironNode;
 	private final Structure _diamondNode;
 	private final Structure _basicTree;
+	private final Structure _villagerHouse;
 	private final StructureRegistry _structures;
 
 	/**
@@ -141,6 +143,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		_ironNode = worldGenConfig.commonStructures.ironNode;
 		_diamondNode = worldGenConfig.commonStructures.diamondNode;
 		_basicTree = worldGenConfig.commonStructures.basicTree;
+		_villagerHouse = worldGenConfig.commonStructures.villagerHouse;
 		
 		// We will place the base of the nexus castle at a random location (based directly on seed), 500 blocks from the
 		// world origin.
@@ -377,6 +380,23 @@ public class BasicWorldGenerator implements IWorldGenerator
 							Structure.FollowUp followUp = _basicTree.applyToCuboid(data, rootLocation, FacingDirection.NORTH, airNumber);
 							Assert.assertTrue(followUp.isEmpty());
 						}
+					}
+				}
+				else if (Biomes.FIELD_CODE == biome.code())
+				{
+					// If we are in a field, we will try to generate a village.
+					Random random = new Random(columnSeed);
+					int i = random.nextInt(VILLAGE_IN_FIELD_DENOMINATOR);
+					if (0 == i)
+					{
+						ColumnHeightMap heightMap = heightMaps.fetchHeightMapForCuboidColumn(x, y);
+						int relativeX = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
+						int relativeY = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
+						int topBlockZ = heightMap.getHeight(relativeX, relativeY);
+						AbsoluteLocation rootLocation = new AbsoluteLocation(sideBase.x() + relativeX - 1, sideBase.y() + relativeY - 1, topBlockZ);
+						short replaceAll = -1;
+						Structure.FollowUp followUp = _villagerHouse.applyToCuboid(data, rootLocation, FacingDirection.NORTH, replaceAll);
+						combined = Structure.FollowUp.merge(combined, followUp);
 					}
 				}
 			}

@@ -37,6 +37,8 @@ public class FlatWorldGenerator implements IWorldGenerator
 	public static final AbsoluteLocation PORTAL_SOUTH = new AbsoluteLocation(CommonStructures.TOWER_SOUTH_X, CommonStructures.TOWER_SOUTH_Y, CommonStructures.TOWER_Z);
 	public static final AbsoluteLocation PORTAL_EAST = new AbsoluteLocation(CommonStructures.TOWER_EAST_X, CommonStructures.TOWER_EAST_Y, CommonStructures.TOWER_Z);
 	public static final AbsoluteLocation PORTAL_WEST = new AbsoluteLocation(CommonStructures.TOWER_WEST_X, CommonStructures.TOWER_WEST_Y, CommonStructures.TOWER_Z);
+	public static final AbsoluteLocation NORTH_FACING_VILLAGER_HOUSE = new AbsoluteLocation(50, -10, -1);
+	public static final AbsoluteLocation SOUTH_FACING_VILLAGER_HOUSE = new AbsoluteLocation(50, 10, -1);
 
 	private final Block _airBlock;
 	private final Block _stoneBlock;
@@ -79,6 +81,8 @@ public class FlatWorldGenerator implements IWorldGenerator
 		_structures.register(structures.distanceTower, PORTAL_SOUTH, FacingDirection.SOUTH);
 		_structures.register(structures.distanceTower, PORTAL_EAST, FacingDirection.EAST);
 		_structures.register(structures.distanceTower, PORTAL_WEST, FacingDirection.WEST);
+		_structures.register(structures.villagerHouse, NORTH_FACING_VILLAGER_HOUSE, FacingDirection.NORTH);
+		_structures.register(structures.villagerHouse, SOUTH_FACING_VILLAGER_HOUSE, FacingDirection.SOUTH);
 		
 		// Pre-generate our template cuboids.
 		CuboidData data = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), _stoneBlock);
