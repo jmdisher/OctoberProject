@@ -179,10 +179,11 @@ public class BasicWorldGenerator implements IWorldGenerator
 		_replaceCrustTopAndBottom(heightMaps, data, cuboidZ);
 		
 		// Generate the ore nodes and other structures (including trees).
-		_generateOreNodesAndStructures(subField, heightMaps, address, data);
+		Structure.FollowUp followOne = _generateOreNodesAndStructures(subField, heightMaps, address, data);
 		
 		// Generate any fixed structures.
-		Structure.FollowUp followUp = _structures.generateAllInCuboid(data);
+		Structure.FollowUp followTwo = _structures.generateAllInCuboid(data);
+		Structure.FollowUp followUp = Structure.FollowUp.merge(followOne, followTwo);
 		List<ScheduledMutation> mutations = followUp.overwriteMutations().stream()
 			.map((IMutationBlock mutation) -> new ScheduledMutation(mutation, 0L))
 			.toList()
@@ -319,10 +320,11 @@ public class BasicWorldGenerator implements IWorldGenerator
 	}
 
 
-	private void _generateOreNodesAndStructures(PerColumnRandomSeedField.View subField, LazyColumnHeightMapGrid heightMaps, CuboidAddress address, CuboidData data)
+	private Structure.FollowUp _generateOreNodesAndStructures(PerColumnRandomSeedField.View subField, LazyColumnHeightMapGrid heightMaps, CuboidAddress address, CuboidData data)
 	{
 		// Since the nodes can cross cuboid boundaries, we will consider the 9 chunk columns around this one and apply all generated nodes to this cuboid.
 		// (in the future, we might short-circuit this to avoid cases where the generation isn't possibly here - for now, we always do it to test the code path)
+		Structure.FollowUp combined = Structure.FollowUp.empty();
 		short airNumber = _blockAir.item().number();
 		for (int y = -1; y <= 1; ++y)
 		{
@@ -379,6 +381,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 				}
 			}
 		}
+		return combined;
 	}
 
 	private void _applyOreNodes(CuboidData data, int columnSeed, int relativeBaseX, int relativeBaseY, int tries, int minZ, int maxZ, Structure node)

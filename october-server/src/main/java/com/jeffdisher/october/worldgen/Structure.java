@@ -1,6 +1,7 @@
 package com.jeffdisher.october.worldgen;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -370,6 +371,29 @@ public class Structure
 	public static record FollowUp(List<MutationBlockOverwriteInternal> overwriteMutations
 		, Map<BlockAddress, Long> periodicMutationMillis
 	) {
+		public static FollowUp empty()
+		{
+			return new FollowUp(List.of(), Map.of());
+		}
+		public static FollowUp merge(FollowUp one, FollowUp two)
+		{
+			return one.isEmpty()
+				? two
+				: two.isEmpty()
+					? one
+					: _merge(one, two)
+			;
+		}
+		private static FollowUp _merge(FollowUp one, FollowUp two)
+		{
+			List<MutationBlockOverwriteInternal> overwriteMutations = new ArrayList<>();
+			overwriteMutations.addAll(one.overwriteMutations);
+			overwriteMutations.addAll(two.overwriteMutations);
+			Map<BlockAddress, Long> periodicMutationMillis = new HashMap<>();
+			periodicMutationMillis.putAll(one.periodicMutationMillis);
+			periodicMutationMillis.putAll(two.periodicMutationMillis);
+			return new FollowUp(Collections.unmodifiableList(overwriteMutations), Collections.unmodifiableMap(periodicMutationMillis));
+		}
 		public boolean isEmpty()
 		{
 			return overwriteMutations.isEmpty() && periodicMutationMillis.isEmpty();

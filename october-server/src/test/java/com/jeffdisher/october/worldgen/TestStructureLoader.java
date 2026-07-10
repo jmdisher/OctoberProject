@@ -527,6 +527,26 @@ public class TestStructureLoader
 		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.WEST), westFacing.getData7(AspectRegistry.ORIENTATION, westFacingDoorBase.getRelative(0, 0, 1).getBlockAddress()));
 	}
 
+	@Test
+	public void mergeFollowUp() throws Throwable
+	{
+		List<MutationBlockOverwriteInternal> overwriteMutations1 = List.of(new MutationBlockOverwriteInternal(new AbsoluteLocation(1, 2, 3), DIRT));
+		List<MutationBlockOverwriteInternal> overwriteMutations2 = List.of(new MutationBlockOverwriteInternal(new AbsoluteLocation(4, 5, 6), DIRT));
+		Map<BlockAddress, Long> periodicMutationMillis1 = Map.of(BlockAddress.fromInt(2, 3, 4), 5L);
+		Map<BlockAddress, Long> periodicMutationMillis2 = Map.of(BlockAddress.fromInt(6, 7, 8), 9L);
+		Structure.FollowUp followUp1 = new Structure.FollowUp(overwriteMutations1, periodicMutationMillis1);
+		Structure.FollowUp followUp2 = new Structure.FollowUp(overwriteMutations2, periodicMutationMillis2);
+		Structure.FollowUp empty1 = new Structure.FollowUp(List.of(), Map.of());
+		Structure.FollowUp empty2 = new Structure.FollowUp(List.of(), Map.of());
+		
+		Assert.assertTrue(empty2 == Structure.FollowUp.merge(empty1, empty2));
+		Assert.assertTrue(followUp2 == Structure.FollowUp.merge(empty1, followUp2));
+		Assert.assertTrue(followUp1 == Structure.FollowUp.merge(followUp1, empty2));
+		Structure.FollowUp merged = Structure.FollowUp.merge(followUp1, followUp2);
+		Assert.assertEquals(2, merged.overwriteMutations().size());
+		Assert.assertEquals(2, merged.periodicMutationMillis().size());
+	}
+
 
 	private static StructureLoader _buildDefaultStructureLoader() throws IOException, TabListReader.TabListException
 	{
