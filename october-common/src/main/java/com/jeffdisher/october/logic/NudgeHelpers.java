@@ -175,24 +175,27 @@ public class NudgeHelpers
 		, EntityVolume volume
 	)
 	{
+		// We want nudge both players and creatures.
+		EntityLocation edge = base.getRelative(volume.width(), volume.width(), volume.height());
 		EntityLocation inCentre = SpatialHelpers.getCentreOfRegion(base, volume);
 		float inRadius = volume.width() / 2.0f;
-		entityCollection.findIntersections(env, inCentre, inRadius
-			, (Entity data, EntityLocation centre, float radius) -> {
-				if (check != data)
-				{
-					EntityActionNudge<IMutablePlayerEntity> nudge = _createNudge(inCentre, centre, inRadius);
-					context.newChangeSink.next(data.id(), nudge);
-				}
+		EntityVolume playerVolume = env.creatures.PLAYER.volume();
+		entityCollection.walkAlignedEntityIntersections(base, edge, (Entity entity) -> {
+			if (check != entity)
+			{
+				EntityLocation centre = SpatialHelpers.getCentreOfRegion(entity.location(), playerVolume);
+				EntityActionNudge<IMutablePlayerEntity> nudge = _createNudge(inCentre, centre, inRadius);
+				context.newChangeSink.next(entity.id(), nudge);
 			}
-			, (CreatureEntity data, EntityLocation centre, float radius) -> {
-				if (check != data)
-				{
-					EntityActionNudge<MutableCreature> nudge = _createNudge(inCentre, centre, inRadius);
-					context.newChangeSink.creature(data.id(), nudge);
-				}
+		});
+		entityCollection.walkAlignedCreatureIntersections(base, edge, (CreatureEntity creature) -> {
+			if (check != creature)
+			{
+				EntityLocation centre = SpatialHelpers.getCentreOfRegion(creature.location(), creature.type().volume());
+				EntityActionNudge<MutableCreature> nudge = _createNudge(inCentre, centre, inRadius);
+				context.newChangeSink.creature(creature.id(), nudge);
 			}
-		);
+		});
 	}
 
 	private static <T extends IMutableMinimalEntity> EntityActionNudge<T> _createNudge(EntityLocation start, EntityLocation end, float sourceRadius)

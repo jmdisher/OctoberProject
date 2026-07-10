@@ -483,23 +483,17 @@ public class ExtensionVillager implements EntityType.IExtension
 		}
 		
 		float vision = type.viewDistance();
-		entityCollection.findIntersections(env
-			, location
-			, vision
-			, null
-			, (CreatureEntity match, EntityLocation centre, float radius) -> {
-				if (match.type() == type)
-				{
-					// This is also a villager so consider its profession.
-					Data other = (Data) match.extendedData();
-					if (null != other.profession)
-					{
-						int count = existingCount.get(other.profession);
-						existingCount.put(other.profession, count + 1);
-					}
-				}
+		EntityLocation base = location.getRelative(-vision, -vision, -vision);
+		EntityLocation edge = location.getRelative(vision, vision, vision);
+		entityCollection.walkAlignedCreatureTypeIntersections(base, edge, type, (CreatureEntity creature) -> {
+			// This is also a villager so consider its profession.
+			Data other = (Data) creature.extendedData();
+			if (null != other.profession)
+			{
+				int count = existingCount.get(other.profession);
+				existingCount.put(other.profession, count + 1);
 			}
-		);
+		});
 		
 		// Just pick the first one with the lowest count (we may want to randomize this in the future to avoid all the villagers in a cuboid making the same decision).
 		TradingRegistry.Profession choice = null;

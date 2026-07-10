@@ -122,9 +122,10 @@ public class RayCastHelpers
 		EntityVolume playerVolume = env.creatures.PLAYER.volume();
 		EntityLocation base = new EntityLocation(Math.min(start.x(), end.x()), Math.min(start.y(), end.y()), Math.min(start.z(), end.z()));
 		EntityLocation edge = new EntityLocation(Math.max(start.x(), end.x()), Math.max(start.y(), end.y()), Math.max(start.z(), end.z()));
-		entities.walkAlignedIntersections(env, base, edge, (Entity entity) -> {
+		entities.walkAlignedEntityIntersections(base, edge, (Entity entity) -> {
 			closeEntities.add(new _PartialEntity(entity.id(), entity.location(), playerVolume));
-		}, (CreatureEntity creature) -> {
+		});
+		entities.walkAlignedCreatureIntersections(base, edge, (CreatureEntity creature) -> {
 			closeEntities.add(new _PartialEntity(creature.id(), creature.location(), creature.type().volume()));
 		});
 		

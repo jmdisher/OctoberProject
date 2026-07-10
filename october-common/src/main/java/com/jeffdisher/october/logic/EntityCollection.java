@@ -191,106 +191,85 @@ public class EntityCollection
 	}
 
 	/**
-	 * Finds all player entities and creatures which intersect within range of centre, calling the given intersectors
-	 * for each one.
+	 * Finds all player entities which intersect the region at base of volume size, calling entityVisit for each.  This
+	 * checks intersections by considering the region and all entities as axis-aligned bounding boxes.
 	 * 
-	 * @param env The environment.
-	 * @param centre The centre-point of the sphere to check.
-	 * @param range The radius of the sphere to check.
-	 * @param entityVisit The intersector for player entities found (can be null).
-	 * @param creatureVisit The intersector for creatures found (can be null).
+	 * @param base The inclusive base of the region to check (west, south, bottom corner).
+	 * @param edge The inclusive edge of the region to check (east, north, up corner).
+	 * @param entityVisit The consumer for player entities found (can be null).
 	 */
-	public void findIntersections(Environment env, EntityLocation centre, float range, IIntersector<Entity> entityVisit, IIntersector<CreatureEntity> creatureVisit)
+	public void walkAlignedEntityIntersections(EntityLocation base, EntityLocation edge, Consumer<Entity> entityVisit)
 	{
-		// TODO:  This is VERY inefficient when a large world is loaded so we need to redesign this based on a different way of organizing or indexing the entities and creatures.
-		float squareRange = range * range;
-		if (null != entityVisit)
+		// Note that the edge needs to be greater than the base.
+		Assert.assertTrue(base.x() <= edge.x());
+		Assert.assertTrue(base.y() <= edge.y());
+		Assert.assertTrue(base.z() <= edge.z());
+		Assert.assertTrue(null != entityVisit);
+		
+		Set<Integer> ids = _playerIndex.idsIntersectingRegion(base, edge);
+		for (int id : ids)
 		{
-			EntityVolume volume = env.creatures.PLAYER.volume();
-			float halfWidth = volume.width() / 2.0f;
-			float halfHeight = volume.height() / 2.0f;
-			// We are summing square radii in 3-space so we need to multiply.
-			float squareSums = 3 * squareRange + 2 * halfWidth * halfWidth + halfHeight * halfHeight;
-			for (Entity player : _players.values())
-			{
-				EntityLocation playerLocation = player.location();
-				EntityLocation playerCentre = SpatialHelpers.getCentreOfRegion(playerLocation, volume);
-				float dx = centre.x() - playerCentre.x();
-				float dy = centre.y() - playerCentre.y();
-				float dz = centre.z() - playerCentre.z();
-				float squareDistance = dx * dx + dy * dy + dz * dz;
-				
-				if (squareDistance <= squareSums)
-				{
-					entityVisit.intersect(player, playerCentre, halfWidth);
-				}
-			}
+			Entity player = _players.get(id);
+			entityVisit.accept(player);
 		}
-		if (null != creatureVisit)
+	}
+
+	/**
+	 * Finds all creatures which intersect the region at base of volume size, calling creatureVisit for each.  This
+	 * checks intersections by considering the region and all creatures as axis-aligned bounding boxes.
+	 * 
+	 * @param base The inclusive base of the region to check (west, south, bottom corner).
+	 * @param edge The inclusive edge of the region to check (east, north, up corner).
+	 * @param creatureVisit The consumer for creatures found (can be null).
+	 */
+	public void walkAlignedCreatureIntersections(EntityLocation base, EntityLocation edge, Consumer<CreatureEntity> creatureVisit)
+	{
+		// Note that the edge needs to be greater than the base.
+		Assert.assertTrue(base.x() <= edge.x());
+		Assert.assertTrue(base.y() <= edge.y());
+		Assert.assertTrue(base.z() <= edge.z());
+		Assert.assertTrue(null != creatureVisit);
+		
+		for (SpatialIndex index : _creatureIndices)
 		{
-			for (CreatureEntity creature : _creatures.values())
+			if (null != index)
 			{
-				EntityLocation creatureLocation = creature.location();
-				EntityVolume volume = creature.type().volume();
-				EntityLocation creatureCentre = SpatialHelpers.getCentreOfRegion(creatureLocation, volume);
-				float dx = centre.x() - creatureCentre.x();
-				float dy = centre.y() - creatureCentre.y();
-				float dz = centre.z() - creatureCentre.z();
-				float squareDistance = dx * dx + dy * dy + dz * dz;
-				
-				// We will just use the XY radius.
-				float halfWidth = volume.width() / 2.0f;
-				float halfHeight = volume.height() / 2.0f;
-				// We are summing square radii in 3-space so we need to multiply.
-				float squareSums = 3 * squareRange + 2 * halfWidth * halfWidth + halfHeight * halfHeight;
-				if (squareDistance <= squareSums)
+				Set<Integer> ids = index.idsIntersectingRegion(base, edge);
+				for (int id : ids)
 				{
-					creatureVisit.intersect(creature, creatureCentre, halfWidth);
+					CreatureEntity creature = _creatures.get(id);
+					creatureVisit.accept(creature);
 				}
 			}
 		}
 	}
 
 	/**
-	 * Finds all player entities and creatures which intersect the region at base of volume size, calling the given
-	 * consumers for each one.  This checks intersections by considering the region and all entities and creatures as
-	 * axis-aligned bounding boxes.
+	 * Finds creatures of type which intersect the region at base of volume size, calling creatureVisit for each.  This
+	 * checks intersections by considering the region and all creatures as axis-aligned bounding boxes.
 	 * 
-	 * @param env The environment.
 	 * @param base The inclusive base of the region to check (west, south, bottom corner).
 	 * @param edge The inclusive edge of the region to check (east, north, up corner).
-	 * @param entityVisit The consumer for player entities found (can be null).
+	 * @param type The type of creature to return.
 	 * @param creatureVisit The consumer for creatures found (can be null).
 	 */
-	public void walkAlignedIntersections(Environment env, EntityLocation base, EntityLocation edge, Consumer<Entity> entityVisit, Consumer<CreatureEntity> creatureVisit)
+	public void walkAlignedCreatureTypeIntersections(EntityLocation base, EntityLocation edge, EntityType type, Consumer<CreatureEntity> creatureVisit)
 	{
 		// Note that the edge needs to be greater than the base.
 		Assert.assertTrue(base.x() <= edge.x());
 		Assert.assertTrue(base.y() <= edge.y());
 		Assert.assertTrue(base.z() <= edge.z());
+		Assert.assertTrue(null != type);
+		Assert.assertTrue(null != creatureVisit);
 		
-		if (null != entityVisit)
+		SpatialIndex index = _creatureIndices[type.number()];
+		if (null != index)
 		{
-			Set<Integer> ids = _playerIndex.idsIntersectingRegion(base, edge);
+			Set<Integer> ids = index.idsIntersectingRegion(base, edge);
 			for (int id : ids)
 			{
-				Entity player = _players.get(id);
-				entityVisit.accept(player);
-			}
-		}
-		if (null != creatureVisit)
-		{
-			for (SpatialIndex index : _creatureIndices)
-			{
-				if (null != index)
-				{
-					Set<Integer> ids = index.idsIntersectingRegion(base, edge);
-					for (int id : ids)
-					{
-						CreatureEntity creature = _creatures.get(id);
-						creatureVisit.accept(creature);
-					}
-				}
+				CreatureEntity creature = _creatures.get(id);
+				creatureVisit.accept(creature);
 			}
 		}
 	}
@@ -305,11 +284,5 @@ public class EntityCollection
 			isInRange = true;
 		}
 		return isInRange;
-	}
-
-
-	public static interface IIntersector<T>
-	{
-		void intersect(T data, EntityLocation centre, float radius);
 	}
 }
