@@ -198,7 +198,14 @@ public class BasicWorldGenerator implements IWorldGenerator
 		CuboidHeightMap cuboidLocalMap = HeightMapHelpers.buildHeightMap(data);
 		
 		// Spawn the creatures within the cuboid.
-		List<CreatureEntity> entities = _spawnCreatures(creatureIdAssigner, subField, heightMaps.fetchHeightMapForCuboidColumn(0, 0), data, cuboidBase, gameTimeMillis);
+		List<CreatureEntity> entities = _spawnCreatures(creatureIdAssigner
+			, subField
+			, heightMaps.fetchHeightMapForCuboidColumn(0, 0)
+			, data
+			, cuboidBase
+			, gameTimeMillis
+			, followUp.entitiesToSpawn()
+		);
 		
 		// No passives.
 		List<PassiveEntity> passives = List.of();
@@ -813,7 +820,14 @@ public class BasicWorldGenerator implements IWorldGenerator
 		_batchWriteUpdates(data, writeUpdates);
 	}
 
-	private List<CreatureEntity> _spawnCreatures(CreatureIdAssigner creatureIdAssigner, PerColumnRandomSeedField.View subField, ColumnHeightMap heightMap, CuboidData data, AbsoluteLocation cuboidBase, long gameTimeMillis)
+	private List<CreatureEntity> _spawnCreatures(CreatureIdAssigner creatureIdAssigner
+		, PerColumnRandomSeedField.View subField
+		, ColumnHeightMap heightMap
+		, CuboidData data
+		, AbsoluteLocation cuboidBase
+		, long gameTimeMillis
+		, Map<AbsoluteLocation, EntityType> entitiesToSpawn
+	)
 	{
 		// We want to spawn the flora.  This is only ever done within a single cuboid column if it is the appropriate biome type and contains a "gully".
 		int columnSeed = subField.get(0, 0);
@@ -837,12 +851,22 @@ public class BasicWorldGenerator implements IWorldGenerator
 				// Choose the block above the dirt.
 				int relativeZ = heightMap.getHeight(relativeX, relativeY) - cuboidBase.z() + 1;
 				entities.add(CreatureEntity.create(creatureIdAssigner.next()
-						, faunaType
-						, cuboidBase.getRelative(relativeX, relativeY, relativeZ).toEntityLocation()
-						, gameTimeMillis
+					, faunaType
+					, cuboidBase.getRelative(relativeX, relativeY, relativeZ).toEntityLocation()
+					, gameTimeMillis
 				));
 			}
 		}
+		
+		for (Map.Entry<AbsoluteLocation, EntityType> ent : entitiesToSpawn.entrySet())
+		{
+			entities.add(CreatureEntity.create(creatureIdAssigner.next()
+				, ent.getValue()
+				, ent.getKey().toEntityLocation()
+				, gameTimeMillis
+			));
+		}
+		
 		return entities;
 	}
 

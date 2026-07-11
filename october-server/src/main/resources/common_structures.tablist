@@ -66,6 +66,8 @@ item_def	special_sword
 #	Optional and references one of the above items as item_ref.
 # -root_rel	x	y	z
 #	Optional references the root of this multi-block by relative location.
+# -spawn	creature_id
+#	Optional references a creature type which should be spawned in this block.
 
 block_def	A
 	block	op.air
@@ -163,3 +165,6 @@ block_def	L
 	block	op.log
 block_def	l
 	block	op.leaf
+block_def	&
+	block	op.torch
+	spawn	op.villager

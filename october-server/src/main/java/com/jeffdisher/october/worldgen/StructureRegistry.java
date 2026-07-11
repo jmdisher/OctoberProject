@@ -57,7 +57,7 @@ public class StructureRegistry
 		}
 		else
 		{
-			followUp = new Structure.FollowUp(List.of(), Map.of());
+			followUp = new Structure.FollowUp(List.of(), Map.of(), Map.of());
 		}
 		return followUp;
 	}

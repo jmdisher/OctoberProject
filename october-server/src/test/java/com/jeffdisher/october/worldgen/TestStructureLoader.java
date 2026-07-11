@@ -248,8 +248,8 @@ public class TestStructureLoader
 		Block voidStone = ENV.blocks.fromItem(ENV.items.getItemById("op.portal_stone"));
 		Block voidLamp = ENV.blocks.fromItem(ENV.items.getItemById("op.void_lamp"));
 		Map<Character, Structure.AspectData> mapping = Map.of(
-			'V', new Structure.AspectData(voidStone, null, null, null, null)
-			, 'L', new Structure.AspectData(voidLamp, null, null, null, null)
+			'V', new Structure.AspectData(voidStone, null, null, null, null, null)
+			, 'L', new Structure.AspectData(voidLamp, null, null, null, null, null)
 		);
 		StructureLoader loader = new StructureLoader(mapping);
 		String[] zLayers = new String[] {""
@@ -378,12 +378,12 @@ public class TestStructureLoader
 			.finish()
 		;
 		Map<Character, Structure.AspectData> mapping = Map.of(
-			'C', new Structure.AspectData(chest, inv, null, null, null)
-			, 'I', new Structure.AspectData(pedestal, null, null, ItemSlot.fromNonStack(customSword), null)
-			, 'N', new Structure.AspectData(andGate, null, FacingDirection.NORTH, null, null)
-			, 'E', new Structure.AspectData(andGate, null, FacingDirection.EAST, null, null)
-			, 'W', new Structure.AspectData(andGate, null, FacingDirection.WEST, null, null)
-			, 'S', new Structure.AspectData(andGate, null, FacingDirection.SOUTH, null, null)
+			'C', new Structure.AspectData(chest, inv, null, null, null, null)
+			, 'I', new Structure.AspectData(pedestal, null, null, ItemSlot.fromNonStack(customSword), null, null)
+			, 'N', new Structure.AspectData(andGate, null, FacingDirection.NORTH, null, null, null)
+			, 'E', new Structure.AspectData(andGate, null, FacingDirection.EAST, null, null, null)
+			, 'W', new Structure.AspectData(andGate, null, FacingDirection.WEST, null, null, null)
+			, 'S', new Structure.AspectData(andGate, null, FacingDirection.SOUTH, null, null, null)
 		);
 		StructureLoader loader = new StructureLoader(mapping);
 		String[] zLayers = new String[] {""
@@ -534,10 +534,10 @@ public class TestStructureLoader
 		List<MutationBlockOverwriteInternal> overwriteMutations2 = List.of(new MutationBlockOverwriteInternal(new AbsoluteLocation(4, 5, 6), DIRT));
 		Map<BlockAddress, Long> periodicMutationMillis1 = Map.of(BlockAddress.fromInt(2, 3, 4), 5L);
 		Map<BlockAddress, Long> periodicMutationMillis2 = Map.of(BlockAddress.fromInt(6, 7, 8), 9L);
-		Structure.FollowUp followUp1 = new Structure.FollowUp(overwriteMutations1, periodicMutationMillis1);
-		Structure.FollowUp followUp2 = new Structure.FollowUp(overwriteMutations2, periodicMutationMillis2);
-		Structure.FollowUp empty1 = new Structure.FollowUp(List.of(), Map.of());
-		Structure.FollowUp empty2 = new Structure.FollowUp(List.of(), Map.of());
+		Structure.FollowUp followUp1 = new Structure.FollowUp(overwriteMutations1, periodicMutationMillis1, Map.of());
+		Structure.FollowUp followUp2 = new Structure.FollowUp(overwriteMutations2, periodicMutationMillis2, Map.of());
+		Structure.FollowUp empty1 = new Structure.FollowUp(List.of(), Map.of(), Map.of());
+		Structure.FollowUp empty2 = new Structure.FollowUp(List.of(), Map.of(), Map.of());
 		
 		Assert.assertTrue(empty2 == Structure.FollowUp.merge(empty1, empty2));
 		Assert.assertTrue(followUp2 == Structure.FollowUp.merge(empty1, followUp2));
@@ -572,6 +572,6 @@ public class TestStructureLoader
 
 	private static Structure.AspectData _wrapBlockWithNulls(Block block)
 	{
-		return new Structure.AspectData(block, null, null, null, null);
+		return new Structure.AspectData(block, null, null, null, null, null);
 	}
 }

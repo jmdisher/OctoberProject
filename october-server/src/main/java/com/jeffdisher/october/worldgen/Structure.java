@@ -22,6 +22,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.ItemSlot;
@@ -231,6 +232,7 @@ public class Structure
 		short replacementBlock = env.special.AIR.item().number();
 		List<MutationBlockOverwriteInternal> overwriteMutations = new ArrayList<>();
 		Map<BlockAddress, Long> periodicMutationMillis = new HashMap<>();
+		Map<AbsoluteLocation, EntityType> entitiesToSpawn = new HashMap<>();
 		for (int c = 0; c < countZ; ++c)
 		{
 			AspectData[] layer = _allLayerBlocks[readZ + c];
@@ -341,8 +343,13 @@ public class Structure
 									
 									if (perioidicMillisDelay > 0L)
 									{
-										periodicMutationMillis.put(thisBlock.getBlockAddress(), perioidicMillisDelay);
+										periodicMutationMillis.put(blockAddress, perioidicMillisDelay);
 									}
+								}
+								
+								if (null != aspectData.creatureToSpawn)
+								{
+									entitiesToSpawn.put(thisBlock, aspectData.creatureToSpawn);
 								}
 							}
 						}
@@ -350,7 +357,10 @@ public class Structure
 				}
 			}
 		}
-		return new FollowUp(overwriteMutations, periodicMutationMillis);
+		return new FollowUp(overwriteMutations
+			, periodicMutationMillis
+			, entitiesToSpawn
+		);
 	}
 
 
@@ -370,10 +380,11 @@ public class Structure
 
 	public static record FollowUp(List<MutationBlockOverwriteInternal> overwriteMutations
 		, Map<BlockAddress, Long> periodicMutationMillis
+		, Map<AbsoluteLocation, EntityType> entitiesToSpawn
 	) {
 		public static FollowUp empty()
 		{
-			return new FollowUp(List.of(), Map.of());
+			return new FollowUp(List.of(), Map.of(), Map.of());
 		}
 		public static FollowUp merge(FollowUp one, FollowUp two)
 		{
@@ -392,11 +403,20 @@ public class Structure
 			Map<BlockAddress, Long> periodicMutationMillis = new HashMap<>();
 			periodicMutationMillis.putAll(one.periodicMutationMillis);
 			periodicMutationMillis.putAll(two.periodicMutationMillis);
-			return new FollowUp(Collections.unmodifiableList(overwriteMutations), Collections.unmodifiableMap(periodicMutationMillis));
+			Map<AbsoluteLocation, EntityType> entitiesToSpawn = new HashMap<>();
+			entitiesToSpawn.putAll(one.entitiesToSpawn);
+			entitiesToSpawn.putAll(two.entitiesToSpawn);
+			return new FollowUp(Collections.unmodifiableList(overwriteMutations)
+				, Collections.unmodifiableMap(periodicMutationMillis)
+				, Collections.unmodifiableMap(entitiesToSpawn)
+			);
 		}
 		public boolean isEmpty()
 		{
-			return overwriteMutations.isEmpty() && periodicMutationMillis.isEmpty();
+			return overwriteMutations.isEmpty()
+				&& periodicMutationMillis.isEmpty()
+				&& entitiesToSpawn.isEmpty()
+			;
 		}
 	}
 
@@ -405,5 +425,7 @@ public class Structure
 		, FacingDirection orientation
 		, ItemSlot specialItemSlot
 		, AbsoluteLocation relativeMultiBlockRoot
+		// Not technically an aspect, but referenced in the structure.
+		, EntityType creatureToSpawn
 	) {}
 }

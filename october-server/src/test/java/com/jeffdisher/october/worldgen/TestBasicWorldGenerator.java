@@ -486,12 +486,18 @@ public class TestBasicWorldGenerator
 		int seed = 42;
 		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
 		
+		CreatureIdAssigner creatureIdAssigner = new CreatureIdAssigner();
 		CuboidAddress highAddress = CuboidAddress.fromInt(-3, 1, 0);
-		CuboidData highData = generator.generateCuboid(null, highAddress, 0L).cuboid();
+		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(creatureIdAssigner, highAddress, 0L);
+		CuboidData highData = suspended.cuboid();
+		List<CreatureEntity> creatures = suspended.creatures();
 		
 		// Verify that the villager house was generated.
 		AbsoluteLocation root = new AbsoluteLocation(-73, 40, 8);
 		Assert.assertEquals(ENV.items.getItemById("op.stone_brick").number(), highData.getData15(AspectRegistry.BLOCK, root.getBlockAddress()));
+		Assert.assertEquals(1, creatures.size());
+		Assert.assertEquals(-1, creatures.get(0).id());
+		Assert.assertEquals(root.getRelative(2, 2, 1).toEntityLocation(), creatures.get(0).location());
 	}
 
 

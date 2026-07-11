@@ -14,6 +14,7 @@ import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.properties.PropertyType;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -54,6 +55,7 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 	public static final String KEY_FACING_DIRECTION = "facing_direction";
 	public static final String KEY_ITEM_SLOT = "item_slot";
 	public static final String KEY_ROOT_REL = "root_rel";
+	public static final String KEY_SPAWN = "spawn";
 
 	public final Structure nexusCastle;
 	public final Structure distanceTower;
@@ -108,6 +110,7 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 	private FacingDirection _facingDirection;
 	private NonStackableItem _itemSlot;
 	private AbsoluteLocation _rootRelative;
+	private EntityType _spawn;
 
 	@Override
 	public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
@@ -250,6 +253,7 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 			, _facingDirection
 			, specialItemSlot
 			, _rootRelative
+			, _spawn
 		);
 		_blockMapping.put(_currentBlockRef, aspectData);
 		
@@ -258,6 +262,7 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 		_facingDirection = null;
 		_itemSlot = null;
 		_rootRelative = null;
+		_spawn = null;
 	}
 
 	private void _itemSubRecord(String name, String[] parameters) throws TabListException
@@ -352,6 +357,15 @@ public class CommonStructures implements TabListReader.IParseCallbacks
 			catch (NumberFormatException e)
 			{
 				throw new TabListReader.TabListException("Invalid " + KEY_ROOT_REL + " under \"" + _currentBlockRef + "\": " + Arrays.toString(parameters));
+			}
+		}
+		else if (KEY_SPAWN.equals(name))
+		{
+			_checkValidSubRecord(KEY_SPAWN, _spawn, 1, parameters);
+			_spawn = _env.creatures.getTypeById(parameters[0]);
+			if (null == _spawn)
+			{
+				throw new TabListReader.TabListException("Unknown creature for " + KEY_SPAWN + " under \"" + _currentBlockRef + "\": \"" + parameters[0] + "\"");
 			}
 		}
 		else
