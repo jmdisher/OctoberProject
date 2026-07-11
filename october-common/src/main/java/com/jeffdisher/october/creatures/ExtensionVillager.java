@@ -256,61 +256,6 @@ public class ExtensionVillager implements EntityType.IExtension
 	}
 
 	/**
-	 * A read-only check to see if villager can buy itemSlotForVillagerToBuy.
-	 * 
-	 * @param env The environment.
-	 * @param villager The minimal villager.
-	 * @param itemSlotForVillagerToBuy The item slot containing the item we want the villager to buy.
-	 * @return True if this villager may be able to buy the item (assuming they have inventory space when it is truly
-	 * offered).
-	 */
-	public boolean canVillagerBuyItem(Environment env, MinimalEntity villager, ItemSlot itemSlotForVillagerToBuy)
-	{
-		ExtensionVillager.Data data = (ExtensionVillager.Data) villager.extendedData();
-		TradingRegistry.Profession profession = data.profession();
-		Item itemTypeToBuy = itemSlotForVillagerToBuy.getType();
-		
-		// Make sure that this is a valid buy offer and that we have inventory space for it.
-		boolean canBuy = false;
-		if (profession.buyOffers().containsKey(itemTypeToBuy)
-			&& (data.inventory().getOrDefault(itemTypeToBuy, 0) < profession.targetInventory().get(itemTypeToBuy))
-		)
-		{
-			// Make sure that this is valid (either a stack or full durability).
-			if ((null == itemSlotForVillagerToBuy.nonStackable)
-				|| (env.durability.getDurability(itemTypeToBuy) == PropertyHelpers.getDurability(itemSlotForVillagerToBuy.nonStackable))
-			)
-			{
-				canBuy = true;
-			}
-		}
-		return canBuy;
-	}
-
-	/**
-	 * A read-only check to see if villager is able to sell itemToRequest.
-	 * 
-	 * @param env The environment.
-	 * @param villager The minimal villager.
-	 * @param itemToRequest The item showing what we want the villager to sell.
-	 * @return The cost of this item, in coins, or 0 if not available.  Note that the villager may still fail to sell if
-	 * it has no inventory when truly asked.
-	 */
-	public int coinCostOfVillagerTrade(Environment env, MinimalEntity villager, Item itemToRequest)
-	{
-		ExtensionVillager.Data data = (ExtensionVillager.Data) villager.extendedData();
-		TradingRegistry.Profession profession = data.profession();
-		
-		// Make sure that this is a valid sell offer and that we have the item in stock (return 0 if not valid).
-		int coinCost = 0;
-		if (profession.sellOffers().containsKey(itemToRequest) && data.inventory.containsKey(itemToRequest))
-		{
-			coinCost = profession.sellOffers().get(itemToRequest);
-		}
-		return coinCost;
-	}
-
-	/**
 	 * The number of coins a villager should return when it buys itemSlotForVillagerToBuy, 0 if it didn't buy it.
 	 * NOTE:  This call modifies villager.
 	 * 

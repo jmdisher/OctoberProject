@@ -17,6 +17,7 @@ import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
+import com.jeffdisher.october.subactions.EntitySubActionSendTrade;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -245,14 +246,14 @@ public class TestVillagerActions
 		// Show when the inventory is empty.
 		mutable.newExtendedData = _emptyData(FORESTER);
 		MinimalEntity emptyMinimal = MinimalEntity.fromCreature(mutable.freeze());
-		Assert.assertTrue(extension.canVillagerBuyItem(ENV, emptyMinimal, hatchetToBuy));
+		Assert.assertTrue(EntitySubActionSendTrade.villagerTradeOffers(ENV, emptyMinimal).get(STONE_HATCHET) > 0);
 		Assert.assertEquals(20, extension.coinsToReturnForVillagerBuyTrade(ENV, mutable, hatchetToBuy));
 		Assert.assertEquals(1, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(STONE_HATCHET).intValue());
 		
 		// Show when the inventory is full.
 		mutable.newExtendedData = _data(FORESTER, Map.of(STONE_HATCHET, 2));
 		MinimalEntity fullMinimal = MinimalEntity.fromCreature(mutable.freeze());
-		Assert.assertFalse(extension.canVillagerBuyItem(ENV, fullMinimal, hatchetToBuy));
+		Assert.assertNull(EntitySubActionSendTrade.villagerTradeOffers(ENV, fullMinimal).get(STONE_HATCHET));
 		Assert.assertEquals(0, extension.coinsToReturnForVillagerBuyTrade(ENV, mutable, hatchetToBuy));
 		Assert.assertEquals(2, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(STONE_HATCHET).intValue());
 	}
@@ -267,14 +268,14 @@ public class TestVillagerActions
 		// Show when the inventory has items.
 		mutable.newExtendedData = _data(FORESTER, Map.of(LOG, 2));
 		MinimalEntity itemMinimal = MinimalEntity.fromCreature(mutable.freeze());
-		Assert.assertEquals(4, extension.coinCostOfVillagerTrade(ENV, itemMinimal, LOG));
+		Assert.assertEquals(-4, EntitySubActionSendTrade.villagerTradeOffers(ENV, itemMinimal).get(LOG).intValue());
 		Assert.assertEquals(ItemSlot.fromStack(new Items(LOG, 1)), extension.purchaseToReturnForVillagerSellTrade(ENV, mutable, LOG, 4));
 		Assert.assertEquals(1, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(LOG).intValue());
 		
 		// Show when the inventory is empty.
 		mutable.newExtendedData = _emptyData(FORESTER);
 		MinimalEntity emptyMinimal = MinimalEntity.fromCreature(mutable.freeze());
-		Assert.assertEquals(0, extension.coinCostOfVillagerTrade(ENV, emptyMinimal, LOG));
+		Assert.assertNull(EntitySubActionSendTrade.villagerTradeOffers(ENV, emptyMinimal).get(LOG));
 		Assert.assertEquals(null, extension.purchaseToReturnForVillagerSellTrade(ENV, mutable, LOG, 4));
 	}
 
@@ -603,6 +604,33 @@ public class TestVillagerActions
 		Assert.assertEquals(8, ((ExtensionVillager.Data)mutable.newExtendedData).inventory().get(LOG).intValue());
 		Assert.assertEquals(4, ((ExtensionVillager.Data)mutable.newExtendedData).inventory().get(STICK).intValue());
 		Assert.assertEquals(8, ((ExtensionVillager.Data)mutable.newExtendedData).inventory().get(SAPLING).intValue());
+	}
+
+	@Test
+	public void villagerTradeOffers()
+	{
+		// Show the combined trade offer mapping helper with different starting inventories.
+		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 5.0f, 5.0f), 1000L));
+		mutable.newExtendedData = ExtensionVillager.test_createData(FORESTER, FORESTER.targetInventory());
+		CreatureEntity full = mutable.freeze();
+		mutable.newExtendedData = ExtensionVillager.test_createData(FORESTER, Map.of());
+		CreatureEntity empty = mutable.freeze();
+		
+		// Full, we should only see the villager wanting to sell.
+		Map<Item, Integer> fullOffers = EntitySubActionSendTrade.villagerTradeOffers(ENV, MinimalEntity.fromCreature(full));
+		Assert.assertEquals(FORESTER.sellOffers().size(), fullOffers.size());
+		for (Integer cost : fullOffers.values())
+		{
+			Assert.assertTrue(cost < 0);
+		}
+		
+		// Empty, we should only see the villager wanting to buy.
+		Map<Item, Integer> emptyOffers = EntitySubActionSendTrade.villagerTradeOffers(ENV, MinimalEntity.fromCreature(empty));
+		Assert.assertEquals(FORESTER.buyOffers().size(), emptyOffers.size());
+		for (Integer cost : emptyOffers.values())
+		{
+			Assert.assertTrue(cost > 0);
+		}
 	}
 
 

@@ -1,12 +1,17 @@
 package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.jeffdisher.october.actions.EntityActionReceiveTrade;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
+import com.jeffdisher.october.aspects.TradingRegistry;
 import com.jeffdisher.october.creatures.ExtensionVillager;
 import com.jeffdisher.october.data.DeserializationContext;
+import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -39,6 +44,22 @@ public class EntitySubActionSendTrade implements IEntitySubAction<IMutablePlayer
 		int targetVillagerId = buffer.getInt();
 		Item itemToRequest = CodecHelpers.readItem(buffer);
 		return new EntitySubActionSendTrade(localInventoryId, targetVillagerId, itemToRequest);
+	}
+
+	/**
+	 * Builds and returns a map of trade offers which can currently be sent to the villager, where the price given for
+	 * each item is the "buying price" meaning that negative numbers are the prices for what the villager is selling.
+	 * 
+	 * @param env The environment.
+	 * @param villager The villager to examine.
+	 * @return The map of items to the prices for which the villager will buy (or negative for selling offers).
+	 */
+	public static Map<Item, Integer> villagerTradeOffers(Environment env, MinimalEntity villager)
+	{
+		// This call assumes that the given entity is a villager.
+		Assert.assertTrue(env.creatures.getTypeById("op.villager") == villager.type());
+		
+		return _villagerTradeOffers(villager);
 	}
 
 
@@ -75,6 +96,12 @@ public class EntitySubActionSendTrade implements IEntitySubAction<IMutablePlayer
 		boolean isBuy = (coinType == _itemToRequest);
 		boolean isSell = (coinType == typeToSend);
 		
+		// Make sure that a villager buying a non-stackable is only getting a full durability one.
+		if (isBuy && (null != localSlot.nonStackable))
+		{
+			isBuy = (env.durability.getDurability(typeToSend) == PropertyHelpers.getDurability(localSlot.nonStackable));
+		}
+		
 		ItemSlot toSend = null;
 		if (isBuy != isSell)
 		{
@@ -98,12 +125,10 @@ public class EntitySubActionSendTrade implements IEntitySubAction<IMutablePlayer
 			{
 				// We are trading with a villager in range.
 				
-				// Note that we down-cast the IExtension here since we already know the type and there isn't a reason to generalize this.
-				ExtensionVillager extension = (ExtensionVillager)villagerType.extension();
-				
 				// If the villager is buying something from us, make sure that they are buying something we send.
 				// If the villager is selling something to us, make sure they are selling what we are requesting.
-				if (isBuy && extension.canVillagerBuyItem(env, villager, localSlot))
+				Map<Item, Integer> positiveCostValidBuyOffers = _villagerTradeOffers(villager);
+				if (isBuy && (positiveCostValidBuyOffers.getOrDefault(typeToSend, 0) > 0))
 				{
 					// Remove this and send it.
 					if (null != localSlot.nonStackable)
@@ -127,7 +152,7 @@ public class EntitySubActionSendTrade implements IEntitySubAction<IMutablePlayer
 				else if (isSell)
 				{
 					// Is what we are requesting something that they sell and do we have enough coins?
-					int cost = extension.coinCostOfVillagerTrade(env, villager, _itemToRequest);
+					int cost = -positiveCostValidBuyOffers.getOrDefault(_itemToRequest, 0);
 					int currentMoney = localSlot.getCount();
 					if ((cost > 0) && (currentMoney >= cost))
 					{
@@ -192,5 +217,39 @@ public class EntitySubActionSendTrade implements IEntitySubAction<IMutablePlayer
 	public String toString()
 	{
 		return String.format("Send trade (item %d) to villager %d", _localInventoryId, _targetVillagerId);
+	}
+
+
+	private static Map<Item, Integer> _villagerTradeOffers(MinimalEntity villager)
+	{
+		Map<Item, Integer> villagerBuyOffers = new HashMap<>();
+		ExtensionVillager.Data data = (ExtensionVillager.Data) villager.extendedData();
+		TradingRegistry.Profession profession = data.profession();
+		if (null != profession)
+		{
+			Map<Item, Integer> inv = data.inventory();
+			Map<Item, Integer> target = profession.targetInventory();
+			for (Map.Entry<Item, Integer> buy : profession.buyOffers().entrySet())
+			{
+				Item key = buy.getKey();
+				int count = inv.getOrDefault(key, 0);
+				if (count < target.get(key))
+				{
+					// They will buy this so include it.
+					villagerBuyOffers.put(key, buy.getValue());
+				}
+			}
+			for (Map.Entry<Item, Integer> sell : profession.sellOffers().entrySet())
+			{
+				Item key = sell.getKey();
+				int count = inv.getOrDefault(key, 0);
+				if (count > 0)
+				{
+					// They can sell this so include it with a negated price.
+					villagerBuyOffers.put(key, -sell.getValue());
+				}
+			}
+		}
+		return Collections.unmodifiableMap(villagerBuyOffers);
 	}
 }
