@@ -1,6 +1,7 @@
 package com.jeffdisher.october.worldgen;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -150,6 +151,23 @@ public class FlatWorldGenerator implements IWorldGenerator
 				.toList()
 			);
 			periodicMutationMillis.putAll(followUp.periodicMutationMillis());
+			Map<AbsoluteLocation, EntityType> entitiesToSpawn = followUp.entitiesToSpawn();
+			if (entitiesToSpawn.size() > 0)
+			{
+				entities = new ArrayList<>(entities);
+				for (Map.Entry<AbsoluteLocation, EntityType> elt : followUp.entitiesToSpawn().entrySet())
+				{
+					AbsoluteLocation blockLocation = elt.getKey();
+					EntityType type = elt.getValue();
+					CreatureEntity entity = CreatureEntity.create(creatureIdAssigner.next()
+						, type
+						, blockLocation.toEntityLocation()
+						, gameTimeMillis
+					);
+					entities.add(entity);
+				}
+				entities = Collections.unmodifiableList(entities);
+			}
 		}
 		
 		// No passives.
