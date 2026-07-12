@@ -17,9 +17,11 @@ import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
+import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.subactions.EntitySubActionSendTrade;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IEntityAction;
@@ -28,6 +30,7 @@ import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
+import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TargetedAction;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -631,6 +634,35 @@ public class TestVillagerActions
 		{
 			Assert.assertTrue(cost > 0);
 		}
+	}
+
+	@Test
+	public void inventorySearch()
+	{
+		// Walk an entity inventory for items associated with a trade (since the local key is required and that can be a little tricky).
+		Item sword = ENV.items.getItemById("op.iron_swird");
+		int maxDurability = ENV.durability.getDurability(STONE_HATCHET);
+		NonStackableItem damaged = new NonStackableItem(STONE_HATCHET, Map.of(PropertyRegistry.DURABILITY, maxDurability - 1
+		));
+		NonStackableItem named = new NonStackableItem(STONE_HATCHET, Map.of(PropertyRegistry.DURABILITY, maxDurability
+			, PropertyRegistry.NAME, "Custom"
+		));
+		NonStackableItem valid1 = new NonStackableItem(STONE_HATCHET, Map.of(PropertyRegistry.DURABILITY, maxDurability
+		));
+		NonStackableItem valid2 = new NonStackableItem(STONE_HATCHET, Map.of(PropertyRegistry.DURABILITY, maxDurability
+		));
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newInventory.addAllItems(LOG, 4);
+		mutable.newInventory.addNonStackableAllowingOverflow(damaged);
+		mutable.newInventory.addNonStackableAllowingOverflow(named);
+		mutable.newInventory.addNonStackableAllowingOverflow(valid1);
+		mutable.newInventory.addNonStackableAllowingOverflow(valid2);
+		Entity player = mutable.freeze();
+		
+		Assert.assertEquals(1, EntitySubActionSendTrade.findKeyOfAcceptableLocalItemToTrade(ENV, player, LOG));
+		Assert.assertEquals(0, EntitySubActionSendTrade.findKeyOfAcceptableLocalItemToTrade(ENV, player, APPLE));
+		Assert.assertEquals(4, EntitySubActionSendTrade.findKeyOfAcceptableLocalItemToTrade(ENV, player, STONE_HATCHET));
+		Assert.assertEquals(0, EntitySubActionSendTrade.findKeyOfAcceptableLocalItemToTrade(ENV, player, sword));
 	}
 
 

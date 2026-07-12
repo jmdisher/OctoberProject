@@ -15,15 +15,18 @@ import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MinimalEntity;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -60,6 +63,52 @@ public class EntitySubActionSendTrade implements IEntitySubAction<IMutablePlayer
 		Assert.assertTrue(env.creatures.getTypeById("op.villager") == villager.type());
 		
 		return _villagerTradeOffers(villager);
+	}
+
+	/**
+	 * Finds the key of a valid instance of tradeType in the given playerEntity's inventory, or 0 if there isn't one.
+	 * 
+	 * @param env The environment.
+	 * @param playerEntity The player whose inventory should be checked.
+	 * @param tradeType The item type to trade.
+	 * @return The key of the tradeType instance in playerEntity or 0 if not found.
+	 */
+	public static int findKeyOfAcceptableLocalItemToTrade(Environment env, Entity playerEntity, Item tradeType)
+	{
+		int localInventoryId;
+		
+		// We just extract the normal inventory but we might extend this to creative if we want to support this in the sub-action, proper.
+		Inventory inventory = playerEntity.inventory();
+		
+		// First check if this is stackable or not.
+		if (env.durability.isStackable(tradeType))
+		{
+			// This is the basic case so just return it (returns 0 if not found).
+			localInventoryId = inventory.getIdOfStackableType(tradeType);
+		}
+		else
+		{
+			// We might have more than one so find one which only has a single property:  Durability which matches default.
+			localInventoryId = 0;
+			for (Integer key : inventory.sortedKeys())
+			{
+				NonStackableItem nonStackable = inventory.getNonStackableForKey(key);
+				if (null != nonStackable)
+				{
+					Item type = nonStackable.type();
+					if ((type == tradeType)
+						&& (1 == nonStackable.properties().size())
+						&& (env.durability.getDurability(type) == PropertyHelpers.getDurability(nonStackable))
+					)
+					{
+						localInventoryId = key;
+						break;
+					}
+				}
+			}
+		}
+		
+		return localInventoryId;
 	}
 
 
@@ -99,7 +148,9 @@ public class EntitySubActionSendTrade implements IEntitySubAction<IMutablePlayer
 		// Make sure that a villager buying a non-stackable is only getting a full durability one.
 		if (isBuy && (null != localSlot.nonStackable))
 		{
-			isBuy = (env.durability.getDurability(typeToSend) == PropertyHelpers.getDurability(localSlot.nonStackable));
+			isBuy = (1 == localSlot.nonStackable.properties().size())
+				&& (env.durability.getDurability(typeToSend) == PropertyHelpers.getDurability(localSlot.nonStackable))
+			;
 		}
 		
 		ItemSlot toSend = null;
