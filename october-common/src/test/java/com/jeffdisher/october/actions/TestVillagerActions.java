@@ -24,6 +24,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
@@ -320,8 +321,13 @@ public class TestVillagerActions
 		);
 		
 		// This should fail when still on cooldown.
+		EventRecord[] out_event = new EventRecord[1];
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(1L)
+			.eventSink((EventRecord event) -> {
+				Assert.assertNull(out_event[0]);
+				out_event[0] = event;
+			})
 			.finish()
 		;
 		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(), Map.of(mutable.getId(), mutable.freeze()));
@@ -331,6 +337,12 @@ public class TestVillagerActions
 		Assert.assertEquals(4, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(STICK).intValue());
 		Assert.assertEquals(8, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(LOG).intValue());
 		Assert.assertEquals(1, ((ExtensionVillager.Data) mutable.newExtendedData).inventory().get(APPLE).intValue());
+		Assert.assertEquals(new EventRecord(EventRecord.Type.CRAFT_IN_INVENTORY_COMPLETE
+			, EventRecord.Cause.NONE
+			, mutable.getLocation().getBlockLocation()
+			, mutable.getId()
+			, mutable.getId()
+		), out_event[0]);
 	}
 
 	@Test

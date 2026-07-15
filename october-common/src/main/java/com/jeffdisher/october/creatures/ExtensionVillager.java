@@ -18,6 +18,7 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
@@ -197,7 +198,7 @@ public class ExtensionVillager implements EntityType.IExtension
 		if (!didTakeAction)
 		{
 			// See if we can craft something.
-			didTakeAction = _tryCraftSpecialAction(creature);
+			didTakeAction = _tryCraftSpecialAction(creature, context);
 		}
 		
 		if (!didTakeAction)
@@ -743,7 +744,9 @@ public class ExtensionVillager implements EntityType.IExtension
 		return didTakeAction;
 	}
 
-	private boolean _tryCraftSpecialAction(MutableCreature creature)
+	private boolean _tryCraftSpecialAction(MutableCreature creature
+		, TickProcessingContext context
+	)
 	{
 		Data data = (Data) creature.newExtendedData;
 		TradingRegistry.Profession profession = data.profession;
@@ -754,6 +757,14 @@ public class ExtensionVillager implements EntityType.IExtension
 		if (null != chosenCraft)
 		{
 			inventory = _applyCraftToInventory(chosenCraft, inventory);
+			
+			// We will generate a crafting event for this, too.
+			context.eventSink.post(new EventRecord(EventRecord.Type.CRAFT_IN_INVENTORY_COMPLETE
+				, EventRecord.Cause.NONE
+				, creature.getLocation().getBlockLocation()
+				, creature.getId()
+				, creature.getId()
+			));
 		}
 		
 		creature.newExtendedData = new Data(profession
