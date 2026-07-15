@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.creatures.ExtensionVillager;
 import com.jeffdisher.october.mutations.EntityActionType;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
@@ -101,6 +102,17 @@ public class EntityActionReceiveTrade implements IEntityAction<MutableCreature>
 			}
 		}
 		
+		// We will generate an event if this was a success.
+		if (didApply)
+		{
+			// Report the event (we are the target and trader is the source).
+			context.eventSink.post(new EventRecord(EventRecord.Type.TRADE_RECEIVED
+				, EventRecord.Cause.NONE
+				, newEntity.getLocation().getBlockLocation()
+				, newEntity.getId()
+				, _traderId
+			));
+		}
 		return didApply;
 	}
 

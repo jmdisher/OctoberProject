@@ -121,16 +121,32 @@ public class TestVillagerActions
 		
 		// Run these and verify how the state changes and what responses we see.
 		CommonChangeSink changes = new CommonChangeSink(Set.of(playerId), null, null);
-		TickProcessingContext context = ContextBuilder.build().sinks(null, changes).finish();
+		_SingleEventSink events = new _SingleEventSink();
+		TickProcessingContext context = ContextBuilder.build()
+			.sinks(null, changes)
+			.eventSink(events)
+			.finish()
+		;
 		Assert.assertTrue(hatchetOrder.applyChange(context, mutable));
 		Assert.assertEquals(1, ((ExtensionVillager.Data)mutable.newExtendedData).inventory().size());
 		Assert.assertEquals(2, ((ExtensionVillager.Data)mutable.newExtendedData).inventory().get(STONE_HATCHET).intValue());
 		List<TargetedAction<ScheduledChange>> list = changes.takeExportedChanges();
 		Assert.assertEquals(1, list.size());
 		Assert.assertEquals("Store to entity inventory Items[type=Item[id=op.coin, name=Coin, number=119], count=20]", list.get(0).action().change().toString());
+		Assert.assertEquals(new EventRecord(EventRecord.Type.TRADE_RECEIVED
+			, EventRecord.Cause.NONE
+			, mutable.getLocation().getBlockLocation()
+			, mutable.getId()
+			, playerId
+		), events.record);
 		
 		changes = new CommonChangeSink(Set.of(playerId), null, null);
-		context = ContextBuilder.build().sinks(null, changes).finish();
+		events = new _SingleEventSink();
+		context = ContextBuilder.build()
+			.sinks(null, changes)
+			.eventSink(events)
+			.finish()
+		;
 		Assert.assertTrue(saplingOrder.applyChange(context, mutable));
 		Assert.assertEquals(2, ((ExtensionVillager.Data)mutable.newExtendedData).inventory().size());
 		Assert.assertEquals(2, ((ExtensionVillager.Data)mutable.newExtendedData).inventory().get(STONE_HATCHET).intValue());
@@ -138,6 +154,12 @@ public class TestVillagerActions
 		list = changes.takeExportedChanges();
 		Assert.assertEquals(1, list.size());
 		Assert.assertEquals("Store to entity inventory Items[type=Item[id=op.coin, name=Coin, number=119], count=1]", list.get(0).action().change().toString());
+		Assert.assertEquals(new EventRecord(EventRecord.Type.TRADE_RECEIVED
+			, EventRecord.Cause.NONE
+			, mutable.getLocation().getBlockLocation()
+			, mutable.getId()
+			, playerId
+		), events.record);
 		
 		// Run the hatchet order again to see that it fails since we are over limit.
 		changes = new CommonChangeSink(Set.of(playerId), null, null);
@@ -169,21 +191,43 @@ public class TestVillagerActions
 		
 		// Run these and verify how the state changes and what responses we see.
 		CommonChangeSink changes = new CommonChangeSink(Set.of(playerId), null, null);
-		TickProcessingContext context = ContextBuilder.build().sinks(null, changes).finish();
+		_SingleEventSink events = new _SingleEventSink();
+		TickProcessingContext context = ContextBuilder.build()
+			.sinks(null, changes)
+			.eventSink(events)
+			.finish()
+		;
 		Assert.assertTrue(hatchetOrder.applyChange(context, toolSmith));
 		Assert.assertEquals(1, ((ExtensionVillager.Data)toolSmith.newExtendedData).inventory().size());
 		Assert.assertEquals(1, ((ExtensionVillager.Data)toolSmith.newExtendedData).inventory().get(STONE_HATCHET).intValue());
 		List<TargetedAction<ScheduledChange>> list = changes.takeExportedChanges();
 		Assert.assertEquals(1, list.size());
 		Assert.assertTrue(list.get(0).action().change().toString().startsWith("Store to entity inventory NonStackableItem[type=Item[id=op.stone_hatchet,"));
+		Assert.assertEquals(new EventRecord(EventRecord.Type.TRADE_RECEIVED
+			, EventRecord.Cause.NONE
+			, toolSmith.getLocation().getBlockLocation()
+			, toolSmith.getId()
+			, playerId
+		), events.record);
 		
 		changes = new CommonChangeSink(Set.of(playerId), null, null);
-		context = ContextBuilder.build().sinks(null, changes).finish();
+		events = new _SingleEventSink();
+		context = ContextBuilder.build()
+			.sinks(null, changes)
+			.eventSink(events)
+			.finish()
+		;
 		Assert.assertTrue(logOrder.applyChange(context, forester));
 		Assert.assertEquals(0, ((ExtensionVillager.Data)forester.newExtendedData).inventory().size());
 		list = changes.takeExportedChanges();
 		Assert.assertEquals(1, list.size());
 		Assert.assertEquals("Store to entity inventory Items[type=Item[id=op.log, name=Log, number=2], count=1]", list.get(0).action().change().toString());
+		Assert.assertEquals(new EventRecord(EventRecord.Type.TRADE_RECEIVED
+			, EventRecord.Cause.NONE
+			, toolSmith.getLocation().getBlockLocation()
+			, toolSmith.getId()
+			, playerId
+		), events.record);
 		
 		// Run the log order again to see that it fails since they no longer have any.
 		changes = new CommonChangeSink(Set.of(playerId), null, null);
@@ -213,21 +257,43 @@ public class TestVillagerActions
 		
 		// Run these and verify how the state changes and what responses we see.
 		CommonChangeSink changes = new CommonChangeSink(null, Set.of(villagerId), null);
-		TickProcessingContext context = ContextBuilder.build().sinks(null, changes).finish();
+		_SingleEventSink events = new _SingleEventSink();
+		TickProcessingContext context = ContextBuilder.build()
+			.sinks(null, changes)
+			.eventSink(events)
+			.finish()
+		;
 		Assert.assertTrue(hatchetOrder.applyChange(context, toolSmith));
 		Assert.assertEquals(1, ((ExtensionVillager.Data)toolSmith.newExtendedData).inventory().size());
 		Assert.assertEquals(1, ((ExtensionVillager.Data)toolSmith.newExtendedData).inventory().get(STONE_HATCHET).intValue());
 		List<TargetedAction<IEntityAction<MutableCreature>>> list = changes.takeExportedCreatureChanges();
 		Assert.assertEquals(1, list.size());
 		Assert.assertEquals("Store to creature inventory: Item[id=op.stone_hatchet, name=Stone Hatchet, number=63]", list.get(0).action().toString());
+		Assert.assertEquals(new EventRecord(EventRecord.Type.TRADE_RECEIVED
+			, EventRecord.Cause.NONE
+			, toolSmith.getLocation().getBlockLocation()
+			, toolSmith.getId()
+			, villagerId
+		), events.record);
 		
 		changes = new CommonChangeSink(null, Set.of(villagerId), null);
-		context = ContextBuilder.build().sinks(null, changes).finish();
+		events = new _SingleEventSink();
+		context = ContextBuilder.build()
+			.sinks(null, changes)
+			.eventSink(events)
+			.finish()
+		;
 		Assert.assertTrue(logOrder.applyChange(context, forester));
 		Assert.assertEquals(0, ((ExtensionVillager.Data)forester.newExtendedData).inventory().size());
 		list = changes.takeExportedCreatureChanges();
 		Assert.assertEquals(1, list.size());
 		Assert.assertEquals("Store to creature inventory: Item[id=op.log, name=Log, number=2](1)", list.get(0).action().toString());
+		Assert.assertEquals(new EventRecord(EventRecord.Type.TRADE_RECEIVED
+			, EventRecord.Cause.NONE
+			, toolSmith.getLocation().getBlockLocation()
+			, toolSmith.getId()
+			, villagerId
+		), events.record);
 		
 		// Run the log order again to see that it fails since they no longer have any.
 		changes = new CommonChangeSink(null, Set.of(villagerId), null);
@@ -321,13 +387,10 @@ public class TestVillagerActions
 		);
 		
 		// This should fail when still on cooldown.
-		EventRecord[] out_event = new EventRecord[1];
+		_SingleEventSink events = new _SingleEventSink();
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(1L)
-			.eventSink((EventRecord event) -> {
-				Assert.assertNull(out_event[0]);
-				out_event[0] = event;
-			})
+			.eventSink(events)
 			.finish()
 		;
 		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(), Map.of(mutable.getId(), mutable.freeze()));
@@ -342,7 +405,7 @@ public class TestVillagerActions
 			, mutable.getLocation().getBlockLocation()
 			, mutable.getId()
 			, mutable.getId()
-		), out_event[0]);
+		), events.record);
 	}
 
 	@Test
@@ -686,5 +749,17 @@ public class TestVillagerActions
 	private static ExtensionVillager.Data _data(TradingRegistry.Profession profession, Map<Item, Integer> inventory)
 	{
 		return ExtensionVillager.test_createData(profession, inventory);
+	}
+
+
+	private static class _SingleEventSink implements TickProcessingContext.IEventSink
+	{
+		public EventRecord record;
+		@Override
+		public void post(EventRecord event)
+		{
+			Assert.assertNull(this.record);
+			this.record = event;
+		}
 	}
 }

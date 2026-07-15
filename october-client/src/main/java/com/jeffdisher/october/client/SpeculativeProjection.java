@@ -84,6 +84,8 @@ public class SpeculativeProjection
 	public static final int MAX_FOLLOW_UP_TICKS = 3;
 	// We want to always pass through the events which are related to entities (since we don't speculate on other entities).
 	public static final Set<EventRecord.Type> ENTITY_HURT_EVENT_TYPES = Set.of(EventRecord.Type.ENTITY_HURT, EventRecord.Type.ENTITY_KILLED);
+	// These are the events which we always assume are to be passed directly through from the server (ignoring their source - sometimes their recipient triggers the event on the server).
+	public static final Set<EventRecord.Type> SERVER_ONLY_EVENT_TYPES = Set.of(EventRecord.Type.TRADE_RECEIVED);
 
 	private final int _localEntityId;
 	private final IProjectionListener _listener;
@@ -889,7 +891,12 @@ public class SpeculativeProjection
 		// However, since we don't run local follow-up actions against entities, we also want to account for those
 		// which were injuries to other entities caused by us.
 		boolean isLocalEvent;
-		if ((thisEntityId == event.entitySource()) && !ENTITY_HURT_EVENT_TYPES.contains(event.type()))
+		EventRecord.Type type = event.type();
+		if (SERVER_ONLY_EVENT_TYPES.contains(type))
+		{
+			isLocalEvent = false;
+		}
+		else if ((thisEntityId == event.entitySource()) && !ENTITY_HURT_EVENT_TYPES.contains(type))
 		{
 			isLocalEvent = true;
 		}

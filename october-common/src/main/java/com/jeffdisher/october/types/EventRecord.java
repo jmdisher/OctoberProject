@@ -38,6 +38,12 @@ public record EventRecord(Type type
 		 * The entityTarget and entitySource will be set to 0.
 		 */
 		CRAFT_IN_BLOCK_COMPLETE,
+		/**
+		 * Called by a villager handling a successful trade request.
+		 * The entityTarget will be the one handling the request and the entitySource is the one who sent it (could be a
+		 * player entity or another villager).
+		 */
+		TRADE_RECEIVED,
 		ENCHANT_COMPLETE,
 	}
 

@@ -760,6 +760,7 @@ public class ServerStateManager
 			case ENTITY_ATE_FOOD:
 			case ENTITY_PICKED_UP_PASSIVE:
 			case CRAFT_IN_INVENTORY_COMPLETE:
+			case TRADE_RECEIVED:
 				// Include this if the entity is known to the client.
 				if (state.knownEntities.contains(event.entityTarget()))
 				{

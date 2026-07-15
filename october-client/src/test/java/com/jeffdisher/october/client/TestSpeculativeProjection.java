@@ -3442,6 +3442,51 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, listener.events.size());
 	}
 
+	@Test
+	public void eventSpecialCases()
+	{
+		// There is some special logic in how we filter the events from the server to avoid duplication so verify those here.
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		mutable.newLocation = new EntityLocation(5.0f, 5.0f, 5.0f);
+		Entity localEntity = mutable.freeze();
+		projector.setThisEntity(localEntity);
+		int tradeTarget = -1;
+		int tradeSource = entityId;
+		int hurtTarget = -2;
+		int hurtSource = 2;
+		int fallTarget = -3;
+		List<EventRecord> events = List.of(new EventRecord(EventRecord.Type.TRADE_RECEIVED, EventRecord.Cause.NONE, new AbsoluteLocation(1, 2, 3), tradeTarget, tradeSource)
+			, new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, new AbsoluteLocation(2, 3, 4), hurtTarget, hurtSource)
+			, new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.FALL, new AbsoluteLocation(3, 4, 5), fallTarget, 0)
+		);
+		long currentTimeMillis = 100_000L;
+		int remaining = projector.applyChangesForServerTick(1L
+			, List.of()
+			, List.of()
+			, List.of()
+			, null
+			, List.of()
+			, List.of()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, Collections.emptyList()
+			, events
+			, 0L
+			, currentTimeMillis
+		);
+		Assert.assertEquals(0, remaining);
+		
+		// Verify that the expected server-only events pass through.
+		Assert.assertEquals(3, listener.events.size());
+		Assert.assertEquals(events.get(0), listener.events.get(0));
+		Assert.assertEquals(events.get(1), listener.events.get(1));
+		Assert.assertEquals(events.get(2), listener.events.get(2));
+	}
+
 
 	private static EntityActionSimpleMove<IMutablePlayerEntity> _wrap(Entity entity, IEntitySubAction<IMutablePlayerEntity> change)
 	{
