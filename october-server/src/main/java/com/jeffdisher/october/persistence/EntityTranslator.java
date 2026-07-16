@@ -64,6 +64,7 @@ public class EntityTranslator
 		if ((StorageVersions.V10 == version)
 			|| (StorageVersions.V11 == version)
 			|| (StorageVersions.V12 == version)
+			|| (StorageVersions.V13 == version)
 		)
 		{
 			// Do nothing special - just stops old versions from being broken.

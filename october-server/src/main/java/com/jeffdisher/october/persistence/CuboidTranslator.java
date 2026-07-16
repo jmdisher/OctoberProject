@@ -100,10 +100,12 @@ public class CuboidTranslator
 		PackagedCuboid packaged;
 		if ((StorageVersions.V11 == version)
 			|| (StorageVersions.V12 == version)
+			|| (StorageVersions.V13 == version)
 		)
 		{
 			// Version 11 is the same as version 12, except it is packaged in the cuboid cluster directories, not flat files.
-			// Version 12 is the same as version 13, except that the craft objects need to be stripped out (dont with DeserializationContext).
+			// Version 12 is the same as version 13, except that the craft objects need to be stripped out (done with DeserializationContext).
+			// Version 13 is the same as version 14, but some new data was added.
 			CuboidData cuboid = CuboidCodec.readCuboid(address, context);
 			
 			// Load any creatures associated with the cuboid.

@@ -71,6 +71,14 @@ public class CuboidCluster
 		{
 			_loadCurrentData(buffer);
 		}
+		else if (StorageVersions.V13 == version)
+		{
+			// V13 only added data so just read and immediately re-write it.
+			_loadCurrentData(buffer);
+			
+			// Write it back, immediately.
+			_writeToBackingStore();
+		}
 		else if (StorageVersions.V12 == version)
 		{
 			// Convert this data.
