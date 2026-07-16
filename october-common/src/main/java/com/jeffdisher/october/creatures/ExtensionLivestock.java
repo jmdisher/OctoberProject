@@ -76,15 +76,18 @@ public class ExtensionLivestock implements EntityType.IExtension
 	@Override
 	public EntityType.TargetEntity findDeliberateTarget(MutableCreature creature, EntityCollection entityCollection)
 	{
-		EntityType thisType = creature.getType();
-		
 		// This is livestock so choose our target based on whether we are looking for a partner or food.
-		EntityType.TargetEntity newTarget = _breeding.findBreedingPartner(creature, entityCollection);
-		if (null == newTarget)
+		EntityType.TargetEntity newTarget;
+		if (_breeding.isMutableInLoveMode(creature))
+		{
+			newTarget = _breeding.findBreedingPartner(creature, entityCollection);
+		}
+		else
 		{
 			// We will keep this simple:  Find the closest player holding our breeding item, up to our limit.
 			EntityType.TargetEntity[] target = new EntityType.TargetEntity[1];
 			float[] distanceToTarget = new float[] { Float.MAX_VALUE };
+			EntityType thisType = creature.getType();
 			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), thisType.volume());
 			EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
 			entityCollection.walkPlayersInViewDistance(creature, (Entity player) -> {

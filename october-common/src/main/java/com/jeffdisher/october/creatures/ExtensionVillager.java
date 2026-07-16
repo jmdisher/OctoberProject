@@ -136,10 +136,12 @@ public class ExtensionVillager implements EntityType.IExtension
 	@Override
 	public EntityType.TargetEntity findDeliberateTarget(MutableCreature creature, EntityCollection entityCollection)
 	{
-		// Check the common breeding mode, first.
-		EntityType.TargetEntity newTarget = _breeding.findBreedingPartner(creature, entityCollection);
-		
-		if (null == newTarget)
+		EntityType.TargetEntity newTarget;
+		if (_breeding.isMutableInLoveMode(creature))
+		{
+			newTarget = _breeding.findBreedingPartner(creature, entityCollection);
+		}
+		else
 		{
 			// NOTE:  This will update the internal data object if non-null.
 			newTarget = _findTradingTarget(creature, entityCollection);

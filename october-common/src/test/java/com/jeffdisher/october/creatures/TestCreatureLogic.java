@@ -1742,6 +1742,70 @@ public class TestCreatureLogic
 		Assert.assertNotNull(action);
 	}
 
+	@Test
+	public void changeTargetAfterFeeding()
+	{
+		// Show that a cow changes target after being fed.
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		MutableEntity mutableEntity = MutableEntity.createWithLocation(1, new EntityLocation(3.0f, 0.0f, 0.0f), new EntityLocation(0.0f, 0.0f, 0.0f));
+		mutableEntity.newInventory.addAllItems(WHEAT, 2);
+		mutableEntity.setSelectedKey(1);
+		Entity player = mutableEntity.freeze();
+		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(assigner.next(), COW, new EntityLocation(4.0f, 0.0f, 0.0f), 0L));
+		mutable.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(false, null, 0L));
+		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(new AbsoluteLocation(3, 0, 0))
+			, player.id()
+			, player.location()
+			, player.location()
+		);
+		CreatureEntity cow0 = mutable.freeze();
+		mutable = MutableCreature.existing(CreatureEntity.create(assigner.next(), COW, new EntityLocation(8.0f, 0.0f, 0.0f), 0L));
+		mutable.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(true, null, 0L));
+		CreatureEntity cow1 = mutable.freeze();
+		
+		// Feed cow0 and we should see it clear its plan.
+		mutable = MutableCreature.existing(cow0);
+		Assert.assertTrue(CreatureLogic.applyItemToCreature(WHEAT, mutable, 0L));
+		Assert.assertEquals(null, mutable.movementPlan);
+		cow0 = mutable.freeze();
+		
+		// Create a context at the next time where we can take an action and see that they pick no target if they can't see the other cow..
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
+			return blockLocation.getCuboidAddress().equals(cuboidAddress)
+				? BlockProxy.load(blockLocation.getBlockAddress(), input)
+				: null
+			;
+		});
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(10L)
+			.lookups(previousBlockLookUp, null, null)
+			.fixedRandom(2)
+			.finish()
+		;
+		mutable = MutableCreature.existing(cow0);
+		Assert.assertFalse(CreatureLogic.didTakeSpecialActions(context
+			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(cow0.id(), cow0))
+			, mutable
+		));
+		Assert.assertEquals(null, mutable.movementPlan);
+		
+		// Try again, but this time with the other cow visible.
+		context = ContextBuilder.build()
+			.tick(10L)
+			.lookups(previousBlockLookUp, null, null)
+			.fixedRandom(2)
+			.finish()
+		;
+		mutable = MutableCreature.existing(cow0);
+		Assert.assertFalse(CreatureLogic.didTakeSpecialActions(context
+			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(cow0.id(), cow0, cow1.id(), cow1))
+			, mutable
+		));
+		Assert.assertEquals(cow1.id(), mutable.movementPlan.targetEntityId());
+	}
+
 
 	private static TickProcessingContext _createContext(Function<AbsoluteLocation, BlockProxy> function, int random)
 	{
