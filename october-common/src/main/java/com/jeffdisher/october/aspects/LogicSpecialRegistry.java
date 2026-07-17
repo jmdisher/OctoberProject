@@ -2,11 +2,11 @@ package com.jeffdisher.october.aspects;
 
 import com.jeffdisher.october.block_movement.MovableBlockHelpers;
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.CuboidLoaderHelpers;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.FacingDirection;
+import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;

@@ -16,11 +16,11 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.PropertyHelpers;
-import com.jeffdisher.october.subactions.EntityChangeUseSelectedItemOnBlock;
+import com.jeffdisher.october.subactions.EntitySubActionUseSelectedItemOnBlock;
 import com.jeffdisher.october.subactions.EntitySubActionDropItemsAsPassive;
 import com.jeffdisher.october.subactions.EntitySubActionPickUpPassive;
 import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
-import com.jeffdisher.october.subactions.MutationPlaceSelectedBlock;
+import com.jeffdisher.october.subactions.EntitySubActionPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -79,7 +79,7 @@ public class TestOneOffRunner
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(airAddress, ENV.special.AIR);
 		CuboidAddress stoneAddress = CuboidAddress.fromInt(0, 0, -1);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(stoneAddress, ENV.blocks.fromItem(STONE_ITEM));
-		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(target, null);
+		EntitySubActionPlaceSelectedBlock place = new EntitySubActionPlaceSelectedBlock(target, null);
 		
 		OneOffRunner.InputState start = new OneOffRunner.InputState(entity, Map.of(airAddress, airCuboid
 				, stoneAddress, stoneCuboid
@@ -108,7 +108,7 @@ public class TestOneOffRunner
 		airCuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), STONE_ITEM.number());
 		CuboidAddress stoneAddress = CuboidAddress.fromInt(0, 0, -1);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(stoneAddress, ENV.blocks.fromItem(STONE_ITEM));
-		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(target, null);
+		EntitySubActionPlaceSelectedBlock place = new EntitySubActionPlaceSelectedBlock(target, null);
 		
 		OneOffRunner.InputState start = new OneOffRunner.InputState(entity, Map.of(airAddress, airCuboid
 				, stoneAddress, stoneCuboid
@@ -141,7 +141,7 @@ public class TestOneOffRunner
 				cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, 0), grass);
 			}
 		}
-		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(target, null);
+		EntitySubActionPlaceSelectedBlock place = new EntitySubActionPlaceSelectedBlock(target, null);
 		
 		OneOffRunner.InputState start = new OneOffRunner.InputState(entity
 			, Map.of(address, cuboid)
@@ -271,7 +271,7 @@ public class TestOneOffRunner
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(airAddress, ENV.special.AIR);
 		airCuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), DIRT_ITEM.number());
 		
-		EntityChangeUseSelectedItemOnBlock till = new EntityChangeUseSelectedItemOnBlock(target);
+		EntitySubActionUseSelectedItemOnBlock till = new EntitySubActionUseSelectedItemOnBlock(target);
 		OneOffRunner.InputState start = new OneOffRunner.InputState(entity, Map.of(airAddress, airCuboid
 		), Map.of(), Map.of()
 			, _buildProxyLoader(airCuboid)

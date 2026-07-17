@@ -13,7 +13,6 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ScheduledMutation;
-import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -23,6 +22,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.FacingDirection;
+import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.utils.CuboidGenerator;
 

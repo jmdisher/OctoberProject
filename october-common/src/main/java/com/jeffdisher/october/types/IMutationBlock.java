@@ -1,10 +1,8 @@
-package com.jeffdisher.october.mutations;
+package com.jeffdisher.october.types;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.data.IMutableBlockProxy;
-import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.mutations.MutationBlockType;
 
 
 /**

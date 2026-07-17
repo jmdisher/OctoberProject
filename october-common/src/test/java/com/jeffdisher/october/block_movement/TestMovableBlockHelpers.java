@@ -15,13 +15,13 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.transactions.MutationBlockTransactionWrapper;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.FacingDirection;
+import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
 

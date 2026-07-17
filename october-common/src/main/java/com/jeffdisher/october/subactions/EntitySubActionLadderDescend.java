@@ -8,7 +8,6 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;

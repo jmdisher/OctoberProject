@@ -5,7 +5,6 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.actions.passive.PassiveActionPickUp;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;

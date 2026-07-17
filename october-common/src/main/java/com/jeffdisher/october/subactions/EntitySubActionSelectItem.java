@@ -3,7 +3,6 @@ package com.jeffdisher.october.subactions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -16,21 +15,21 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * Selects the given item type if it exists in the entity's inventory.  Fails if it is already selected or is not in the
  * inventory.
  */
-public class MutationEntitySelectItem implements IEntitySubAction<IMutablePlayerEntity>
+public class EntitySubActionSelectItem implements IEntitySubAction<IMutablePlayerEntity>
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.SELECT_ITEM;
 
-	public static MutationEntitySelectItem deserializeFromContext(DeserializationContext context)
+	public static EntitySubActionSelectItem deserializeFromContext(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
 		int inventoryId = buffer.getInt();
-		return new MutationEntitySelectItem(inventoryId);
+		return new EntitySubActionSelectItem(inventoryId);
 	}
 
 
 	private final int _inventoryId;
 
-	public MutationEntitySelectItem(int inventoryId)
+	public EntitySubActionSelectItem(int inventoryId)
 	{
 		_inventoryId = inventoryId;
 	}

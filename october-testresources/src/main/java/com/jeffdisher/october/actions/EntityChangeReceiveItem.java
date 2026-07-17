@@ -2,7 +2,6 @@ package com.jeffdisher.october.actions;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;

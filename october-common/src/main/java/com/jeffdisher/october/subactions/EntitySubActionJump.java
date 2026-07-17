@@ -8,7 +8,6 @@ import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IEntitySubAction;
@@ -20,7 +19,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * This is how the user jumps - if they are standing on the ground, this gives them an upward movement vector.
  * Note that this doesn't move them or take time, just changes the vector.
  */
-public class EntityChangeJump<T extends IMutableMinimalEntity> implements IEntitySubAction<T>
+public class EntitySubActionJump<T extends IMutableMinimalEntity> implements IEntitySubAction<T>
 {
 	/**
 	 * We will make the jump force 0.6x the force of gravity (this was experimentally shown to jump just over 1 block
@@ -44,9 +43,9 @@ public class EntityChangeJump<T extends IMutableMinimalEntity> implements IEntit
 		);
 	}
 
-	public static <T extends IMutableMinimalEntity> EntityChangeJump<T> deserializeFromContext(DeserializationContext context)
+	public static <T extends IMutableMinimalEntity> EntitySubActionJump<T> deserializeFromContext(DeserializationContext context)
 	{
-		return new EntityChangeJump<>();
+		return new EntitySubActionJump<>();
 	}
 
 	@Override

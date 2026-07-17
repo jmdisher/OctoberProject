@@ -3,7 +3,6 @@ package com.jeffdisher.october.subactions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -14,21 +13,21 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * Changes the currently-selected hotbar slot for this entity.
  */
-public class EntityChangeChangeHotbarSlot implements IEntitySubAction<IMutablePlayerEntity>
+public class EntitySubActionChangeHotbarSlot implements IEntitySubAction<IMutablePlayerEntity>
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.CHANGE_HOTBAR_SLOT;
 
-	public static EntityChangeChangeHotbarSlot deserializeFromContext(DeserializationContext context)
+	public static EntitySubActionChangeHotbarSlot deserializeFromContext(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
 		int index = buffer.getInt();
-		return new EntityChangeChangeHotbarSlot(index);
+		return new EntitySubActionChangeHotbarSlot(index);
 	}
 
 
 	private final int _index;
 
-	public EntityChangeChangeHotbarSlot(int index)
+	public EntitySubActionChangeHotbarSlot(int index)
 	{
 		Assert.assertTrue(index >= 0);
 		Assert.assertTrue(index < Entity.HOTBAR_SIZE);

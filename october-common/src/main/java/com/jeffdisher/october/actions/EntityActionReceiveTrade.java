@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.creatures.ExtensionVillager;
-import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.Item;

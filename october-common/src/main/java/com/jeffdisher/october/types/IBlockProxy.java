@@ -1,13 +1,4 @@
-package com.jeffdisher.october.data;
-
-import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.Block;
-import com.jeffdisher.october.types.CraftOperation;
-import com.jeffdisher.october.types.EnchantingOperation;
-import com.jeffdisher.october.types.FacingDirection;
-import com.jeffdisher.october.types.FuelState;
-import com.jeffdisher.october.types.Inventory;
-import com.jeffdisher.october.types.ItemSlot;
+package com.jeffdisher.october.types;
 
 
 /**

@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.IEntitySubAction;
@@ -20,23 +19,23 @@ import com.jeffdisher.october.utils.Assert;
  * Note that swapping the armour into the inventory will create a new key and only armour non-stackable items can be
  * swapped from the inventory.
  */
-public class EntityChangeSwapArmour implements IEntitySubAction<IMutablePlayerEntity>
+public class EntitySubActionSwapArmour implements IEntitySubAction<IMutablePlayerEntity>
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.SWAP_ARMOUR;
 
-	public static EntityChangeSwapArmour deserializeFromContext(DeserializationContext context)
+	public static EntitySubActionSwapArmour deserializeFromContext(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
 		BodyPart slot = CodecHelpers.readBodyPart(buffer);
 		int inventoryId = buffer.getInt();
-		return new EntityChangeSwapArmour(slot, inventoryId);
+		return new EntitySubActionSwapArmour(slot, inventoryId);
 	}
 
 
 	private final BodyPart _slot;
 	private final int _inventoryId;
 
-	public EntityChangeSwapArmour(BodyPart slot, int inventoryId)
+	public EntitySubActionSwapArmour(BodyPart slot, int inventoryId)
 	{
 		Assert.assertTrue(null != slot);
 		

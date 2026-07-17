@@ -20,11 +20,11 @@ import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
-import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 

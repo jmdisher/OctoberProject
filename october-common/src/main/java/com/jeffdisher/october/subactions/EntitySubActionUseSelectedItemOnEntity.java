@@ -6,7 +6,6 @@ import com.jeffdisher.october.actions.EntityActionApplyItemToCreature;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -25,16 +24,16 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * An example of this is feeding wheat to a cow.
  * Note that this is NOT the same as "hitting" an entity.
  */
-public class EntityChangeUseSelectedItemOnEntity implements IEntitySubAction<IMutablePlayerEntity>
+public class EntitySubActionUseSelectedItemOnEntity implements IEntitySubAction<IMutablePlayerEntity>
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.USE_SELECTED_ITEM_ON_ENTITY;
 	public static final long COOLDOWN_MILLIS = 250L;
 
-	public static EntityChangeUseSelectedItemOnEntity deserializeFromContext(DeserializationContext context)
+	public static EntitySubActionUseSelectedItemOnEntity deserializeFromContext(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
 		int entityId = buffer.getInt();
-		return new EntityChangeUseSelectedItemOnEntity(entityId);
+		return new EntitySubActionUseSelectedItemOnEntity(entityId);
 	}
 
 	/**
@@ -55,7 +54,7 @@ public class EntityChangeUseSelectedItemOnEntity implements IEntitySubAction<IMu
 
 	private final int _entityId;
 
-	public EntityChangeUseSelectedItemOnEntity(int entityId)
+	public EntitySubActionUseSelectedItemOnEntity(int entityId)
 	{
 		_entityId = entityId;
 	}

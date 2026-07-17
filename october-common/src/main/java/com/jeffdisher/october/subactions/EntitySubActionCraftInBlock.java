@@ -8,7 +8,6 @@ import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.mutations.MutationBlockCraft;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -29,16 +28,16 @@ import com.jeffdisher.october.utils.Assert;
  * entities within the same tick (since that could result in one entity completing the operation while another starts
  * another one, instead of also helping to complete it).
  */
-public class EntityChangeCraftInBlock implements IEntitySubAction<IMutablePlayerEntity>
+public class EntitySubActionCraftInBlock implements IEntitySubAction<IMutablePlayerEntity>
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.CRAFT_IN_BLOCK;
 
-	public static EntityChangeCraftInBlock deserializeFromContext(DeserializationContext context)
+	public static EntitySubActionCraftInBlock deserializeFromContext(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation targetBlock = CodecHelpers.readAbsoluteLocation(buffer);
 		
-		EntityChangeCraftInBlock toReturn;
+		EntitySubActionCraftInBlock toReturn;
 		if (context.skipPreV13CraftObjects())
 		{
 			buffer.getShort();
@@ -48,7 +47,7 @@ public class EntityChangeCraftInBlock implements IEntitySubAction<IMutablePlayer
 		else
 		{
 			Craft craft = CodecHelpers.readCraft(buffer);
-			return new EntityChangeCraftInBlock(targetBlock, craft);
+			return new EntitySubActionCraftInBlock(targetBlock, craft);
 		}
 		return toReturn;
 	}
@@ -57,7 +56,7 @@ public class EntityChangeCraftInBlock implements IEntitySubAction<IMutablePlayer
 	private final AbsoluteLocation _targetBlock;
 	private final Craft _craft;
 
-	public EntityChangeCraftInBlock(AbsoluteLocation targetBlock, Craft craft)
+	public EntitySubActionCraftInBlock(AbsoluteLocation targetBlock, Craft craft)
 	{
 		Assert.assertTrue(null != targetBlock);
 		// Note that craft can be null if it just means "continue".

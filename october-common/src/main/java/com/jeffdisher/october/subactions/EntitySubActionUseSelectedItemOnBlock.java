@@ -11,7 +11,6 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.mutations.MutationBlockForceGrow;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -36,16 +35,16 @@ import com.jeffdisher.october.utils.Assert;
  * An example of this is a bucket being used on a water block.
  * Note that this is NOT the same as "hitting" a block.
  */
-public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMutablePlayerEntity>
+public class EntitySubActionUseSelectedItemOnBlock implements IEntitySubAction<IMutablePlayerEntity>
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.USE_SELECTED_ITEM_ON_BLOCK;
 	public static final long COOLDOWN_MILLIS = 250L;
 
-	public static EntityChangeUseSelectedItemOnBlock deserializeFromContext(DeserializationContext context)
+	public static EntitySubActionUseSelectedItemOnBlock deserializeFromContext(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation target = CodecHelpers.readAbsoluteLocation(buffer);
-		return new EntityChangeUseSelectedItemOnBlock(target);
+		return new EntitySubActionUseSelectedItemOnBlock(target);
 	}
 
 	/**
@@ -86,7 +85,7 @@ public class EntityChangeUseSelectedItemOnBlock implements IEntitySubAction<IMut
 
 	private final AbsoluteLocation _target;
 
-	public EntityChangeUseSelectedItemOnBlock(AbsoluteLocation target)
+	public EntitySubActionUseSelectedItemOnBlock(AbsoluteLocation target)
 	{
 		_target = target;
 	}

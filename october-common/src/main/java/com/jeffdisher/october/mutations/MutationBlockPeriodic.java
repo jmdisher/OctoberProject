@@ -5,7 +5,6 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.logic.PlantHelpers;
 import com.jeffdisher.october.logic.PortalHelpers;
@@ -13,6 +12,8 @@ import com.jeffdisher.october.logic.CuboidLoaderHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.IMutableBlockProxy;
+import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 

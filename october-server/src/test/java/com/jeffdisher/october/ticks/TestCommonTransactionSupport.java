@@ -16,12 +16,12 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.ScheduledMutation;
-import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockApplyGravity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
+import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 

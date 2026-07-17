@@ -8,7 +8,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IEntitySubAction;
@@ -21,7 +20,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * It is very similar to EntityChangeJump but has different conditions and potentially different force magnitudes.
  * Note that this doesn't move them or take time, just changes the vector.
  */
-public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IEntitySubAction<T>
+public class EntitySubActionSwim<T extends IMutableMinimalEntity> implements IEntitySubAction<T>
 {
 	/**
 	 * We will make the swim force 0.6x the force of gravity since that is the current jump force but this will change
@@ -45,9 +44,9 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IEntit
 		);
 	}
 
-	public static <T extends IMutableMinimalEntity> EntityChangeSwim<T> deserializeFromContext(DeserializationContext context)
+	public static <T extends IMutableMinimalEntity> EntitySubActionSwim<T> deserializeFromContext(DeserializationContext context)
 	{
-		return new EntityChangeSwim<>();
+		return new EntitySubActionSwim<>();
 	}
 
 	@Override

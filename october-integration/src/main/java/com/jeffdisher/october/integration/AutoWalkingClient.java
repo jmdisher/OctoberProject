@@ -12,9 +12,9 @@ import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.process.ClientProcess;
-import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;
-import com.jeffdisher.october.subactions.MutationEntitySelectItem;
-import com.jeffdisher.october.subactions.MutationPlaceSelectedBlock;
+import com.jeffdisher.october.subactions.EntitySubActionIncrementalBlockBreak;
+import com.jeffdisher.october.subactions.EntitySubActionSelectItem;
+import com.jeffdisher.october.subactions.EntitySubActionPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -126,7 +126,7 @@ public class AutoWalkingClient
 				? lantern.item()
 				: stoneBrick.item()
 		;
-		MutationEntitySelectItem select = new MutationEntitySelectItem(toSelect.number());
+		EntitySubActionSelectItem select = new EntitySubActionSelectItem(toSelect.number());
 		client.sendAction(select, System.currentTimeMillis());
 		
 		// We can now run the loop.
@@ -151,12 +151,12 @@ public class AutoWalkingClient
 					// Do nothing special.
 					break;
 				case BREAK:
-					EntityChangeIncrementalBlockBreak change = new EntityChangeIncrementalBlockBreak(lastBlock.getRelative(0, 0, -1));
+					EntitySubActionIncrementalBlockBreak change = new EntitySubActionIncrementalBlockBreak(lastBlock.getRelative(0, 0, -1));
 					client.sendAction(change, currentTimeMillis);
 					break;
 				case BRICK:
 				case LANTERN:
-					client.sendAction(new MutationPlaceSelectedBlock(lastBlock, lastBlock), currentTimeMillis);
+					client.sendAction(new EntitySubActionPlaceSelectedBlock(lastBlock, lastBlock), currentTimeMillis);
 					break;
 					default:
 						throw Assert.unreachable();

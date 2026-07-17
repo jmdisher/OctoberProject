@@ -51,7 +51,7 @@ import com.jeffdisher.october.net.Packet_ServerSendConfigUpdate;
 import com.jeffdisher.october.persistence.PackagedCuboid;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
-import com.jeffdisher.october.subactions.MutationEntitySelectItem;
+import com.jeffdisher.october.subactions.EntitySubActionSelectItem;
 import com.jeffdisher.october.ticks.TickSnapshot;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -260,7 +260,7 @@ public class TestServerStateManager
 		manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
 		
 		// We need to setup the callouts to not fully satisfy this.
-		MutationEntitySelectItem subAction = new MutationEntitySelectItem(1);
+		EntitySubActionSelectItem subAction = new EntitySubActionSelectItem(1);
 		EntityActionSimpleMove<IMutablePlayerEntity> change = new EntityActionSimpleMove<>(0.0f
 			, 0.0f
 			, EntityActionSimpleMove.Intensity.STANDING

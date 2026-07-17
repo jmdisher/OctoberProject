@@ -6,10 +6,11 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.IMutableBlockProxy;
+import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 

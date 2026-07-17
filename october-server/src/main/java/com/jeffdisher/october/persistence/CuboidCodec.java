@@ -15,11 +15,11 @@ import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.PassiveIdAssigner;
 import com.jeffdisher.october.logic.ScheduledMutation;
-import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.utils.Assert;
 

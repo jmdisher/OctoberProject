@@ -2,11 +2,11 @@ package com.jeffdisher.october.logic;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.mutations.CommonBlockMutationHelpers;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 

@@ -2,11 +2,11 @@ package com.jeffdisher.october.block_movement;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.FuelState;
+import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.utils.Assert;

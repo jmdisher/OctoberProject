@@ -4,14 +4,14 @@ import java.util.Set;
 
 import com.jeffdisher.october.aspects.CraftAspect;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.IBlockProxy;
-import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.FuelState;
+import com.jeffdisher.october.types.IBlockProxy;
+import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;

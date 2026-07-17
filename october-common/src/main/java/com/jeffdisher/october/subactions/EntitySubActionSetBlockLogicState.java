@@ -8,7 +8,6 @@ import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.mutations.MultiBlockUtils;
 import com.jeffdisher.october.mutations.MutationBlockSetLogicState;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -26,16 +25,16 @@ import com.jeffdisher.october.utils.Assert;
  * This calls MutationBlockSetLogicState to change the logic state of the underlying block.
  * This is typically used for things like setting a door to the open or closed state.
  */
-public class EntityChangeSetBlockLogicState implements IEntitySubAction<IMutablePlayerEntity>
+public class EntitySubActionSetBlockLogicState implements IEntitySubAction<IMutablePlayerEntity>
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.SET_BLOCK_LOGIC_STATE;
 
-	public static EntityChangeSetBlockLogicState deserializeFromContext(DeserializationContext context)
+	public static EntitySubActionSetBlockLogicState deserializeFromContext(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation target = CodecHelpers.readAbsoluteLocation(buffer);
 		boolean setHigh = CodecHelpers.readBoolean(buffer);
-		return new EntityChangeSetBlockLogicState(target, setHigh);
+		return new EntitySubActionSetBlockLogicState(target, setHigh);
 	}
 
 	public static boolean canChangeBlockLogicState(Block block)
@@ -60,7 +59,7 @@ public class EntityChangeSetBlockLogicState implements IEntitySubAction<IMutable
 	private final AbsoluteLocation _targetBlock;
 	private final boolean _setHigh;
 
-	public EntityChangeSetBlockLogicState(AbsoluteLocation targetBlock, boolean setHigh)
+	public EntitySubActionSetBlockLogicState(AbsoluteLocation targetBlock, boolean setHigh)
 	{
 		_targetBlock = targetBlock;
 		_setHigh = setHigh;

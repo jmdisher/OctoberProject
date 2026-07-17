@@ -1,9 +1,10 @@
-package com.jeffdisher.october.mutations;
+package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 

@@ -9,10 +9,10 @@ import com.jeffdisher.october.config.IValueTransformer;
 import com.jeffdisher.october.config.SimpleTabListCallbacks;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.config.TabListReader.TabListException;
-import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FacingDirection;
+import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 

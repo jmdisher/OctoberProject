@@ -4,10 +4,10 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 
-import com.jeffdisher.october.data.IMutableBlockProxy;
-import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockType;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.IMutableBlockProxy;
+import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 

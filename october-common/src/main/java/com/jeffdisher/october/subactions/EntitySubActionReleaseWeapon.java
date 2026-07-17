@@ -5,8 +5,6 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.CommonEntityMutationHelpers;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
@@ -62,13 +60,13 @@ public class EntitySubActionReleaseWeapon implements IEntitySubAction<IMutablePl
 			Assert.assertTrue(count > 0);
 			
 			// Apply durability loss to the weapon.
-			CommonEntityMutationHelpers.decrementToolDurability(env, context, newEntity, mutableInventory, selectedKey, nonStack);
+			CommonEntitySubActionHelpers.decrementToolDurability(env, context, newEntity, mutableInventory, selectedKey, nonStack);
 			
 			// Remove the ammunition.
 			mutableInventory.removeStackableItems(ammo, 1);
 			if (1 == count)
 			{
-				CommonEntityMutationHelpers.rationalizeHotbar(newEntity);
+				CommonEntitySubActionHelpers.rationalizeHotbar(newEntity);
 			}
 			
 			// Create the projectile.

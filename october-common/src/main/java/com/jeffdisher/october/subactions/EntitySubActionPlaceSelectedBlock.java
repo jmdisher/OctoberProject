@@ -13,7 +13,6 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -34,23 +33,23 @@ import com.jeffdisher.october.utils.CuboidGenerator;
  * Places the block currently selected in the entity's inventory into the world if it is currently air.  This emits a
  * MutationBlockOverwrite if it is consistent.
  */
-public class MutationPlaceSelectedBlock implements IEntitySubAction<IMutablePlayerEntity>
+public class EntitySubActionPlaceSelectedBlock implements IEntitySubAction<IMutablePlayerEntity>
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.BLOCK_PLACE;
 
-	public static MutationPlaceSelectedBlock deserializeFromContext(DeserializationContext context)
+	public static EntitySubActionPlaceSelectedBlock deserializeFromContext(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation target = CodecHelpers.readAbsoluteLocation(buffer);
 		AbsoluteLocation blockOutput = CodecHelpers.readAbsoluteLocation(buffer);
-		return new MutationPlaceSelectedBlock(target, blockOutput);
+		return new EntitySubActionPlaceSelectedBlock(target, blockOutput);
 	}
 
 
 	private final AbsoluteLocation _targetBlock;
 	private final AbsoluteLocation _blockOutput;
 
-	public MutationPlaceSelectedBlock(AbsoluteLocation targetBlock, AbsoluteLocation blockOutput)
+	public EntitySubActionPlaceSelectedBlock(AbsoluteLocation targetBlock, AbsoluteLocation blockOutput)
 	{
 		_targetBlock = targetBlock;
 		_blockOutput = blockOutput;

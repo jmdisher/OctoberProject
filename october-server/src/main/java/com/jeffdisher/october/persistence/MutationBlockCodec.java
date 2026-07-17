@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 import java.util.function.Function;
 
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockApplyGravity;
 import com.jeffdisher.october.mutations.MutationBlockBurnDown;
 import com.jeffdisher.october.mutations.MutationBlockChargeEnchantment;
@@ -36,6 +35,7 @@ import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationBlockSwapSpecialSlot;
 import com.jeffdisher.october.mutations.MutationBlockType;
 import com.jeffdisher.october.mutations.MutationBlockUpdate;
+import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.utils.Assert;
 
 

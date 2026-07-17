@@ -23,8 +23,6 @@ import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.PassiveIdAssigner;
 import com.jeffdisher.october.logic.ScheduledMutation;
-import com.jeffdisher.october.mutations.EntityChangeMutation;
-import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
 import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
@@ -32,10 +30,11 @@ import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
-import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;
-import com.jeffdisher.october.subactions.EntityChangeSetBlockLogicState;
-import com.jeffdisher.october.subactions.MutationEntityPushItems;
-import com.jeffdisher.october.subactions.MutationPlaceSelectedBlock;
+import com.jeffdisher.october.subactions.EntitySubActionIncrementalBlockBreak;
+import com.jeffdisher.october.subactions.EntityChangeMutation;
+import com.jeffdisher.october.subactions.EntitySubActionSetBlockLogicState;
+import com.jeffdisher.october.subactions.EntitySubActionPushItems;
+import com.jeffdisher.october.subactions.EntitySubActionPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -46,6 +45,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
@@ -148,8 +148,8 @@ public class TestTickRunner_slow
 		// Load the furnace with fuel and material.
 		AbsoluteLocation location = new AbsoluteLocation(0, 0, 0);
 		BlockAddress block = location.getBlockAddress();
-		runner.enqueueEntityChange(entityId1, _wrapSubAction(entity1, new MutationEntityPushItems(location, logKey, logsToConvert, Inventory.INVENTORY_ASPECT_INVENTORY)), 1L);
-		runner.enqueueEntityChange(entityId2, _wrapSubAction(entity2, new MutationEntityPushItems(location, plankKey, planksToProvide, Inventory.INVENTORY_ASPECT_FUEL)), 2L);
+		runner.enqueueEntityChange(entityId1, _wrapSubAction(entity1, new EntitySubActionPushItems(location, logKey, logsToConvert, Inventory.INVENTORY_ASPECT_INVENTORY)), 1L);
+		runner.enqueueEntityChange(entityId2, _wrapSubAction(entity2, new EntitySubActionPushItems(location, plankKey, planksToProvide, Inventory.INVENTORY_ASPECT_FUEL)), 2L);
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
 		Assert.assertEquals(2, snap.stats().countOfEntityActionsRun());
@@ -298,8 +298,8 @@ public class TestTickRunner_slow
 		// Load the furnace with fuel and material.
 		AbsoluteLocation location = new AbsoluteLocation(0, 0, 0);
 		BlockAddress block = location.getBlockAddress();
-		runner.enqueueEntityChange(entityId1, _wrapSubAction(entity1, new MutationEntityPushItems(location, logKey, logsToConvert, Inventory.INVENTORY_ASPECT_INVENTORY)), 1L);
-		runner.enqueueEntityChange(entityId2, _wrapSubAction(entity2, new MutationEntityPushItems(location, charcoalKey, charcoalToProvide, Inventory.INVENTORY_ASPECT_FUEL)), 2L);
+		runner.enqueueEntityChange(entityId1, _wrapSubAction(entity1, new EntitySubActionPushItems(location, logKey, logsToConvert, Inventory.INVENTORY_ASPECT_INVENTORY)), 1L);
+		runner.enqueueEntityChange(entityId2, _wrapSubAction(entity2, new EntitySubActionPushItems(location, charcoalKey, charcoalToProvide, Inventory.INVENTORY_ASPECT_FUEL)), 2L);
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
 		Assert.assertEquals(2, snap.stats().countOfEntityActionsRun());
@@ -511,7 +511,7 @@ public class TestTickRunner_slow
 		Assert.assertEquals(0, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
 		
 		// Now, break the plug.
-		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntityChangeIncrementalBlockBreak(plug)), 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntitySubActionIncrementalBlockBreak(plug)), 1L);
 		// Apply a tick for the entity mutation.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
@@ -591,7 +591,7 @@ public class TestTickRunner_slow
 		Assert.assertEquals(0, snapshot.cuboids().values().stream().filter((TickSnapshot.SnapshotCuboid cuboid) -> !cuboid.scheduledBlockMutations().isEmpty()).count());
 		
 		// Now, break the plug.
-		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntityChangeIncrementalBlockBreak(plug)), 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntitySubActionIncrementalBlockBreak(plug)), 1L);
 		// Apply a tick for the entity mutation.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
@@ -731,7 +731,7 @@ public class TestTickRunner_slow
 		);
 		runner.start();
 		runner.waitForPreviousTick();
-		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new MutationPlaceSelectedBlock(location, location)), 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntitySubActionPlaceSelectedBlock(location, location)), 1L);
 		runner.startNextTick();
 		
 		// (run an extra tick to unwrap the entity change)
@@ -807,7 +807,7 @@ public class TestTickRunner_slow
 		);
 		runner.start();
 		runner.waitForPreviousTick();
-		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new MutationPlaceSelectedBlock(location, location)), 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntitySubActionPlaceSelectedBlock(location, location)), 1L);
 		runner.startNextTick();
 		
 		// (run an extra tick to unwrap the entity change)
@@ -1111,9 +1111,9 @@ public class TestTickRunner_slow
 		
 		// We will run these changes in 3 batches:  (1) place gates, (2) flip one switch, (3) flip second switch.
 		// Run phase1.
-		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new MutationPlaceSelectedBlock(andGate, andGate.getRelative(1, 0, 0))), 1L);
-		runner.enqueueEntityChange(2, _wrapSubAction(entity2, new MutationPlaceSelectedBlock(orGate, orGate.getRelative(1, 0, 0))), 1L);
-		runner.enqueueEntityChange(3, _wrapSubAction(entity3, new MutationPlaceSelectedBlock(notGate, notGate.getRelative(1, 0, 0))), 1L);
+		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new EntitySubActionPlaceSelectedBlock(andGate, andGate.getRelative(1, 0, 0))), 1L);
+		runner.enqueueEntityChange(2, _wrapSubAction(entity2, new EntitySubActionPlaceSelectedBlock(orGate, orGate.getRelative(1, 0, 0))), 1L);
+		runner.enqueueEntityChange(3, _wrapSubAction(entity3, new EntitySubActionPlaceSelectedBlock(notGate, notGate.getRelative(1, 0, 0))), 1L);
 		
 		// Now, run enough ticks that this first batch is complete (this is how many ticks it takes for the NOT to propagate).
 		// 1) Run MutationPlaceSelectedBlock.
@@ -1142,9 +1142,9 @@ public class TestTickRunner_slow
 		_checkBlock(phase1, notGate.getRelative(1, 0, 0), itemGate, null, true);
 		
 		// Run phase2 - we flip the switches and should see OR and NOT change.
-		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new EntityChangeSetBlockLogicState(andGate.getRelative(0, -1, 0), true)), 2L);
-		runner.enqueueEntityChange(2, _wrapSubAction(entity2, new EntityChangeSetBlockLogicState(orGate.getRelative(0, -1, 0), true)), 2L);
-		runner.enqueueEntityChange(3, _wrapSubAction(entity3, new EntityChangeSetBlockLogicState(notGate.getRelative(-1, 0, 0), true)), 2L);
+		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new EntitySubActionSetBlockLogicState(andGate.getRelative(0, -1, 0), true)), 2L);
+		runner.enqueueEntityChange(2, _wrapSubAction(entity2, new EntitySubActionSetBlockLogicState(orGate.getRelative(0, -1, 0), true)), 2L);
+		runner.enqueueEntityChange(3, _wrapSubAction(entity3, new EntitySubActionSetBlockLogicState(notGate.getRelative(-1, 0, 0), true)), 2L);
 		
 		// Run enough ticks to observe the output from the or gate.
 		// 1) EntityChangeSetBlockLogicState
@@ -1182,8 +1182,8 @@ public class TestTickRunner_slow
 		_checkBlock(phase2, notGate.getRelative(1, 0, 0), itemGate, null, false);
 		
 		// Run phase3 - we flip the switches and should see AND change.
-		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new EntityChangeSetBlockLogicState(andGate.getRelative(0, 1, 0), true)), 3L);
-		runner.enqueueEntityChange(2, _wrapSubAction(entity2, new EntityChangeSetBlockLogicState(orGate.getRelative(0, 1, 0), true)), 3L);
+		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new EntitySubActionSetBlockLogicState(andGate.getRelative(0, 1, 0), true)), 3L);
+		runner.enqueueEntityChange(2, _wrapSubAction(entity2, new EntitySubActionSetBlockLogicState(orGate.getRelative(0, 1, 0), true)), 3L);
 		
 		// Run enough ticks to observe the output from the or gate.
 		// 1) EntityChangeSetBlockLogicState
@@ -1277,7 +1277,7 @@ public class TestTickRunner_slow
 		int millisRemaining = millisOfBreak;
 		while (millisRemaining > 0)
 		{
-			EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(changeLocation);
+			EntitySubActionIncrementalBlockBreak break1 = new EntitySubActionIncrementalBlockBreak(changeLocation);
 			runner.enqueueEntityChange(entityId, _wrapSubAction(entity, break1), nextCommit);
 			nextCommit += 1L;
 			runner.startNextTick();

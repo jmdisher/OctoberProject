@@ -12,8 +12,8 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.subactions.EntityChangeJump;
-import com.jeffdisher.october.subactions.EntityChangeSwim;
+import com.jeffdisher.october.subactions.EntitySubActionJump;
+import com.jeffdisher.october.subactions.EntitySubActionSwim;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.ContextBuilder;
@@ -119,7 +119,7 @@ public class TestCreatureMovementHelpers
 		ViscosityReader reader = _getSplitBlockReader(ENV.special.AIR, STONE);
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, true, false);
 		Assert.assertNotNull(change);
-		Assert.assertTrue(change.getSubAction() instanceof EntityChangeJump);
+		Assert.assertTrue(change.getSubAction() instanceof EntitySubActionJump);
 	}
 
 	@Test
@@ -166,7 +166,7 @@ public class TestCreatureMovementHelpers
 		ViscosityReader reader = _getFixedBlockReader(WATER_SOURCE);
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.5f, true, true);
 		Assert.assertNotNull(change);
-		Assert.assertTrue(change.getSubAction() instanceof EntityChangeSwim);
+		Assert.assertTrue(change.getSubAction() instanceof EntitySubActionSwim);
 	}
 
 	@Test

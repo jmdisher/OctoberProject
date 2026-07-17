@@ -6,9 +6,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.mutations.EntityActionType;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.subactions.EntitySubActionType;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;

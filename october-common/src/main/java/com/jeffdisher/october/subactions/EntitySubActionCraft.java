@@ -6,8 +6,6 @@ import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.aspects.CraftAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.mutations.CommonEntityMutationHelpers;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
@@ -25,15 +23,15 @@ import com.jeffdisher.october.utils.Assert;
  * Note that this is meant to be used incrementally - multiple calls to this mutation will eventually complete the
  * craft.
  */
-public class EntityChangeCraft implements IEntitySubAction<IMutablePlayerEntity>
+public class EntitySubActionCraft implements IEntitySubAction<IMutablePlayerEntity>
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.CRAFT;
 
-	public static EntityChangeCraft deserializeFromContext(DeserializationContext context)
+	public static EntitySubActionCraft deserializeFromContext(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
 		
-		EntityChangeCraft toReturn;
+		EntitySubActionCraft toReturn;
 		if (context.skipPreV13CraftObjects())
 		{
 			buffer.getShort();
@@ -44,7 +42,7 @@ public class EntityChangeCraft implements IEntitySubAction<IMutablePlayerEntity>
 		{
 			Craft operation = CodecHelpers.readCraft(buffer);
 			buffer.getLong();
-			toReturn = new EntityChangeCraft(operation);
+			toReturn = new EntitySubActionCraft(operation);
 		}
 		return toReturn;
 	}
@@ -52,7 +50,7 @@ public class EntityChangeCraft implements IEntitySubAction<IMutablePlayerEntity>
 
 	private final Craft _operation;
 
-	public EntityChangeCraft(Craft operation)
+	public EntitySubActionCraft(Craft operation)
 	{
 		// NOTE:  In storage version 6 or network version 8, this craft operation was not allowed to be null.
 		// In storage 7 and network 9, this was relaxed so that it can be null.
@@ -116,7 +114,7 @@ public class EntityChangeCraft implements IEntitySubAction<IMutablePlayerEntity>
 				Assert.assertTrue(didCraft);
 				
 				// Make sure that this cleared the hotbar, if we used the last of them (we need to check all of the hotbar slots).
-				CommonEntityMutationHelpers.rationalizeHotbar(newEntity);
+				CommonEntitySubActionHelpers.rationalizeHotbar(newEntity);
 				
 				// Clear the current operation since we are done.
 				newEntity.setCurrentCraftingOperation(null);

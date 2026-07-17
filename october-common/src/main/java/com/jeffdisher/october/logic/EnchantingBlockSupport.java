@@ -8,7 +8,6 @@ import java.util.Map;
 
 import com.jeffdisher.october.aspects.EnchantmentRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.mutations.MutationBlockChargeEnchantment;
 import com.jeffdisher.october.mutations.MutationBlockCleanEnchantment;
 import com.jeffdisher.october.mutations.MutationBlockFetchSpecialForEnchantment;
@@ -19,6 +18,7 @@ import com.jeffdisher.october.types.EnchantingOperation;
 import com.jeffdisher.october.types.Enchantment;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
+import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.Infusion;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;

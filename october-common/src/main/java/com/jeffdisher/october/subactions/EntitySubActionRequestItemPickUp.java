@@ -6,7 +6,6 @@ import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -31,18 +30,18 @@ import com.jeffdisher.october.utils.Assert;
  * -MutationBlockExtractItems - run against the block to extract the items
  * -MutationEntityStoreToInventory - run against the entity to store the extracted items
  */
-public class MutationEntityRequestItemPickUp implements IEntitySubAction<IMutablePlayerEntity>
+public class EntitySubActionRequestItemPickUp implements IEntitySubAction<IMutablePlayerEntity>
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.ITEMS_REQUEST_PULL;
 
-	public static MutationEntityRequestItemPickUp deserializeFromContext(DeserializationContext context)
+	public static EntitySubActionRequestItemPickUp deserializeFromContext(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation blockLocation = CodecHelpers.readAbsoluteLocation(buffer);
 		int blockInventoryKey = buffer.getInt();
 		int countRequested = buffer.getInt();
 		byte inventoryAspect = buffer.get();
-		return new MutationEntityRequestItemPickUp(blockLocation, blockInventoryKey, countRequested, inventoryAspect);
+		return new EntitySubActionRequestItemPickUp(blockLocation, blockInventoryKey, countRequested, inventoryAspect);
 	}
 
 
@@ -51,7 +50,7 @@ public class MutationEntityRequestItemPickUp implements IEntitySubAction<IMutabl
 	private final int _countRequested;
 	private final byte _inventoryAspect;
 
-	public MutationEntityRequestItemPickUp(AbsoluteLocation blockLocation, int blockInventoryKey, int countRequested, byte inventoryAspect)
+	public EntitySubActionRequestItemPickUp(AbsoluteLocation blockLocation, int blockInventoryKey, int countRequested, byte inventoryAspect)
 	{
 		_blockLocation = blockLocation;
 		_blockInventoryKey = blockInventoryKey;

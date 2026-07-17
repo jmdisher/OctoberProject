@@ -10,8 +10,6 @@ import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.NudgeHelpers;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.CommonEntityMutationHelpers;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
@@ -30,22 +28,22 @@ import com.jeffdisher.october.utils.Assert;
  * change to check the range on the sender side (here), in the future.
  * In the future, we will need this to have some time cost but this is just to get the first step working.
  */
-public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayerEntity>
+public class EntitySubActionAttackEntity implements IEntitySubAction<IMutablePlayerEntity>
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.ATTACK_ENTITY;
 	public static final long ATTACK_COOLDOWN_MILLIS = 500L;
 
-	public static EntityChangeAttackEntity deserializeFromContext(DeserializationContext context)
+	public static EntitySubActionAttackEntity deserializeFromContext(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
 		int targetEntityId = buffer.getInt();
-		return new EntityChangeAttackEntity(targetEntityId);
+		return new EntitySubActionAttackEntity(targetEntityId);
 	}
 
 
 	private final int _targetEntityId;
 
-	public EntityChangeAttackEntity(int targetEntityId)
+	public EntitySubActionAttackEntity(int targetEntityId)
 	{
 		// Note that there is no entity 0 (positive are players, negatives are creatures).
 		Assert.assertTrue(0 != targetEntityId);
@@ -122,7 +120,7 @@ public class EntityChangeAttackEntity implements IEntitySubAction<IMutablePlayer
 				, targetVolume
 			);
 			
-			CommonEntityMutationHelpers.decrementToolDurability(env, context, newEntity, mutableInventory, selectedKey, nonStack);
+			CommonEntitySubActionHelpers.decrementToolDurability(env, context, newEntity, mutableInventory, selectedKey, nonStack);
 			
 			// Attacking expends a lot of energy.
 			newEntity.applyEnergyCost(EntityActionPeriodic.ENERGY_COST_PER_ATTACK);

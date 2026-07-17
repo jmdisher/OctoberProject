@@ -17,6 +17,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.FacingDirection;
+import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
 

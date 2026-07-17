@@ -7,7 +7,6 @@ import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
@@ -20,21 +19,21 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * Called to reset the day and set the spawn for the entity.
  */
-public class EntityChangeSetDayAndSpawn implements IEntitySubAction<IMutablePlayerEntity>
+public class EntitySubActionSetDayAndSpawn implements IEntitySubAction<IMutablePlayerEntity>
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.SET_DAY_AND_SPAWN;
 
-	public static EntityChangeSetDayAndSpawn deserializeFromContext(DeserializationContext context)
+	public static EntitySubActionSetDayAndSpawn deserializeFromContext(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation bedLocation = CodecHelpers.readAbsoluteLocation(buffer);
-		return new EntityChangeSetDayAndSpawn(bedLocation);
+		return new EntitySubActionSetDayAndSpawn(bedLocation);
 	}
 
 
 	private final AbsoluteLocation _bedLocation;
 
-	public EntityChangeSetDayAndSpawn(AbsoluteLocation bedLocation)
+	public EntitySubActionSetDayAndSpawn(AbsoluteLocation bedLocation)
 	{
 		Assert.assertTrue(null != bedLocation);
 		

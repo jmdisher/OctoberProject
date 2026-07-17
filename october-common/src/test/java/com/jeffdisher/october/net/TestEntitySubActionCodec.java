@@ -6,7 +6,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockRepair;
+import com.jeffdisher.october.subactions.EntitySubActionIncrementalBlockRepair;
 import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
@@ -20,14 +20,14 @@ public class TestEntitySubActionCodec
 	public void repair() throws Throwable
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
-		EntityChangeIncrementalBlockRepair change = new EntityChangeIncrementalBlockRepair(location);
+		EntitySubActionIncrementalBlockRepair change = new EntitySubActionIncrementalBlockRepair(location);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		EntitySubActionCodec.serializeToBuffer(buffer, change);
 		buffer.flip();
 		DeserializationContext context = DeserializationContext.empty(null, buffer);
 		IEntitySubAction<IMutablePlayerEntity> read = EntitySubActionCodec.parseAndSeekFlippedBuffer(context);
-		Assert.assertTrue(read instanceof EntityChangeIncrementalBlockRepair);
+		Assert.assertTrue(read instanceof EntitySubActionIncrementalBlockRepair);
 		Assert.assertEquals(0, buffer.remaining());
 	}
 

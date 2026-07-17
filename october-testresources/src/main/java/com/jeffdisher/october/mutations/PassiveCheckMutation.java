@@ -2,9 +2,10 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.IMutableBlockProxy;
+import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;

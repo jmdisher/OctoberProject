@@ -42,7 +42,7 @@ import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV1;
-import com.jeffdisher.october.subactions.EntityChangeAttackEntity;
+import com.jeffdisher.october.subactions.EntitySubActionAttackEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -485,7 +485,7 @@ public class TestResourceLoader
 		EntityActionStoreToInventory persistentChange  = new EntityActionStoreToInventory(new Items(STONE.item(), 2), null);
 		
 		// Originally, this used the top-level attack action but that has been deprecated so now we use the appropriate sub-action in a standing top-level action.
-		EntityChangeAttackEntity subAction = new EntityChangeAttackEntity(targetId);
+		EntitySubActionAttackEntity subAction = new EntitySubActionAttackEntity(targetId);
 		EntityActionSimpleMove<IMutablePlayerEntity> ephemeralChange = new EntityActionSimpleMove<>(0.0f
 			, 0.0f
 			, EntityActionSimpleMove.Intensity.STANDING

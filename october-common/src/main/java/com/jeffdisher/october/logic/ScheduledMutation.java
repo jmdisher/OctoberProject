@@ -1,6 +1,6 @@
 package com.jeffdisher.october.logic;
 
-import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.types.IMutationBlock;
 
 
 /**

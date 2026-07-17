@@ -9,9 +9,9 @@ import org.junit.Test;
 
 import com.jeffdisher.october.actions.Deprecated_EntityAction;
 import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
+import com.jeffdisher.october.actions.EntityActionType;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;

@@ -6,7 +6,6 @@ import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.mutations.IMutationBlock;
 
 
 /**

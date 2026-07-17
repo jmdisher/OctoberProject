@@ -4,8 +4,8 @@ import java.util.List;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.logic.EntityMovementHelpers.IInteractiveHelper;
-import com.jeffdisher.october.subactions.EntityChangeJump;
-import com.jeffdisher.october.subactions.EntityChangeSwim;
+import com.jeffdisher.october.subactions.EntitySubActionJump;
+import com.jeffdisher.october.subactions.EntitySubActionSwim;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -193,15 +193,15 @@ public class CreatureMovementHelpers
 		{
 			// We need to go up so see if we should jump, swim, or hope our momentum will get us there.
 			IEntitySubAction<MutableCreature> subAction;
-			if (EntityChangeJump.canJumpWithReader(supplier, creatureLocation, creatureType.volume(), creatureVelocity))
+			if (EntitySubActionJump.canJumpWithReader(supplier, creatureLocation, creatureType.volume(), creatureVelocity))
 			{
 				// Jump.
-				subAction = new EntityChangeJump<>();
+				subAction = new EntitySubActionJump<>();
 			}
 			else if (isBlockSwimmable && (creatureVelocity.z() <= 0.0f))
 			{
 				// Swim.
-				subAction = new EntityChangeSwim<>();
+				subAction = new EntitySubActionSwim<>();
 			}
 			else
 			{

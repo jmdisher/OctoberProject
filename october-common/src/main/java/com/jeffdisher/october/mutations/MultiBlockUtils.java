@@ -5,10 +5,11 @@ import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.data.IBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FacingDirection;
+import com.jeffdisher.october.types.IBlockProxy;
+import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 

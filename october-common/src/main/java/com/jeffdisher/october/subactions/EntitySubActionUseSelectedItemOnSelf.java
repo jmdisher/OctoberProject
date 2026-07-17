@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntitySubAction;
@@ -19,14 +18,14 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * Handles the "right-click with selection" case for specific items.
  * An example of this is a piece of bread being used in order to eat it.
  */
-public class EntityChangeUseSelectedItemOnSelf implements IEntitySubAction<IMutablePlayerEntity>
+public class EntitySubActionUseSelectedItemOnSelf implements IEntitySubAction<IMutablePlayerEntity>
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.USE_SELECTED_ITEM_ON_SELF;
 	public static final long COOLDOWN_MILLIS = 250L;
 
-	public static EntityChangeUseSelectedItemOnSelf deserializeFromContext(DeserializationContext context)
+	public static EntitySubActionUseSelectedItemOnSelf deserializeFromContext(DeserializationContext context)
 	{
-		return new EntityChangeUseSelectedItemOnSelf();
+		return new EntitySubActionUseSelectedItemOnSelf();
 	}
 
 	/**
@@ -43,7 +42,7 @@ public class EntityChangeUseSelectedItemOnSelf implements IEntitySubAction<IMuta
 	}
 
 
-	public EntityChangeUseSelectedItemOnSelf()
+	public EntitySubActionUseSelectedItemOnSelf()
 	{
 	}
 

@@ -33,7 +33,7 @@ import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.PlantHelpers;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.properties.PropertyRegistry;
-import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;
+import com.jeffdisher.october.subactions.EntitySubActionIncrementalBlockBreak;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -49,6 +49,7 @@ import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.IPassiveAction;
 import com.jeffdisher.october.types.Infusion;
 import com.jeffdisher.october.types.Inventory;
@@ -160,7 +161,7 @@ public class TestCommonMutations
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), STONE);
 		ProcessingSinks sinks = new ProcessingSinks();
 		TickProcessingContext context = sinks.createBoundContext(cuboid);
-		EntityChangeIncrementalBlockBreak longRunningChange = new EntityChangeIncrementalBlockBreak(target);
+		EntitySubActionIncrementalBlockBreak longRunningChange = new EntitySubActionIncrementalBlockBreak(target);
 		
 		// We will need an entity so that phase1 can ask to schedule the follow-up against it.
 		int clientId = 1;
@@ -203,7 +204,7 @@ public class TestCommonMutations
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), STONE);
 		ProcessingSinks sinks = new ProcessingSinks();
 		TickProcessingContext context = sinks.createBoundContext(cuboid);
-		EntityChangeIncrementalBlockBreak longRunningChange = new EntityChangeIncrementalBlockBreak(target);
+		EntitySubActionIncrementalBlockBreak longRunningChange = new EntitySubActionIncrementalBlockBreak(target);
 		
 		// We will need an entity so that phase1 can ask to schedule the follow-up against it.
 		int clientId = 1;

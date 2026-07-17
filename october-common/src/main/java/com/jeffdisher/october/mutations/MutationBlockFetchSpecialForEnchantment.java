@@ -3,9 +3,10 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.IMutableBlockProxy;
+import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.TickProcessingContext;

@@ -8,7 +8,6 @@ import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IEntitySubAction;

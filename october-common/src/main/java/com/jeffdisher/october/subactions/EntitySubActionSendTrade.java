@@ -13,7 +13,6 @@ import com.jeffdisher.october.creatures.ExtensionVillager;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;

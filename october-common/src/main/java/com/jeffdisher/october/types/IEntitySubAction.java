@@ -2,7 +2,7 @@ package com.jeffdisher.october.types;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.mutations.EntitySubActionType;
+import com.jeffdisher.october.subactions.EntitySubActionType;
 
 
 /**

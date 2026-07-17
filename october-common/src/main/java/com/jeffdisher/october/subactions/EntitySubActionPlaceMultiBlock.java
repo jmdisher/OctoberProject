@@ -14,7 +14,6 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.mutations.MultiBlockUtils;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -40,23 +39,23 @@ import com.jeffdisher.october.utils.CuboidGenerator;
  * follow-up mutations to each of the block locations in order to verify consistency in the following tick.
  * If this consistency is violated, all of the blocks will revert to what they replaced.
  */
-public class EntityChangePlaceMultiBlock implements IEntitySubAction<IMutablePlayerEntity>
+public class EntitySubActionPlaceMultiBlock implements IEntitySubAction<IMutablePlayerEntity>
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.MULTI_BLOCK_PLACE;
 
-	public static EntityChangePlaceMultiBlock deserializeFromContext(DeserializationContext context)
+	public static EntitySubActionPlaceMultiBlock deserializeFromContext(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation target = CodecHelpers.readAbsoluteLocation(buffer);
 		FacingDirection orientation = CodecHelpers.readOrientation(buffer);
-		return new EntityChangePlaceMultiBlock(target, orientation);
+		return new EntitySubActionPlaceMultiBlock(target, orientation);
 	}
 
 
 	private final AbsoluteLocation _targetBlock;
 	private final FacingDirection _orientation;
 
-	public EntityChangePlaceMultiBlock(AbsoluteLocation targetBlock, FacingDirection orientation)
+	public EntitySubActionPlaceMultiBlock(AbsoluteLocation targetBlock, FacingDirection orientation)
 	{
 		_targetBlock = targetBlock;
 		_orientation = orientation;

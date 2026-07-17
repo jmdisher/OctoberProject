@@ -20,8 +20,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.IMutationBlock;
-import com.jeffdisher.october.subactions.MutationPlaceSelectedBlock;
+import com.jeffdisher.october.subactions.EntitySubActionPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -31,6 +30,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
@@ -273,7 +273,7 @@ public class TestCreativeFlightAccumulator
 		byte yaw = 5;
 		byte pitch = 6;
 		accumulator.setOrientation(yaw, pitch);
-		boolean didAdd = accumulator.enqueueSubAction(currentTimeMillis, new MutationPlaceSelectedBlock(entity.location().getBlockLocation().getRelative(1, 0, 0), null));
+		boolean didAdd = accumulator.enqueueSubAction(currentTimeMillis, new EntitySubActionPlaceSelectedBlock(entity.location().getBlockLocation().getRelative(1, 0, 0), null));
 		Assert.assertTrue(didAdd);
 		
 		currentTimeMillis += 60L;

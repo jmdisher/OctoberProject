@@ -3,12 +3,12 @@ package com.jeffdisher.october.block_movement;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.actions.EntityActionPush;
-import com.jeffdisher.october.data.IMutableBlockProxy;
-import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockType;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.TickProcessingContext;

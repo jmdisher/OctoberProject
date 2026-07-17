@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;

@@ -3,7 +3,6 @@ package com.jeffdisher.october.actions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.mutations.EntityActionType;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;

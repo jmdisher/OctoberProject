@@ -7,7 +7,6 @@ import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.EntitySubActionType;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -29,11 +28,11 @@ import com.jeffdisher.october.utils.Assert;
  * inventory.
  * Note that races here can result in items being destroyed (if the same block is over-filled in one tick).
  */
-public class MutationEntityPushItems implements IEntitySubAction<IMutablePlayerEntity>
+public class EntitySubActionPushItems implements IEntitySubAction<IMutablePlayerEntity>
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.ITEMS_REQUEST_PUSH;
 
-	public static MutationEntityPushItems deserializeFromContext(DeserializationContext context)
+	public static EntitySubActionPushItems deserializeFromContext(DeserializationContext context)
 	{
 		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation blockLocation = CodecHelpers.readAbsoluteLocation(buffer);
@@ -42,7 +41,7 @@ public class MutationEntityPushItems implements IEntitySubAction<IMutablePlayerE
 		int count = buffer.getInt();
 		Assert.assertTrue(count > 0);
 		byte inventoryAspect = buffer.get();
-		return new MutationEntityPushItems(blockLocation, localInventoryId, count, inventoryAspect);
+		return new EntitySubActionPushItems(blockLocation, localInventoryId, count, inventoryAspect);
 	}
 
 
@@ -51,7 +50,7 @@ public class MutationEntityPushItems implements IEntitySubAction<IMutablePlayerE
 	private final int _count;
 	private final byte _inventoryAspect;
 
-	public MutationEntityPushItems(AbsoluteLocation blockLocation, int localInventoryId, int count, byte inventoryAspect)
+	public EntitySubActionPushItems(AbsoluteLocation blockLocation, int localInventoryId, int count, byte inventoryAspect)
 	{
 		Assert.assertTrue(localInventoryId > 0);
 		Assert.assertTrue(count > 0);

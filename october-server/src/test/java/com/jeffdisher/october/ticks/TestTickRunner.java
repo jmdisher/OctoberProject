@@ -34,9 +34,6 @@ import com.jeffdisher.october.logic.PassiveIdAssigner;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.ScheduledMutation;
-import com.jeffdisher.october.mutations.EntityChangeFutureBlock;
-import com.jeffdisher.october.mutations.EntityChangeMutation;
-import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockChargeEnchantment;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
@@ -52,14 +49,16 @@ import com.jeffdisher.october.mutations.ShockwaveMutation;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.properties.PropertyRegistry;
-import com.jeffdisher.october.subactions.EntityChangeAttackEntity;
-import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;
+import com.jeffdisher.october.subactions.EntitySubActionAttackEntity;
+import com.jeffdisher.october.subactions.EntityChangeFutureBlock;
+import com.jeffdisher.october.subactions.EntitySubActionIncrementalBlockBreak;
+import com.jeffdisher.october.subactions.EntityChangeMutation;
 import com.jeffdisher.october.subactions.EntityChangeSendItem;
-import com.jeffdisher.october.subactions.EntityChangeSetBlockLogicState;
+import com.jeffdisher.october.subactions.EntitySubActionSetBlockLogicState;
 import com.jeffdisher.october.subactions.EntitySubActionSendTrade;
-import com.jeffdisher.october.subactions.MutationEntityPushItems;
-import com.jeffdisher.october.subactions.MutationEntityRequestItemPickUp;
-import com.jeffdisher.october.subactions.MutationPlaceSelectedBlock;
+import com.jeffdisher.october.subactions.EntitySubActionPushItems;
+import com.jeffdisher.october.subactions.EntitySubActionRequestItemPickUp;
+import com.jeffdisher.october.subactions.EntitySubActionPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -75,6 +74,7 @@ import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
@@ -653,7 +653,7 @@ public class TestTickRunner
 		Assert.assertEquals(2, snapshot.cuboids().size());
 		
 		// Tell them to start breaking a stone block.
-		runner.enqueueEntityChange(entityId, _wrapSubAction(entity.entity(), new EntityChangeIncrementalBlockBreak(new AbsoluteLocation(1, 1, -1))), 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity.entity(), new EntitySubActionIncrementalBlockBreak(new AbsoluteLocation(1, 1, -1))), 1L);
 		// Run a tick and verify that we see the cuboid mutation from this in the snapshot.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
@@ -912,7 +912,7 @@ public class TestTickRunner
 		runner.start();
 		runner.waitForPreviousTick();
 		long nextCommit = 1L;
-		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new MutationPlaceSelectedBlock(location, location)), nextCommit);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntitySubActionPlaceSelectedBlock(location, location)), nextCommit);
 		nextCommit += 1L;
 		runner.startNextTick();
 		
@@ -1008,12 +1008,12 @@ public class TestTickRunner
 		);
 		runner.start();
 		// Skip a few ticks until the system has warmed up to the point where we can use a weapon.
-		for (int i = 0; i < (EntityChangeAttackEntity.ATTACK_COOLDOWN_MILLIS / MILLIS_PER_TICK); ++i)
+		for (int i = 0; i < (EntitySubActionAttackEntity.ATTACK_COOLDOWN_MILLIS / MILLIS_PER_TICK); ++i)
 		{
 			runner.startNextTick();
 		}
 		runner.waitForPreviousTick();
-		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntityChangeAttackEntity(creatureId)), 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntitySubActionAttackEntity(creatureId)), 1L);
 		runner.startNextTick();
 		
 		// (run an extra tick to unwrap the entity change)
@@ -1026,12 +1026,12 @@ public class TestTickRunner
 		Assert.assertEquals((byte)5, updated.health());
 		
 		// Hitting them again should cause them to de-spawn and drop items.
-		for (int i = 0; i < (EntityChangeAttackEntity.ATTACK_COOLDOWN_MILLIS / MILLIS_PER_TICK); ++i)
+		for (int i = 0; i < (EntitySubActionAttackEntity.ATTACK_COOLDOWN_MILLIS / MILLIS_PER_TICK); ++i)
 		{
 			runner.startNextTick();
 		}
 		runner.waitForPreviousTick();
-		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntityChangeAttackEntity(creatureId)), 2L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntitySubActionAttackEntity(creatureId)), 2L);
 		runner.startNextTick();
 		
 		// (run an extra tick to unwrap the entity change)
@@ -1122,7 +1122,7 @@ public class TestTickRunner
 		runner.waitForPreviousTick();
 		
 		// Enqueue the mutation to change the state of the switch.
-		EntityChangeSetBlockLogicState setSwitch = new EntityChangeSetBlockLogicState(switchLocation, true);
+		EntitySubActionSetBlockLogicState setSwitch = new EntitySubActionSetBlockLogicState(switchLocation, true);
 		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, setSwitch), 1L);
 		runner.startNextTick();
 		
@@ -1202,7 +1202,7 @@ public class TestTickRunner
 		runner.waitForPreviousTick();
 		
 		// Enqueue the mutation to change the state of the switch.
-		EntityChangeSetBlockLogicState setSwitch = new EntityChangeSetBlockLogicState(switchLocation, true);
+		EntitySubActionSetBlockLogicState setSwitch = new EntitySubActionSetBlockLogicState(switchLocation, true);
 		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, setSwitch), 1L);
 		runner.startNextTick();
 		
@@ -1227,7 +1227,7 @@ public class TestTickRunner
 		
 		// Break one of these wires.
 		runner.waitForPreviousTick();
-		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(wire1Location);
+		EntitySubActionIncrementalBlockBreak break1 = new EntitySubActionIncrementalBlockBreak(wire1Location);
 		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, break1), 2L);
 		runner.startNextTick();
 		
@@ -1680,14 +1680,14 @@ public class TestTickRunner
 		runner.waitForPreviousTick();
 		
 		// We are only interested in seeing the final state so run all the operations concurrently and wait until all logic processing is completed.
-		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new MutationPlaceSelectedBlock(emitterSpace1, emitterSpace1.getRelative(1, 0, 0))), 1L);
-		runner.enqueueEntityChange(2, _wrapSubAction(entity2, new MutationPlaceSelectedBlock(emitterSpace2, emitterSpace2.getRelative(1, 0, 0))), 1L);
-		runner.enqueueEntityChange(3, _wrapSubAction(entity3, new MutationPlaceSelectedBlock(doorSpace1_1, doorSpace1_1.getRelative(1, 0, 0))), 1L);
-		runner.enqueueEntityChange(4, _wrapSubAction(entity4, new MutationPlaceSelectedBlock(wireSpace2_1, wireSpace2_1.getRelative(1, 0, 0))), 1L);
+		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new EntitySubActionPlaceSelectedBlock(emitterSpace1, emitterSpace1.getRelative(1, 0, 0))), 1L);
+		runner.enqueueEntityChange(2, _wrapSubAction(entity2, new EntitySubActionPlaceSelectedBlock(emitterSpace2, emitterSpace2.getRelative(1, 0, 0))), 1L);
+		runner.enqueueEntityChange(3, _wrapSubAction(entity3, new EntitySubActionPlaceSelectedBlock(doorSpace1_1, doorSpace1_1.getRelative(1, 0, 0))), 1L);
+		runner.enqueueEntityChange(4, _wrapSubAction(entity4, new EntitySubActionPlaceSelectedBlock(wireSpace2_1, wireSpace2_1.getRelative(1, 0, 0))), 1L);
 		runner.startNextTick();
 		runner.waitForPreviousTick();
-		runner.enqueueEntityChange(3, _wrapSubAction(entity3, new MutationPlaceSelectedBlock(doorSpace1_2, doorSpace1_2.getRelative(1, 0, 0))), 2L);
-		runner.enqueueEntityChange(4, _wrapSubAction(entity4, new MutationPlaceSelectedBlock(wireSpace2_2, wireSpace2_2.getRelative(1, 0, 0))), 2L);
+		runner.enqueueEntityChange(3, _wrapSubAction(entity3, new EntitySubActionPlaceSelectedBlock(doorSpace1_2, doorSpace1_2.getRelative(1, 0, 0))), 2L);
+		runner.enqueueEntityChange(4, _wrapSubAction(entity4, new EntitySubActionPlaceSelectedBlock(wireSpace2_2, wireSpace2_2.getRelative(1, 0, 0))), 2L);
 		
 		runner.startNextTick();
 		runner.waitForPreviousTick();
@@ -1831,16 +1831,16 @@ public class TestTickRunner
 		// We will run these changes in 2 batches since we want to check some failures and successes, but failures first.
 		// Run phase1.
 		// These 2 should fail.
-		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new MutationPlaceSelectedBlock(emitterActiveDirect.getRelative(0, 1, 0), emitterActiveDirect.getRelative(1, 1, 0))), 1L);
-		runner.enqueueEntityChange(2, _wrapSubAction(entity2, new MutationPlaceSelectedBlock(emitterActiveIndirect.getRelative(0, 2, 0), emitterActiveIndirect.getRelative(1, 2, 0))), 1L);
+		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new EntitySubActionPlaceSelectedBlock(emitterActiveDirect.getRelative(0, 1, 0), emitterActiveDirect.getRelative(1, 1, 0))), 1L);
+		runner.enqueueEntityChange(2, _wrapSubAction(entity2, new EntitySubActionPlaceSelectedBlock(emitterActiveIndirect.getRelative(0, 2, 0), emitterActiveIndirect.getRelative(1, 2, 0))), 1L);
 		// These 2 should fail.
-		runner.enqueueEntityChange(3, _wrapSubAction(entity3, new MutationPlaceSelectedBlock(diodeDirect.getRelative(0, -1, 0), diodeDirect.getRelative(1, -1, 0))), 1L);
-		runner.enqueueEntityChange(4, _wrapSubAction(entity4, new MutationPlaceSelectedBlock(diodeIndirect.getRelative(0, -2, 0), diodeIndirect.getRelative(1, -2, 0))), 1L);
+		runner.enqueueEntityChange(3, _wrapSubAction(entity3, new EntitySubActionPlaceSelectedBlock(diodeDirect.getRelative(0, -1, 0), diodeDirect.getRelative(1, -1, 0))), 1L);
+		runner.enqueueEntityChange(4, _wrapSubAction(entity4, new EntitySubActionPlaceSelectedBlock(diodeIndirect.getRelative(0, -2, 0), diodeIndirect.getRelative(1, -2, 0))), 1L);
 		// These 2 should fail.
-		runner.enqueueEntityChange(5, _wrapSubAction(entity5, new MutationPlaceSelectedBlock(diodeActiveDirect.getRelative(0, 1, 0), diodeActiveDirect.getRelative(1, 1, 0))), 1L);
-		runner.enqueueEntityChange(6, _wrapSubAction(entity6, new MutationPlaceSelectedBlock(diodeActiveIndirect.getRelative(0, 2, 0), diodeActiveIndirect.getRelative(1, 2, 0))), 1L);
+		runner.enqueueEntityChange(5, _wrapSubAction(entity5, new EntitySubActionPlaceSelectedBlock(diodeActiveDirect.getRelative(0, 1, 0), diodeActiveDirect.getRelative(1, 1, 0))), 1L);
+		runner.enqueueEntityChange(6, _wrapSubAction(entity6, new EntitySubActionPlaceSelectedBlock(diodeActiveIndirect.getRelative(0, 2, 0), diodeActiveIndirect.getRelative(1, 2, 0))), 1L);
 		// This will switch "on".
-		runner.enqueueEntityChange(7, _wrapSubAction(entity7, new EntityChangeSetBlockLogicState(switchIndirect, true)), 1L);
+		runner.enqueueEntityChange(7, _wrapSubAction(entity7, new EntitySubActionSetBlockLogicState(switchIndirect, true)), 1L);
 		
 		// Now, run enough ticks that this first batch is complete (this is how many ticks it takes for the long arrangement to complete).
 		// 1) Run entity change (enqueue block mutation).
@@ -1886,16 +1886,16 @@ public class TestTickRunner
 		
 		// We can now run phase2.
 		// These 2 should pass.
-		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new MutationPlaceSelectedBlock(emitterActiveDirect.getRelative(1, 0, 0), emitterActiveDirect.getRelative(2, 0, 0))), 2L);
-		runner.enqueueEntityChange(2, _wrapSubAction(entity2, new MutationPlaceSelectedBlock(emitterActiveIndirect.getRelative(2, 0, 0), emitterActiveIndirect.getRelative(3, 0, 0))), 2L);
+		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new EntitySubActionPlaceSelectedBlock(emitterActiveDirect.getRelative(1, 0, 0), emitterActiveDirect.getRelative(2, 0, 0))), 2L);
+		runner.enqueueEntityChange(2, _wrapSubAction(entity2, new EntitySubActionPlaceSelectedBlock(emitterActiveIndirect.getRelative(2, 0, 0), emitterActiveIndirect.getRelative(3, 0, 0))), 2L);
 		// These 2 should pass.
-		runner.enqueueEntityChange(3, _wrapSubAction(entity3, new MutationPlaceSelectedBlock(diodeDirect.getRelative(-1, 0, 0), diodeDirect.getRelative(0, 0, 0))), 2L);
-		runner.enqueueEntityChange(4, _wrapSubAction(entity4, new MutationPlaceSelectedBlock(diodeIndirect.getRelative(-2, 0, 0), diodeIndirect.getRelative(-1, 0, 0))), 2L);
+		runner.enqueueEntityChange(3, _wrapSubAction(entity3, new EntitySubActionPlaceSelectedBlock(diodeDirect.getRelative(-1, 0, 0), diodeDirect.getRelative(0, 0, 0))), 2L);
+		runner.enqueueEntityChange(4, _wrapSubAction(entity4, new EntitySubActionPlaceSelectedBlock(diodeIndirect.getRelative(-2, 0, 0), diodeIndirect.getRelative(-1, 0, 0))), 2L);
 		// These 2 should pass.
-		runner.enqueueEntityChange(5, _wrapSubAction(entity5, new MutationPlaceSelectedBlock(diodeActiveDirect.getRelative(1, 0, 0), diodeActiveDirect.getRelative(2, 0, 0))), 2L);
-		runner.enqueueEntityChange(6, _wrapSubAction(entity6, new MutationPlaceSelectedBlock(diodeActiveIndirect.getRelative(2, 0, 0), diodeActiveIndirect.getRelative(3, 0, 0))), 2L);
+		runner.enqueueEntityChange(5, _wrapSubAction(entity5, new EntitySubActionPlaceSelectedBlock(diodeActiveDirect.getRelative(1, 0, 0), diodeActiveDirect.getRelative(2, 0, 0))), 2L);
+		runner.enqueueEntityChange(6, _wrapSubAction(entity6, new EntitySubActionPlaceSelectedBlock(diodeActiveIndirect.getRelative(2, 0, 0), diodeActiveIndirect.getRelative(3, 0, 0))), 2L);
 		// This will switch "off".
-		runner.enqueueEntityChange(7, _wrapSubAction(entity7, new EntityChangeSetBlockLogicState(switchIndirect, false)), 2L);
+		runner.enqueueEntityChange(7, _wrapSubAction(entity7, new EntitySubActionSetBlockLogicState(switchIndirect, false)), 2L);
 		
 		// Now, run enough ticks that this second batch to complete.
 		// 1) Run entity change (enqueue block mutation).
@@ -1984,7 +1984,7 @@ public class TestTickRunner
 		
 		// We will run these changes in 3 batches:  (1) place sensor, (2) remove item, (3) add item.
 		// Run phase1 - place sensor.
-		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new MutationPlaceSelectedBlock(sensorSpace, sensorSpace.getRelative(1, 0, 0))), 1L);
+		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new EntitySubActionPlaceSelectedBlock(sensorSpace, sensorSpace.getRelative(1, 0, 0))), 1L);
 		
 		// Run enough ticks to see the door open.
 		// 1) Run MutationPlaceSelectedBlock.
@@ -2009,7 +2009,7 @@ public class TestTickRunner
 		_checkBlock(phase1, doorSpace, itemGate, null, true);
 		
 		// Run phase2 - empty chest inventory.
-		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new MutationEntityRequestItemPickUp(chestSpace, 1, 1, Inventory.INVENTORY_ASPECT_INVENTORY)), 2L);
+		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new EntitySubActionRequestItemPickUp(chestSpace, 1, 1, Inventory.INVENTORY_ASPECT_INVENTORY)), 2L);
 		
 		// Run enough ticks to observe the sensor and door deactivate.
 		// 1) MutationEntityRequestItemPickUp
@@ -2043,7 +2043,7 @@ public class TestTickRunner
 		_checkBlock(phase2, doorSpace, itemGate, null, false);
 		
 		// Run phase3 - fill chest inventory.
-		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new MutationEntityPushItems(chestSpace, 1, 1, Inventory.INVENTORY_ASPECT_INVENTORY)), 3L);
+		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new EntitySubActionPushItems(chestSpace, 1, 1, Inventory.INVENTORY_ASPECT_INVENTORY)), 3L);
 		
 		// Run enough ticks to observe the sensor and door reactivate.
 		// 1) MutationEntityPushItems
@@ -2149,7 +2149,7 @@ public class TestTickRunner
 			, EntityActionSimpleMove.Intensity.STANDING
 			, (byte)5
 			, (byte)6
-			, new EntityChangeSetBlockLogicState(target, true)
+			, new EntitySubActionSetBlockLogicState(target, true)
 		);
 		runner.enqueueEntityChange(1, action, 1L);
 		runner.startNextTick();
@@ -2196,7 +2196,7 @@ public class TestTickRunner
 			, EntityActionSimpleMove.Intensity.STANDING
 			, (byte)5
 			, (byte)6
-			, new MutationPlaceSelectedBlock(onLamp, onLamp.getRelative(0, 0, -1))
+			, new EntitySubActionPlaceSelectedBlock(onLamp, onLamp.getRelative(0, 0, -1))
 		);
 		runner.enqueueEntityChange(entityId, onAction, 1L);
 		EntityActionSimpleMove<IMutablePlayerEntity> offAction = new EntityActionSimpleMove<>(0.0f
@@ -2204,7 +2204,7 @@ public class TestTickRunner
 			, EntityActionSimpleMove.Intensity.STANDING
 			, (byte)5
 			, (byte)6
-			, new MutationPlaceSelectedBlock(offLamp, offLamp.getRelative(0, 0, -1))
+			, new EntitySubActionPlaceSelectedBlock(offLamp, offLamp.getRelative(0, 0, -1))
 		);
 		runner.enqueueEntityChange(entityId, offAction, 2L);
 		
@@ -2772,7 +2772,7 @@ public class TestTickRunner
 		runner.waitForPreviousTick();
 		
 		// Enqueue the mutation to change the state of the switch.
-		EntityChangeSetBlockLogicState setSwitch = new EntityChangeSetBlockLogicState(switchLocation, true);
+		EntitySubActionSetBlockLogicState setSwitch = new EntitySubActionSetBlockLogicState(switchLocation, true);
 		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, setSwitch), 1L);
 		runner.startNextTick();
 		
@@ -2816,7 +2816,7 @@ public class TestTickRunner
 		Assert.assertEquals(STONE_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, outsideLocation.getBlockAddress()));
 		
 		// Now, change the switch and see it pull one block back.
-		setSwitch = new EntityChangeSetBlockLogicState(switchLocation, false);
+		setSwitch = new EntitySubActionSetBlockLogicState(switchLocation, false);
 		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, setSwitch), 1L);
 		// Run a tick to apply the change and another to apply it to the block.
 		runner.startNextTick();
@@ -2895,7 +2895,7 @@ public class TestTickRunner
 		runner.waitForPreviousTick();
 		
 		// Enqueue the mutation to change the state of the switch.
-		EntityChangeSetBlockLogicState setSwitch = new EntityChangeSetBlockLogicState(switchLocation, true);
+		EntitySubActionSetBlockLogicState setSwitch = new EntitySubActionSetBlockLogicState(switchLocation, true);
 		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, setSwitch), 1L);
 		runner.startNextTick();
 		
@@ -2939,7 +2939,7 @@ public class TestTickRunner
 		Assert.assertEquals(sand.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, outsideLocation.getBlockAddress()));
 		
 		// Now, change the switch and see it pull one block back.
-		setSwitch = new EntityChangeSetBlockLogicState(switchLocation, false);
+		setSwitch = new EntitySubActionSetBlockLogicState(switchLocation, false);
 		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, setSwitch), 1L);
 		// Run a tick to apply the change and another to apply it to the block.
 		runner.startNextTick();
@@ -3275,7 +3275,7 @@ public class TestTickRunner
 		int millisRemaining = millisOfBreak;
 		while (millisRemaining > 0)
 		{
-			EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(changeLocation);
+			EntitySubActionIncrementalBlockBreak break1 = new EntitySubActionIncrementalBlockBreak(changeLocation);
 			runner.enqueueEntityChange(entityId, _wrapSubAction(entity, break1), nextCommit);
 			nextCommit += 1L;
 			runner.startNextTick();

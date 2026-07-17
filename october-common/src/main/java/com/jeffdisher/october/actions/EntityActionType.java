@@ -1,4 +1,4 @@
-package com.jeffdisher.october.mutations;
+package com.jeffdisher.october.actions;
 
 
 /**

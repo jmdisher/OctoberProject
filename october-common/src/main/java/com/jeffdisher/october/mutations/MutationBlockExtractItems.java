@@ -4,10 +4,11 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.FuelState;
+import com.jeffdisher.october.types.IMutableBlockProxy;
+import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;

@@ -25,13 +25,13 @@ import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalRepair;
 import com.jeffdisher.october.net.EntityUpdatePerField;
-import com.jeffdisher.october.subactions.EntityChangeCraft;
-import com.jeffdisher.october.subactions.EntityChangeCraftInBlock;
-import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockBreak;
-import com.jeffdisher.october.subactions.EntityChangeIncrementalBlockRepair;
-import com.jeffdisher.october.subactions.EntityChangeJump;
-import com.jeffdisher.october.subactions.EntityChangeUseSelectedItemOnSelf;
-import com.jeffdisher.october.subactions.MutationEntityPushItems;
+import com.jeffdisher.october.subactions.EntitySubActionCraft;
+import com.jeffdisher.october.subactions.EntitySubActionCraftInBlock;
+import com.jeffdisher.october.subactions.EntitySubActionIncrementalBlockBreak;
+import com.jeffdisher.october.subactions.EntitySubActionIncrementalBlockRepair;
+import com.jeffdisher.october.subactions.EntitySubActionJump;
+import com.jeffdisher.october.subactions.EntitySubActionUseSelectedItemOnSelf;
+import com.jeffdisher.october.subactions.EntitySubActionPushItems;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -186,7 +186,7 @@ public class TestClientRunner
 		
 		// Start the multi-phase - we will 
 		currentTimeMillis += MILLIS_PER_TICK;
-		runner.commonApplyEntityAction(new EntityChangeIncrementalBlockBreak(changeLocation), currentTimeMillis);
+		runner.commonApplyEntityAction(new EntitySubActionIncrementalBlockBreak(changeLocation), currentTimeMillis);
 		currentTimeMillis += MILLIS_PER_TICK;
 		runner.standStill(currentTimeMillis);
 		currentTimeMillis += MILLIS_PER_TICK;
@@ -214,7 +214,7 @@ public class TestClientRunner
 		
 		// Send the second hit and wait for the same operation.
 		currentTimeMillis += MILLIS_PER_TICK;
-		runner.commonApplyEntityAction(new EntityChangeIncrementalBlockBreak(changeLocation), currentTimeMillis);
+		runner.commonApplyEntityAction(new EntitySubActionIncrementalBlockBreak(changeLocation), currentTimeMillis);
 		currentTimeMillis += MILLIS_PER_TICK;
 		runner.standStill(currentTimeMillis);
 		currentTimeMillis += MILLIS_PER_TICK;
@@ -277,10 +277,10 @@ public class TestClientRunner
 		
 		// Start crafting, but not with enough time to complete it.
 		currentTimeMillis += 100L;
-		runner.commonApplyEntityAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.b000")), currentTimeMillis);
+		runner.commonApplyEntityAction(new EntitySubActionCraft(ENV.crafting.getCraftById("op.b000")), currentTimeMillis);
 		runner.standStill(currentTimeMillis);
 		currentTimeMillis += 100L;
-		runner.commonApplyEntityAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.b000")), currentTimeMillis);
+		runner.commonApplyEntityAction(new EntitySubActionCraft(ENV.crafting.getCraftById("op.b000")), currentTimeMillis);
 		runner.standStill(currentTimeMillis);
 		// Verify that we now see this in the entity.
 		Assert.assertNotNull(projection.thisEntity.ephemeralShared().localCraftOperation());
@@ -325,7 +325,7 @@ public class TestClientRunner
 		currentTimeMillis += 100L;
 		
 		// Jump and then try to move to the West and observe the updated location.
-		EntityChangeJump<IMutablePlayerEntity> jumpChange = new EntityChangeJump<>();
+		EntitySubActionJump<IMutablePlayerEntity> jumpChange = new EntitySubActionJump<>();
 		runner.commonApplyEntityAction(jumpChange, currentTimeMillis);
 		currentTimeMillis += 100L;
 		runner.setOrientation(OrientationHelpers.YAW_WEST, OrientationHelpers.PITCH_FLAT);
@@ -419,7 +419,7 @@ public class TestClientRunner
 		
 		// Select a table and load an item into it.
 		AbsoluteLocation table = new AbsoluteLocation(0, 0, -1);
-		MutationEntityPushItems push = new MutationEntityPushItems(table, logKey, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
+		EntitySubActionPushItems push = new EntitySubActionPushItems(table, logKey, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
 		currentTimeMillis += 100L;
 		runner.commonApplyEntityAction(push, currentTimeMillis);
 		currentTimeMillis += 70L;
@@ -429,7 +429,7 @@ public class TestClientRunner
 		
 		// Start crafting, but not with enough time to complete it (the table has 10x efficiency bonus).
 		currentTimeMillis += 50L;
-		runner.commonApplyEntityAction(new EntityChangeCraftInBlock(table, ENV.crafting.getCraftById("op.b000")), currentTimeMillis);
+		runner.commonApplyEntityAction(new EntitySubActionCraftInBlock(table, ENV.crafting.getCraftById("op.b000")), currentTimeMillis);
 		currentTimeMillis += 70L;
 		runner.standStill(currentTimeMillis);
 		currentTimeMillis += 80L;
@@ -521,7 +521,7 @@ public class TestClientRunner
 		runnerList.runFullQueue(currentTimeMillis);
 		
 		// Eat the bread, showing that it worked.
-		EntityChangeUseSelectedItemOnSelf eatChange = new EntityChangeUseSelectedItemOnSelf();
+		EntitySubActionUseSelectedItemOnSelf eatChange = new EntitySubActionUseSelectedItemOnSelf();
 		currentTimeMillis += 100L;
 		runner.commonApplyEntityAction(eatChange, currentTimeMillis);
 		currentTimeMillis += 70L;
@@ -539,7 +539,7 @@ public class TestClientRunner
 		Assert.assertEquals(1, projection.thisEntity.inventory().getCount(bread));
 		
 		// Unless we pass some time.
-		currentTimeMillis += EntityChangeUseSelectedItemOnSelf.COOLDOWN_MILLIS;
+		currentTimeMillis += EntitySubActionUseSelectedItemOnSelf.COOLDOWN_MILLIS;
 		runner.commonApplyEntityAction(eatChange, currentTimeMillis);
 		currentTimeMillis += 70L;
 		runner.standStill(currentTimeMillis);
@@ -634,7 +634,7 @@ public class TestClientRunner
 		
 		// Run a repair call and observe the damage value change.
 		currentTimeMillis += 100L;
-		runner.commonApplyEntityAction(new EntityChangeIncrementalBlockRepair(changeLocation), currentTimeMillis);
+		runner.commonApplyEntityAction(new EntitySubActionIncrementalBlockRepair(changeLocation), currentTimeMillis);
 		runner.standStill(currentTimeMillis);
 		currentTimeMillis += 100L;
 		runner.standStill(currentTimeMillis);
@@ -741,7 +741,7 @@ public class TestClientRunner
 		currentTimeMillis += 100L;
 		
 		// Jump and watch how we move over time.
-		EntityChangeJump<IMutablePlayerEntity> jumpChange = new EntityChangeJump<>();
+		EntitySubActionJump<IMutablePlayerEntity> jumpChange = new EntitySubActionJump<>();
 		runner.commonApplyEntityAction(jumpChange, currentTimeMillis);
 		currentTimeMillis += 100L;
 		runner.standStill(currentTimeMillis);
@@ -809,7 +809,7 @@ public class TestClientRunner
 		currentTimeMillis += 100L;
 		
 		// Jump and watch how we move over time.
-		EntityChangeCraft doCraft = new EntityChangeCraft(craft);
+		EntitySubActionCraft doCraft = new EntitySubActionCraft(craft);
 		runner.commonApplyEntityAction(doCraft, currentTimeMillis);
 		currentTimeMillis += 100L;
 		runner.standStill(currentTimeMillis);
