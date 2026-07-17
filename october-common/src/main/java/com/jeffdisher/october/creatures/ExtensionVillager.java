@@ -18,6 +18,7 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
@@ -580,30 +581,33 @@ public class ExtensionVillager implements EntityType.IExtension
 		EntityType.TargetEntity target = null;
 		if (!itemsWeCouldRequest.isEmpty())
 		{
-			EntityType type = creature.newType;
 			Item[] itemToBuy = new Item[1];
-			EntityType.TargetEntity[] out = new EntityType.TargetEntity[1];
-			entityCollection.walkCreaturesInViewDistance(creature, (CreatureEntity entity) -> {
-				if ((null == out[0]) && (type == entity.type()))
+			
+			target = entityCollection.findClosestCreatureOfMatchedTypeInViewDistance(creature, (CreatureEntity entity) -> {
+				// This is a villager so see if they are selling any of the objects we need and if they have them in stock.
+				Data data = (Data)entity.extendedData();
+				Set<Item> otherInventoryItems = data.inventory.keySet();
+				// If this entity is new, it might not have a profession yet.
+				Set<Item> otherSales = (null != data.profession)
+					? data.profession.sellOffers().keySet()
+					: Set.of()
+				;
+				
+				// We will target the closest villager which has anything we want to buy.
+				boolean canBuyFromTarget = false;
+				for (Item item : otherSales)
 				{
-					// This is a villager so see if they are selling any of the objects we need and if they have them in stock.
-					Data data = (Data)entity.extendedData();
-					Set<Item> otherInventoryItems = data.inventory.keySet();
-					// If this entity is new, it might not have a profession yet.
-					Set<Item> otherSales = (null != data.profession)
-						? data.profession.sellOffers().keySet()
-						: Set.of()
-					;
-					for (Item item : otherSales)
+					if (itemsWeCouldRequest.contains(item) && otherInventoryItems.contains(item))
 					{
-						if (itemsWeCouldRequest.contains(item) && otherInventoryItems.contains(item))
-						{
-							itemToBuy[0] = item;
-							out[0] = new EntityType.TargetEntity(entity.id(), entity.location());
-						}
+						// We want to buy from this target so remember which item we want to buy.
+						canBuyFromTarget = true;
+						itemToBuy[0] = item;
+						break;
 					}
 				}
+				return canBuyFromTarget;
 			});
+			
 			if (null != itemToBuy[0])
 			{
 				creature.newExtendedData = new Data(safe.profession
@@ -613,7 +617,6 @@ public class ExtensionVillager implements EntityType.IExtension
 					, safe.foodValueInStomach
 				);
 			}
-			target = out[0];
 		}
 		
 		return target;
@@ -678,12 +681,18 @@ public class ExtensionVillager implements EntityType.IExtension
 				EntityType type = creature.newType;
 				EntityType offspringType = env.creatures.getOffspringType(type);
 				int[] outVillagerCount = new int[1];
-				entityCollection.walkCreaturesInViewDistance(creature, (CreatureEntity entity) -> {
-					// We just want to count the villagers (babies and adults).
-					if ((type == entity.type()) || (offspringType == entity.type()))
-					{
-						outVillagerCount[0] += 1;
-					}
+				
+				// We want to count the number of both villagers and young villagers nearby so we will use the axis-aligned count (square search, not circular).
+				EntityVolume villagerVolume = type.volume();
+				EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), villagerVolume);
+				float viewDistance = type.viewDistance();
+				EntityLocation base = sourceEyeLocation.getRelative(-viewDistance, -viewDistance, -viewDistance);
+				EntityLocation edge = sourceEyeLocation.getRelative(villagerVolume.width() + viewDistance, villagerVolume.width() + viewDistance, villagerVolume.height() + viewDistance);
+				entityCollection.walkAlignedCreatureTypeIntersections(base, edge, type, (CreatureEntity entity) -> {
+					outVillagerCount[0] += 1;
+				});
+				entityCollection.walkAlignedCreatureTypeIntersections(base, edge, offspringType, (CreatureEntity entity) -> {
+					outVillagerCount[0] += 1;
 				});
 				
 				// If the population is too low, try to eat.

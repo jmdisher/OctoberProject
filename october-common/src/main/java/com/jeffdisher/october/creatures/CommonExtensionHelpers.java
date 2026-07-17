@@ -22,21 +22,8 @@ public class CommonExtensionHelpers
 {
 	public static EntityType.TargetEntity findPlayerInRange(EntityCollection entityCollection, IMutableMinimalEntity creature)
 	{
-		EntityType.TargetEntity[] target = new EntityType.TargetEntity[1];
-		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
-		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), creature.getType().volume());
-		EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
-		entityCollection.walkPlayersInViewDistance(creature, (Entity player) -> {
-			// We are looking for any player so just choose the closest.
-			EntityLocation end = player.location();
-			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, end, playerVolume);
-			if (distance < distanceToTarget[0])
-			{
-				target[0] = new EntityType.TargetEntity(player.id(), end);
-				distanceToTarget[0] = distance;
-			}
-		});
-		return target[0];
+		// Just match everyone.
+		return entityCollection.findClosestPlayerInViewDistance(creature, (Entity ignore) -> true);
 	}
 
 	public static boolean isHostileTargetValid(EntityCollection entityCollection, MutableCreature creature)

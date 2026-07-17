@@ -3,6 +3,7 @@ package com.jeffdisher.october.logic;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -103,60 +104,6 @@ public class EntityCollection
 			float dz = centre.z() - playerLocation.z();
 			float distance = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
 			if (distance <= maxRange)
-			{
-				found += 1;
-			}
-		}
-		return found;
-	}
-
-	/**
-	 * Walks all entities within view distance of searchingCreature, sending them to consumer and returning how many
-	 * were found.
-	 * 
-	 * @param creature The creature issuing the search (will search their view distance).
-	 * @param consumer The consumer for Entity objects within range.
-	 * @return The total number of Entities found.
-	 */
-	public int walkPlayersInViewDistance(IMutableMinimalEntity searchingCreature, Consumer<Entity> consumer)
-	{
-		int found = 0;
-		EntityType creatureType = searchingCreature.getType();
-		float maxRange = creatureType.viewDistance();
-		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(searchingCreature.getLocation(), creatureType.volume());
-		EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
-		for (Entity player : _players.values())
-		{
-			EntityLocation playerBase = player.location();
-			boolean isInRange = _checkInstance(sourceEyeLocation, playerBase, playerVolume, maxRange, consumer, player);
-			if (isInRange)
-			{
-				found += 1;
-			}
-		}
-		return found;
-	}
-
-	/**
-	 * Walks all creatures within view distance of searchingCreature, sending them to consumer and returning how many
-	 * were found.
-	 * 
-	 * @param creature The creature issuing the search (will search their view distance).
-	 * @param consumer The consumer for CreatureEntity objects within range.
-	 * @return The total number of CreatureEntities found.
-	 */
-	public int walkCreaturesInViewDistance(IMutableMinimalEntity searchingCreature, Consumer<CreatureEntity> consumer)
-	{
-		int found = 0;
-		EntityType creatureType = searchingCreature.getType();
-		float maxRange = creatureType.viewDistance();
-		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(searchingCreature.getLocation(), creatureType.volume());
-		for (CreatureEntity creature : _creatures.values())
-		{
-			EntityLocation targetBase = creature.location();
-			EntityVolume targetVolume = creature.type().volume();
-			boolean isInRange = _checkInstance(sourceEyeLocation, targetBase, targetVolume, maxRange, consumer, creature);
-			if (isInRange)
 			{
 				found += 1;
 			}
@@ -274,15 +221,81 @@ public class EntityCollection
 		}
 	}
 
-
-	private static <T> boolean _checkInstance(EntityLocation sourceEyeLocation, EntityLocation destBase, EntityVolume destVolume, float maxRange, Consumer<T> consumer, T arg)
+	/**
+	 * Finds the closest player entity in view distance of searchingCreature which matches the given shouldConsider
+	 * predicate.
+	 * 
+	 * @param searchingCreature The creature issuing the search (will search their view distance from their eye).
+	 * @param shouldConsider The predicate to check which players to consider.
+	 * @return The description of the found entity (null if none found or matched the shouldConsider predicate).
+	 */
+	public EntityType.TargetEntity findClosestPlayerInViewDistance(IMutableMinimalEntity searchingCreature, Predicate<Entity> shouldConsider)
 	{
-		boolean isInRange = false;
-		if (SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, destBase, destVolume) <= maxRange)
+		// Note that we currently walk all the players on the server, which may run into scaling problems in the future.
+		// (we could walk _playerIndex if we wanted a square search instead of circular, and if the population became
+		// very high - this current design is very low-constant).
+		EntityType creatureType = searchingCreature.getType();
+		float maxRange = creatureType.viewDistance();
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(searchingCreature.getLocation(), creatureType.volume());
+		EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
+		
+		EntityType.TargetEntity found = null;
+		float matchDistance = Float.POSITIVE_INFINITY;
+		for (Entity player : _players.values())
 		{
-			consumer.accept(arg);
-			isInRange = true;
+			EntityLocation playerBase = player.location();
+			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, playerBase, playerVolume);
+			if ((distance <= maxRange)
+				&& (distance < matchDistance)
+				&& shouldConsider.test(player)
+			)
+			{
+				found = new EntityType.TargetEntity(player.id(), playerBase);
+				matchDistance = distance;
+			}
 		}
-		return isInRange;
+		return found;
+	}
+
+	/**
+	 * Finds the closest creature in view distance of searchingCreature which has the same type as searchingCreature and
+	 * matches the given shouldConsider predicate (and obviously excludes itself).
+	 * 
+	 * @param searchingCreature The creature issuing the search (will search their view distance from their eye).
+	 * @param shouldConsider The predicate to check which players to consider.
+	 * @return The description of the found creature (null if none found or matched the shouldConsider predicate).
+	 */
+	public EntityType.TargetEntity findClosestCreatureOfMatchedTypeInViewDistance(IMutableMinimalEntity searchingCreature, Predicate<CreatureEntity> shouldConsider)
+	{
+		// Note that we currently walk all the loaded creatures on the server, which may run into scaling problems in
+		// the future.
+		// (we could walk _creatureIndices for this creature type if we wanted a square search instead of circular, and
+		// if the population became very high).
+		EntityType creatureType = searchingCreature.getType();
+		EntityVolume creatureVolume = creatureType.volume();
+		float maxRange = creatureType.viewDistance();
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(searchingCreature.getLocation(), creatureVolume);
+		int searchingId = searchingCreature.getId();
+		
+		EntityType.TargetEntity found = null;
+		float matchDistance = Float.POSITIVE_INFINITY;
+		for (CreatureEntity creature : _creatures.values())
+		{
+			int creatureId = creature.id();
+			if ((searchingId != creatureId) && (creature.type() == creatureType))
+			{
+				EntityLocation targetBase = creature.location();
+				float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, targetBase, creatureVolume);
+				if ((distance <= maxRange)
+					&& (distance < matchDistance)
+					&& shouldConsider.test(creature)
+				)
+				{
+					found = new EntityType.TargetEntity(creatureId, targetBase);
+					matchDistance = distance;
+				}
+			}
+		}
+		return found;
 	}
 }

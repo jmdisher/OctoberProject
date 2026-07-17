@@ -85,26 +85,7 @@ public class ExtensionLivestock implements EntityType.IExtension
 		else
 		{
 			// We will keep this simple:  Find the closest player holding our breeding item, up to our limit.
-			EntityType.TargetEntity[] target = new EntityType.TargetEntity[1];
-			float[] distanceToTarget = new float[] { Float.MAX_VALUE };
-			EntityType thisType = creature.getType();
-			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), thisType.volume());
-			EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
-			entityCollection.walkPlayersInViewDistance(creature, (Entity player) -> {
-				// See if this player has the breeding item in their hand.
-				if (_breedingItem == _itemInPlayerHand(player))
-				{
-					// See how far away they are so we choose the closest.
-					EntityLocation end = player.location();
-					float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, end, playerVolume);
-					if (distance < distanceToTarget[0])
-					{
-						target[0] = new EntityType.TargetEntity(player.id(), end);
-						distanceToTarget[0] = distance;
-					}
-				}
-			});
-			newTarget = target[0];
+			newTarget = entityCollection.findClosestPlayerInViewDistance(creature, (Entity player) -> (_breedingItem == _itemInPlayerHand(player)));
 		}
 		return newTarget;
 	}

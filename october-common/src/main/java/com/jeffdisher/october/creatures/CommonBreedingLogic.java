@@ -121,7 +121,7 @@ public class CommonBreedingLogic
 	 * 
 	 * @param creature The creature searching (MUST be in love mode).
 	 * @param entityCollection The collection to use to find the partner.
-	 * @return The target creature or null if the caller wasn't in love mode or couldn't find a partner.
+	 * @return The target creature or null if couldn't find a partner.
 	 */
 	public EntityType.TargetEntity findBreedingPartner(MutableCreature creature
 		, EntityCollection entityCollection
@@ -132,31 +132,8 @@ public class CommonBreedingLogic
 		// The caller needs to check if we are in love mode before calling or they will look for the wrong kind of target.
 		Assert.assertTrue(data.inLoveMode);
 		
-		EntityType.TargetEntity[] target = new EntityType.TargetEntity[1];
-		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
-		EntityType thisType = creature.getType();
-		EntityVolume thisVolume = thisType.volume();
-		int thisCreatureId = creature.getId();
-		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), thisVolume);
-		entityCollection.walkCreaturesInViewDistance(creature, (CreatureEntity check) -> {
-			// Ignore ourselves and make sure that they are the same type and in love mode.
-			if ((thisCreatureId != check.id())
-				&& (thisType == check.type())
-				&& _embeddedReader.apply(check.extendedData()).inLoveMode
-			)
-			{
-				// See how far away they are so we choose the closest.
-				EntityLocation end = check.location();
-				float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, end, thisVolume);
-				if (distance < distanceToTarget[0])
-				{
-					target[0] = new EntityType.TargetEntity(check.id(), end);
-					distanceToTarget[0] = distance;
-				}
-			}
-		});
-		EntityType.TargetEntity ifChanged = target[0];
-		return ifChanged;
+		// Choose the closest partner in love mode.
+		return entityCollection.findClosestCreatureOfMatchedTypeInViewDistance(creature, (CreatureEntity check) -> _embeddedReader.apply(check.extendedData()).inLoveMode);
 	}
 
 	/**

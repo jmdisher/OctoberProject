@@ -46,10 +46,10 @@ public class TestEntityCollection
 		MutableCreature searcher = _buildMutableCow(-1, centre);
 		int count = collection.countPlayersInRangeOfBase(centre, 1.0f);
 		Assert.assertEquals(0, count);
-		count = collection.walkPlayersInViewDistance(searcher, (Entity player) -> Assert.fail());
-		Assert.assertEquals(0, count);
-		count = collection.walkCreaturesInViewDistance(searcher, (CreatureEntity creature) -> Assert.fail());
-		Assert.assertEquals(0, count);
+		EntityType.TargetEntity target = collection.findClosestPlayerInViewDistance(searcher, (Entity player) -> true);
+		Assert.assertNull(target);
+		target = collection.findClosestCreatureOfMatchedTypeInViewDistance(searcher, (CreatureEntity creature) -> true);
+		Assert.assertNull(target);
 	}
 
 	@Test
@@ -62,10 +62,10 @@ public class TestEntityCollection
 		MutableCreature searcher = _buildMutableCow(-1, centre);
 		int count = collection.countPlayersInRangeOfBase(centre, 1.0f);
 		Assert.assertEquals(0, count);
-		count = collection.walkPlayersInViewDistance(searcher, (Entity player) -> Assert.fail());
-		Assert.assertEquals(0, count);
-		count = collection.walkCreaturesInViewDistance(searcher, (CreatureEntity creature) -> Assert.fail());
-		Assert.assertEquals(0, count);
+		EntityType.TargetEntity target = collection.findClosestPlayerInViewDistance(searcher, (Entity player) -> true);
+		Assert.assertNull(target);
+		target = collection.findClosestCreatureOfMatchedTypeInViewDistance(searcher, (CreatureEntity creature) -> true);
+		Assert.assertNull(target);
 	}
 
 	@Test
@@ -81,14 +81,23 @@ public class TestEntityCollection
 		);
 		EntityCollection collection = EntityCollection.fromMaps(players, creatures);
 		EntityLocation centre = new EntityLocation(0.0f, 0.0f, 0.0f);
-		MutableCreature searcher = _buildMutableCow(-1, centre);
-		int[] counts = new int[2];
+		MutableCreature searcher = _buildMutableCow(-4, centre);
 		int count = collection.countPlayersInRangeOfBase(centre, COW.viewDistance());
 		Assert.assertEquals(2, count);
-		count = collection.walkPlayersInViewDistance(searcher, (Entity player) -> counts[0] += 1);
-		Assert.assertEquals(2, count);
-		count = collection.walkCreaturesInViewDistance(searcher, (CreatureEntity creature) -> counts[1] += 1);
-		Assert.assertEquals(2, count);
+		
+		int[] counts = new int[2];
+		EntityType.TargetEntity target = collection.findClosestPlayerInViewDistance(searcher, (Entity player) -> {
+			counts[0] += 1;
+			// We are just counting, so check them all.
+			return false;
+		});
+		Assert.assertNull(target);
+		target = collection.findClosestCreatureOfMatchedTypeInViewDistance(searcher, (CreatureEntity creature) -> {
+			counts[1] += 1;
+			// We are just counting, so check them all.
+			return false;
+		});
+		Assert.assertNull(target);
 		
 		Assert.assertEquals(2, counts[0]);
 		Assert.assertEquals(2, counts[1]);
