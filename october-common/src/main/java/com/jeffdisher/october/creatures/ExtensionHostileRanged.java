@@ -14,6 +14,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
@@ -82,7 +83,7 @@ public class ExtensionHostileRanged implements EntityType.IExtension
 			if (distance <= attackDistance)
 			{
 				// We are in range so find the vector which will fire in an arc toward the centre of the target.
-				EntityLocation targetCentre = SpatialHelpers.getCentreOfRegion(targetBase, targetVolume);
+				EntityLocation targetCentre = FixedRegion.fromBaseAndVolume(targetBase, targetVolume).getCentre();
 				
 				// Make sure that we can see them.
 				Environment env = Environment.getShared();

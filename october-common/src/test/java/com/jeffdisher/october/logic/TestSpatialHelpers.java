@@ -193,16 +193,6 @@ public class TestSpatialHelpers
 	}
 
 	@Test
-	public void centreOfRegion()
-	{
-		EntityLocation base = new EntityLocation(5.1f, -6.4f, 7.2f);
-		EntityVolume volume = new EntityVolume(0.5f, 0.4f);
-		
-		EntityLocation centre = SpatialHelpers.getCentreOfRegion(base, volume);
-		Assert.assertEquals(new EntityLocation(5.3f, -6.2f, 7.45f), centre);
-	}
-
-	@Test
 	public void distanceFromPlayerToEntity()
 	{
 		// Test these helpers as one is mostly just a convenience on the other.

@@ -6,6 +6,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MutableCreature;
@@ -115,8 +116,8 @@ public class NudgeHelpers
 		, EntityVolume targetVolume
 	)
 	{
-		EntityLocation sourceCentre = SpatialHelpers.getCentreOfRegion(source, sourceVolume);
-		EntityLocation targetCentre = SpatialHelpers.getCentreOfRegion(target, targetVolume);
+		EntityLocation sourceCentre = FixedRegion.fromBaseAndVolume(source, sourceVolume).getCentre();
+		EntityLocation targetCentre = FixedRegion.fromBaseAndVolume(target, targetVolume).getCentre();
 		EntityLocation delta = new EntityLocation(targetCentre.x() - sourceCentre.x()
 			, targetCentre.y() - sourceCentre.y()
 			, targetCentre.z() - sourceCentre.z()
@@ -177,13 +178,13 @@ public class NudgeHelpers
 	{
 		// We want nudge both players and creatures.
 		EntityLocation edge = base.getRelative(volume.width(), volume.width(), volume.height());
-		EntityLocation inCentre = SpatialHelpers.getCentreOfRegion(base, volume);
+		EntityLocation inCentre = FixedRegion.fromBaseAndVolume(base, volume).getCentre();
 		float inRadius = volume.width() / 2.0f;
 		EntityVolume playerVolume = env.creatures.PLAYER.volume();
 		entityCollection.walkAlignedEntityIntersections(base, edge, (Entity entity) -> {
 			if (check != entity)
 			{
-				EntityLocation centre = SpatialHelpers.getCentreOfRegion(entity.location(), playerVolume);
+				EntityLocation centre = FixedRegion.fromBaseAndVolume(entity.location(), playerVolume).getCentre();
 				EntityActionNudge<IMutablePlayerEntity> nudge = _createNudge(inCentre, centre, inRadius);
 				context.newChangeSink.next(entity.id(), nudge);
 			}
@@ -191,7 +192,7 @@ public class NudgeHelpers
 		entityCollection.walkAlignedCreatureIntersections(base, edge, (CreatureEntity creature) -> {
 			if (check != creature)
 			{
-				EntityLocation centre = SpatialHelpers.getCentreOfRegion(creature.location(), creature.type().volume());
+				EntityLocation centre = FixedRegion.fromBaseAndVolume(creature.location(), creature.type().volume()).getCentre();
 				EntityActionNudge<MutableCreature> nudge = _createNudge(inCentre, centre, inRadius);
 				context.newChangeSink.creature(creature.id(), nudge);
 			}

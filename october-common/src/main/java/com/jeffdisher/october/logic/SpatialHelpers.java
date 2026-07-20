@@ -118,20 +118,6 @@ public class SpatialHelpers
 	}
 
 	/**
-	 * Gets the centre-point of a region based at base of volume.
-	 * 
-	 * @param base The bottom-south-west corner of the region.
-	 * @param volume The total volume of the region.
-	 * @return The centre of the region.
-	 */
-	public static EntityLocation getCentreOfRegion(EntityLocation base, EntityVolume volume)
-	{
-		float width = volume.width() / 2.0f;
-		float height = volume.height() / 2.0f;
-		return base.getRelative(width, width, height);
-	}
-
-	/**
 	 * Converts an entity's yaw and pitch into an actual facing vector, sized as a unit vector (magnitude 1.0).
 	 * 
 	 * @param yaw The yaw ([-128..127] - 0 points North, positive values turn to the left).

@@ -8,7 +8,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
-import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.MutationBlockReplaceDropExisting;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -16,6 +15,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -101,7 +101,7 @@ public class PassiveSynth_FallingBlock
 		if (movement.isOnGround())
 		{
 			// Send the mutation to the block to break anything there as an item and set the block.
-			AbsoluteLocation target = SpatialHelpers.getCentreOfRegion(finalLocation, volume).getBlockLocation();
+			AbsoluteLocation target = FixedRegion.fromBaseAndVolume(finalLocation, volume).getCentre().getBlockLocation();
 			Block blockType = (Block)entity.extendedData();
 			MutationBlockReplaceDropExisting blockMutation = new MutationBlockReplaceDropExisting(target, blockType);
 			context.mutationSink.next(blockMutation);
