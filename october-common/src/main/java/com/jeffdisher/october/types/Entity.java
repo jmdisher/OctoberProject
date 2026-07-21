@@ -2,42 +2,44 @@ package com.jeffdisher.october.types;
 
 
 /**
- * An Entity represents something which can move in the world.  This includes users, monsters, animals, and machines.
+ * An Entity represents a player in the world (as opposed to CreatureEntity or PassiveEntity).
  */
 public record Entity(int id
-		// If this flag is set, the entity's inventory is ignored and it doesn't get hungry or take damage.
-		, boolean isCreativeMode
-		// Note that the location is the bottom, south-west corner of the space occupied by the entity and the volume extends from there.
-		, EntityLocation location
-		// We track the current entity velocity using an EntityLocation object since it is 3 orthogonal floats.
-		// Note that horizontal movement is usually cancelled by friction within the same tick.
-		, EntityLocation velocity
-		// Yaw is measured from [-128..127] where 0 is "North" and positive values move to the "left" (counter-clockwise, from above).
-		, byte yaw
-		// Pitch is measured from [-64..64] where 0 is "level", -64 is "straight down", and 64 is "straight up".
-		, byte pitch
-		// The normal inventory of the entity (hotbar slots reference this but armour slots do NOT overlap with this).
-		, Inventory inventory
-		// The keys in the hotbar are references to inventory.  If any are 0, they have no selection.
-		, int[] hotbarItems
-		// hotbarIndex is always [0..HOTBAR_SIZE).
-		, int hotbarIndex
-		// The armour slots don't count as part of the inventory so they keep the non-stackables inline.
-		, NonStackableItem[] armourSlots
-		// The health value of the entity.  Currently, we just use a byte since it is in the range of [1..100].
-		, byte health
-		// The food level stored within the entity.  Currently, we just use a byte since it is in the range of [0..100].
-		, byte food
-		// The breath the entity has (for drowning).
-		, byte breath
-		// The location where the entity is sent when they spawn for the first time or die and respawn.
-		, EntityLocation spawnLocation
-		
-		// We have some ephemeral data which is still passed to the client, just never persisted to disk.
-		, Ephemeral_Shared ephemeralShared
-		
-		// We have some private ephemeral data which is server-local and never passed to the client or stored to disk.
-		, Ephemeral_Local ephemeralLocal
+	// Note that this EntityType is always the PLAYER type (stored here for convenience).
+	, EntityType type
+	// If this flag is set, the entity's inventory is ignored and it doesn't get hungry or take damage.
+	, boolean isCreativeMode
+	// Note that the location is the bottom, south-west corner of the space occupied by the entity and the volume extends from there.
+	, EntityLocation location
+	// We track the current entity velocity using an EntityLocation object since it is 3 orthogonal floats.
+	// Note that horizontal movement is usually cancelled by friction within the same tick.
+	, EntityLocation velocity
+	// Yaw is measured from [-128..127] where 0 is "North" and positive values move to the "left" (counter-clockwise, from above).
+	, byte yaw
+	// Pitch is measured from [-64..64] where 0 is "level", -64 is "straight down", and 64 is "straight up".
+	, byte pitch
+	// The normal inventory of the entity (hotbar slots reference this but armour slots do NOT overlap with this).
+	, Inventory inventory
+	// The keys in the hotbar are references to inventory.  If any are 0, they have no selection.
+	, int[] hotbarItems
+	// hotbarIndex is always [0..HOTBAR_SIZE).
+	, int hotbarIndex
+	// The armour slots don't count as part of the inventory so they keep the non-stackables inline.
+	, NonStackableItem[] armourSlots
+	// The health value of the entity.  Currently, we just use a byte since it is in the range of [1..100].
+	, byte health
+	// The food level stored within the entity.  Currently, we just use a byte since it is in the range of [0..100].
+	, byte food
+	// The breath the entity has (for drowning).
+	, byte breath
+	// The location where the entity is sent when they spawn for the first time or die and respawn.
+	, EntityLocation spawnLocation
+	
+	// We have some ephemeral data which is still passed to the client, just never persisted to disk.
+	, Ephemeral_Shared ephemeralShared
+	
+	// We have some private ephemeral data which is server-local and never passed to the client or stored to disk.
+	, Ephemeral_Local ephemeralLocal
 )
 {
 	public static final int HOTBAR_SIZE = 9;

@@ -229,21 +229,22 @@ public class TestCreatureLogic
 		CreatureEntity orc = CreatureEntity.create(-1, ORC, orcLocation, 0L);
 		EntityLocation playerLocation = new EntityLocation(5.0f, 1.0f, 1.0f);
 		Entity player = new Entity(1
-				, false
-				, playerLocation
-				, new EntityLocation(0.0f, 0.0f, 0.0f)
-				, (byte)0
-				, (byte)0
-				, Inventory.start(10).finish()
-				, new int[1]
-				, 0
-				, null
-				, (byte)0
-				, (byte)0
-				, MiscConstants.MAX_BREATH
-				, MutableEntity.TESTING_LOCATION
-				, Entity.EMPTY_SHARED
-				, Entity.EMPTY_LOCAL
+			, ENV.creatures.PLAYER
+			, false
+			, playerLocation
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, (byte)0
+			, (byte)0
+			, Inventory.start(10).finish()
+			, new int[1]
+			, 0
+			, null
+			, (byte)0
+			, (byte)0
+			, MiscConstants.MAX_BREATH
+			, MutableEntity.TESTING_LOCATION
+			, Entity.EMPTY_SHARED
+			, Entity.EMPTY_LOCAL
 		);
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
@@ -283,21 +284,22 @@ public class TestCreatureLogic
 		// Now, move the entity and see that the special action updates it.
 		EntityLocation newPlayerLocation = new EntityLocation(2.0f, 5.0f, 1.0f);
 		player = new Entity(1
-				, false
-				, newPlayerLocation
-				, new EntityLocation(0.0f, 0.0f, 0.0f)
-				, (byte)0
-				, (byte)0
-				, Inventory.start(10).finish()
-				, new int[1]
-				, 0
-				, null
-				, (byte)0
-				, (byte)0
-				, MiscConstants.MAX_BREATH
-				, MutableEntity.TESTING_LOCATION
-				, Entity.EMPTY_SHARED
-				, Entity.EMPTY_LOCAL
+			, ENV.creatures.PLAYER
+			, false
+			, newPlayerLocation
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, (byte)0
+			, (byte)0
+			, Inventory.start(10).finish()
+			, new int[1]
+			, 0
+			, null
+			, (byte)0
+			, (byte)0
+			, MiscConstants.MAX_BREATH
+			, MutableEntity.TESTING_LOCATION
+			, Entity.EMPTY_SHARED
+			, Entity.EMPTY_LOCAL
 		);
 		// Special action is where we account for this targeting update but it doesn't count as a special action.
 		context = ContextBuilder.build()

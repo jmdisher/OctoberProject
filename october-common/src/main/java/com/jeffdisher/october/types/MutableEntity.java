@@ -55,23 +55,25 @@ public class MutableEntity implements IMutablePlayerEntity
 		Assert.assertTrue(id > 0);
 		Assert.assertTrue(null != location);
 		Environment env = Environment.getShared();
+		EntityType type = env.creatures.PLAYER;
 		Inventory inventory = Inventory.start(StationRegistry.CAPACITY_PLAYER).finish();
 		Entity entity = new Entity(id
-				, false
-				, location
-				, new EntityLocation(0.0f, 0.0f, 0.0f)
-				, (byte)0
-				, (byte)0
-				, inventory
-				, new int[Entity.HOTBAR_SIZE]
-				, 0
-				, new NonStackableItem[BodyPart.values().length]
-				, env.creatures.PLAYER.maxHealth()
-				, MiscConstants.PLAYER_MAX_FOOD
-				, MiscConstants.MAX_BREATH
-				, spawn
-				, Entity.EMPTY_SHARED
-				, Entity.EMPTY_LOCAL
+			, type
+			, false
+			, location
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, (byte)0
+			, (byte)0
+			, inventory
+			, new int[Entity.HOTBAR_SIZE]
+			, 0
+			, new NonStackableItem[BodyPart.values().length]
+			, type.maxHealth()
+			, MiscConstants.PLAYER_MAX_FOOD
+			, MiscConstants.MAX_BREATH
+			, spawn
+			, Entity.EMPTY_SHARED
+			, Entity.EMPTY_LOCAL
 		);
 		return new MutableEntity(entity);
 	}
@@ -178,8 +180,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	@Override
 	public EntityType getType()
 	{
-		Environment env = Environment.getShared();
-		return env.creatures.PLAYER;
+		return _original.type();
 	}
 
 	@Override
@@ -229,8 +230,6 @@ public class MutableEntity implements IMutablePlayerEntity
 	@Override
 	public void handleEntityDeath(TickProcessingContext context)
 	{
-		Environment env = Environment.getShared();
-		
 		// Drop their inventory.
 		EntityLocation entityCentre = SpatialHelpers.getCentreFeetLocation(this);
 		for (Integer key : this.newInventory.freeze().sortedKeys())
@@ -242,7 +241,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		// Respawn them.
 		this.newInventory.clearInventory(null);
 		this.newLocation = this.newSpawn;
-		this.newHealth = env.creatures.PLAYER.maxHealth();
+		this.newHealth = _original.type().maxHealth();
 		this.newFood = MiscConstants.PLAYER_MAX_FOOD;
 		// Wipe all the hotbar slots.
 		for (int i = 0; i < Entity.HOTBAR_SIZE; ++i)
@@ -466,21 +465,22 @@ public class MutableEntity implements IMutablePlayerEntity
 			, this.newEnergyDeficit
 		);
 		Entity newInstance = new Entity(_original.id()
-				, this.isCreativeMode
-				, this.newLocation
-				, this.newVelocity
-				, this.newYaw
-				, this.newPitch
-				, this.newInventory.freeze()
-				, didHotbarChange ? this.newHotbar : _original.hotbarItems()
-				, this.newHotbarIndex
-				, didArmourChange ? this.newArmour : _original.armourSlots()
-				, this.newHealth
-				, this.newFood
-				, this.newBreath
-				, this.newSpawn
-				, ephemeralShared.equals(_original.ephemeralShared()) ? _original.ephemeralShared() : ephemeralShared
-				, ephemeralLocal.equals(_original.ephemeralLocal()) ? _original.ephemeralLocal() : ephemeralLocal
+			, _original.type()
+			, this.isCreativeMode
+			, this.newLocation
+			, this.newVelocity
+			, this.newYaw
+			, this.newPitch
+			, this.newInventory.freeze()
+			, didHotbarChange ? this.newHotbar : _original.hotbarItems()
+			, this.newHotbarIndex
+			, didArmourChange ? this.newArmour : _original.armourSlots()
+			, this.newHealth
+			, this.newFood
+			, this.newBreath
+			, this.newSpawn
+			, ephemeralShared.equals(_original.ephemeralShared()) ? _original.ephemeralShared() : ephemeralShared
+			, ephemeralLocal.equals(_original.ephemeralLocal()) ? _original.ephemeralLocal() : ephemeralLocal
 		);
 		// See if these are identical.
 		return _original.equals(newInstance)

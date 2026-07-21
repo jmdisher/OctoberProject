@@ -1255,21 +1255,22 @@ public class TestEngineCreatures
 		Inventory inventory = builder.finish();
 		int key = 1;
 		return new Entity(id
-				, false
-				, location
-				, new EntityLocation(0.0f, 0.0f, 0.0f)
-				, (byte)0
-				, (byte)0
-				, inventory
-				, new int[] { key }
-				, 0
-				, null
-				, (byte)0
-				, (byte)0
-				, MiscConstants.MAX_BREATH
-				, MutableEntity.TESTING_LOCATION
-				, Entity.EMPTY_SHARED
-				, Entity.EMPTY_LOCAL
+			, ENV.creatures.PLAYER
+			, false
+			, location
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, (byte)0
+			, (byte)0
+			, inventory
+			, new int[] { key }
+			, 0
+			, null
+			, (byte)0
+			, (byte)0
+			, MiscConstants.MAX_BREATH
+			, MutableEntity.TESTING_LOCATION
+			, Entity.EMPTY_SHARED
+			, Entity.EMPTY_LOCAL
 		);
 	}
 

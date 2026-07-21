@@ -1887,21 +1887,22 @@ public class TestCommonChanges
 		int entityId = 1;
 		Inventory inventory = Inventory.start(StationRegistry.CAPACITY_PLAYER).finish();
 		Entity original = new Entity(entityId
-				, true
-				, new EntityLocation(0.0f, 0.0f, 0.0f)
-				, new EntityLocation(0.0f, 0.0f, 0.0f)
-				, (byte)0
-				, (byte)0
-				, inventory
-				, new int[Entity.HOTBAR_SIZE]
-				, 0
-				, new NonStackableItem[BodyPart.values().length]
-				, ENV.creatures.PLAYER.maxHealth()
-				, MiscConstants.PLAYER_MAX_FOOD
-				, MiscConstants.MAX_BREATH
-				, MutableEntity.TESTING_LOCATION
-				, Entity.EMPTY_SHARED
-				, Entity.EMPTY_LOCAL
+			, ENV.creatures.PLAYER
+			, true
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, (byte)0
+			, (byte)0
+			, inventory
+			, new int[Entity.HOTBAR_SIZE]
+			, 0
+			, new NonStackableItem[BodyPart.values().length]
+			, ENV.creatures.PLAYER.maxHealth()
+			, MiscConstants.PLAYER_MAX_FOOD
+			, MiscConstants.MAX_BREATH
+			, MutableEntity.TESTING_LOCATION
+			, Entity.EMPTY_SHARED
+			, Entity.EMPTY_LOCAL
 		);
 		Block table = ENV.blocks.fromItem(ENV.items.getItemById("op.crafting_table"));
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
@@ -2015,21 +2016,22 @@ public class TestCommonChanges
 		byte breath = MiscConstants.MAX_BREATH / 2;
 		int energyDeficit = 50;
 		Entity original = new Entity(entityId
-				, true
-				, new EntityLocation(0.0f, 0.0f, 10.0f)
-				, new EntityLocation(0.0f, 0.0f, 0.0f)
-				, (byte)0
-				, (byte)0
-				, inventory
-				, new int[Entity.HOTBAR_SIZE]
-				, 0
-				, new NonStackableItem[BodyPart.values().length]
-				, health
-				, food
-				, breath
-				, MutableEntity.TESTING_LOCATION
-				, Entity.EMPTY_SHARED
-				, new Entity.Ephemeral_Local(0L, 0L, energyDeficit)
+			, ENV.creatures.PLAYER
+			, true
+			, new EntityLocation(0.0f, 0.0f, 10.0f)
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, (byte)0
+			, (byte)0
+			, inventory
+			, new int[Entity.HOTBAR_SIZE]
+			, 0
+			, new NonStackableItem[BodyPart.values().length]
+			, health
+			, food
+			, breath
+			, MutableEntity.TESTING_LOCATION
+			, Entity.EMPTY_SHARED
+			, new Entity.Ephemeral_Local(0L, 0L, energyDeficit)
 		);
 		
 		// Try to change these values and verify that nothing happens.

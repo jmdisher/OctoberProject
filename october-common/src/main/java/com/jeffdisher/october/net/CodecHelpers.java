@@ -226,6 +226,7 @@ public class CodecHelpers
 		EntityLocation spawn = _readEntityLocation(buffer);
 		
 		return new Entity(id
+			, context.env().creatures.PLAYER
 			, isCreativeMode
 			, location
 			, velocity
@@ -309,6 +310,7 @@ public class CodecHelpers
 		Entity.Ephemeral_Shared ephemeralShared = _readEntityEphemeralShared(context);
 		
 		return new Entity(id
+			, context.env().creatures.PLAYER
 			, isCreativeMode
 			, location
 			, velocity

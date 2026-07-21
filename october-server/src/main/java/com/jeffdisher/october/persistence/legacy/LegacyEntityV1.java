@@ -2,6 +2,7 @@ package com.jeffdisher.october.persistence.legacy;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.BodyPart;
@@ -89,21 +90,22 @@ public record LegacyEntityV1(int id
 		byte yaw = 0;
 		byte pitch = 0;
 		return new Entity(this.id
-				, this.isCreativeMode
-				, this.location
-				, this.velocity
-				, yaw
-				, pitch
-				, this.inventory
-				, this.hotbarItems
-				, this.hotbarIndex
-				, this.armourSlots
-				, this.health
-				, this.food
-				, this.breath
-				, this.spawnLocation
-				, Entity.EMPTY_SHARED
-				, Entity.EMPTY_LOCAL
+			, Environment.getShared().creatures.PLAYER
+			, this.isCreativeMode
+			, this.location
+			, this.velocity
+			, yaw
+			, pitch
+			, this.inventory
+			, this.hotbarItems
+			, this.hotbarIndex
+			, this.armourSlots
+			, this.health
+			, this.food
+			, this.breath
+			, this.spawnLocation
+			, Entity.EMPTY_SHARED
+			, Entity.EMPTY_LOCAL
 		);
 	}
 }

@@ -143,6 +143,7 @@ public class EntityTranslator
 		EntityLocation spawn = CodecHelpers.readEntityLocation(buffer);
 		
 		return new Entity(id
+			, Environment.getShared().creatures.PLAYER
 			, isCreativeMode
 			, location
 			, velocity
