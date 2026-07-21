@@ -4,10 +4,11 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IEntitySubAction;
-import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -37,9 +38,10 @@ public class EntitySubActionChargeWeapon implements IEntitySubAction<IMutablePla
 		boolean didApply = false;
 		
 		// See if our currently-selected item is a charge weapon and if we have ammunition for it.
-		int key = newEntity.getSelectedKey();
-		NonStackableItem nonStack = (0 != key)
-			? newEntity.accessMutableInventory().getNonStackableForKey(key)
+		MutableSlotManager slotManager = newEntity.getSlotManager();
+		int key = slotManager.getSelectedKey();
+		NonStackableItem nonStack = (Entity.NO_SELECTION != key)
+			? slotManager.getSlot(key).nonStackable
 			: null
 		;
 		int maxCharge = (null != nonStack)
@@ -53,8 +55,7 @@ public class EntitySubActionChargeWeapon implements IEntitySubAction<IMutablePla
 		
 		if (null != ammo)
 		{
-			IMutableInventory mutableInventory = newEntity.accessMutableInventory();
-			int count = mutableInventory.getCount(ammo);
+			int count = slotManager.getCount(ammo);
 			
 			if (count > 0)
 			{

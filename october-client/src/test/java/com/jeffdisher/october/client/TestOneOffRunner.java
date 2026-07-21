@@ -70,7 +70,7 @@ public class TestOneOffRunner
 		// Create a world with the player and 2 cuboids, showing that we can place a block and verify changes.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = new EntityLocation(5.0f, 5.0f, 0.0f);
-		mutable.setSelectedKey(1);
+		mutable.slotManager.setSelectedKey(1);
 		mutable.newInventory.addAllItems(STONE_ITEM, 1);
 		Entity entity = mutable.freeze();
 		AbsoluteLocation target = mutable.newLocation.getBlockLocation().getRelative(1, 1, 0);
@@ -98,7 +98,7 @@ public class TestOneOffRunner
 	{
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = new EntityLocation(5.0f, 5.0f, 0.0f);
-		mutable.setSelectedKey(1);
+		mutable.slotManager.setSelectedKey(1);
 		mutable.newInventory.addAllItems(STONE_ITEM, 1);
 		Entity entity = mutable.freeze();
 		AbsoluteLocation target = mutable.newLocation.getBlockLocation().getRelative(1, 1, 0);
@@ -126,7 +126,7 @@ public class TestOneOffRunner
 		// Tests that there are no problems when a block mutation schedules a secondary block mutation (even though OneOffRunner ignores these).
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = new EntityLocation(5.0f, 5.0f, 1.0f);
-		mutable.setSelectedKey(1);
+		mutable.slotManager.setSelectedKey(1);
 		mutable.newInventory.addAllItems(DIRT_ITEM, 1);
 		Entity entity = mutable.freeze();
 		AbsoluteLocation target = mutable.newLocation.getBlockLocation().getRelative(1, 1, 0);
@@ -163,7 +163,7 @@ public class TestOneOffRunner
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newInventory.addAllItems(DIRT_ITEM, 1);
-		mutable.setSelectedKey(1);
+		mutable.slotManager.setSelectedKey(1);
 		mutable.newLocation = new EntityLocation(1.0f, 2.0f, 1.0f);
 		Entity entity = mutable.freeze();
 		
@@ -183,7 +183,7 @@ public class TestOneOffRunner
 		
 		Entity result = end.thisEntity();
 		Assert.assertEquals(0, result.inventory().currentEncumbrance);
-		Assert.assertEquals(0, MutableEntity.existing(result).getSelectedKey());
+		Assert.assertEquals(0, MutableEntity.existing(result).slotManager.getSelectedKey());
 	}
 
 	@Test
@@ -263,7 +263,7 @@ public class TestOneOffRunner
 		mutable.newLocation = new EntityLocation(5.0f, 5.0f, 5.0f);
 		NonStackableItem hoe = PropertyHelpers.newItemWithDefaults(ENV, STONE_HOE);
 		mutable.newInventory.addNonStackableAllowingOverflow(hoe);
-		mutable.setSelectedKey(1);
+		mutable.slotManager.setSelectedKey(1);
 		Entity entity = mutable.freeze();
 		AbsoluteLocation target = mutable.newLocation.getBlockLocation().getRelative(0, 0, -1);
 		

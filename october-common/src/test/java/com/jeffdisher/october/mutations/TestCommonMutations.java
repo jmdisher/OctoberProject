@@ -211,7 +211,7 @@ public class TestCommonMutations
 		MutableEntity mutable = MutableEntity.createForTest(clientId);
 		Item pickaxe = ENV.items.getItemById("op.iron_pickaxe");
 		mutable.newInventory.addNonStackableBestEfforts(PropertyHelpers.newItemWithDefaults(ENV, pickaxe));
-		mutable.setSelectedKey(1);
+		mutable.slotManager.setSelectedKey(1);
 		Entity entity = mutable.freeze();
 		
 		// Just make 1 hit and see the damage apply.

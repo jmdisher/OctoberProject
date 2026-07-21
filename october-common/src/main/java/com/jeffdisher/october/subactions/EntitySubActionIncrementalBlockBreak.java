@@ -12,11 +12,12 @@ import com.jeffdisher.october.mutations.MultiBlockUtils;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntitySubAction;
-import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -68,12 +69,15 @@ public class EntitySubActionIncrementalBlockBreak implements IEntitySubAction<IM
 		if (isLocationClose && !isAir)
 		{
 			// We know that tools are non-stackable so just check for those types.
-			int selectedKey = newEntity.getSelectedKey();
-			IMutableInventory mutableInventory = newEntity.accessMutableInventory();
-			NonStackableItem selected = mutableInventory.getNonStackableForKey(selectedKey);
+			MutableSlotManager slotManager = newEntity.getSlotManager();
+			int selectedKey = slotManager.getSelectedKey();
+			NonStackableItem selected = (Entity.NO_SELECTION != selectedKey)
+				? slotManager.getSlot(selectedKey).nonStackable
+				: null
+			;
 			Item selectedItem = (null != selected)
-					? selected.type()
-					: null
+				? selected.type()
+				: null
 			;
 			int breakingMillis = (int)context.millisPerTick;
 			// We will apply max damage if creative, otherwise we will consider the tool and material.
@@ -103,7 +107,7 @@ public class EntitySubActionIncrementalBlockBreak implements IEntitySubAction<IM
 			}, lookup);
 			
 			// If we have a tool with finite durability equipped, decrement its durability by one.
-			CommonEntitySubActionHelpers.decrementToolDurability(env, context, newEntity, mutableInventory, selectedKey, selected);
+			CommonEntitySubActionHelpers.decrementToolDurability(env, context, newEntity, slotManager, selectedKey, selected);
 			didApply = true;
 			
 			// Do other state reset.

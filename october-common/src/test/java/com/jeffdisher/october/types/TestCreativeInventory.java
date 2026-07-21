@@ -135,7 +135,9 @@ public class TestCreativeInventory
 	public void craftInInventory() throws Throwable
 	{
 		Inventory inv = CreativeInventory.fakeInventory();
+		MutableInventory mut = new MutableInventory(inv);
+		MutableSlotManager slotManager = new MutableSlotManager(mut, new int[0], 0);
 		Craft craft = ENV.crafting.getCraftById("op.b002");
-		Assert.assertTrue(CraftAspect.canApply(craft, inv));
+		Assert.assertTrue(CraftAspect.canApply(craft, slotManager));
 	}
 }

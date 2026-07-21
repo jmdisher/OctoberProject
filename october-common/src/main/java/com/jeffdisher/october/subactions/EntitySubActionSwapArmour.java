@@ -7,8 +7,9 @@ import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.IEntitySubAction;
-import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.ItemSlot;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -50,8 +51,12 @@ public class EntitySubActionSwapArmour implements IEntitySubAction<IMutablePlaye
 		Environment env = Environment.getShared();
 		
 		// Make sure that the inventory key references a valid type and that there is something to swap.
-		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
-		NonStackableItem fromInventory = mutableInventory.getNonStackableForKey(_inventoryId);
+		MutableSlotManager slotManager = newEntity.getSlotManager();
+		ItemSlot slot = slotManager.getSlot(_inventoryId);
+		NonStackableItem fromInventory = (null != slot)
+			? slot.nonStackable
+			: null
+		;
 		BodyPart inventoryArmour = (null != fromInventory) ? env.armour.getBodyPart(fromInventory.type()) : _slot;
 		NonStackableItem fromArmour = newEntity.getArmour(_slot);
 		if ((_slot == inventoryArmour) && ((null != fromInventory) || (null != fromArmour)))
@@ -60,13 +65,12 @@ public class EntitySubActionSwapArmour implements IEntitySubAction<IMutablePlaye
 			newEntity.setArmour(_slot, fromInventory);
 			if (null != fromInventory)
 			{
-				mutableInventory.removeNonStackableItems(_inventoryId);
-				newEntity.clearHotBarWithKey(_inventoryId);
+				slotManager.removeNonStackable(_inventoryId);
 			}
 			if (null != fromArmour)
 			{
 				// In this case, we will allow it to become over-filled.
-				mutableInventory.addNonStackableAllowingOverflow(fromArmour);
+				slotManager.addNonStackableAllowingOverflow(fromArmour);
 			}
 			didApply = true;
 		}

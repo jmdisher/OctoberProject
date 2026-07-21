@@ -12,11 +12,11 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.IEntitySubAction;
-import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -101,8 +101,8 @@ public class EntitySubActionRequestItemPickUp implements IEntitySubAction<IMutab
 			if (null != type)
 			{
 				// We will still try a best-efforts request if the inventory has changed.
-				IMutableInventory mutableInventory = newEntity.accessMutableInventory();
-				int maxToFetch = mutableInventory.maxVacancyForItem(type);
+				MutableSlotManager slotManager = newEntity.getSlotManager();
+				int maxToFetch = slotManager.maxVacancyForItem(type);
 				int toFetch = Math.min(maxToFetch, _countRequested);
 				
 				if (toFetch > 0)

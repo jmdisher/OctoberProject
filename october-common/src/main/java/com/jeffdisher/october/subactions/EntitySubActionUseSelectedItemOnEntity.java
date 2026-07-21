@@ -6,17 +6,16 @@ import com.jeffdisher.october.actions.EntityActionApplyItemToCreature;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.IEntitySubAction;
-import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MinimalEntity;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -83,9 +82,9 @@ public class EntitySubActionUseSelectedItemOnEntity implements IEntitySubAction<
 		}
 		
 		// Get the current selected item.
-		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
-		int selectedKey = newEntity.getSelectedKey();
-		ItemSlot slot = mutableInventory.getSlotForKey(selectedKey);
+		MutableSlotManager slotManager = newEntity.getSlotManager();
+		int selectedKey = slotManager.getSelectedKey();
+		ItemSlot slot = slotManager.getSlot(selectedKey);
 		
 		// (we currently only handle the wheat type so just check for stackable)
 		Items selectedStack = (null != slot)
@@ -99,11 +98,7 @@ public class EntitySubActionUseSelectedItemOnEntity implements IEntitySubAction<
 		{
 			// Remove the wheat item and apply it to the entity.
 			// Note that we don't bother with racy conditions where we might need to pass it back since that is a rare case and of minimal impact.
-			mutableInventory.removeStackableItems(itemType, 1);
-			if (0 == mutableInventory.getCount(itemType))
-			{
-				newEntity.setSelectedKey(Entity.NO_SELECTION);
-			}
+			slotManager.removeStackable(itemType, 1);
 			
 			// Pass this to the entity.
 			context.newChangeSink.creature(_entityId, new EntityActionApplyItemToCreature(itemType));

@@ -341,11 +341,11 @@ public class EntityUpdatePerField
 		}
 		if (null != _hotbar)
 		{
-			newEntity.newHotbar = _hotbar;
+			newEntity.slotManager.setHotbar(_hotbar);
 		}
 		if (null != _hotbarIndex)
 		{
-			newEntity.newHotbarIndex = _hotbarIndex;
+			newEntity.slotManager.setHotbarIndex(_hotbarIndex);
 		}
 		if (null != _armour)
 		{

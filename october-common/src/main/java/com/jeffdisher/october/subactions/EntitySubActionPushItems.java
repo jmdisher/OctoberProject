@@ -12,13 +12,13 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntitySubAction;
-import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -68,8 +68,8 @@ public class EntitySubActionPushItems implements IEntitySubAction<IMutablePlayer
 		boolean didApply = false;
 		
 		// Make sure that we actually have this much of the referenced item in our inventory.
-		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
-		ItemSlot slot = mutableInventory.getSlotForKey(_localInventoryId);
+		MutableSlotManager slotManager = newEntity.getSlotManager();
+		ItemSlot slot = slotManager.getSlot(_localInventoryId);
 		boolean isValidKey = (null != slot);
 		
 		// We want to make sure that this is a block which can accept items.
@@ -120,22 +120,16 @@ public class EntitySubActionPushItems implements IEntitySubAction<IMutablePlayer
 				Items stackToMove;
 				if (null != slot.stack)
 				{
-					mutableInventory.removeStackableItems(type, toDrop);
+					slotManager.removeStackable(type, toDrop);
 					stackToMove = new Items(type, toDrop);
 				}
 				else
 				{
-					mutableInventory.removeNonStackableItems(_localInventoryId);
+					slotManager.removeNonStackable(_localInventoryId);
 					stackToMove = null;
 				}
 				context.mutationSink.next(new MutationBlockStoreItems(_blockLocation, stackToMove, slot.nonStackable, _inventoryAspect));
 				
-				// If this removed something from the inventory, entirely, make sure it is removed from any hotbar slots.
-				boolean shouldClear = (null != slot.nonStackable) || (0 == mutableInventory.getCount(type));
-				if (shouldClear)
-				{
-					newEntity.clearHotBarWithKey(_localInventoryId);
-				}
 				newEntity.setCurrentChargeMillis(0);
 				didApply = true;
 			}

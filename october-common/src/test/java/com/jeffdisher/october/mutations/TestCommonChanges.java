@@ -237,7 +237,7 @@ public class TestCommonChanges
 			Assert.assertTrue(craft.applyChange(holder.context, newEntity));
 		}
 		Assert.assertTrue(holder.events.didPost());
-		Assert.assertEquals(Entity.NO_SELECTION, newEntity.getSelectedKey());
+		Assert.assertEquals(Entity.NO_SELECTION, newEntity.slotManager.getSelectedKey());
 		
 		// Actively select the type and verify it is selected.
 		EntitySubActionSelectItem select = new EntitySubActionSelectItem(newEntity.newInventory.getIdOfStackableType(PLANK_ITEM));
@@ -252,7 +252,7 @@ public class TestCommonChanges
 		// Show that we can unselect.
 		EntitySubActionSelectItem select3 = new EntitySubActionSelectItem(Entity.NO_SELECTION);
 		Assert.assertTrue(select3.applyChange(holder.context, newEntity));
-		Assert.assertEquals(Entity.NO_SELECTION, newEntity.getSelectedKey());
+		Assert.assertEquals(Entity.NO_SELECTION, newEntity.slotManager.getSelectedKey());
 	}
 
 	@Test
@@ -263,7 +263,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
-		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
+		newEntity.slotManager.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
@@ -281,7 +281,7 @@ public class TestCommonChanges
 		// We expect that the block will be placed and our selection and inventory will be cleared.
 		Assert.assertEquals(LOG_ITEM.number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(0, newEntity.freeze().inventory().sortedKeys().size());
-		Assert.assertEquals(Entity.NO_SELECTION, newEntity.getSelectedKey());
+		Assert.assertEquals(Entity.NO_SELECTION, newEntity.slotManager.getSelectedKey());
 	}
 
 	@Test
@@ -315,7 +315,7 @@ public class TestCommonChanges
 		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
 		Assert.assertEquals(1, blockInventory.getCount(STONE_ITEM));
 		Assert.assertEquals(0, newEntity.newInventory.getCount(STONE_ITEM));
-		Assert.assertEquals(Entity.NO_SELECTION, newEntity.getSelectedKey());
+		Assert.assertEquals(Entity.NO_SELECTION, newEntity.slotManager.getSelectedKey());
 		
 		// We should see the request to store data, now.
 		Assert.assertTrue(holder.change instanceof EntityActionStoreToInventory);
@@ -349,7 +349,7 @@ public class TestCommonChanges
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
-		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
+		mutable.slotManager.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
 		Entity original = mutable.freeze();
 		Block table = ENV.blocks.fromItem(ENV.items.getItemById("op.crafting_table"));
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
@@ -392,7 +392,7 @@ public class TestCommonChanges
 		freeze = newEntity.freeze();
 		Assert.assertEquals(2, blockInventory.getCount(STONE_ITEM));
 		Assert.assertEquals(0, freeze.inventory().sortedKeys().size());
-		Assert.assertEquals(Entity.NO_SELECTION, newEntity.getSelectedKey());
+		Assert.assertEquals(Entity.NO_SELECTION, newEntity.slotManager.getSelectedKey());
 	}
 
 	@Test
@@ -405,7 +405,7 @@ public class TestCommonChanges
 		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
 		mutable.newInventory.addNonStackableBestEfforts(PropertyHelpers.newItemWithDefaults(ENV, pickItem));
 		int idOfPick = 1;
-		mutable.setSelectedKey(idOfPick);
+		mutable.slotManager.setSelectedKey(idOfPick);
 		Entity original = mutable.freeze();
 		Block table = ENV.blocks.fromItem(ENV.items.getItemById("op.crafting_table"));
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
@@ -421,7 +421,7 @@ public class TestCommonChanges
 		// We can now verify that the entity has lost the item but the block is unchanged.
 		Assert.assertNull(newEntity.newInventory.getNonStackableForKey(idOfPick));
 		Assert.assertEquals(0, newEntity.newInventory.getCurrentEncumbrance());
-		Assert.assertEquals(0, newEntity.getSelectedKey());
+		Assert.assertEquals(0, newEntity.slotManager.getSelectedKey());
 		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()));
 		
 		// We should see the mutation requested and then we can process step 2.
@@ -437,7 +437,7 @@ public class TestCommonChanges
 		Assert.assertEquals(pickItem, blockInventory.getNonStackableForKey(idOfPick).type());
 		Entity freeze = newEntity.freeze();
 		Assert.assertEquals(0, freeze.inventory().currentEncumbrance);
-		Assert.assertEquals(0, newEntity.getSelectedKey());
+		Assert.assertEquals(0, newEntity.slotManager.getSelectedKey());
 	}
 
 	@Test
@@ -447,7 +447,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
-		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
+		newEntity.slotManager.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
@@ -471,7 +471,7 @@ public class TestCommonChanges
 		// Make sure we fail if there is no selection.
 		reasonable = new AbsoluteLocation(1, 1, 8);
 		placeReasonable = new EntitySubActionPlaceSelectedBlock(reasonable, reasonable);
-		newEntity.setSelectedKey(Entity.NO_SELECTION);
+		newEntity.slotManager.setSelectedKey(Entity.NO_SELECTION);
 		Assert.assertFalse(placeReasonable.applyChange(holder.context, newEntity));
 	}
 
@@ -515,7 +515,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(16.0f, 16.0f, 20.0f);
 		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
-		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
+		newEntity.slotManager.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
 		
 		// We will create a bogus context which just says that they are floating in the air so they can drop.
 		_Events events = new _Events();
@@ -552,7 +552,7 @@ public class TestCommonChanges
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
 		newEntity.newInventory.addAllItems(CHARCOAL_ITEM, 2);
-		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(CHARCOAL_ITEM));
+		newEntity.slotManager.setSelectedKey(newEntity.newInventory.getIdOfStackableType(CHARCOAL_ITEM));
 		AbsoluteLocation furnace = new AbsoluteLocation(2, 0, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		MutableBlockProxy proxy = new MutableBlockProxy(furnace, cuboid);
@@ -593,12 +593,12 @@ public class TestCommonChanges
 		MutableEntity mutable1 = MutableEntity.createForTest(entityId1);
 		mutable1.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		mutable1.newInventory.addAllItems(STONE_ITEM, 1);
-		mutable1.setSelectedKey(mutable1.newInventory.getIdOfStackableType(STONE_ITEM));
+		mutable1.slotManager.setSelectedKey(mutable1.newInventory.getIdOfStackableType(STONE_ITEM));
 		int entityId2 = 2;
 		MutableEntity mutable2 = MutableEntity.createForTest(entityId2);
 		mutable2.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		mutable2.newInventory.addAllItems(STONE_ITEM, 1);
-		mutable2.setSelectedKey(mutable2.newInventory.getIdOfStackableType(STONE_ITEM));
+		mutable2.slotManager.setSelectedKey(mutable2.newInventory.getIdOfStackableType(STONE_ITEM));
 		
 		// We will build an air cuboid but place a table where we will run the test.
 		Block table = ENV.blocks.fromItem(ENV.items.getItemById("op.crafting_table"));
@@ -692,7 +692,7 @@ public class TestCommonChanges
 		MutableEntity target = MutableEntity.createForTest(targetId);
 		target.newLocation = new EntityLocation(9.0f, 9.0f, 0.0f);
 		target.newInventory.addAllItems(STONE_ITEM, 2);
-		target.setSelectedKey(target.newInventory.getIdOfStackableType(STONE_ITEM));
+		target.slotManager.setSelectedKey(target.newInventory.getIdOfStackableType(STONE_ITEM));
 		MutableEntity miss = MutableEntity.createForTest(missId);
 		miss.newLocation = new EntityLocation(12.3f, 10.0f, 0.0f);
 		
@@ -750,7 +750,7 @@ public class TestCommonChanges
 		EntityLocation targetLocation = new EntityLocation(9.0f, 9.0f, 0.0f);
 		MutableEntity target = MutableEntity.createWithLocation(targetId, targetLocation, MutableEntity.TESTING_LOCATION);
 		target.newInventory.addAllItems(STONE_ITEM, 2);
-		target.setSelectedKey(target.newInventory.getIdOfStackableType(STONE_ITEM));
+		target.slotManager.setSelectedKey(target.newInventory.getIdOfStackableType(STONE_ITEM));
 		
 		// We need to make sure that there is a solid block under the entities so nothing falls.
 		CuboidAddress airAddress = CuboidAddress.fromInt(0, 0, 0);
@@ -841,7 +841,7 @@ public class TestCommonChanges
 		Assert.assertEquals(ENV.creatures.PLAYER.maxHealth(), target.newHealth);
 		Assert.assertEquals(MiscConstants.PLAYER_MAX_FOOD, target.newFood);
 		Assert.assertEquals(0, target.newInventory.freeze().sortedKeys().size());
-		Assert.assertEquals(Entity.NO_SELECTION, target.getSelectedKey());
+		Assert.assertEquals(Entity.NO_SELECTION, target.slotManager.getSelectedKey());
 		Assert.assertEquals(spawnLocation, target.newLocation);
 		
 		// We should also see the dropped inventory as passives.
@@ -865,11 +865,11 @@ public class TestCommonChanges
 		Item swordType = ENV.items.getItemById("op.iron_sword");
 		int startDurability = 100;
 		attacker.newInventory.addNonStackableBestEfforts(new NonStackableItem(swordType, Map.of(PropertyRegistry.DURABILITY, startDurability)));
-		attacker.setSelectedKey(1);
+		attacker.slotManager.setSelectedKey(1);
 		MutableEntity target = MutableEntity.createForTest(targetId);
 		target.newLocation = new EntityLocation(9.0f, 9.0f, 0.0f);
 		target.newInventory.addAllItems(STONE_ITEM, 2);
-		target.setSelectedKey(target.newInventory.getIdOfStackableType(STONE_ITEM));
+		target.slotManager.setSelectedKey(target.newInventory.getIdOfStackableType(STONE_ITEM));
 		
 		Map<Integer, Entity> targetsById = Map.of(targetId, target.freeze());
 		List<IEntityAction<IMutablePlayerEntity>> outChanges = new ArrayList<>();
@@ -910,7 +910,7 @@ public class TestCommonChanges
 		Assert.assertEquals(2, outChanges.size());
 		Assert.assertTrue(outChanges.get(0) instanceof EntityActionTakeDamageFromEntity);
 		Assert.assertTrue(outChanges.get(1) instanceof EntityActionNudge);
-		int endDurability = PropertyHelpers.getDurability(attacker.newInventory.getNonStackableForKey(attacker.getSelectedKey()));
+		int endDurability = PropertyHelpers.getDurability(attacker.newInventory.getNonStackableForKey(attacker.slotManager.getSelectedKey()));
 		Assert.assertEquals(1, (startDurability - endDurability));
 		
 		// Apply the hit and verify that the target health changed.
@@ -968,7 +968,7 @@ public class TestCommonChanges
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(STONE_ITEM, 1);
 		newEntity.newInventory.addAllItems(bread, 1);
-		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
+		newEntity.slotManager.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
 		newEntity.newFood = 90;
 		
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
@@ -986,11 +986,11 @@ public class TestCommonChanges
 			, newEntity.getId()
 			, newEntity.getId()
 		));
-		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(bread));
+		newEntity.slotManager.setSelectedKey(newEntity.newInventory.getIdOfStackableType(bread));
 		Assert.assertTrue(eat.applyChange(holder.context, newEntity));
 		Assert.assertTrue(holder.events.didPost());
 		
-		Assert.assertEquals(Entity.NO_SELECTION, newEntity.getSelectedKey());
+		Assert.assertEquals(Entity.NO_SELECTION, newEntity.slotManager.getSelectedKey());
 		Assert.assertEquals(1, newEntity.newInventory.getCount(STONE_ITEM));
 		Assert.assertEquals(0, newEntity.newInventory.getCount(bread));
 		Assert.assertEquals(100, newEntity.newFood);
@@ -1005,7 +1005,7 @@ public class TestCommonChanges
 		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
 		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, Map.of(PropertyRegistry.DURABILITY, 1)));
 		// We assume that this is 1.
-		newEntity.setSelectedKey(1);
+		newEntity.slotManager.setSelectedKey(1);
 		
 		AbsoluteLocation target = new AbsoluteLocation(6, 0, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
@@ -1019,7 +1019,7 @@ public class TestCommonChanges
 		EntitySubActionIncrementalBlockBreak breakReasonable = new EntitySubActionIncrementalBlockBreak(target);
 		Assert.assertTrue(breakReasonable.applyChange(holder.context, newEntity));
 		Assert.assertNotNull(holder.mutation);
-		Assert.assertEquals(0, newEntity.getSelectedKey());
+		Assert.assertEquals(0, newEntity.slotManager.getSelectedKey());
 		Assert.assertEquals(0, newEntity.newInventory.freeze().sortedKeys().size());
 	}
 
@@ -1085,7 +1085,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
 		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe, Map.of(PropertyRegistry.DURABILITY, startDurability)));
-		newEntity.setSelectedKey(1);
+		newEntity.slotManager.setSelectedKey(1);
 		
 		AbsoluteLocation targetStone = new AbsoluteLocation(6, 0, 10);
 		AbsoluteLocation targetLog = new AbsoluteLocation(6, 1, 10);
@@ -1137,7 +1137,7 @@ public class TestCommonChanges
 		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(waterBucket, Map.of(PropertyRegistry.DURABILITY, 0)));
 		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(lavaBucket, Map.of(PropertyRegistry.DURABILITY, 0)));
 		// Start with the water.
-		newEntity.setSelectedKey(1);
+		newEntity.slotManager.setSelectedKey(1);
 		
 		AbsoluteLocation target = new AbsoluteLocation(6, 0, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), stone);
@@ -1171,7 +1171,7 @@ public class TestCommonChanges
 		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		
 		// Place the lava source.
-		newEntity.setSelectedKey(2);
+		newEntity.slotManager.setSelectedKey(2);
 		newEntity.ephemeral_lastSpecialActionMillis = 0L;
 		Assert.assertTrue(exchange.applyChange(holder.context, newEntity));
 		Assert.assertNotNull(holder.mutation);
@@ -1209,11 +1209,12 @@ public class TestCommonChanges
 		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(swordType, Map.of(PropertyRegistry.DURABILITY, startDurability)));
 		
 		// We should default to slot 0.
-		Assert.assertEquals(0, mutable.newHotbarIndex);
+		int[] hotbar = mutable.slotManager.test_unsafeHotbar();
+		Assert.assertEquals(0, mutable.slotManager.getHotbarIndex());
 		EntitySubActionSelectItem select = new EntitySubActionSelectItem(stoneId);
 		Assert.assertTrue(select.applyChange(null,  mutable));
-		Assert.assertEquals(stoneId, mutable.newHotbar[0]);
-		Assert.assertEquals(stoneId, mutable.getSelectedKey());
+		Assert.assertEquals(stoneId, hotbar[0]);
+		Assert.assertEquals(stoneId, mutable.slotManager.getSelectedKey());
 		
 		// Change to the other slot and add another reference.
 		Assert.assertFalse(new EntitySubActionChangeHotbarSlot(0).applyChange(null, mutable));
@@ -1221,9 +1222,9 @@ public class TestCommonChanges
 		Assert.assertTrue(change.applyChange(null, mutable));
 		select = new EntitySubActionSelectItem(swordId);
 		Assert.assertTrue(select.applyChange(null,  mutable));
-		Assert.assertEquals(swordId, mutable.newHotbar[1]);
-		Assert.assertEquals(swordId, mutable.getSelectedKey());
-		Assert.assertEquals(stoneId, mutable.newHotbar[0]);
+		Assert.assertEquals(swordId, hotbar[1]);
+		Assert.assertEquals(swordId, mutable.slotManager.getSelectedKey());
+		Assert.assertEquals(stoneId, hotbar[0]);
 	}
 
 	@Test
@@ -1350,7 +1351,7 @@ public class TestCommonChanges
 		int blockInventoryKey = 1;
 		EntitySubActionRequestItemPickUp pullFromInventory = new EntitySubActionRequestItemPickUp(furnace, blockInventoryKey, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(pullFromInventory.applyChange(holder.context, newEntity));
-		Assert.assertEquals(0, newEntity.getSelectedKey());
+		Assert.assertEquals(0, newEntity.slotManager.getSelectedKey());
 		Assert.assertNull(holder.change);
 		Assert.assertTrue(holder.mutation instanceof MutationBlockExtractItems);
 		holder.mutation.applyMutation(holder.context, mutable);
@@ -1358,7 +1359,7 @@ public class TestCommonChanges
 		Assert.assertTrue(holder.change instanceof EntityActionStoreToInventory);
 		Assert.assertTrue(holder.change.applyChange(holder.context, newEntity));
 		// We expect to see the removed item selected now since we had nothing selected before.
-		Assert.assertEquals(2, newEntity.getSelectedKey());
+		Assert.assertEquals(2, newEntity.slotManager.getSelectedKey());
 		holder.change = null;
 		mutable.writeBack(cuboid);
 		
@@ -1440,7 +1441,7 @@ public class TestCommonChanges
 		entity.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
 		entity.newInventory.addAllItems(ENV.items.getItemById("op.wheat_item"), 1);
 		// We assume that this is key 1.
-		entity.newHotbar[0] = 1;
+		entity.slotManager.setSelectedKey(1);
 		CreatureEntity creature = CreatureEntity.create(targetId
 				, COW
 				, new EntityLocation(9.0f, 9.0f, 0.0f)
@@ -1483,7 +1484,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(itemGate, 1);
-		newEntity.setSelectedKey(1);
+		newEntity.slotManager.setSelectedKey(1);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
@@ -1561,7 +1562,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(itemHopper, 6);
-		newEntity.setSelectedKey(1);
+		newEntity.slotManager.setSelectedKey(1);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
 		
@@ -1702,9 +1703,10 @@ public class TestCommonChanges
 		// Put log and stone on the hotbar, selecting the log.
 		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
 		newEntity.newInventory.addAllItems(STONE_ITEM, 1);
-		newEntity.newHotbar[0] = 1;
-		newEntity.newHotbar[1] = 2;
-		newEntity.newHotbarIndex = 0;
+		int[] hotbar = newEntity.slotManager.test_unsafeHotbar();
+		hotbar[0] = 1;
+		hotbar[1] = 2;
+		newEntity.slotManager.setHotbarIndex(0);
 		newEntity.freeze();
 		
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
@@ -1721,11 +1723,12 @@ public class TestCommonChanges
 			EntitySubActionCraft craft = new EntitySubActionCraft(logToPlanks);
 			Assert.assertTrue(craft.applyChange(holder.context, newEntity));
 		}
+		hotbar = newEntity.slotManager.test_unsafeHotbar();
 		Assert.assertTrue(holder.events.didPost());
 		Assert.assertNull(newEntity.newLocalCraftOperation);
-		Assert.assertEquals(Entity.NO_SELECTION, newEntity.newHotbar[0]);
-		Assert.assertEquals(2, newEntity.newHotbar[1]);
-		Assert.assertEquals(0, newEntity.newHotbarIndex);
+		Assert.assertEquals(Entity.NO_SELECTION, hotbar[0]);
+		Assert.assertEquals(2, hotbar[1]);
+		Assert.assertEquals(0, newEntity.slotManager.getHotbarIndex());
 		newEntity.freeze();
 		
 		holder.events.expected(new EventRecord(EventRecord.Type.CRAFT_IN_INVENTORY_COMPLETE
@@ -1739,11 +1742,12 @@ public class TestCommonChanges
 			EntitySubActionCraft craft = new EntitySubActionCraft(stoneToBrick);
 			Assert.assertTrue(craft.applyChange(holder.context, newEntity));
 		}
+		hotbar = newEntity.slotManager.test_unsafeHotbar();
 		Assert.assertTrue(holder.events.didPost());
 		Assert.assertNull(newEntity.newLocalCraftOperation);
-		Assert.assertEquals(Entity.NO_SELECTION, newEntity.newHotbar[0]);
-		Assert.assertEquals(Entity.NO_SELECTION, newEntity.newHotbar[1]);
-		Assert.assertEquals(0, newEntity.newHotbarIndex);
+		Assert.assertEquals(Entity.NO_SELECTION, hotbar[0]);
+		Assert.assertEquals(Entity.NO_SELECTION, hotbar[1]);
+		Assert.assertEquals(0, newEntity.slotManager.getHotbarIndex());
 		newEntity.freeze();
 	}
 
@@ -1930,7 +1934,7 @@ public class TestCommonChanges
 		holder.mutation = null;
 		
 		// This should be unchanged and the block shouldn't yet have the items.
-		Assert.assertEquals(CreativeInventory.STACK_SIZE, newEntity.accessMutableInventory().getCount(STONE_ITEM));
+		Assert.assertEquals(CreativeInventory.STACK_SIZE, newEntity.getSlotManager().getCount(STONE_ITEM));
 		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()));
 		
 		// We can now apply the step 2.
@@ -1971,7 +1975,8 @@ public class TestCommonChanges
 		// Create an entity in survival mode, change them to creative and back.  We also show that this change clears the hotbar (since it isn't the same inventory).
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newInventory.addAllItems(CHARCOAL_ITEM, 1);
-		newEntity.newHotbar[newEntity.newHotbarIndex] = 1;
+		int[] hotbar = newEntity.slotManager.test_unsafeHotbar();
+		hotbar[newEntity.slotManager.getHotbarIndex()] = 1;
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, false, false);
 		Assert.assertFalse(newEntity.freeze().isCreativeMode());
@@ -1979,15 +1984,15 @@ public class TestCommonChanges
 		EntityActionOperatorSetCreative set = new EntityActionOperatorSetCreative(true);
 		Assert.assertTrue(set.applyChange(holder.context, newEntity));
 		Assert.assertTrue(newEntity.freeze().isCreativeMode());
-		Assert.assertEquals(0, newEntity.newHotbar[newEntity.newHotbarIndex]);
+		Assert.assertEquals(0, hotbar[newEntity.slotManager.getHotbarIndex()]);
 		EntitySubActionSelectItem select = new EntitySubActionSelectItem(10);
 		Assert.assertTrue(select.applyChange(holder.context, newEntity));
-		Assert.assertEquals(10, newEntity.newHotbar[newEntity.newHotbarIndex]);
+		Assert.assertEquals(10, hotbar[newEntity.slotManager.getHotbarIndex()]);
 		
 		EntityActionOperatorSetCreative clear = new EntityActionOperatorSetCreative(false);
 		Assert.assertTrue(clear.applyChange(holder.context, newEntity));
 		Assert.assertFalse(newEntity.freeze().isCreativeMode());
-		Assert.assertEquals(0, newEntity.newHotbar[newEntity.newHotbarIndex]);
+		Assert.assertEquals(0, hotbar[newEntity.slotManager.getHotbarIndex()]);
 	}
 
 	@Test
@@ -2093,7 +2098,7 @@ public class TestCommonChanges
 		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
 		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, Map.of(PropertyRegistry.DURABILITY, 1)));
 		// We assume that this is 1.
-		newEntity.setSelectedKey(1);
+		newEntity.slotManager.setSelectedKey(1);
 		
 		AbsoluteLocation target = new AbsoluteLocation(6, 0, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
@@ -2108,7 +2113,7 @@ public class TestCommonChanges
 		Assert.assertTrue(breakReasonable.applyChange(holder.context, newEntity));
 		Assert.assertNotNull(holder.mutation);
 		// We should still see the item in the inventory.
-		Assert.assertEquals(1, newEntity.getSelectedKey());
+		Assert.assertEquals(1, newEntity.slotManager.getSelectedKey());
 		Assert.assertEquals(1, PropertyHelpers.getDurability(newEntity.newInventory.freeze().getNonStackableForKey(1)));
 	}
 
@@ -2259,7 +2264,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(itemDoor, 1);
-		newEntity.setSelectedKey(1);
+		newEntity.slotManager.setSelectedKey(1);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
 		
 		// Show that we fail to place when using the wrong helper.
@@ -2437,8 +2442,8 @@ public class TestCommonChanges
 		Item dirtItem = ENV.items.getItemById("op.dirt");
 		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(hoeItem, Map.of(PropertyRegistry.DURABILITY, 2)));
 		// We assume that this is 1.
-		newEntity.setSelectedKey(1);
-		Assert.assertEquals(2, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(newEntity.getSelectedKey())));
+		newEntity.slotManager.setSelectedKey(1);
+		Assert.assertEquals(2, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(newEntity.slotManager.getSelectedKey())));
 		
 		AbsoluteLocation target0 = newEntity.newLocation.getBlockLocation().getRelative(1, 0, 0);
 		AbsoluteLocation target1 = newEntity.newLocation.getBlockLocation().getRelative(1, 1, 0);
@@ -2455,7 +2460,7 @@ public class TestCommonChanges
 		Assert.assertTrue(use0.applyChange(holder.context, newEntity));
 		Assert.assertTrue(holder.mutation instanceof MutationBlockReplace);
 		holder.mutation = null;
-		Assert.assertEquals(1, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(newEntity.getSelectedKey())));
+		Assert.assertEquals(1, PropertyHelpers.getDurability(newEntity.newInventory.getNonStackableForKey(newEntity.slotManager.getSelectedKey())));
 		Assert.assertEquals(1, newEntity.newInventory.freeze().sortedKeys().size());
 		
 		// This counts as a special action so reset that.
@@ -2464,7 +2469,7 @@ public class TestCommonChanges
 		EntitySubActionUseSelectedItemOnBlock use1 = new EntitySubActionUseSelectedItemOnBlock(target1);
 		Assert.assertTrue(use1.applyChange(holder.context, newEntity));
 		Assert.assertTrue(holder.mutation instanceof MutationBlockReplace);
-		Assert.assertEquals(0, newEntity.getSelectedKey());
+		Assert.assertEquals(0, newEntity.slotManager.getSelectedKey());
 		Assert.assertEquals(0, newEntity.newInventory.freeze().sortedKeys().size());
 	}
 
@@ -2492,7 +2497,7 @@ public class TestCommonChanges
 		// Make sure that we aren't crafting and and nothing is selected.
 		Assert.assertNull(newEntity.newLocalCraftOperation);
 		Assert.assertEquals(0, newEntity.newInventory.getCurrentEncumbrance());
-		Assert.assertEquals(Entity.NO_SELECTION, newEntity.getSelectedKey());
+		Assert.assertEquals(Entity.NO_SELECTION, newEntity.slotManager.getSelectedKey());
 	}
 
 	@Test
@@ -2502,8 +2507,9 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
 		newEntity.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(IRON_SWORD_ITEM, Map.of(PropertyRegistry.DURABILITY, 5)));
-		newEntity.newHotbar[0] = 1;
-		newEntity.newHotbar[1] = 2;
+		int[] hotbar = newEntity.slotManager.test_unsafeHotbar();
+		hotbar[0] = 1;
+		hotbar[1] = 2;
 		
 		// We will create a bogus context which just says that they are standing in a wall so they don't try to move.
 		_Events events = new _Events();
@@ -2536,8 +2542,8 @@ public class TestCommonChanges
 		Assert.assertNull(newEntity.newLocalCraftOperation);
 		Assert.assertEquals(0, newEntity.newInventory.getCount(LOG_ITEM));
 		Assert.assertEquals(2, newEntity.newInventory.getCount(PLANK_ITEM));
-		Assert.assertEquals(Entity.NO_SELECTION, newEntity.newHotbar[0]);
-		Assert.assertEquals(2, newEntity.newHotbar[1]);
+		Assert.assertEquals(Entity.NO_SELECTION, hotbar[0]);
+		Assert.assertEquals(2, hotbar[1]);
 	}
 
 	@Test
@@ -2581,24 +2587,24 @@ public class TestCommonChanges
 		MutableEntity swordAttacker = MutableEntity.createForTest(swordAttackerId);
 		swordAttacker.newLocation = new EntityLocation(11.0f, 10.0f, 0.0f);
 		swordAttacker.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(IRON_SWORD_ITEM, Map.of(PropertyRegistry.DURABILITY, 100)));
-		swordAttacker.setSelectedKey(1);
+		swordAttacker.slotManager.setSelectedKey(1);
 		
 		MutableEntity axeAttacker = MutableEntity.createForTest(axeAttackerId);
 		axeAttacker.newLocation = new EntityLocation(10.0f, 11.0f, 0.0f);
 		axeAttacker.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(IRON_AXE_ITEM, Map.of(PropertyRegistry.DURABILITY, 100)));
-		axeAttacker.setSelectedKey(1);
+		axeAttacker.slotManager.setSelectedKey(1);
 		
 		MutableEntity stoneAttacker = MutableEntity.createForTest(stoneAttackerId);
 		stoneAttacker.newLocation = new EntityLocation(9.0f, 10.0f, 0.0f);
 		stoneAttacker.newInventory.addAllItems(STONE_ITEM, 2);
-		stoneAttacker.setSelectedKey(1);
+		stoneAttacker.slotManager.setSelectedKey(1);
 		
 		MutableEntity enchantedSwordAttacker = MutableEntity.createForTest(enchantedSwordAttackerId);
 		enchantedSwordAttacker.newLocation = new EntityLocation(10.0f, 9.0f, 0.0f);
 		enchantedSwordAttacker.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(IRON_SWORD_ITEM, Map.of(PropertyRegistry.DURABILITY, 100
 			, PropertyRegistry.ENCHANT_WEAPON_MELEE, (byte)3
 		)));
-		enchantedSwordAttacker.setSelectedKey(1);
+		enchantedSwordAttacker.slotManager.setSelectedKey(1);
 		
 		Entity baselineTarget = target.freeze();
 		Map<Integer, Entity> targetsById = Map.of(targetId, baselineTarget);
@@ -2738,7 +2744,7 @@ public class TestCommonChanges
 		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe, Map.of(PropertyRegistry.DURABILITY, startDurability
 				, PropertyRegistry.ENCHANT_TOOL_EFFICIENCY, (byte)5
 		)));
-		newEntity.setSelectedKey(1);
+		newEntity.slotManager.setSelectedKey(1);
 		
 		AbsoluteLocation targetStone = new AbsoluteLocation(6, 0, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
@@ -2768,7 +2774,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(STONE_ITEM, 2);
-		newEntity.setSelectedKey(1);
+		newEntity.slotManager.setSelectedKey(1);
 		
 		AbsoluteLocation platform = newEntity.newLocation.getBlockLocation().getRelative(0, 0, -1);
 		AbsoluteLocation target = platform.getRelative(1, 0, 1);
@@ -2791,7 +2797,7 @@ public class TestCommonChanges
 		proxy.writeBack(cuboid);
 		Assert.assertNull(holder.change);
 		Assert.assertEquals(0, newEntity.newInventory.getCurrentEncumbrance());
-		Assert.assertEquals(0, newEntity.getSelectedKey());
+		Assert.assertEquals(0, newEntity.slotManager.getSelectedKey());
 		Assert.assertEquals(new Items(STONE_ITEM, 2), cuboid.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, target.getBlockAddress()).stack);
 		
 		// Now, swap the stones back into the inventory.
@@ -2811,7 +2817,7 @@ public class TestCommonChanges
 		Assert.assertNull(holder.mutation);
 		
 		Assert.assertEquals(ENV.encumbrance.getEncumbrance(STONE_ITEM) * 2, newEntity.newInventory.getCurrentEncumbrance());
-		Assert.assertEquals(1, newEntity.getSelectedKey());
+		Assert.assertEquals(1, newEntity.slotManager.getSelectedKey());
 		Assert.assertEquals(null, cuboid.getDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, target.getBlockAddress()));
 	}
 
@@ -2825,7 +2831,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(itemKeystone, 3);
-		newEntity.setSelectedKey(1);
+		newEntity.slotManager.setSelectedKey(1);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
 		
@@ -3099,7 +3105,7 @@ public class TestCommonChanges
 		newEntity.newLocation = new EntityLocation(6.1f, 0.2f, 11.0f);
 		newEntity.newInventory.addNonStackableBestEfforts(sword);
 		newEntity.newInventory.addAllItems(LOG_ITEM, 3);
-		newEntity.setSelectedKey(1);
+		newEntity.slotManager.setSelectedKey(1);
 		
 		AbsoluteLocation targetStone = new AbsoluteLocation(6, 0, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
@@ -3139,7 +3145,7 @@ public class TestCommonChanges
 		
 		// Verify the inventory is empty, nothing is selected, and the passives contain what is expected.
 		Assert.assertEquals(0, newEntity.newInventory.getCurrentEncumbrance());
-		Assert.assertEquals(0, newEntity.getSelectedKey());
+		Assert.assertEquals(0, newEntity.slotManager.getSelectedKey());
 		
 		Assert.assertEquals(1, pass1.id());
 		Assert.assertEquals(newEntity.newLocation, pass1.location());
@@ -3326,15 +3332,16 @@ public class TestCommonChanges
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newInventory.addNonStackableAllowingOverflow(bow);
 		mutable.newInventory.addAllItems(arrow, 2);
-		mutable.newHotbar[0] = 1;
-		mutable.newHotbar[1] = 2;
-		mutable.newHotbarIndex = 2;
+		int[] hotbar = mutable.slotManager.test_unsafeHotbar();
+		hotbar[0] = 1;
+		hotbar[1] = 2;
+		mutable.slotManager.setHotbarIndex(2);
 		
 		// Show that we can't charge with no bow selected.
 		Assert.assertFalse(new EntitySubActionChargeWeapon().applyChange(context, mutable));
 		
 		// Show that we can't release with no charge.
-		mutable.newHotbarIndex = 0;
+		mutable.slotManager.setHotbarIndex(0);
 		Assert.assertFalse(new EntitySubActionReleaseWeapon().applyChange(context, mutable));
 		
 		// Show that we can now charge.
@@ -3381,7 +3388,7 @@ public class TestCommonChanges
 		Assert.assertEquals(new EntityLocation(0.0f, 12.5f, 0.0f), out[0].velocity());
 		Assert.assertNull(out[0].extendedData());
 		Assert.assertEquals(0, mutable.newInventory.getCount(arrow));
-		Assert.assertEquals(0, mutable.newHotbar[1]);
+		Assert.assertEquals(0, hotbar[1]);
 		
 		// We should now fail to charge.
 		Assert.assertFalse(new EntitySubActionChargeWeapon().applyChange(context, mutable));
@@ -3425,7 +3432,8 @@ public class TestCommonChanges
 		entity.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
 		entity.newInventory.addAllItems(wheatItem, 1);
 		// We assume that this is key 1.
-		entity.newHotbar[0] = 1;
+		int[] hotbar = entity.slotManager.test_unsafeHotbar();
+		hotbar[0] = 1;
 		
 		CreatureEntity cow = CreatureEntity.create(cowId
 			, COW
@@ -3511,27 +3519,28 @@ public class TestCommonChanges
 		Assert.assertEquals(1, newEntity.newInventory.getCount(STONE_ITEM));
 		
 		// We should see this only in the 0-index slot.
-		Assert.assertEquals(1, newEntity.newHotbar[newEntity.newHotbarIndex]);
-		for (int i = 1; i < newEntity.newHotbar.length; ++i)
+		int[] hotbar = newEntity.slotManager.test_unsafeHotbar();
+		Assert.assertEquals(1, hotbar[newEntity.slotManager.getHotbarIndex()]);
+		for (int i = 1; i < hotbar.length; ++i)
 		{
-			int key = newEntity.newHotbar[i];
+			int key = hotbar[i];
 			Assert.assertEquals(0, key);
 		}
-		Assert.assertEquals(0, newEntity.newHotbarIndex);
+		Assert.assertEquals(0, newEntity.slotManager.getHotbarIndex());
 		
 		// Change the slot and show that the same action doesn't duplicate the reference.
-		newEntity.newHotbarIndex = 1;
+		newEntity.slotManager.setHotbarIndex(1);
 		Assert.assertTrue(store.applyChange(context, newEntity));
 		Assert.assertEquals(2, newEntity.newInventory.getCount(STONE_ITEM));
 		
 		// We should still see this only in the 0-index slot.
-		Assert.assertEquals(1, newEntity.newHotbar[0]);
-		for (int i = 1; i < newEntity.newHotbar.length; ++i)
+		Assert.assertEquals(1, hotbar[0]);
+		for (int i = 1; i < hotbar.length; ++i)
 		{
-			int key = newEntity.newHotbar[i];
+			int key = hotbar[i];
 			Assert.assertEquals(0, key);
 		}
-		Assert.assertEquals(1, newEntity.newHotbarIndex);
+		Assert.assertEquals(1, newEntity.slotManager.getHotbarIndex());
 	}
 
 	@Test
@@ -3542,7 +3551,7 @@ public class TestCommonChanges
 		int entityId = 1;
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		newEntity.newInventory.addNonStackableAllowingOverflow(PropertyHelpers.newItemWithDefaults(ENV, portalOrb));
-		newEntity.setSelectedKey(1);
+		newEntity.slotManager.setSelectedKey(1);
 		
 		// Set the location.
 		TickProcessingContext context = _createSimpleContext();
@@ -3682,7 +3691,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
-		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
+		newEntity.slotManager.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups(new TickProcessingContext.IBlockFetcher() {
 				@Override
@@ -3704,7 +3713,7 @@ public class TestCommonChanges
 		EntitySubActionPlaceSelectedBlock place = new EntitySubActionPlaceSelectedBlock(target, target);
 		Assert.assertFalse(place.applyChange(context, newEntity));
 		Assert.assertEquals(1, newEntity.freeze().inventory().getCount(LOG_ITEM));
-		Assert.assertEquals(1, newEntity.getSelectedKey());
+		Assert.assertEquals(1, newEntity.slotManager.getSelectedKey());
 	}
 
 	@Test
@@ -3758,7 +3767,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		newEntity.newLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
 		newEntity.newInventory.addAllItems(blockMover, 6);
-		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(blockMover));
+		newEntity.slotManager.setSelectedKey(newEntity.newInventory.getIdOfStackableType(blockMover));
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
@@ -3800,7 +3809,7 @@ public class TestCommonChanges
 		
 		// We expect that the block will be placed and our selection and inventory will be cleared.
 		Assert.assertEquals(0, newEntity.freeze().inventory().sortedKeys().size());
-		Assert.assertEquals(Entity.NO_SELECTION, newEntity.getSelectedKey());
+		Assert.assertEquals(Entity.NO_SELECTION, newEntity.slotManager.getSelectedKey());
 	}
 
 	@Test
@@ -3838,7 +3847,7 @@ public class TestCommonChanges
 		Assert.assertEquals(new EntityLocation(2.5f, -1.5f, 0.55f), newEntity.newVelocity);
 		Assert.assertEquals((byte)7, newEntity.newYaw);
 		Assert.assertEquals((byte)8, newEntity.newPitch);
-		Assert.assertEquals(inventoryId, newEntity.getSelectedKey());
+		Assert.assertEquals(inventoryId, newEntity.slotManager.getSelectedKey());
 	}
 
 	@Test
@@ -3999,7 +4008,7 @@ public class TestCommonChanges
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{
-		Items stack = entity.newInventory.getStackForKey(entity.getSelectedKey());
+		Items stack = entity.newInventory.getStackForKey(entity.getSlotManager().getSelectedKey());
 		return (null != stack)
 				? stack.type()
 				: null

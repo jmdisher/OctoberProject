@@ -81,15 +81,15 @@ public class MutableEntity implements IMutablePlayerEntity
 
 	// Some data elements are actually immutable (id, for example) so they are just left in the original, along with the original data.
 	private final Entity _original;
+	private final int[] _sharedHotbar;
 	public final MutableInventory newInventory;
+	public final MutableSlotManager slotManager;
 
 	// The location is immutable but can be directly replaced.
 	public EntityLocation newLocation;
 	public EntityLocation newVelocity;
 	public byte newYaw;
 	public byte newPitch;
-	public int[] newHotbar;
-	public int newHotbarIndex;
 	public NonStackableItem[] newArmour;
 	public CraftOperation newLocalCraftOperation;
 	public byte newHealth;
@@ -105,13 +105,17 @@ public class MutableEntity implements IMutablePlayerEntity
 	private MutableEntity(Entity original)
 	{
 		_original = original;
+		_sharedHotbar = original.hotbarItems().clone();
 		this.newInventory = new MutableInventory(original.inventory());
+		IMutableInventory slotInventory = original.isCreativeMode()
+			? new CreativeInventory()
+			: this.newInventory
+		;
+		this.slotManager = new MutableSlotManager(slotInventory, _sharedHotbar, original.hotbarIndex());
 		this.newLocation = original.location();
 		this.newVelocity = original.velocity();
 		this.newYaw = original.yaw();
 		this.newPitch = original.pitch();
-		this.newHotbar = original.hotbarItems().clone();
-		this.newHotbarIndex = original.hotbarIndex();
 		this.newArmour = original.armourSlots().clone();
 		this.newLocalCraftOperation = original.ephemeralShared().localCraftOperation();
 		this.newHealth = original.health();
@@ -132,22 +136,6 @@ public class MutableEntity implements IMutablePlayerEntity
 	}
 
 	@Override
-	public IMutableInventory accessMutableInventory()
-	{
-		// If this is a creative player, which ignore their inventory and always return the fake creative one.
-		IMutableInventory inv;
-		if (_isCreativeMode)
-		{
-			inv = new CreativeInventory();
-		}
-		else
-		{
-			inv = this.newInventory;
-		}
-		return inv;
-	}
-
-	@Override
 	public CraftOperation getCurrentCraftingOperation()
 	{
 		return this.newLocalCraftOperation;
@@ -160,21 +148,9 @@ public class MutableEntity implements IMutablePlayerEntity
 	}
 
 	@Override
-	public int[] copyHotbar()
+	public MutableSlotManager getSlotManager()
 	{
-		return this.newHotbar.clone();
-	}
-
-	@Override
-	public int getSelectedKey()
-	{
-		return this.newHotbar[this.newHotbarIndex];
-	}
-
-	@Override
-	public void setSelectedKey(int key)
-	{
-		this.newHotbar[this.newHotbarIndex] = key;
+		return this.slotManager;
 	}
 
 	@Override
@@ -208,18 +184,6 @@ public class MutableEntity implements IMutablePlayerEntity
 	}
 
 	@Override
-	public void clearHotBarWithKey(int key)
-	{
-		for (int i = 0; i < Entity.HOTBAR_SIZE; ++i)
-		{
-			if (key == this.newHotbar[i])
-			{
-				this.newHotbar[i] = Entity.NO_SELECTION;
-			}
-		}
-	}
-
-	@Override
 	public void resetLongRunningOperations()
 	{
 		// Crafting and charging should be reset here.
@@ -244,22 +208,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		this.newHealth = _original.type().maxHealth();
 		this.newFood = MiscConstants.PLAYER_MAX_FOOD;
 		// Wipe all the hotbar slots.
-		for (int i = 0; i < Entity.HOTBAR_SIZE; ++i)
-		{
-			this.newHotbar[i] = Entity.NO_SELECTION;
-		}
-	}
-
-	@Override
-	public boolean changeHotbarIndex(int index)
-	{
-		boolean didApply = false;
-		if (this.newHotbarIndex != index)
-		{
-			this.newHotbarIndex = index;
-			didApply = true;
-		}
-		return didApply;
+		this.slotManager.clearHotbar();
 	}
 
 	@Override
@@ -368,11 +317,12 @@ public class MutableEntity implements IMutablePlayerEntity
 	{
 		_isCreativeMode = enableCreative;
 		
-		// The hotbar is coupled to the inventory, which is changed by this flag.
-		for (int i = 0; i < Entity.HOTBAR_SIZE; ++i)
-		{
-			this.newHotbar[i] = Entity.NO_SELECTION;
-		}
+		// We also need to change the mode of the slot manager.
+		IMutableInventory inventory = enableCreative
+			? new CreativeInventory()
+			: this.newInventory
+		;
+		this.slotManager.setInventory(inventory);
 	}
 
 	@Override
@@ -435,16 +385,18 @@ public class MutableEntity implements IMutablePlayerEntity
 	public Entity freeze()
 	{
 		// We want to verify that the selection index is valid and that the hotbar only references valid inventory ids.
-		Assert.assertTrue((this.newHotbarIndex >= 0) && (this.newHotbarIndex < this.newHotbar.length));
+		int newHotbarIndex = this.slotManager.getHotbarIndex();
+		Assert.assertTrue((newHotbarIndex >= 0) && (newHotbarIndex < _sharedHotbar.length));
 		boolean didHotbarChange = false;
-		for (int i = 0; i < this.newHotbar.length; ++i)
+		for (int i = 0; i < _sharedHotbar.length; ++i)
 		{
-			int newKey = this.newHotbar[i];
+			int newKey = _sharedHotbar[i];
 			if (Entity.NO_SELECTION != newKey)
 			{
 				IMutableInventory inventoryToCheck = _isCreativeMode
 					? new CreativeInventory()
-					: this.newInventory;
+					: this.newInventory
+				;
 				Items stack = inventoryToCheck.getStackForKey(newKey);
 				NonStackableItem nonStack = inventoryToCheck.getNonStackableForKey(newKey);
 				Assert.assertTrue((null != stack) != (null != nonStack));
@@ -478,8 +430,8 @@ public class MutableEntity implements IMutablePlayerEntity
 			, this.newYaw
 			, this.newPitch
 			, this.newInventory.freeze()
-			, didHotbarChange ? this.newHotbar : _original.hotbarItems()
-			, this.newHotbarIndex
+			, didHotbarChange ? _sharedHotbar : _original.hotbarItems()
+			, newHotbarIndex
 			, didArmourChange ? this.newArmour : _original.armourSlots()
 			, this.newHealth
 			, this.newFood

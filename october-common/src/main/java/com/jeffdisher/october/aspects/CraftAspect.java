@@ -12,11 +12,10 @@ import java.util.Set;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.types.Craft;
-import com.jeffdisher.october.types.IMutableInventory;
-import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.ISlotManager;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
-import com.jeffdisher.october.types.MutableInventory;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.utils.Assert;
 
@@ -247,18 +246,12 @@ public class CraftAspect
 		return _craftingByClassifications.containsKey(value);
 	}
 
-
-	public static boolean canApply(Craft craft, Inventory inv)
-	{
-		return _canApply(craft, new MutableInventory(inv));
-	}
-
-	public static boolean canApplyMutable(Craft craft, IMutableInventory inv)
+	public static boolean canApply(Craft craft, ISlotManager inv)
 	{
 		return _canApply(craft, inv);
 	}
 
-	public static boolean craft(Environment env, Craft craft, IMutableInventory inv)
+	public static boolean craft(Environment env, Craft craft, MutableSlotManager inv)
 	{
 		boolean didCraft = false;
 		// Verify that they have the input.
@@ -267,19 +260,19 @@ public class CraftAspect
 			// Now, perform the craft against this inventory.
 			for (Items items : craft.input)
 			{
-				inv.removeStackableItems(items.type(), items.count());
+				inv.removeStackable(items.type(), items.count());
 			}
 			for (Item item : craft.output)
 			{
 				boolean didAdd;
 				if (env.durability.isStackable(item))
 				{
-					didAdd = inv.addAllItems(item, 1);
+					didAdd = inv.addStackableItems(item, 1);
 				}
 				else
 				{
 					NonStackableItem newItem = PropertyHelpers.newItemWithDefaults(env, item);
-					didAdd = inv.addNonStackableBestEfforts(newItem);
+					didAdd = inv.addNonStackable(newItem);
 				}
 				// We can't fail to add here.
 				Assert.assertTrue(didAdd);
@@ -290,7 +283,7 @@ public class CraftAspect
 	}
 
 
-	private static boolean _canApply(Craft craft, IMutableInventory inv)
+	private static boolean _canApply(Craft craft, ISlotManager inv)
 	{
 		boolean canApply = true;
 		for (Items items : craft.input)

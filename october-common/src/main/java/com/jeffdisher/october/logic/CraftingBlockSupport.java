@@ -16,6 +16,7 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -64,10 +65,11 @@ public class CraftingBlockSupport
 				{
 					// We are done so try to apply the craft.
 					Inventory inventory = newBlock.getInventory();
-					if (classifications.contains(currentOperation.selectedCraft().classification) && CraftAspect.canApply(currentCraft, inventory))
+					MutableInventory mutable = new MutableInventory(inventory);
+					MutableSlotManager slotManager = new MutableSlotManager(mutable, new int[0], 0);
+					if (classifications.contains(currentOperation.selectedCraft().classification) && CraftAspect.canApply(currentCraft, slotManager))
 					{
-						MutableInventory mutable = new MutableInventory(inventory);
-						CraftAspect.craft(env, currentCraft, mutable);
+						CraftAspect.craft(env, currentCraft, slotManager);
 						newBlock.setInventory(mutable.freeze());
 						newBlock.setCrafting(null);
 					}
@@ -94,15 +96,16 @@ public class CraftingBlockSupport
 			// We are changing so see if the craft makes sense and then start it.
 			// Make sure that this crafting operation can be done within a table.
 			Inventory inventory = newBlock.getInventory();
-			if (classifications.contains(startCraft.classification) && CraftAspect.canApply(startCraft, inventory))
+			MutableInventory mutable = new MutableInventory(inventory);
+			MutableSlotManager slotManager = new MutableSlotManager(mutable, new int[0], 0);
+			if (classifications.contains(startCraft.classification) && CraftAspect.canApply(startCraft, slotManager))
 			{
 				long effectiveMillis = craftingMultiplier * millisToApply;
 				
 				// See if this should be finished immediately or if it will take multiple calls.
 				if (effectiveMillis >= startCraft.millisPerCraft)
 				{
-					MutableInventory mutable = new MutableInventory(inventory);
-					CraftAspect.craft(env, startCraft, mutable);
+					CraftAspect.craft(env, startCraft, slotManager);
 					newBlock.setInventory(mutable.freeze());
 					newBlock.setCrafting(null);
 				}
@@ -181,7 +184,8 @@ public class CraftingBlockSupport
 				{
 					// Complete the crafting operation.
 					MutableInventory inv = new MutableInventory(newBlock.getInventory());
-					CraftAspect.craft(env, craft.selectedCraft(), inv);
+					MutableSlotManager slotManager = new MutableSlotManager(inv, new int[0], 0);
+					CraftAspect.craft(env, craft.selectedCraft(), slotManager);
 					newBlock.setInventory(inv.freeze());
 					craft = null;
 					
@@ -274,7 +278,8 @@ public class CraftingBlockSupport
 				for (Craft craft : env.crafting.craftsForClassifications(Set.of(FUELLED_CLASSIFICATION)))
 				{
 					// Just take the first match (we don't currently have a priority).
-					if (CraftAspect.canApply(craft, inv))
+					MutableSlotManager slotManager = new MutableSlotManager(new MutableInventory(inv), new int[0], 0);
+					if (CraftAspect.canApply(craft, slotManager))
 					{
 						possibleCraft = craft;
 						break;

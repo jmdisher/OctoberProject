@@ -39,7 +39,7 @@ public class EntitySubActionChangeHotbarSlot implements IEntitySubAction<IMutabl
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		newEntity.setCurrentChargeMillis(0);
-		return newEntity.changeHotbarIndex(_index);
+		return newEntity.getSlotManager().setHotbarIndex(_index);
 	}
 
 	@Override

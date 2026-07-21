@@ -5,9 +5,9 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IEntitySubAction;
-import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.ItemSlot;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -39,14 +39,12 @@ public class EntitySubActionSelectItem implements IEntitySubAction<IMutablePlaye
 	{
 		boolean didApply = false;
 		
-		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
-		ItemSlot slot = mutableInventory.getSlotForKey(_inventoryId);
-		if ((_inventoryId != newEntity.getSelectedKey())
+		MutableSlotManager slotManager = newEntity.getSlotManager();
+		ItemSlot slot = slotManager.getSlot(_inventoryId);
+		if ((_inventoryId != slotManager.getSelectedKey())
 				&& ((Entity.NO_SELECTION == _inventoryId) || (null != slot)))
 		{
-			// Remove from any other slots and select in the current slot.
-			newEntity.clearHotBarWithKey(_inventoryId);
-			newEntity.setSelectedKey(_inventoryId);
+			slotManager.setSelectedKey(_inventoryId);
 			newEntity.setCurrentChargeMillis(0);
 			didApply = true;
 		}

@@ -7,11 +7,11 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntityAction;
-import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -58,46 +58,36 @@ public class EntityActionStoreToInventory implements IEntityAction<IMutablePlaye
 		int itemsToStore;
 		int stored;
 		int itemKeyToSelect = 0;
-		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
+		MutableSlotManager slotManager = newEntity.getSlotManager();
 		if (null != _stack)
 		{
 			Item type = _stack.type();
 			itemsToStore = _stack.count();
-			stored = mutableInventory.addItemsBestEfforts(type, itemsToStore);
+			stored = slotManager.addStackableBestEfforts(type, itemsToStore);
 			if (stored > 0)
 			{
-				itemKeyToSelect = mutableInventory.getIdOfStackableType(type);
+				itemKeyToSelect = slotManager.getKeyForStackable(type);
 			}
 		}
 		else
 		{
 			itemsToStore = 1;
-			boolean didStore = mutableInventory.addNonStackableBestEfforts(_nonStack);
+			boolean didStore = slotManager.addNonStackable(_nonStack);
 			stored = didStore ? 1 : 0;
 			if (didStore)
 			{
-				itemKeyToSelect = mutableInventory.getIdOfNonStackableInstance(_nonStack);
+				itemKeyToSelect = slotManager.getKeyForNonStackableInstance(_nonStack);
 			}
 		}
 		
 		// Just as a "nice to have" behaviour, we will select this item if we have nothing selected and we didn't have any of this item.
-		if ((0 != itemKeyToSelect) && (Entity.NO_SELECTION == newEntity.getSelectedKey()))
+		if ((Entity.NO_SELECTION != itemKeyToSelect) && (Entity.NO_SELECTION == slotManager.getSelectedKey()))
 		{
 			// We also only want to select this if it isn't already on the hotbar.
-			int existingIndex = -1;
-			int[] toWalk = newEntity.copyHotbar();
-			for (int i = 0; i < toWalk.length; ++i)
-			{
-				if (itemKeyToSelect == toWalk[i])
-				{
-					existingIndex = 1;
-					break;
-				}
-			}
+			int existingIndex = slotManager.getHotbarIndexOfKey(itemKeyToSelect);
 			if (-1 == existingIndex)
 			{
-				newEntity.clearHotBarWithKey(itemKeyToSelect);
-				newEntity.setSelectedKey(itemKeyToSelect);
+				slotManager.setSelectedKey(itemKeyToSelect);
 			}
 		}
 		

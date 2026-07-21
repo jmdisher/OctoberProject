@@ -439,7 +439,7 @@ public class TestTickRunner
 		Item pickaxe = ENV.items.getItemById("op.iron_pickaxe");
 		int startDurability = ENV.durability.getDurability(pickaxe);
 		mutable.newInventory.addNonStackableBestEfforts(PropertyHelpers.newItemWithDefaults(ENV, pickaxe));
-		mutable.setSelectedKey(1);
+		mutable.slotManager.setSelectedKey(1);
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of(), List.of()))
 				, null
@@ -901,7 +901,7 @@ public class TestTickRunner
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(location.x() + 1, location.y(), location.z());
 		mutable.newInventory.addAllItems(WHEAT_SEED_ITEM, 1);
-		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(WHEAT_SEED_ITEM));
+		mutable.slotManager.setSelectedKey(mutable.newInventory.getIdOfStackableType(WHEAT_SEED_ITEM));
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of(), List.of())
 				)
@@ -998,7 +998,7 @@ public class TestTickRunner
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = entityLocation;
 		mutable.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(ENV.items.getItemById("op.iron_sword"), Map.of(PropertyRegistry.DURABILITY, 1000)));
-		mutable.setSelectedKey(1);
+		mutable.slotManager.setSelectedKey(1);
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(creature), List.of(), Map.of(), List.of())
 				)
@@ -1647,22 +1647,22 @@ public class TestTickRunner
 		MutableEntity mutable1 = MutableEntity.createForTest(1);
 		mutable1.newLocation = emitterSpace1.getRelative(1, 1, 0).toEntityLocation();
 		mutable1.newInventory.addAllItems(itemEmitter, 1);
-		mutable1.setSelectedKey(1);
+		mutable1.slotManager.setSelectedKey(1);
 		Entity entity1 = mutable1.freeze();
 		MutableEntity mutable2 = MutableEntity.createForTest(2);
 		mutable2.newLocation = emitterSpace2.getRelative(1, 1, 0).toEntityLocation();
 		mutable2.newInventory.addAllItems(itemEmitter, 1);
-		mutable2.setSelectedKey(1);
+		mutable2.slotManager.setSelectedKey(1);
 		Entity entity2 = mutable2.freeze();
 		MutableEntity mutable3 = MutableEntity.createForTest(3);
 		mutable3.newLocation = existingEmitter1.getRelative(1, 1, 0).toEntityLocation();
 		mutable3.newInventory.addAllItems(itemGate, 2);
-		mutable3.setSelectedKey(1);
+		mutable3.slotManager.setSelectedKey(1);
 		Entity entity3 = mutable3.freeze();
 		MutableEntity mutable4 = MutableEntity.createForTest(4);
 		mutable4.newLocation = existingEmitter2.getRelative(1, 1, 0).toEntityLocation();
 		mutable4.newInventory.addAllItems(itemWire, 2);
-		mutable4.setSelectedKey(1);
+		mutable4.slotManager.setSelectedKey(1);
 		Entity entity4 = mutable4.freeze();
 		
 		// Create the runner and load all test data.
@@ -1780,32 +1780,32 @@ public class TestTickRunner
 		MutableEntity mutable1 = MutableEntity.createForTest(1);
 		mutable1.newLocation = emitterActiveDirect.getRelative(1, 1, 0).toEntityLocation();
 		mutable1.newInventory.addAllItems(itemDiode, 2);
-		mutable1.setSelectedKey(1);
+		mutable1.slotManager.setSelectedKey(1);
 		Entity entity1 = mutable1.freeze();
 		MutableEntity mutable2 = MutableEntity.createForTest(2);
 		mutable2.newLocation = emitterActiveIndirect.getRelative(1, 1, 0).toEntityLocation();
 		mutable2.newInventory.addAllItems(itemDiode, 2);
-		mutable2.setSelectedKey(1);
+		mutable2.slotManager.setSelectedKey(1);
 		Entity entity2 = mutable2.freeze();
 		MutableEntity mutable3 = MutableEntity.createForTest(3);
 		mutable3.newLocation = diodeDirect.getRelative(1, 1, 0).toEntityLocation();
 		mutable3.newInventory.addAllItems(itemEmitter, 2);
-		mutable3.setSelectedKey(1);
+		mutable3.slotManager.setSelectedKey(1);
 		Entity entity3 = mutable3.freeze();
 		MutableEntity mutable4 = MutableEntity.createForTest(4);
 		mutable4.newLocation = diodeIndirect.getRelative(1, 1, 0).toEntityLocation();
 		mutable4.newInventory.addAllItems(itemEmitter, 2);
-		mutable4.setSelectedKey(1);
+		mutable4.slotManager.setSelectedKey(1);
 		Entity entity4 = mutable4.freeze();
 		MutableEntity mutable5 = MutableEntity.createForTest(5);
 		mutable5.newLocation = diodeActiveDirect.getRelative(1, 1, 0).toEntityLocation();
 		mutable5.newInventory.addAllItems(itemGate, 2);
-		mutable5.setSelectedKey(1);
+		mutable5.slotManager.setSelectedKey(1);
 		Entity entity5 = mutable5.freeze();
 		MutableEntity mutable6 = MutableEntity.createForTest(6);
 		mutable6.newLocation = diodeActiveIndirect.getRelative(1, 1, 0).toEntityLocation();
 		mutable6.newInventory.addAllItems(itemGate, 2);
-		mutable6.setSelectedKey(1);
+		mutable6.slotManager.setSelectedKey(1);
 		Entity entity6 = mutable6.freeze();
 		MutableEntity mutable7 = MutableEntity.createForTest(7);
 		mutable7.newLocation = switchIndirect.getRelative(1, 1, 0).toEntityLocation();
@@ -1968,7 +1968,7 @@ public class TestTickRunner
 		MutableEntity mutable1 = MutableEntity.createForTest(1);
 		mutable1.newLocation = sensorSpace.getRelative(1, 1, 0).toEntityLocation();
 		mutable1.newInventory.addAllItems(itemSensor, 1);
-		mutable1.setSelectedKey(1);
+		mutable1.slotManager.setSelectedKey(1);
 		Entity entity1 = mutable1.freeze();
 		
 		// Create the runner and load all test data.
@@ -2175,7 +2175,7 @@ public class TestTickRunner
 		MutableEntity entity1 = MutableEntity.createForTest(entityId);
 		entity1.newLocation = step.getRelative(0, 0, 1).toEntityLocation();
 		entity1.newInventory.addAllItems(VOID_LAMP_ITEM, 2);
-		entity1.setSelectedKey(1);
+		entity1.slotManager.setSelectedKey(1);
 		
 		// Create the runner and load all test data.
 		TickRunner runner = _createTestRunner();
@@ -3049,7 +3049,7 @@ public class TestTickRunner
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(10.0f, 10.0f, 1.0f);
 		mutable.newInventory.addAllItems(sapling, 1);
-		mutable.setSelectedKey(1);
+		mutable.slotManager.setSelectedKey(1);
 		Entity entity = mutable.freeze();
 		
 		int villagerId = -1;

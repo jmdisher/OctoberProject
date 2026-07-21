@@ -21,10 +21,10 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IEntitySubAction;
-import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
@@ -72,9 +72,12 @@ public class EntitySubActionPlaceSelectedBlock implements IEntitySubAction<IMuta
 			: false
 		;
 		
-		int selectedKey = newEntity.getSelectedKey();
-		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
-		Items stack = (Entity.NO_SELECTION != selectedKey) ? mutableInventory.getStackForKey(selectedKey) : null;
+		MutableSlotManager slotManager = newEntity.getSlotManager();
+		int selectedKey = slotManager.getSelectedKey();
+		Items stack = (Entity.NO_SELECTION != selectedKey)
+			? slotManager.getSlot(selectedKey).stack
+			: null
+		;
 		Item itemType = (null != stack) ? stack.type() : null;
 		// Note that we will get a null from the asBlock if this can't be placed.
 		Block blockType = (null != itemType) ? env.blocks.getAsPlaceableBlock(itemType) : null;
@@ -145,11 +148,7 @@ public class EntitySubActionPlaceSelectedBlock implements IEntitySubAction<IMuta
 				didApply = true;
 				
 				// We were able to send the mutation, so remove this from the inventory.
-				mutableInventory.removeStackableItems(itemType, 1);
-				if (0 == mutableInventory.getCount(itemType))
-				{
-					newEntity.setSelectedKey(Entity.NO_SELECTION);
-				}
+				slotManager.removeStackable(itemType, 1);
 				
 				// Do other state reset.
 				newEntity.setCurrentCraftingOperation(null);

@@ -69,6 +69,8 @@ import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.MutableInventory;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
@@ -1154,7 +1156,7 @@ public class TestSpeculativeProjection
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newInventory.addAllItems(STONE_ITEM, 1);
 		int stoneKey = mutable.newInventory.getIdOfStackableType(STONE_ITEM);
-		mutable.setSelectedKey(stoneKey);
+		mutable.slotManager.setSelectedKey(stoneKey);
 		Entity entity = mutable.freeze();
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
 		projector.setThisEntity(entity);
@@ -1225,7 +1227,7 @@ public class TestSpeculativeProjection
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
-		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
+		mutable.slotManager.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
 		Entity entity = mutable.freeze();
 		projector.setThisEntity(entity);
 		long currentTimeMillis = 1L;
@@ -1279,7 +1281,7 @@ public class TestSpeculativeProjection
 		MutableEntity mutable = MutableEntity.createForTest(localEntityId);
 		mutable.newInventory.addAllItems(CRAFTING_TABLE_ITEM, 1);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
-		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(CRAFTING_TABLE_ITEM));
+		mutable.slotManager.setSelectedKey(mutable.newInventory.getIdOfStackableType(CRAFTING_TABLE_ITEM));
 		int stoneKey = mutable.newInventory.getIdOfStackableType(STONE_ITEM);
 		Entity entity = mutable.freeze();
 		projector.setThisEntity(entity);
@@ -1393,7 +1395,7 @@ public class TestSpeculativeProjection
 		Assert.assertNotNull(listener.thisEntityState);
 		
 		// Verify that this craft should be valid for the inventory.
-		Assert.assertTrue(CraftAspect.canApply(stoneBricksToFurnace, inventory));
+		Assert.assertTrue(CraftAspect.canApply(stoneBricksToFurnace, new MutableSlotManager(new MutableInventory(inventory), new int[0], 0)));
 		
 		// But verify that it fails when applied to the entity, directly (as it isn't "trivial").
 		EntitySubActionCraft craft = new EntitySubActionCraft(stoneBricksToFurnace);
@@ -1415,7 +1417,7 @@ public class TestSpeculativeProjection
 		mutable.newInventory.addAllItems(FURNACE_ITEM, 1);
 		mutable.newInventory.addAllItems(PLANK_ITEM, 1);
 		mutable.newInventory.addAllItems(STONE_ITEM, 1);
-		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(FURNACE_ITEM));
+		mutable.slotManager.setSelectedKey(mutable.newInventory.getIdOfStackableType(FURNACE_ITEM));
 		int plankKey = mutable.newInventory.getIdOfStackableType(PLANK_ITEM);
 		int stoneKey = mutable.newInventory.getIdOfStackableType(STONE_ITEM);
 		Entity entity = mutable.freeze();
@@ -2329,7 +2331,7 @@ public class TestSpeculativeProjection
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newInventory.addAllItems(dirt.item(), 1);
-		mutable.setSelectedKey(1);
+		mutable.slotManager.setSelectedKey(1);
 		mutable.newLocation = new EntityLocation(1.0f, 2.0f, 1.0f);
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
 		
@@ -2398,7 +2400,7 @@ public class TestSpeculativeProjection
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newInventory.addAllItems(lantern.item(), 1);
-		mutable.setSelectedKey(1);
+		mutable.slotManager.setSelectedKey(1);
 		mutable.newLocation = entityLocation.toEntityLocation();
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
 		
@@ -2473,7 +2475,7 @@ public class TestSpeculativeProjection
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newInventory.addAllItems(door.item(), 1);
-		mutable.setSelectedKey(1);
+		mutable.slotManager.setSelectedKey(1);
 		mutable.newLocation = new EntityLocation(5.0f, 6.0f, 0.0f);
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
 		
@@ -2527,7 +2529,7 @@ public class TestSpeculativeProjection
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
-		mutable.setSelectedKey(1);
+		mutable.slotManager.setSelectedKey(1);
 		mutable.newLocation = new EntityLocation(1.0f, 2.0f, 1.0f);
 		
 		AbsoluteLocation entityLocation = mutable.newLocation.getBlockLocation();
@@ -2567,7 +2569,7 @@ public class TestSpeculativeProjection
 		
 		Entity result = listener.thisEntityState;
 		Assert.assertEquals(0, result.inventory().currentEncumbrance);
-		Assert.assertEquals(0, MutableEntity.existing(result).getSelectedKey());
+		Assert.assertEquals(0, MutableEntity.existing(result).slotManager.getSelectedKey());
 	}
 
 	@Test
@@ -2721,7 +2723,7 @@ public class TestSpeculativeProjection
 		NonStackableItem bow = PropertyHelpers.newItemWithDefaults(ENV, bowItem);
 		mutable.newInventory.addNonStackableAllowingOverflow(bow);
 		mutable.newInventory.addAllItems(arrowItem, 10);
-		mutable.setSelectedKey(1);
+		mutable.slotManager.setSelectedKey(1);
 		Entity localEntity = mutable.freeze();
 		projector.setThisEntity(localEntity);
 		long currentTimeMillis = 1L;

@@ -6,10 +6,10 @@ import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntitySubAction;
-import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -47,8 +47,8 @@ public class EntitySubActionDropItemsAsPassive implements IEntitySubAction<IMuta
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		// Make sure that we actually have this much of the referenced item in our inventory.
-		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
-		ItemSlot slot = mutableInventory.getSlotForKey(_localInventoryId);
+		MutableSlotManager slotManager = newEntity.getSlotManager();
+		ItemSlot slot = slotManager.getSlot(_localInventoryId);
 		
 		if (null != slot)
 		{
@@ -66,25 +66,18 @@ public class EntitySubActionDropItemsAsPassive implements IEntitySubAction<IMuta
 					// Drop the whole stack.
 					stackToDrop = slot.stack;
 				}
-				mutableInventory.removeStackableItems(stackToDrop.type(), stackToDrop.count());
+				slotManager.removeStackable(stackToDrop.type(), stackToDrop.count());
 				slotToMove = ItemSlot.fromStack(stackToDrop);
 			}
 			else
 			{
-				mutableInventory.removeNonStackableItems(_localInventoryId);
+				slotManager.removeNonStackable(_localInventoryId);
 				slotToMove = ItemSlot.fromNonStack(slot.nonStackable);
 			}
 			
 			// Drop the passive.
 			EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 			context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, newEntity.getLocation(), velocity, slotToMove);
-			
-			// If this removed something from the inventory, entirely, make sure it is removed from any hotbar slots.
-			boolean shouldClear = (null != slot.nonStackable) || (0 == mutableInventory.getCount(slot.stack.type()));
-			if (shouldClear)
-			{
-				newEntity.clearHotBarWithKey(_localInventoryId);
-			}
 		}
 		else
 		{

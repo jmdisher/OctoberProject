@@ -53,7 +53,7 @@ public class EntitySubActionIncrementalBlockRepair implements IEntitySubAction<I
 		// 3) The block must have a positive damage value or be on fire.
 		Environment env = Environment.getShared();
 		
-		boolean isHandEmpty = (Entity.NO_SELECTION == newEntity.getSelectedKey());
+		boolean isHandEmpty = (Entity.NO_SELECTION == newEntity.getSlotManager().getSelectedKey());
 		
 		// Find the distance from the eye to the target.
 		EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(newEntity);

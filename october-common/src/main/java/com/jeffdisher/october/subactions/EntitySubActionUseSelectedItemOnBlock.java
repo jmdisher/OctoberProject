@@ -18,13 +18,12 @@ import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.properties.PropertyType;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
-import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntitySubAction;
-import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -145,9 +144,9 @@ public class EntitySubActionUseSelectedItemOnBlock implements IEntitySubAction<I
 	private boolean _apply(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		Environment env = Environment.getShared();
-		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
-		int selectedKey = newEntity.getSelectedKey();
-		ItemSlot slot = mutableInventory.getSlotForKey(selectedKey);
+		MutableSlotManager slotManager = newEntity.getSlotManager();
+		int selectedKey = slotManager.getSelectedKey();
+		ItemSlot slot = slotManager.getSlot(selectedKey);
 		Item type = (null != slot)
 			? slot.getType()
 			: null
@@ -166,18 +165,14 @@ public class EntitySubActionUseSelectedItemOnBlock implements IEntitySubAction<I
 			Assert.assertTrue(null != outputBucket);
 			Assert.assertTrue(null != outputBlock);
 			// We can place down the bucket.
-			mutableInventory.replaceNonStackable(selectedKey, PropertyHelpers.newItemWithDefaults(env, outputBucket));
+			slotManager.replaceNonStackable(selectedKey, PropertyHelpers.newItemWithDefaults(env, outputBucket));
 			context.mutationSink.next(new MutationBlockReplace(_target, block, outputBlock));
 			didApply = true;
 		}
 		else if (isFertilizer && isGrowable)
 		{
 			// We can apply the fertilizer by forcing a growth tick.
-			mutableInventory.removeStackableItems(type, 1);
-			if (0 == mutableInventory.getCount(type))
-			{
-				newEntity.setSelectedKey(Entity.NO_SELECTION);
-			}
+			slotManager.removeStackable(type, 1);
 			context.mutationSink.next(new MutationBlockForceGrow(_target));
 			didApply = true;
 		}
@@ -192,13 +187,12 @@ public class EntitySubActionUseSelectedItemOnBlock implements IEntitySubAction<I
 				if (null != newItem)
 				{
 					// Normal wear.
-					mutableInventory.replaceNonStackable(selectedKey, newItem);
+					slotManager.replaceNonStackable(selectedKey, newItem);
 				}
 				else
 				{
 					// Broken.
-					mutableInventory.removeNonStackableItems(selectedKey);
-					newEntity.setSelectedKey(Entity.NO_SELECTION);
+					slotManager.removeNonStackable(selectedKey);
 				}
 			}
 			context.mutationSink.next(new MutationBlockReplace(_target, block, env.special.blockTilledSoil));
@@ -214,7 +208,7 @@ public class EntitySubActionUseSelectedItemOnBlock implements IEntitySubAction<I
 				Map<PropertyType<?>, Object> props = new HashMap<>(slot.nonStackable.properties());
 				props.put(PropertyRegistry.LOCATION, _target);
 				NonStackableItem newItem = new NonStackableItem(type, Collections.unmodifiableMap(props));
-				mutableInventory.replaceNonStackable(selectedKey, newItem);
+				slotManager.replaceNonStackable(selectedKey, newItem);
 			}
 			didApply = true;
 		}

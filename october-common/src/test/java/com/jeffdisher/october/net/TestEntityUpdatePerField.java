@@ -120,8 +120,8 @@ public class TestEntityUpdatePerField
 		mutable.newLocation = new EntityLocation(1.0f, 2.0f, -5.6f);
 		mutable.newVelocity = new EntityLocation(-0.4f, 5.7f, 0.0f);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
-		mutable.newHotbar[3] = 1;
-		mutable.newHotbarIndex = 3;
+		mutable.slotManager.setHotbarIndex(3);
+		mutable.slotManager.setSelectedKey(1);
 		mutable.newArmour[BodyPart.HEAD.ordinal()] = PropertyHelpers.newItemWithDefaults(ENV, IRON_HELMET);
 		mutable.newHealth = (byte)61;
 		mutable.newFood = (byte)77;

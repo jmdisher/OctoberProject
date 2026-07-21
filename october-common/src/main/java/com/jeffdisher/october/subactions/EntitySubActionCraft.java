@@ -11,8 +11,8 @@ import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntitySubAction;
-import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -90,7 +90,7 @@ public class EntitySubActionCraft implements IEntitySubAction<IMutablePlayerEnti
 		// Make sure that this crafting operation is valid for this inventory.
 		if (null != existing)
 		{
-			if (!CraftAspect.canApplyMutable(existing.selectedCraft(), newEntity.accessMutableInventory()))
+			if (!CraftAspect.canApply(existing.selectedCraft(), newEntity.getSlotManager()))
 			{
 				existing = null;
 			}
@@ -107,14 +107,11 @@ public class EntitySubActionCraft implements IEntitySubAction<IMutablePlayerEnti
 			{
 				// We can now apply this and clear it.
 				Environment env = Environment.getShared();
-				IMutableInventory mutableInventory = newEntity.accessMutableInventory();
+				MutableSlotManager slotManager = newEntity.getSlotManager();
 				
 				// We just checked this above so we expect this to craft.
-				boolean didCraft = CraftAspect.craft(env, existing.selectedCraft(), mutableInventory);
+				boolean didCraft = CraftAspect.craft(env, existing.selectedCraft(), slotManager);
 				Assert.assertTrue(didCraft);
-				
-				// Make sure that this cleared the hotbar, if we used the last of them (we need to check all of the hotbar slots).
-				CommonEntitySubActionHelpers.rationalizeHotbar(newEntity);
 				
 				// Clear the current operation since we are done.
 				newEntity.setCurrentCraftingOperation(null);

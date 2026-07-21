@@ -3,11 +3,10 @@ package com.jeffdisher.october.subactions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.actions.EntityChangeReceiveItem;
-import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IEntitySubAction;
-import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -38,18 +37,13 @@ public class EntityChangeSendItem implements IEntitySubAction<IMutablePlayerEnti
 	private int _common(IMutablePlayerEntity newEntity, TickProcessingContext.IChangeSink newChangeSink)
 	{
 		// Extract all items of this type from the entity, failing the mutation if there aren't any.
-		IMutableInventory inventory = newEntity.accessMutableInventory();
-		int foundCount = inventory.getCount(_itemType);
+		MutableSlotManager slotManager = newEntity.getSlotManager();
+		int foundCount = slotManager.getCount(_itemType);
 		
 		if (foundCount > 0)
 		{
 			// Update the inventory.
-			inventory.removeStackableItems(_itemType, foundCount);
-			// If we had this selected, clear it.
-			if (inventory.getIdOfStackableType(_itemType) == newEntity.getSelectedKey())
-			{
-				newEntity.setSelectedKey(Entity.NO_SELECTION);
-			}
+			slotManager.removeStackable(_itemType, foundCount);
 			// Send this to the other entity.
 			newChangeSink.next(_targetId, new EntityChangeReceiveItem(_itemType, foundCount));
 		}

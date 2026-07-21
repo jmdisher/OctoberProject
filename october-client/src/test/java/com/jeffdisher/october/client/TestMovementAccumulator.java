@@ -444,7 +444,7 @@ public class TestMovementAccumulator
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = new EntityLocation(16.0f, 16.0f, 16.0f);
 		mutable.newInventory.addAllItems(STONE_ITEM, 1);
-		mutable.setSelectedKey(1);
+		mutable.slotManager.setSelectedKey(1);
 		Entity entity = mutable.freeze();
 		commonCache.setThisEntity(entity);
 		commonCache.setCuboid(cuboid, Set.of());
@@ -812,7 +812,7 @@ public class TestMovementAccumulator
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = startLocation;
 		mutable.setCreativeMode(true);
-		mutable.setSelectedKey(STONE_ITEM.number());
+		mutable.slotManager.setSelectedKey(STONE_ITEM.number());
 		Entity entity = mutable.freeze();
 		commonCache.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);

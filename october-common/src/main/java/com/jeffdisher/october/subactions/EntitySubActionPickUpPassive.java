@@ -73,7 +73,7 @@ public class EntitySubActionPickUpPassive implements IEntitySubAction<IMutablePl
 				? contents.stack.type()
 				: contents.nonStackable.type()
 			;
-			if (newEntity.accessMutableInventory().maxVacancyForItem(type) > 0)
+			if (newEntity.getSlotManager().maxVacancyForItem(type) > 0)
 			{
 				// We can pick up at least one of these so send on the request.
 				PassiveActionPickUp pickup = new PassiveActionPickUp(newEntity.getId());

@@ -7,9 +7,9 @@ import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntitySubAction;
-import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -46,28 +46,24 @@ public class EntitySubActionReleaseWeapon implements IEntitySubAction<IMutablePl
 			Environment env = Environment.getShared();
 			
 			// Note that we shouldn't be able to have a positive charge without a weapon and ammunition so we will assert that.
-			int selectedKey = newEntity.getSelectedKey();
+			MutableSlotManager slotManager = newEntity.getSlotManager();
+			int selectedKey = slotManager.getSelectedKey();
 			Assert.assertTrue(selectedKey > 0);
-			NonStackableItem nonStack = newEntity.accessMutableInventory().getNonStackableForKey(selectedKey);
+			NonStackableItem nonStack = slotManager.getSlot(selectedKey).nonStackable;
 			Assert.assertTrue(null != nonStack);
 			int maxCharge = env.tools.getChargeMillis(nonStack.type());
 			Assert.assertTrue(maxCharge > 0);
 			Assert.assertTrue(chargeMillis <= maxCharge);
 			Item ammo = env.tools.getAmmunitionType(nonStack.type());
 			Assert.assertTrue(null != ammo);
-			IMutableInventory mutableInventory = newEntity.accessMutableInventory();
-			int count = mutableInventory.getCount(ammo);
+			int count = slotManager.getCount(ammo);
 			Assert.assertTrue(count > 0);
 			
 			// Apply durability loss to the weapon.
-			CommonEntitySubActionHelpers.decrementToolDurability(env, context, newEntity, mutableInventory, selectedKey, nonStack);
+			CommonEntitySubActionHelpers.decrementToolDurability(env, context, newEntity, slotManager, selectedKey, nonStack);
 			
 			// Remove the ammunition.
-			mutableInventory.removeStackableItems(ammo, 1);
-			if (1 == count)
-			{
-				CommonEntitySubActionHelpers.rationalizeHotbar(newEntity);
-			}
+			slotManager.removeStackable(ammo, 1);
 			
 			// Create the projectile.
 			float forceMultiplier = (float)chargeMillis / (float) maxCharge;

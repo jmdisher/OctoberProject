@@ -10,6 +10,7 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
+import com.jeffdisher.october.types.MutableSlotManager;
 
 
 public class TestCraftAspect
@@ -40,9 +41,10 @@ public class TestCraftAspect
 			, 1000L
 		);
 		Inventory inv = Inventory.start(50).addStackable(dirtItem, 4).addStackable(stoneItem, 2).finish();
-		Assert.assertTrue(CraftAspect.canApply(craft, inv));
 		MutableInventory mutable = new MutableInventory(inv);
-		CraftAspect.craft(ENV, craft, mutable);
+		MutableSlotManager slotManager = new MutableSlotManager(mutable, new int[0], 0);
+		Assert.assertTrue(CraftAspect.canApply(craft, slotManager));
+		CraftAspect.craft(ENV, craft, slotManager);
 		inv = mutable.freeze();
 		Assert.assertEquals(2, inv.getCount(dirtItem));
 		Assert.assertEquals(1, inv.getCount(stoneItem));
@@ -63,9 +65,10 @@ public class TestCraftAspect
 			, 1000L
 		);
 		Inventory inv = Inventory.start(50).addStackable(dirtItem, 2).addStackable(stoneItem, 1).finish();
-		Assert.assertTrue(CraftAspect.canApply(craft, inv));
 		MutableInventory mutable = new MutableInventory(inv);
-		CraftAspect.craft(ENV, craft, mutable);
+		MutableSlotManager slotManager = new MutableSlotManager(mutable, new int[0], 0);
+		Assert.assertTrue(CraftAspect.canApply(craft, slotManager));
+		CraftAspect.craft(ENV, craft, slotManager);
 		inv = mutable.freeze();
 		Assert.assertEquals(2, inv.sortedKeys().size());
 		Assert.assertEquals(1, inv.getCount(dirtItem));

@@ -14,11 +14,11 @@ import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.IEntitySubAction;
-import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -78,9 +78,9 @@ public class EntitySubActionAttackEntity implements IEntitySubAction<IMutablePla
 		{
 			// We will just use the tool speed modifier of the selected item to figure out the damage.
 			Environment env = Environment.getShared();
-			IMutableInventory mutableInventory = newEntity.accessMutableInventory();
-			int selectedKey = newEntity.getSelectedKey();
-			ItemSlot slot = mutableInventory.getSlotForKey(selectedKey);
+			MutableSlotManager slotManager = newEntity.getSlotManager();
+			int selectedKey = slotManager.getSelectedKey();
+			ItemSlot slot = slotManager.getSlot(selectedKey);
 			NonStackableItem nonStack = (null != slot)
 				? slot.nonStackable
 				: null
@@ -119,7 +119,7 @@ public class EntitySubActionAttackEntity implements IEntitySubAction<IMutablePla
 				, targetEntity.type().volume()
 			);
 			
-			CommonEntitySubActionHelpers.decrementToolDurability(env, context, newEntity, mutableInventory, selectedKey, nonStack);
+			CommonEntitySubActionHelpers.decrementToolDurability(env, context, newEntity, slotManager, selectedKey, nonStack);
 			
 			// Attacking expends a lot of energy.
 			newEntity.applyEnergyCost(EntityActionPeriodic.ENERGY_COST_PER_ATTACK);

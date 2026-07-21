@@ -12,11 +12,11 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IEntitySubAction;
-import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -66,9 +66,9 @@ public class EntitySubActionRequestSwapSpecialSlot implements IEntitySubAction<I
 		if (isInRange && (null != proxy) && env.specialSlot.hasSpecialSlot(proxy.getBlock()))
 		{
 			// See if we should be sending anything with this request, or just pulling.
-			IMutableInventory inv = newEntity.accessMutableInventory();
-			int key = newEntity.getSelectedKey();
-			ItemSlot selectedSlot = inv.getSlotForKey(key);
+			MutableSlotManager slotManager = newEntity.getSlotManager();
+			int key = slotManager.getSelectedKey();
+			ItemSlot selectedSlot = slotManager.getSlot(key);
 			
 			// We want to send just one item, if this is a stack.  The other side will absorb it if it already has the
 			// same item type, or swap out if otherwise.
@@ -87,16 +87,11 @@ public class EntitySubActionRequestSwapSpecialSlot implements IEntitySubAction<I
 			{
 				if (null != toPush.stack)
 				{
-					inv.removeStackableItems(toPush.stack.type(), toPush.stack.count());
+					slotManager.removeStackable(toPush.stack.type(), toPush.stack.count());
 				}
 				else
 				{
-					inv.removeNonStackableItems(key);
-				}
-				boolean shouldClear = (null != toPush.nonStackable) || (0 == inv.getCount(toPush.stack.type()));
-				if (shouldClear)
-				{
-					newEntity.clearHotBarWithKey(key);
+					slotManager.removeNonStackable(key);
 				}
 			}
 			

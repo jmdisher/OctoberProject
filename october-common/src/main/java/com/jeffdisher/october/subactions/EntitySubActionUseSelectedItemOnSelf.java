@@ -4,14 +4,13 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IEntitySubAction;
-import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -106,9 +105,9 @@ public class EntitySubActionUseSelectedItemOnSelf implements IEntitySubAction<IM
 		Environment env = Environment.getShared();
 		boolean didApply = false;
 		
-		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
-		int selectedKey = newEntity.getSelectedKey();
-		ItemSlot slot = mutableInventory.getSlotForKey(selectedKey);
+		MutableSlotManager slotManager = newEntity.getSlotManager();
+		int selectedKey = slotManager.getSelectedKey();
+		ItemSlot slot = slotManager.getSlot(selectedKey);
 		Items selectedStack = (null != slot)
 			? slot.stack
 			: null
@@ -129,11 +128,7 @@ public class EntitySubActionUseSelectedItemOnSelf implements IEntitySubAction<IM
 			newEntity.setFood((byte)newFood);
 			
 			// Remove the item from the inventory.
-			mutableInventory.removeStackableItems(selected, 1);
-			if (0 == mutableInventory.getCount(selected))
-			{
-				newEntity.setSelectedKey(Entity.NO_SELECTION);
-			}
+			slotManager.removeStackable(selected, 1);
 			didApply = true;
 			
 			// Do other state reset.

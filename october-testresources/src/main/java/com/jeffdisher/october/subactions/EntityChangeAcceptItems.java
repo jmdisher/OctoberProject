@@ -2,11 +2,10 @@ package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IEntitySubAction;
-import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -26,18 +25,8 @@ public class EntityChangeAcceptItems implements IEntitySubAction<IMutablePlayerE
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
-		IMutableInventory entityInventory = newEntity.accessMutableInventory();
-		boolean didAdd = entityInventory.addAllItems(_items.type(), _items.count());
-		if (didAdd)
-		{
-			// If there isn't already selected item, we want to select this one.
-			if (Entity.NO_SELECTION == newEntity.getSelectedKey())
-			{
-				int key = entityInventory.getIdOfStackableType(_items.type());
-				newEntity.clearHotBarWithKey(key);
-				newEntity.setSelectedKey(key);
-			}
-		}
+		MutableSlotManager slotManager = newEntity.getSlotManager();
+		boolean didAdd = slotManager.addStackableItems(_items.type(), _items.count());
 		return didAdd;
 	}
 

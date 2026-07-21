@@ -264,7 +264,7 @@ public class TestCreativeFlightAccumulator
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
 		mutable.setCreativeMode(true);
-		mutable.setSelectedKey(creativeStoneKey);
+		mutable.slotManager.setSelectedKey(creativeStoneKey);
 		Entity entity = mutable.freeze();
 		commonCache.setThisEntity(entity);
 		commonCache.setCuboid(airCuboid, Set.of());

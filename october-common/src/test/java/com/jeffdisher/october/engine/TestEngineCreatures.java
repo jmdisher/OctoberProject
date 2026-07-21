@@ -529,7 +529,7 @@ public class TestEngineCreatures
 		Item wheat_item = ENV.items.getItemById("op.wheat_item");
 		MutableEntity mutablePlayer = MutableEntity.createWithLocation(1, playerLocation, playerLocation);
 		mutablePlayer.newInventory.addAllItems(wheat_item, 3);
-		mutablePlayer.setSelectedKey(1);
+		mutablePlayer.slotManager.setSelectedKey(1);
 		Entity player = mutablePlayer.freeze();
 		int cowId1 = idAssigner.next();
 		int cowId2 = idAssigner.next();

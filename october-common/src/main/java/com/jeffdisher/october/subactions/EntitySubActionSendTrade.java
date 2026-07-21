@@ -19,13 +19,13 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.IEntitySubAction;
-import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MinimalEntity;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -135,8 +135,8 @@ public class EntitySubActionSendTrade implements IEntitySubAction<IMutablePlayer
 		// We need to check what item this is, in our inventory, and what item we are requesting, make sure that they
 		// match (exactly one is a coin), and check that the target is a villager who is offering this trade.
 		Item coinType = env.items.getItemById("op.coin");
-		IMutableInventory inventory = newEntity.accessMutableInventory();
-		ItemSlot localSlot = inventory.getSlotForKey(_localInventoryId);
+		MutableSlotManager slotManager = newEntity.getSlotManager();
+		ItemSlot localSlot = slotManager.getSlot(_localInventoryId);
 		Item typeToSend = localSlot.getType();
 		
 		// Note that we will use a wording of what the "villager" is doing, since that is how the profession names things, so this might seem a bit backward.
@@ -185,18 +185,13 @@ public class EntitySubActionSendTrade implements IEntitySubAction<IMutablePlayer
 					// Remove this and send it.
 					if (null != localSlot.nonStackable)
 					{
-						inventory.removeNonStackableItems(_localInventoryId);
-						newEntity.clearHotBarWithKey(_localInventoryId);
+						slotManager.removeNonStackable(_localInventoryId);
 						
 						toSend = localSlot;
 					}
 					else
 					{
-						inventory.removeStackableItems(typeToSend, 1);
-						if (0 == inventory.getCount(typeToSend))
-						{
-							newEntity.clearHotBarWithKey(_localInventoryId);
-						}
+						slotManager.removeStackable(typeToSend, 1);
 						
 						toSend = ItemSlot.fromStack(new Items(typeToSend, 1));
 					}
@@ -209,11 +204,7 @@ public class EntitySubActionSendTrade implements IEntitySubAction<IMutablePlayer
 					if ((cost > 0) && (currentMoney >= cost))
 					{
 						// This is valid so remove the money and send the trade.
-						inventory.removeStackableItems(coinType, cost);
-						if (0 == inventory.getCount(coinType))
-						{
-							newEntity.clearHotBarWithKey(_localInventoryId);
-						}
+						slotManager.removeStackable(coinType, cost);
 						
 						Items coinsToSend = new Items(coinType, cost);
 						toSend = ItemSlot.fromStack(coinsToSend);

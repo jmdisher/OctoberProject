@@ -3,9 +3,9 @@ package com.jeffdisher.october.actions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.types.IEntityAction;
-import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -35,13 +35,13 @@ public class EntityChangeReceiveItem implements IEntityAction<IMutablePlayerEnti
 	private boolean _common(IMutablePlayerEntity newEntity)
 	{
 		boolean didApply = false;
-		IMutableInventory inventory = newEntity.accessMutableInventory();
+		MutableSlotManager slotManager = newEntity.getSlotManager();
 		
 		// Make sure that we don't already have some.
-		if (0 == inventory.getCount(_itemType))
+		if (0 == slotManager.getCount(_itemType))
 		{
 			// Try to add them.
-			didApply = inventory.addAllItems(_itemType, _itemCount);
+			didApply = slotManager.addStackableItems(_itemType, _itemCount);
 		}
 		return didApply;
 	}

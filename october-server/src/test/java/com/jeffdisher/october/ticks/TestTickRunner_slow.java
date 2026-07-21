@@ -498,7 +498,7 @@ public class TestTickRunner_slow
 		mutable.newLocation = new EntityLocation(plug.x(), plug.y(), plug.z() + 1);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
 		mutable.setCreativeMode(true);
-		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
+		mutable.slotManager.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cascade, HeightMapHelpers.buildHeightMap(cascade), List.of(), List.of(), Map.of(), List.of()))
 				, null
@@ -570,7 +570,7 @@ public class TestTickRunner_slow
 		mutable.newLocation = topOfFalls.toEntityLocation();
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
 		mutable.setCreativeMode(true);
-		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
+		mutable.slotManager.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(_packageCuboid(topNorthEast)
 				, _packageCuboid(_buildCascade(startAddress.getRelative(0, 0, -1)))
@@ -721,7 +721,7 @@ public class TestTickRunner_slow
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(location.x() + 1, location.y(), location.z());
 		mutable.newInventory.addAllItems(SAPLING_ITEM, 1);
-		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(SAPLING_ITEM));
+		mutable.slotManager.setSelectedKey(mutable.newInventory.getIdOfStackableType(SAPLING_ITEM));
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of(), List.of())
 				)
@@ -797,7 +797,7 @@ public class TestTickRunner_slow
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = location.toEntityLocation();
 		mutable.newInventory.addAllItems(WHEAT_SEED_ITEM, 1);
-		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(WHEAT_SEED_ITEM));
+		mutable.slotManager.setSelectedKey(mutable.newInventory.getIdOfStackableType(WHEAT_SEED_ITEM));
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of(), List.of())
 				)
@@ -1083,17 +1083,17 @@ public class TestTickRunner_slow
 		MutableEntity mutable1 = MutableEntity.createForTest(1);
 		mutable1.newLocation = andGate.getRelative(1, 1, 0).toEntityLocation();
 		mutable1.newInventory.addAllItems(itemAnd, 2);
-		mutable1.setSelectedKey(1);
+		mutable1.slotManager.setSelectedKey(1);
 		Entity entity1 = mutable1.freeze();
 		MutableEntity mutable2 = MutableEntity.createForTest(2);
 		mutable2.newLocation = orGate.getRelative(1, 1, 0).toEntityLocation();
 		mutable2.newInventory.addAllItems(itemOr, 2);
-		mutable2.setSelectedKey(1);
+		mutable2.slotManager.setSelectedKey(1);
 		Entity entity2 = mutable2.freeze();
 		MutableEntity mutable3 = MutableEntity.createForTest(3);
 		mutable3.newLocation = notGate.getRelative(1, 1, 0).toEntityLocation();
 		mutable3.newInventory.addAllItems(itemNot, 2);
-		mutable3.setSelectedKey(1);
+		mutable3.slotManager.setSelectedKey(1);
 		Entity entity3 = mutable3.freeze();
 		
 		// Create the runner and load all test data.

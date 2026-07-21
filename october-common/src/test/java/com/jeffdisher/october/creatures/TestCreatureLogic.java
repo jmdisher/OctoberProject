@@ -729,7 +729,7 @@ public class TestCreatureLogic
 		MutableEntity mutablePlayer = MutableEntity.createForTest(1);
 		mutablePlayer.newLocation = location;
 		mutablePlayer.newInventory.addAllItems(WHEAT, 1);
-		mutablePlayer.setSelectedKey(1);
+		mutablePlayer.slotManager.setSelectedKey(1);
 		Entity player = mutablePlayer.freeze();
 		EntityLocation cowLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, cowLocation, 0L);
@@ -795,7 +795,7 @@ public class TestCreatureLogic
 		Assert.assertEquals(player.location(), mutableCow.movementPlan.directLocation());
 		
 		// Switch out wheat.
-		mutablePlayer.setSelectedKey(Entity.NO_SELECTION);
+		mutablePlayer.slotManager.setSelectedKey(Entity.NO_SELECTION);
 		player = mutablePlayer.freeze();
 		entities.put(player.id(), MinimalEntity.fromEntity(player));
 		cow = mutableCow.freeze();
@@ -1753,7 +1753,7 @@ public class TestCreatureLogic
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		MutableEntity mutableEntity = MutableEntity.createWithLocation(1, new EntityLocation(3.0f, 0.0f, 0.0f), new EntityLocation(0.0f, 0.0f, 0.0f));
 		mutableEntity.newInventory.addAllItems(WHEAT, 2);
-		mutableEntity.setSelectedKey(1);
+		mutableEntity.slotManager.setSelectedKey(1);
 		Entity player = mutableEntity.freeze();
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(assigner.next(), COW, new EntityLocation(4.0f, 0.0f, 0.0f), 0L));
 		mutable.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(false, null, 0L));

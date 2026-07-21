@@ -511,7 +511,7 @@ public class TestClientRunner
 		MutableEntity mutable = MutableEntity.createForTest(clientId);
 		mutable.newInventory.addAllItems(bread, 2);
 		int itemKey = mutable.newInventory.getIdOfStackableType(bread);
-		mutable.setSelectedKey(itemKey);
+		mutable.slotManager.setSelectedKey(itemKey);
 		Entity startEntity = mutable.freeze();
 		network.client.receivedFullEntity(startEntity);
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
