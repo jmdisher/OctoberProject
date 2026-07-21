@@ -86,7 +86,7 @@ public class EntitySubActionPlaceSelectedBlock implements IEntitySubAction<IMuta
 		boolean isItemSelected = (null != blockType);
 		
 		// Find the distance from the eye to the target.
-		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(newEntity);
 		float distance = SpatialHelpers.distanceFromLocationToBlockSurface(sourceEyeLocation, _targetBlock);
 		boolean isLocationClose = (distance <= MiscConstants.REACH_BLOCK);
 		

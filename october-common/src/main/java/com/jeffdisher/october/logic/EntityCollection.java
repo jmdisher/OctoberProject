@@ -237,7 +237,7 @@ public class EntityCollection
 		// very high - this current design is very low-constant).
 		EntityType creatureType = searchingCreature.getType();
 		float maxRange = creatureType.viewDistance();
-		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(searchingCreature.getLocation(), creatureType.volume());
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(searchingCreature);
 		EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
 		
 		EntityType.TargetEntity found = null;
@@ -273,9 +273,8 @@ public class EntityCollection
 		// (we could walk _creatureIndices for this creature type if we wanted a square search instead of circular, and
 		// if the population became very high).
 		EntityType creatureType = searchingCreature.getType();
-		EntityVolume creatureVolume = creatureType.volume();
 		float maxRange = creatureType.viewDistance();
-		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(searchingCreature.getLocation(), creatureVolume);
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(searchingCreature);
 		int searchingId = searchingCreature.getId();
 		
 		EntityType.TargetEntity found = null;

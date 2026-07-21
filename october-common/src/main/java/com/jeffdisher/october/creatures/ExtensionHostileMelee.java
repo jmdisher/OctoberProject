@@ -78,11 +78,10 @@ public class ExtensionHostileMelee implements EntityType.IExtension
 			Assert.assertTrue(null != targetEntity);
 			
 			// See if they are in attack range.
-			EntityType creatureType = creature.getType();
-			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), creatureType.volume());
+			EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(creature);
 			FixedRegion region = FixedRegion.fromMinimal(targetEntity);
 			float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
-			float attackDistance = creatureType.actionDistance();
+			float attackDistance = creature.getType().actionDistance();
 			if (distance <= attackDistance)
 			{
 				// We can attack them so choose the target.

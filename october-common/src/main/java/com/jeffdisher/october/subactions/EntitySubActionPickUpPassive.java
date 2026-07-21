@@ -56,7 +56,7 @@ public class EntitySubActionPickUpPassive implements IEntitySubAction<IMutablePl
 			&& (PassiveType.ITEM_SLOT == passive.type())
 		)
 		{
-			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+			EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(newEntity);
 			FixedRegion region = FixedRegion.fromPartialPassive(passive);
 			float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
 			isInRange = (distance <= PICKUP_DISTANCE);

@@ -69,7 +69,7 @@ public class EntitySubActionSetBlockLogicState implements IEntitySubAction<IMuta
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		// Make sure that this is in range.
-		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(newEntity);
 		float distance = SpatialHelpers.distanceFromLocationToBlockSurface(sourceEyeLocation, _targetBlock);
 		boolean isLocationClose = (distance <= MiscConstants.REACH_BLOCK);
 		BlockProxy previous = context.previousBlockLookUp.readBlock(_targetBlock);

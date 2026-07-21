@@ -56,7 +56,7 @@ public class EntitySubActionIncrementalBlockRepair implements IEntitySubAction<I
 		boolean isHandEmpty = (Entity.NO_SELECTION == newEntity.getSelectedKey());
 		
 		// Find the distance from the eye to the target.
-		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(newEntity);
 		float distance = SpatialHelpers.distanceFromLocationToBlockSurface(sourceEyeLocation, _targetBlock);
 		boolean isReachable = (distance <= MiscConstants.REACH_BLOCK);
 		

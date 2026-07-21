@@ -120,7 +120,7 @@ public class ExtensionLivestock implements EntityType.IExtension
 			Entity player = entityCollection.getPlayerById(targetId);
 			if (null != player)
 			{
-				EntityLocation sourceEye = SpatialHelpers.getEyeLocation(creature.getLocation(), creatureType.volume());
+				EntityLocation sourceEye = SpatialHelpers.getEntityEye(creature);
 				EntityLocation playerBase = player.location();
 				EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
 				float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEye, playerBase, playerVolume);

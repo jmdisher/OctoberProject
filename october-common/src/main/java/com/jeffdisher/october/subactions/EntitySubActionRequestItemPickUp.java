@@ -66,7 +66,7 @@ public class EntitySubActionRequestItemPickUp implements IEntitySubAction<IMutab
 		Inventory inv = _getInventory(target);
 		
 		// We also want to make sure that this is in range.
-		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(newEntity);
 		float distance = SpatialHelpers.distanceFromLocationToBlockSurface(sourceEyeLocation, _blockLocation);
 		boolean isInRange = (distance <= MiscConstants.REACH_BLOCK);
 		

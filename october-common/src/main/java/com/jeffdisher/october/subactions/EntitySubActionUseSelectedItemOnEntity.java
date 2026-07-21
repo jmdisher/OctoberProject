@@ -71,7 +71,7 @@ public class EntitySubActionUseSelectedItemOnEntity implements IEntitySubAction<
 		boolean isInRange;
 		if (null != target)
 		{
-			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+			EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(newEntity);
 			FixedRegion region = FixedRegion.fromMinimal(target);
 			float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
 			isInRange = (distance <= MiscConstants.REACH_ENTITY);

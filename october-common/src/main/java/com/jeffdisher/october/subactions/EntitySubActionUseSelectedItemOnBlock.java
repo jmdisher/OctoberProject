@@ -97,7 +97,7 @@ public class EntitySubActionUseSelectedItemOnBlock implements IEntitySubAction<I
 		boolean isReady = ((newEntity.getLastSpecialActionMillis() + COOLDOWN_MILLIS) <= context.currentTickTimeMillis);
 		
 		// We also want to make sure that this is in range.
-		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(newEntity);
 		float distance = SpatialHelpers.distanceFromLocationToBlockSurface(sourceEyeLocation, _target);
 		boolean isInRange = (distance <= MiscConstants.REACH_BLOCK);
 		

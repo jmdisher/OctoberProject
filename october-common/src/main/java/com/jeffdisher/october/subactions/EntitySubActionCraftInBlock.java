@@ -70,7 +70,7 @@ public class EntitySubActionCraftInBlock implements IEntitySubAction<IMutablePla
 	{
 		Environment env = Environment.getShared();
 		// Make sure that the block is within range and is a crafting table.
-		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(newEntity);
 		float distance = SpatialHelpers.distanceFromLocationToBlockSurface(sourceEyeLocation, _targetBlock);
 		boolean isLocationClose = (distance <= MiscConstants.REACH_BLOCK);
 		// Note that the cuboid could theoretically not be loaded (although this shouldn't happen in normal clients).

@@ -72,7 +72,7 @@ public class EntitySubActionReleaseWeapon implements IEntitySubAction<IMutablePl
 			// Create the projectile.
 			float forceMultiplier = (float)chargeMillis / (float) maxCharge;
 			float totalPower = PROJECTILE_POWER_MULTIPLIER * forceMultiplier;
-			EntityLocation arrowLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+			EntityLocation arrowLocation = SpatialHelpers.getEntityEye(newEntity);
 			EntityLocation unitFacingVector = SpatialHelpers.getUnitFacingVector(newEntity.getYaw(), newEntity.getPitch());
 			EntityLocation arrowVelocity = new EntityLocation(totalPower * unitFacingVector.x(), totalPower * unitFacingVector.y(), totalPower * unitFacingVector.z());
 			context.passiveSpawner.spawnPassive(PassiveType.PROJECTILE_ARROW, arrowLocation, arrowVelocity, null);

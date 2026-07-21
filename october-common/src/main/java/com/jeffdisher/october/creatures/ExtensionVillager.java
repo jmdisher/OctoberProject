@@ -685,7 +685,7 @@ public class ExtensionVillager implements EntityType.IExtension
 				
 				// We want to count the number of both villagers and young villagers nearby so we will use the axis-aligned count (square search, not circular).
 				EntityVolume villagerVolume = type.volume();
-				EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), villagerVolume);
+				EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(creature);
 				float viewDistance = type.viewDistance();
 				EntityLocation base = sourceEyeLocation.getRelative(-viewDistance, -viewDistance, -viewDistance);
 				EntityLocation edge = sourceEyeLocation.getRelative(villagerVolume.width() + viewDistance, villagerVolume.width() + viewDistance, villagerVolume.height() + viewDistance);
@@ -806,12 +806,11 @@ public class ExtensionVillager implements EntityType.IExtension
 			{
 				// If we are close enough to send the purchase request, do that and clear the purchase plan.
 				CreatureEntity target = entityCollection.getCreatureById(targetId);
-				EntityType thisType = creature.getType();
 				
-				EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), thisType.volume());
+				EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(creature);
 				FixedRegion region = FixedRegion.fromCreature(target);
 				float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
-				float actionDistance = thisType.actionDistance();
+				float actionDistance = creature.getType().actionDistance();
 				
 				if (distance <= actionDistance)
 				{

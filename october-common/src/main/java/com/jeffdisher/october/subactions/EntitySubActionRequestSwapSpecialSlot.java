@@ -56,7 +56,7 @@ public class EntitySubActionRequestSwapSpecialSlot implements IEntitySubAction<I
 	{
 		Environment env = Environment.getShared();
 		
-		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(newEntity);
 		float distance = SpatialHelpers.distanceFromLocationToBlockSurface(sourceEyeLocation, _blockLocation);
 		boolean isInRange = (distance <= MiscConstants.REACH_BLOCK);
 		

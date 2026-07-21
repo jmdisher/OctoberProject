@@ -274,17 +274,16 @@ public class CommonBreedingLogic
 			Assert.assertTrue(null != targetEntity);
 			
 			// See if they are within mating distance and we are the father.
-			EntityLocation location = creature.newLocation;
-			EntityType creatureType = creature.newType;
-			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(location, creatureType.volume());
+			EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(creature);
 			
 			FixedRegion region = FixedRegion.fromMinimal(targetEntity);
 			float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
 			
-			float matingDistance = creatureType.actionDistance();
+			float matingDistance = creature.newType.actionDistance();
 			if ((distance <= matingDistance) && (targetEntity.id() < creature.getId()))
 			{
 				// Send the message to impregnate them.
+				EntityLocation location = creature.newLocation;
 				EntityActionImpregnateCreature sperm = new EntityActionImpregnateCreature(location);
 				context.newChangeSink.creature(targetEntityId, sperm);
 				// We can also now clear our plans since we are done with them.

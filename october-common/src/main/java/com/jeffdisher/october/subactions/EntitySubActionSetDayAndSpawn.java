@@ -51,7 +51,7 @@ public class EntitySubActionSetDayAndSpawn implements IEntitySubAction<IMutableP
 		if (isBed)
 		{
 			// Find the distance from the eye to the bed.
-			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+			EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(newEntity);
 			float distance = SpatialHelpers.distanceFromLocationToBlockSurface(sourceEyeLocation, _bedLocation);
 			isInRange = (distance <= MiscConstants.REACH_BLOCK);
 		}

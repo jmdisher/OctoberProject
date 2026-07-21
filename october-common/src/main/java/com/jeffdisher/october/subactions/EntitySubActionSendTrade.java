@@ -163,7 +163,7 @@ public class EntitySubActionSendTrade implements IEntitySubAction<IMutablePlayer
 			boolean isInRange;
 			if (null != villager)
 			{
-				EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+				EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(newEntity);
 				FixedRegion region = FixedRegion.fromMinimal(villager);
 				float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
 				isInRange = (distance <= MiscConstants.REACH_ENTITY);

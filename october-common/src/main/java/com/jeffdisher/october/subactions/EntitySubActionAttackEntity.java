@@ -63,7 +63,7 @@ public class EntitySubActionAttackEntity implements IEntitySubAction<IMutablePla
 		if (isReady && (null != targetEntity))
 		{
 			// Find the distance from the eye to the target.
-			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
+			EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(newEntity);
 			FixedRegion region = FixedRegion.fromMinimal(targetEntity);
 			float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
 			isInRange = (distance <= MiscConstants.REACH_ENTITY);

@@ -61,19 +61,26 @@ public class SpatialHelpers
 	/**
 	 * Finds the location of the entity's eyes.  This is the centre of their model, near the top.
 	 * 
+	 * @param entity The entity.
+	 * @return The location where their eyes are.
+	 */
+	public static EntityLocation getEntityEye(IMutableMinimalEntity entity)
+	{
+		EntityLocation entityLocation = entity.getLocation();
+		EntityVolume volume = entity.getType().volume();
+		return _getEyeLocation(entityLocation, volume);
+	}
+
+	/**
+	 * Finds the location of the entity's eyes.  This is the centre of their model, near the top.
+	 * 
 	 * @param entityLocation The base location of the entity.
 	 * @param volume The total volume of the entity.
 	 * @return The location where their eyes are.
 	 */
 	public static EntityLocation getEyeLocation(EntityLocation entityLocation, EntityVolume volume)
 	{
-		// The location is the bottom-south-west corner so we want to offset by half their width and most of their height.
-		// We will say that their eyes are 90% of the way up their body from their feet.
-		float entityEyeHeightMultiplier = 0.9f;
-		
-		float widthOffset = volume.width() / 2.0f;
-		float heightOffset = volume.height() * entityEyeHeightMultiplier;
-		return entityLocation.getRelative(widthOffset, widthOffset, heightOffset);
+		return _getEyeLocation(entityLocation, volume);
 	}
 
 	/**
@@ -261,6 +268,17 @@ public class SpatialHelpers
 			squareDistance += delta * delta;
 		}
 		return (float)Math.sqrt(squareDistance);
+	}
+
+	private static EntityLocation _getEyeLocation(EntityLocation entityLocation, EntityVolume volume)
+	{
+		// The location is the bottom-south-west corner so we want to offset by half their width and most of their height.
+		// We will say that their eyes are 90% of the way up their body from their feet.
+		float entityEyeHeightMultiplier = 0.9f;
+		
+		float widthOffset = volume.width() / 2.0f;
+		float heightOffset = volume.height() * entityEyeHeightMultiplier;
+		return entityLocation.getRelative(widthOffset, widthOffset, heightOffset);
 	}
 
 

@@ -73,11 +73,10 @@ public class ExtensionHostileRanged implements EntityType.IExtension
 			Assert.assertTrue(null != targetEntity);
 			
 			// See if they are in attack range - we will aim for the centre of the entity, since that will give us a large target.
-			EntityType creatureType = creature.getType();
-			EntityLocation sourceEye = SpatialHelpers.getEyeLocation(creature.getLocation(), creatureType.volume());
+			EntityLocation sourceEye = SpatialHelpers.getEntityEye(creature);
 			FixedRegion region = FixedRegion.fromMinimal(targetEntity);
 			float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEye, region);
-			float attackDistance = creatureType.actionDistance();
+			float attackDistance = creature.getType().actionDistance();
 			if (distance <= attackDistance)
 			{
 				// We are in range so find the vector which will fire in an arc toward the centre of the target.

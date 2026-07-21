@@ -32,19 +32,16 @@ public class CommonExtensionHelpers
 		int targetId = creature.movementPlan.targetEntityId();
 		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetId);
 		
-		// How we look at the target depends on our type and state.
-		EntityType creatureType = creature.getType();
-		boolean isValid = false;
-		
 		// Make sure that they still exist, are in range.
 		Entity player = entityCollection.getPlayerById(targetId);
+		boolean isValid = false;
 		if (null != player)
 		{
-			EntityLocation sourceEye = SpatialHelpers.getEyeLocation(creature.newLocation, creatureType.volume());
+			EntityLocation sourceEye = SpatialHelpers.getEntityEye(creature);
 			EntityLocation playerBase = player.location();
 			EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
 			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEye, playerBase, playerVolume);
-			isValid = (distance <= creatureType.viewDistance());
+			isValid = (distance <= creature.getType().viewDistance());
 		}
 		return isValid;
 	}
