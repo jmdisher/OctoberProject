@@ -24,7 +24,7 @@ import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -145,15 +145,12 @@ public class EntitySubActionUseSelectedItemOnBlock implements IEntitySubAction<I
 	private boolean _apply(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		Environment env = Environment.getShared();
-		int selectedKey = newEntity.getSelectedKey();
 		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
-		NonStackableItem nonStack = (Entity.NO_SELECTION != selectedKey) ? mutableInventory.getNonStackableForKey(selectedKey) : null;
-		Items stack = (Entity.NO_SELECTION != selectedKey) ? mutableInventory.getStackForKey(selectedKey) : null;
-		Item type = (null != nonStack)
-				? nonStack.type()
-				: (null != stack)
-					? stack.type()
-					: null
+		int selectedKey = newEntity.getSelectedKey();
+		ItemSlot slot = mutableInventory.getSlotForKey(selectedKey);
+		Item type = (null != slot)
+			? slot.getType()
+			: null
 		;
 		boolean isFertilizer = (env.special.itemFertilizer == type);
 		BlockProxy proxy = context.previousBlockLookUp.readBlock(_target);
@@ -191,7 +188,7 @@ public class EntitySubActionUseSelectedItemOnBlock implements IEntitySubAction<I
 			if (null != context.randomInt)
 			{
 				int randomNumberTo255 = context.randomInt.applyAsInt(256);
-				NonStackableItem newItem = PropertyHelpers.reduceDurabilityOrBreak(nonStack, 1, randomNumberTo255);
+				NonStackableItem newItem = PropertyHelpers.reduceDurabilityOrBreak(slot.nonStackable, 1, randomNumberTo255);
 				if (null != newItem)
 				{
 					// Normal wear.
@@ -210,11 +207,11 @@ public class EntitySubActionUseSelectedItemOnBlock implements IEntitySubAction<I
 		else if (env.special.itemPortalOrb == type)
 		{
 			// Set the location in the orb to the touched block.
-			AbsoluteLocation oldTarget = PropertyHelpers.getLocation(nonStack);
+			AbsoluteLocation oldTarget = PropertyHelpers.getLocation(slot.nonStackable);
 			if (!_target.equals(oldTarget))
 			{
 				// We should replace this and update the orb.
-				Map<PropertyType<?>, Object> props = new HashMap<>(nonStack.properties());
+				Map<PropertyType<?>, Object> props = new HashMap<>(slot.nonStackable.properties());
 				props.put(PropertyRegistry.LOCATION, _target);
 				NonStackableItem newItem = new NonStackableItem(type, Collections.unmodifiableMap(props));
 				mutableInventory.replaceNonStackable(selectedKey, newItem);

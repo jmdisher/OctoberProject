@@ -16,6 +16,7 @@ import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.NonStackableItem;
@@ -76,11 +77,14 @@ public class EntitySubActionAttackEntity implements IEntitySubAction<IMutablePla
 		if (isInRange)
 		{
 			// We will just use the tool speed modifier of the selected item to figure out the damage.
-			// TODO:  Filter this based on some kind of target type so a sword hits harder than a pick-axe.
+			Environment env = Environment.getShared();
 			IMutableInventory mutableInventory = newEntity.accessMutableInventory();
 			int selectedKey = newEntity.getSelectedKey();
-			NonStackableItem nonStack = mutableInventory.getNonStackableForKey(selectedKey);
-			Environment env = Environment.getShared();
+			ItemSlot slot = mutableInventory.getSlotForKey(selectedKey);
+			NonStackableItem nonStack = (null != slot)
+				? slot.nonStackable
+				: null
+			;
 			
 			// Stackable or empty hand default to 1 damage.
 			int damageToApply = 1;

@@ -3975,6 +3975,27 @@ public class TestCommonChanges
 		Assert.assertEquals("Villager receive trade Item[id=op.coin, name=Coin, number=119](4), requesting Item[id=op.log, name=Log, number=2]", actions.get(2).action().toString());
 	}
 
+	@Test
+	public void pushInvalidKey() throws Throwable
+	{
+		// Show that EntitySubActionPushItems fails if given an invalid key (since this comes from the client and can't be validated before execution).
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
+		newEntity.newInventory.addNonStackableBestEfforts(PropertyHelpers.newItemWithDefaults(ENV, pickItem));
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		
+		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
+		
+		// We fail if the key is invalid.
+		EntitySubActionPushItems invalidKey = new EntitySubActionPushItems(newEntity.newLocation.getBlockLocation(), 2, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
+		Assert.assertFalse(invalidKey.applyChange(holder.context, newEntity));
+		
+		// We fail if the count is inconsistent.
+		EntitySubActionPushItems invalidCount = new EntitySubActionPushItems(newEntity.newLocation.getBlockLocation(), 1, 2, Inventory.INVENTORY_ASPECT_INVENTORY);
+		Assert.assertFalse(invalidCount.applyChange(holder.context, newEntity));
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

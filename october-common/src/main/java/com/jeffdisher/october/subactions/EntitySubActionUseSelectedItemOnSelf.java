@@ -10,6 +10,7 @@ import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -105,9 +106,13 @@ public class EntitySubActionUseSelectedItemOnSelf implements IEntitySubAction<IM
 		Environment env = Environment.getShared();
 		boolean didApply = false;
 		
-		int selectedKey = newEntity.getSelectedKey();
 		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
-		Items selectedStack = (Entity.NO_SELECTION != selectedKey) ? mutableInventory.getStackForKey(selectedKey) : null;
+		int selectedKey = newEntity.getSelectedKey();
+		ItemSlot slot = mutableInventory.getSlotForKey(selectedKey);
+		Items selectedStack = (null != slot)
+			? slot.stack
+			: null
+		;
 		Item selected = (null != selectedStack) ? selectedStack.type() : null;
 		int foodValue = (null != selected)
 				? env.foods.foodValue(selected)

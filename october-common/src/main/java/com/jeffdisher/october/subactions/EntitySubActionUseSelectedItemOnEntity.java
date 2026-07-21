@@ -14,6 +14,7 @@ import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.PartialEntity;
@@ -82,10 +83,15 @@ public class EntitySubActionUseSelectedItemOnEntity implements IEntitySubAction<
 		}
 		
 		// Get the current selected item.
-		int selectedKey = newEntity.getSelectedKey();
 		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
+		int selectedKey = newEntity.getSelectedKey();
+		ItemSlot slot = mutableInventory.getSlotForKey(selectedKey);
+		
 		// (we currently only handle the wheat type so just check for stackable)
-		Items selectedStack = (Entity.NO_SELECTION != selectedKey) ? mutableInventory.getStackForKey(selectedKey) : null;
+		Items selectedStack = (null != slot)
+			? slot.stack
+			: null
+		;
 		Item itemType = (null != selectedStack) ? selectedStack.type() : null;
 		
 		boolean didApply = false;

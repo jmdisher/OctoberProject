@@ -16,9 +16,9 @@ import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
-import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -41,6 +41,7 @@ public class EntitySubActionPushItems implements IEntitySubAction<IMutablePlayer
 		int count = buffer.getInt();
 		Assert.assertTrue(count > 0);
 		byte inventoryAspect = buffer.get();
+		Assert.assertTrue((Inventory.INVENTORY_ASPECT_INVENTORY == inventoryAspect) || (Inventory.INVENTORY_ASPECT_FUEL == inventoryAspect));
 		return new EntitySubActionPushItems(blockLocation, localInventoryId, count, inventoryAspect);
 	}
 
@@ -68,29 +69,36 @@ public class EntitySubActionPushItems implements IEntitySubAction<IMutablePlayer
 		
 		// Make sure that we actually have this much of the referenced item in our inventory.
 		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
-		Items stackable = mutableInventory.getStackForKey(_localInventoryId);
-		NonStackableItem nonStackable = mutableInventory.getNonStackableForKey(_localInventoryId);
-		// We should see precisely one of these.
-		Assert.assertTrue((null != stackable) != (null != nonStackable));
+		ItemSlot slot = mutableInventory.getSlotForKey(_localInventoryId);
+		boolean isValidKey = (null != slot);
 		
-		// We want to make sure that this is a block which can accept items (currently just air).
-		BlockProxy block = context.previousBlockLookUp.readBlock(_blockLocation);
+		// We want to make sure that this is a block which can accept items.
 		boolean canTransfer;
 		Inventory inv;
-		Item type;
-		if (null != stackable)
+		if (isValidKey)
 		{
-			canTransfer = (stackable.count() >= _count);
-			inv = _getInventory(block, stackable.type());
-			type = stackable.type();
+			BlockProxy block = context.previousBlockLookUp.readBlock(_blockLocation);
+			Item type = slot.getType();
+			if (null != slot.stack)
+			{
+				canTransfer = (slot.stack.count() >= _count);
+				inv = _getInventory(block, type);
+			}
+			else
+			{
+				canTransfer = true;
+				inv = _getInventory(block, type);
+				// In this case, it MUST be only 1.
+				if (1 != _count)
+				{
+					isValidKey = false;
+				}
+			}
 		}
 		else
 		{
-			canTransfer = true;
-			inv = _getInventory(block, nonStackable.type());
-			// In this case, it MUST be only 1.
-			Assert.assertTrue(1 == _count);
-			type = nonStackable.type();
+			canTransfer = false;
+			inv = null;
 		}
 		
 		// We also want to make sure that this is in range.
@@ -98,18 +106,19 @@ public class EntitySubActionPushItems implements IEntitySubAction<IMutablePlayer
 		float distance = SpatialHelpers.distanceFromLocationToBlockSurface(sourceEyeLocation, _blockLocation);
 		boolean isInRange = (distance <= MiscConstants.REACH_BLOCK);
 		
-		if (canTransfer && isInRange && (null != inv))
+		if (isValidKey && canTransfer && isInRange && (null != inv))
 		{
 			// See if there is space in the inventory.
 			MutableInventory checker = new MutableInventory(inv);
 			
+			Item type = slot.getType();
 			int capacity = checker.maxVacancyForItem(type);
 			int toDrop = Math.min(capacity, _count);
 			if (toDrop > 0)
 			{
 				// We will proceed to remove the items from our inventory and pass them to the block.
 				Items stackToMove;
-				if (null != stackable)
+				if (null != slot.stack)
 				{
 					mutableInventory.removeStackableItems(type, toDrop);
 					stackToMove = new Items(type, toDrop);
@@ -119,10 +128,10 @@ public class EntitySubActionPushItems implements IEntitySubAction<IMutablePlayer
 					mutableInventory.removeNonStackableItems(_localInventoryId);
 					stackToMove = null;
 				}
-				context.mutationSink.next(new MutationBlockStoreItems(_blockLocation, stackToMove, nonStackable, _inventoryAspect));
+				context.mutationSink.next(new MutationBlockStoreItems(_blockLocation, stackToMove, slot.nonStackable, _inventoryAspect));
 				
 				// If this removed something from the inventory, entirely, make sure it is removed from any hotbar slots.
-				boolean shouldClear = (null != nonStackable) || (0 == mutableInventory.getCount(type));
+				boolean shouldClear = (null != slot.nonStackable) || (0 == mutableInventory.getCount(type));
 				if (shouldClear)
 				{
 					newEntity.clearHotBarWithKey(_localInventoryId);
