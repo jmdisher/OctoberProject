@@ -11,6 +11,7 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.SpatialIndex;
@@ -284,13 +285,14 @@ public class EntityCollection
 			int creatureId = creature.id();
 			if ((searchingId != creatureId) && (creature.type() == creatureType))
 			{
-				EntityLocation targetBase = creature.location();
-				float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, targetBase, creatureVolume);
+				FixedRegion region = FixedRegion.fromCreature(creature);
+				float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
 				if ((distance <= maxRange)
 					&& (distance < matchDistance)
 					&& shouldConsider.test(creature)
 				)
 				{
+					EntityLocation targetBase = creature.location();
 					found = new EntityType.TargetEntity(creatureId, targetBase);
 					matchDistance = distance;
 				}

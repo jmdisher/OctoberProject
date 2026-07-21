@@ -11,6 +11,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -79,9 +80,8 @@ public class ExtensionHostileMelee implements EntityType.IExtension
 			// See if they are in attack range.
 			EntityType creatureType = creature.getType();
 			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), creatureType.volume());
-			EntityLocation targetBase = targetEntity.location();
-			EntityVolume targetVolume = targetEntity.type().volume();
-			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, targetBase, targetVolume);
+			FixedRegion region = FixedRegion.fromMinimal(targetEntity);
+			float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
 			float attackDistance = creatureType.actionDistance();
 			if (distance <= attackDistance)
 			{
@@ -90,6 +90,8 @@ public class ExtensionHostileMelee implements EntityType.IExtension
 				BodyPart target = BodyPart.values()[index];
 				EntityActionTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityActionTakeDamageFromEntity<>(target, _attackDamage, creature.getId());
 				context.newChangeSink.next(creature.movementPlan.targetEntityId(), takeDamage);
+				EntityLocation targetBase = targetEntity.location();
+				EntityVolume targetVolume = targetEntity.type().volume();
 				NudgeHelpers.nudgeFromMelee(context
 					, creature.movementPlan.targetEntityId()
 					, creature.newLocation

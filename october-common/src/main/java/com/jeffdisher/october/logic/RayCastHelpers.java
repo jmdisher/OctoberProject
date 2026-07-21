@@ -10,6 +10,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -341,12 +342,13 @@ public class RayCastHelpers
 
 	private static float _findDistanceToIntersect(EntityLocation start, EntityLocation base, EntityVolume volume, boolean isFixedX, float compX, boolean isFixedY, float compY, boolean isFixedZ, float compZ)
 	{
-		float west = base.x();
-		float east = base.x() + volume.width();
-		float south = base.y();
-		float north = base.y() + volume.width();
-		float bottom = base.z();
-		float top = base.z() + volume.height();
+		FixedRegion region = FixedRegion.fromBaseAndVolume(base, volume);
+		float west = region.westX;
+		float east = region.eastX;
+		float south = region.southY;
+		float north = region.northY;
+		float bottom = region.downZ;
+		float top = region.upZ;
 		
 		// We will calculate the t-values relative to the end of the vector so any match will be when all axes have t values in [0..1].
 		float closeX = -Float.MAX_VALUE;
@@ -406,7 +408,7 @@ public class RayCastHelpers
 		// -the "close" is a positive number (since otherwise we started "inside" the volume)
 		// NOTE:  "close" is not the physical distance, but a proportional one, so actually calculate the distance.
 		return ((close <= far) && (close >= 0.0f))
-				? SpatialHelpers.distanceFromLocationToVolume(start, base, volume)
+				? SpatialHelpers.distanceFromLocationToRegion(start, region)
 				: Float.MAX_VALUE
 		;
 	}

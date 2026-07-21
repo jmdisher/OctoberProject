@@ -25,6 +25,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
@@ -458,9 +459,8 @@ public class CreatureLogic
 		MinimalEntity targetEntity = context.previousEntityLookUp.getById(targetId);
 		EntityVolume creatureVolume = creatureType.volume();
 		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(location, creatureVolume);
-		EntityLocation targetLocation = targetEntity.location();
-		EntityVolume targetVolume = targetEntity.type().volume();
-		float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, targetLocation, targetVolume);
+		FixedRegion region = FixedRegion.fromMinimal(targetEntity);
+		float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
 		float pathDistance = creatureType.getPathDistance();
 		Assert.assertTrue(distance <= pathDistance);
 		
@@ -479,6 +479,7 @@ public class CreatureLogic
 				? originalLocation.getBlockLocation()
 				: null
 			;
+			EntityLocation targetLocation = targetEntity.location();
 			AbsoluteLocation currentBlockLocation = targetLocation.getBlockLocation();
 			boolean didTargetMove = !currentBlockLocation.equals(previousBlockLocation);
 			if (didTargetMove)

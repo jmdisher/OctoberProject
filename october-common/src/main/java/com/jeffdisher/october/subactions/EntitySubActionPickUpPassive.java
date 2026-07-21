@@ -6,6 +6,7 @@ import com.jeffdisher.october.actions.passive.PassiveActionPickUp;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
@@ -56,7 +57,8 @@ public class EntitySubActionPickUpPassive implements IEntitySubAction<IMutablePl
 		)
 		{
 			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
-			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, passive.location(), passive.type().volume());
+			FixedRegion region = FixedRegion.fromPartialPassive(passive);
+			float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
 			isInRange = (distance <= PICKUP_DISTANCE);
 		}
 		else

@@ -11,7 +11,7 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
-import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -278,9 +278,8 @@ public class CommonBreedingLogic
 			EntityType creatureType = creature.newType;
 			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(location, creatureType.volume());
 			
-			EntityLocation targetBase = targetEntity.location();
-			EntityVolume targetVolume = targetEntity.type().volume();
-			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, targetBase, targetVolume);
+			FixedRegion region = FixedRegion.fromMinimal(targetEntity);
+			float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
 			
 			float matingDistance = creatureType.actionDistance();
 			if ((distance <= matingDistance) && (targetEntity.id() < creature.getId()))

@@ -9,6 +9,7 @@ import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -67,18 +68,16 @@ public class EntitySubActionUseSelectedItemOnEntity implements IEntitySubAction<
 		
 		// We also want to make sure that this is in range.
 		MinimalEntity target = context.previousEntityLookUp.getById(_entityId);
-		EntityType entityType;
 		boolean isInRange;
 		if (null != target)
 		{
 			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
-			entityType = target.type();
-			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, target.location(), entityType.volume());
+			FixedRegion region = FixedRegion.fromMinimal(target);
+			float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
 			isInRange = (distance <= MiscConstants.REACH_ENTITY);
 		}
 		else
 		{
-			entityType = null;
 			isInRange = false;
 		}
 		
@@ -90,7 +89,7 @@ public class EntitySubActionUseSelectedItemOnEntity implements IEntitySubAction<
 		Item itemType = (null != selectedStack) ? selectedStack.type() : null;
 		
 		boolean didApply = false;
-		if (isReady && isInRange && entityType.extension().canApplyItemToCreature(target, itemType, context.currentTickTimeMillis))
+		if (isReady && isInRange && target.type().extension().canApplyItemToCreature(target, itemType, context.currentTickTimeMillis))
 		{
 			// Remove the wheat item and apply it to the entity.
 			// Note that we don't bother with racy conditions where we might need to pass it back since that is a rare case and of minimal impact.

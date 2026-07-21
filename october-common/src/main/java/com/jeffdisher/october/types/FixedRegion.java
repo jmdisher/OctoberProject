@@ -51,6 +51,104 @@ public final class FixedRegion
 		);
 	}
 
+	/**
+	 * Creates an instance to describe just the region occupied by a single full block.
+	 * 
+	 * @param blockLocation The location of the block, in logical coordinates.
+	 * @return A new instance.
+	 */
+	public static FixedRegion forBlock(AbsoluteLocation blockLocation)
+	{
+		EntityLocation base = blockLocation.toEntityLocation();
+		return new FixedRegion(base.x()
+			, base.y()
+			, base.z()
+			, base.x() + 1.0f
+			, base.y() + 1.0f
+			, base.z() + 1.0f
+		);
+	}
+
+	/**
+	 * Creates an instance to describe the region occupied by a MinimalEntity.  This considers its base location and
+	 * type-defined volume.
+	 * 
+	 * @param minimal The MinimalEntity.
+	 * @return A new instance.
+	 */
+	public static FixedRegion fromMinimal(MinimalEntity minimal)
+	{
+		EntityLocation base = minimal.location();
+		EntityVolume volume = minimal.type().volume();
+		return new FixedRegion(base.x()
+			, base.y()
+			, base.z()
+			, base.x() + volume.width()
+			, base.y() + volume.width()
+			, base.z() + volume.height()
+		);
+	}
+
+	/**
+	 * Creates an instance to describe the region occupied by a CreatureEntity.  This considers its base location and
+	 * type-defined volume.
+	 * 
+	 * @param creature The CreatureEntity.
+	 * @return A new instance.
+	 */
+	public static FixedRegion fromCreature(CreatureEntity creature)
+	{
+		EntityLocation base = creature.location();
+		EntityVolume volume = creature.type().volume();
+		return new FixedRegion(base.x()
+			, base.y()
+			, base.z()
+			, base.x() + volume.width()
+			, base.y() + volume.width()
+			, base.z() + volume.height()
+		);
+	}
+
+	/**
+	 * Creates an instance to describe the region occupied by a PartialPassive.  This considers its base location and
+	 * type-defined volume.
+	 * 
+	 * @param passive The PartialPassive.
+	 * @return A new instance.
+	 */
+	public static FixedRegion fromPartialPassive(PartialPassive passive)
+	{
+		EntityLocation base = passive.location();
+		EntityVolume volume = passive.type().volume();
+		return new FixedRegion(base.x()
+			, base.y()
+			, base.z()
+			, base.x() + volume.width()
+			, base.y() + volume.width()
+			, base.z() + volume.height()
+		);
+	}
+
+	/**
+	 * Creates an instance to describe the region occupied by a PassiveEntity.  This considers its base location and
+	 * type-defined volume.
+	 * 
+	 * @param passive The PassiveEntity.
+	 * @return A new instance.
+	 */
+	public static FixedRegion fromPassive(PassiveEntity passive)
+	{
+		EntityLocation base = passive.location();
+		EntityVolume volume = passive.type().volume();
+		return new FixedRegion(base.x()
+			, base.y()
+			, base.z()
+			, base.x() + volume.width()
+			, base.y() + volume.width()
+			, base.z() + volume.height()
+		);
+	}
+
 
 	public final float westX;
 	public final float southY;

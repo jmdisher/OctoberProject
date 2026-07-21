@@ -17,6 +17,7 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -163,7 +164,8 @@ public class EntitySubActionSendTrade implements IEntitySubAction<IMutablePlayer
 			if (null != villager)
 			{
 				EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
-				float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, villager.location(), villager.type().volume());
+				FixedRegion region = FixedRegion.fromMinimal(villager);
+				float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
 				isInRange = (distance <= MiscConstants.REACH_ENTITY);
 			}
 			else

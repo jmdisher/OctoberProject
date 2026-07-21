@@ -60,6 +60,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.EventRecord;
+import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
@@ -929,9 +930,8 @@ public class ServerStateManager
 		for (CreatureEntity entity : _creatureIndex.added)
 		{
 			int entityId = entity.id();
-			EntityLocation entityBase = entity.location();
-			EntityVolume entityVolume = entity.type().volume();
-			float distance = SpatialHelpers.distanceFromLocationToVolume(playerEyeLocation, entityBase, entityVolume);
+			FixedRegion region = FixedRegion.fromCreature(entity);
+			float distance = SpatialHelpers.distanceFromLocationToRegion(playerEyeLocation, region);
 			
 			if (distance <= entityVisibleDistance)
 			{
@@ -954,9 +954,8 @@ public class ServerStateManager
 	private void _handleExistingCreature(OutpacketBuffer buffer, ClientState state, float entityVisibleDistance, EntityLocation playerEyeLocation, CreatureEntity entity, boolean didChange)
 	{
 		int entityId = entity.id();
-		EntityLocation entityBase = entity.location();
-		EntityVolume entityVolume = entity.type().volume();
-		float distance = SpatialHelpers.distanceFromLocationToVolume(playerEyeLocation, entityBase, entityVolume);
+		FixedRegion region = FixedRegion.fromCreature(entity);
+		float distance = SpatialHelpers.distanceFromLocationToRegion(playerEyeLocation, region);
 		
 		if (state.knownEntities.contains(entityId))
 		{
@@ -1001,9 +1000,8 @@ public class ServerStateManager
 		for (PassiveEntity passive : _passiveIndex.added)
 		{
 			int entityId = passive.id();
-			EntityLocation entityBase = passive.location();
-			EntityVolume entityVolume = passive.type().volume();
-			float distance = SpatialHelpers.distanceFromLocationToVolume(playerEyeLocation, entityBase, entityVolume);
+			FixedRegion region = FixedRegion.fromPassive(passive);
+			float distance = SpatialHelpers.distanceFromLocationToRegion(playerEyeLocation, region);
 			
 			if (distance <= entityVisibleDistance)
 			{
@@ -1026,9 +1024,8 @@ public class ServerStateManager
 	private void _handleExistingPassive(OutpacketBuffer buffer, ClientState state, float entityVisibleDistance, EntityLocation playerEyeLocation, PassiveEntity passive, boolean didChange)
 	{
 		int entityId = passive.id();
-		EntityLocation entityBase = passive.location();
-		EntityVolume entityVolume = passive.type().volume();
-		float distance = SpatialHelpers.distanceFromLocationToVolume(playerEyeLocation, entityBase, entityVolume);
+		FixedRegion region = FixedRegion.fromPassive(passive);
+		float distance = SpatialHelpers.distanceFromLocationToRegion(playerEyeLocation, region);
 		
 		if (state.knownPassives.contains(entityId))
 		{

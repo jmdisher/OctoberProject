@@ -3,6 +3,7 @@ package com.jeffdisher.october.logic;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 
 
@@ -76,6 +77,18 @@ public class SpatialHelpers
 	}
 
 	/**
+	 * Finds the distance from a start location to the nearest edge of the given fixed region.
+	 * 
+	 * @param start The start location from which to measure.
+	 * @param region The fixed region we are targeting.
+	 * @return The diagonal distance from the eye to the nearest edge of fixed region.
+	 */
+	public static float distanceFromLocationToRegion(EntityLocation start, FixedRegion region)
+	{
+		return _distanceToTarget(start, region);
+	}
+
+	/**
 	 * Finds the distance from a start location to the nearest edge of the given block.
 	 * 
 	 * @param start The start location from which to measure.
@@ -84,10 +97,7 @@ public class SpatialHelpers
 	 */
 	public static float distanceFromLocationToBlockSurface(EntityLocation start, AbsoluteLocation block)
 	{
-		EntityLocation target = block.toEntityLocation();
-		EntityVolume cubeVolume = new EntityVolume(1.0f, 1.0f);
-		
-		return _distanceToTarget(start, target, cubeVolume);
+		return _distanceToTarget(start, FixedRegion.forBlock(block));
 	}
 
 	/**
@@ -100,7 +110,7 @@ public class SpatialHelpers
 	 */
 	public static float distanceFromLocationToVolume(EntityLocation start, EntityLocation targetBase, EntityVolume targetVolume)
 	{
-		return _distanceToTarget(start, targetBase, targetVolume);
+		return _distanceToTarget(start, FixedRegion.fromBaseAndVolume(targetBase, targetVolume));
 	}
 
 	/**
@@ -212,17 +222,17 @@ public class SpatialHelpers
 		return entityLocation.getRelative(widthOffset, widthOffset, 0.0f);
 	}
 
-	private static float _distanceToTarget(EntityLocation eye, EntityLocation target, EntityVolume targetVolume)
+	private static float _distanceToTarget(EntityLocation eye, FixedRegion region)
 	{
 		// We interpret this as a rectangular prism axis-aligned bounding-box.
-		float highX = target.x() + targetVolume.width();
-		float highY = target.y() + targetVolume.width();
-		float highZ = target.z() + targetVolume.height();
+		float highX = region.eastX;
+		float highY = region.northY;
+		float highZ = region.upZ;
 		float squareDistance = 0.0f;
 		
-		if (eye.x() < target.x())
+		if (eye.x() < region.westX)
 		{
-			float delta = target.x() - eye.x();
+			float delta = region.westX - eye.x();
 			squareDistance += delta * delta;
 		}
 		else if (eye.x() > highX)
@@ -230,9 +240,9 @@ public class SpatialHelpers
 			float delta = eye.x() - highX;
 			squareDistance += delta * delta;
 		}
-		if (eye.y() < target.y())
+		if (eye.y() < region.southY)
 		{
-			float delta = target.y() - eye.y();
+			float delta = region.southY - eye.y();
 			squareDistance += delta * delta;
 		}
 		else if (eye.y() > highY)
@@ -240,9 +250,9 @@ public class SpatialHelpers
 			float delta = eye.y() - highY;
 			squareDistance += delta * delta;
 		}
-		if (eye.z() < target.z())
+		if (eye.z() < region.downZ)
 		{
-			float delta = target.z() - eye.z();
+			float delta = region.downZ - eye.z();
 			squareDistance += delta * delta;
 		}
 		else if (eye.z() > highZ)

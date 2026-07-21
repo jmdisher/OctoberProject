@@ -20,6 +20,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.EventRecord;
+import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
@@ -808,7 +809,8 @@ public class ExtensionVillager implements EntityType.IExtension
 				EntityType thisType = creature.getType();
 				
 				EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(creature.getLocation(), thisType.volume());
-				float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, target.location(), target.type().volume());
+				FixedRegion region = FixedRegion.fromCreature(target);
+				float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
 				float actionDistance = thisType.actionDistance();
 				
 				if (distance <= actionDistance)

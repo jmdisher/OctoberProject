@@ -12,7 +12,7 @@ import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -59,24 +59,19 @@ public class EntitySubActionAttackEntity implements IEntitySubAction<IMutablePla
 		
 		// Check that the target is in range.  We will use block breaking distance.
 		boolean isInRange;
-		EntityLocation targetBase;
-		EntityVolume targetVolume;
 		MinimalEntity targetEntity = context.previousEntityLookUp.getById(_targetEntityId);
 		if (isReady && (null != targetEntity))
 		{
 			// Find the distance from the eye to the target.
 			EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(newEntity.getLocation(), newEntity.getType().volume());
-			targetBase = targetEntity.location();
-			targetVolume = targetEntity.type().volume();
-			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, targetBase, targetVolume);
+			FixedRegion region = FixedRegion.fromMinimal(targetEntity);
+			float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
 			isInRange = (distance <= MiscConstants.REACH_ENTITY);
 		}
 		else
 		{
 			// Not loaded or not ready to strike.
 			isInRange = false;
-			targetBase = null;
-			targetVolume = null;
 		}
 		if (isInRange)
 		{
@@ -116,8 +111,8 @@ public class EntitySubActionAttackEntity implements IEntitySubAction<IMutablePla
 				, _targetEntityId
 				, newEntity.getLocation()
 				, newEntity.getType().volume()
-				, targetBase
-				, targetVolume
+				, targetEntity.location()
+				, targetEntity.type().volume()
 			);
 			
 			CommonEntitySubActionHelpers.decrementToolDurability(env, context, newEntity, mutableInventory, selectedKey, nonStack);

@@ -13,7 +13,6 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
-import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -76,14 +75,13 @@ public class ExtensionHostileRanged implements EntityType.IExtension
 			// See if they are in attack range - we will aim for the centre of the entity, since that will give us a large target.
 			EntityType creatureType = creature.getType();
 			EntityLocation sourceEye = SpatialHelpers.getEyeLocation(creature.getLocation(), creatureType.volume());
-			EntityLocation targetBase = targetEntity.location();
-			EntityVolume targetVolume = targetEntity.type().volume();
-			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEye, targetBase, targetVolume);
+			FixedRegion region = FixedRegion.fromMinimal(targetEntity);
+			float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEye, region);
 			float attackDistance = creatureType.actionDistance();
 			if (distance <= attackDistance)
 			{
 				// We are in range so find the vector which will fire in an arc toward the centre of the target.
-				EntityLocation targetCentre = FixedRegion.fromBaseAndVolume(targetBase, targetVolume).getCentre();
+				EntityLocation targetCentre = region.getCentre();
 				
 				// Make sure that we can see them.
 				Environment env = Environment.getShared();
