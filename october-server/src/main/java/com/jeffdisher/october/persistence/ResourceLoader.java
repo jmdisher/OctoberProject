@@ -587,7 +587,7 @@ public class ResourceLoader
 				new ScheduledChange(new EntityActionPeriodic(), EntityActionPeriodic.MILLIS_BETWEEN_PERIODIC_UPDATES)
 		);
 		MutableEntity entity = MutableEntity.createWithLocation(id, spawn, spawn);
-		entity.isCreativeMode = isCreative;
+		entity.setCreativeMode(isCreative);
 		return new SuspendedEntity(entity.freeze(), initialChanges);
 	}
 

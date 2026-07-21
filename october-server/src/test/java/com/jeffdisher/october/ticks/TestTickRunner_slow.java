@@ -497,7 +497,7 @@ public class TestTickRunner_slow
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(plug.x(), plug.y(), plug.z() + 1);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
-		mutable.isCreativeMode = true;
+		mutable.setCreativeMode(true);
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cascade, HeightMapHelpers.buildHeightMap(cascade), List.of(), List.of(), Map.of(), List.of()))
@@ -569,7 +569,7 @@ public class TestTickRunner_slow
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = topOfFalls.toEntityLocation();
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
-		mutable.isCreativeMode = true;
+		mutable.setCreativeMode(true);
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(_packageCuboid(topNorthEast)

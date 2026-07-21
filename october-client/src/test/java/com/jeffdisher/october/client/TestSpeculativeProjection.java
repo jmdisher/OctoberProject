@@ -3408,7 +3408,7 @@ public class TestSpeculativeProjection
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
-		mutable.isCreativeMode = true;
+		mutable.setCreativeMode(true);
 		mutable.newLocation = new EntityLocation(5.0f, 5.0f, 5.0f);
 		Entity localEntity = mutable.freeze();
 		projector.setThisEntity(localEntity);

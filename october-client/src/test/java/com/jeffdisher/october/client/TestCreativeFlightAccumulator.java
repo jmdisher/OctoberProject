@@ -65,7 +65,7 @@ public class TestCreativeFlightAccumulator
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
-		mutable.isCreativeMode = true;
+		mutable.setCreativeMode(true);
 		Entity entity = mutable.freeze();
 		commonCache.setThisEntity(entity);
 		commonCache.setCuboid(airCuboid, Set.of());
@@ -105,7 +105,7 @@ public class TestCreativeFlightAccumulator
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
-		mutable.isCreativeMode = true;
+		mutable.setCreativeMode(true);
 		Entity entity = mutable.freeze();
 		commonCache.setThisEntity(entity);
 		commonCache.setCuboid(airCuboid, Set.of());
@@ -142,7 +142,7 @@ public class TestCreativeFlightAccumulator
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
-		mutable.isCreativeMode = true;
+		mutable.setCreativeMode(true);
 		Entity entity = mutable.freeze();
 		commonCache.setThisEntity(entity);
 		commonCache.setCuboid(airCuboid, Set.of());
@@ -188,7 +188,7 @@ public class TestCreativeFlightAccumulator
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
-		mutable.isCreativeMode = true;
+		mutable.setCreativeMode(true);
 		Entity entity = mutable.freeze();
 		commonCache.setThisEntity(entity);
 		commonCache.setCuboid(airCuboid, Set.of());
@@ -225,7 +225,7 @@ public class TestCreativeFlightAccumulator
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
-		mutable.isCreativeMode = true;
+		mutable.setCreativeMode(true);
 		Entity entity = mutable.freeze();
 		commonCache.setThisEntity(entity);
 		commonCache.setCuboid(airCuboid, Set.of());
@@ -263,7 +263,7 @@ public class TestCreativeFlightAccumulator
 		int creativeStoneKey = 1;
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
-		mutable.isCreativeMode = true;
+		mutable.setCreativeMode(true);
 		mutable.setSelectedKey(creativeStoneKey);
 		Entity entity = mutable.freeze();
 		commonCache.setThisEntity(entity);
@@ -305,7 +305,7 @@ public class TestCreativeFlightAccumulator
 		EntityLocation hoverLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = hoverLocation;
-		mutable.isCreativeMode = true;
+		mutable.setCreativeMode(true);
 		Entity entity = mutable.freeze();
 		commonCache.setThisEntity(entity);
 		commonCache.setCuboid(airCuboid, Set.of());

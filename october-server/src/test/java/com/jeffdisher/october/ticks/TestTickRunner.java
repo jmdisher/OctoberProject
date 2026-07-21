@@ -1190,7 +1190,7 @@ public class TestTickRunner
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(stoneLocation.x(), stoneLocation.y(), stoneLocation.z() + 1.0f);
-		mutable.isCreativeMode = true;
+		mutable.setCreativeMode(true);
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of(), List.of())
 				)
@@ -3000,7 +3000,7 @@ public class TestTickRunner
 		CuboidData cuboid = _zeroAirCuboidWithBase();
 		int entityId = 1;
 		MutableEntity entity1 = MutableEntity.createForTest(entityId);
-		entity1.isCreativeMode = true;
+		entity1.setCreativeMode(true);
 		entity1.newLocation = new EntityLocation(10.0f, 10.0f, 5.0f);
 		
 		// Create the runner and load all test data.

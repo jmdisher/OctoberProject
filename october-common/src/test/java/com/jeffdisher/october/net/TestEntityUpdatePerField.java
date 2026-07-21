@@ -116,7 +116,7 @@ public class TestEntityUpdatePerField
 	{
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		Entity first = mutable.freeze();
-		mutable.isCreativeMode = true;
+		mutable.setCreativeMode(true);
 		mutable.newLocation = new EntityLocation(1.0f, 2.0f, -5.6f);
 		mutable.newVelocity = new EntityLocation(-0.4f, 5.7f, 0.0f);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);

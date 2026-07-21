@@ -325,7 +325,7 @@ public class EntityUpdatePerField
 		
 		if (null != _isCreativeMode)
 		{
-			newEntity.isCreativeMode = _isCreativeMode;
+			newEntity.setCreativeMode(_isCreativeMode);
 		}
 		if (null != _location)
 		{

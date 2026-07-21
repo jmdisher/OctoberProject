@@ -726,7 +726,7 @@ public class TestMovementAccumulator
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = startLocation;
-		mutable.isCreativeMode = true;
+		mutable.setCreativeMode(true);
 		Entity entity = mutable.freeze();
 		commonCache.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
@@ -811,7 +811,7 @@ public class TestMovementAccumulator
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = startLocation;
-		mutable.isCreativeMode = true;
+		mutable.setCreativeMode(true);
 		mutable.setSelectedKey(STONE_ITEM.number());
 		Entity entity = mutable.freeze();
 		commonCache.setThisEntity(entity);

@@ -981,7 +981,7 @@ public class TestServerRunner
 		int clientId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(clientId);
 		mutable.newLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
-		mutable.isCreativeMode = true;
+		mutable.setCreativeMode(true);
 		
 		WorldConfig config = new WorldConfig();
 		File directory = DIRECTORY.newFolder();

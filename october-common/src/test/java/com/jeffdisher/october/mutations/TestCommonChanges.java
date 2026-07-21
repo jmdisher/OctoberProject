@@ -2089,7 +2089,7 @@ public class TestCommonChanges
 		// Break a block with a tool with 1 durability, while in creative mode, to observe it does NOT break and only takes one hit.
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
-		newEntity.isCreativeMode = true;
+		newEntity.setCreativeMode(true);
 		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
 		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, Map.of(PropertyRegistry.DURABILITY, 1)));
 		// We assume that this is 1.
@@ -3823,7 +3823,7 @@ public class TestCommonChanges
 		Assert.assertEquals((byte)0, newEntity.newPitch);
 		
 		// Set them to creative mode and show that this works.
-		newEntity.isCreativeMode = true;
+		newEntity.setCreativeMode(true);
 		Assert.assertTrue(move.applyChange(holder.context, newEntity));
 		Assert.assertEquals(new EntityLocation(10.1f, 9.8f, 10.15f), newEntity.newLocation);
 		Assert.assertEquals(new EntityLocation(1.0f, -2.0f, 1.5f), newEntity.newVelocity);

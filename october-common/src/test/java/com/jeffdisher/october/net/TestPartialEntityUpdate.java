@@ -41,7 +41,7 @@ public class TestPartialEntityUpdate
 	{
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		Entity initial = mutable.freeze();
-		mutable.isCreativeMode = true;
+		mutable.setCreativeMode(true);
 		Entity unchanged = mutable.freeze();
 		mutable.newYaw = (byte)66;
 		Entity changed = mutable.freeze();

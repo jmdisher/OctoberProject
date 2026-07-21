@@ -851,7 +851,7 @@ public class TestClientRunner
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		MutableEntity mutable = MutableEntity.createForTest(clientId);
 		mutable.newLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
-		mutable.isCreativeMode = true;
+		mutable.setCreativeMode(true);
 		network.client.receivedFullEntity(mutable.freeze());
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
 		network.client.receivedEndOfTick(1L, 0L);

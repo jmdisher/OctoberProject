@@ -96,7 +96,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	public byte newFood;
 	public byte newBreath;
 	public int newEnergyDeficit;
-	public boolean isCreativeMode;
+	private boolean _isCreativeMode;
 	public EntityLocation newSpawn;
 	public long ephemeral_lastSpecialActionMillis;
 	public long ephemeral_nextTakeDamageMillis;
@@ -118,7 +118,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		this.newFood = original.food();
 		this.newBreath = original.breath();
 		this.newEnergyDeficit = original.ephemeralLocal().energyDeficit();
-		this.isCreativeMode = original.isCreativeMode();
+		_isCreativeMode = original.isCreativeMode();
 		this.newSpawn = original.spawnLocation();
 		this.ephemeral_lastSpecialActionMillis = original.ephemeralLocal().lastSpecialActionMillis();
 		this.ephemeral_nextTakeDamageMillis = original.ephemeralLocal().nextTakeDamageMillis();
@@ -136,7 +136,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	{
 		// If this is a creative player, which ignore their inventory and always return the fake creative one.
 		IMutableInventory inv;
-		if (this.isCreativeMode)
+		if (_isCreativeMode)
 		{
 			inv = new CreativeInventory();
 		}
@@ -272,7 +272,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	public void setHealth(byte health)
 	{
 		// We can't change food, health, or breath in creative mode.
-		if (!this.isCreativeMode)
+		if (!_isCreativeMode)
 		{
 			this.newHealth = health;
 		}
@@ -288,7 +288,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	public void setFood(byte food)
 	{
 		// We can't change food, health, or breath in creative mode.
-		if (!this.isCreativeMode)
+		if (!_isCreativeMode)
 		{
 			this.newFood = food;
 		}
@@ -304,7 +304,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	public void setBreath(byte breath)
 	{
 		// We can't change food, health, or breath in creative mode.
-		if (!this.isCreativeMode)
+		if (!_isCreativeMode)
 		{
 			this.newBreath = breath;
 		}
@@ -351,7 +351,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	public void setEnergyDeficit(int deficit)
 	{
 		// Energy deficit shouldn't be changed in creative mode.
-		if (!this.isCreativeMode)
+		if (!_isCreativeMode)
 		{
 			this.newEnergyDeficit = deficit;
 		}
@@ -360,20 +360,20 @@ public class MutableEntity implements IMutablePlayerEntity
 	@Override
 	public boolean isCreativeMode()
 	{
-		return this.isCreativeMode;
+		return _isCreativeMode;
 	}
 
 	@Override
 	public void setCreativeMode(boolean enableCreative)
 	{
-		this.isCreativeMode = enableCreative;
+		_isCreativeMode = enableCreative;
 	}
 
 	@Override
 	public void applyEnergyCost(int cost)
 	{
 		// Energy deficit shouldn't be changed in creative mode.
-		if (!this.isCreativeMode)
+		if (!_isCreativeMode)
 		{
 			this.newEnergyDeficit += cost;
 		}
@@ -436,9 +436,9 @@ public class MutableEntity implements IMutablePlayerEntity
 			int newKey = this.newHotbar[i];
 			if (Entity.NO_SELECTION != newKey)
 			{
-				IMutableInventory inventoryToCheck = this.isCreativeMode
-						? new CreativeInventory()
-						: this.newInventory;
+				IMutableInventory inventoryToCheck = _isCreativeMode
+					? new CreativeInventory()
+					: this.newInventory;
 				Items stack = inventoryToCheck.getStackForKey(newKey);
 				NonStackableItem nonStack = inventoryToCheck.getNonStackableForKey(newKey);
 				Assert.assertTrue((null != stack) != (null != nonStack));
@@ -466,7 +466,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		);
 		Entity newInstance = new Entity(_original.id()
 			, _original.type()
-			, this.isCreativeMode
+			, _isCreativeMode
 			, this.newLocation
 			, this.newVelocity
 			, this.newYaw
