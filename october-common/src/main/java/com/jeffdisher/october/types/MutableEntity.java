@@ -367,6 +367,12 @@ public class MutableEntity implements IMutablePlayerEntity
 	public void setCreativeMode(boolean enableCreative)
 	{
 		_isCreativeMode = enableCreative;
+		
+		// The hotbar is coupled to the inventory, which is changed by this flag.
+		for (int i = 0; i < Entity.HOTBAR_SIZE; ++i)
+		{
+			this.newHotbar[i] = Entity.NO_SELECTION;
+		}
 	}
 
 	@Override

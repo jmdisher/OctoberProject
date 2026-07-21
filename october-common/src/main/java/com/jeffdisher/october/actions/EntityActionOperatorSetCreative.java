@@ -34,14 +34,6 @@ public class EntityActionOperatorSetCreative implements IEntityAction<IMutablePl
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		newEntity.setCreativeMode(_setCreative);
-		// We need to clear the hotbar since this is changing the interpretation of the inventory (we may want to change how we access this).
-		for (int key : newEntity.copyHotbar())
-		{
-			if (key > 0)
-			{
-				newEntity.clearHotBarWithKey(key);
-			}
-		}
 		return true;
 	}
 
