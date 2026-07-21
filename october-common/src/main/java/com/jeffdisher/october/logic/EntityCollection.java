@@ -10,7 +10,6 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
-import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.utils.Assert;
@@ -238,19 +237,18 @@ public class EntityCollection
 		EntityType creatureType = searchingCreature.getType();
 		float maxRange = creatureType.viewDistance();
 		EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(searchingCreature);
-		EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
 		
 		EntityType.TargetEntity found = null;
 		float matchDistance = Float.POSITIVE_INFINITY;
 		for (Entity player : _players.values())
 		{
-			EntityLocation playerBase = player.location();
-			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEyeLocation, playerBase, playerVolume);
+			float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, FixedRegion.fromEntity(player));
 			if ((distance <= maxRange)
 				&& (distance < matchDistance)
 				&& shouldConsider.test(player)
 			)
 			{
+				EntityLocation playerBase = player.location();
 				found = new EntityType.TargetEntity(player.id(), playerBase);
 				matchDistance = distance;
 			}

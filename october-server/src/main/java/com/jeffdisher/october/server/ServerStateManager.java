@@ -830,8 +830,7 @@ public class ServerStateManager
 		for (Entity entity : _entityIndex.added)
 		{
 			int entityId = entity.id();
-			EntityLocation entityBase = entity.location();
-			float distance = SpatialHelpers.distanceFromLocationToVolume(playerEyeLocation, entityBase, entityVolume);
+			float distance = SpatialHelpers.distanceFromLocationToRegion(playerEyeLocation, FixedRegion.fromEntity(entity));
 			
 			if (distance <= entityVisibleDistance)
 			{
@@ -840,22 +839,21 @@ public class ServerStateManager
 		}
 		for (Entity entity : _entityIndex.changed)
 		{
-			_handleExistingEntity(clientId, buffer, state, entityVisibleDistance, entityVolume, playerEyeLocation, entity);
+			_handleExistingEntity(clientId, buffer, state, entityVisibleDistance, playerEyeLocation, entity);
 		}
 		if (didMoveToNewCuboid)
 		{
 			for (Entity entity : _entityIndex.unchanged)
 			{
-				_handleExistingEntity(clientId, buffer, state, entityVisibleDistance, entityVolume, playerEyeLocation, entity);
+				_handleExistingEntity(clientId, buffer, state, entityVisibleDistance, playerEyeLocation, entity);
 			}
 		}
 	}
 
-	private void _handleExistingEntity(int clientId, OutpacketBuffer buffer, ClientState state, float entityVisibleDistance, EntityVolume entityVolume, EntityLocation playerEyeLocation, Entity entity)
+	private void _handleExistingEntity(int clientId, OutpacketBuffer buffer, ClientState state, float entityVisibleDistance, EntityLocation playerEyeLocation, Entity entity)
 	{
 		int entityId = entity.id();
-		EntityLocation entityBase = entity.location();
-		float distance = SpatialHelpers.distanceFromLocationToVolume(playerEyeLocation, entityBase, entityVolume);
+		float distance = SpatialHelpers.distanceFromLocationToRegion(playerEyeLocation, FixedRegion.fromEntity(entity));
 		
 		if (state.knownEntities.contains(entityId))
 		{

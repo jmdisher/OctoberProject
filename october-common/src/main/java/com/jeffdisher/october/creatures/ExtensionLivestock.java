@@ -2,14 +2,13 @@ package com.jeffdisher.october.creatures;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
-import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -121,9 +120,7 @@ public class ExtensionLivestock implements EntityType.IExtension
 			if (null != player)
 			{
 				EntityLocation sourceEye = SpatialHelpers.getEntityEye(creature);
-				EntityLocation playerBase = player.location();
-				EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
-				float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEye, playerBase, playerVolume);
+				float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEye, FixedRegion.fromEntity(player));
 				if (distance <= creatureType.viewDistance())
 				{
 					isValid = (_breedingItem == _itemInPlayerHand(player));

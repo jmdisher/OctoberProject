@@ -90,6 +90,26 @@ public final class FixedRegion
 	}
 
 	/**
+	 * Creates an instance to describe the region occupied by an Entity.  This considers its base location and
+	 * type-defined volume.
+	 * 
+	 * @param entity The  entity.
+	 * @return A new instance.
+	 */
+	public static FixedRegion fromEntity(Entity entity)
+	{
+		EntityLocation base = entity.location();
+		EntityVolume volume = entity.type().volume();
+		return new FixedRegion(base.x()
+			, base.y()
+			, base.z()
+			, base.x() + volume.width()
+			, base.y() + volume.width()
+			, base.z() + volume.height()
+		);
+	}
+
+	/**
 	 * Creates an instance to describe the region occupied by a CreatureEntity.  This considers its base location and
 	 * type-defined volume.
 	 * 

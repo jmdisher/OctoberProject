@@ -1,6 +1,5 @@
 package com.jeffdisher.october.creatures;
 
-import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -8,7 +7,7 @@ import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
-import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -38,9 +37,7 @@ public class CommonExtensionHelpers
 		if (null != player)
 		{
 			EntityLocation sourceEye = SpatialHelpers.getEntityEye(creature);
-			EntityLocation playerBase = player.location();
-			EntityVolume playerVolume = Environment.getShared().creatures.PLAYER.volume();
-			float distance = SpatialHelpers.distanceFromLocationToVolume(sourceEye, playerBase, playerVolume);
+			float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEye, FixedRegion.fromEntity(player));
 			isValid = (distance <= creature.getType().viewDistance());
 		}
 		return isValid;
