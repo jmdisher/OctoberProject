@@ -18,6 +18,7 @@ import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.NonStackableItem;
+import com.jeffdisher.october.types.SlotReader;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -278,7 +279,7 @@ public class CraftingBlockSupport
 				for (Craft craft : env.crafting.craftsForClassifications(Set.of(FUELLED_CLASSIFICATION)))
 				{
 					// Just take the first match (we don't currently have a priority).
-					MutableSlotManager slotManager = new MutableSlotManager(new MutableInventory(inv), new int[0], 0);
+					SlotReader slotManager = new SlotReader(inv);
 					if (CraftAspect.canApply(craft, slotManager))
 					{
 						possibleCraft = craft;
