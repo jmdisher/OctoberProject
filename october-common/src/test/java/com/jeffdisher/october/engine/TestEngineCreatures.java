@@ -945,7 +945,7 @@ public class TestEngineCreatures
 		CreatureEntity.MovementPlan movementPlan = creature.ephemeral().movementPlan();
 		Assert.assertNull(movementPlan.fullPlan());
 		Assert.assertEquals(target.id(), movementPlan.targetEntityId());
-		Assert.assertNull(movementPlan.targetPreviousLocation());
+		Assert.assertEquals(target.location(), movementPlan.targetPreviousLocation());
 		Assert.assertNull(movementPlan.directLocation());
 		
 		// We should now see us close enough to the new target.

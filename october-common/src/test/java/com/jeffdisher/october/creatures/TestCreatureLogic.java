@@ -775,7 +775,7 @@ public class TestCreatureLogic
 		);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals(player.id(), mutableCow.movementPlan.targetEntityId());
-		Assert.assertNull(mutableCow.movementPlan.targetPreviousLocation());
+		Assert.assertEquals(player.location(), mutableCow.movementPlan.targetPreviousLocation());
 		Assert.assertNull(mutableCow.movementPlan.fullPlan());
 		
 		// Move far.

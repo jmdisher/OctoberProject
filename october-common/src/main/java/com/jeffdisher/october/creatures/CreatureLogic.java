@@ -526,13 +526,16 @@ public class CreatureLogic
 		);
 	}
 
-	private static CreatureEntity.MovementPlan _planWithInRangeTarget(int targetEntityId)
+	private static CreatureEntity.MovementPlan _planWithInRangeTarget(int targetEntityId
+		, EntityLocation targetPreviousLocation
+	)
 	{
 		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId);
+		Assert.assertTrue(null != targetPreviousLocation);
 		
 		return new CreatureEntity.MovementPlan(null
 			, targetEntityId
-			, null
+			, targetPreviousLocation
 			, null
 		);
 	}
@@ -768,7 +771,7 @@ public class CreatureLogic
 				if (distance < actionDistance)
 				{
 					// We can drop the direct location and just keep them in-range.
-					mutable.movementPlan = _planWithInRangeTarget(mutable.movementPlan.targetEntityId());
+					mutable.movementPlan = _planWithInRangeTarget(mutable.movementPlan.targetEntityId(), targetEntity.location());
 				}
 				else
 				{
