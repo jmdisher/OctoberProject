@@ -85,13 +85,33 @@ public class PathFinder
 	 * @param blockKind Returns the kind of block at the given location.
 	 * @param source The starting location of the entity.
 	 * @param limitSteps The movement cost limit.
+	 * @param allowWest Whether steps to the west should be allowed.
+	 * @param allowEast Whether steps to the east should be allowed.
+	 * @param allowSouth Whether steps to the south should be allowed.
+	 * @param allowNorth Whether steps to the north should be allowed.
 	 * @return The walk-back map.
 	 */
-	public static Map<AbsoluteLocation, AbsoluteLocation> findPlacesWithinLimit(Function<AbsoluteLocation, BlockKind> blockKind, EntityLocation source, float limitSteps)
+	public static Map<AbsoluteLocation, AbsoluteLocation> findPlacesWithinLimit(Function<AbsoluteLocation, BlockKind> blockKind
+		, EntityLocation source
+		, float limitSteps
+		, boolean allowWest
+		, boolean allowEast
+		, boolean allowSouth
+		, boolean allowNorth
+	)
 	{
 		Map<AbsoluteLocation, AbsoluteLocation> walkBackward = new HashMap<>();
 		// This will populate the walkBackward map
-		_populateWalkbackMap(walkBackward, blockKind, source, null, limitSteps);
+		_populateWalkbackMap(walkBackward
+			, blockKind
+			, source
+			, null
+			, limitSteps
+			, allowWest
+			, allowEast
+			, allowSouth
+			, allowNorth
+		);
 		return walkBackward;
 	}
 
@@ -112,7 +132,16 @@ public class PathFinder
 		// Key is destination.
 		Map<AbsoluteLocation, AbsoluteLocation> walkBackward = new HashMap<>();
 		// This will populate the walkBackward map and return the final spot for entityTarget, assuming it could be reached.
-		Spot targetSpot = _populateWalkbackMap(walkBackward, blockKind, entitySource, entityTarget, limit);
+		Spot targetSpot = _populateWalkbackMap(walkBackward
+			, blockKind
+			, entitySource
+			, entityTarget
+			, limit
+			, true
+			, true
+			, true
+			, true
+		);
 		List<AbsoluteLocation> path = null;
 		if (null != targetSpot)
 		{
@@ -128,7 +157,16 @@ public class PathFinder
 		return path;
 	}
 
-	private static Spot _populateWalkbackMap(Map<AbsoluteLocation, AbsoluteLocation> walkBackward, Function<AbsoluteLocation, BlockKind> blockKind, EntityLocation entitySource, EntityLocation entityTarget, float limit)
+	private static Spot _populateWalkbackMap(Map<AbsoluteLocation, AbsoluteLocation> walkBackward
+		, Function<AbsoluteLocation, BlockKind> blockKind
+		, EntityLocation entitySource
+		, EntityLocation entityTarget
+		, float limit
+		, boolean allowWest
+		, boolean allowEast
+		, boolean allowSouth
+		, boolean allowNorth
+	)
 	{
 		AbsoluteLocation start = entitySource.getBlockLocation();
 		AbsoluteLocation target = (null != entityTarget) ? entityTarget.getBlockLocation() : null;
@@ -188,15 +226,26 @@ public class PathFinder
 				// If we are currently in swimmable block, that means we don't need to fall into a hole.
 				if (!didStepIntoHole || isSwimmable)
 				{
-					AbsoluteLocation east = spotLocation.getRelative(1, 0, 0);
-					AbsoluteLocation west = spotLocation.getRelative(-1, 0, 0);
-					AbsoluteLocation north = spotLocation.getRelative(0, 1, 0);
-					AbsoluteLocation south = spotLocation.getRelative(0, -1, 0);
-					
-					_tryAddSpot(walkBackward, workQueue, blockKind, limit, spot, east, COST_STEP_FLAT);
-					_tryAddSpot(walkBackward, workQueue, blockKind, limit, spot, west, COST_STEP_FLAT);
-					_tryAddSpot(walkBackward, workQueue, blockKind, limit, spot, north, COST_STEP_FLAT);
-					_tryAddSpot(walkBackward, workQueue, blockKind, limit, spot, south, COST_STEP_FLAT);
+					if (allowWest)
+					{
+						AbsoluteLocation west = spotLocation.getRelative(-1, 0, 0);
+						_tryAddSpot(walkBackward, workQueue, blockKind, limit, spot, west, COST_STEP_FLAT);
+					}
+					if (allowEast)
+					{
+						AbsoluteLocation east = spotLocation.getRelative(1, 0, 0);
+						_tryAddSpot(walkBackward, workQueue, blockKind, limit, spot, east, COST_STEP_FLAT);
+					}
+					if (allowSouth)
+					{
+						AbsoluteLocation south = spotLocation.getRelative(0, -1, 0);
+						_tryAddSpot(walkBackward, workQueue, blockKind, limit, spot, south, COST_STEP_FLAT);
+					}
+					if (allowNorth)
+					{
+						AbsoluteLocation north = spotLocation.getRelative(0, 1, 0);
+						_tryAddSpot(walkBackward, workQueue, blockKind, limit, spot, north, COST_STEP_FLAT);
+					}
 				}
 				// If we are currently in swimmable block, that means we can still "jump" (swim) up.
 				if (!isStandingOnAir || isSwimmable)

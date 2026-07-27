@@ -209,8 +209,12 @@ public class CreatureLogic
 	{
 		Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, location.getOffsetIntoBlock(), type.volume());
 		return _findPathToRandomSpot(context
-				, blockKindLookup
-				, location
+			, blockKindLookup
+			, location
+			, true
+			, true
+			, true
+			, true
 		);
 	}
 
@@ -257,8 +261,12 @@ public class CreatureLogic
 				if (isInDanger || canMakeIdleAction)
 				{
 					List<AbsoluteLocation> steps = _findPathToRandomSpot(context
-							, blockKindLookup
-							, mutable.getLocation()
+						, blockKindLookup
+						, mutable.getLocation()
+						, true
+						, true
+						, true
+						, true
 					);
 					// We can't plan an empty path.
 					Assert.assertTrue((null == steps) || !steps.isEmpty());
@@ -348,12 +356,23 @@ public class CreatureLogic
 	}
 
 	private static List<AbsoluteLocation> _findPathToRandomSpot(TickProcessingContext context
-			, Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsUser
-			, EntityLocation creatureLocation
+		, Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsUser
+		, EntityLocation creatureLocation
+		, boolean allowWest
+		, boolean allowEast
+		, boolean allowSouth
+		, boolean allowNorth
 	)
 	{
 		float limitSteps = RANDOM_MOVEMENT_DISTANCE;
-		Map<AbsoluteLocation, AbsoluteLocation> possiblePaths = PathFinder.findPlacesWithinLimit(blockPermitsUser, creatureLocation, limitSteps);
+		Map<AbsoluteLocation, AbsoluteLocation> possiblePaths = PathFinder.findPlacesWithinLimit(blockPermitsUser
+			, creatureLocation
+			, limitSteps
+			, allowWest
+			, allowEast
+			, allowSouth
+			, allowNorth
+		);
 		
 		// Strip out any of the ending positions which we don't want.
 		List<AbsoluteLocation> goodTargets = _extractAcceptablePathTargets(blockPermitsUser, possiblePaths, creatureLocation.getBlockLocation());

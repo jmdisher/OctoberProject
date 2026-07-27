@@ -194,9 +194,23 @@ public class TestPathFinder
 				"AAAAAAAAAA",
 		});
 		// We want to show what is reachable in the maze for different distances.
-		Map<AbsoluteLocation, AbsoluteLocation> places = PathFinder.findPlacesWithinLimit(blockPermitsUser, source, 2.0f);
+		Map<AbsoluteLocation, AbsoluteLocation> places = PathFinder.findPlacesWithinLimit(blockPermitsUser
+			, source
+			, 2.0f
+			, true
+			, true
+			, true
+			, true
+		);
 		_printStepMap2D(10, 9, 5, places);
-		places = PathFinder.findPlacesWithinLimit(blockPermitsUser, source, 4.0f);
+		places = PathFinder.findPlacesWithinLimit(blockPermitsUser
+			, source
+			, 4.0f
+			, true
+			, true
+			, true
+			, true
+		);
 		_printStepMap2D(10, 9, 5, places);
 	}
 
@@ -320,10 +334,59 @@ public class TestPathFinder
 		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, source, target);
 		Assert.assertNull(path);
 		
-		Map<AbsoluteLocation, AbsoluteLocation> possiblePaths = PathFinder.findPlacesWithinLimit(blockPermitsUser, source, 50);
+		Map<AbsoluteLocation, AbsoluteLocation> possiblePaths = PathFinder.findPlacesWithinLimit(blockPermitsUser
+			, source
+			, 50
+			, true
+			, true
+			, true
+			, true
+		);
 		Assert.assertEquals(1, possiblePaths.size());
 		Assert.assertTrue(possiblePaths.containsKey(startLocation));
 		Assert.assertNull(possiblePaths.get(startLocation));
+	}
+
+	@Test
+	public void findPossibleWithRestrictions()
+	{
+		// Show that we can constrain possible places with control flags.
+		EntityLocation source = new EntityLocation(-10.5f, -6.5f, 5.0f);
+		int floor = 4;
+		Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsUser = (AbsoluteLocation location) -> (floor == location.z())
+			? PathFinder.BlockKind.SOLID
+			: PathFinder.BlockKind.WALKABLE
+		;
+		
+		// Get normal count, unrestricted.
+		float limitSteps = 4.0f;
+		Map<AbsoluteLocation, AbsoluteLocation> allPaths = PathFinder.findPlacesWithinLimit(blockPermitsUser
+			, source
+			, limitSteps
+			, true
+			, true
+			, true
+			, true
+		);
+		Assert.assertEquals(54, allPaths.size());
+		
+		// Only allow north-west.
+		Map<AbsoluteLocation, AbsoluteLocation> restrictedPaths = PathFinder.findPlacesWithinLimit(blockPermitsUser
+			, source
+			, limitSteps
+			, true
+			, false
+			, false
+			, true
+		);
+		Assert.assertEquals(21, restrictedPaths.size());
+		
+		AbsoluteLocation start = source.getBlockLocation();
+		for (AbsoluteLocation key : restrictedPaths.keySet())
+		{
+			Assert.assertTrue(key.x() <= start.x());
+			Assert.assertTrue(key.y() >= start.y());
+		}
 	}
 
 
