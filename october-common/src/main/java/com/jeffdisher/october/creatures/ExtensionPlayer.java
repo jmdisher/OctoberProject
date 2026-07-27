@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
@@ -80,5 +81,11 @@ public class ExtensionPlayer implements EntityType.IExtension
 	public boolean applyItemToCreature(MutableCreature creature, Item itemType, long gameTimeMillis)
 	{
 		throw Assert.unreachable();
+	}
+
+	@Override
+	public void applyInjuryVector(IMutableMinimalEntity instance, EntityLocation vector)
+	{
+		// This only matters for certain types of creatures so players do nothing.
 	}
 }

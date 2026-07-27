@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
@@ -111,6 +112,13 @@ public class ExtensionLivestockBaby implements EntityType.IExtension
 	{
 		// We don't do direct item application to babies.
 		return false;
+	}
+
+	@Override
+	public void applyInjuryVector(IMutableMinimalEntity instance, EntityLocation vector)
+	{
+		// We know that this is a creature.
+		((MutableCreature)instance).storeInjuryVector(vector);
 	}
 
 

@@ -204,7 +204,12 @@ public class MutableCreature implements IMutableMinimalEntity
 		return canUpdate;
 	}
 
-	@Override
+	/**
+	 * Used when something pushes the receiver, typically some kind of attack.  The purpose is to store the angle of
+	 * attack in case this is a creature with and AI which wants to run from danger.
+	 * 
+	 * @param vector The vector the receive was pushed by an injury.
+	 */
 	public void storeInjuryVector(EntityLocation vector)
 	{
 		// Note that we only set the injury vector and clear the plan if we took damage in this tick.

@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -43,7 +44,10 @@ public class EntityActionNudge<T extends IMutableMinimalEntity> implements IEnti
 		EntityLocation originalVelocity = newEntity.getVelocityVector();
 		EntityLocation combinedVelocity = originalVelocity.getRelativeForLocation(_force);
 		newEntity.setVelocityVector(combinedVelocity);
-		newEntity.storeInjuryVector(_force);
+		
+		EntityType creatureType = newEntity.getType();
+		creatureType.extension().applyInjuryVector(newEntity, combinedVelocity);
+		
 		return true;
 	}
 

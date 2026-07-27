@@ -14,6 +14,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.FixedRegion;
+import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
@@ -157,5 +158,11 @@ public class ExtensionHostileRanged implements EntityType.IExtension
 	{
 		// We don't do direct item application to hostiles.
 		return false;
+	}
+
+	@Override
+	public void applyInjuryVector(IMutableMinimalEntity instance, EntityLocation vector)
+	{
+		// Hostiles don't run from danger.
 	}
 }

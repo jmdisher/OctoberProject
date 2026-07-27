@@ -9,6 +9,7 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.FixedRegion;
+import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -199,6 +200,13 @@ public class ExtensionLivestock implements EntityType.IExtension
 			}
 		}
 		return didApply;
+	}
+
+	@Override
+	public void applyInjuryVector(IMutableMinimalEntity instance, EntityLocation vector)
+	{
+		// We know that this is a creature.
+		((MutableCreature)instance).storeInjuryVector(vector);
 	}
 
 

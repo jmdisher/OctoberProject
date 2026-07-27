@@ -123,6 +123,14 @@ public record EntityType(byte number
 		 * @return True if this item was applied successfully.
 		 */
 		public boolean applyItemToCreature(MutableCreature creature, Item itemType, long gameTimeMillis);
+		/**
+		 * Used when something pushes the instance, typically some kind of attack.  The purpose is to store the angle of
+		 * attack in case this kind of entity should path away from danger.
+		 * 
+		 * @param instance The instance.
+		 * @param vector The vector the receive was pushed by an injury.
+		 */
+		public void applyInjuryVector(IMutableMinimalEntity instance, EntityLocation vector);
 	}
 
 	/**

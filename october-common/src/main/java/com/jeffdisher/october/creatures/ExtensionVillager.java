@@ -21,6 +21,7 @@ import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.FixedRegion;
+import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
@@ -258,6 +259,13 @@ public class ExtensionVillager implements EntityType.IExtension
 	{
 		// We don't do direct item application to villagers.
 		return false;
+	}
+
+	@Override
+	public void applyInjuryVector(IMutableMinimalEntity instance, EntityLocation vector)
+	{
+		// We know that this is a creature.
+		((MutableCreature)instance).storeInjuryVector(vector);
 	}
 
 	/**

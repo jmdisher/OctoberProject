@@ -70,12 +70,4 @@ public interface IMutableMinimalEntity
 	 * @return True if the timeout was updated.
 	 */
 	boolean updateDamageTimeoutIfValid(long currentTickMillis);
-
-	/**
-	 * Used when something pushes the receiver, typically some kind of attack.  The purpose is to store the angle of
-	 * attack in case this is a creature with and AI which wants to run from danger.
-	 * 
-	 * @param vector The vector the receive was pushed by an injury.
-	 */
-	void storeInjuryVector(EntityLocation vector);
 }
