@@ -395,8 +395,9 @@ public class TestCreatureMovementHelpers
 	}
 
 	@Test
-	public void directWalkNoMove()
+	public void directWalkSmallDistance()
 	{
+		// Show that diagonal walk doesn't stop just because we enter the same block.
 		EntityLocation location = new EntityLocation(1.02f, 1.2f, 1.0f);
 		EntityLocation end = new EntityLocation(1.0f, 1.21f, 1.0f);
 		long millisPerTick = 50L;
@@ -407,7 +408,7 @@ public class TestCreatureMovementHelpers
 		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
 			return BlockProxy.load(l.getBlockAddress(), cuboid);
 		}));
-		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(reader
+		EntityActionSimpleMove<MutableCreature> shortMove = CreatureMovementHelpers.moveAlongDiagonalPath(reader
 			, location
 			, (byte)5
 			, (byte)6
@@ -417,7 +418,33 @@ public class TestCreatureMovementHelpers
 			, 0.0f
 			, false
 		);
-		Assert.assertNull(change);
+		Assert.assertEquals("SimpleMove(WALKING), by -0.02, 0.01, Sub: null", shortMove.toString());
+	}
+
+	@Test
+	public void directWalkNoDistance()
+	{
+		// The diagonal walk will return null if the start and end of the walk equal.
+		EntityLocation location = new EntityLocation(1.02f, 1.2f, 1.0f);
+		long millisPerTick = 50L;
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		
+		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
+			return BlockProxy.load(l.getBlockAddress(), cuboid);
+		}));
+		EntityActionSimpleMove<MutableCreature> noMove = CreatureMovementHelpers.moveAlongDiagonalPath(reader
+			, location
+			, (byte)5
+			, (byte)6
+			, COW
+			, location
+			, millisPerTick
+			, 0.0f
+			, false
+		);
+		Assert.assertNull(noMove);
 	}
 
 	@Test

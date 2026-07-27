@@ -100,6 +100,13 @@ public class CreatureLogic
 				, viscosity
 				, isIdleMovement
 			);
+			
+			if (null == action)
+			{
+				// This only returns null if we are stuck so clear the plan.
+				// Ideally, we would clear this in the "special action" phase but this is only detected here.
+				mutable.movementPlan = null;
+			}
 		}
 		else if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
 		{

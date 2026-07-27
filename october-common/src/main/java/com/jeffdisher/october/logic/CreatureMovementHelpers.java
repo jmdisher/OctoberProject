@@ -341,7 +341,7 @@ public class CreatureMovementHelpers
 
 	/**
 	 * Creates the changes required for the given creature to move to targetBase.  This will move in a straight line,
-	 * returning null only if there is nothing left to do (it already there) or the path isn't valid (would hit
+	 * returning null only if there is nothing left to do (is already there) or the path isn't valid (would hit
 	 * something or fall).
 	 * 
 	 * @param supplier Looks up the viscosity of various blocks.
@@ -366,11 +366,8 @@ public class CreatureMovementHelpers
 		, boolean isIdleMovement
 	)
 	{
-		AbsoluteLocation creatureBlock = creatureBaseLocation.getBlockLocation();
-		AbsoluteLocation targetBlock = targetBase.getBlockLocation();
-		
 		EntityActionSimpleMove<MutableCreature> change;
-		if (creatureBlock.equals(targetBlock))
+		if (creatureBaseLocation.equals(targetBase))
 		{
 			// If we already reached the destination, just return null.
 			change = null;
@@ -378,7 +375,7 @@ public class CreatureMovementHelpers
 		else
 		{
 			// We assume that our current location and target location are on the same Z-level so verify that.
-			Assert.assertTrue(creatureBlock.z() == targetBlock.z());
+			Assert.assertTrue(creatureBaseLocation.getBlockLocation().z() == targetBase.getBlockLocation().z());
 			
 			// Since viscosity will directly impede our motion, we use it to determine our adjusted remaining distance.
 			float viscosityScaling = (viscosityFraction > 0.0f)
