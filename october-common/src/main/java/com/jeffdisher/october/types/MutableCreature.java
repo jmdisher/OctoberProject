@@ -207,12 +207,13 @@ public class MutableCreature implements IMutableMinimalEntity
 	@Override
 	public void storeInjuryVector(EntityLocation vector)
 	{
-		// Note that we don't bother checking "this.shouldTakeActionInTick" here, which would mean we only run if we
-		// take damage, because it would be preferable if a non-hostile "nudge" still made them move.
-		// We need to clear the movement plan, as well, since we want to force a new one to be created.
-		this.lastInjuryVector = vector;
-		this.movementPlan = null;
-		this.shouldTakeActionInTick = true;
+		// Note that we only set the injury vector and clear the plan if we took damage in this tick.
+		if (this.shouldTakeActionInTick)
+		{
+			// We need to clear the movement plan, as well, since we want to force a new one to be created.
+			this.lastInjuryVector = vector;
+			this.movementPlan = null;
+		}
 	}
 
 	/**

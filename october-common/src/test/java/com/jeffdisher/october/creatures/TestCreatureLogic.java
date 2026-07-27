@@ -1832,6 +1832,8 @@ public class TestCreatureLogic
 		;
 		
 		mutable = MutableCreature.existing(cow0);
+		// We need to set the health before the vector so that it actually does make them move.
+		mutable.setHealth(mutable.newHealth);
 		mutable.storeInjuryVector(new EntityLocation(-0.3f, -0.2f, 1.0f));
 		Assert.assertFalse(CreatureLogic.didTakeSpecialActions(context
 			, EntityCollection.fromMaps(Map.of(), Map.of(cow0.id(), cow0))
@@ -1840,6 +1842,7 @@ public class TestCreatureLogic
 		Assert.assertEquals(new EntityLocation(3.0f, 2.0f, 0.0f), mutable.movementPlan.directLocation());
 		
 		mutable = MutableCreature.existing(cow0);
+		mutable.setHealth(mutable.newHealth);
 		mutable.storeInjuryVector(new EntityLocation(0.3f, -0.2f, 1.0f));
 		Assert.assertFalse(CreatureLogic.didTakeSpecialActions(context
 			, EntityCollection.fromMaps(Map.of(), Map.of(cow0.id(), cow0))
