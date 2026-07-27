@@ -180,7 +180,7 @@ public class CreatureLogic
 		// worth doing if we didn't take an action since we skip movement actions if we return true from here).
 		if (!isDone)
 		{
-			// We want to update the state of the general movement plan before taking any other special action (which may update it again).
+			// If we have a plan, we want to update it whenever we didn't take any special action.
 			if (null != mutable.movementPlan)
 			{
 				_updateExistingMovementPlanState(context, entityCollection, mutable);
@@ -455,61 +455,6 @@ public class CreatureLogic
 		return goodTargets;
 	}
 
-	private static CreatureEntity.MovementPlan _updateValidPathIfTargetMoved(TickProcessingContext context
-		, EntityType creatureType
-		, EntityLocation location
-		, CreatureEntity.MovementPlan original
-	)
-	{
-		// We know that the target is valid and in range when we get here so the exist and are in range.
-		int targetId = original.targetEntityId();
-		MinimalEntity targetEntity = context.previousEntityLookUp.getById(targetId);
-		EntityVolume creatureVolume = creatureType.volume();
-		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(location, creatureVolume);
-		FixedRegion region = FixedRegion.fromMinimal(targetEntity);
-		float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
-		float pathDistance = creatureType.getPathDistance();
-		Assert.assertTrue(distance <= pathDistance);
-		
-		// We default to just using the original but we can override this.
-		CreatureEntity.MovementPlan newPlan = original;
-		if (distance < creatureType.actionDistance())
-		{
-			// They are close enough that we don't need to bother with the movement plan but still keep the target ID.
-			newPlan = _planWithInRangeTarget(targetId);
-		}
-		else
-		{
-			// We can keep this but see if we need to update their location - we compare on the precision of the block.
-			EntityLocation originalLocation = original.targetPreviousLocation();
-			AbsoluteLocation previousBlockLocation = (null != originalLocation)
-				? originalLocation.getBlockLocation()
-				: null
-			;
-			EntityLocation targetLocation = targetEntity.location();
-			AbsoluteLocation currentBlockLocation = targetLocation.getBlockLocation();
-			boolean didTargetMove = !currentBlockLocation.equals(previousBlockLocation);
-			if (didTargetMove)
-			{
-				// They moved by at least a block so update their location and build a new path.
-				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, location.getOffsetIntoBlock(), creatureVolume);
-				List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockKindLookup, location, targetLocation, pathDistance);
-				
-				// It is possible that we dropped the path if they become unreachable so forget about them.
-				if (null != path)
-				{
-					newPlan = _pruneAndStoreFreshTargetPlan(context, location, creatureType, path, targetId, targetLocation);
-				}
-				else
-				{
-					// We just to drop the plan.
-					newPlan = null;
-				}
-			}
-		}
-		return newPlan;
-	}
-
 	private static CreatureEntity.MovementPlan _pruneAndStoreFreshTargetPlan(TickProcessingContext context
 		, EntityLocation location
 		, EntityType type
@@ -627,14 +572,114 @@ public class CreatureLogic
 		// This can only be called if there IS a movement plan.
 		Assert.assertTrue(null != mutable.movementPlan);
 		
-		// Handle the uncommon case where we are in direct mode but are no longer on the same z-level.
-		if ((null != mutable.movementPlan.directLocation()) && (mutable.newLocation.getBlockLocation().z() != mutable.movementPlan.directLocation().getBlockLocation().z()))
+		// First, handle the invalidate cases.
+		
+		// Invalidate:  Verify that the target is valid.
+		if ((null != mutable.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId()))
 		{
-			// To avoid over-complicating this, we will reset the movement plan to only have the target or delete it, entirely.
+			boolean isTargetValid = mutable.getType().extension().isTargetValid(mutable, entityCollection);
+			if (!isTargetValid)
+			{
+				// The target is invalid so clear our state.
+				mutable.movementPlan = null;
+			}
+		}
+		
+		// Invalidate:  Verify that we aren't stuck in a block.
+		if ((null != mutable.movementPlan)
+			&& ((null != mutable.movementPlan.directLocation()) || (null != mutable.movementPlan.fullPlan()))
+		)
+		{
+			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), mutable.getType().volume());
+			AbsoluteLocation currentLocation = mutable.newLocation.getBlockLocation();
+			PathFinder.BlockKind currentKind = blockKindLookup.apply(currentLocation);
+			
+			if (PathFinder.BlockKind.SOLID == currentKind)
+			{
+				// This typically happens if a block drops on us or if a block was placed on us due to a race condition.
+				// Clear the plan since we can't move.
+				mutable.movementPlan = null;
+			}
+		}
+		
+		// Invalidate:  Verify that we are in range of the next step and it isn't solid.
+		if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
+		{
+			EntityLocation entityLocation = mutable.newLocation;
+			
+			List<AbsoluteLocation> existingPlan = mutable.movementPlan.fullPlan();
+			AbsoluteLocation thisStep = existingPlan.get(0);
+			AbsoluteLocation currentLocation = entityLocation.getBlockLocation();
+			
+			// We might not yet have noticed that we have moved into the next step so skip this check in that case.
+			if (!currentLocation.equals(thisStep))
+			{
+				int distanceToNext = Math.abs(currentLocation.x() - thisStep.x())
+					+ Math.abs(currentLocation.y() - thisStep.y())
+					+ Math.abs(currentLocation.z() - thisStep.z())
+				;
+				boolean isAdjacent = (1 == distanceToNext);
+				if (isAdjacent)
+				{
+					// Just make sure we can move into this next step.
+					Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), mutable.getType().volume());
+					PathFinder.BlockKind nextKind = blockKindLookup.apply(thisStep);
+					if (PathFinder.BlockKind.SOLID == nextKind)
+					{
+						// Something is blocked so clear the plan.
+						mutable.movementPlan = null;
+					}
+					else
+					{
+						// Common case:  The path is still valid so just fall through and continue.
+					}
+				}
+				else
+				{
+					// We must have fallen or been pushed so clear the plan.
+					mutable.movementPlan = null;
+				}
+			}
+		}
+		
+		// --- The path is either clear and valid so check if it should be advanced ---
+		
+		// Check if the plan should be update in response to a target having moved.
+		if ((null != mutable.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId()))
+		{
+			MinimalEntity targetEntity = context.previousEntityLookUp.getById(mutable.movementPlan.targetEntityId());
+			
+			// The target validity was checked in the invalidate path so this is valid.
+			Assert.assertTrue(null != targetEntity);
+			
+			if (!targetEntity.location().equals(mutable.movementPlan.targetPreviousLocation()))
+			{
+				// This has moved so update the plan in response.
+				mutable.movementPlan = _makeNewPlanToTarget(context
+					, mutable.getLocation()
+					, mutable.getType()
+					, mutable.movementPlan.targetEntityId()
+					, targetEntity.location()
+				);
+			}
+		}
+		
+		// Handle the uncommon case where we are in direct mode but are no longer on the same z-level.
+		if ((null != mutable.movementPlan)
+			&& (null != mutable.movementPlan.directLocation())
+			&& (mutable.newLocation.getBlockLocation().z() != mutable.movementPlan.directLocation().getBlockLocation().z())
+		)
+		{
 			if (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId())
 			{
-				// This is not technically "in range" but it will allow us to fall into the common target update case, below.
-				mutable.movementPlan = _planWithInRangeTarget(mutable.movementPlan.targetEntityId());
+				// We will rebuild the plan from our new location.
+				MinimalEntity targetEntity = context.previousEntityLookUp.getById(mutable.movementPlan.targetEntityId());
+				mutable.movementPlan = _makeNewPlanToTarget(context
+					, mutable.getLocation()
+					, mutable.getType()
+					, mutable.movementPlan.targetEntityId()
+					, targetEntity.location()
+				);
 			}
 			else
 			{
@@ -643,71 +688,14 @@ public class CreatureLogic
 			}
 		}
 		
-		// First, we will handle the target moving or becoming invalid (if we have a target).
-		CreatureEntity.MovementPlan planToAdvance = null;
-		if ((null != mutable.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId()))
+		// Check if the plan should be updated due to us stepping into the next block.
+		if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
 		{
-			// We have some target so see if they are still valid and update our path to them.
-			boolean isTargetValid = mutable.getType().extension().isTargetValid(mutable, entityCollection);
-			
-			if (isTargetValid)
-			{
-				// The target is still valid for our current state so see if the plan should be updated, cleared, or left unchanged.
-				CreatureEntity.MovementPlan updatedPlan = _updateValidPathIfTargetMoved(context, mutable.newType, mutable.newLocation, mutable.movementPlan);
-				
-				if (mutable.movementPlan != updatedPlan)
-				{
-					// In this case, we can set it directly since the updated plan comes pre-advanced (or null).
-					mutable.movementPlan = updatedPlan;
-				}
-				else
-				{
-					// This is the original plan so use the advancing logic so long as it still has a full plan.
-					if (null != updatedPlan.fullPlan())
-					{
-						planToAdvance = updatedPlan;
-					}
-					else
-					{
-						// This is probably a "too close" plan so just leave it unchanged.
-						mutable.movementPlan = updatedPlan;
-					}
-				}
-			}
-			else
-			{
-				// The target is invalid so clear our state.
-				mutable.movementPlan = null;
-				mutable.shouldTakeActionInTick = true;
-			}
-		}
-		else if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
-		{
-			// In this default case, we just want to advance the plan.
-			planToAdvance = mutable.movementPlan;
-		}
-		
-		if (null != planToAdvance)
-		{
-			// Our plan needs to be checked for validity and advancing.
-			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), mutable.getType().volume());
-			EntityLocation entityLocation = mutable.newLocation;
-			
-			int targetId = planToAdvance.targetEntityId();
-			EntityLocation targetLocation = planToAdvance.targetPreviousLocation();
-			List<AbsoluteLocation> existingPlan = planToAdvance.fullPlan();
+			List<AbsoluteLocation> existingPlan = mutable.movementPlan.fullPlan();
 			AbsoluteLocation thisStep = existingPlan.get(0);
-			AbsoluteLocation currentLocation = entityLocation.getBlockLocation();
-			PathFinder.BlockKind currentKind = blockKindLookup.apply(currentLocation);
+			AbsoluteLocation currentLocation = mutable.getLocation().getBlockLocation();
 			
-			CreatureEntity.MovementPlan planToReturn;
-			if (PathFinder.BlockKind.SOLID == currentKind)
-			{
-				// This typically happens if a block drops on us or if a block was placed on us due to a race condition.
-				// Clear the plan since we can't move.
-				planToReturn = null;
-			}
-			else if (currentLocation.equals(thisStep))
+			if (currentLocation.equals(thisStep))
 			{
 				// We are in the next part of the plan so remove this step.
 				if (existingPlan.size() > 1)
@@ -716,64 +704,102 @@ public class CreatureLogic
 					List<AbsoluteLocation> updatedPlan = new ArrayList<>(existingPlan);
 					updatedPlan.remove(0);
 					
-					if (CreatureEntity.NO_TARGET_ENTITY_ID == targetId)
+					if (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.movementPlan.targetEntityId())
 					{
-						Assert.assertTrue(null == targetLocation);
-						planToReturn = _decidePlanWithoutTarget(context, mutable, Collections.unmodifiableList(updatedPlan));
+						mutable.movementPlan = _decidePlanWithoutTarget(context, mutable, Collections.unmodifiableList(updatedPlan));
 					}
 					else
 					{
-						planToReturn = _decidePlanWithDistantTarget(context, mutable.newLocation, mutable.newType, targetId, targetLocation, updatedPlan);
+						mutable.movementPlan = _decidePlanWithDistantTarget(context
+							, mutable.newLocation
+							, mutable.newType
+							, mutable.movementPlan.targetEntityId()
+							, mutable.movementPlan.targetPreviousLocation()
+							, Collections.unmodifiableList(updatedPlan)
+						);
 					}
 				}
 				else
 				{
 					// The movement plan is complete so determine if we enter a near target state or no plan.
-					if (CreatureEntity.NO_TARGET_ENTITY_ID == targetId)
+					if (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.movementPlan.targetEntityId())
 					{
 						// This means clear the plan since we must have been idling.
-						Assert.assertTrue(null == targetLocation);
-						planToReturn = null;
+						mutable.movementPlan = null;
 					}
 					else
 					{
 						// We assume that they are in range as a near target.
-						planToReturn = _planWithNearTarget(targetId, targetLocation);
+						mutable.movementPlan = _planWithNearTarget(mutable.movementPlan.targetEntityId(), mutable.movementPlan.targetPreviousLocation());
 					}
+				}
+			}
+		}
+		
+		// Check if the plan should be updated due to proximity to the target.
+		if ((null != mutable.movementPlan) && (null != mutable.movementPlan.directLocation()))
+		{
+			// If we are targeting an entity, then we clear this once within action range, otherwise we clear when we match it.
+			if (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.movementPlan.targetEntityId())
+			{
+				if (mutable.getLocation().equals(mutable.movementPlan.directLocation()))
+				{
+					// We are at our destination, so clear.
+					mutable.movementPlan = null;
+				}
+				else
+				{
+					// We are still walking there, so leave this unchanged.
 				}
 			}
 			else
 			{
-				// We just need to see if the plan is still valid.  This means that the next step must be adjacent and both our current and next locations can be entered.
-				int distanceToNext = Math.abs(currentLocation.x() - thisStep.x())
-						+ Math.abs(currentLocation.y() - thisStep.y())
-						+ Math.abs(currentLocation.z() - thisStep.z())
-				;
-				boolean isAdjacent = (1 == distanceToNext);
-				if (isAdjacent)
+				// We have a target so see if they are within action range.
+				MinimalEntity targetEntity = context.previousEntityLookUp.getById(mutable.movementPlan.targetEntityId());
+				
+				// Note that we already checked that this target is valid in an earlier check.
+				Assert.assertTrue(null != targetEntity);
+				
+				EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(mutable.getLocation(), mutable.getType().volume());
+				FixedRegion region = FixedRegion.fromMinimal(targetEntity);
+				float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
+				float actionDistance = mutable.getType().actionDistance();
+				
+				if (distance < actionDistance)
 				{
-					// Just make sure we can move in both of these.
-					PathFinder.BlockKind nextKind = blockKindLookup.apply(thisStep);
-					if (PathFinder.BlockKind.SOLID == nextKind)
-					{
-						// Something is blocked so clear the plan.
-						planToReturn = null;
-					}
-					else
-					{
-						// Common case:  The path is still valid so just continue.
-						planToReturn = planToAdvance;
-					}
+					// We can drop the direct location and just keep them in-range.
+					mutable.movementPlan = _planWithInRangeTarget(mutable.movementPlan.targetEntityId());
 				}
 				else
 				{
-					// We must have fallen or been pushed so clear the plan.
-					planToReturn = null;
+					// We are still approaching them so change nothing.
 				}
 			}
-			
-			mutable.movementPlan = planToReturn;
 		}
+	}
+
+	private static CreatureEntity.MovementPlan _makeNewPlanToTarget(TickProcessingContext context
+		, EntityLocation currentLocation
+		, EntityType creatureType
+		, int targetId
+		, EntityLocation targetLocation
+	)
+	{
+		// This has moved so update the plan in response.
+		Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, currentLocation.getOffsetIntoBlock(), creatureType.volume());
+		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockKindLookup, currentLocation, targetLocation, creatureType.getPathDistance());
+		
+		// The path will come back null if they are unreachable.
+		return (null != path)
+			? _pruneAndStoreFreshTargetPlan(context
+				, currentLocation
+				, creatureType
+				, path
+				, targetId
+				, targetLocation
+			)
+			: null
+		;
 	}
 
 	private static CreatureEntity.MovementPlan _decidePlanWithoutTarget(TickProcessingContext context, MutableCreature mutable, List<AbsoluteLocation> steps)
