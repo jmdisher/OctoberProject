@@ -1808,6 +1808,46 @@ public class TestCreatureLogic
 		Assert.assertEquals(cow1.id(), mutable.movementPlan.targetEntityId());
 	}
 
+	@Test
+	public void showFleePathing()
+	{
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, COW, new EntityLocation(4.0f, 4.0f, 0.0f), 0L));
+		mutable.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(false, null, 0L));
+		CreatureEntity cow0 = mutable.freeze();
+		
+		// Create a context at the next time where we can take an action and see that they pick no target if they can't see the other cow..
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
+			return blockLocation.getCuboidAddress().equals(cuboidAddress)
+				? BlockProxy.load(blockLocation.getBlockAddress(), input)
+				: null
+			;
+		});
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(10L)
+			.lookups(previousBlockLookUp, null, null)
+			.fixedRandom(2)
+			.finish()
+		;
+		
+		mutable = MutableCreature.existing(cow0);
+		mutable.storeInjuryVector(new EntityLocation(-0.3f, -0.2f, 1.0f));
+		Assert.assertFalse(CreatureLogic.didTakeSpecialActions(context
+			, EntityCollection.fromMaps(Map.of(), Map.of(cow0.id(), cow0))
+			, mutable
+		));
+		Assert.assertEquals(new EntityLocation(3.0f, 2.0f, 0.0f), mutable.movementPlan.directLocation());
+		
+		mutable = MutableCreature.existing(cow0);
+		mutable.storeInjuryVector(new EntityLocation(0.3f, -0.2f, 1.0f));
+		Assert.assertFalse(CreatureLogic.didTakeSpecialActions(context
+			, EntityCollection.fromMaps(Map.of(), Map.of(cow0.id(), cow0))
+			, mutable
+		));
+		Assert.assertEquals(new EntityLocation(6.0f, 4.0f, 0.0f), mutable.movementPlan.directLocation());
+	}
+
 
 	private static TickProcessingContext _createContext(Function<AbsoluteLocation, BlockProxy> function, int random)
 	{

@@ -43,6 +43,7 @@ public class MutableCreature implements IMutableMinimalEntity
 	public long despawnMillis;
 	public long nextActionMillis;
 	public long nextTakeDamageMillis;
+	public EntityLocation lastInjuryVector;
 
 	// This data is only kept within this instance and discarded when it is (only useful within this one tick).
 	public boolean shouldTakeActionInTick;
@@ -64,6 +65,7 @@ public class MutableCreature implements IMutableMinimalEntity
 		this.despawnMillis = creature.ephemeral().despawnMillis();
 		this.nextActionMillis = creature.ephemeral().nextActionMillis();
 		this.nextTakeDamageMillis = creature.ephemeral().nextTakeDamageMillis();
+		this.lastInjuryVector = null;
 	}
 
 	@Override
@@ -202,6 +204,17 @@ public class MutableCreature implements IMutableMinimalEntity
 		return canUpdate;
 	}
 
+	@Override
+	public void storeInjuryVector(EntityLocation vector)
+	{
+		// Note that we don't bother checking "this.shouldTakeActionInTick" here, which would mean we only run if we
+		// take damage, because it would be preferable if a non-hostile "nudge" still made them move.
+		// We need to clear the movement plan, as well, since we want to force a new one to be created.
+		this.lastInjuryVector = vector;
+		this.movementPlan = null;
+		this.shouldTakeActionInTick = true;
+	}
+
 	/**
 	 * Changes the receiver's type, resetting its health and extended data to defaults for this type.  This is typically
 	 * used for cases such as livestock growing from a baby to adult but there is no internal check on usage.
@@ -229,6 +242,9 @@ public class MutableCreature implements IMutableMinimalEntity
 		CreatureEntity newInstance;
 		if (this.newHealth > 0)
 		{
+			// We require that this vector was handled within the tick since we don't persist it across.
+			Assert.assertTrue(null == this.lastInjuryVector);
+			
 			CreatureEntity.Ephemeral ephemeral = new CreatureEntity.Ephemeral(
 				this.movementPlan
 				, this.nextMovementPlanMillis

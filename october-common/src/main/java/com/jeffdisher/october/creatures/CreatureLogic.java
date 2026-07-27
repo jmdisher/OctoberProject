@@ -242,14 +242,37 @@ public class CreatureLogic
 	{
 		// We will first see if they can make a deliberate plan.
 		boolean canMakeAction = mutable.shouldTakeActionInTick || (context.currentTickTimeMillis >= mutable.nextMovementPlanMillis);
-		CreatureEntity.MovementPlan movementPlan;
+		CreatureEntity.MovementPlan movementPlan = null;
 		if (canMakeAction)
 		{
-			movementPlan = _buildDeliberatePath(context
+			// We first check to see if we should be running away, then make a deliberate plan, then make an idle plan.
+			if (null != mutable.lastInjuryVector)
+			{
+				float injuryX = mutable.lastInjuryVector.x();
+				float injuryY = mutable.lastInjuryVector.y();
+				boolean allowWest = (injuryX <= 0.0f);
+				boolean allowEast = (injuryX >= 0.0f);
+				boolean allowSouth = (injuryY <= 0.0f);
+				boolean allowNorth = (injuryY >= 0.0f);
+				
+				movementPlan = _findRandomPathAsPlan(context
+					, blockKindLookup
+					, mutable
+					, allowWest
+					, allowEast
+					, allowSouth
+					, allowNorth
+				);
+				mutable.lastInjuryVector = null;
+			}
+			if (null == movementPlan)
+			{
+				movementPlan = _buildDeliberatePath(context
 					, blockKindLookup
 					, entityCollection
 					, mutable
-			);
+				);
+			}
 			if (null == movementPlan)
 			{
 				// If we don't have anything deliberate to do, we will just do some random "idle" movement but this is
@@ -260,33 +283,50 @@ public class CreatureLogic
 				boolean canMakeIdleAction = (1 == context.randomInt.applyAsInt(IDLE_ACTION_DENOMINATOR));
 				if (isInDanger || canMakeIdleAction)
 				{
-					List<AbsoluteLocation> steps = _findPathToRandomSpot(context
+					movementPlan = _findRandomPathAsPlan(context
 						, blockKindLookup
-						, mutable.getLocation()
+						, mutable
 						, true
 						, true
 						, true
 						, true
 					);
-					// We can't plan an empty path.
-					Assert.assertTrue((null == steps) || !steps.isEmpty());
-					
-					if (null != steps)
-					{
-						movementPlan = _decidePlanWithoutTarget(context, mutable, steps);
-					}
-					else
-					{
-						// There is nothing here so return null.
-						movementPlan = null;
-					}
 				}
 			}
 			mutable.nextMovementPlanMillis = context.currentTickTimeMillis + MINIMUM_MILLIS_TO_ACTION;
 			mutable.shouldTakeActionInTick = false;
 		}
+		return movementPlan;
+	}
+
+	private static CreatureEntity.MovementPlan _findRandomPathAsPlan(TickProcessingContext context
+		, Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
+		, MutableCreature mutable
+		, boolean allowWest
+		, boolean allowEast
+		, boolean allowSouth
+		, boolean allowNorth
+	)
+	{
+		CreatureEntity.MovementPlan movementPlan;
+		List<AbsoluteLocation> steps = _findPathToRandomSpot(context
+			, blockKindLookup
+			, mutable.getLocation()
+			, allowWest
+			, allowEast
+			, allowSouth
+			, allowNorth
+		);
+		// We can't plan an empty path.
+		Assert.assertTrue((null == steps) || !steps.isEmpty());
+		
+		if (null != steps)
+		{
+			movementPlan = _decidePlanWithoutTarget(context, mutable, steps);
+		}
 		else
 		{
+			// There is nothing here so return null.
 			movementPlan = null;
 		}
 		return movementPlan;

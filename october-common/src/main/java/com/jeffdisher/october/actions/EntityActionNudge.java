@@ -43,6 +43,7 @@ public class EntityActionNudge<T extends IMutableMinimalEntity> implements IEnti
 		EntityLocation originalVelocity = newEntity.getVelocityVector();
 		EntityLocation combinedVelocity = originalVelocity.getRelativeForLocation(_force);
 		newEntity.setVelocityVector(combinedVelocity);
+		newEntity.storeInjuryVector(_force);
 		return true;
 	}
 

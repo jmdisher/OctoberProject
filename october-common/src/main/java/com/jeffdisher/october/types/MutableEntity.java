@@ -347,6 +347,12 @@ public class MutableEntity implements IMutablePlayerEntity
 	}
 
 	@Override
+	public void storeInjuryVector(EntityLocation vector)
+	{
+		// The player ignores this.
+	}
+
+	@Override
 	public long getLastSpecialActionMillis()
 	{
 		return this.ephemeral_lastSpecialActionMillis;
