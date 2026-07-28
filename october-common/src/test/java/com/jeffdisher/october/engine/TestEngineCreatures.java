@@ -13,6 +13,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.actions.EntityActionNudge;
+import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.actions.EntityActionApplyItemToCreature;
 import com.jeffdisher.october.actions.EntityActionImpregnateCreature;
 import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
@@ -206,6 +207,7 @@ public class TestEngineCreatures
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
 			, null
+			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
 		);
 		CreatureEntity creature = new CreatureEntity(-1
 				, COW
@@ -248,6 +250,7 @@ public class TestEngineCreatures
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
 			, null
+			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
 		);
 		CreatureEntity creature = new CreatureEntity(-1
 				, COW
@@ -291,6 +294,7 @@ public class TestEngineCreatures
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
 			, null
+			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
 		);
 		int creatureId = -1;
 		CreatureEntity creature = new CreatureEntity(creatureId
@@ -897,6 +901,7 @@ public class TestEngineCreatures
 			, target.id()
 			, null
 			, null
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		creature = mutable.freeze();
 		

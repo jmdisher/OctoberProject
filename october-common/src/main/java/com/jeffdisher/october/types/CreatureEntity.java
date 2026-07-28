@@ -2,6 +2,7 @@ package com.jeffdisher.october.types;
 
 import java.util.List;
 
+import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.utils.Assert;
 
@@ -85,6 +86,8 @@ public record CreatureEntity(int id
 		// In the cases where we need a very short walk, or where we are going to take a short-cut through fullPlan, we
 		// use this location.
 		, EntityLocation directLocation
+		// The intensity of movement to apply if there is any.
+		, EntityActionSimpleMove.Intensity intensity
 	) {}
 
 	/**

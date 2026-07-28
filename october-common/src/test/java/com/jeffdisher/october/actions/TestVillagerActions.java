@@ -440,6 +440,7 @@ public class TestVillagerActions
 			, -1
 			, toolMutable.newLocation
 			, toolMutable.newLocation
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER
 			, Map.of(SAPLING, 5)
@@ -502,11 +503,13 @@ public class TestVillagerActions
 			, mutable.getId()
 			, null
 			, null
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		mutable.movementPlan = new CreatureEntity.MovementPlan(null
 			, toolMutable.getId()
 			, null
 			, null
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		
 		// Show that the larger ID will impregnate the lesser.

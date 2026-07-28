@@ -89,11 +89,6 @@ public class CreatureLogic
 			float viscosity = reader.getMaxStillViscosityInVolume(mutable.newLocation, mutable.getType().volume());
 			
 			byte yaw = OrientationHelpers.getYawBetweenPoints(mutable.newLocation, targetLocation);
-			boolean isIdleMovement = (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.movementPlan.targetEntityId());
-			EntityActionSimpleMove.Intensity intensity = isIdleMovement
-				? EntityActionSimpleMove.Intensity.IDLE_CREATURE
-				: EntityActionSimpleMove.Intensity.WALKING
-			;
 			action = CreatureMovementHelpers.moveAlongDiagonalPath(reader
 				, mutable.newLocation
 				, yaw
@@ -102,7 +97,7 @@ public class CreatureLogic
 				, targetLocation
 				, timeLimitMillis
 				, viscosity
-				, intensity
+				, mutable.movementPlan.intensity()
 			);
 			
 			if (null == action)
@@ -348,11 +343,6 @@ public class CreatureLogic
 		
 		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
 		float viscosity = reader.getMaxStillViscosityInVolume(mutable.newLocation, mutable.getType().volume());
-		boolean isIdleMovement = (CreatureEntity.NO_TARGET_ENTITY_ID == oldPlan.targetEntityId());
-		EntityActionSimpleMove.Intensity intensity = isIdleMovement
-			? EntityActionSimpleMove.Intensity.IDLE_CREATURE
-			: EntityActionSimpleMove.Intensity.WALKING
-		;
 		
 		// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
 		AbsoluteLocation directionHint = existingPlan.get(0);
@@ -367,7 +357,7 @@ public class CreatureLogic
 			, directionHint
 			, timeLimitMillis
 			, viscosity
-			, intensity
+			, oldPlan.intensity()
 		);
 		if (null == actionProduced)
 		{
@@ -382,7 +372,7 @@ public class CreatureLogic
 				, existingPlan
 				, timeLimitMillis
 				, viscosity
-				, intensity
+				, oldPlan.intensity()
 			);
 		}
 		
@@ -575,6 +565,7 @@ public class CreatureLogic
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
 			, directLocation
+			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
 		);
 	}
 
@@ -592,6 +583,7 @@ public class CreatureLogic
 			, targetEntityId
 			, targetPreviousLocation
 			, directLocation
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 	}
 
@@ -608,6 +600,7 @@ public class CreatureLogic
 			, targetEntityId
 			, targetPreviousLocation
 			, directLocation
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 	}
 
@@ -622,6 +615,7 @@ public class CreatureLogic
 			, targetEntityId
 			, targetPreviousLocation
 			, null
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 	}
 
@@ -633,6 +627,7 @@ public class CreatureLogic
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
 			, directLocation
+			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
 		);
 	}
 
@@ -649,6 +644,7 @@ public class CreatureLogic
 			, targetEntityId
 			, targetPreviousLocation
 			, directLocation
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 	}
 

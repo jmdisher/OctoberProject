@@ -414,6 +414,7 @@ public class TestCreatureLogic
 			, mother.id()
 			, null
 			, null
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		mutable.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(true, null, 0L));
 		father = mutable.freeze();
@@ -422,6 +423,7 @@ public class TestCreatureLogic
 			, father.id()
 			, null
 			, null
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		mutable.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(true, null, 0L));
 		mother = mutable.freeze();
@@ -653,6 +655,7 @@ public class TestCreatureLogic
 			, player.id()
 			, null
 			, null
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		
 		// The first attempt to attack should fail since we are still out of range.
@@ -845,6 +848,7 @@ public class TestCreatureLogic
 			, entityId
 			, location
 			, location
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		entities.put(player.id(), MinimalEntity.fromEntity(player));
 		entities.put(orc.id(), MinimalEntity.fromCreature(orc));
@@ -897,6 +901,7 @@ public class TestCreatureLogic
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
 			, null
+			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
 		);
 		
 		TickProcessingContext context = ContextBuilder.build()
@@ -1081,6 +1086,7 @@ public class TestCreatureLogic
 			, player.id()
 			, null
 			, null
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(skeleton.id(), skeleton))
@@ -1212,6 +1218,7 @@ public class TestCreatureLogic
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
 			, null
+			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
 		);
 		
 		TickProcessingContext context = ContextBuilder.build()
@@ -1249,6 +1256,7 @@ public class TestCreatureLogic
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
 			, null
+			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
 		);
 		
 		TickProcessingContext context = ContextBuilder.build()
@@ -1288,6 +1296,7 @@ public class TestCreatureLogic
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
 			, null
+			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
 		);
 		
 		TickProcessingContext context = ContextBuilder.build()
@@ -1353,6 +1362,7 @@ public class TestCreatureLogic
 			, player.id()
 			, playerLocation.getRelative(1.0f, 0.0f, 0.0f)
 			, null
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
@@ -1405,6 +1415,7 @@ public class TestCreatureLogic
 			, player.id()
 			, playerLocation
 			, null
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
@@ -1428,6 +1439,7 @@ public class TestCreatureLogic
 			, player.id()
 			, playerLocation
 			, null
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(movedPlayer, orc), null)
@@ -1451,6 +1463,7 @@ public class TestCreatureLogic
 			, player.id()
 			, playerLocation
 			, null
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(null, orc), null)
@@ -1510,6 +1523,7 @@ public class TestCreatureLogic
 			, player.id()
 			, playerLocation
 			, null
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
@@ -1530,6 +1544,7 @@ public class TestCreatureLogic
 			, player.id()
 			, playerLocation
 			, null
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(movedPlayer, orc), null)
@@ -1552,6 +1567,7 @@ public class TestCreatureLogic
 			, elevatedPlayer.id()
 			, elevatedPlayerLocation
 			, null
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(elevatedPlayer, orc), null)
@@ -1573,6 +1589,7 @@ public class TestCreatureLogic
 			, player.id()
 			, playerLocation
 			, null
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
@@ -1626,6 +1643,7 @@ public class TestCreatureLogic
 			, player.id()
 			, playerLocation
 			, playerLocation
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		CreatureEntity orc = mutableOrc.freeze();
 		TickProcessingContext context = ContextBuilder.build()
@@ -1651,6 +1669,7 @@ public class TestCreatureLogic
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
 			, idleLocation
+			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
 		);
 		mutableOrc.nextMovementPlanMillis = CreatureLogic.MINIMUM_MILLIS_TO_ACTION;
 		orc = mutableOrc.freeze();
@@ -1761,6 +1780,7 @@ public class TestCreatureLogic
 			, player.id()
 			, player.location()
 			, player.location()
+			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		CreatureEntity cow0 = mutable.freeze();
 		mutable = MutableCreature.existing(CreatureEntity.create(assigner.next(), COW, new EntityLocation(8.0f, 0.0f, 0.0f), 0L));
