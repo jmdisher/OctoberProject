@@ -179,40 +179,56 @@ public class NudgeHelpers
 		// We want nudge both players and creatures.
 		EntityLocation edge = base.getRelative(volume.width(), volume.width(), volume.height());
 		EntityLocation inCentre = FixedRegion.fromBaseAndVolume(base, volume).getCentre();
-		float inRadius = volume.width() / 2.0f;
 		EntityVolume playerVolume = env.creatures.PLAYER.volume();
+		float playerMaxWidth = Math.max(volume.width(), playerVolume.width()) / 2.0f;
 		entityCollection.walkAlignedEntityIntersections(base, edge, (Entity entity) -> {
 			if (check != entity)
 			{
 				EntityLocation centre = FixedRegion.fromBaseAndVolume(entity.location(), playerVolume).getCentre();
-				EntityActionNudge<IMutablePlayerEntity> nudge = _createNudge(inCentre, centre, inRadius);
-				context.newChangeSink.next(entity.id(), nudge);
+				EntityActionNudge<IMutablePlayerEntity> nudge = _createNudge(inCentre, centre, playerMaxWidth);
+				if (null != nudge)
+				{
+					context.newChangeSink.next(entity.id(), nudge);
+				}
 			}
 		});
 		entityCollection.walkAlignedCreatureIntersections(base, edge, (CreatureEntity creature) -> {
 			if (check != creature)
 			{
 				EntityLocation centre = FixedRegion.fromBaseAndVolume(creature.location(), creature.type().volume()).getCentre();
-				EntityActionNudge<MutableCreature> nudge = _createNudge(inCentre, centre, inRadius);
-				context.newChangeSink.creature(creature.id(), nudge);
+				EntityVolume creatureVolume = creature.type().volume();
+				float maxWidth = Math.max(volume.width(), creatureVolume.width()) / 2.0f;
+				EntityActionNudge<MutableCreature> nudge = _createNudge(inCentre, centre, maxWidth);
+				if (null != nudge)
+				{
+					context.newChangeSink.creature(creature.id(), nudge);
+				}
 			}
 		});
 	}
 
-	private static <T extends IMutableMinimalEntity> EntityActionNudge<T> _createNudge(EntityLocation start, EntityLocation end, float sourceRadius)
+	private static <T extends IMutableMinimalEntity> EntityActionNudge<T> _createNudge(EntityLocation start, EntityLocation end, float maxWidth)
 	{
 		// These are reversed since we are subtracting them from the sourceRadius.
 		float dx = end.x() - start.x();
 		float dy = end.y() - start.y();
 		float dz = end.z() - start.z();
-		// The sourceRadius is the effective radius of the source located at "start" so we want to push harder, the closer we are, but to a minimum of 0.0f (since we may be far away in some axes).
-		float magX = Math.max(sourceRadius - Math.abs(dx), 0.0f);
-		float magY = Math.max(sourceRadius - Math.abs(dy), 0.0f);
-		float magZ = Math.max(sourceRadius - Math.abs(dz), 0.0f);
-		float vx = Math.signum(dx) * magX * COLLISION_KNOCKBACK_MAGNITUDE;
-		float vy = Math.signum(dy) * magY * COLLISION_KNOCKBACK_MAGNITUDE;
-		float vz = Math.signum(dz) * magZ * COLLISION_KNOCKBACK_MAGNITUDE;
-		EntityLocation force = new EntityLocation(vx, vy, vz);
-		return new EntityActionNudge<>(force);
+		// We want to push harder if the space between them is lower, but to a minimum of 0.0f (since we may be far away in some axes).
+		float magX = Math.max(maxWidth - Math.abs(dx), 0.0f);
+		float magY = Math.max(maxWidth - Math.abs(dy), 0.0f);
+		float magZ = Math.max(maxWidth - Math.abs(dz), 0.0f);
+		
+		// We only want to create this nudge force if it has some meaning in all vectors (otherwise, we might not be fully intersecting).
+		EntityActionNudge<T> nudge = null;
+		if ((magX > 0.0f) && (magY > 0.0f) && (magZ > 0.0f))
+		{
+			float vx = Math.signum(dx) * magX * COLLISION_KNOCKBACK_MAGNITUDE;
+			float vy = Math.signum(dy) * magY * COLLISION_KNOCKBACK_MAGNITUDE;
+			float vz = Math.signum(dz) * magZ * COLLISION_KNOCKBACK_MAGNITUDE;
+			
+			EntityLocation force = new EntityLocation(vx, vy, vz);
+			nudge = new EntityActionNudge<>(force);
+		}
+		return nudge;
 	}
 }
