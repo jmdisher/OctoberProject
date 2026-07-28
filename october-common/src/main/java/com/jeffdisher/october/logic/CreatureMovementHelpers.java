@@ -40,7 +40,7 @@ public class CreatureMovementHelpers
 	 * @param directionHint The block we need to eventually enter.
 	 * @param timeLimitMillis The number of milliseconds left in the tick.
 	 * @param viscosityFraction The viscosity of the current block ([0.0 .. 1.0]) where 1.0 is solid.
-	 * @param isIdleMovement True if this movement is just idle and not one with a specific goal.
+	 * @param intensity The movement intensity.
 	 * @return The next move to make to centre in the block toward directionHint (null if there is no useful action).
 	 */
 	public static EntityActionSimpleMove<MutableCreature> prepareForMove(EntityLocation creatureLocation
@@ -49,7 +49,7 @@ public class CreatureMovementHelpers
 		, AbsoluteLocation directionHint
 		, long timeLimitMillis
 		, float viscosityFraction
-		, boolean isIdleMovement
+		, EntityActionSimpleMove.Intensity intensity
 	)
 	{
 		// Find our current location.
@@ -144,14 +144,10 @@ public class CreatureMovementHelpers
 		
 		// Now, move.
 		float speed = creatureType.blocksPerSecond();
-		float speedMultiplier = isIdleMovement
-				? 0.5f
-				: 1.0f
-		;
-		EntityActionSimpleMove<MutableCreature> move = _moveByX(creatureLocation, timeLimitMillis, speed * speedMultiplier, viscosityFraction, targetX, creatureVelocity.x());
+		EntityActionSimpleMove<MutableCreature> move = _moveByX(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, targetX, creatureVelocity.x());
 		if (null == move)
 		{
-			move = _moveByY(creatureLocation, timeLimitMillis, speed * speedMultiplier, viscosityFraction, targetY, creatureVelocity.y());
+			move = _moveByY(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, targetY, creatureVelocity.y());
 		}
 		return move;
 	}
@@ -168,22 +164,22 @@ public class CreatureMovementHelpers
 	 * @param targetBlock The target location.
 	 * @param timeLimitMillis The number of milliseconds left in the tick.
 	 * @param viscosityFraction The viscosity of the current block ([0.0 .. 1.0]) where 1.0 is solid.
-	 * @param isIdleMovement True if this movement is just idle and not one with a specific goal.
+	 * @param intensity The movement intensity.
 	 * @param isBlockSwimmable True if the creature is in a block where they can swim.
 	 * @return The next move toward targetBlock (null if there is no useful action at this time - usually just pass
 	 * time).
 	 */
 	public static EntityActionSimpleMove<MutableCreature> moveToNextLocation(ViscosityReader supplier
-			, EntityLocation creatureLocation
-			, EntityLocation creatureVelocity
-			, byte yaw
-			, byte pitch
-			, EntityType creatureType
-			, AbsoluteLocation targetBlock
-			, long timeLimitMillis
-			, float viscosityFraction
-			, boolean isIdleMovement
-			, boolean isBlockSwimmable
+		, EntityLocation creatureLocation
+		, EntityLocation creatureVelocity
+		, byte yaw
+		, byte pitch
+		, EntityType creatureType
+		, AbsoluteLocation targetBlock
+		, long timeLimitMillis
+		, float viscosityFraction
+		, EntityActionSimpleMove.Intensity intensity
+		, boolean isBlockSwimmable
 	)
 	{
 		// We might need to jump, walk, or do nothing.
@@ -250,17 +246,13 @@ public class CreatureMovementHelpers
 			{
 				// We need to move horizontally so figure out which way.
 				float speed = creatureType.blocksPerSecond();
-				float speedMultiplier = isIdleMovement
-						? 0.5f
-						: 1.0f
-				;
 				if (maxHorizontal == distanceX)
 				{
-					change = _moveByX(creatureLocation, timeLimitMillis, speed * speedMultiplier, viscosityFraction, stepLocation.x(), creatureVelocity.x());
+					change = _moveByX(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, stepLocation.x(), creatureVelocity.x());
 				}
 				else
 				{
-					change = _moveByY(creatureLocation, timeLimitMillis, speed * speedMultiplier, viscosityFraction, stepLocation.y(), creatureVelocity.y());
+					change = _moveByY(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, stepLocation.y(), creatureVelocity.y());
 				}
 			}
 			else
@@ -352,7 +344,7 @@ public class CreatureMovementHelpers
 	 * @param targetBase The target location.
 	 * @param timeLimitMillis The number of milliseconds left in the tick.
 	 * @param viscosityFraction The viscosity of the current location ([0.0 .. 1.0]) where 1.0 is solid.
-	 * @param isIdleMovement True if this movement is just idle and not one with a specific goal.
+	 * @param intensity The movement intensity.
 	 * @return The next move toward targetBase (null if the creature is already there, would hit an obstacle or fall).
 	 */
 	public static EntityActionSimpleMove<MutableCreature> moveAlongDiagonalPath(ViscosityReader supplier
@@ -363,7 +355,7 @@ public class CreatureMovementHelpers
 		, EntityLocation targetBase
 		, long timeLimitMillis
 		, float viscosityFraction
-		, boolean isIdleMovement
+		, EntityActionSimpleMove.Intensity intensity
 	)
 	{
 		EntityActionSimpleMove<MutableCreature> change;
@@ -385,12 +377,8 @@ public class CreatureMovementHelpers
 			float effectiveXRemaining = viscosityScaling * (targetBase.x() - creatureBaseLocation.x());
 			float effectiveYRemaining = viscosityScaling * (targetBase.y() - creatureBaseLocation.y());
 			float speed = creatureType.blocksPerSecond();
-			float speedMultiplier = isIdleMovement
-				? 0.5f
-				: 1.0f
-			;
 			float secondsToMove = ((float)timeLimitMillis) / 1000.0f;
-			float blockDistanceInMove = secondsToMove * speed * speedMultiplier;
+			float blockDistanceInMove = secondsToMove * speed * intensity.speedMultipler;
 			
 			// If the remaining distance fits, do it all, otherwise, just part of it.
 			float xToMove;
@@ -434,7 +422,7 @@ public class CreatureMovementHelpers
 					// This is a valid step.
 					change = new EntityActionSimpleMove<>(xToMove
 						, yToMove
-						, EntityActionSimpleMove.Intensity.WALKING
+						, intensity
 						, yaw
 						, pitch
 						, null
@@ -446,7 +434,7 @@ public class CreatureMovementHelpers
 	}
 
 
-	private static EntityActionSimpleMove<MutableCreature> _moveByX(EntityLocation location, long timeLimitMillis, float currentCreatureSpeed, float viscosityFraction, float targetX, float passiveVelocityX)
+	private static EntityActionSimpleMove<MutableCreature> _moveByX(EntityLocation location, long timeLimitMillis, float creatureSpeed, EntityActionSimpleMove.Intensity intensity, float viscosityFraction, float targetX, float passiveVelocityX)
 	{
 		// NOTE:  This call assumes that moving in X is possible (on solid ground or swimming).
 		float moveX = targetX - location.x();
@@ -455,11 +443,11 @@ public class CreatureMovementHelpers
 		if (absoluteMove > FLOAT_THRESHOLD)
 		{
 			// Note that we use viscosity to estimate how far we will move but the actual units of movement are just in terms of our basic speed.
-			float distanceToMove = _findRawMoveInTime(currentCreatureSpeed, viscosityFraction, moveX, passiveVelocityX, timeLimitMillis);
+			float distanceToMove = _findRawMoveInTime(creatureSpeed * intensity.speedMultipler, viscosityFraction, moveX, passiveVelocityX, timeLimitMillis);
 			
 			move = new EntityActionSimpleMove<>(distanceToMove
 				, 0.0f
-				, EntityActionSimpleMove.Intensity.WALKING
+				, intensity
 				, (moveX > 0.0f) ? OrientationHelpers.YAW_EAST : OrientationHelpers.YAW_WEST
 				, OrientationHelpers.PITCH_FLAT
 				, null
@@ -468,7 +456,7 @@ public class CreatureMovementHelpers
 		return move;
 	}
 
-	private static EntityActionSimpleMove<MutableCreature> _moveByY(EntityLocation location, long timeLimitMillis, float currentCreatureSpeed, float viscosityFraction, float targetY, float passiveVelocityY)
+	private static EntityActionSimpleMove<MutableCreature> _moveByY(EntityLocation location, long timeLimitMillis, float creatureSpeed, EntityActionSimpleMove.Intensity intensity, float viscosityFraction, float targetY, float passiveVelocityY)
 	{
 		// NOTE:  This call assumes that moving in Y is possible (on solid ground or swimming).
 		float moveY = targetY - location.y();
@@ -477,11 +465,11 @@ public class CreatureMovementHelpers
 		if (absoluteMove > FLOAT_THRESHOLD)
 		{
 			// Note that we use viscosity to estimate how far we will move but the actual units of movement are just in terms of our basic speed.
-			float distanceToMove = _findRawMoveInTime(currentCreatureSpeed, viscosityFraction, moveY, passiveVelocityY, timeLimitMillis);
+			float distanceToMove = _findRawMoveInTime(creatureSpeed * intensity.speedMultipler, viscosityFraction, moveY, passiveVelocityY, timeLimitMillis);
 			
 			move = new EntityActionSimpleMove<>(0.0f
 				, distanceToMove
-				, EntityActionSimpleMove.Intensity.WALKING
+				, intensity
 				, (moveY > 0.0f) ? OrientationHelpers.YAW_NORTH : OrientationHelpers.YAW_SOUTH
 				, OrientationHelpers.PITCH_FLAT
 				, null

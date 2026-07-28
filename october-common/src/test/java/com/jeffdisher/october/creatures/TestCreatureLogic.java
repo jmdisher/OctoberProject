@@ -1224,7 +1224,7 @@ public class TestCreatureLogic
 		
 		// Make sure that the movement is correct.
 		EntityActionSimpleMove<MutableCreature> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
-		Assert.assertEquals("SimpleMove(WALKING), by 0.00, 0.04, Sub: null", change.toString());
+		Assert.assertEquals("SimpleMove(IDLE_CREATURE), by 0.00, 0.04, Sub: null", change.toString());
 		Assert.assertTrue(change.applyChange(context, mutable));
 		Assert.assertEquals(new EntityLocation(4.7f, 5.01f, 1.0f), mutable.newLocation);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutable.newVelocity);

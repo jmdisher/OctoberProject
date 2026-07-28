@@ -90,6 +90,10 @@ public class CreatureLogic
 			
 			byte yaw = OrientationHelpers.getYawBetweenPoints(mutable.newLocation, targetLocation);
 			boolean isIdleMovement = (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.movementPlan.targetEntityId());
+			EntityActionSimpleMove.Intensity intensity = isIdleMovement
+				? EntityActionSimpleMove.Intensity.IDLE_CREATURE
+				: EntityActionSimpleMove.Intensity.WALKING
+			;
 			action = CreatureMovementHelpers.moveAlongDiagonalPath(reader
 				, mutable.newLocation
 				, yaw
@@ -98,7 +102,7 @@ public class CreatureLogic
 				, targetLocation
 				, timeLimitMillis
 				, viscosity
-				, isIdleMovement
+				, intensity
 			);
 			
 			if (null == action)
@@ -345,6 +349,10 @@ public class CreatureLogic
 		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
 		float viscosity = reader.getMaxStillViscosityInVolume(mutable.newLocation, mutable.getType().volume());
 		boolean isIdleMovement = (CreatureEntity.NO_TARGET_ENTITY_ID == oldPlan.targetEntityId());
+		EntityActionSimpleMove.Intensity intensity = isIdleMovement
+			? EntityActionSimpleMove.Intensity.IDLE_CREATURE
+			: EntityActionSimpleMove.Intensity.WALKING
+		;
 		
 		// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
 		AbsoluteLocation directionHint = existingPlan.get(0);
@@ -353,11 +361,29 @@ public class CreatureLogic
 			// This means we are jumping so choose the next place where we want to go for direction hint.
 			directionHint = existingPlan.get(1);
 		}
-		EntityActionSimpleMove<MutableCreature> actionProduced = CreatureMovementHelpers.prepareForMove(mutable.getLocation(), mutable.getVelocityVector(), mutable.getType(), directionHint, timeLimitMillis, viscosity, isIdleMovement);
+		EntityActionSimpleMove<MutableCreature> actionProduced = CreatureMovementHelpers.prepareForMove(mutable.getLocation()
+			, mutable.getVelocityVector()
+			, mutable.getType()
+			, directionHint
+			, timeLimitMillis
+			, viscosity
+			, intensity
+		);
 		if (null == actionProduced)
 		{
 			// If we are already in a reasonable location, proceed to move.
-			actionProduced = _planNextStep(blockKindLookup, reader, mutable.getLocation(), mutable.getVelocityVector(), mutable.newYaw, mutable.newPitch, mutable.getType(), existingPlan, timeLimitMillis, viscosity, isIdleMovement);
+			actionProduced = _planNextStep(blockKindLookup
+				, reader
+				, mutable.getLocation()
+				, mutable.getVelocityVector()
+				, mutable.newYaw
+				, mutable.newPitch
+				, mutable.getType()
+				, existingPlan
+				, timeLimitMillis
+				, viscosity
+				, intensity
+			);
 		}
 		
 		return actionProduced;
@@ -451,16 +477,16 @@ public class CreatureLogic
 	}
 
 	private static EntityActionSimpleMove<MutableCreature> _planNextStep(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
-			, ViscosityReader reader
-			, EntityLocation entityLocation
-			, EntityLocation entityVelocity
-			, byte yaw
-			, byte pitch
-			, EntityType type
-			, List<AbsoluteLocation> existingPlan
-			, long timeLimitMillis
-			, float viscosity
-			, boolean isIdleMovement
+		, ViscosityReader reader
+		, EntityLocation entityLocation
+		, EntityLocation entityVelocity
+		, byte yaw
+		, byte pitch
+		, EntityType type
+		, List<AbsoluteLocation> existingPlan
+		, long timeLimitMillis
+		, float viscosity
+		, EntityActionSimpleMove.Intensity intensity
 	)
 	{
 		AbsoluteLocation thisStep = existingPlan.get(0);
@@ -470,7 +496,7 @@ public class CreatureLogic
 		Assert.assertTrue(!currentLocation.equals(thisStep));
 		
 		boolean isSwimmable = (PathFinder.BlockKind.SWIMMABLE == blockKindLookup.apply(currentLocation));
-		return CreatureMovementHelpers.moveToNextLocation(reader, entityLocation, entityVelocity, yaw, pitch, type, thisStep, timeLimitMillis, viscosity, isIdleMovement, isSwimmable);
+		return CreatureMovementHelpers.moveToNextLocation(reader, entityLocation, entityVelocity, yaw, pitch, type, thisStep, timeLimitMillis, viscosity, intensity, isSwimmable);
 	}
 
 	private static List<AbsoluteLocation> _extractAcceptablePathTargets(Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsUser

@@ -249,6 +249,12 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 		STANDING(0.0f, 0),
 		WALKING(1.0f, EntityActionPeriodic.ENERGY_COST_PER_TICK_WALKING),
 		RUNNING(2.0f, EntityActionPeriodic.ENERGY_COST_PER_TICK_RUNNING),
+		/**
+		 * Note that this constant is expected to only be used internally for creatures idling.
+		 * Technically, nothing prevents players from using it, either, but it has the same energy cost as walking with
+		 * a lower top speed so using this wouldn't help them.
+		 */
+		IDLE_CREATURE(0.5f, EntityActionPeriodic.ENERGY_COST_PER_TICK_WALKING),
 		;
 		public final float speedMultipler;
 		public final int energyCostPerTick;
