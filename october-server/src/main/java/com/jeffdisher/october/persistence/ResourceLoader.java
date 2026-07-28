@@ -63,6 +63,9 @@ public class ResourceLoader
 	// retired by a call to writeBackToDiskAndRetire) and used to avoid redundant write-back to disk.
 	private final Map<Integer, byte[]> _background_serializedEntityBuffer;
 
+	// We store the last read time which we use to re-write any abandoned reads.
+	private long _background_lastReadMillis;
+
 	// We directly expose the ID assigner since it is designed to be shared and is atomic.
 	public final CreatureIdAssigner creatureIdAssigner;
 	public final PassiveIdAssigner passiveIdAssigner;
@@ -162,6 +165,26 @@ public class ResourceLoader
 			throw Assert.unexpected(e);
 		}
 		
+		// Make sure that any reads which completed before the caller could ask about them are written-back, now.
+		// _background has also joined so we can access these, directly.
+		if (null != _shared_resolvedCuboids)
+		{
+			// This isn't common so log it (probably remove this log in the future as it is harmless but may point to other issues).
+			System.err.printf("WARNING:  Writing-back %d cuboids from abandoned reads\n", _shared_resolvedCuboids.size());
+			
+			for (SuspendedCuboid<CuboidData> suspended : _shared_resolvedCuboids)
+			{
+				PackagedCuboid data = new PackagedCuboid(suspended.cuboid()
+					, suspended.creatures()
+					, suspended.pendingMutations()
+					, suspended.periodicMutationMillis()
+					, suspended.passives()
+				);
+				_background_writeCuboidToDisk(data, _background_lastReadMillis, false);
+			}
+			_shared_resolvedCuboids = null;
+		}
+		
 		// Once everything is done, we expect those internal caches to be empty (otherwise, something is leaking).
 		Assert.assertTrue(_background_serializedEntityBuffer.isEmpty());
 		_cuboidClusterManager.shutdown();
@@ -247,6 +270,7 @@ public class ResourceLoader
 					Assert.assertTrue(null != data);
 					_background_returnEntity(data);
 				}
+				_background_lastReadMillis = currentGameMillis;
 			});
 		}
 		

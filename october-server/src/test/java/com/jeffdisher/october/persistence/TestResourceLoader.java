@@ -1482,6 +1482,21 @@ public class TestResourceLoader
 		Assert.assertEquals(2, entity.inventory().getCount(LOG_ITEM));
 	}
 
+	@Test
+	public void shutdownWithIncompleteReads() throws Throwable
+	{
+		PreloadedWorldGenerator generator = new PreloadedWorldGenerator();
+		CuboidAddress address = CuboidAddress.fromInt(1, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
+		generator.preload(cuboid);
+		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), generator, new WorldConfig());
+		
+		// Request this cuboid but then shutdown before we read it.
+		loader.getResultsAndRequestBackgroundLoad(List.of(), List.of(), List.of(address), List.of(), 0L);
+		
+		loader.shutdown();
+	}
+
 
 	private static CuboidData _waitForOne(ResourceLoader loader) throws InterruptedException
 	{
