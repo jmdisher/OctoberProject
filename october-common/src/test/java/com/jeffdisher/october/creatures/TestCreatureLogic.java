@@ -193,6 +193,7 @@ public class TestCreatureLogic
 		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, mutable.movementPlan.targetEntityId());
 		Assert.assertEquals(null, mutable.movementPlan.targetPreviousLocation());
 		Assert.assertEquals(new EntityLocation(14.0f, 16.0f, 1.0f), mutable.movementPlan.directLocation());
+		Assert.assertEquals(EntityActionSimpleMove.Intensity.IDLE_CREATURE, mutable.movementPlan.intensity());
 	}
 
 	@Test
@@ -1826,6 +1827,7 @@ public class TestCreatureLogic
 			, mutable
 		));
 		Assert.assertEquals(cow1.id(), mutable.movementPlan.targetEntityId());
+		Assert.assertEquals(EntityActionSimpleMove.Intensity.WALKING, mutable.movementPlan.intensity());
 	}
 
 	@Test
@@ -1860,6 +1862,7 @@ public class TestCreatureLogic
 			, mutable
 		));
 		Assert.assertEquals(new EntityLocation(3.0f, 2.0f, 0.0f), mutable.movementPlan.directLocation());
+		Assert.assertEquals(EntityActionSimpleMove.Intensity.RUNNING, mutable.movementPlan.intensity());
 		
 		mutable = MutableCreature.existing(cow0);
 		mutable.setHealth(mutable.newHealth);
@@ -1869,6 +1872,7 @@ public class TestCreatureLogic
 			, mutable
 		));
 		Assert.assertEquals(new EntityLocation(6.0f, 4.0f, 0.0f), mutable.movementPlan.directLocation());
+		Assert.assertEquals(EntityActionSimpleMove.Intensity.RUNNING, mutable.movementPlan.intensity());
 	}
 
 

@@ -261,6 +261,7 @@ public class CreatureLogic
 					, allowEast
 					, allowSouth
 					, allowNorth
+					, EntityActionSimpleMove.Intensity.RUNNING
 				);
 				mutable.lastInjuryVector = null;
 			}
@@ -289,6 +290,7 @@ public class CreatureLogic
 						, true
 						, true
 						, true
+						, EntityActionSimpleMove.Intensity.IDLE_CREATURE
 					);
 				}
 			}
@@ -305,6 +307,7 @@ public class CreatureLogic
 		, boolean allowEast
 		, boolean allowSouth
 		, boolean allowNorth
+		, EntityActionSimpleMove.Intensity intensity
 	)
 	{
 		CreatureEntity.MovementPlan movementPlan;
@@ -321,7 +324,7 @@ public class CreatureLogic
 		
 		if (null != steps)
 		{
-			movementPlan = _decidePlanWithoutTarget(context, mutable, steps);
+			movementPlan = _decidePlanWithoutTarget(context, mutable, steps, intensity);
 		}
 		else
 		{
@@ -556,7 +559,9 @@ public class CreatureLogic
 		return plan;
 	}
 
-	private static CreatureEntity.MovementPlan _planWithoutTarget(List<AbsoluteLocation> path)
+	private static CreatureEntity.MovementPlan _planWithoutTarget(List<AbsoluteLocation> path
+		, EntityActionSimpleMove.Intensity intensity
+	)
 	{
 		Assert.assertTrue(!path.isEmpty());
 		
@@ -565,7 +570,7 @@ public class CreatureLogic
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
 			, directLocation
-			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
+			, intensity
 		);
 	}
 
@@ -619,7 +624,9 @@ public class CreatureLogic
 		);
 	}
 
-	private static CreatureEntity.MovementPlan _planDirectWithoutTarget(EntityLocation directLocation)
+	private static CreatureEntity.MovementPlan _planDirectWithoutTarget(EntityLocation directLocation
+		, EntityActionSimpleMove.Intensity intensity
+	)
 	{
 		Assert.assertTrue(null != directLocation);
 		
@@ -627,7 +634,7 @@ public class CreatureLogic
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
 			, directLocation
-			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
+			, intensity
 		);
 	}
 
@@ -790,7 +797,11 @@ public class CreatureLogic
 					
 					if (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.movementPlan.targetEntityId())
 					{
-						mutable.movementPlan = _decidePlanWithoutTarget(context, mutable, Collections.unmodifiableList(updatedPlan));
+						mutable.movementPlan = _decidePlanWithoutTarget(context
+							, mutable
+							, Collections.unmodifiableList(updatedPlan)
+							, EntityActionSimpleMove.Intensity.IDLE_CREATURE
+						);
 					}
 					else
 					{
@@ -886,7 +897,11 @@ public class CreatureLogic
 		;
 	}
 
-	private static CreatureEntity.MovementPlan _decidePlanWithoutTarget(TickProcessingContext context, MutableCreature mutable, List<AbsoluteLocation> steps)
+	private static CreatureEntity.MovementPlan _decidePlanWithoutTarget(TickProcessingContext context
+		, MutableCreature mutable
+		, List<AbsoluteLocation> steps
+		, EntityActionSimpleMove.Intensity intensity
+	)
 	{
 		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
 		EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, mutable.newLocation, mutable.newType, steps);
@@ -894,11 +909,11 @@ public class CreatureLogic
 		CreatureEntity.MovementPlan movementPlan;
 		if (null != directLocation)
 		{
-			movementPlan = _planDirectWithoutTarget(directLocation);
+			movementPlan = _planDirectWithoutTarget(directLocation, intensity);
 		}
 		else
 		{
-			movementPlan = _planWithoutTarget(steps);
+			movementPlan = _planWithoutTarget(steps, intensity);
 		}
 		return movementPlan;
 	}
