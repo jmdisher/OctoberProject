@@ -107,10 +107,10 @@ public class ServerStateManager
 	private Map<CuboidAddress, List<ScheduledMutation>> _scheduledBlockMutations;
 	private Map<CuboidAddress, Map<BlockAddress, Long>> _periodicBlockMutations;
 	private Map<Integer, List<ScheduledChange>> _scheduledEntityMutations;
-	private final _EntityIndex<Entity> _entityIndex;
 	private Map<Integer, Long> _commitLevels;
-	private final _EntityIndex<CreatureEntity> _creatureIndex;
-	private final _EntityIndex<PassiveEntity> _passiveIndex;
+	private _EntityIndex<Entity> _entityIndex;
+	private _EntityIndex<CreatureEntity> _creatureIndex;
+	private _EntityIndex<PassiveEntity> _passiveIndex;
 	private Map<CuboidAddress, List<MutationBlockSetBlock>> _blockChanges;
 
 	public ServerStateManager(ICallouts callouts, long millisPerTick)
@@ -131,10 +131,10 @@ public class ServerStateManager
 		_scheduledBlockMutations = Collections.emptyMap();
 		_periodicBlockMutations = Collections.emptyMap();
 		_scheduledEntityMutations = Collections.emptyMap();
-		_entityIndex = new _EntityIndex<>();
+		_entityIndex = _EntityIndex.empty();
 		_commitLevels = Collections.emptyMap();
-		_creatureIndex = new _EntityIndex<>();
-		_passiveIndex = new _EntityIndex<>();
+		_creatureIndex = _EntityIndex.empty();
+		_passiveIndex = _EntityIndex.empty();
 		_blockChanges = Collections.emptyMap();
 	}
 
@@ -218,102 +218,25 @@ public class ServerStateManager
 			}
 		}
 		
-		// Reset the entities.
+		// Extract the other entities meta-data.
 		_scheduledEntityMutations = new HashMap<>();
-		Set<Integer> previousEntityIds = _entityIndex.resetAndTakeExistingIds();
 		_commitLevels = new HashMap<>();
 		for (TickSnapshot.SnapshotEntity elt : snapshot.entities().values())
 		{
 			Entity completed = elt.completed();
 			int id = completed.id();
 			_scheduledEntityMutations.put(id, elt.scheduledMutations());
-			_entityIndex.completed.put(id, completed);
-			boolean wasKnown = previousEntityIds.remove(id);
-			
-			// NOTE:  We can't pre-check if this change matters, like in creatures and passives, as all changes are
-			// visible to the client behind the entity.  This means we need to check if this change matters when we know
-			// who is asking (full Entity or PartialEntity).
-			Entity previous = elt.previousVersion();
-			if (null != previous)
-			{
-				_entityIndex.previousVersions.put(id, previous);
-				_entityIndex.changed.add(completed);
-			}
-			else if (wasKnown)
-			{
-				_entityIndex.unchanged.add(completed);
-			}
-			else
-			{
-				_entityIndex.added.add(completed);
-			}
-			
 			_commitLevels.put(id, elt.commitLevel());
 		}
-		for (Integer id : previousEntityIds)
-		{
-			_entityIndex.removed.add(id);
-		}
+		
+		// Reset the entities.
+		_entityIndex = _extractEntityIndex(_entityIndex, snapshot);
 		
 		// Reset the creatures.
-		Set<Integer> previousCreatureIds = _creatureIndex.resetAndTakeExistingIds();
-		for (TickSnapshot.SnapshotCreature elt : snapshot.creatures().values())
-		{
-			CreatureEntity completed = elt.completed();
-			int id = completed.id();
-			_creatureIndex.completed.put(id, completed);
-			boolean wasKnown = previousCreatureIds.remove(id);
-			
-			CreatureEntity previous = elt.previousVersion();
-			boolean didChange = (null != previous) && PartialEntityUpdate.canDescribeCreatureChange(previous, completed);
-			if (didChange)
-			{
-				_creatureIndex.previousVersions.put(id, previous);
-				_creatureIndex.changed.add(completed);
-			}
-			else if (wasKnown)
-			{
-				_creatureIndex.unchanged.add(completed);
-			}
-			else
-			{
-				_creatureIndex.added.add(completed);
-			}
-		}
-		for (Integer id : previousCreatureIds)
-		{
-			_creatureIndex.removed.add(id);
-		}
+		_creatureIndex = _extractCreatureIndex(_creatureIndex, snapshot);
 		
 		// Reset the passives.
-		Set<Integer> previousPassiveIds = _passiveIndex.resetAndTakeExistingIds();
-		for (TickSnapshot.SnapshotPassive elt : snapshot.passives().values())
-		{
-			PassiveEntity completed = elt.completed();
-			int id = completed.id();
-			_passiveIndex.completed.put(id, completed);
-			boolean wasKnown = previousPassiveIds.remove(id);
-			
-			PassiveEntity previous = elt.previousVersion();
-			boolean didChange = (null != previous) && _canDescribePassiveChange(previous, completed);
-			if (didChange)
-			{
-				_passiveIndex.previousVersions.put(id, previous);
-				_passiveIndex.changed.add(completed);
-			}
-			else if (wasKnown)
-			{
-				_passiveIndex.unchanged.add(completed);
-			}
-			else
-			{
-				_passiveIndex.added.add(completed);
-			}
-		}
-		for (Integer id : previousPassiveIds)
-		{
-			_passiveIndex.removed.add(id);
-		}
+		_passiveIndex = _extractPassiveIndex(_passiveIndex, snapshot);
 		
 		Set<CuboidAddress> completedCuboidAddresses = _completedCuboids.keySet();
 		
@@ -1324,6 +1247,144 @@ public class ServerStateManager
 		}
 	}
 
+	private static _EntityIndex<Entity> _extractEntityIndex(_EntityIndex<Entity> oldIndex, TickSnapshot snapshot)
+	{
+		Set<Integer> previousEntityIds = new HashSet<>(oldIndex.completed().keySet());
+		Map<Integer, Entity> completedEntities = new HashMap<>();
+		Map<Integer, Entity> previousEntities = new HashMap<>();
+		List<Entity> addedEntities = new ArrayList<>();
+		List<Integer> removedEntityIds = new ArrayList<>();
+		List<Entity> changedEntities = new ArrayList<>();
+		List<Entity> unchangedEntities = new ArrayList<>();
+		for (TickSnapshot.SnapshotEntity elt : snapshot.entities().values())
+		{
+			Entity completed = elt.completed();
+			int id = completed.id();
+			completedEntities.put(id, completed);
+			boolean wasKnown = previousEntityIds.remove(id);
+			
+			// NOTE:  We can't pre-check if this change matters, like in creatures and passives, as all changes are
+			// visible to the client behind the entity.  This means we need to check if this change matters when we know
+			// who is asking (full Entity or PartialEntity).
+			Entity previous = elt.previousVersion();
+			if (null != previous)
+			{
+				previousEntities.put(id, previous);
+				changedEntities.add(completed);
+			}
+			else if (wasKnown)
+			{
+				unchangedEntities.add(completed);
+			}
+			else
+			{
+				addedEntities.add(completed);
+			}
+			
+		}
+		for (Integer id : previousEntityIds)
+		{
+			removedEntityIds.add(id);
+		}
+		return new _EntityIndex<>(Collections.unmodifiableMap(completedEntities)
+			, Collections.unmodifiableMap(previousEntities)
+			, Collections.unmodifiableList(addedEntities)
+			, Collections.unmodifiableList(removedEntityIds)
+			, Collections.unmodifiableList(changedEntities)
+			, Collections.unmodifiableList(unchangedEntities)
+		);
+	}
+
+	private static _EntityIndex<CreatureEntity> _extractCreatureIndex(_EntityIndex<CreatureEntity> oldIndex, TickSnapshot snapshot)
+	{
+		Set<Integer> previousCreatureIds = new HashSet<>(oldIndex.completed().keySet());
+		Map<Integer, CreatureEntity> completedCreatures = new HashMap<>();
+		Map<Integer, CreatureEntity> previousCreatures = new HashMap<>();
+		List<CreatureEntity> addedCreatures = new ArrayList<>();
+		List<Integer> removedCreatureIds = new ArrayList<>();
+		List<CreatureEntity> changedCreatures = new ArrayList<>();
+		List<CreatureEntity> unchangedCreatures = new ArrayList<>();
+		for (TickSnapshot.SnapshotCreature elt : snapshot.creatures().values())
+		{
+			CreatureEntity completed = elt.completed();
+			int id = completed.id();
+			completedCreatures.put(id, completed);
+			boolean wasKnown = previousCreatureIds.remove(id);
+			
+			CreatureEntity previous = elt.previousVersion();
+			boolean didChange = (null != previous) && PartialEntityUpdate.canDescribeCreatureChange(previous, completed);
+			if (didChange)
+			{
+				previousCreatures.put(id, previous);
+				changedCreatures.add(completed);
+			}
+			else if (wasKnown)
+			{
+				unchangedCreatures.add(completed);
+			}
+			else
+			{
+				addedCreatures.add(completed);
+			}
+		}
+		for (Integer id : previousCreatureIds)
+		{
+			removedCreatureIds.add(id);
+		}
+		return new _EntityIndex<>(Collections.unmodifiableMap(completedCreatures)
+			, Collections.unmodifiableMap(previousCreatures)
+			, Collections.unmodifiableList(addedCreatures)
+			, Collections.unmodifiableList(removedCreatureIds)
+			, Collections.unmodifiableList(changedCreatures)
+			, Collections.unmodifiableList(unchangedCreatures)
+		);
+	}
+
+	private static _EntityIndex<PassiveEntity> _extractPassiveIndex(_EntityIndex<PassiveEntity> oldIndex, TickSnapshot snapshot)
+	{
+		Set<Integer> previousPassiveIds = new HashSet<>(oldIndex.completed().keySet());
+		Map<Integer, PassiveEntity> completedPassives = new HashMap<>();
+		Map<Integer, PassiveEntity> previousPassives = new HashMap<>();
+		List<PassiveEntity> addedPassives = new ArrayList<>();
+		List<Integer> removedPassiveIds = new ArrayList<>();
+		List<PassiveEntity> changedPassives = new ArrayList<>();
+		List<PassiveEntity> unchangedPassives = new ArrayList<>();
+		for (TickSnapshot.SnapshotPassive elt : snapshot.passives().values())
+		{
+			PassiveEntity completed = elt.completed();
+			int id = completed.id();
+			completedPassives.put(id, completed);
+			boolean wasKnown = previousPassiveIds.remove(id);
+			
+			PassiveEntity previous = elt.previousVersion();
+			boolean didChange = (null != previous) && _canDescribePassiveChange(previous, completed);
+			if (didChange)
+			{
+				previousPassives.put(id, previous);
+				changedPassives.add(completed);
+			}
+			else if (wasKnown)
+			{
+				unchangedPassives.add(completed);
+			}
+			else
+			{
+				addedPassives.add(completed);
+			}
+		}
+		for (Integer id : previousPassiveIds)
+		{
+			removedPassiveIds.add(id);
+		}
+		return new _EntityIndex<>(Collections.unmodifiableMap(completedPassives)
+			, Collections.unmodifiableMap(previousPassives)
+			, Collections.unmodifiableList(addedPassives)
+			, Collections.unmodifiableList(removedPassiveIds)
+			, Collections.unmodifiableList(changedPassives)
+			, Collections.unmodifiableList(unchangedPassives)
+		);
+	}
+
 
 	public static interface ICallouts
 	{
@@ -1406,25 +1467,23 @@ public class ServerStateManager
 		}
 	}
 
-	private static final class _EntityIndex<T>
+	private static final record _EntityIndex<T>(Map<Integer, T> completed
+		, Map<Integer, T> previousVersions
+		, List<T> added
+		, List<Integer> removed
+		, List<T> changed
+		, List<T> unchanged
+	)
 	{
-		public Map<Integer, T> completed = Map.of();
-		public Map<Integer, T> previousVersions = Map.of();
-		public List<T> added = List.of();
-		public List<Integer> removed = List.of();
-		public List<T> changed = List.of();
-		public List<T> unchanged = List.of();
-		
-		public Set<Integer> resetAndTakeExistingIds()
+		public static <T> _EntityIndex<T> empty()
 		{
-			Set<Integer> ids = this.completed.keySet();
-			this.completed = new HashMap<>();
-			this.previousVersions = new HashMap<>();
-			this.added = new ArrayList<>();
-			this.removed = new ArrayList<>();
-			this.changed = new ArrayList<>();
-			this.unchanged = new ArrayList<>();
-			return ids;
+			return new _EntityIndex<>(Map.of()
+				, Map.of()
+				, List.of()
+				, List.of()
+				, List.of()
+				, List.of()
+			);
 		}
 	}
 }
