@@ -62,6 +62,7 @@ import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.Pair;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
@@ -190,120 +191,31 @@ public class ServerStateManager
 		Assert.assertTrue(Thread.currentThread() == _ownerThread);
 		
 		// We will first tear the snapshot apart and cache the relevant parts of it in our state (then base all decisions on the state).
-		_tickNumber = snapshot.tickNumber();
+		// This returns this load,unload tuple.
+		Pair<Set<CuboidAddress>, Set<CuboidAddress>> cuboidsToLoadAndUnload = _absorbSnapshot(snapshot, worldSpawn);
+		Set<CuboidAddress> cuboidsToLoad = cuboidsToLoadAndUnload.one();
+		Set<CuboidAddress> cuboidsToUnload = cuboidsToLoadAndUnload.two();
 		
-		// We start by reseting everything indexed by cuboid address.
-		_completedCuboids = new HashMap<>();
-		_scheduledBlockMutations = new HashMap<>();
-		_periodicBlockMutations = new HashMap<>();
-		_blockChanges = new HashMap<>();
-		for (TickSnapshot.SnapshotCuboid elt : snapshot.cuboids().values())
-		{
-			IReadOnlyCuboidData cuboid = elt.completed();
-			CuboidAddress address = cuboid.getCuboidAddress();
-			_completedCuboids.put(address, cuboid);
-			
-			// Never null but could be empty.
-			_scheduledBlockMutations.put(address, elt.scheduledBlockMutations());
-			
-			// Never null but could be empty.
-			_periodicBlockMutations.put(address, elt.periodicMutationMillis());
-			
-			// This one is a bit special in that we on make an entry in the map if non-null.
-			List<MutationBlockSetBlock> blockChanges = elt.blockChanges();
-			if (null != blockChanges)
-			{
-				Assert.assertTrue(!blockChanges.isEmpty());
-				_blockChanges.put(address, blockChanges);
-			}
-		}
+		// By this point, we are done absorbing the TickSnapshot so we need to handle 4 end-of-tick tasks:
+		// 1) Flush cuboids and entities (unloaded or periodically) to disk.
+		// 2) Receive cuboids and entities loaded from disk (requested earlier).
+		// 3) Flush changes to existing clients.
+		// 4) Set up initial state for newly-loaded ones clients.
 		
-		// Extract the other entities meta-data.
-		_scheduledEntityMutations = new HashMap<>();
-		_commitLevels = new HashMap<>();
-		for (TickSnapshot.SnapshotEntity elt : snapshot.entities().values())
-		{
-			Entity completed = elt.completed();
-			int id = completed.id();
-			_scheduledEntityMutations.put(id, elt.scheduledMutations());
-			_commitLevels.put(id, elt.commitLevel());
-		}
+		Collection<Integer> removedClients = new ArrayList<>(_removedClients);
+		_removedClients.clear();
 		
-		// Reset the entities.
-		_entityIndex = _extractEntityIndex(_entityIndex, snapshot);
+		// Request that we save back anything we are unloading before we request that anything new be loaded.
+		_handleEndOfTickWriteBack(removedClients, cuboidsToUnload);
 		
-		// Reset the creatures.
-		_creatureIndex = _extractCreatureIndex(_creatureIndex, snapshot);
+		// Request any missing cuboids and see what we got back from last time.
+		Collection<SuspendedCuboid<CuboidData>> newlyLoadedCuboids = new ArrayList<>();
+		Collection<SuspendedEntity> newlyLoadedEntities = new ArrayList<>();
+		_handleResourceLoading(newlyLoadedCuboids, newlyLoadedEntities, cuboidsToLoad, _tickNumber * _millisPerTick);
+		// (we will account for having requested these).
+		_requestedCuboids.addAll(cuboidsToLoad);
 		
-		// Reset the passives.
-		_passiveIndex = _extractPassiveIndex(_passiveIndex, snapshot);
-		
-		Set<CuboidAddress> completedCuboidAddresses = _completedCuboids.keySet();
-		
-		// We want to create a set of all the cuboids which are actually required, based on the entities.
-		// (we will use this for load/unload decisions)
-		Set<CuboidAddress> referencedCuboids = _findReferencedCuboids(_connectedClients.values());
-		referencedCuboids.addAll(snapshot.internallyMarkedAlive());
-		
-		// We want to implicitly load the area around the world spawn.
-		CuboidAddress spawnCuboid = worldSpawn.getCuboidAddress();
-		for (int z = -1; z <= 1; ++z)
-		{
-			for (int y = -1; y <= 1; ++y)
-			{
-				for (int x = -1; x <= 1; ++x)
-				{
-					CuboidAddress thisCuboid = spawnCuboid.getRelative(x, y, z);
-					referencedCuboids.add(thisCuboid);
-				}
-			}
-		}
-		
-		// Update our keep-alive timers for cuboids.
-		// (we assume that we are always tracking the keep-alive for all completed cuboids)
-		Assert.assertTrue(_completedCuboids.size() == _cuboidKeepAlive.size());
-		Set<CuboidAddress> cuboidsToLoad = new HashSet<>();
-		Set<CuboidAddress> cuboidsToUnload = new HashSet<>();
-		Map<CuboidAddress, Integer> oldCounters = _cuboidKeepAlive;
-		_cuboidKeepAlive = new HashMap<>();
-		for (CuboidAddress address : referencedCuboids)
-		{
-			// We will set the keep-alive if loaded, or request that it be loaded.
-			if (completedCuboidAddresses.contains(address))
-			{
-				_cuboidKeepAlive.put(address, _cuboidKeepAliveTicks);
-			}
-			else
-			{
-				// Not yet loaded.
-				if (!_requestedCuboids.contains(address))
-				{
-					cuboidsToLoad.add(address);
-				}
-			}
-		}
-		for (Map.Entry<CuboidAddress, Integer> elt : oldCounters.entrySet())
-		{
-			CuboidAddress address = elt.getKey();
-			
-			// These shouldn't have been unloaded yet.
-			Assert.assertTrue(completedCuboidAddresses.contains(address));
-			
-			if (!_cuboidKeepAlive.containsKey(address))
-			{
-				// Decrement count and keep-alive or schedule for unload.
-				int count = elt.getValue();
-				if (count > 1)
-				{
-					_cuboidKeepAlive.put(address, count - 1);
-				}
-				else
-				{
-					cuboidsToUnload.add(address);
-				}
-			}
-		}
-		
+		// Flush updates to already-connected clients.
 		for (Map.Entry<Integer, ClientState> elt : _connectedClients.entrySet())
 		{
 			int clientId = elt.getKey();
@@ -325,22 +237,6 @@ public class ServerStateManager
 			
 			_sendUpdatesToClient(clientId, state, newCuboidLocation, snapshot.postedEvents());
 		}
-		
-		// Note that we will clear the removed clients BEFORE adding new ones since it is theoretically possible for
-		// a client to disconnect and reconnect in the same tick and the logic has this implicit assumption.
-		// Create a copy of the removed clients so we can clear the long-lived container.
-		// (we removed this from the connected clients, earlier).
-		Collection<Integer> removedClients = new ArrayList<>(_removedClients);
-		_removedClients.clear();
-		
-		// Request that we save back anything we are unloading before we request that anything new be loaded.
-		_handleEndOfTickWriteBack(removedClients, cuboidsToUnload);
-		
-		// Request any missing cuboids or new entities and see what we got back from last time.
-		Collection<SuspendedCuboid<CuboidData>> newlyLoadedCuboids = new ArrayList<>();
-		Collection<SuspendedEntity> newlyLoadedEntities = new ArrayList<>();
-		_handleResourceLoading(newlyLoadedCuboids, newlyLoadedEntities, cuboidsToLoad, _tickNumber * _millisPerTick);
-		_requestedCuboids.addAll(cuboidsToLoad);
 		
 		// Any cuboids we just loaded, we want to set their keep-alive.
 		for (SuspendedCuboid<CuboidData> loaded : newlyLoadedCuboids)
@@ -452,7 +348,7 @@ public class ServerStateManager
 	}
 
 
-	private Set<CuboidAddress> _findReferencedCuboids(Collection<ClientState> clientStates)
+	private static Set<CuboidAddress> _findReferencedCuboids(Collection<ClientState> clientStates)
 	{
 		Set<CuboidAddress> referencedCuboids = new HashSet<>();
 		for (ClientState state : clientStates)
@@ -660,7 +556,7 @@ public class ServerStateManager
 		return didHandle;
 	}
 
-	private void _sendEvents(OutpacketBuffer buffer, ClientState state, List<EventRecord> postedEvents)
+	private static void _sendEvents(OutpacketBuffer buffer, ClientState state, List<EventRecord> postedEvents)
 	{
 		for (EventRecord event : postedEvents)
 		{
@@ -1043,7 +939,7 @@ public class ServerStateManager
 		}
 	}
 
-	private void _updateRangeAndSendRemoves(OutpacketBuffer buffer, ClientState state, CuboidAddress currentCuboid)
+	private static void _updateRangeAndSendRemoves(OutpacketBuffer buffer, ClientState state, CuboidAddress currentCuboid)
 	{
 		int minDistance = -state.cuboidViewDistance;
 		int maxDistance = state.cuboidViewDistance;
@@ -1383,6 +1279,136 @@ public class ServerStateManager
 			, Collections.unmodifiableList(changedPassives)
 			, Collections.unmodifiableList(unchangedPassives)
 		);
+	}
+
+	private static Set<CuboidAddress> _buildReferencedCuboidSet(Collection<ClientState> clients
+		, TickSnapshot snapshot
+		, AbsoluteLocation worldSpawn
+	)
+	{
+		Set<CuboidAddress> referencedCuboids = _findReferencedCuboids(clients);
+		referencedCuboids.addAll(snapshot.internallyMarkedAlive());
+		
+		// We want to implicitly load the area around the world spawn.
+		CuboidAddress spawnCuboid = worldSpawn.getCuboidAddress();
+		for (int z = -1; z <= 1; ++z)
+		{
+			for (int y = -1; y <= 1; ++y)
+			{
+				for (int x = -1; x <= 1; ++x)
+				{
+					CuboidAddress thisCuboid = spawnCuboid.getRelative(x, y, z);
+					referencedCuboids.add(thisCuboid);
+				}
+			}
+		}
+		return referencedCuboids;
+	}
+
+	private Pair<Set<CuboidAddress>, Set<CuboidAddress>> _absorbSnapshot(TickSnapshot snapshot
+		, AbsoluteLocation worldSpawn
+	)
+	{
+		_tickNumber = snapshot.tickNumber();
+		
+		// We start by reseting everything indexed by cuboid address.
+		_completedCuboids = new HashMap<>();
+		_scheduledBlockMutations = new HashMap<>();
+		_periodicBlockMutations = new HashMap<>();
+		_blockChanges = new HashMap<>();
+		for (TickSnapshot.SnapshotCuboid elt : snapshot.cuboids().values())
+		{
+			IReadOnlyCuboidData cuboid = elt.completed();
+			CuboidAddress address = cuboid.getCuboidAddress();
+			_completedCuboids.put(address, cuboid);
+			
+			// Never null but could be empty.
+			_scheduledBlockMutations.put(address, elt.scheduledBlockMutations());
+			
+			// Never null but could be empty.
+			_periodicBlockMutations.put(address, elt.periodicMutationMillis());
+			
+			// This one is a bit special in that we on make an entry in the map if non-null.
+			List<MutationBlockSetBlock> blockChanges = elt.blockChanges();
+			if (null != blockChanges)
+			{
+				Assert.assertTrue(!blockChanges.isEmpty());
+				_blockChanges.put(address, blockChanges);
+			}
+		}
+		
+		// Extract the other entities meta-data.
+		_scheduledEntityMutations = new HashMap<>();
+		_commitLevels = new HashMap<>();
+		for (TickSnapshot.SnapshotEntity elt : snapshot.entities().values())
+		{
+			Entity completed = elt.completed();
+			int id = completed.id();
+			_scheduledEntityMutations.put(id, elt.scheduledMutations());
+			_commitLevels.put(id, elt.commitLevel());
+		}
+		
+		// Reset the entities.
+		_entityIndex = _extractEntityIndex(_entityIndex, snapshot);
+		
+		// Reset the creatures.
+		_creatureIndex = _extractCreatureIndex(_creatureIndex, snapshot);
+		
+		// Reset the passives.
+		_passiveIndex = _extractPassiveIndex(_passiveIndex, snapshot);
+		
+		Set<CuboidAddress> completedCuboidAddresses = _completedCuboids.keySet();
+		
+		// We want to create a set of all the cuboids which are actually required, based on the entities.
+		// (we will use this for load/unload decisions)
+		Set<CuboidAddress> referencedCuboids = _buildReferencedCuboidSet(_connectedClients.values(), snapshot, worldSpawn);
+		
+		// Update our keep-alive timers for cuboids.
+		// (we assume that we are always tracking the keep-alive for all completed cuboids)
+		Assert.assertTrue(_completedCuboids.size() == _cuboidKeepAlive.size());
+		Set<CuboidAddress> cuboidsToLoad = new HashSet<>();
+		Set<CuboidAddress> cuboidsToUnload = new HashSet<>();
+		Map<CuboidAddress, Integer> oldCounters = _cuboidKeepAlive;
+		_cuboidKeepAlive = new HashMap<>();
+		for (CuboidAddress address : referencedCuboids)
+		{
+			// We will set the keep-alive if loaded, or request that it be loaded.
+			if (completedCuboidAddresses.contains(address))
+			{
+				_cuboidKeepAlive.put(address, _cuboidKeepAliveTicks);
+			}
+			else
+			{
+				// Not yet loaded.
+				if (!_requestedCuboids.contains(address))
+				{
+					cuboidsToLoad.add(address);
+				}
+			}
+		}
+		for (Map.Entry<CuboidAddress, Integer> elt : oldCounters.entrySet())
+		{
+			CuboidAddress address = elt.getKey();
+			
+			// These shouldn't have been unloaded yet.
+			Assert.assertTrue(completedCuboidAddresses.contains(address));
+			
+			if (!_cuboidKeepAlive.containsKey(address))
+			{
+				// Decrement count and keep-alive or schedule for unload.
+				int count = elt.getValue();
+				if (count > 1)
+				{
+					_cuboidKeepAlive.put(address, count - 1);
+				}
+				else
+				{
+					cuboidsToUnload.add(address);
+				}
+			}
+		}
+		Pair<Set<CuboidAddress>, Set<CuboidAddress>> cuboidsToLoadAndUnload = new Pair<>(cuboidsToLoad, cuboidsToUnload);
+		return cuboidsToLoadAndUnload;
 	}
 
 
