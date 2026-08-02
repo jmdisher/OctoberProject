@@ -329,9 +329,13 @@ public class ServerStateManager
 		return _cuboidKeepAliveTicks;
 	}
 
-	public void shutdown()
+	public void shutdown(TickSnapshot finalSnapshot)
 	{
 		Assert.assertTrue(Thread.currentThread() == _ownerThread);
+		
+		// After we absorb the snapshot, we don't act on the returned variables to load or unload since we will be unloading everything.
+		_absorbSnapshot(finalSnapshot, null);
+		
 		// Finish any remaining write-back.
 		if (!_completedCuboids.isEmpty() || !_entityIndex.completed.isEmpty())
 		{
@@ -1290,15 +1294,18 @@ public class ServerStateManager
 		referencedCuboids.addAll(snapshot.internallyMarkedAlive());
 		
 		// We want to implicitly load the area around the world spawn.
-		CuboidAddress spawnCuboid = worldSpawn.getCuboidAddress();
-		for (int z = -1; z <= 1; ++z)
+		if (null != worldSpawn)
 		{
-			for (int y = -1; y <= 1; ++y)
+			CuboidAddress spawnCuboid = worldSpawn.getCuboidAddress();
+			for (int z = -1; z <= 1; ++z)
 			{
-				for (int x = -1; x <= 1; ++x)
+				for (int y = -1; y <= 1; ++y)
 				{
-					CuboidAddress thisCuboid = spawnCuboid.getRelative(x, y, z);
-					referencedCuboids.add(thisCuboid);
+					for (int x = -1; x <= 1; ++x)
+					{
+						CuboidAddress thisCuboid = spawnCuboid.getRelative(x, y, z);
+						referencedCuboids.add(thisCuboid);
+					}
 				}
 			}
 		}

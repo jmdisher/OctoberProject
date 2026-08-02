@@ -202,7 +202,9 @@ public class ServerRunner
 		CountDownLatch latch = new CountDownLatch(1);
 		_messages.enqueue("SHUTDOWN", () -> {
 			// Allow the state manager to flush anything it has stored.
-			_stateManager.shutdown();
+			// We need to give it the last snapshot so it knows what to unload.
+			TickSnapshot finalSnapshot = _tickRunner.waitForPreviousTick();
+			_stateManager.shutdown(finalSnapshot);
 			latch.countDown();
 		});
 		try

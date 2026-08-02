@@ -99,7 +99,11 @@ public class TestServerStateManager
 		_Callouts callouts = new _Callouts();
 		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
 		manager.setOwningThread();
-		manager.shutdown();
+		TickSnapshot snapshot = _createEmptySnapshot();
+		manager.shutdown(snapshot);
+		
+		// Show that we want to write-back everything remaining in the final snapshot.
+		Assert.assertEquals(snapshot.cuboids().size(), callouts.cuboidsToWrite.size());
 	}
 
 	@Test
@@ -110,13 +114,16 @@ public class TestServerStateManager
 		manager.setOwningThread();
 		TickSnapshot snapshot = _createEmptySnapshot();
 		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot, new AbsoluteLocation(0, 0, 0));
-		manager.shutdown();
+		manager.shutdown(snapshot);
 		
 		// This should request nothing be set up for the next tick.
 		Assert.assertTrue(changes.newCuboids().isEmpty());
 		Assert.assertTrue(changes.cuboidsToUnload().isEmpty());
 		Assert.assertTrue(changes.newEntities().isEmpty());
 		Assert.assertTrue(changes.entitiesToUnload().isEmpty());
+		
+		// Show that we want to write-back everything remaining in the final snapshot.
+		Assert.assertEquals(snapshot.cuboids().size(), callouts.cuboidsToWrite.size());
 	}
 
 	@Test
@@ -242,7 +249,21 @@ public class TestServerStateManager
 		Assert.assertEquals(1, callouts.cuboidsToWrite.size());
 		callouts.cuboidsToWrite.clear();
 		
-		manager.shutdown();
+		// Unload these in the final snapshot.
+		Map<CuboidAddress, TickSnapshot.SnapshotCuboid> cuboids = new HashMap<>(snapshot.cuboids());
+		cuboids.remove(changes.cuboidsToUnload().iterator().next());
+		snapshot = _modifySnapshot(snapshot
+			, cuboids
+			, snapshot.entities()
+			, snapshot.creatures()
+			, snapshot.passives()
+			, snapshot.completedHeightMaps()
+			, Set.of()
+		);
+		manager.shutdown(snapshot);
+		
+		// Show that we want to write-back everything remaining in the final snapshot.
+		Assert.assertEquals(snapshot.cuboids().size(), callouts.cuboidsToWrite.size());
 	}
 
 	@Test
@@ -415,7 +436,10 @@ public class TestServerStateManager
 		Assert.assertEquals(1, callouts.cuboidsToTryWrite.size());
 		Assert.assertEquals(1, callouts.entitiesToTryWrite.size());
 		
-		manager.shutdown();
+		manager.shutdown(snapshot);
+		
+		// Show that we want to write-back everything remaining in the final snapshot.
+		Assert.assertEquals(snapshot.cuboids().size(), callouts.cuboidsToWrite.size());
 	}
 
 	@Test
@@ -615,7 +639,10 @@ public class TestServerStateManager
 		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		Assert.assertEquals(1, callouts.cuboidsSentToClient.get(clientId).size());
 		
-		manager.shutdown();
+		manager.shutdown(snapshot);
+		
+		// Show that we want to write-back everything remaining in the final snapshot.
+		Assert.assertEquals(snapshot.cuboids().size(), callouts.cuboidsToWrite.size());
 	}
 
 	@Test
@@ -715,7 +742,7 @@ public class TestServerStateManager
 		Assert.assertEquals(1, callouts.cuboidsSentToClient.get(clientId).size());
 		
 		callouts.cuboidsToWrite.clear();
-		manager.shutdown();
+		manager.shutdown(snapshot);
 	}
 
 	@Test
@@ -748,7 +775,10 @@ public class TestServerStateManager
 		manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
 		// (we should now see that the 5x5x5 is requested since we asked for a radius of 2)
 		Assert.assertEquals(27 + 125, callouts.requestedCuboidAddresses.size());
-		manager.shutdown();
+		manager.shutdown(snapshot);
+		
+		// Show that we want to write-back everything remaining in the final snapshot.
+		Assert.assertEquals(snapshot.cuboids().size(), callouts.cuboidsToWrite.size());
 	}
 
 	@Test
@@ -839,7 +869,10 @@ public class TestServerStateManager
 		Assert.assertEquals(0, callouts.cuboidsToWrite.size());
 		Assert.assertEquals(0, callouts.cuboidsToTryWrite.size());
 		
-		manager.shutdown();
+		manager.shutdown(snapshot);
+		
+		// Show that we want to write-back everything remaining in the final snapshot.
+		Assert.assertEquals(snapshot.cuboids().size(), callouts.cuboidsToWrite.size());
 	}
 
 	@Test
@@ -1851,6 +1884,49 @@ public class TestServerStateManager
 			manager.setupNextTickAfterCompletion(snap2, worldSpawn);
 			manager.setupNextTickAfterCompletion(snap3, worldSpawn);
 		}
+	}
+
+	@Test
+	public void unloadLateLoadedCuboid()
+	{
+		_Callouts callouts = new _Callouts();
+		ServerStateManager manager = new ServerStateManager(callouts, ServerRunner.DEFAULT_MILLIS_PER_TICK);
+		manager.setOwningThread();
+		
+		// Start with an empty snapshot and see that we request cuboids around work spawn.
+		TickSnapshot snapshot = _createEmptySnapshot();
+		AbsoluteLocation worldSpawn = new AbsoluteLocation(0, 0, 0);
+		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
+		Assert.assertEquals(27, callouts.requestedCuboidAddresses.size());
+		
+		// Create a cuboid for one of these locations and prepare it for loading.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(worldSpawn.getCuboidAddress(), ENV.special.AIR);
+		callouts.loadedCuboids.add(new SuspendedCuboid<>(cuboid
+			, HeightMapHelpers.buildHeightMap(cuboid)
+			, List.of()
+			, List.of()
+			, Map.of()
+			, List.of()
+		));
+		
+		// We can now run another tick to load this.
+		snapshot = _createEmptySnapshot();
+		changes = manager.setupNextTickAfterCompletion(snapshot, worldSpawn);
+		Assert.assertEquals(1, changes.newCuboids().size());
+		
+		// Now, create the final snapshot with this loaded and shut down.
+		snapshot = _modifySnapshot(snapshot
+			, _convertToCuboidMap(changes.newCuboids())
+			, snapshot.entities()
+			, snapshot.creatures()
+			, snapshot.passives()
+			, _convertToCuboidHeightMap(changes.newCuboids())
+			, Set.of()
+		);
+		manager.shutdown(snapshot);
+		
+		// Show that we want to write-back everything remaining in the final snapshot.
+		Assert.assertEquals(snapshot.cuboids().size(), callouts.cuboidsToWrite.size());
 	}
 
 
