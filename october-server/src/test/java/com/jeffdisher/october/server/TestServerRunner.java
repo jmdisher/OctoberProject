@@ -873,7 +873,7 @@ public class TestServerRunner
 	@Test
 	public void clientRejoinCuboidLoader() throws Throwable
 	{
-		// Connect a client, turn on a cucoib loader and observe the creatures, then reconnect after a while to see that their IDs have not changed (not unloaded).
+		// Connect a client, turn on a cuboid loader and observe the creatures, then reconnect after a while to see that their IDs have not changed (not unloaded).
 		TestAdapter network = new TestAdapter();
 		// We will use a special cuboid generator which only generates the one cuboid with a well-defined population of creatures.
 		IWorldGenerator cuboidGenerator = new IWorldGenerator() {
@@ -884,20 +884,14 @@ public class TestServerRunner
 				CuboidData raw = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 				if (address.equals(CuboidAddress.fromInt(0, 0, 0)))
 				{
-					for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
-					{
-						for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
-						{
-							raw.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, 0), STONE.item().number());
-						}
-					}
+					CuboidGenerator.fillPlane(raw, (byte)0, STONE);
 					raw.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 1, 1), CUBOID_LOADER.item().number());
 					CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(raw);
 					EntityLocation base = address.getBase().toEntityLocation();
 					CreatureEntity cow = CreatureEntity.create(creatureIdAssigner.next()
-							, COW
-							, new EntityLocation(base.x() + 30.0f, base.y() + 0.0f, base.z() + 1.0f)
-							, gameTimeMillis
+						, COW
+						, new EntityLocation(base.x() + 30.0f, base.y() + 0.0f, base.z() + 1.0f)
+						, gameTimeMillis
 					);
 					data = new SuspendedCuboid<>(raw, heightMap, List.of(cow), List.of(), Map.of(), List.of());
 				}
@@ -913,7 +907,8 @@ public class TestServerRunner
 			{
 				// Only called by main.
 				throw new AssertionError();
-			}};
+			}
+		};
 		WorldConfig config = new WorldConfig();
 		config.worldSpawn = new AbsoluteLocation(1, 1, 1);
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), cuboidGenerator, config);
@@ -936,6 +931,9 @@ public class TestServerRunner
 		server.clientConnected(clientId1, null, "name", 1);
 		Entity entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
+		
+		// We want to move the world spawn since it otherwise nullifies this test (as these cuboids will be loaded even without the loader).
+		config.worldSpawn = new AbsoluteLocation(256, 256, 0);
 		
 		// We expect to see a cow.
 		PartialEntity cow = network.waitForPeerEntity(clientId1, -1);
