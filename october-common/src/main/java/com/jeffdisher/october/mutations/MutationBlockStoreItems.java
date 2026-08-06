@@ -3,10 +3,8 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.block_periodic.PeriodicBehaviourHopper;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.CraftingBlockSupport;
-import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
@@ -71,7 +69,6 @@ public class MutationBlockStoreItems implements IMutationBlock
 	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
-		boolean didApply = false;
 		
 		Inventory existing = _getInventory(newBlock);
 		if (null != existing)
@@ -93,7 +90,6 @@ public class MutationBlockStoreItems implements IMutationBlock
 			{
 				context.mutationSink.next(new MutationBlockFurnaceCraft(_blockLocation));
 			}
-			didApply = true;
 		}
 		else
 		{
@@ -103,13 +99,6 @@ public class MutationBlockStoreItems implements IMutationBlock
 				: ItemSlot.fromNonStack(_nonStackable)
 			;
 			context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, _blockLocation.toEntityLocation(), new EntityLocation(0.0f, 0.0f, 0.0f), slot);
-			didApply = true;
-		}
-		
-		// Handle the case where this might be a hopper.
-		if (didApply && HopperHelpers.isHopper(_blockLocation, newBlock))
-		{
-			newBlock.requestFutureMutation(PeriodicBehaviourHopper.MILLIS_BETWEEN_HOPPER_CALLS);
 		}
 	}
 

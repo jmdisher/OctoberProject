@@ -5,12 +5,10 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
-import com.jeffdisher.october.block_periodic.PeriodicBehaviourHopper;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.FireHelpers;
 import com.jeffdisher.october.logic.GroundCoverHelpers;
-import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -136,12 +134,6 @@ public class MutationBlockUpdate implements IMutationBlock
 					}
 				}
 			}
-		}
-		
-		// Handle the case where this might be a hopper.
-		if (!didApply && HopperHelpers.isHopper(_blockLocation, newBlock))
-		{
-			newBlock.requestFutureMutation(PeriodicBehaviourHopper.MILLIS_BETWEEN_HOPPER_CALLS);
 		}
 		
 		// Check if this was burning and should be extinguished (happens when water flows on top).

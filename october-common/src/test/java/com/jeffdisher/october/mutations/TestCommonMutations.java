@@ -26,7 +26,6 @@ import com.jeffdisher.october.block_movement.MutationBlockDeleteBlock;
 import com.jeffdisher.october.block_movement.MutationBlockOverwriteWithMove;
 import com.jeffdisher.october.block_movement.MutationBlockPushEntities;
 import com.jeffdisher.october.block_movement.PassiveActionPush;
-import com.jeffdisher.october.block_periodic.PeriodicBehaviourHopper;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourPlant;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -588,7 +587,6 @@ public class TestCommonMutations
 		// This should cause no change.
 		Assert.assertFalse(proxy.didChange());
 		Assert.assertEquals(hopper, proxy.getBlock());
-		Assert.assertEquals(PeriodicBehaviourHopper.MILLIS_BETWEEN_HOPPER_CALLS, proxy.periodicDelayMillis);
 	}
 
 	@Test
