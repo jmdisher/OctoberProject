@@ -6,6 +6,8 @@ import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
+import com.jeffdisher.october.block_periodic.PeriodicBehaviourHopper;
+import com.jeffdisher.october.block_periodic.PeriodicBehaviourPlant;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.FireHelpers;
 import com.jeffdisher.october.logic.GroundCoverHelpers;
@@ -107,7 +109,7 @@ public class CommonBlockMutationHelpers
 				
 				if (env.plants.growthDivisor(blockType) > 0)
 				{
-					newBlock.requestFutureMutation(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS);
+					newBlock.requestFutureMutation(PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS);
 				}
 				
 				if (shouldSetHigh)
@@ -146,7 +148,7 @@ public class CommonBlockMutationHelpers
 		// Handle the case where this might be a hopper.
 		if (didApply && HopperHelpers.isHopper(location, newBlock))
 		{
-			newBlock.requestFutureMutation(MutationBlockPeriodic.MILLIS_BETWEEN_HOPPER_CALLS);
+			newBlock.requestFutureMutation(PeriodicBehaviourHopper.MILLIS_BETWEEN_HOPPER_CALLS);
 		}
 		if (didApply)
 		{

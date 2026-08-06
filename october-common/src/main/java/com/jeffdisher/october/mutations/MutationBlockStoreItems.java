@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.block_periodic.PeriodicBehaviourHopper;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.CraftingBlockSupport;
 import com.jeffdisher.october.logic.HopperHelpers;
@@ -108,7 +109,7 @@ public class MutationBlockStoreItems implements IMutationBlock
 		// Handle the case where this might be a hopper.
 		if (didApply && HopperHelpers.isHopper(_blockLocation, newBlock))
 		{
-			newBlock.requestFutureMutation(MutationBlockPeriodic.MILLIS_BETWEEN_HOPPER_CALLS);
+			newBlock.requestFutureMutation(PeriodicBehaviourHopper.MILLIS_BETWEEN_HOPPER_CALLS);
 		}
 	}
 

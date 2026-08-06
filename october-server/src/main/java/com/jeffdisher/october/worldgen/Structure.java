@@ -13,9 +13,9 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.GroundCoverRegistry;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.PlantRegistry;
+import com.jeffdisher.october.block_periodic.PeriodicBehaviourPlant;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
-import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.properties.PropertyType;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -334,11 +334,11 @@ public class Structure
 									long perioidicMillisDelay = 0L;
 									if (needsGrowth)
 									{
-										perioidicMillisDelay = MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS;
+										perioidicMillisDelay = PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS;
 									}
 									else if (isComposite)
 									{
-										perioidicMillisDelay = MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS;
+										perioidicMillisDelay = PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS;
 									}
 									
 									if (perioidicMillisDelay > 0L)

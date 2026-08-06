@@ -15,6 +15,7 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LightAspect;
+import com.jeffdisher.october.block_periodic.PeriodicBehaviourPlant;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -24,7 +25,6 @@ import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.PassiveIdAssigner;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
-import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
@@ -746,7 +746,7 @@ public class TestTickRunner_slow
 		// The last call will have enqueued a growth tick so we want to skip ahead 500 ticks to see the growth.
 		// Then, there will be 1 growth attempt, but we set the random provider to 0 so it will fail.  Then we will see another 100 ticks pass.
 		randomHolder[0] = 0;
-		int ticksBetweenGrowthCalls = (int)(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS / MILLIS_PER_TICK);
+		int ticksBetweenGrowthCalls = (int)(PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS / MILLIS_PER_TICK);
 		for (int i = 0; i < (2 * ticksBetweenGrowthCalls + 1); ++i)
 		{
 			runner.startNextTick();
@@ -776,7 +776,7 @@ public class TestTickRunner_slow
 	public void wheatGrowth()
 	{
 		// Plant a seed and watch it grow.
-		int ticksBetweenGrowthCalls = (int)(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS / MILLIS_PER_TICK);
+		int ticksBetweenGrowthCalls = (int)(PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS / MILLIS_PER_TICK);
 		CuboidAddress address = CuboidAddress.fromInt(7, 8, 9);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation location = address.getBase().getRelative(0, 6, 7);

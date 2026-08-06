@@ -26,6 +26,8 @@ import com.jeffdisher.october.block_movement.MutationBlockDeleteBlock;
 import com.jeffdisher.october.block_movement.MutationBlockOverwriteWithMove;
 import com.jeffdisher.october.block_movement.MutationBlockPushEntities;
 import com.jeffdisher.october.block_movement.PassiveActionPush;
+import com.jeffdisher.october.block_periodic.PeriodicBehaviourHopper;
+import com.jeffdisher.october.block_periodic.PeriodicBehaviourPlant;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.DeserializationContext;
@@ -504,7 +506,7 @@ public class TestCommonMutations
 		mutation.applyMutation(context, proxy);
 		Assert.assertFalse(proxy.didChange());
 		Assert.assertEquals(wheatSeedling, proxy.getBlock());
-		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS, proxy.periodicDelayMillis);
+		Assert.assertEquals(PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS, proxy.periodicDelayMillis);
 		
 		// Now, show that it works if there is light.
 		proxy.periodicDelayMillis = 0L;
@@ -515,7 +517,7 @@ public class TestCommonMutations
 		mutation.applyMutation(context, proxy);
 		Assert.assertTrue(proxy.didChange());
 		Assert.assertEquals(wheatYoung, proxy.getBlock());
-		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS, proxy.periodicDelayMillis);
+		Assert.assertEquals(PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS, proxy.periodicDelayMillis);
 	}
 
 	@Test
@@ -543,21 +545,21 @@ public class TestCommonMutations
 		mutation.applyMutation(context, proxy);
 		Assert.assertFalse(proxy.didChange());
 		Assert.assertEquals(wheatSeedling, proxy.getBlock());
-		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS, proxy.periodicDelayMillis);
+		Assert.assertEquals(PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS, proxy.periodicDelayMillis);
 		
 		// Now change the update delay to a later one and observe that re-running this will cause it to update it.
-		proxy.periodicDelayMillis = 2 * MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS;
+		proxy.periodicDelayMillis = 2 * PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS;
 		mutation.applyMutation(context, proxy);
 		Assert.assertFalse(proxy.didChange());
 		Assert.assertEquals(wheatSeedling, proxy.getBlock());
-		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS, proxy.periodicDelayMillis);
+		Assert.assertEquals(PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS, proxy.periodicDelayMillis);
 		
 		// We can also show that a sooner value will not be updated.
-		proxy.periodicDelayMillis = MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS / 2;
+		proxy.periodicDelayMillis = PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS / 2;
 		mutation.applyMutation(context, proxy);
 		Assert.assertFalse(proxy.didChange());
 		Assert.assertEquals(wheatSeedling, proxy.getBlock());
-		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS / 2, proxy.periodicDelayMillis);
+		Assert.assertEquals(PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS / 2, proxy.periodicDelayMillis);
 	}
 
 	@Test
@@ -586,7 +588,7 @@ public class TestCommonMutations
 		// This should cause no change.
 		Assert.assertFalse(proxy.didChange());
 		Assert.assertEquals(hopper, proxy.getBlock());
-		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_HOPPER_CALLS, proxy.periodicDelayMillis);
+		Assert.assertEquals(PeriodicBehaviourHopper.MILLIS_BETWEEN_HOPPER_CALLS, proxy.periodicDelayMillis);
 	}
 
 	@Test

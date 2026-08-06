@@ -3,12 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.DeserializationContext;
-import com.jeffdisher.october.logic.HopperHelpers;
-import com.jeffdisher.october.logic.PlantHelpers;
-import com.jeffdisher.october.logic.PortalHelpers;
-import com.jeffdisher.october.logic.CuboidLoaderHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -25,8 +20,6 @@ import com.jeffdisher.october.utils.Assert;
 public class MutationBlockPeriodic implements IMutationBlock
 {
 	public static final MutationBlockType TYPE = MutationBlockType.PERIODIC;
-	public static final long MILLIS_BETWEEN_GROWTH_CALLS = 10_000L;
-	public static final long MILLIS_BETWEEN_HOPPER_CALLS = 1_000L;
 
 	public static MutationBlockPeriodic deserialize(DeserializationContext context)
 	{
@@ -57,38 +50,7 @@ public class MutationBlockPeriodic implements IMutationBlock
 		
 		// Make sure that this is a block which can grow.
 		Block block = newBlock.getBlock();
-		if (PlantHelpers.canGrow(env, block))
-		{
-			boolean shouldReschedule = PlantHelpers.shouldRescheduleAfterPlantPeriodic(env, context, _location, newBlock, block);
-			
-			if (shouldReschedule)
-			{
-				newBlock.requestFutureMutation(MILLIS_BETWEEN_GROWTH_CALLS);
-			}
-		}
-		else if (env.special.blockCuboidLoader == block)
-		{
-			byte flags = newBlock.getFlags();
-			boolean isActive = FlagsAspect.isSet(flags, FlagsAspect.FLAG_ACTIVE);
-			CuboidLoaderHelpers.periodicUpdate(context, newBlock, _location, isActive);
-		}
-		else if (HopperHelpers.isHopper(_location, newBlock))
-		{
-			HopperHelpers.tryProcessHopper(context, _location, newBlock);
-			newBlock.requestFutureMutation(MILLIS_BETWEEN_HOPPER_CALLS);
-		}
-		else if (env.composites.isActiveCornerstone(block))
-		{
-			// See if we need to change the state of the composite.
-			// Note that this implicitly calls requestFutureMutation (called via multiple paths).
-			env.composites.processCornerstoneUpdate(env, context, _location, newBlock);
-			
-			// If this is the portal cornerstone, see if it needs to update the portal.
-			if (PortalHelpers.isKeystone(newBlock))
-			{
-				PortalHelpers.handlePortalSurface(env, context, _location, newBlock);
-			}
-		}
+		env.periodic.behaviour(block).runPeriodic(env, context, _location, newBlock);
 	}
 
 	@Override

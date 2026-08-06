@@ -1,0 +1,24 @@
+package com.jeffdisher.october.block_periodic;
+
+import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.logic.PlantHelpers;
+import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.IMutableBlockProxy;
+import com.jeffdisher.october.types.TickProcessingContext;
+
+
+public class PeriodicBehaviourPlant implements IBlockPeriodicBehaviour
+{
+	public static final long MILLIS_BETWEEN_GROWTH_CALLS = 10_000L;
+
+	@Override
+	public void runPeriodic(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
+	{
+		boolean shouldReschedule = PlantHelpers.shouldRescheduleAfterPlantPeriodic(env, context, location, newBlock, newBlock.getBlock());
+		
+		if (shouldReschedule)
+		{
+			newBlock.requestFutureMutation(MILLIS_BETWEEN_GROWTH_CALLS);
+		}
+	}
+}
