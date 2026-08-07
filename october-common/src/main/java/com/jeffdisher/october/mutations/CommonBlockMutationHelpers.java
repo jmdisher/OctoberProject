@@ -24,9 +24,6 @@ import com.jeffdisher.october.types.IBlockProxy;
 import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.ItemSlot;
-import com.jeffdisher.october.types.Items;
-import com.jeffdisher.october.types.MutableInventory;
-import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -55,15 +52,16 @@ public class CommonBlockMutationHelpers
 	}
 
 	/**
-	 * Fills the given inventoryToFill with all items found in any inventory of block, leaving it unchanged.  Note that
-	 * inventoryToFill may become over-filled as encumbrance limits are ignored in this path.
+	 * Drops all the given inventories (normal, fuel, but also special slot) of the given block as passives at the given
+	 * location.
 	 * 
-	 * @param inventoryToFill The inventory to fill.
+	 * @param context The context.
+	 * @param location The location for passives.
 	 * @param block The block to read.
 	 */
-	public static void fillInventoryFromBlockWithoutLimit(MutableInventory inventoryToFill, IBlockProxy block)
+	public static void dropBlockInventoriesAsPassives(TickProcessingContext context, AbsoluteLocation location, IBlockProxy block)
 	{
-		_fillInventoryFromBlockWithoutLimit(inventoryToFill, block);
+		_dropBlockInventoriesAsPassives(context, location, block);
 	}
 
 	/**
@@ -173,17 +171,17 @@ public class CommonBlockMutationHelpers
 	}
 
 	/**
-	 * Adds any dropped items from breaking a block of type "block" into the inventory provided by out_inventory.  Note
-	 * that this does NOT include any inventory dropped by a specific container block.
+	 * Drops all the normal item blocks of the given block type as passives at the given location.  Note that this does
+	 * NOT include any inventory dropped by a specific container block.
 	 * 
 	 * @param env The environment.
 	 * @param context The context for requesting random numbers.
-	 * @param out_inventory The inventory to populate with any dropped items.
+	 * @param location The location for passives.
 	 * @param block The block type being broken.
 	 */
-	public static void populateInventoryWhenBreakingBlock(Environment env, TickProcessingContext context, MutableInventory out_inventory, Block block)
+	public static void dropAsPassivesWhenBreakingBlock(Environment env, TickProcessingContext context, AbsoluteLocation location, Block block)
 	{
-		_populateInventoryWhenBreakingBlock(env, context, out_inventory, block);
+		_dropAsPassivesWhenBreakingBlock(env, context, location, block);
 	}
 
 	/**
@@ -257,11 +255,7 @@ public class CommonBlockMutationHelpers
 			context.mutationSink.future(new MutationBlockLiquidFlowInto(location), millisDelay);
 		}
 		
-		// We will populate a MutableInventory (since it can collect like types) and then walk this union of all
-		// drops to generate passives.
-		// NOTE:  This approach assumes that a flowing block CANNOT also have an inventory.
-		MutableInventory tempInventory = new MutableInventory(Inventory.start(Integer.MAX_VALUE).finish());
-		_fillInventoryFromBlockWithoutLimit(tempInventory, proxy);
+		_dropBlockInventoriesAsPassives(context, location, proxy);
 		
 		// We are going to break this block so see if we should send it back to an entity.
 		// (note that we drop the existing inventory on the ground, either way).
@@ -283,7 +277,7 @@ public class CommonBlockMutationHelpers
 			else
 			{
 				// Just drop this in the target location.
-				_populateInventoryWhenBreakingBlock(env, context, tempInventory, block);
+				_dropAsPassivesWhenBreakingBlock(env, context, location, block);
 			}
 		}
 		
@@ -291,43 +285,17 @@ public class CommonBlockMutationHelpers
 		// This isn't an explicit block placement, so it has no direction.
 		FacingDirection outputDirection = null;
 		_setBlockCheckingFire(env, context, location, proxy, emptyBlock, outputDirection);
-		
-		// Spawn any related passives from the dropped blocks.
-		_dropTempInventoryAsPassives(context, location, tempInventory);
-	}
-
-	/**
-	 * A helper to drop all the items in tempInventory as passives in the block at location.  Note that this doesn't
-	 * check that the passives are allowed to exist in this space and will drop them there, either way.
-	 * This help exists since it is a useful idiom to use MutableInventory to package a large collection of items to
-	 * properly stack the stackable items and just use this as a temporary container.
-	 * 
-	 * @param context The context for looking up blocks and scheduling mutations.
-	 * @param location The location where the inventory should drop.
-	 * @param tempInventory The container of the items to drop on the ground as passives.
-	 */
-	public static void dropTempInventoryAsPassives(TickProcessingContext context, AbsoluteLocation location, MutableInventory tempInventory)
-	{
-		_dropTempInventoryAsPassives(context, location, tempInventory);
 	}
 
 
-	private static void _combineInventory(MutableInventory mutable, Inventory oldInventory)
+	private static void _dropInventoryAsPassives(TickProcessingContext context, AbsoluteLocation location, Inventory oldInventory)
 	{
 		if (null != oldInventory)
 		{
 			for (Integer key : oldInventory.sortedKeys())
 			{
-				Items stackable = oldInventory.getStackForKey(key);
-				if (null != stackable)
-				{
-					mutable.addAllItems(stackable.type(), stackable.count());
-				}
-				else
-				{
-					NonStackableItem nonStackable = oldInventory.getNonStackableForKey(key);
-					mutable.addNonStackableBestEfforts(nonStackable);
-				}
+				ItemSlot slot = oldInventory.getSlotForKey(key);
+				_dropAsPassive(context, location, slot);
 			}
 		}
 	}
@@ -354,31 +322,24 @@ public class CommonBlockMutationHelpers
 		;
 	}
 
-	private static void _fillInventoryFromBlockWithoutLimit(MutableInventory inventoryToFill, IBlockProxy block)
+	private static void _dropBlockInventoriesAsPassives(TickProcessingContext context, AbsoluteLocation location, IBlockProxy block)
 	{
 		Inventory oldInventory = block.getInventory();
 		if (null != oldInventory)
 		{
-			_combineInventory(inventoryToFill, oldInventory);
+			_dropInventoryAsPassives(context, location, oldInventory);
 		}
 		
 		FuelState oldFuel = block.getFuel();
 		if (null != oldFuel)
 		{
-			_combineInventory(inventoryToFill, oldFuel.fuelInventory());
+			_dropInventoryAsPassives(context, location, oldFuel.fuelInventory());
 		}
 		
 		ItemSlot oldSlot = block.getSpecialSlot();
 		if (null != oldSlot)
 		{
-			if (null != oldSlot.stack)
-			{
-				inventoryToFill.addAllItems(oldSlot.stack.type(), oldSlot.stack.count());
-			}
-			else
-			{
-				inventoryToFill.addNonStackableBestEfforts(oldSlot.nonStackable);
-			}
+			_dropAsPassive(context, location, oldSlot);
 		}
 	}
 
@@ -502,26 +463,18 @@ public class CommonBlockMutationHelpers
 		}
 	}
 
-	private static void _populateInventoryWhenBreakingBlock(Environment env, TickProcessingContext context, MutableInventory out_inventory, Block block)
+	private static void _dropAsPassivesWhenBreakingBlock(Environment env, TickProcessingContext context, AbsoluteLocation location, Block block)
 	{
 		for (ItemSlot dropped : _getItemsDroppedWhenBreakingBlock(env, context, block))
 		{
-			// In this case, we assume that the dropped items are all stackable.
-			Items stack = dropped.stack;
-			Assert.assertTrue(null != stack);
-			out_inventory.addItemsAllowingOverflow(stack.type(), stack.count());
+			_dropAsPassive(context, location, dropped);
 		}
 	}
 
-	private static void _dropTempInventoryAsPassives(TickProcessingContext context, AbsoluteLocation location, MutableInventory tempInventory)
+	private static void _dropAsPassive(TickProcessingContext context, AbsoluteLocation location, ItemSlot slot)
 	{
-		Inventory frozen = tempInventory.freeze();
 		EntityLocation passiveLocation = location.toEntityLocation();
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
-		for (Integer key : frozen.sortedKeys())
-		{
-			ItemSlot slot = frozen.getSlotForKey(key);
-			context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, passiveLocation, velocity, slot);
-		}
+		context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, passiveLocation, velocity, slot);
 	}
 }

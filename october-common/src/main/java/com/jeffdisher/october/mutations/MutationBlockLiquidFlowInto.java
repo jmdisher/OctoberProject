@@ -9,8 +9,6 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.IMutationBlock;
-import com.jeffdisher.october.types.Inventory;
-import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -67,13 +65,8 @@ public class MutationBlockLiquidFlowInto implements IMutationBlock
 			Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, emptyBlock);
 			if (emptyBlock != eventualBlock)
 			{
-				// We will populate a MutableInventory (since it can collect like types) and then walk this union of all
-				// drops to generate passives.
-				// NOTE:  This approach assumes that a flowing block CANNOT also have an inventory.
-				MutableInventory tempInventory = new MutableInventory(Inventory.start(Integer.MAX_VALUE).finish());
-				CommonBlockMutationHelpers.populateInventoryWhenBreakingBlock(env, context, tempInventory, thisBlock);
-				CommonBlockMutationHelpers.fillInventoryFromBlockWithoutLimit(tempInventory, newBlock);
-				CommonBlockMutationHelpers.dropTempInventoryAsPassives(context, _blockLocation, tempInventory);
+				CommonBlockMutationHelpers.dropAsPassivesWhenBreakingBlock(env, context, _blockLocation, thisBlock);
+				CommonBlockMutationHelpers.dropBlockInventoriesAsPassives(context, _blockLocation, newBlock);
 				
 				// Break the block and replace it with the flowing type.
 				CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _blockLocation, newBlock, eventualBlock);

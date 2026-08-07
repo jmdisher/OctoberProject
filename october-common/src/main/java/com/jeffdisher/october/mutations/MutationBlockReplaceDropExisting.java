@@ -11,8 +11,6 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.IMutationBlock;
-import com.jeffdisher.october.types.Inventory;
-import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -55,21 +53,21 @@ public class MutationBlockReplaceDropExisting implements IMutationBlock
 	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
-		MutableInventory tempInventory = new MutableInventory(Inventory.start(Integer.MAX_VALUE).finish());
 		
 		// Check if the existing block is solid.
 		Block oldType = newBlock.getBlock();
 		boolean isActive = FlagsAspect.isSet(newBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
+		AbsoluteLocation passiveDropBlock = _location.getRelative(0, 0, 1);
 		if (env.blocks.isSolid(oldType, isActive))
 		{
 			// This is solid so we won't replace it.  Drop the input as a passive on top.
-			CommonBlockMutationHelpers.populateInventoryWhenBreakingBlock(env, context, tempInventory, _newType);
+			CommonBlockMutationHelpers.dropAsPassivesWhenBreakingBlock(env, context, passiveDropBlock, _newType);
 		}
 		else
 		{
 			// We will replace this but check to see what the original block drops, first.
-			CommonBlockMutationHelpers.populateInventoryWhenBreakingBlock(env, context, tempInventory, oldType);
-			CommonBlockMutationHelpers.fillInventoryFromBlockWithoutLimit(tempInventory, newBlock);
+			CommonBlockMutationHelpers.dropAsPassivesWhenBreakingBlock(env, context, passiveDropBlock, oldType);
+			CommonBlockMutationHelpers.dropBlockInventoriesAsPassives(context, passiveDropBlock, newBlock);
 			
 			// Overwrite the block with the new type.
 			newBlock.setBlockAndClear(_newType);
@@ -87,13 +85,6 @@ public class MutationBlockReplaceDropExisting implements IMutationBlock
 					}
 				}
 			}
-		}
-		
-		// Drop anything which needs to be put somewhere.
-		if (tempInventory.getCurrentEncumbrance() > 0)
-		{
-			AbsoluteLocation passiveDropBlock = _location.getRelative(0, 0, 1);
-			CommonBlockMutationHelpers.dropTempInventoryAsPassives(context, passiveDropBlock, tempInventory);
 		}
 	}
 

@@ -15,8 +15,6 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.IMutationBlock;
-import com.jeffdisher.october.types.Inventory;
-import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -103,15 +101,11 @@ public class MutationBlockUpdate implements IMutationBlock
 				else
 				{
 					// Create a temporary inventory to drain everything.
-					MutableInventory tempInventory = new MutableInventory(Inventory.start(Integer.MAX_VALUE).finish());
-					CommonBlockMutationHelpers.fillInventoryFromBlockWithoutLimit(tempInventory, newBlock);
-					CommonBlockMutationHelpers.populateInventoryWhenBreakingBlock(env, context, tempInventory, thisBlock);
+					CommonBlockMutationHelpers.dropAsPassivesWhenBreakingBlock(env, context, _blockLocation, thisBlock);
+					CommonBlockMutationHelpers.dropBlockInventoriesAsPassives(context, _blockLocation, newBlock);
 					
 					// Set the actual block type.
 					CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _blockLocation, newBlock, emptyBlock);
-					
-					// Drop this fake inventory as passives.
-					CommonBlockMutationHelpers.dropTempInventoryAsPassives(context, _blockLocation, tempInventory);
 				}
 				didApply = true;
 			}
