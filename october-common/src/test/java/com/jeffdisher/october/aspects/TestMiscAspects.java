@@ -63,6 +63,21 @@ public class TestMiscAspects
 	}
 
 	@Test
+	public void defaultDropPossibilities() throws Throwable
+	{
+		// Make sure that the default block (no special drops) are handled correctly (full blocks and not replaceable).
+		Block sapling = ENV.blocks.fromItem(ENV.items.getItemById("op.sapling"));
+		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		Block air = ENV.blocks.fromItem(ENV.items.getItemById("op.air"));
+		Block lavaWeak = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_weak"));
+		
+		Assert.assertArrayEquals(new DropChance[] {new DropChance(sapling.item(), 100)}, ENV.blocks.possibleDropsOnBreak(sapling));
+		Assert.assertArrayEquals(new DropChance[] {new DropChance(stone.item(), 100)}, ENV.blocks.possibleDropsOnBreak(stone));
+		Assert.assertArrayEquals(new DropChance[] {}, ENV.blocks.possibleDropsOnBreak(air));
+		Assert.assertArrayEquals(new DropChance[] {}, ENV.blocks.possibleDropsOnBreak(lavaWeak));
+	}
+
+	@Test
 	public void blockDamage() throws Throwable
 	{
 		Block air = ENV.special.AIR;

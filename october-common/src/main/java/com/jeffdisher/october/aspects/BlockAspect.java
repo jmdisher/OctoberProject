@@ -394,8 +394,16 @@ public class BlockAspect
 		DropChance[] chances = _specialBlockBreak.get(block);
 		if (null == chances)
 		{
+			// Replaceable blocks drop nothing.
 			// By default, all other blocks just drop as their item type.
-			chances = new DropChance[] { new DropChance(block.item(), 100) };
+			if (_canBeReplaced.contains(block))
+			{
+				chances = new DropChance[0];
+			}
+			else
+			{
+				chances = new DropChance[] { new DropChance(block.item(), 100) };
+			}
 		}
 		return chances;
 	}
