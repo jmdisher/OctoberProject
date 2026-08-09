@@ -2127,14 +2127,18 @@ public class TestTickRunner
 		// We just want to show that a cuboid loader can be activated without issue.
 		CuboidData cuboid = _zeroAirCuboidWithBase();
 		AbsoluteLocation target = cuboid.getCuboidAddress().getBase().getRelative(5, 6, 7);
-		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), CUBOID_LOADER.item().number());
+		BlockAddress blockAddress = target.getBlockAddress();
+		cuboid.setData15(AspectRegistry.BLOCK, blockAddress, CUBOID_LOADER.item().number());
 		int entityId = 1;
 		MutableEntity entity1 = MutableEntity.createForTest(entityId);
 		entity1.newLocation = target.getRelative(0, 0, 1).toEntityLocation();
 		
 		// Create the runner and load all test data.
 		TickRunner runner = _createTestRunner();
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of(), List.of()))
+		// Pre-register the periodic callback for the cuboid loader - set the delay to the tick after we set logic state.
+		Map<BlockAddress, Long> periodicMutationMillis = Map.of(blockAddress, 2L * MILLIS_PER_TICK
+		);
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), periodicMutationMillis, List.of()))
 				, null
 				, List.of(new SuspendedEntity(entity1.freeze(), List.of())
 				)
@@ -2156,7 +2160,11 @@ public class TestTickRunner
 		TickSnapshot snapshot = runner.waitForPreviousTick();
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0, snapshot.internallyMarkedAlive().size());
 		
+		// Run another tick and see it register since the periodic would have run.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.internallyMarkedAlive().size());
 		
 		runner.shutdown();

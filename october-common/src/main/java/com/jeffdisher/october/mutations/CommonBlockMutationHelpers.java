@@ -6,6 +6,7 @@ import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourHopper;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourPlant;
 import com.jeffdisher.october.data.BlockProxy;
@@ -321,6 +322,10 @@ public class CommonBlockMutationHelpers
 		if (HopperHelpers.isHopper(location, proxy))
 		{
 			proxy.requestFutureMutation(PeriodicBehaviourHopper.MILLIS_BETWEEN_HOPPER_CALLS);
+		}
+		if (env.special.blockCuboidLoader == newType)
+		{
+			proxy.requestFutureMutation(MiscConstants.CUBOID_KEEP_ALIVE_MILLIS - context.millisPerTick);
 		}
 		
 		// Handle any other follow-up actions.

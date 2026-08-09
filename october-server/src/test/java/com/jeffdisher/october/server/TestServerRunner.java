@@ -885,7 +885,8 @@ public class TestServerRunner
 				if (address.equals(CuboidAddress.fromInt(0, 0, 0)))
 				{
 					CuboidGenerator.fillPlane(raw, (byte)0, STONE);
-					raw.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 1, 1), CUBOID_LOADER.item().number());
+					BlockAddress blockAddress = BlockAddress.fromInt(0, 1, 1);
+					raw.setData15(AspectRegistry.BLOCK, blockAddress, CUBOID_LOADER.item().number());
 					CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(raw);
 					EntityLocation base = address.getBase().toEntityLocation();
 					CreatureEntity cow = CreatureEntity.create(creatureIdAssigner.next()
@@ -893,7 +894,10 @@ public class TestServerRunner
 						, new EntityLocation(base.x() + 30.0f, base.y() + 0.0f, base.z() + 1.0f)
 						, gameTimeMillis
 					);
-					data = new SuspendedCuboid<>(raw, heightMap, List.of(cow), List.of(), Map.of(), List.of());
+					// Pre-register the periodic callback for the cuboid loader.
+					Map<BlockAddress, Long> periodicMutationMillis = Map.of(blockAddress, 0L
+					);
+					data = new SuspendedCuboid<>(raw, heightMap, List.of(cow), List.of(), periodicMutationMillis, List.of());
 				}
 				else
 				{
