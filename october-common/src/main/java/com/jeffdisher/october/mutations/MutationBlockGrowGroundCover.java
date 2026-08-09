@@ -59,7 +59,7 @@ public class MutationBlockGrowGroundCover implements IMutationBlock
 		if (GroundCoverHelpers.canChangeToGroundCover(env, context.previousBlockLookUp, _blockLocation, newBlock.getBlock(), _groundCoverType))
 		{
 			// Change our block type.
-			CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _blockLocation, newBlock, _groundCoverType);
+			CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, _blockLocation, newBlock, _groundCoverType);
 		}
 	}
 

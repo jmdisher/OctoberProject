@@ -90,7 +90,7 @@ public class PlantHelpers
 		if (null != nextPhase)
 		{
 			// Become that next phase.
-			CommonBlockMutationHelpers.setBlockCheckingFire(env, context, location, newBlock, nextPhase);
+			CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, location, newBlock, nextPhase);
 			// Reschedule if that block is also growable.
 			shouldReschedule = (env.plants.growthDivisor(nextPhase) > 0);
 		}
@@ -115,7 +115,7 @@ public class PlantHelpers
 		// Replace this with a log and leaf blocks.
 		// TODO:  Figure out how to make more interesting trees.
 		
-		CommonBlockMutationHelpers.setBlockCheckingFire(env, context, location, newBlock, log);
+		CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, location, newBlock, log);
 		_tryScheduleBlockOverwrite(env, context, location,  log,  0,  0,  1);
 		_tryScheduleBlockOverwrite(env, context, location, leaf, -1,  0,  1);
 		_tryScheduleBlockOverwrite(env, context, location, leaf,  1,  0,  1);

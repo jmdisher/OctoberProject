@@ -66,7 +66,7 @@ public class MutationBlockOverwriteByEntity implements IMutationBlock
 	@Override
 	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
-		boolean didApply = CommonBlockMutationHelpers.overwriteBlock(context, newBlock, _location, _outputDirection, _blockType, false);
+		boolean didApply = CommonBlockMutationHelpers.overwriteBlockIfReplaceableWithFollowUps(context, newBlock, _location, _outputDirection, _blockType, false);
 		if (didApply)
 		{
 			Environment env = Environment.getShared();

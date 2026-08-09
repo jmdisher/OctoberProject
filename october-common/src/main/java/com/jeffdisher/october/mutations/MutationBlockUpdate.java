@@ -105,7 +105,7 @@ public class MutationBlockUpdate implements IMutationBlock
 					CommonBlockMutationHelpers.dropBlockInventoriesAsPassives(context, _blockLocation, newBlock);
 					
 					// Set the actual block type.
-					CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _blockLocation, newBlock, emptyBlock);
+					CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, _blockLocation, newBlock, emptyBlock);
 				}
 				didApply = true;
 			}
@@ -145,7 +145,7 @@ public class MutationBlockUpdate implements IMutationBlock
 			Block reverted = GroundCoverHelpers.checkRevertGroundCover(env, context.previousBlockLookUp, _blockLocation, newBlock.getBlock());
 			if (null != reverted)
 			{
-				CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _blockLocation, newBlock, reverted);
+				CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, _blockLocation, newBlock, reverted);
 				didApply = true;
 			}
 		}

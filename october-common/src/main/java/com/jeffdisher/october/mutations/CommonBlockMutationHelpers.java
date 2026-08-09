@@ -65,22 +65,29 @@ public class CommonBlockMutationHelpers
 
 	/**
 	 * A helper to overwrite the given newBlock with a block of blockType if it is a block type which can be replaced.
+	 * Internally runs any follow-up processing logic, as well.
 	 * 
 	 * @param context The context wherein the change should be applied.
-	 * @param newBlock The block being written.
+	 * @param proxy The block being written.
 	 * @param location The location of the block being written.
 	 * @param outputDirection The output directly of the block in location (can be null).
 	 * @param blockType The new block type to write.
 	 * @param isMultiBlockExtension True if this is a multi-block extension (since they ignore block support rules).
 	 * @return True if the block was written or false if the write was aborted.
 	 */
-	public static boolean overwriteBlock(TickProcessingContext context, IMutableBlockProxy newBlock, AbsoluteLocation location, FacingDirection outputDirection, Block blockType, boolean isMultiBlockExtension)
+	public static boolean overwriteBlockIfReplaceableWithFollowUps(TickProcessingContext context
+		, IMutableBlockProxy proxy
+		, AbsoluteLocation location
+		, FacingDirection outputDirection
+		, Block blockType
+		, boolean isMultiBlockExtension
+	)
 	{
 		Environment env = Environment.getShared();
 		boolean didApply = false;
 		
 		// Check to see if this is the expected type.
-		Block oldBlock = newBlock.getBlock();
+		Block oldBlock = proxy.getBlock();
 		if (env.blocks.canBeReplaced(oldBlock))
 		{
 			// See if the block we are changing needs a special logic mode.
@@ -102,25 +109,25 @@ public class CommonBlockMutationHelpers
 			// Note that failing to place this means that the block will be destroyed and nothing changes.
 			if (blockIsSupported)
 			{
-				_setBlockCheckingFire(env, context, location, newBlock, blockType, outputDirection);
+				_setBlockWithFollowUps(env, context, location, proxy, blockType, outputDirection);
 				
 				if (env.plants.growthDivisor(blockType) > 0)
 				{
-					newBlock.requestFutureMutation(PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS);
+					proxy.requestFutureMutation(PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS);
 				}
 				
 				if (shouldSetHigh)
 				{
-					byte oldFlags = newBlock.getFlags();
+					byte oldFlags = proxy.getFlags();
 					if (!FlagsAspect.isSet(oldFlags, FlagsAspect.FLAG_ACTIVE))
 					{
 						byte newFlags = FlagsAspect.set(oldFlags, FlagsAspect.FLAG_ACTIVE);
-						newBlock.setFlags(newFlags);
+						proxy.setFlags(newFlags);
 						
-						LogicAspect.IActiveFlagChangeCallback changeState = env.logic.flagChangeHandler(newBlock.getBlock());
+						LogicAspect.IActiveFlagChangeCallback changeState = env.logic.flagChangeHandler(proxy.getBlock());
 						if (null != changeState)
 						{
-							changeState.activeFlagDidChange(context, newBlock, location, shouldSetHigh);
+							changeState.activeFlagDidChange(context, proxy, location, shouldSetHigh);
 						}
 					}
 				}
@@ -143,9 +150,9 @@ public class CommonBlockMutationHelpers
 		}
 		
 		// Handle the case where this might be a hopper.
-		if (didApply && HopperHelpers.isHopper(location, newBlock))
+		if (didApply && HopperHelpers.isHopper(location, proxy))
 		{
-			newBlock.requestFutureMutation(PeriodicBehaviourHopper.MILLIS_BETWEEN_HOPPER_CALLS);
+			proxy.requestFutureMutation(PeriodicBehaviourHopper.MILLIS_BETWEEN_HOPPER_CALLS);
 		}
 		if (didApply)
 		{
@@ -184,8 +191,7 @@ public class CommonBlockMutationHelpers
 	}
 
 	/**
-	 * Sets the block in proxy, at location, to newType.  Internally, checks if fire-related mutations should be
-	 * scheduled for this or a neighbouring block and schedules those mutations.
+	 * Sets the block in proxy, at location, to newType.  Internally runs any follow-up processing logic, as well.
 	 * 
 	 * @param env The environment.
 	 * @param context The context for looking up blocks and scheduling mutations.
@@ -193,11 +199,16 @@ public class CommonBlockMutationHelpers
 	 * @param proxy The block to modify.
 	 * @param newType The new type to assign to proxy.
 	 */
-	public static void setBlockCheckingFire(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy, Block newType)
+	public static void setBlockWithFollowUps(Environment env
+		, TickProcessingContext context
+		, AbsoluteLocation location
+		, IMutableBlockProxy proxy
+		, Block newType
+	)
 	{
 		// This isn't an explicit block placement, so it has no direction.
 		FacingDirection outputDirection = null;
-		_setBlockCheckingFire(env, context, location, proxy, newType, outputDirection);
+		_setBlockWithFollowUps(env, context, location, proxy, newType, outputDirection);
 	}
 
 	/**
@@ -255,7 +266,7 @@ public class CommonBlockMutationHelpers
 		// NOTE:  We use this common helper just as a consistent idiom but setting to air never starts fires.
 		// This isn't an explicit block placement, so it has no direction.
 		FacingDirection outputDirection = null;
-		_setBlockCheckingFire(env, context, location, proxy, emptyBlock, outputDirection);
+		_setBlockWithFollowUps(env, context, location, proxy, emptyBlock, outputDirection);
 	}
 
 
@@ -355,7 +366,13 @@ public class CommonBlockMutationHelpers
 		return slots;
 	}
 
-	private static void _setBlockCheckingFire(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy, Block newType, FacingDirection outputDirection)
+	private static void _setBlockWithFollowUps(Environment env
+		, TickProcessingContext context
+		, AbsoluteLocation location
+		, IMutableBlockProxy proxy
+		, Block newType
+		, FacingDirection outputDirection
+	)
 	{
 		Block oldType = proxy.getBlock();
 		

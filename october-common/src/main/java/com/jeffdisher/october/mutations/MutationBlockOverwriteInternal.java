@@ -55,7 +55,7 @@ public class MutationBlockOverwriteInternal implements IMutationBlock
 	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		// We ignore the return value of whether or not the change applied.
-		CommonBlockMutationHelpers.overwriteBlock(context, newBlock, _location, null, _blockType, false);
+		CommonBlockMutationHelpers.overwriteBlockIfReplaceableWithFollowUps(context, newBlock, _location, null, _blockType, false);
 	}
 
 	@Override
