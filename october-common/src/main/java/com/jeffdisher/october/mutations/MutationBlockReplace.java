@@ -60,9 +60,6 @@ public class MutationBlockReplace implements IMutationBlock
 			Environment env = Environment.getShared();
 			
 			CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, _location, newBlock, _newType);
-			
-			// See if we might need to reflow water (consider if this was a bucket picking up a source).
-			CommonBlockMutationHelpers.scheduleLiquidFlowIfRequired(env, context, _location, oldType, _newType);
 		}
 	}
 

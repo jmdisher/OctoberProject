@@ -79,12 +79,7 @@ public class MutationBlockPhase2Multi implements IMutationBlock
 		
 		if (!doesMatch)
 		{
-			Block oldType = newBlock.getBlock();
-			
 			CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, _location, newBlock, _revertType);
-			
-			// See if we might need to reflow water (if this multi-block failed to be placed in water).
-			CommonBlockMutationHelpers.scheduleLiquidFlowIfRequired(env, context, _location, oldType, _revertType);
 		}
 	}
 

@@ -84,14 +84,13 @@ public class CommonBlockMutationHelpers
 	)
 	{
 		Environment env = Environment.getShared();
-		boolean didApply = false;
 		
 		// Check to see if this is the expected type.
+		boolean shouldSet = false;
 		Block oldBlock = proxy.getBlock();
 		if (env.blocks.canBeReplaced(oldBlock))
 		{
 			// See if the block we are changing needs a special logic mode.
-			boolean shouldSetHigh = LogicLayerHelpers.shouldSetActive(env, context.previousBlockLookUp, location, outputDirection, blockType);
 			BlockProxy belowBlock = context.previousBlockLookUp.readBlock(location.getRelative(0, 0, -1));
 			
 			// Make sure that this block can be supported by the one under it.
@@ -107,73 +106,17 @@ public class CommonBlockMutationHelpers
 			}
 			
 			// Note that failing to place this means that the block will be destroyed and nothing changes.
-			if (blockIsSupported)
-			{
-				_setBlockWithFollowUps(env, context, location, proxy, blockType, outputDirection);
-				
-				if (env.plants.growthDivisor(blockType) > 0)
-				{
-					proxy.requestFutureMutation(PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS);
-				}
-				
-				if (shouldSetHigh)
-				{
-					byte oldFlags = proxy.getFlags();
-					if (!FlagsAspect.isSet(oldFlags, FlagsAspect.FLAG_ACTIVE))
-					{
-						byte newFlags = FlagsAspect.set(oldFlags, FlagsAspect.FLAG_ACTIVE);
-						proxy.setFlags(newFlags);
-						
-						LogicAspect.IActiveFlagChangeCallback changeState = env.logic.flagChangeHandler(proxy.getBlock());
-						if (null != changeState)
-						{
-							changeState.activeFlagDidChange(context, proxy, location, shouldSetHigh);
-						}
-					}
-				}
-				
-				// Gravity blocks are placed once and then fall after an update, so see if that matters here.
-				if (env.blocks.hasGravity(blockType))
-				{
-					// If we think that this should fall, schedule the apply gravity mutation.
-					if (null != belowBlock)
-					{
-						if (!env.blocks.isSupportedAgainstGravity(blockType, belowBlock.getBlock()))
-						{
-							context.mutationSink.next(new MutationBlockApplyGravity(location));
-						}
-					}
-				}
-				
-				didApply = true;
-			}
+			shouldSet = blockIsSupported;
 		}
 		
-		// Handle the case where this might be a hopper.
-		if (didApply && HopperHelpers.isHopper(location, proxy))
+		boolean didApply = false;
+		if (shouldSet)
 		{
-			proxy.requestFutureMutation(PeriodicBehaviourHopper.MILLIS_BETWEEN_HOPPER_CALLS);
-		}
-		if (didApply)
-		{
-			_scheduleLiquidFlowIfRequired(env, context, location, oldBlock, blockType);
+			_setBlockWithFollowUps(env, context, location, proxy, blockType, outputDirection);
+			
+			didApply = true;
 		}
 		return didApply;
-	}
-
-	/**
-	 * Checks the blocks around a location where one is being replaced and schedules a liquid flow mutation for the
-	 * future if there should be a flow into that location.
-	 * 
-	 * @param env The environment.
-	 * @param context The context for scheduling the follow-up flow mutation or looking up blocks.
-	 * @param location The location where oldType was replaced by newType.
-	 * @param oldType The previous block type in this location.
-	 * @param newType The updated block type in this location.
-	 */
-	public static void scheduleLiquidFlowIfRequired(Environment env, TickProcessingContext context, AbsoluteLocation location, Block oldType, Block newType)
-	{
-		_scheduleLiquidFlowIfRequired(env, context, location, oldType, newType);
 	}
 
 	/**
@@ -230,12 +173,6 @@ public class CommonBlockMutationHelpers
 		// We want to see if there are any liquids around this block which we will need to handle.
 		Block block = proxy.getBlock();
 		Block emptyBlock = env.special.AIR;
-		Block eventualBlock = _determineEmptyBlockType(context, location, emptyBlock);
-		if (emptyBlock != eventualBlock)
-		{
-			long millisDelay = env.liquids.minFlowDelayMillis(eventualBlock, block);
-			context.mutationSink.future(new MutationBlockLiquidFlowInto(location), millisDelay);
-		}
 		
 		_dropBlockInventoriesAsPassives(context, location, proxy);
 		
@@ -325,34 +262,6 @@ public class CommonBlockMutationHelpers
 		}
 	}
 
-	private static void _scheduleLiquidFlowIfRequired(Environment env, TickProcessingContext context, AbsoluteLocation location, Block oldType, Block newType)
-	{
-		boolean didScheduleLiquid = false;
-		if (env.blocks.canBeReplaced(newType))
-		{
-			// We need to make sure that the eventual type is a mismatch but also that it has a flow rate (otherwise, placing a water source surrounded by air will think it should be air, meaning it should reflow immediately).
-			Block eventualType = CommonBlockMutationHelpers.determineEmptyBlockType(context, location, newType);
-			long millisDelay = env.liquids.minFlowDelayMillis(eventualType, oldType);
-			if ((newType != eventualType) && (millisDelay > 0L))
-			{
-				context.mutationSink.future(new MutationBlockLiquidFlowInto(location), millisDelay);
-				didScheduleLiquid = true;
-			}
-		}
-		// See if this block might actually need to be broken, now, due to neighbours.
-		if (!didScheduleLiquid && env.blocks.isBrokenByFlowingLiquid(newType))
-		{
-			Block emptyBlock = env.special.AIR;
-			Block eventualType = CommonBlockMutationHelpers.determineEmptyBlockType(context, location, emptyBlock);
-			if (emptyBlock != eventualType)
-			{
-				long millisDelay = env.liquids.minFlowDelayMillis(eventualType, oldType);
-				context.mutationSink.future(new MutationBlockLiquidFlowInto(location), millisDelay);
-				didScheduleLiquid = true;
-			}
-		}
-	}
-
 	private static ItemSlot[] _getItemsDroppedWhenBreakingBlock(Environment env, TickProcessingContext context, Block block)
 	{
 		DropChance[] chances = env.blocks.possibleDropsOnBreak(block);
@@ -374,7 +283,47 @@ public class CommonBlockMutationHelpers
 		, FacingDirection outputDirection
 	)
 	{
+		// Collect the information from the previous state or which isn't dependent on the state of this block, at all.
 		Block oldType = proxy.getBlock();
+		BlockProxy belowBlock = context.previousBlockLookUp.readBlock(location.getRelative(0, 0, -1));
+		boolean shouldSetHigh = LogicLayerHelpers.shouldSetActive(env, context.previousBlockLookUp, location, outputDirection, newType);
+		
+		// Set the changes to the block type.
+		proxy.setBlockAndClear(newType);
+		if (null != outputDirection)
+		{
+			proxy.setOrientation(outputDirection);
+		}
+		if (shouldSetHigh)
+		{
+			// Setting the block clears the flags so we are always setting this.
+			byte newFlags = FlagsAspect.FLAG_ACTIVE;
+			proxy.setFlags(newFlags);
+			
+			LogicAspect.IActiveFlagChangeCallback changeState = env.logic.flagChangeHandler(newType);
+			if (null != changeState)
+			{
+				changeState.activeFlagDidChange(context, proxy, location, shouldSetHigh);
+			}
+		}
+		
+		// If this is the cornerstone of a composition, check the composition state and schedule a periodic update.
+		if (env.composites.isActiveCornerstone(newType))
+		{
+			env.composites.processCornerstoneUpdate(env, context, location, proxy);
+		}
+		
+		// Handle the setting of periodic updates.
+		if (env.plants.growthDivisor(newType) > 0)
+		{
+			proxy.requestFutureMutation(PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS);
+		}
+		if (HopperHelpers.isHopper(location, proxy))
+		{
+			proxy.requestFutureMutation(PeriodicBehaviourHopper.MILLIS_BETWEEN_HOPPER_CALLS);
+		}
+		
+		// Handle any other follow-up actions.
 		
 		// If this changed into a fire source block, schedule the ignition mutations around it.
 		if (env.blocks.isFireSource(newType) && !env.blocks.isFireSource(oldType))
@@ -389,11 +338,6 @@ public class CommonBlockMutationHelpers
 		
 		// If this block changed into a flammable type, see if it should receive an ignition mutation.
 		// (set type first since this helper reads it).
-		proxy.setBlockAndClear(newType);
-		if (null != outputDirection)
-		{
-			proxy.setOrientation(outputDirection);
-		}
 		if (!env.blocks.isFlammable(oldType) && FireHelpers.canIgnite(env, context, location, proxy))
 		{
 			MutationBlockStartFire startFire = new MutationBlockStartFire(location);
@@ -422,10 +366,43 @@ public class CommonBlockMutationHelpers
 			}
 		}
 		
-		// If this is the cornerstone of a composition, check the composition state and schedule a periodic update.
-		if (env.composites.isActiveCornerstone(newType))
+		// Gravity blocks are placed once and then fall after an update, so see if that matters here.
+		if (env.blocks.hasGravity(newType))
 		{
-			env.composites.processCornerstoneUpdate(env, context, location, proxy);
+			// If we think that this should fall, schedule the apply gravity mutation.
+			if (null != belowBlock)
+			{
+				if (!env.blocks.isSupportedAgainstGravity(newType, belowBlock.getBlock()))
+				{
+					context.mutationSink.next(new MutationBlockApplyGravity(location));
+				}
+			}
+		}
+		
+		// Handle the cases where this triggered a liquid to flow.
+		boolean didScheduleLiquid = false;
+		if (env.blocks.canBeReplaced(newType))
+		{
+			// We need to make sure that the eventual type is a mismatch but also that it has a flow rate (otherwise, placing a water source surrounded by air will think it should be air, meaning it should reflow immediately).
+			Block eventualType = CommonBlockMutationHelpers.determineEmptyBlockType(context, location, newType);
+			long millisDelay = env.liquids.minFlowDelayMillis(eventualType, oldType);
+			if ((newType != eventualType) && (millisDelay > 0L))
+			{
+				context.mutationSink.future(new MutationBlockLiquidFlowInto(location), millisDelay);
+				didScheduleLiquid = true;
+			}
+		}
+		// See if this block might actually need to be broken, now, due to neighbours.
+		if (!didScheduleLiquid && env.blocks.isBrokenByFlowingLiquid(newType))
+		{
+			Block emptyBlock = env.special.AIR;
+			Block eventualType = CommonBlockMutationHelpers.determineEmptyBlockType(context, location, emptyBlock);
+			if (emptyBlock != eventualType)
+			{
+				long millisDelay = env.liquids.minFlowDelayMillis(eventualType, oldType);
+				context.mutationSink.future(new MutationBlockLiquidFlowInto(location), millisDelay);
+				didScheduleLiquid = true;
+			}
 		}
 	}
 
