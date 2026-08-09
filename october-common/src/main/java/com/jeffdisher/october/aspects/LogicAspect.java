@@ -225,7 +225,7 @@ public class LogicAspect
 		OR_GATE(true, LogicSpecialRegistry.OR_SINK, null, LogicSpecialRegistry.OR_SINK, false, null),
 		NOT_GATE(true, LogicSpecialRegistry.NOT_SINK, null, LogicSpecialRegistry.NOT_SINK, false, null),
 		SENSOR_INVENTORY(true, LogicSpecialRegistry.SENSOR_INVENTORY, LogicSpecialRegistry.SENSOR_INVENTORY, null, false, null),
-		CUBOID_LOADER(false, null, null, null, true, LogicSpecialRegistry.FLAG_CHANGE_CUBOID_LOADER),
+		CUBOID_LOADER(false, null, null, null, true, null),
 		BLOCK_MOVER(false, LogicSpecialRegistry.GENERIC_SINK, null, LogicSpecialRegistry.GENERIC_SINK, false, LogicSpecialRegistry.FLAG_CHANGE_BLOCK_MOVER),
 		// NOTE:  CONDUIT is a degenerate type, only used for parsing (these are never seen after bootstrap).
 		CONDUIT(false, null, null, null, false, null),
