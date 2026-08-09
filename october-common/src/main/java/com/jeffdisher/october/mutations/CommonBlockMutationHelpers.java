@@ -26,7 +26,6 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -185,20 +184,6 @@ public class CommonBlockMutationHelpers
 	}
 
 	/**
-	 * Returns the list of items dropped by breaking a block of type "block".  Note that this does NOT include any
-	 * inventory dropped by a specific container block.
-	 * 
-	 * @param env The environment.
-	 * @param context The context for requesting random numbers.
-	 * @param block The block type being broken.
-	 * @return The list of items dropped.
-	 */
-	public static ItemSlot[] getItemsDroppedWhenBreakingBlock(Environment env, TickProcessingContext context, Block block)
-	{
-		return _getItemsDroppedWhenBreakingBlock(env, context, block);
-	}
-
-	/**
 	 * Sets the block in proxy, at location, to newType.  Internally, checks if fire-related mutations should be
 	 * scheduled for this or a neighbouring block and schedules those mutations.
 	 * 
@@ -213,20 +198,6 @@ public class CommonBlockMutationHelpers
 		// This isn't an explicit block placement, so it has no direction.
 		FacingDirection outputDirection = null;
 		_setBlockCheckingFire(env, context, location, proxy, newType, outputDirection);
-	}
-
-	/**
-	 * Ignites the proxy, at location.  Internally, schedules the burn-down for this block and fire spread for any
-	 * flammable neighbouring blocks.
-	 * 
-	 * @param env The environment.
-	 * @param context The context for looking up blocks and scheduling mutations.
-	 * @param location The location of proxy.
-	 * @param proxy The block to modify.
-	 */
-	public static void igniteBlockAndSpread(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
-	{
-		_igniteBlockAndSpread(env, context, location, proxy);
 	}
 
 	/**
@@ -438,28 +409,6 @@ public class CommonBlockMutationHelpers
 		if (env.composites.isActiveCornerstone(newType))
 		{
 			env.composites.processCornerstoneUpdate(env, context, location, proxy);
-		}
-	}
-
-	private static void _igniteBlockAndSpread(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
-	{
-		byte flags = proxy.getFlags();
-		
-		// Make sure that this isn't already on fire.
-		Assert.assertTrue(!FlagsAspect.isSet(flags, FlagsAspect.FLAG_BURNING));
-		// Set us on fire (in the future, this will probably be made random).
-		flags = FlagsAspect.set(flags, FlagsAspect.FLAG_BURNING);
-		proxy.setFlags(flags);
-		
-		// Schedule the mutation to finish burning.
-		context.mutationSink.future(new MutationBlockBurnDown(location), MutationBlockBurnDown.BURN_DELAY_MILLIS);
-		
-		// See if there are any ignition blocks around this.
-		List<AbsoluteLocation> flammable = FireHelpers.findFlammableNeighbours(env, context, location);
-		for (AbsoluteLocation neighour : flammable)
-		{
-			MutationBlockStartFire startFire = new MutationBlockStartFire(neighour);
-			context.mutationSink.future(startFire, MutationBlockStartFire.IGNITION_DELAY_MILLIS);
 		}
 	}
 

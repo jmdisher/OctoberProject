@@ -1,8 +1,10 @@
 package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.FireHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -10,6 +12,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -52,7 +55,7 @@ public class MutationBlockStartFire implements IMutationBlock
 		Environment env = Environment.getShared();
 		if (FireHelpers.canIgnite(env, context, _blockLocation, newBlock))
 		{
-			CommonBlockMutationHelpers.igniteBlockAndSpread(env, context, _blockLocation, newBlock);
+			_igniteBlockAndSpread(env, context, _blockLocation, newBlock);
 		}
 	}
 
@@ -73,5 +76,28 @@ public class MutationBlockStartFire implements IMutationBlock
 	{
 		// Common case.
 		return true;
+	}
+
+
+	private static void _igniteBlockAndSpread(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
+	{
+		byte flags = proxy.getFlags();
+		
+		// Make sure that this isn't already on fire.
+		Assert.assertTrue(!FlagsAspect.isSet(flags, FlagsAspect.FLAG_BURNING));
+		// Set us on fire (in the future, this will probably be made random).
+		flags = FlagsAspect.set(flags, FlagsAspect.FLAG_BURNING);
+		proxy.setFlags(flags);
+		
+		// Schedule the mutation to finish burning.
+		context.mutationSink.future(new MutationBlockBurnDown(location), MutationBlockBurnDown.BURN_DELAY_MILLIS);
+		
+		// See if there are any ignition blocks around this.
+		List<AbsoluteLocation> flammable = FireHelpers.findFlammableNeighbours(env, context, location);
+		for (AbsoluteLocation neighour : flammable)
+		{
+			MutationBlockStartFire startFire = new MutationBlockStartFire(neighour);
+			context.mutationSink.future(startFire, MutationBlockStartFire.IGNITION_DELAY_MILLIS);
+		}
 	}
 }
