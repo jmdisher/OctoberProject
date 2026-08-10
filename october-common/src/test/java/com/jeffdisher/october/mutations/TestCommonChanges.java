@@ -3148,13 +3148,16 @@ public class TestCommonChanges
 		Assert.assertEquals(0, newEntity.slotManager.getSelectedKey());
 		
 		Assert.assertEquals(1, pass1.id());
-		Assert.assertEquals(newEntity.newLocation, pass1.location());
+		Assert.assertEquals(new EntityLocation(6.2f, 0.3f, 12.43f), pass1.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 5.0f, 0.0f), pass1.velocity());
 		Assert.assertEquals(sword, ((ItemSlot)pass1.extendedData()).nonStackable);
 		Assert.assertEquals(2, pass2.id());
-		Assert.assertEquals(newEntity.newLocation, pass2.location());
+		Assert.assertEquals(new EntityLocation(6.2f, 0.3f, 12.43f), pass1.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 5.0f, 0.0f), pass1.velocity());
 		Assert.assertEquals(new Items(LOG_ITEM, 1), ((ItemSlot)pass2.extendedData()).stack);
 		Assert.assertEquals(3, pass3.id());
-		Assert.assertEquals(newEntity.newLocation, pass3.location());
+		Assert.assertEquals(new EntityLocation(6.2f, 0.3f, 12.43f), pass1.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 5.0f, 0.0f), pass1.velocity());
 		Assert.assertEquals(new Items(LOG_ITEM, 2), ((ItemSlot)pass3.extendedData()).stack);
 	}
 

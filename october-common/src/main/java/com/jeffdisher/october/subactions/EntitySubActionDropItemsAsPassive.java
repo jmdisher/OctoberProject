@@ -3,8 +3,10 @@ package com.jeffdisher.october.subactions;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.data.DeserializationContext;
+import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.ItemSlot;
@@ -21,6 +23,11 @@ import com.jeffdisher.october.utils.Assert;
 public class EntitySubActionDropItemsAsPassive implements IEntitySubAction<IMutablePlayerEntity>
 {
 	public static final EntitySubActionType TYPE = EntitySubActionType.DROP_ITEMS_AS_PASSIVE;
+
+	/**
+	 * The velocity used to throw the item when dropping it, in metres per second.
+	 */
+	public static final float THROW_MULTIPLIER = 5.0f;
 
 	public static EntitySubActionDropItemsAsPassive deserializeFromContext(DeserializationContext context)
 	{
@@ -75,9 +82,18 @@ public class EntitySubActionDropItemsAsPassive implements IEntitySubAction<IMuta
 				slotToMove = ItemSlot.fromNonStack(slot.nonStackable);
 			}
 			
-			// Drop the passive.
-			EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
-			context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, newEntity.getLocation(), velocity, slotToMove);
+			// We will "throw" the passive in the direction we are looking.
+			EntityVolume passiveVolume = PassiveType.ITEM_SLOT.volume();
+			float halfWidth = passiveVolume.width() / 2.0f;
+			float halfHeight = passiveVolume.height() / 2.0f;
+			EntityLocation entityEye = SpatialHelpers.getEntityEye(newEntity);
+			EntityLocation startLocation = new EntityLocation(entityEye.x() - halfWidth
+				, entityEye.y() - halfWidth
+				, entityEye.z() - halfHeight
+			);
+			EntityLocation unitFacingVector = SpatialHelpers.getUnitFacingVector(newEntity.getYaw(), newEntity.getPitch());
+			EntityLocation velocity = unitFacingVector.makeScaledInstance(THROW_MULTIPLIER);
+			context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, startLocation, velocity, slotToMove);
 		}
 		else
 		{
