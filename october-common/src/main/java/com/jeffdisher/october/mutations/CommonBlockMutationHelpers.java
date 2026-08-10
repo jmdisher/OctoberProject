@@ -7,6 +7,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
+import com.jeffdisher.october.block_periodic.PeriodicBehaviourCompositeCornerstone;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourHopper;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourPlant;
 import com.jeffdisher.october.data.BlockProxy;
@@ -326,6 +327,10 @@ public class CommonBlockMutationHelpers
 		if (env.special.blockCuboidLoader == newType)
 		{
 			proxy.requestFutureMutation(MiscConstants.CUBOID_KEEP_ALIVE_MILLIS - context.millisPerTick);
+		}
+		if (env.composites.isActiveCornerstone(newType))
+		{
+			proxy.requestFutureMutation(PeriodicBehaviourCompositeCornerstone.COMPOSITE_CHECK_FREQUENCY);
 		}
 		
 		// Handle any other follow-up actions.

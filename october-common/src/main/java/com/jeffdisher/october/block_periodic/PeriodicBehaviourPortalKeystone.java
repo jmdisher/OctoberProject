@@ -13,5 +13,9 @@ public class PeriodicBehaviourPortalKeystone implements IBlockPeriodicBehaviour
 	public void runPeriodic(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 	{
 		PortalHelpers.handlePortalSurface(env, context, location, newBlock);
+		
+		// NOTE:  This is redundant, in actual usage, since the portal keystone IS a composite cornerstone, but the code
+		// shouldn't hide that assumption.  We run both handlers so this will change nothing.
+		newBlock.requestFutureMutation(PeriodicBehaviourCompositeCornerstone.COMPOSITE_CHECK_FREQUENCY);
 	}
 }

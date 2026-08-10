@@ -16,7 +16,6 @@ import org.junit.Test;
 import com.jeffdisher.october.actions.EntityActionPush;
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.CompositeRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
@@ -26,6 +25,7 @@ import com.jeffdisher.october.block_movement.MutationBlockDeleteBlock;
 import com.jeffdisher.october.block_movement.MutationBlockOverwriteWithMove;
 import com.jeffdisher.october.block_movement.MutationBlockPushEntities;
 import com.jeffdisher.october.block_movement.PassiveActionPush;
+import com.jeffdisher.october.block_periodic.PeriodicBehaviourCompositeCornerstone;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourPlant;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -1392,7 +1392,7 @@ public class TestCommonMutations
 		
 		// Verify that it is active and requested an update check.
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, cuboid.getData7(AspectRegistry.FLAGS, target.getBlockAddress()));
-		Assert.assertEquals(CompositeRegistry.COMPOSITE_CHECK_FREQUENCY, proxy.periodicDelayMillis);
+		Assert.assertEquals(PeriodicBehaviourCompositeCornerstone.COMPOSITE_CHECK_FREQUENCY, proxy.periodicDelayMillis);
 		
 		// Invalidate one of the corners and run the re-check.
 		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 2, 4).getBlockAddress(), STONE.item().number());
@@ -1404,7 +1404,7 @@ public class TestCommonMutations
 		
 		// Verify that it is inactive but requested an update check.
 		Assert.assertEquals(0x0, cuboid.getData7(AspectRegistry.FLAGS, target.getBlockAddress()));
-		Assert.assertEquals(CompositeRegistry.COMPOSITE_CHECK_FREQUENCY, proxy.periodicDelayMillis);
+		Assert.assertEquals(PeriodicBehaviourCompositeCornerstone.COMPOSITE_CHECK_FREQUENCY, proxy.periodicDelayMillis);
 	}
 
 	@Test

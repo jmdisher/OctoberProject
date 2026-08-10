@@ -68,12 +68,10 @@ public class TestCompositeRegistry
 		onProxy.writeBack(cuboid);
 		byte flags = cuboid.getData7(AspectRegistry.FLAGS, onLamp.getBlockAddress());
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, flags);
-		Assert.assertEquals(CompositeRegistry.COMPOSITE_CHECK_FREQUENCY, onProxy.periodicDelayMillis);
 		
 		MutableBlockProxy offProxy = new MutableBlockProxy(offLamp, cuboid);
 		ENV.composites.processCornerstoneUpdate(ENV, context, offLamp, offProxy);
 		Assert.assertFalse(offProxy.didChange());
-		Assert.assertEquals(CompositeRegistry.COMPOSITE_CHECK_FREQUENCY, offProxy.periodicDelayMillis);
 	}
 
 	@Test
@@ -101,7 +99,6 @@ public class TestCompositeRegistry
 		onProxy.writeBack(cuboid);
 		byte flags = cuboid.getData7(AspectRegistry.FLAGS, centre.getBlockAddress());
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, flags);
-		Assert.assertEquals(CompositeRegistry.COMPOSITE_CHECK_FREQUENCY, onProxy.periodicDelayMillis);
 	}
 
 	@Test
@@ -145,7 +142,6 @@ public class TestCompositeRegistry
 		onProxy.writeBack(cuboid);
 		byte flags = cuboid.getData7(AspectRegistry.FLAGS, centre.getBlockAddress());
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, flags);
-		Assert.assertEquals(CompositeRegistry.COMPOSITE_CHECK_FREQUENCY, onProxy.periodicDelayMillis);
 	}
 
 	@Test

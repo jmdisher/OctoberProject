@@ -31,13 +31,6 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CompositeRegistry
 {
-	/**
-	 * We will poll the composite cornerstone every 5 seconds to see if it should change its active state.
-	 * Ideally, this would be replaced with an event-based solution but these may not be in the same cuboid so it would
-	 * require some kind of "on load" event for other blocks in the composition which will complicate the system a lot
-	 * for something which is otherwise quite low-cost, even if hack-ish with this 5-second delay.
-	 */
-	public static final long COMPOSITE_CHECK_FREQUENCY = 5_000L;
 	public static final String FLAG_ACTIVE = "ACTIVE";
 	public static final String FLAG_PASSIVE = "PASSIVE";
 
@@ -172,7 +165,7 @@ public class CompositeRegistry
 	/**
 	 * Called when a cornerstone block is placed or receives a periodic update event in order to check if any state
 	 * needs to change.
-	 * This call also re-requests the periodic update for this block.
+	 * NOTE:  This helper does NOT reschedule the periodic check.
 	 * 
 	 * @param env The environment.
 	 * @param context The current tick context.
@@ -202,7 +195,6 @@ public class CompositeRegistry
 				changeState.activeFlagDidChange(context, proxy, location, shouldBeActive);
 			}
 		}
-		proxy.requestFutureMutation(COMPOSITE_CHECK_FREQUENCY);
 	}
 
 	/**
