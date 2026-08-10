@@ -12,6 +12,12 @@ public class PeriodicBehaviourPlant implements IBlockPeriodicBehaviour
 	public static final long MILLIS_BETWEEN_GROWTH_CALLS = 10_000L;
 
 	@Override
+	public void doInitialRegistration(TickProcessingContext context, IMutableBlockProxy newBlock)
+	{
+		newBlock.requestFutureMutation(MILLIS_BETWEEN_GROWTH_CALLS);
+	}
+
+	@Override
 	public void runPeriodic(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 	{
 		boolean shouldReschedule = PlantHelpers.shouldRescheduleAfterPlantPeriodic(env, context, location, newBlock, newBlock.getBlock());

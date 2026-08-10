@@ -12,6 +12,12 @@ public class PeriodicBehaviourHopper implements IBlockPeriodicBehaviour
 	public static final long MILLIS_BETWEEN_HOPPER_CALLS = 1_000L;
 
 	@Override
+	public void doInitialRegistration(TickProcessingContext context, IMutableBlockProxy newBlock)
+	{
+		newBlock.requestFutureMutation(MILLIS_BETWEEN_HOPPER_CALLS);
+	}
+
+	@Override
 	public void runPeriodic(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 	{
 		HopperHelpers.tryProcessHopper(context, location, newBlock);

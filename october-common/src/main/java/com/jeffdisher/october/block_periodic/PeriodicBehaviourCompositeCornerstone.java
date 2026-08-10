@@ -17,6 +17,12 @@ public class PeriodicBehaviourCompositeCornerstone implements IBlockPeriodicBeha
 	public static final long COMPOSITE_CHECK_FREQUENCY = 5_000L;
 
 	@Override
+	public void doInitialRegistration(TickProcessingContext context, IMutableBlockProxy newBlock)
+	{
+		newBlock.requestFutureMutation(COMPOSITE_CHECK_FREQUENCY);
+	}
+
+	@Override
 	public void runPeriodic(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 	{
 		// See if we need to change the state of the composite.

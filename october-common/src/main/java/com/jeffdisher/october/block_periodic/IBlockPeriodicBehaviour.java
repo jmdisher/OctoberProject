@@ -14,5 +14,6 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public interface IBlockPeriodicBehaviour
 {
+	public void doInitialRegistration(TickProcessingContext context, IMutableBlockProxy newBlock);
 	public void runPeriodic(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock);
 }

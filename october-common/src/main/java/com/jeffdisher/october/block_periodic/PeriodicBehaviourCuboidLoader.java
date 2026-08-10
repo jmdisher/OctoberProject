@@ -11,6 +11,12 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public class PeriodicBehaviourCuboidLoader implements IBlockPeriodicBehaviour
 {
 	@Override
+	public void doInitialRegistration(TickProcessingContext context, IMutableBlockProxy newBlock)
+	{
+		newBlock.requestFutureMutation(MiscConstants.CUBOID_KEEP_ALIVE_MILLIS - context.millisPerTick);
+	}
+
+	@Override
 	public void runPeriodic(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 	{
 		byte flags = newBlock.getFlags();

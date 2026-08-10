@@ -6,14 +6,9 @@ import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
-import com.jeffdisher.october.aspects.MiscConstants;
-import com.jeffdisher.october.block_periodic.PeriodicBehaviourCompositeCornerstone;
-import com.jeffdisher.october.block_periodic.PeriodicBehaviourHopper;
-import com.jeffdisher.october.block_periodic.PeriodicBehaviourPlant;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.FireHelpers;
 import com.jeffdisher.october.logic.GroundCoverHelpers;
-import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.logic.MiscHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -316,22 +311,7 @@ public class CommonBlockMutationHelpers
 		}
 		
 		// Handle the setting of periodic updates.
-		if (env.plants.growthDivisor(newType) > 0)
-		{
-			proxy.requestFutureMutation(PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS);
-		}
-		if (HopperHelpers.isHopper(location, proxy))
-		{
-			proxy.requestFutureMutation(PeriodicBehaviourHopper.MILLIS_BETWEEN_HOPPER_CALLS);
-		}
-		if (env.special.blockCuboidLoader == newType)
-		{
-			proxy.requestFutureMutation(MiscConstants.CUBOID_KEEP_ALIVE_MILLIS - context.millisPerTick);
-		}
-		if (env.composites.isActiveCornerstone(newType))
-		{
-			proxy.requestFutureMutation(PeriodicBehaviourCompositeCornerstone.COMPOSITE_CHECK_FREQUENCY);
-		}
+		env.periodic.behaviour(newType).doInitialRegistration(context, proxy);
 		
 		// Handle any other follow-up actions.
 		

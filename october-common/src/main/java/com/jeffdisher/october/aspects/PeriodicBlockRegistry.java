@@ -110,6 +110,12 @@ public class PeriodicBlockRegistry
 	 */
 	private static class _DefaultBehaviour implements IBlockPeriodicBehaviour
 	{
+		@Override
+		public void doInitialRegistration(TickProcessingContext context, IMutableBlockProxy newBlock)
+		{
+			// Do nothing.
+		}
+		@Override
 		public void runPeriodic(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 		{
 			// Do nothing and don't reschedule this.
@@ -128,6 +134,15 @@ public class PeriodicBlockRegistry
 		{
 			_components = components;
 		}
+		@Override
+		public void doInitialRegistration(TickProcessingContext context, IMutableBlockProxy newBlock)
+		{
+			for (IBlockPeriodicBehaviour sub : _components)
+			{
+				sub.doInitialRegistration(context, newBlock);
+			}
+		}
+		@Override
 		public void runPeriodic(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 		{
 			for (IBlockPeriodicBehaviour sub : _components)

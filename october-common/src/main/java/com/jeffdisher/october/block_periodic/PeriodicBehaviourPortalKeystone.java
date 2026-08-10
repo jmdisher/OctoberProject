@@ -10,6 +10,12 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public class PeriodicBehaviourPortalKeystone implements IBlockPeriodicBehaviour
 {
 	@Override
+	public void doInitialRegistration(TickProcessingContext context, IMutableBlockProxy newBlock)
+	{
+		newBlock.requestFutureMutation(PeriodicBehaviourCompositeCornerstone.COMPOSITE_CHECK_FREQUENCY);
+	}
+
+	@Override
 	public void runPeriodic(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 	{
 		PortalHelpers.handlePortalSurface(env, context, location, newBlock);
