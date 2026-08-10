@@ -170,14 +170,19 @@ public class MovementAccumulator
 	}
 
 	/**
-	 * Enqueues a sub-action for the beginning of the next packed action.  This can fail if there is already an enqueued
-	 * sub-action.
+	 * Sets a sub-action to be used in the current accumulation.  This will return false if one is already part of this
+	 * accumulation and true if it is clear.
+	 * NOTE:  The sub-action may be cleared at any point, if it will fail, so this return true only if the sub-action
+	 * was clear when the call was issued, ignoring whether or not it decided to actually store the sub-action.  This is
+	 * because the caller is expected to pass the sub-action in, as soon as it can, and only care about the result via
+	 * callback (plus, it may be accepted here but failed later, before the final accumulation, so returning false here
+	 * wouldn't be completely descriptive).
 	 * 
-	 * @param subAction The sub-action to enqueue.
+	 * @param subAction The sub-action to set.
 	 * @param currentTimeMillis The current time.
-	 * @return True if the action was enqueued, false if there is already one waiting.
+	 * @return True if the action could be set (whether it was or not), false if there is already one waiting.
 	 */
-	public boolean enqueueSubAction(IEntitySubAction<IMutablePlayerEntity> subAction, long currentTimeMillis)
+	public boolean setSubActionIfClear(IEntitySubAction<IMutablePlayerEntity> subAction, long currentTimeMillis)
 	{
 		// We will always just apply this immediately, unless there is already something there.
 		boolean didApply = false;
@@ -194,12 +199,12 @@ public class MovementAccumulator
 			Entity newEntity = _worldCache.localEntityAfterAction(toRun, millisToApply, currentTimeMillis);
 			if (null == newEntity)
 			{
+				// If this is a failure, we will drop it.
 				_subAction = null;
 			}
-			else
-			{
-				didApply = true;
-			}
+			
+			// Whether we dropped the sub-action or not, we return true if we weren't already full.
+			didApply = true;
 		}
 		return didApply;
 	}

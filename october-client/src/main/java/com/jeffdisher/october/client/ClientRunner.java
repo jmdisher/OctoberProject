@@ -77,7 +77,8 @@ public class ClientRunner
 	 * 
 	 * @param change The change to run.
 	 * @param currentTimeMillis The current time, in milliseconds.
-	 * @return True if the action was enqueued, false if there is already one waiting.
+	 * @return True if the action could be set (still true if it was dropped due to failure), false if there is already
+	 * one in the accumulator.
 	 */
 	public boolean commonApplyEntityAction(IEntitySubAction<IMutablePlayerEntity> change, long currentTimeMillis)
 	{
@@ -85,11 +86,11 @@ public class ClientRunner
 		boolean didApply;
 		if (null != _standardAccumulator)
 		{
-			didApply = _standardAccumulator.enqueueSubAction(change, currentTimeMillis);
+			didApply = _standardAccumulator.setSubActionIfClear(change, currentTimeMillis);
 		}
 		else
 		{
-			didApply = _creativeFlightAccumulator.enqueueSubAction(currentTimeMillis, change);
+			didApply = _creativeFlightAccumulator.setSubActionIfClear(currentTimeMillis, change);
 		}
 		return didApply;
 	}

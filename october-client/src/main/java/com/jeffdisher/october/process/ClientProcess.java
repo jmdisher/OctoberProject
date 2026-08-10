@@ -134,7 +134,8 @@ public class ClientProcess
 	 * 
 	 * @param change The change to apply.
 	 * @param currentTimeMillis The current time, in milliseconds.
-	 * @return True if the action was enqueued, false if there is already one waiting.
+	 * @return True if the action could be set (still true if it was dropped due to failure), false if there is already
+	 * one in the runner.
 	 */
 	public boolean sendAction(IEntitySubAction<IMutablePlayerEntity> change, long currentTimeMillis)
 	{

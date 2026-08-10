@@ -174,7 +174,7 @@ public class TestMovementAccumulator
 		commonCache.setCuboid(stoneCuboid, Set.of());
 		listener.thisEntityDidLoad(entity);
 		
-		boolean didJump = accumulator.enqueueSubAction(new EntitySubActionJump<>(), currentTimeMillis);
+		boolean didJump = accumulator.setSubActionIfClear(new EntitySubActionJump<>(), currentTimeMillis);
 		Assert.assertTrue(didJump);
 		currentTimeMillis += 20L;
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
@@ -217,7 +217,7 @@ public class TestMovementAccumulator
 		
 		// We will walk south to make sure that there are no sign assumptions.
 		accumulator.setOrientation(OrientationHelpers.YAW_SOUTH, OrientationHelpers.PITCH_UP);
-		boolean didJump = accumulator.enqueueSubAction(new EntitySubActionJump<>(), currentTimeMillis);
+		boolean didJump = accumulator.setSubActionIfClear(new EntitySubActionJump<>(), currentTimeMillis);
 		Assert.assertTrue(didJump);
 		currentTimeMillis += 20L;
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, false);
@@ -384,7 +384,7 @@ public class TestMovementAccumulator
 		listener.thisEntityDidLoad(entity);
 		
 		// Swim, then move forward until the action is generated, and again to see that the swim impacts the second action.
-		boolean didSwim = accumulator.enqueueSubAction(new EntitySubActionSwim<>(), currentTimeMillis);
+		boolean didSwim = accumulator.setSubActionIfClear(new EntitySubActionSwim<>(), currentTimeMillis);
 		Assert.assertTrue(didSwim);
 		currentTimeMillis += 20L;
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, false);
@@ -456,7 +456,7 @@ public class TestMovementAccumulator
 		// Place a block and verify that the output information is correct for local accumulation.
 		long millisPerMove = 60L;
 		currentTimeMillis += millisPerMove;
-		accumulator.enqueueSubAction(new EntitySubActionPlaceSelectedBlock(new AbsoluteLocation(15, 15, 15), new AbsoluteLocation(15, 16, 15)), currentTimeMillis);
+		accumulator.setSubActionIfClear(new EntitySubActionPlaceSelectedBlock(new AbsoluteLocation(15, 15, 15), new AbsoluteLocation(15, 16, 15)), currentTimeMillis);
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
@@ -599,7 +599,7 @@ public class TestMovementAccumulator
 		// Enqueue a craft operation and run a standing iteration to see that it does set the local crafting operation but that the following tick, without continuing, abandons it.
 		long millisPerMove = millisPerTick;
 		currentTimeMillis += millisPerMove;
-		accumulator.enqueueSubAction(new EntitySubActionCraft(ENV.crafting.getCraftById("op.b000")), currentTimeMillis);
+		accumulator.setSubActionIfClear(new EntitySubActionCraft(ENV.crafting.getCraftById("op.b000")), currentTimeMillis);
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(out.getSubAction() instanceof EntitySubActionCraft);
@@ -646,7 +646,7 @@ public class TestMovementAccumulator
 		AbsoluteLocation targetBlock = entity.location().getBlockLocation();
 		long millisPerMove = millisPerTick;
 		currentTimeMillis += millisPerMove;
-		accumulator.enqueueSubAction(new EntitySubActionIncrementalBlockBreak(targetBlock), currentTimeMillis);
+		accumulator.setSubActionIfClear(new EntitySubActionIncrementalBlockBreak(targetBlock), currentTimeMillis);
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(out.getSubAction() instanceof EntitySubActionIncrementalBlockBreak);
@@ -734,7 +734,7 @@ public class TestMovementAccumulator
 		
 		// Enqueue and then stand around for a bit (enough that we will properly collide with the ground).
 		currentTimeMillis += 25L;
-		accumulator.enqueueSubAction(new EntitySubActionChangeHotbarSlot(1), currentTimeMillis);
+		accumulator.setSubActionIfClear(new EntitySubActionChangeHotbarSlot(1), currentTimeMillis);
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
@@ -822,7 +822,7 @@ public class TestMovementAccumulator
 		// Enqueue and then stand around for a bit (enough that we will properly collide with the ground).
 		currentTimeMillis += 25L;
 		AbsoluteLocation targetLocation = new AbsoluteLocation(4, 5, 7);
-		accumulator.enqueueSubAction(new EntitySubActionPlaceSelectedBlock(targetLocation, targetLocation.getRelative(0, 0, -1)), currentTimeMillis);
+		accumulator.setSubActionIfClear(new EntitySubActionPlaceSelectedBlock(targetLocation, targetLocation.getRelative(0, 0, -1)), currentTimeMillis);
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		// Note that this will produce nothing and will actually reset the accumulation since it changes nothing about the entity - it will cue up the sub-action, though.
 		Assert.assertNull(out);
@@ -952,7 +952,7 @@ public class TestMovementAccumulator
 		// Enqueue an action which we know will fail and observe that the top-level is still produced and passes.
 		long millisPerMove = millisPerTick;
 		currentTimeMillis += millisPerMove;
-		accumulator.enqueueSubAction(new EntitySubActionChangeHotbarSlot(0), currentTimeMillis);
+		accumulator.setSubActionIfClear(new EntitySubActionChangeHotbarSlot(0), currentTimeMillis);
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, RelativeDirection.BACKWARD, false);
 		Assert.assertNotNull(out);
 		Assert.assertNull(out.getSubAction());
@@ -991,7 +991,7 @@ public class TestMovementAccumulator
 		
 		// Enqueue a craft operation and run a standing iteration.
 		currentTimeMillis += (millisPerTick / 2L);
-		accumulator.enqueueSubAction(new EntitySubActionCraft(ENV.crafting.getCraftById("op.b000")), currentTimeMillis);
+		accumulator.setSubActionIfClear(new EntitySubActionCraft(ENV.crafting.getCraftById("op.b000")), currentTimeMillis);
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
 		// We shouldn't see anything until we apply the accumulation.
@@ -1001,7 +1001,7 @@ public class TestMovementAccumulator
 		
 		// Show what happens when we spill over into the next tick.
 		currentTimeMillis += millisPerTick;
-		accumulator.enqueueSubAction(new EntitySubActionCraft(null), currentTimeMillis);
+		accumulator.setSubActionIfClear(new EntitySubActionCraft(null), currentTimeMillis);
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(out.getSubAction() instanceof EntitySubActionCraft);
@@ -1043,7 +1043,7 @@ public class TestMovementAccumulator
 		listener.cuboidDidLoad(blockingCuboid, columnMap);
 		
 		// Try to craft something in the table, where normal validation that the sub-task is value will fail witout any accumulation.
-		accumulator.enqueueSubAction(new EntitySubActionCraftInBlock(tableLocation, ENV.crafting.getCraftById("op.b000")), currentTimeMillis);
+		accumulator.setSubActionIfClear(new EntitySubActionCraftInBlock(tableLocation, ENV.crafting.getCraftById("op.b000")), currentTimeMillis);
 		currentTimeMillis += millisPerTick;
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
@@ -1131,7 +1131,7 @@ public class TestMovementAccumulator
 		
 		// Show that adding a sub-action _will_ force the generation of the move.
 		EntitySubActionJump<IMutablePlayerEntity> jump = new EntitySubActionJump<>();
-		accumulator.enqueueSubAction(jump, currentTimeMillis);
+		accumulator.setSubActionIfClear(jump, currentTimeMillis);
 		currentTimeMillis += 70L;
 		out = accumulator.walk(currentTimeMillis, RelativeDirection.FORWARD, false);
 		Assert.assertNotNull(out);
@@ -1360,6 +1360,58 @@ public class TestMovementAccumulator
 		
 		// Make sure that removing this doesn't cause issues.
 		commonCache.removeCuboid(cuboid.getCuboidAddress());
+	}
+
+	@Test
+	public void failedSubAction() throws Throwable
+	{
+		// Show that we can still set a sub-action, even if it fails to run.
+		long millisPerTick = 100L;
+		long currentTimeMillis = 1000L;
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		_ProjectionListener listener = new _ProjectionListener();
+		CommonClientWorldCache commonCache = new CommonClientWorldCache(ENV, listener, millisPerTick);
+		MovementAccumulator accumulator = new MovementAccumulator(commonCache, currentTimeMillis);
+		
+		// Create the baseline data we need.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newInventory.addAllItems(STONE_ITEM, 2);
+		mutable.slotManager.setSelectedKey(1);
+		Entity entity = mutable.freeze();
+		commonCache.setThisEntity(entity);
+		commonCache.setCuboid(airCuboid, Set.of());
+		commonCache.setCuboid(stoneCuboid, Set.of());
+		listener.thisEntityDidLoad(entity);
+		
+		// If we fail to place a block where we are standing, we should see this still accepted, just not change to the projection.
+		AbsoluteLocation footBlock = entity.location().getBlockLocation();
+		boolean didSet = accumulator.setSubActionIfClear(new EntitySubActionPlaceSelectedBlock(footBlock, null), currentTimeMillis);
+		Assert.assertTrue(didSet);
+		currentTimeMillis += 10L;
+		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(2, listener.thisEntity.inventory().getCount(STONE_ITEM));
+		
+		// We should be able to set a correct location.
+		AbsoluteLocation freeBlock = footBlock.getRelative(1, 1, 1);
+		didSet = accumulator.setSubActionIfClear(new EntitySubActionPlaceSelectedBlock(freeBlock, null), currentTimeMillis);
+		Assert.assertTrue(didSet);
+		currentTimeMillis += 10L;
+		out = accumulator.stand(currentTimeMillis);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(1, listener.thisEntity.inventory().getCount(STONE_ITEM));
+		
+		// Trying this again will fail since there is already a sub-action in the accumulator.
+		didSet = accumulator.setSubActionIfClear(new EntitySubActionPlaceSelectedBlock(freeBlock, null), currentTimeMillis);
+		Assert.assertFalse(didSet);
+		currentTimeMillis += 10L;
+		out = accumulator.stand(currentTimeMillis);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(1, listener.thisEntity.inventory().getCount(STONE_ITEM));
 	}
 
 

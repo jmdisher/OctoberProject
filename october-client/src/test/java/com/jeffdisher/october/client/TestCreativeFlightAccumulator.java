@@ -273,7 +273,7 @@ public class TestCreativeFlightAccumulator
 		byte yaw = 5;
 		byte pitch = 6;
 		accumulator.setOrientation(yaw, pitch);
-		boolean didAdd = accumulator.enqueueSubAction(currentTimeMillis, new EntitySubActionPlaceSelectedBlock(entity.location().getBlockLocation().getRelative(1, 0, 0), null));
+		boolean didAdd = accumulator.setSubActionIfClear(currentTimeMillis, new EntitySubActionPlaceSelectedBlock(entity.location().getBlockLocation().getRelative(1, 0, 0), null));
 		Assert.assertTrue(didAdd);
 		
 		currentTimeMillis += 60L;
