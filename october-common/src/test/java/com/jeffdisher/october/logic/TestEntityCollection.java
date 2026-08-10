@@ -30,7 +30,7 @@ public class TestEntityCollection
 		ENV = Environment.createSharedInstance();
 		COW = ENV.creatures.getTypeById("op.cow");
 		// These tests assume that they know the cow's view distance.
-		Assert.assertEquals(7.0f, COW.viewDistance(), 0.01f);
+		Assert.assertEquals(8.0f, COW.viewDistance(), 0.01f);
 	}
 	@AfterClass
 	public static void tearDown()

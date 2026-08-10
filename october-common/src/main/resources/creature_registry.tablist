@@ -18,7 +18,7 @@ op.cow	Cow
 	volume	0.9	1.2
 	blocks_per_second	1.0
 	max_health	40
-	view_distance	7.0
+	view_distance	8.0
 	action_distance	1.0
 	action_cooldown_millis	1000
 	drops	100	op.beef	100	op.beef	100	op.beef	100	op.beef	50	op.beef
@@ -27,7 +27,7 @@ op.orc	Orc
 	volume	0.7	0.4
 	blocks_per_second	2.0
 	max_health	20
-	view_distance	8.0
+	view_distance	12.0
 	action_distance	1.0
 	action_cooldown_millis	1000
 	drops	20	op.iron_dust
@@ -45,7 +45,7 @@ op.skeleton	Skeleton
 	volume	1.8	0.6
 	blocks_per_second	1.0
 	max_health	30
-	view_distance	8.0
+	view_distance	12.0
 	action_distance	7.0
 	action_cooldown_millis	5000
 	drops	10	op.bow
@@ -54,7 +54,7 @@ op.villager	Villager
 	volume	1.7	0.4
 	blocks_per_second	2.0
 	max_health	50
-	view_distance	8.0
+	view_distance	16.0
 	action_distance	1.0
 	action_cooldown_millis	10000
 	drops	100	op.coin	100	op.coin	100	op.coin	100	op.coin	100	op.coin
