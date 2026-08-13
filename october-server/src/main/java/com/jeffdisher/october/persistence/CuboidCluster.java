@@ -71,6 +71,14 @@ public class CuboidCluster
 		{
 			_loadCurrentData(buffer);
 		}
+		else if (StorageVersions.V14 == version)
+		{
+			// TODO:  Add handling for V14 translation once the new cases are added.
+			_loadCurrentData(buffer);
+			
+			// Write it back, immediately.
+			_writeToBackingStore();
+		}
 		else if (StorageVersions.V13 == version)
 		{
 			// V13 only added data so just read and immediately re-write it.

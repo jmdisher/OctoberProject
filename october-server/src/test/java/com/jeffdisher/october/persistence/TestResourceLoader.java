@@ -1497,6 +1497,106 @@ public class TestResourceLoader
 		loader.shutdown();
 	}
 
+	@Test
+	public void readDataV14() throws Throwable
+	{
+		// Verify that we can read V14 cuboid data (new data aspect added in V15 and some orientation users changed).
+		File worldDirectory = DIRECTORY.newFolder();
+		
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		BlockAddress torchLocation = BlockAddress.fromInt(1, 1, 0);
+		BlockAddress stairLocation = BlockAddress.fromInt(2, 2, 0);
+		BlockAddress waterSourceLocation = BlockAddress.fromInt(3, 3, 0);
+		BlockAddress waterStrongLocation = waterSourceLocation.getRelativeInt(1, 0, 0);
+		BlockAddress waterWeakLocation = waterSourceLocation.getRelativeInt(2, 0, 0);
+		
+		Item torch = ENV.items.getItemById("op.torch");
+		Item stairs = ENV.items.getItemById("op.stone_brick_stair");
+		Item waterSource = ENV.items.getItemById("op.water_source");
+		Item waterStrong = ENV.items.getItemById("op.water_strong");
+		Item waterWeak = ENV.items.getItemById("op.water_weak");
+		
+		File clusterFile = new File(new File(new File(worldDirectory, "cuboids"), "region_0_0_0.cd8"), "cluster_0_0_0.c4");
+		clusterFile.getParentFile().mkdirs();
+		
+		/* ----- This code was used to generate the serialized buffer in the V14 shape (kept here for reference)
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		for (byte z = 0; z < 8; ++z)
+		{
+			for (byte y = 0; y < 8; ++y)
+			{
+				for (byte x = 0; x < 8; ++x)
+				{
+					cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, z), STONE.item().number());
+				}
+			}
+		}
+		cuboid.setData15(AspectRegistry.BLOCK, torchLocation, torch.number());
+		cuboid.setData15(AspectRegistry.BLOCK, stairLocation, stairs.number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, stairLocation, FacingDirection.directionToByte(FacingDirection.WEST));
+		cuboid.setData15(AspectRegistry.BLOCK, waterSourceLocation, waterSource.number());
+		cuboid.setData15(AspectRegistry.BLOCK, waterStrongLocation, waterStrong.number());
+		cuboid.setData15(AspectRegistry.BLOCK, waterWeakLocation, waterWeak.number());
+		
+		// Package the cuboid.
+		PackagedCuboid packaged = new PackagedCuboid(cuboid
+			, List.of()
+			, List.of()
+			, Map.of()
+			, List.of()
+		);
+		
+		// Serialize the cuboid.
+		ByteBuffer buffer = ByteBuffer.allocate(512);
+		CuboidCodec.serializeCuboidWithoutVersionHeader(buffer, packaged, 0L);
+		buffer.flip();
+		byte[] serializedCuboid = new byte[buffer.remaining()];
+		buffer.get(serializedCuboid);
+		buffer.clear();
+		
+		// Create the cluster structure.
+		buffer.putInt(StorageVersions.V14);
+		buffer.putInt(serializedCuboid.length);
+		for (int i = 1; i < 64; ++i)
+		{
+			buffer.putInt(0);
+		}
+		buffer.put(serializedCuboid);
+		buffer.flip();
+		byte[] serializedCluster = new byte[buffer.remaining()];
+		buffer.get(serializedCluster);
+		Files.write(clusterFile.toPath(), serializedCluster, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+		
+		System.out.println(Arrays.toString(Files.readAllBytes(clusterFile.toPath())));
+		*/
+		// Write the pre-serialized data.
+		byte[] capturedCuboidData = new byte[] {0, 0, 0, 14, 0, 0, 0, -36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 107, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, -1, -1, -1, -1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 53, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, -1, 0, 116, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 11, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, -1, 0, 1, 0, 1, -1, 0, 1, 0, 1, 0, 12, 0, 1, 0, 1, 0, 1, 0, 13, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 2, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+		Files.write(clusterFile.toPath(), capturedCuboidData, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+		
+		// Now, read this and make sure it contains what we serialized.
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), new WorldConfig());
+		List<SuspendedCuboid<CuboidData>> cuboidResults = new ArrayList<>();
+		List<SuspendedEntity> entityResults = new ArrayList<>();
+		loader.getResultsAndRequestBackgroundLoad(cuboidResults, entityResults, List.of(address), List.of(), 0L);
+		for (int i = 0; (i < 10) && (cuboidResults.isEmpty() || entityResults.isEmpty()); ++i)
+		{
+			Thread.sleep(10L);
+			loader.getResultsAndRequestBackgroundLoad(cuboidResults, entityResults, List.of(), List.of(), 0L);
+		}
+		Assert.assertEquals(1, cuboidResults.size());
+		Assert.assertEquals(0, entityResults.size());
+		
+		// Verify the state of the cuboid -  we should see anything related to Craft disappear.
+		SuspendedCuboid<CuboidData> cuboidData = cuboidResults.get(0);
+		CuboidData cuboid = cuboidData.cuboid();
+		Assert.assertEquals(torch.number(), cuboid.getData15(AspectRegistry.BLOCK, torchLocation));
+		Assert.assertEquals(stairs.number(), cuboid.getData15(AspectRegistry.BLOCK, stairLocation));
+		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.WEST), cuboid.getData7(AspectRegistry.ORIENTATION, stairLocation));
+		Assert.assertEquals(waterSource.number(), cuboid.getData15(AspectRegistry.BLOCK, waterSourceLocation));
+		Assert.assertEquals(waterStrong.number(), cuboid.getData15(AspectRegistry.BLOCK, waterStrongLocation));
+		Assert.assertEquals(waterWeak.number(), cuboid.getData15(AspectRegistry.BLOCK, waterWeakLocation));
+	}
+
 
 	private static CuboidData _waitForOne(ResourceLoader loader) throws InterruptedException
 	{
