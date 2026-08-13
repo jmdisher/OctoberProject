@@ -7,7 +7,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.persistence.legacy.LegacyEntityV1;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -75,29 +74,14 @@ public class EntityTranslator
 			List<ScheduledChange> suspended = EntityCodec.readSuspendedMutations(context);
 			result = new SuspendedEntity(entity, suspended);
 		}
-		else if ((StorageVersions.V2 == version)
-				|| (StorageVersions.V3 == version)
-				|| (StorageVersions.V4 == version)
-				|| (StorageVersions.V5 == version)
-				|| (StorageVersions.V6 == version)
-				|| (StorageVersions.V7 == version)
-				|| (StorageVersions.V8 == version)
-				|| (StorageVersions.V9 == version)
+		else if (false
+			|| (StorageVersions.V7 == version)
+			|| (StorageVersions.V8 == version)
+			|| (StorageVersions.V9 == version)
 		)
 		{
 			// These versions used a different on-disk entity shape.
 			Entity entity = _readEntityPre10(context);
-			
-			// Now, load any suspended changes.
-			List<ScheduledChange> suspended = EntityCodec.readSuspendedMutations(context);
-			result = new SuspendedEntity(entity, suspended);
-		}
-		else if (StorageVersions.V1 == version)
-		{
-			// The V1 entity is has less data.
-			// Read the legacy data.
-			LegacyEntityV1 legacy = LegacyEntityV1.load(context);
-			Entity entity = legacy.toEntity();
 			
 			// Now, load any suspended changes.
 			List<ScheduledChange> suspended = EntityCodec.readSuspendedMutations(context);

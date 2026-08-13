@@ -25,13 +25,8 @@ import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.creatures.ExtensionLivestock;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
-import com.jeffdisher.october.data.IObjectCodec;
-import com.jeffdisher.october.data.OctreeInflatedByte;
-import com.jeffdisher.october.data.OctreeObject;
-import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.PropertyHelpers;
@@ -40,24 +35,17 @@ import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
-import com.jeffdisher.october.mutations.MutationBlockStoreItems;
-import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV1;
 import com.jeffdisher.october.subactions.EntitySubActionAttackEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
-import com.jeffdisher.october.types.BodyPart;
-import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.FacingDirection;
-import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
-import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.Items;
@@ -83,7 +71,6 @@ public class TestResourceLoader
 	private static Item IRON_SWORD;
 	private static Item LOG_ITEM;
 	private static Block STONE;
-	private static EntityType COW;
 	@BeforeClass
 	public static void setup() throws Throwable
 	{
@@ -92,7 +79,6 @@ public class TestResourceLoader
 		IRON_SWORD = ENV.items.getItemById("op.iron_sword");
 		LOG_ITEM = ENV.items.getItemById("op.log");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
-		COW = ENV.creatures.getTypeById("op.cow");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -624,269 +610,6 @@ public class TestResourceLoader
 		Assert.assertEquals(WorldConfig.MAX_CLIENT_VIEW_DISTANCE_MAXIMUM, config.clientViewDistanceMaximum);
 		Assert.assertEquals("OctoberProject Server", config.serverName);
 		Assert.assertEquals(WorldConfig.DefaultPlayerMode.SURVIVAL, config.defaultPlayerMode);
-		loader.shutdown();
-	}
-
-	@Test
-	public void writeAndReadEntityV1() throws Throwable
-	{
-		File worldDirectory = DIRECTORY.newFolder();
-		
-		// This is a test of our ability to read the V1 entity data.  We manually write a file and then attempt to read it, verifying the result is sensible.
-		// Note that, since we no longer want to support writing old versions, we use a capture of an old version.
-		byte[] version1SerializedData = new byte[] {0, 0, 0, 1, 0, 0, 0, 1, 1, 63, -128, 0, 0, 64, 0, 0, 0, 64, 64, 0, 0, 64, -128, 0, 0, 64, -96, 0, 0, 64, -64, 0, 0, 0, 0, 0, 20, 2, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 2, 0, 28, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, -1, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 50, 12, 98, 0, 0, 1, -12, -64, -96, 0, 0, -64, -64, 0, 0, -64, -32, 0, 0, 0, 0, 0, 0, 0, 0, 1, -12, 1, 0, 0, 0, 0, 0, 0, 0, 0, 63, -128, 0, 0, 1};
-		int id = 1;
-		EntityLocation location = new EntityLocation(1.0f, 2.0f, 3.0f);
-
-		// Write the file.
-		String fileName = "entity_" + id + ".entity";
-		try (
-				RandomAccessFile aFile = new RandomAccessFile(new File(worldDirectory, fileName), "rw");
-				FileChannel outChannel = aFile.getChannel();
-		)
-		{
-			ByteBuffer buffer = ByteBuffer.wrap(version1SerializedData);
-			int written = outChannel.write(buffer);
-			outChannel.truncate((long)written);
-		}
-		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
-		
-		// Now, read the data and verify that it is correct.
-		WorldConfig config = new WorldConfig();
-		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);
-		List<SuspendedEntity> results = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(id), 0L);
-		Assert.assertTrue(results.isEmpty());
-		for (int i = 0; (results.size() < 1) && (i < 10); ++i)
-		{
-			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(), 0L);
-		}
-		
-		// Verify that this matches.
-		Assert.assertEquals(1, results.size());
-		Entity entity = results.get(0).entity();
-		Assert.assertEquals(location, entity.location());
-		Assert.assertEquals(BodyPart.values().length, entity.armourSlots().length);
-		Assert.assertNull(entity.ephemeralShared().localCraftOperation());
-		Assert.assertEquals((byte)0, entity.yaw());
-		
-		// We no longer end up seeing deprecated actions when deserializing legacy entity formats so this list should be empty.
-		List<ScheduledChange> changes = results.get(0).changes();
-		Assert.assertEquals(0, changes.size());
-		
-		loader.writeBackToDiskAndRetire(List.of(), results, 0L);
-		loader.shutdown();
-	}
-
-	@SuppressWarnings("unchecked")
-	@Test
-	public void writeAndReadCuboidV1() throws Throwable
-	{
-		File worldDirectory = DIRECTORY.newFolder();
-		CuboidAddress address = CuboidAddress.fromInt(3, -5, 0);
-		
-		// This is a test of our ability to read the V1 cuboid data.  We manually write a file and then attempt to read it, verifying the result is sensible.
-		OctreeShort blockData = OctreeShort.create(STONE.item().number());
-		OctreeObject<Inventory> inventoryData = OctreeObject.create();
-		OctreeShort damageData = OctreeShort.create((short) 0);
-		OctreeObject<CraftOperation> craftingData = OctreeObject.create();
-		OctreeObject<FuelState> fuelledData = OctreeObject.create();
-		OctreeInflatedByte lightData = OctreeInflatedByte.empty();
-		OctreeInflatedByte logicData = OctreeInflatedByte.empty();
-		
-		int id = -5;
-		EntityType type = COW;
-		EntityLocation location = new EntityLocation(1.0f, 2.0f, 3.0f);
-		EntityLocation velocity = new EntityLocation(4.0f, 5.0f, 6.0f);
-		byte health = 50;
-		byte breath = 98;
-		LegacyCreatureEntityV1 legacy = new LegacyCreatureEntityV1(id
-				, type
-				, location
-				, velocity
-				, health
-				, breath
-		);
-		MutationBlockStoreItems store = new MutationBlockStoreItems(address.getBase(), new Items(STONE_ITEM, 2), null, Inventory.INVENTORY_ASPECT_INVENTORY);
-		
-		// Serialize to buffer.
-		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		buffer.putInt(StorageVersions.V1);
-		
-		// We want to manually write the cuboid in V1 shape.
-		Assert.assertNull(blockData.serializeResumable(null, buffer, (IObjectCodec<Short>) AspectRegistry.ALL_ASPECTS[0].codec()));
-		Assert.assertNull(inventoryData.serializeResumable(null, buffer, (IObjectCodec<Inventory>) AspectRegistry.ALL_ASPECTS[1].codec()));
-		Assert.assertNull(damageData.serializeResumable(null, buffer, (IObjectCodec<Short>) AspectRegistry.ALL_ASPECTS[2].codec()));
-		Assert.assertNull(craftingData.serializeResumable(null, buffer, (IObjectCodec<CraftOperation>) AspectRegistry.ALL_ASPECTS[3].codec()));
-		Assert.assertNull(fuelledData.serializeResumable(null, buffer, (IObjectCodec<FuelState>) AspectRegistry.ALL_ASPECTS[4].codec()));
-		Assert.assertNull(lightData.serializeResumable(null, buffer, (IObjectCodec<Byte>) AspectRegistry.ALL_ASPECTS[5].codec()));
-		Assert.assertNull(logicData.serializeResumable(null, buffer, (IObjectCodec<Byte>) AspectRegistry.ALL_ASPECTS[6].codec()));
-		
-		// Now, proceed to write creatures and mutations.
-		buffer.putInt(1);
-		legacy.test_writeToBuffer(buffer);
-		buffer.putInt(1);
-		buffer.putLong(500L);
-		MutationBlockCodec.serializeToBuffer(buffer, store);
-		buffer.flip();
-		
-		// Write the file.
-		String fileName = "cuboid_" + address.x() + "_" + address.y() + "_" + address.z() + ".cuboid";
-		try (
-				RandomAccessFile aFile = new RandomAccessFile(new File(worldDirectory, fileName), "rw");
-				FileChannel outChannel = aFile.getChannel();
-		)
-		{
-			int written = outChannel.write(buffer);
-			outChannel.truncate((long)written);
-		}
-		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
-		
-		// Now, read the data and verify that it is correct.
-		WorldConfig config = new WorldConfig();
-		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);
-		List<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
-		long loadingGameMillis = 2000L;
-		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of(), loadingGameMillis);
-		for (int i = 0; (i < 10) && results.isEmpty(); ++i)
-		{
-			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of(), loadingGameMillis);
-		}
-		
-		// We expect a result with a cow of ID -1 (renumbered on load).
-		Assert.assertEquals(1, results.size());
-		SuspendedCuboid<CuboidData> result = results.get(0);
-		Assert.assertNotNull(result.cuboid());
-		Assert.assertNotNull(result.heightMap());
-		List<CreatureEntity> creatures = result.creatures();
-		Assert.assertEquals(1, creatures.size());
-		List<ScheduledMutation> pendingMutations = result.pendingMutations();
-		Assert.assertEquals(1, pendingMutations.size());
-		Map<BlockAddress, Long> periodicMutationMillis = result.periodicMutationMillis();
-		Assert.assertEquals(0, periodicMutationMillis.size());
-		
-		CreatureEntity entity = creatures.get(0);
-		Assert.assertEquals(-1, entity.id());
-		Assert.assertEquals((byte)0, entity.yaw());
-		Assert.assertEquals(loadingGameMillis + CreatureEntity.MILLIS_UNTIL_NO_ACTION_DESPAWN, entity.ephemeral().despawnMillis());
-		Assert.assertFalse(((ExtensionLivestock.LivestockData)entity.extendedData()).breeding().inLoveMode());
-		
-		loader.writeBackToDiskAndRetire(List.of(new PackagedCuboid(result.cuboid(), List.of(), List.of(), Map.of(), List.of())), List.of(), 0L);
-		loader.shutdown();
-	}
-
-	@Test
-	public void writeAndReadCuboidV3() throws Throwable
-	{
-		File worldDirectory = DIRECTORY.newFolder();
-		CuboidAddress address = CuboidAddress.fromInt(3, -5, 0);
-		BlockAddress periodicBlock = BlockAddress.fromInt(1, 2, 3);
-		long periodicDelay = 1000L;
-		
-		// This was captured from an earlier version of the code.
-		byte[] rawCapture = new byte[] {0, 0, 0, 3, -128, 1, 0, 0, 0, 0, -128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 96, -1, -1, -1, 96, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, -1, -1, 1, 0, 0, 0, 0, 0, 0, 3, -24, 12, 0, 0, 0, 97, -1, -1, -1, 98, 0, 0, 0, 3};
-		String fileName = "cuboid_" + address.x() + "_" + address.y() + "_" + address.z() + ".cuboid";
-		_storePerSerialized(worldDirectory, fileName, rawCapture);
-		
-		// Now, read the data and verify that it is correct.
-		WorldConfig config = new WorldConfig();
-		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);
-		List<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of(), 0L);
-		for (int i = 0; (i < 10) && results.isEmpty(); ++i)
-		{
-			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of(), 0L);
-		}
-		Assert.assertEquals(1, results.size());
-		SuspendedCuboid<CuboidData> result = results.get(0);
-		
-		Assert.assertNotNull(result.cuboid());
-		Assert.assertNotNull(result.heightMap());
-		Assert.assertEquals(0, result.creatures().size());
-		List<ScheduledMutation> pendingMutations = result.pendingMutations();
-		Assert.assertEquals(1, pendingMutations.size());
-		Assert.assertEquals(0L, pendingMutations.get(0).millisUntilReady());
-		Assert.assertTrue(pendingMutations.get(0).mutation() instanceof MutationBlockStoreItems);
-		Map<BlockAddress, Long> periodicMutationMillis = result.periodicMutationMillis();
-		Assert.assertEquals(1, periodicMutationMillis.size());
-		Assert.assertEquals(periodicDelay, periodicMutationMillis.get(periodicBlock).longValue());
-		
-		loader.writeBackToDiskAndRetire(List.of(new PackagedCuboid(result.cuboid(), List.of(), List.of(), Map.of(), List.of())), List.of(), 0L);
-		loader.shutdown();
-	}
-
-	@Test
-	public void readCuboidV5() throws Throwable
-	{
-		File worldDirectory = DIRECTORY.newFolder();
-		CuboidAddress address = CuboidAddress.fromInt(3, -5, 0);
-		
-		// We want to show switches and logic being disabled after load so enable them, now.
-		// (we can build this using current helpers and just save it out)
-		short switchOffNumber = ENV.items.getItemById("op.switch").number();
-		short wireNumber = ENV.items.getItemById("op.logic_wire").number();
-		short lampOffNumber = ENV.items.getItemById("op.lamp").number();
-		AbsoluteLocation switchOnLocation = address.getBase().getRelative(2, 3, 4);
-		AbsoluteLocation wireLocation = switchOnLocation.getRelative(1, 0, 0);
-		AbsoluteLocation lampOnLocation = wireLocation.getRelative(1, 0, 0);
-		short doorClosedNumber = ENV.items.getItemById("op.gate").number();
-		short multiDoorClosedNumber = ENV.items.getItemById("op.double_door_base").number();
-		AbsoluteLocation doorLocation = switchOnLocation.getRelative(0, 2, 0);
-		AbsoluteLocation multiDoorLocation = doorLocation.getRelative(0, 3, 0);
-		short hopperDownNumber = ENV.items.getItemById("op.hopper").number();
-		AbsoluteLocation hopperDownLocation = address.getBase().getRelative(10, 12, 21);
-		AbsoluteLocation hopperNorthLocation = hopperDownLocation.getRelative(0, -1, 0);
-		
-		// This was captured from an earlier version of the code.
-		byte[] rawCapture = new byte[] {0, 0, 0, 5, 0, -29, 0, 92, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, -1, -1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 46, 0, 0, 0, 0, 0, 0, 0, 49, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 39, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 73, 0, 73, 0, 0, 0, 0, 0, 73, 0, 73, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 41, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 62, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 1, 3, 0, 0, 15, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 13, 4, 1, 0, 0, 0, 98, -1, -1, -1, 104, 0, 0, 0, 4, 9, 5, 1, 0, 0, 0, 98, -1, -1, -1, 104, 0, 0, 0, 4, 13, 5, 1, 0, 0, 0, 98, -1, -1, -1, 104, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-		String fileName = "cuboid_" + address.x() + "_" + address.y() + "_" + address.z() + ".cuboid";
-		_storePerSerialized(worldDirectory, fileName, rawCapture);
-		
-		// Now, read the data and verify that it is correct.
-		WorldConfig config = new WorldConfig();
-		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);
-		List<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of(), 0L);
-		for (int i = 0; (i < 10) && results.isEmpty(); ++i)
-		{
-			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of(), 0L);
-		}
-		Assert.assertEquals(1, results.size());
-		SuspendedCuboid<CuboidData> result = results.get(0);
-		
-		CuboidData found = result.cuboid();
-		Assert.assertEquals(switchOffNumber, found.getData15(AspectRegistry.BLOCK, switchOnLocation.getBlockAddress()));
-		Assert.assertEquals(0, found.getData7(AspectRegistry.LOGIC, switchOnLocation.getBlockAddress()));
-		Assert.assertEquals(wireNumber, found.getData15(AspectRegistry.BLOCK, wireLocation.getBlockAddress()));
-		Assert.assertEquals(0, found.getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
-		Assert.assertEquals(lampOffNumber, found.getData15(AspectRegistry.BLOCK, lampOnLocation.getBlockAddress()));
-		// We just drop old damage version so this was written as (short)1 but will be read as null.
-		Assert.assertNull(found.getDataSpecial(AspectRegistry.DAMAGE, lampOnLocation.getBlockAddress()));
-		
-		Assert.assertEquals(doorClosedNumber, found.getData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress()));
-		Assert.assertEquals(multiDoorClosedNumber, found.getData15(AspectRegistry.BLOCK, multiDoorLocation.getBlockAddress()));
-		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.NORTH), found.getData7(AspectRegistry.ORIENTATION, multiDoorLocation.getBlockAddress()));
-		Assert.assertEquals(multiDoorClosedNumber, found.getData15(AspectRegistry.BLOCK, multiDoorLocation.getRelative(0, 0, 1).getBlockAddress()));
-		Assert.assertEquals(multiDoorLocation, found.getDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, multiDoorLocation.getRelative(0, 0, 1).getBlockAddress()));
-		Assert.assertEquals(multiDoorClosedNumber, found.getData15(AspectRegistry.BLOCK, multiDoorLocation.getRelative(1, 0, 0).getBlockAddress()));
-		Assert.assertEquals(multiDoorLocation, found.getDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, multiDoorLocation.getRelative(1, 0, 0).getBlockAddress()));
-		Assert.assertEquals(multiDoorClosedNumber, found.getData15(AspectRegistry.BLOCK, multiDoorLocation.getRelative(1, 0, 1).getBlockAddress()));
-		Assert.assertEquals(multiDoorLocation, found.getDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, multiDoorLocation.getRelative(1, 0, 1).getBlockAddress()));
-		
-		Assert.assertEquals(hopperDownNumber, found.getData15(AspectRegistry.BLOCK, hopperDownLocation.getBlockAddress()));
-		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.DOWN), found.getData7(AspectRegistry.ORIENTATION, hopperDownLocation.getBlockAddress()));
-		Assert.assertEquals(hopperDownNumber, found.getData15(AspectRegistry.BLOCK, hopperNorthLocation.getBlockAddress()));
-		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.NORTH), found.getData7(AspectRegistry.ORIENTATION, hopperNorthLocation.getBlockAddress()));
-		
-		loader.writeBackToDiskAndRetire(List.of(new PackagedCuboid(result.cuboid(), result.creatures(), result.pendingMutations(), result.periodicMutationMillis(), result.passives())), List.of(), 0L);
 		loader.shutdown();
 	}
 

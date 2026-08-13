@@ -14,34 +14,13 @@ public class StorageVersions
 	 */
 
 	/**
-	 * Version 1 was used in v1.0.1 and earlier, and is supported.
+	 * Version 1 was used in v1.0.1 and earlier, and was deprecated in 1.15.
+	 * Version 2 was used in v1.1 and earlier, and was deprecated in 1.15.
+	 * Version 3 was used in v1.2.1 and earlier, and was deprecated in 1.15.
+	 * Version 4 was used in v1.3 and earlier, and was deprecated in 1.15.
+	 * Version 5 was used in v1.5 and earlier, and was deprecated in 1.15.
+	 * Version 6 was used in v1.6 and earlier, and was deprecated in 1.15.
 	 */
-	public static final int V1 = 1;
-
-	/**
-	 * Version 2 was used in v1.1 and earlier, and is supported.
-	 */
-	public static final int V2 = 2;
-
-	/**
-	 * Version 3 was used in v1.2.1 and earlier, and is supported.
-	 */
-	public static final int V3 = 3;
-
-	/**
-	 * Version 4 was used in v1.3 and earlier, and is supported.
-	 */
-	public static final int V4 = 4;
-
-	/**
-	 * Version 5 was used in v1.5 and earlier, and is supported.
-	 */
-	public static final int V5 = 5;
-
-	/**
-	 * Version 6 was used in v1.6 and earlier, and is supported.
-	 */
-	public static final int V6 = 6;
 
 	/**
 	 * Version 7 was used in v1.7 and earlier, and is supported.
