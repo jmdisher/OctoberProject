@@ -75,6 +75,7 @@ public class CuboidGenerator
 		OctreeObject<?> multiBlockRootData = OctreeObject.create();
 		OctreeObject<?> specialItemSlotData = OctreeObject.create();
 		OctreeObject<?> enchantingData = OctreeObject.create();
+		OctreeInflatedByte blockDefinedByteData = OctreeInflatedByte.empty();
 		return CuboidData.createNew(cuboidAddress, new IOctree[] { blockData
 				, inventoryData
 				, damageData
@@ -93,6 +94,9 @@ public class CuboidGenerator
 				
 				// Added in storage version 11.
 				, enchantingData
+				
+				// Added in storage version 15.
+				, blockDefinedByteData
 		});
 	}
 }

@@ -278,17 +278,18 @@ public class TestIntegratedNetwork
 		// Combine this into a basic cuboid.
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidData.createNew(cuboidAddress, new IOctree[] { octree
-				, OctreeObject.create()
-				, OctreeObject.create()
-				, OctreeObject.create()
-				, OctreeObject.create()
-				, OctreeInflatedByte.empty()
-				, OctreeInflatedByte.empty()
-				, OctreeInflatedByte.empty()
-				, OctreeInflatedByte.empty()
-				, OctreeObject.create()
-				, OctreeObject.create()
-				, OctreeObject.create()
+			, OctreeObject.create()
+			, OctreeObject.create()
+			, OctreeObject.create()
+			, OctreeObject.create()
+			, OctreeInflatedByte.empty()
+			, OctreeInflatedByte.empty()
+			, OctreeInflatedByte.empty()
+			, OctreeInflatedByte.empty()
+			, OctreeObject.create()
+			, OctreeObject.create()
+			, OctreeObject.create()
+			, OctreeInflatedByte.empty()
 		});
 		
 		// We should be able to send this as 1 start packet and 2 fragment packets.

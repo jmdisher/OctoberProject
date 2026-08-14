@@ -359,8 +359,8 @@ public class TestResourceLoader
 		// Make sure that we see this written back.
 		File cuboidFile = _getCuboidClusterFile(worldDirectory, airAddress);
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 65 * 4 + 73 bytes.
-		Assert.assertEquals(Integer.BYTES + 64 * Integer.BYTES + 73L, cuboidFile.length());
+		// Experimentally, we know that this is 65 * 4 + 74 bytes.
+		Assert.assertEquals(Integer.BYTES + 64 * Integer.BYTES + 74L, cuboidFile.length());
 		
 		// Now, create a new loader, load, and resave this.
 		loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);
@@ -374,8 +374,8 @@ public class TestResourceLoader
 		
 		// Verify that the file has been truncated.
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 65 * 4 + 50 bytes.
-		Assert.assertEquals(Integer.BYTES + 64 * Integer.BYTES + 50L, cuboidFile.length());
+		// Experimentally, we know that this is 65 * 4 + 51 bytes.
+		Assert.assertEquals(Integer.BYTES + 64 * Integer.BYTES + 51L, cuboidFile.length());
 		
 		// Load it again and verify that the mutation is missing and we parsed without issue.
 		loader = new ResourceLoader(worldDirectory, new PreloadedWorldGenerator(), config);

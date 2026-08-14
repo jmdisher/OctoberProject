@@ -95,10 +95,29 @@ public class CuboidTranslator
 			|| (StorageVersions.V14 == version))
 		{
 			// Version 13 is the same as version 14, but some new data was added.
-			// TODO:  Add handling for V14 translation once the new cases are added.
+			// Version 15 added a new aspect, so we need to handle this differently.
+			CuboidData cuboid = _readCuboidPre15(address, context);
 			
-			// These cases are never called because they don't require special translation.
-			throw Assert.unreachable();
+			// Load any creatures associated with the cuboid.
+			List<CreatureEntity> creatures = CuboidCodec.readCreatures(context, creatureIdAssigner);
+			
+			// Now, load any suspended mutations.
+			List<ScheduledMutation> pendingMutations = CuboidCodec.readMutations(context);
+			// ... and any periodic mutations.
+			Map<BlockAddress, Long> periodicMutations = CuboidCodec.readPeriodic(inBuffer);
+			
+			// Passives are stored much like creatures.
+			List<PassiveEntity> passives = CuboidCodec.readPassives(context, passiveIdAssigner);
+			
+			// This should be fully read (might remove this check if buffer usage changes).
+			Assert.assertTrue(!inBuffer.hasRemaining());
+			
+			packaged = new PackagedCuboid(cuboid
+				, creatures
+				, pendingMutations
+				, periodicMutations
+				, passives
+			);
 		}
 		else if ((StorageVersions.V11 == version)
 			|| (StorageVersions.V12 == version)
@@ -106,7 +125,7 @@ public class CuboidTranslator
 		{
 			// Version 11 is the same as version 12, except it is packaged in the cuboid cluster directories, not flat files.
 			// Version 12 is the same as version 13, except that the craft objects need to be stripped out (done with DeserializationContext).
-			CuboidData cuboid = CuboidCodec.readCuboid(address, context);
+			CuboidData cuboid = _readCuboidPre15(address, context);
 			
 			// Load any creatures associated with the cuboid.
 			List<CreatureEntity> creatures = CuboidCodec.readCreatures(context, creatureIdAssigner);
@@ -223,10 +242,20 @@ public class CuboidTranslator
 		return packaged;
 	}
 
+	private static CuboidData _readCuboidPre15(CuboidAddress address, DeserializationContext context)
+	{
+		// Prior to version 15, only aspects up to and including ENCHANTING were included.
+		int aspectCount = AspectRegistry.ENCHANTING.index() + 1;
+		
+		CuboidData cuboid = CuboidData.createEmpty(address);
+		cuboid.deserializeSomeAspectsFully(context, aspectCount);
+		return cuboid;
+	}
+
 	private static CuboidData _readCuboidPre11(CuboidAddress address, DeserializationContext context)
 	{
 		// Prior to version 11, only aspects up to and including SPECIAL_ITEM_SLOT were included.
-		int aspectCount = 11;
+		int aspectCount = AspectRegistry.SPECIAL_ITEM_SLOT.index() + 1;
 		
 		CuboidData cuboid = CuboidData.createEmpty(address);
 		cuboid.deserializeSomeAspectsFully(context, aspectCount);
@@ -236,7 +265,7 @@ public class CuboidTranslator
 	private static CuboidData _readCuboidPre8(CuboidAddress address, DeserializationContext context)
 	{
 		// Prior to version 8, only aspects up to and including MULTI_BLOCK_ROOT were included.
-		int aspectCount = 10;
+		int aspectCount = AspectRegistry.MULTI_BLOCK_ROOT.index() + 1;
 		
 		CuboidData cuboid = CuboidData.createEmpty(address);
 		cuboid.deserializeSomeAspectsFully(context, aspectCount);

@@ -73,26 +73,17 @@ public class CuboidCluster
 		}
 		else if (StorageVersions.V14 == version)
 		{
-			// TODO:  Add handling for V14 translation once the new cases are added.
-			_loadCurrentData(buffer);
-			
-			// Write it back, immediately.
+			_loadAndConvertCommon(buffer, version);
 			_writeToBackingStore();
 		}
 		else if (StorageVersions.V13 == version)
 		{
-			// V13 only added data so just read and immediately re-write it.
-			_loadCurrentData(buffer);
-			
-			// Write it back, immediately.
+			_loadAndConvertCommon(buffer, version);
 			_writeToBackingStore();
 		}
 		else if (StorageVersions.V12 == version)
 		{
-			// Convert this data.
-			_loadAndConvertV12(buffer);
-			
-			// Write it back, immediately.
+			_loadAndConvertCommon(buffer, version);
 			_writeToBackingStore();
 		}
 		else
@@ -269,9 +260,10 @@ public class CuboidCluster
 		}
 	}
 
-	private void _loadAndConvertV12(ByteBuffer buffer)
+	private void _loadAndConvertCommon(ByteBuffer buffer, int version)
 	{
-		// This has the same high-level structure as V13 but we need to re-write the cuboids to strip out Craft instances.
+		// The common case of converting data versions:  Re-write the top-level structure, reading and directly converting all the cuboids within it.
+		// Note that special-cases will need to be split out based on the given version the cluster starts with.
 		int[] sizes = new int[64];
 		for (int i = 0; i < sizes.length; ++i)
 		{
@@ -291,7 +283,7 @@ public class CuboidCluster
 				ByteBuffer inBuffer = ByteBuffer.wrap(rawCuboid);
 				CuboidTranslator.changeToLatestVersion(updateBuffer
 					, inBuffer
-					, StorageVersions.V12
+					, version
 				);
 				updateBuffer.flip();
 				

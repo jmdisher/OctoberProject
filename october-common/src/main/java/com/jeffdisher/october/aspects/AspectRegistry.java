@@ -182,6 +182,20 @@ public class AspectRegistry
 			}
 			, new EnchantingAspectCodec()
 	);
+	/**
+	 * This is a special aspect in that it is completely block-defined.  This is used in the somewhat common case of a
+	 * block needing to store just a byte of data, like a counter, magnitude, etc.
+	 * NOTE:  An implementation should always consider "0" as the common-case, due to storage.
+	 */
+	public static final Aspect<Byte, OctreeInflatedByte> BLOCK_DEFINED_BYTE = registerAspect(Byte.class
+		, OctreeInflatedByte.class
+		, () -> OctreeInflatedByte.empty()
+		, (OctreeInflatedByte original) -> {
+			return original.cloneData();
+		}
+		// IAspectCodec only exists for OctreeObject types.
+		, null
+	);
 
 	private static int _nextIndex = 0;
 	public static final Aspect<?,?>[] ALL_ASPECTS;
@@ -199,6 +213,7 @@ public class AspectRegistry
 		Assert.assertTrue(9 == MULTI_BLOCK_ROOT.index());
 		Assert.assertTrue(10 == SPECIAL_ITEM_SLOT.index());
 		Assert.assertTrue(11 == ENCHANTING.index());
+		Assert.assertTrue(12 == BLOCK_DEFINED_BYTE.index());
 		
 		// Create the finished array, in-order.
 		ALL_ASPECTS = new Aspect<?,?>[] {
@@ -220,6 +235,9 @@ public class AspectRegistry
 			
 			// Added in storage version 11.
 			ENCHANTING,
+			
+			// Added in storage version 15.
+			BLOCK_DEFINED_BYTE,
 		};
 	}
 
