@@ -1313,6 +1313,7 @@ public class TestResourceLoader
 		SuspendedCuboid<CuboidData> cuboidData = cuboidResults.get(0);
 		CuboidData cuboid = cuboidData.cuboid();
 		Assert.assertEquals(torch.number(), cuboid.getData15(AspectRegistry.BLOCK, torchLocation));
+		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.DOWN), cuboid.getData7(AspectRegistry.ORIENTATION, torchLocation));
 		Assert.assertEquals(stairs.number(), cuboid.getData15(AspectRegistry.BLOCK, stairLocation));
 		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.WEST), cuboid.getData7(AspectRegistry.ORIENTATION, stairLocation));
 		Assert.assertEquals(waterSource.number(), cuboid.getData15(AspectRegistry.BLOCK, waterSourceLocation));

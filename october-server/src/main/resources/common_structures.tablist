@@ -81,6 +81,7 @@ block_def	G
 	block	op.grass
 block_def	i
 	block	op.torch
+	facing_direction	DOWN
 block_def	w
 	block	op.wheat_seedling
 block_def	c
@@ -167,4 +168,5 @@ block_def	l
 	block	op.leaf
 block_def	&
 	block	op.torch
+	facing_direction	DOWN
 	spawn	op.villager
