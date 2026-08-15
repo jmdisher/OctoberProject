@@ -4008,6 +4008,124 @@ public class TestCommonChanges
 		Assert.assertFalse(invalidCount.applyChange(holder.context, newEntity));
 	}
 
+	@Test
+	public void torchSideOfBlock() throws Throwable
+	{
+		// Place a torch on the side of a block and then break it.
+		Item itemTorch = ENV.items.getItemById("op.torch");
+		Item itemDirt = ENV.items.getItemById("op.dirt");
+		
+		int entityId = 1;
+		MutableEntity newEntity = MutableEntity.createForTest(entityId);
+		newEntity.newLocation = new EntityLocation(2.0f, 2.0f, 10.0f);
+		newEntity.newInventory.addAllItems(itemTorch, 6);
+		newEntity.slotManager.setSelectedKey(1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
+		
+		// We will place 5 torches around a single block, on all sides but the bottom.
+		AbsoluteLocation dirtLocation = new AbsoluteLocation(2, 2, 9);
+		cuboid.setData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress(), itemDirt.number());
+		
+		// Top face.
+		AbsoluteLocation topTorch = dirtLocation.getRelative(0, 0, 1);
+		EntitySubActionPlaceSelectedBlock top = new EntitySubActionPlaceSelectedBlock(topTorch, dirtLocation);
+		Assert.assertTrue(top.applyChange(holder.context, newEntity));
+		MutableBlockProxy proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, topTorch, 0, entityId));
+		holder.mutation.applyMutation(holder.context, proxy);
+		Assert.assertEquals(itemTorch, proxy.getBlock().item());
+		Assert.assertEquals(FacingDirection.DOWN, proxy.getOrientation());
+		proxy.writeBack(cuboid);
+		holder.mutation = null;
+		
+		// North face.
+		AbsoluteLocation northTorch = dirtLocation.getRelative(0, 1, 0);
+		EntitySubActionPlaceSelectedBlock north = new EntitySubActionPlaceSelectedBlock(northTorch, dirtLocation);
+		Assert.assertTrue(north.applyChange(holder.context, newEntity));
+		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, northTorch, 0, entityId));
+		holder.mutation.applyMutation(holder.context, proxy);
+		Assert.assertEquals(itemTorch, proxy.getBlock().item());
+		Assert.assertEquals(FacingDirection.SOUTH, proxy.getOrientation());
+		proxy.writeBack(cuboid);
+		holder.mutation = null;
+		
+		// South face.
+		AbsoluteLocation southTorch = dirtLocation.getRelative(0, -1, 0);
+		EntitySubActionPlaceSelectedBlock south = new EntitySubActionPlaceSelectedBlock(southTorch, dirtLocation);
+		Assert.assertTrue(south.applyChange(holder.context, newEntity));
+		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, southTorch, 0, entityId));
+		holder.mutation.applyMutation(holder.context, proxy);
+		Assert.assertEquals(itemTorch, proxy.getBlock().item());
+		Assert.assertEquals(FacingDirection.NORTH, proxy.getOrientation());
+		proxy.writeBack(cuboid);
+		holder.mutation = null;
+		
+		// East face.
+		AbsoluteLocation eastTorch = dirtLocation.getRelative(1, 0, 0);
+		EntitySubActionPlaceSelectedBlock east = new EntitySubActionPlaceSelectedBlock(eastTorch, dirtLocation);
+		Assert.assertTrue(east.applyChange(holder.context, newEntity));
+		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, eastTorch, 0, entityId));
+		holder.mutation.applyMutation(holder.context, proxy);
+		Assert.assertEquals(itemTorch, proxy.getBlock().item());
+		Assert.assertEquals(FacingDirection.WEST, proxy.getOrientation());
+		proxy.writeBack(cuboid);
+		holder.mutation = null;
+		
+		// West face.
+		AbsoluteLocation westTorch = dirtLocation.getRelative(-1, 0, 0);
+		EntitySubActionPlaceSelectedBlock west = new EntitySubActionPlaceSelectedBlock(westTorch, dirtLocation);
+		Assert.assertTrue(west.applyChange(holder.context, newEntity));
+		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, westTorch, 0, entityId));
+		holder.mutation.applyMutation(holder.context, proxy);
+		Assert.assertEquals(itemTorch, proxy.getBlock().item());
+		Assert.assertEquals(FacingDirection.EAST, proxy.getOrientation());
+		proxy.writeBack(cuboid);
+		holder.mutation = null;
+		
+		// Now, break the block and run updates against these 5 locations to show that the torches drop.
+		cuboid.setData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress(), (short)0);
+		
+		proxy = new MutableBlockProxy(topTorch, cuboid);
+		new MutationBlockUpdate(topTorch).applyMutation(holder.context, proxy);
+		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(topTorch.toEntityLocation(), holder.passive.location());
+		holder.passive = null;
+		
+		proxy = new MutableBlockProxy(northTorch, cuboid);
+		new MutationBlockUpdate(northTorch).applyMutation(holder.context, proxy);
+		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(northTorch.toEntityLocation(), holder.passive.location());
+		holder.passive = null;
+		
+		proxy = new MutableBlockProxy(southTorch, cuboid);
+		new MutationBlockUpdate(southTorch).applyMutation(holder.context, proxy);
+		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(southTorch.toEntityLocation(), holder.passive.location());
+		holder.passive = null;
+		
+		proxy = new MutableBlockProxy(eastTorch, cuboid);
+		new MutationBlockUpdate(eastTorch).applyMutation(holder.context, proxy);
+		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(eastTorch.toEntityLocation(), holder.passive.location());
+		holder.passive = null;
+		
+		proxy = new MutableBlockProxy(westTorch, cuboid);
+		new MutationBlockUpdate(westTorch).applyMutation(holder.context, proxy);
+		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(westTorch.toEntityLocation(), holder.passive.location());
+		holder.passive = null;
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

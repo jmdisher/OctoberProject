@@ -69,14 +69,24 @@ public class MutationBlockUpdate implements IMutationBlock
 		
 		if (!didApply)
 		{
-			// Make sure that this block can be supported by the one under it.
-			AbsoluteLocation belowBlockLocation = _blockLocation.getRelative(0, 0, -1);
-			BlockProxy belowBlock = context.previousBlockLookUp.readBlock(belowBlockLocation);
+			// Make sure that this block can be supported - see if we can read the orientation.
+			AbsoluteLocation supportLocation;
+			if (env.orientations.doesSingleBlockRequireOrientation(thisBlock))
+			{
+				FacingDirection output = newBlock.getOrientation();
+				supportLocation = output.getOutputBlockLocation(_blockLocation);
+			}
+			else
+			{
+				supportLocation = _blockLocation.getRelative(0, 0, -1);
+			}
+			
+			BlockProxy supportBlock = context.previousBlockLookUp.readBlock(supportLocation);
 			Block emptyBlock = env.special.AIR;
 			Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, emptyBlock);
 			
 			// Note that multi-blocks also can require "existing on block", but only if they are the root block.
-			boolean blockIsSupported = env.blocks.canExistOnBlock(thisBlock, (null != belowBlock) ? belowBlock.getBlock() : null);
+			boolean blockIsSupported = env.blocks.canExistOnBlock(thisBlock, (null != supportBlock) ? supportBlock.getBlock() : null);
 			if (MultiBlockUtils.isMultiBlockExtension(env, newBlock))
 			{
 				blockIsSupported = true;
@@ -119,6 +129,7 @@ public class MutationBlockUpdate implements IMutationBlock
 			else if (env.blocks.hasGravity(thisBlock))
 			{
 				// If it looks like this should fall, schedule the mutation to apply that.
+				BlockProxy belowBlock = context.previousBlockLookUp.readBlock(_blockLocation.getRelative(0, 0, -1));
 				if (null != belowBlock)
 				{
 					if (!env.blocks.isSupportedAgainstGravity(thisBlock, belowBlock.getBlock()))

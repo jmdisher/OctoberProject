@@ -126,9 +126,16 @@ public class EntitySubActionPlaceSelectedBlock implements IEntitySubAction<IMuta
 		boolean blockIsSupported = false;
 		if (null != blockType)
 		{
-			BlockProxy belowProxy = context.previousBlockLookUp.readBlock(_targetBlock.getRelative(0, 0, -1));
-			blockIsSupported = (null != belowProxy)
-				? env.blocks.canExistOnBlock(blockType, belowProxy.getBlock())
+			AbsoluteLocation supportLocation = env.orientations.doesSingleBlockRequireOrientation(blockType)
+				? _blockOutput
+				: _targetBlock.getRelative(0, 0, -1)
+			;
+			BlockProxy supportBlock = (null != supportLocation)
+				? context.previousBlockLookUp.readBlock(supportLocation)
+				: null
+			;
+			blockIsSupported = (null != supportBlock)
+				? env.blocks.canExistOnBlock(blockType, supportBlock.getBlock())
 				: false
 			;
 		}

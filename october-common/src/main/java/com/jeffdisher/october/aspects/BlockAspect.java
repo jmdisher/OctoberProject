@@ -341,21 +341,21 @@ public class BlockAspect
 	 * Used to determine if the given block can exist on top of another block type.  This is generally true but some
 	 * types have specific requirements.
 	 * 
-	 * @param topBlock The block being checked (on top).
-	 * @param bottomBlock The block underneath (null if not loaded).
+	 * @param mainBlock The block being checked (on top).
+	 * @param baseBlock The block supporting mainBlock (usually below it - null if not loaded).
 	 * @return True if topBlock can exist on top of bottomBlock.
 	 */
-	public boolean canExistOnBlock(Block topBlock, Block bottomBlock)
+	public boolean canExistOnBlock(Block mainBlock, Block baseBlock)
 	{
 		// By default, we want to assume that this is ok for all block types.
 		boolean canExist = true;
 		// Only check the special types if the bottom block is loaded (otherwise, assume it is supported - later update event will fix this).
-		if (null != bottomBlock)
+		if (null != baseBlock)
 		{
 			// See if this is one of our special-cases.
-			Set<Block> specialBottom = _specialBlockSupport.get(topBlock);
+			Set<Block> specialBottom = _specialBlockSupport.get(mainBlock);
 			// This can exist if there is no supporting set or if this block is in the supporting set.
-			canExist = (null == specialBottom) || specialBottom.contains(bottomBlock);
+			canExist = (null == specialBottom) || specialBottom.contains(baseBlock);
 		}
 		return canExist;
 	}

@@ -87,18 +87,23 @@ public class CommonBlockMutationHelpers
 		Block oldBlock = proxy.getBlock();
 		if (env.blocks.canBeReplaced(oldBlock))
 		{
-			// See if the block we are changing needs a special logic mode.
-			BlockProxy belowBlock = context.previousBlockLookUp.readBlock(location.getRelative(0, 0, -1));
+			// Find the block this one is supported by (usually below, might not be loaded).
+			AbsoluteLocation supportLocation = location.getRelative(0, 0, -1);
+			if ((null != outputDirection) && env.orientations.doesSingleBlockRequireOrientation(blockType))
+			{
+				supportLocation = outputDirection.getOutputBlockLocation(location);
+			}
+			BlockProxy supportBlock = context.previousBlockLookUp.readBlock(supportLocation);
 			
 			// Make sure that this block can be supported by the one under it.
 			// Note that multi-blocks only honour their support block for their root.
 			boolean blockIsSupported = true;
 			if (!isMultiBlockExtension)
 			{
-				// If the cuboid beneath this isn't loaded, we will just treat it as supported (best we can do in this situation).
-				if (null != belowBlock)
+				// If the cuboid supporting this isn't loaded, we will just treat it as supported (best we can do in this situation).
+				if (null != supportBlock)
 				{
-					blockIsSupported = env.blocks.canExistOnBlock(blockType, belowBlock.getBlock());
+					blockIsSupported = env.blocks.canExistOnBlock(blockType, supportBlock.getBlock());
 				}
 			}
 			
