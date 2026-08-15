@@ -15,7 +15,7 @@ import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.PlantRegistry;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourPlant;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
+import com.jeffdisher.october.mutations.MutationBlockOverwriteWorldGeneration;
 import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.properties.PropertyType;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -230,7 +230,7 @@ public class Structure
 		PlantRegistry plants = env.plants;
 		GroundCoverRegistry groundCover = env.groundCover;
 		short replacementBlock = env.special.AIR.item().number();
-		List<MutationBlockOverwriteInternal> overwriteMutations = new ArrayList<>();
+		List<MutationBlockOverwriteWorldGeneration> overwriteMutations = new ArrayList<>();
 		Map<BlockAddress, Long> periodicMutationMillis = new HashMap<>();
 		Map<AbsoluteLocation, EntityType> entitiesToSpawn = new HashMap<>();
 		for (int c = 0; c < countZ; ++c)
@@ -275,11 +275,13 @@ public class Structure
 								{
 									// Lighting updates require that the block be placed to trigger the lighting update.
 									cuboid.setData15(AspectRegistry.BLOCK, blockAddress, replacementBlock);
-									overwriteMutations.add(new MutationBlockOverwriteInternal(thisBlock, block));
+									overwriteMutations.add(new MutationBlockOverwriteWorldGeneration(thisBlock
+										, block
+										, aspectData.orientation
+									));
 									
 									// We can't have other data if we are using this special path.
 									Assert.assertTrue(null == aspectData.normalInventory);
-									Assert.assertTrue(null == aspectData.orientation);
 									Assert.assertTrue(null == aspectData.specialItemSlot);
 								}
 								else
@@ -378,7 +380,7 @@ public class Structure
 	}
 
 
-	public static record FollowUp(List<MutationBlockOverwriteInternal> overwriteMutations
+	public static record FollowUp(List<MutationBlockOverwriteWorldGeneration> overwriteMutations
 		, Map<BlockAddress, Long> periodicMutationMillis
 		, Map<AbsoluteLocation, EntityType> entitiesToSpawn
 	) {
@@ -397,7 +399,7 @@ public class Structure
 		}
 		private static FollowUp _merge(FollowUp one, FollowUp two)
 		{
-			List<MutationBlockOverwriteInternal> overwriteMutations = new ArrayList<>();
+			List<MutationBlockOverwriteWorldGeneration> overwriteMutations = new ArrayList<>();
 			overwriteMutations.addAll(one.overwriteMutations);
 			overwriteMutations.addAll(two.overwriteMutations);
 			Map<BlockAddress, Long> periodicMutationMillis = new HashMap<>();

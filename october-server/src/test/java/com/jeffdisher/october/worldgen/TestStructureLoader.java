@@ -17,7 +17,7 @@ import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.PropertyHelpers;
-import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
+import com.jeffdisher.october.mutations.MutationBlockOverwriteWorldGeneration;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -151,7 +151,7 @@ public class TestStructureLoader
 		AbsoluteLocation wait2 = target.getRelative(5, 0, 0);
 		AbsoluteLocation wait3 = target.getRelative(9, 0, 0);
 		
-		List<MutationBlockOverwriteInternal> changes = followUp.overwriteMutations();
+		List<MutationBlockOverwriteWorldGeneration> changes = followUp.overwriteMutations();
 		Map<BlockAddress, Long> periodicMutationMillis = followUp.periodicMutationMillis();
 		Assert.assertEquals(1, changes.size());
 		Assert.assertEquals(wait3, changes.get(0).getAbsoluteLocation());
@@ -267,7 +267,7 @@ public class TestStructureLoader
 		
 		// We expect 1 update since the void lamp is a composite structure.
 		AbsoluteLocation wait1 = target.getRelative(0, 0, 1);
-		List<MutationBlockOverwriteInternal> changes = followUp.overwriteMutations(); 
+		List<MutationBlockOverwriteWorldGeneration> changes = followUp.overwriteMutations(); 
 		Map<BlockAddress, Long> periodicMutationMillis = followUp.periodicMutationMillis();
 		Assert.assertEquals(0, changes.size());
 		Assert.assertEquals(1, periodicMutationMillis.size());
@@ -530,8 +530,8 @@ public class TestStructureLoader
 	@Test
 	public void mergeFollowUp() throws Throwable
 	{
-		List<MutationBlockOverwriteInternal> overwriteMutations1 = List.of(new MutationBlockOverwriteInternal(new AbsoluteLocation(1, 2, 3), DIRT));
-		List<MutationBlockOverwriteInternal> overwriteMutations2 = List.of(new MutationBlockOverwriteInternal(new AbsoluteLocation(4, 5, 6), DIRT));
+		List<MutationBlockOverwriteWorldGeneration> overwriteMutations1 = List.of(new MutationBlockOverwriteWorldGeneration(new AbsoluteLocation(1, 2, 3), DIRT, null));
+		List<MutationBlockOverwriteWorldGeneration> overwriteMutations2 = List.of(new MutationBlockOverwriteWorldGeneration(new AbsoluteLocation(4, 5, 6), DIRT, null));
 		Map<BlockAddress, Long> periodicMutationMillis1 = Map.of(BlockAddress.fromInt(2, 3, 4), 5L);
 		Map<BlockAddress, Long> periodicMutationMillis2 = Map.of(BlockAddress.fromInt(6, 7, 8), 9L);
 		Structure.FollowUp followUp1 = new Structure.FollowUp(overwriteMutations1, periodicMutationMillis1, Map.of());
