@@ -57,14 +57,7 @@ public class MutationBlockUpdate implements IMutationBlock
 		if (env.blocks.canBeReplaced(thisBlock))
 		{
 			// This is an "empty" type so see if the "empty" blocks around it should influence its type.
-			Block newType = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, thisBlock);
-			if (newType != thisBlock)
-			{
-				// This block needs to be changed due to some kind of flowing liquid so schedule the mutation to do that.
-				long millisDelay = env.liquids.minFlowDelayMillis(newType, thisBlock);
-				context.mutationSink.future(new MutationBlockLiquidFlowInto(_blockLocation), millisDelay);
-				didApply = true;
-			}
+			didApply = CommonBlockMutationHelpers.didScheduleFlowInForReplaceable(env, context, _blockLocation, thisBlock);
 		}
 		
 		if (!didApply)
@@ -82,8 +75,6 @@ public class MutationBlockUpdate implements IMutationBlock
 			}
 			
 			BlockProxy supportBlock = context.previousBlockLookUp.readBlock(supportLocation);
-			Block emptyBlock = env.special.AIR;
-			Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, emptyBlock);
 			
 			// Note that multi-blocks also can require "existing on block", but only if they are the root block.
 			boolean blockIsSupported = env.blocks.canExistOnBlock(thisBlock, (null != supportBlock) ? supportBlock.getBlock() : null);
@@ -95,11 +86,8 @@ public class MutationBlockUpdate implements IMutationBlock
 			if (!blockIsSupported)
 			{
 				// The block isn't supported so break it (replace with air) and then see if a liquid needs to change anything).
-				if (emptyBlock != eventualBlock)
-				{
-					long millisDelay = env.liquids.minFlowDelayMillis(eventualBlock, thisBlock);
-					context.mutationSink.future(new MutationBlockLiquidFlowInto(_blockLocation), millisDelay);
-				}
+				Block emptyBlock = env.special.AIR;
+				CommonBlockMutationHelpers.didScheduleFlowInForReplaceable(env, context, _blockLocation, emptyBlock);
 				
 				// Determine if this is a block which breaks normally or if we need to use a special multi-block breaking idiom.
 				if (MultiBlockUtils.isMultiBlockRoot(env, newBlock))
@@ -119,12 +107,9 @@ public class MutationBlockUpdate implements IMutationBlock
 				}
 				didApply = true;
 			}
-			else if (env.blocks.isBrokenByFlowingLiquid(thisBlock) && (emptyBlock != eventualBlock))
+			else if (env.blocks.isBrokenByFlowingLiquid(thisBlock))
 			{
-				// The block is supported but can be broken by a flowing liquid and flowing liquid should touch it so schedule this update.
-				long millisDelay = env.liquids.minFlowDelayMillis(eventualBlock, thisBlock);
-				context.mutationSink.future(new MutationBlockLiquidFlowInto(_blockLocation), millisDelay);
-				didApply = true;
+				didApply = CommonBlockMutationHelpers.didScheduleFlowInToBreak(env, context, _blockLocation, thisBlock);
 			}
 			else if (env.blocks.hasGravity(thisBlock))
 			{

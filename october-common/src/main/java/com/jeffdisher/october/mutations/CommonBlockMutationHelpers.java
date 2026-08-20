@@ -23,6 +23,7 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -208,6 +209,51 @@ public class CommonBlockMutationHelpers
 		_setBlockWithFollowUps(env, context, location, proxy, emptyBlock, outputDirection);
 	}
 
+	/**
+	 * Checks to see if a replaceable block is adjacent to liquids which should flow into it and interact.  Returns true
+	 * if the follow-up mutation to accomplish this was scheduled in the given context.
+	 * 
+	 * @param env The environment.
+	 * @param context The context for looking up blocks and scheduling mutations.
+	 * @param location The location of the check.
+	 * @param blockType The current type of block (must be replaceable).
+	 * @return True if a MutationBlockLiquidFlowInto was scheduled for this block.
+	 */
+	public static boolean didScheduleFlowInForReplaceable(Environment env
+		, TickProcessingContext context
+		, AbsoluteLocation location
+		, Block blockType
+	)
+	{
+		// We expect that this is only called when the block can be replaced.
+		Assert.assertTrue(env.blocks.canBeReplaced(blockType));
+		
+		// This case is used when not changing the type so we use the same for new and old (only used to choose a delay).
+		return _didScheduleFlowInForReplaceable(env, context, location, blockType, blockType);
+	}
+
+	/**
+	 * Checks to see if a block which can be broken by liquids is adjacent to liquids which should flow into it and
+	 * interact.  Returns true if the follow-up mutation to accomplish this was scheduled in the given context.
+	 * 
+	 * @param env The environment.
+	 * @param context The context for looking up blocks and scheduling mutations.
+	 * @param location The location of the check.
+	 * @param blockType The current type of block (must be replaceable).
+	 * @return True if a MutationBlockLiquidFlowInto was scheduled for this block.
+	 */
+	public static boolean didScheduleFlowInToBreak(Environment env
+		, TickProcessingContext context
+		, AbsoluteLocation location
+		, Block blockType
+	)
+	{
+		// We expect that this is only called when the block can be broken by liquids.
+		Assert.assertTrue(env.blocks.isBrokenByFlowingLiquid(blockType));
+		
+		return _didScheduleFlowInToBreak(env, context, location, blockType);
+	}
+
 
 	private static void _dropInventoryAsPassives(TickProcessingContext context, AbsoluteLocation location, Inventory oldInventory)
 	{
@@ -378,26 +424,12 @@ public class CommonBlockMutationHelpers
 		boolean didScheduleLiquid = false;
 		if (env.blocks.canBeReplaced(newType))
 		{
-			// We need to make sure that the eventual type is a mismatch but also that it has a flow rate (otherwise, placing a water source surrounded by air will think it should be air, meaning it should reflow immediately).
-			Block eventualType = _determineEmptyBlockType(context, location, newType);
-			long millisDelay = env.liquids.minFlowDelayMillis(eventualType, oldType);
-			if ((newType != eventualType) && (millisDelay > 0L))
-			{
-				context.mutationSink.future(new MutationBlockLiquidFlowInto(location), millisDelay);
-				didScheduleLiquid = true;
-			}
+			didScheduleLiquid = _didScheduleFlowInForReplaceable(env, context, location, oldType, newType);
 		}
 		// See if this block might actually need to be broken, now, due to neighbours.
 		if (!didScheduleLiquid && env.blocks.isBrokenByFlowingLiquid(newType))
 		{
-			Block emptyBlock = env.special.AIR;
-			Block eventualType = _determineEmptyBlockType(context, location, emptyBlock);
-			if (emptyBlock != eventualType)
-			{
-				long millisDelay = env.liquids.minFlowDelayMillis(eventualType, oldType);
-				context.mutationSink.future(new MutationBlockLiquidFlowInto(location), millisDelay);
-				didScheduleLiquid = true;
-			}
+			didScheduleLiquid = _didScheduleFlowInToBreak(env, context, location, oldType);
 		}
 	}
 
@@ -414,5 +446,43 @@ public class CommonBlockMutationHelpers
 		EntityLocation passiveLocation = location.toEntityLocation();
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 		context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, passiveLocation, velocity, slot);
+	}
+
+	private static boolean _didScheduleFlowInForReplaceable(Environment env
+		, TickProcessingContext context
+		, AbsoluteLocation location
+		, Block oldType
+		, Block newType
+	)
+	{
+		// We need to make sure that the eventual type is a mismatch but also that it has a flow rate (otherwise, placing a water source surrounded by air will think it should be air, meaning it should reflow immediately).
+		Block eventualType = _determineEmptyBlockType(context, location, newType);
+		boolean didScheduleLiquid = false;
+		if (newType != eventualType)
+		{
+			long millisDelay = env.liquids.minFlowDelayMillis(eventualType, oldType);
+			Assert.assertTrue(millisDelay > 0L);
+			context.mutationSink.future(new MutationBlockLiquidFlowInto(location), millisDelay);
+			didScheduleLiquid = true;
+		}
+		return didScheduleLiquid;
+	}
+
+	private static boolean _didScheduleFlowInToBreak(Environment env
+		, TickProcessingContext context
+		, AbsoluteLocation location
+		, Block blockType
+	)
+	{
+		Block emptyBlock = env.special.AIR;
+		Block eventualType = _determineEmptyBlockType(context, location, emptyBlock);
+		boolean didScheduleLiquid = false;
+		if (emptyBlock != eventualType)
+		{
+			long millisDelay = env.liquids.minFlowDelayMillis(eventualType, blockType);
+			context.mutationSink.future(new MutationBlockLiquidFlowInto(location), millisDelay);
+			didScheduleLiquid = true;
+		}
+		return didScheduleLiquid;
 	}
 }

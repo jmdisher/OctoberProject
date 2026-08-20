@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.mutations.CommonBlockMutationHelpers;
-import com.jeffdisher.october.mutations.MutationBlockLiquidFlowInto;
 import com.jeffdisher.october.mutations.MutationBlockType;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -42,12 +41,7 @@ public class MutationBlockDeleteBlock implements IMutationBlock
 		newBlock.setBlockAndClear(emptyBlock);
 		
 		// Now, determine if a liquid needs to flow into the space.
-		Block eventualType = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, emptyBlock);
-		if (emptyBlock != eventualType)
-		{
-			long millisDelay = env.liquids.flowDelayMillis(eventualType);
-			context.mutationSink.future(new MutationBlockLiquidFlowInto(_blockLocation), millisDelay);
-		}
+		CommonBlockMutationHelpers.didScheduleFlowInForReplaceable(env, context, _blockLocation, emptyBlock);
 	}
 
 	@Override
