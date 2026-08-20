@@ -379,7 +379,7 @@ public class CommonBlockMutationHelpers
 		if (env.blocks.canBeReplaced(newType))
 		{
 			// We need to make sure that the eventual type is a mismatch but also that it has a flow rate (otherwise, placing a water source surrounded by air will think it should be air, meaning it should reflow immediately).
-			Block eventualType = CommonBlockMutationHelpers.determineEmptyBlockType(context, location, newType);
+			Block eventualType = _determineEmptyBlockType(context, location, newType);
 			long millisDelay = env.liquids.minFlowDelayMillis(eventualType, oldType);
 			if ((newType != eventualType) && (millisDelay > 0L))
 			{
@@ -391,7 +391,7 @@ public class CommonBlockMutationHelpers
 		if (!didScheduleLiquid && env.blocks.isBrokenByFlowingLiquid(newType))
 		{
 			Block emptyBlock = env.special.AIR;
-			Block eventualType = CommonBlockMutationHelpers.determineEmptyBlockType(context, location, emptyBlock);
+			Block eventualType = _determineEmptyBlockType(context, location, emptyBlock);
 			if (emptyBlock != eventualType)
 			{
 				long millisDelay = env.liquids.minFlowDelayMillis(eventualType, oldType);

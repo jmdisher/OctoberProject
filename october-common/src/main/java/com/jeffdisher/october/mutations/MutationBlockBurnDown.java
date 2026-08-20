@@ -59,14 +59,6 @@ public class MutationBlockBurnDown implements IMutationBlock
 			// When a block burns, destroy it and any inventory.
 			Block emptyBlock = env.special.AIR;
 			CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, _blockLocation, newBlock, emptyBlock);
-			
-			// We want to see if there are any liquids around this block which we will need to handle.
-			Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, emptyBlock);
-			if (emptyBlock != eventualBlock)
-			{
-				long millisDelay = env.liquids.minFlowDelayMillis(eventualBlock, eventualBlock);
-				context.mutationSink.future(new MutationBlockLiquidFlowInto(_blockLocation), millisDelay);
-			}
 		}
 	}
 

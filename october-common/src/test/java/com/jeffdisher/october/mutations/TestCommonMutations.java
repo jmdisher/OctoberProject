@@ -2450,6 +2450,75 @@ public class TestCommonMutations
 		Assert.assertNotNull(outPassive[0]);
 	}
 
+	@Test
+	public void waterFlowAfterGravity()
+	{
+		// We want to apply the gravity mutation to an unsupported block next to water and verify that we see a flow into mutation scheduled.
+		AbsoluteLocation sandBlock = new AbsoluteLocation(15, 15, 15);
+		AbsoluteLocation waterBlock = new AbsoluteLocation(15, 16, 15);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(sandBlock.getCuboidAddress(), ENV.special.AIR);
+		Block sand = ENV.blocks.fromItem(ENV.items.getItemById("op.sand"));
+		cuboid.setData15(AspectRegistry.BLOCK, sandBlock.getBlockAddress(), sand.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, waterBlock.getBlockAddress(), WATER_SOURCE.item().number());
+		
+		MutationBlockLiquidFlowInto[] out_mutation = new MutationBlockLiquidFlowInto[1];
+		PassiveEntity[] out_passive = new PassiveEntity[1];
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
+			.sinks(new TickProcessingContext.IMutationSink() {
+				@Override
+				public boolean next(IMutationBlock mutation)
+				{
+					throw new AssertionError("Not in test");
+				}
+				@Override
+				public boolean future(IMutationBlock mutation, long millisToDelay)
+				{
+					Assert.assertNull(out_mutation[0]);
+					out_mutation[0] = (MutationBlockLiquidFlowInto) mutation;
+					Assert.assertEquals(100L, millisToDelay);
+					return true;
+				}
+			}, null)
+			.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+				Assert.assertNull(out_passive[0]);
+				out_passive[0] = new PassiveEntity(1
+					, type
+					, location
+					, velocity
+					, extendedData
+					, 1000L
+				);
+			})
+			.finish()
+		;
+		
+		MutationBlockApplyGravity gravity = new MutationBlockApplyGravity(sandBlock);
+		MutableBlockProxy proxy = new MutableBlockProxy(sandBlock, cuboid);
+		gravity.applyMutation(context, proxy);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		
+		// We should see this start as the air block but also schedule a flow-into mutation and create a passive.
+		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, sandBlock.getBlockAddress()));
+		Assert.assertEquals(PassiveType.FALLING_BLOCK, out_passive[0].type());
+		Assert.assertEquals(sandBlock, out_mutation[0].getAbsoluteLocation());
+		
+		// Verify the flow-into change.
+		MutationBlockLiquidFlowInto flowInto = out_mutation[0];
+		proxy = new MutableBlockProxy(flowInto.getAbsoluteLocation(), cuboid);
+		out_mutation[0] = null;
+		out_passive[0] = null;
+		flowInto.applyMutation(context, proxy);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		
+		// (this will be weak since it isn't falling onto a solid block)
+		Assert.assertEquals(WATER_WEAK.item().number(), cuboid.getData15(AspectRegistry.BLOCK, sandBlock.getBlockAddress()));
+		Assert.assertNull(out_mutation[0]);
+		Assert.assertNull(out_passive[0]);
+	}
+
 
 	private static Set<AbsoluteLocation> _getEastFacingPortalVoidStones(AbsoluteLocation keystoneLocation)
 	{
