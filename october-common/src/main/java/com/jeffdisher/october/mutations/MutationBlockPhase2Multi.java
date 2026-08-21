@@ -79,7 +79,18 @@ public class MutationBlockPhase2Multi implements IMutationBlock
 		
 		if (!doesMatch)
 		{
-			CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, _location, newBlock, _revertType);
+			if (env.special.AIR == _revertType)
+			{
+				CommonBlockMutationHelpers.setEmptyBlock(env, context, _location, newBlock);
+			}
+			else if (env.liquids.isSource(_revertType))
+			{
+				CommonBlockMutationHelpers.setLiquidWithFollowUps(env, context, _location, newBlock, _revertType);
+			}
+			else
+			{
+				CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, _location, newBlock, _revertType);
+			}
 		}
 	}
 

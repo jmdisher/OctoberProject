@@ -68,8 +68,7 @@ public class MutationBlockApplyGravity implements IMutationBlock
 					// We need to break this block and drop it as a passive falling block.
 					// Note that we will assume that gravity blocks can't have inventories.
 					Assert.assertTrue(null == newBlock.getInventory());
-					Block emptyBlock = env.special.AIR;
-					CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, _blockLocation, newBlock, emptyBlock);
+					CommonBlockMutationHelpers.setEmptyBlock(env, context, _blockLocation, newBlock);
 					
 					// Create the falling block.
 					context.passiveSpawner.spawnPassive(PassiveType.FALLING_BLOCK, _blockLocation.toEntityLocation(), new EntityLocation(0.0f, 0.0f, 0.0f), thisBlock);

@@ -102,8 +102,8 @@ public class MutationBlockUpdate implements IMutationBlock
 					CommonBlockMutationHelpers.dropAsPassivesWhenBreakingBlock(env, context, _blockLocation, thisBlock);
 					CommonBlockMutationHelpers.dropBlockInventoriesAsPassives(context, _blockLocation, newBlock);
 					
-					// Set the actual block type.
-					CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, _blockLocation, newBlock, emptyBlock);
+					// Destroy the block.
+					CommonBlockMutationHelpers.setEmptyBlock(env, context, _blockLocation, newBlock);
 				}
 				didApply = true;
 			}

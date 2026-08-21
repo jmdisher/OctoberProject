@@ -7,7 +7,6 @@ import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -57,8 +56,7 @@ public class MutationBlockBurnDown implements IMutationBlock
 			Environment env = Environment.getShared();
 			
 			// When a block burns, destroy it and any inventory.
-			Block emptyBlock = env.special.AIR;
-			CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, _blockLocation, newBlock, emptyBlock);
+			CommonBlockMutationHelpers.setEmptyBlock(env, context, _blockLocation, newBlock);
 		}
 	}
 

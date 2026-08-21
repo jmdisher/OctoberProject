@@ -51,7 +51,7 @@ public class MutationBlockForceGrow implements IMutationBlock
 		Block block = newBlock.getBlock();
 		if (PlantHelpers.canGrow(env, block))
 		{
-			PlantHelpers.performForcedGrow(env, context, _location, newBlock, block);
+			PlantHelpers.performForcedGrow(env, context, _location, newBlock);
 			
 			// Note that the force grow doesn't reschedule the growth mutation since that is independent.
 		}

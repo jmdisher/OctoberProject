@@ -6,7 +6,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.mutations.CommonBlockMutationHelpers;
 import com.jeffdisher.october.mutations.MutationBlockType;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -35,13 +34,8 @@ public class MutationBlockDeleteBlock implements IMutationBlock
 	@Override
 	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
-		// First, set the block to air.
 		Environment env = Environment.getShared();
-		Block emptyBlock = env.special.AIR;
-		newBlock.setBlockAndClear(emptyBlock);
-		
-		// Now, determine if a liquid needs to flow into the space.
-		CommonBlockMutationHelpers.didScheduleFlowInForReplaceable(env, context, _blockLocation, emptyBlock);
+		CommonBlockMutationHelpers.setEmptyBlock(env, context, _blockLocation, newBlock);
 	}
 
 	@Override

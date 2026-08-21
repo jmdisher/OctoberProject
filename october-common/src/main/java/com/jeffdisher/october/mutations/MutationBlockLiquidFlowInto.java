@@ -54,8 +54,7 @@ public class MutationBlockLiquidFlowInto implements IMutationBlock
 			Block newType = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, thisBlock);
 			if (newType != thisBlock)
 			{
-				CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, _blockLocation, newBlock, newType);
-				thisBlock = newType;
+				_updateBlock(env, context, newBlock, newType);
 			}
 		}
 		else if (env.blocks.isBrokenByFlowingLiquid(thisBlock))
@@ -68,8 +67,7 @@ public class MutationBlockLiquidFlowInto implements IMutationBlock
 				CommonBlockMutationHelpers.dropAsPassivesWhenBreakingBlock(env, context, _blockLocation, thisBlock);
 				CommonBlockMutationHelpers.dropBlockInventoriesAsPassives(context, _blockLocation, newBlock);
 				
-				// Break the block and replace it with the flowing type.
-				CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, _blockLocation, newBlock, eventualBlock);
+				_updateBlock(env, context, newBlock, eventualBlock);
 			}
 		}
 	}
@@ -91,5 +89,22 @@ public class MutationBlockLiquidFlowInto implements IMutationBlock
 	{
 		// Common case.
 		return true;
+	}
+
+
+	private void _updateBlock(Environment env, TickProcessingContext context, IMutableBlockProxy proxy, Block newBlock)
+	{
+		if (env.special.AIR == newBlock)
+		{
+			CommonBlockMutationHelpers.setEmptyBlock(env, context, _blockLocation, proxy);
+		}
+		else if (env.liquids.getFlowStrength(newBlock) > 0)
+		{
+			CommonBlockMutationHelpers.setLiquidWithFollowUps(env, context, _blockLocation, proxy, newBlock);
+		}
+		else
+		{
+			CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, _blockLocation, proxy, newBlock);
+		}
 	}
 }

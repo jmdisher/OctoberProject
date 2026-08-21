@@ -15,8 +15,6 @@ import com.jeffdisher.october.types.TickProcessingContext;
 /**
  * Replaces the block with the new block type, but only if the existing block type is what is expected.  On failure,
  * changes nothing and does nothing.
- * NOTE:  This can ONLY be used if both types are the replaceable (this could change in the future but narrows testing
- * surface in the near-term).
  */
 public class MutationBlockReplace implements IMutationBlock
 {
@@ -59,7 +57,18 @@ public class MutationBlockReplace implements IMutationBlock
 		{
 			Environment env = Environment.getShared();
 			
-			CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, _location, newBlock, _newType);
+			if (env.special.AIR == _newType)
+			{
+				CommonBlockMutationHelpers.setEmptyBlock(env, context, _location, newBlock);
+			}
+			else if (env.liquids.isSource(_newType))
+			{
+				CommonBlockMutationHelpers.setLiquidWithFollowUps(env, context, _location, newBlock, _newType);
+			}
+			else
+			{
+				CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, _location, newBlock, _newType);
+			}
 		}
 	}
 

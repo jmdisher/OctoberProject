@@ -138,6 +138,7 @@ public class CommonBlockMutationHelpers
 
 	/**
 	 * Sets the block in proxy, at location, to newType.  Internally runs any follow-up processing logic, as well.
+	 * Note that this can only be used to set a block which is not replaceable (otherwise, use empty or liquid helpers).
 	 * 
 	 * @param env The environment.
 	 * @param context The context for looking up blocks and scheduling mutations.
@@ -152,9 +153,82 @@ public class CommonBlockMutationHelpers
 		, Block newType
 	)
 	{
+		// This case is only expected to be used for non-replaceable blocks.
+		Assert.assertTrue(!env.blocks.canBeReplaced(newType));
+		
 		// This isn't an explicit block placement, so it has no direction.
 		FacingDirection outputDirection = null;
 		_setBlockWithFollowUps(env, context, location, proxy, newType, outputDirection);
+	}
+
+	/**
+	 * Advances the plant growth phase of the block in proxy to the next phase.  Internally runs any follow-up
+	 * processing logic, as well.
+	 * Note that this can only be used on a block which contains a normal plant which isn't fully mature, yet.
+	 * 
+	 * @param env The environment.
+	 * @param context The context for looking up blocks and scheduling mutations.
+	 * @param location The location of proxy.
+	 * @param proxy The block to modify.
+	 */
+	public static void plantGrowthWithFollowUps(Environment env
+		, TickProcessingContext context
+		, AbsoluteLocation location
+		, IMutableBlockProxy proxy
+	)
+	{
+		// We only call this for plants which can grow.
+		Block nextPhase = env.plants.nextPhaseForPlant(proxy.getBlock());
+		Assert.assertTrue(null != nextPhase);
+		
+		// This isn't an explicit block placement, so it has no direction.
+		FacingDirection outputDirection = null;
+		_setBlockWithFollowUps(env, context, location, proxy, nextPhase, outputDirection);
+	}
+
+	/**
+	 * Clears the block in proxy to be an air block.  Internally runs any follow-up liquid flow-in scheduling, as well.
+	 * 
+	 * @param env The environment.
+	 * @param context The context for looking up blocks and scheduling mutations.
+	 * @param location The location of proxy.
+	 * @param proxy The block to modify.
+	 */
+	public static void setEmptyBlock(Environment env
+		, TickProcessingContext context
+		, AbsoluteLocation location
+		, IMutableBlockProxy proxy
+	)
+	{
+		// When we set an empty block, we only need to check if a liquid can flow into the space.
+		Block oldType = proxy.getBlock();
+		Block newType = env.special.AIR;
+		proxy.setBlockAndClear(newType);
+		_didScheduleFlowInForReplaceable(env, context, location, oldType, newType);
+	}
+
+	/**
+	 * Sets the block in proxy to be the given newType liquid block.  Internally runs any follow-up fire scheduling, as
+	 * well.
+	 * 
+	 * @param env The environment.
+	 * @param context The context for looking up blocks and scheduling mutations.
+	 * @param location The location of proxy.
+	 * @param proxy The block to modify.
+	 */
+	public static void setLiquidWithFollowUps(Environment env
+		, TickProcessingContext context
+		, AbsoluteLocation location
+		, IMutableBlockProxy proxy
+		, Block newType
+	)
+	{
+		// Can only be used for liquids.
+		Assert.assertTrue(env.liquids.getFlowStrength(newType) > 0);
+		
+		Block oldType = proxy.getBlock();
+		proxy.setBlockAndClear(newType);
+		_scheduleFireIfNewSource(env, context, location, oldType, newType);
 	}
 
 	/**
@@ -367,15 +441,7 @@ public class CommonBlockMutationHelpers
 		// Handle any other follow-up actions.
 		
 		// If this changed into a fire source block, schedule the ignition mutations around it.
-		if (env.blocks.isFireSource(newType) && !env.blocks.isFireSource(oldType))
-		{
-			List<AbsoluteLocation> flammable = FireHelpers.findFlammableNeighbours(env, context, location);
-			for (AbsoluteLocation neighour : flammable)
-			{
-				MutationBlockStartFire startFire = new MutationBlockStartFire(neighour);
-				context.mutationSink.future(startFire, MutationBlockStartFire.IGNITION_DELAY_MILLIS);
-			}
-		}
+		_scheduleFireIfNewSource(env, context, location, oldType, newType);
 		
 		// If this block changed into a flammable type, see if it should receive an ignition mutation.
 		// (set type first since this helper reads it).
@@ -484,5 +550,18 @@ public class CommonBlockMutationHelpers
 			didScheduleLiquid = true;
 		}
 		return didScheduleLiquid;
+	}
+
+	private static void _scheduleFireIfNewSource(Environment env, TickProcessingContext context, AbsoluteLocation location, Block oldType, Block newType)
+	{
+		if (env.blocks.isFireSource(newType) && !env.blocks.isFireSource(oldType))
+		{
+			List<AbsoluteLocation> flammable = FireHelpers.findFlammableNeighbours(env, context, location);
+			for (AbsoluteLocation neighour : flammable)
+			{
+				MutationBlockStartFire startFire = new MutationBlockStartFire(neighour);
+				context.mutationSink.future(startFire, MutationBlockStartFire.IGNITION_DELAY_MILLIS);
+			}
+		}
 	}
 }

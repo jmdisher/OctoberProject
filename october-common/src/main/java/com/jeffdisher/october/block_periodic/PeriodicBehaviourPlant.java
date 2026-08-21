@@ -20,7 +20,7 @@ public class PeriodicBehaviourPlant implements IBlockPeriodicBehaviour
 	@Override
 	public void runPeriodic(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 	{
-		boolean shouldReschedule = PlantHelpers.shouldRescheduleAfterPlantPeriodic(env, context, location, newBlock, newBlock.getBlock());
+		boolean shouldReschedule = PlantHelpers.shouldRescheduleAfterPlantPeriodic(env, context, location, newBlock);
 		
 		if (shouldReschedule)
 		{

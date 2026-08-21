@@ -39,15 +39,14 @@ public class PlantHelpers
 	 * @param context The context.
 	 * @param location The location where the growth is happening.
 	 * @param newBlock The mutable block which we should grow (block type can be modified).
-	 * @param block The existing block type.
 	 * @return True if another growth operation should be scheduled.
 	 */
-	public static boolean shouldRescheduleAfterPlantPeriodic(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock, Block block)
+	public static boolean shouldRescheduleAfterPlantPeriodic(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 	{
 		// See if the random generator says we should grow this tick or try again later.
 		// We will only bother if the block is lit.
 		boolean isLit = (newBlock.getLight() >= MIN_LIGHT) || (context.skyLight.lookup(location) >= MIN_LIGHT);
-		int growthDivisor = env.plants.growthDivisor(block);
+		int growthDivisor = env.plants.growthDivisor(newBlock.getBlock());
 		// This MUST be something which can grow.
 		Assert.assertTrue(growthDivisor > 0);
 		int randomBits = context.randomInt.applyAsInt(growthDivisor);
@@ -55,7 +54,7 @@ public class PlantHelpers
 		boolean shouldReschedule;
 		if (canGrow)
 		{
-			shouldReschedule = _shouldRescheduleAfterGrowth(env, context, location, newBlock, block);
+			shouldReschedule = _shouldRescheduleAfterGrowth(env, context, location, newBlock);
 		}
 		else
 		{
@@ -72,25 +71,25 @@ public class PlantHelpers
 	 * @param context The context.
 	 * @param location The location where the growth is happening.
 	 * @param newBlock The mutable block which we should grow (block type can be modified).
-	 * @param block The existing block type.
 	 */
-	public static void performForcedGrow(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock, Block block)
+	public static void performForcedGrow(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 	{
-		int growthDivisor = env.plants.growthDivisor(block);
+		int growthDivisor = env.plants.growthDivisor(newBlock.getBlock());
 		// This MUST be something which can grow.
 		Assert.assertTrue(growthDivisor > 0);
-		_shouldRescheduleAfterGrowth(env, context, location, newBlock, block);
+		_shouldRescheduleAfterGrowth(env, context, location, newBlock);
 	}
 
 
-	private static boolean _shouldRescheduleAfterGrowth(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock, Block block)
+	private static boolean _shouldRescheduleAfterGrowth(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 	{
 		boolean shouldReschedule;
+		Block block = newBlock.getBlock();
 		Block nextPhase = env.plants.nextPhaseForPlant(block);
 		if (null != nextPhase)
 		{
 			// Become that next phase.
-			CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, location, newBlock, nextPhase);
+			CommonBlockMutationHelpers.plantGrowthWithFollowUps(env, context, location, newBlock);
 			// Reschedule if that block is also growable.
 			shouldReschedule = (env.plants.growthDivisor(nextPhase) > 0);
 		}
