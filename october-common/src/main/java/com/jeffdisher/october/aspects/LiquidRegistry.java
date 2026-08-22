@@ -243,114 +243,58 @@ public class LiquidRegistry
 	 * -if the block isn't above a solid block, it will become weak flow, at best (if not solid or air)
 	 * 
 	 * @param env The environment.
-	 * @param currentBlock The current block type.
-	 * @param east Block to the East.
-	 * @param west Block to the West.
-	 * @param north Block to the North.
-	 * @param south Block to the South.
-	 * @param above Block above.
-	 * @param below Block below.
+	 * @param currentBlock The current block type (MUST be a replaceable type).
+	 * @param east Block to the East (null if not a liquid).
+	 * @param west Block to the West (null if not a liquid).
+	 * @param north Block to the North (null if not a liquid).
+	 * @param south Block to the South (null if not a liquid).
+	 * @param above Block above (null if not a liquid).
+	 * @param below Block below (null if replaceable).
 	 * @return The block type (never null).
 	 */
-	public Block chooseEmptyLiquidBlock(Environment env, Block currentBlock, Block east, Block west, Block north, Block south, Block above, Block below)
+	public Block chooseEmptyLiquidBlock(Environment env
+		, Block currentBlock
+		, Block east
+		, Block west
+		, Block north
+		, Block south
+		, Block above
+		, Block below
+	)
 	{
+		// Verify the assumptions of our interface.
+		Assert.assertTrue(env.blocks.canBeReplaced(currentBlock));
+		Assert.assertTrue((null == east) || _blocksToSource.containsKey(east));
+		Assert.assertTrue((null == west) || _blocksToSource.containsKey(west));
+		Assert.assertTrue((null == north) || _blocksToSource.containsKey(north));
+		Assert.assertTrue((null == south) || _blocksToSource.containsKey(south));
+		Assert.assertTrue((null == above) || _blocksToSource.containsKey(above));
+		Assert.assertTrue((null == below) || !env.blocks.canBeReplaced(below));
+		
 		// This takes a few steps:
 		// -check if horizontal liquids should act on currentBlock
 		// -check if vertical liquids should act on currentBlock
 		// -update currentBlock based on horizontal adjacent blocks
 		// -apply vertical liquid to the updated currentBlock
-		Block updatedBlock;
-		if (!env.blocks.canBeReplaced(currentBlock))
+		
+		boolean isAboveSolidBlock = (null != below) && !env.blocks.canBeReplaced(below);
+		_FlowCollector collector = new _FlowCollector(currentBlock, isAboveSolidBlock);
+		collector.addAdjacent(east, false);
+		collector.addAdjacent(west, false);
+		collector.addAdjacent(north, false);
+		collector.addAdjacent(south, false);
+		collector.addAdjacent(above, true);
+		
+		// If there is a solid, we prefer that.
+		Block updatedBlock = collector.getSolid();
+		if (null == updatedBlock)
 		{
-			// This can't be replaced so it isn't a liquid or air.
-			updatedBlock = currentBlock;
+			updatedBlock = collector.getLiquid();
 		}
-		else
+		if (null == updatedBlock)
 		{
-			// Since we need to work on this block, see what type it is.
-			Block currentType = _blocksToSource.get(currentBlock);
-			boolean isAboveSolidBlock = (null != below) && !env.blocks.canBeReplaced(below);
-			boolean isCurrentlySource = _sourceToSolid.containsKey(currentBlock);
-			
-			// We first need to see what the adjacent horizontal blocks thing should be selected.
-			Block horizontalBlock = _candidateBlockHorizontal(env, east, west, north, south, above, isAboveSolidBlock);
-			Block horizontalType = _blocksToSource.get(horizontalBlock);
-			
-			// Check to see if this is a conflict to see what we should pass on to the next step.
-			Block newBlock;
-			Block blockToConflict;
-			if (currentType == horizontalType)
-			{
-				// We agree so pick the new one unless the first is a source.
-				newBlock = isCurrentlySource
-						? currentBlock
-						: horizontalBlock
-				;
-				blockToConflict = newBlock;
-			}
-			else if (env.special.AIR == horizontalBlock)
-			{
-				// This means it should be nothing so just consider what we had for the conflict and only keep what we had if it was a source.
-				newBlock = isCurrentlySource
-						? currentBlock
-						: horizontalBlock
-				;
-				blockToConflict = currentBlock;
-			}
-			else if (env.special.AIR == currentBlock)
-			{
-				// This means we are replacing what was there so just consider this new block, directly.
-				newBlock = horizontalBlock;
-				blockToConflict = horizontalBlock;
-			}
-			else if (!env.blocks.canBeReplaced(horizontalBlock))
-			{
-				// Horizontal is suggesting solidification so we will use that end now.
-				newBlock = horizontalBlock;
-				blockToConflict = horizontalBlock;
-			}
-			else
-			{
-				// There is some kind of conflict so convert what was into a solid and we are done.
-				newBlock = _sourceToSolid.get(currentType);
-				blockToConflict = newBlock;
-			}
-			
-			// If we aren't yet forming a solid, check what is above the block.
-			if (env.blocks.canBeReplaced(blockToConflict))
-			{
-				Block verticalBlock = _candidateBlockVertical(env, above, isAboveSolidBlock);
-				Block conflictType = _blocksToSource.get(blockToConflict);
-				Block verticalType = _blocksToSource.get(verticalBlock);
-				if (conflictType == verticalType)
-				{
-					// We agree so pick the new one unless the first is a source.
-					updatedBlock = _sourceToSolid.containsKey(newBlock)
-							? newBlock
-							: verticalBlock
-					;
-				}
-				else if (env.special.AIR == verticalBlock)
-				{
-					// This means it should be nothing so just consider what we had for the conflict.
-					updatedBlock = newBlock;
-				}
-				else if (env.special.AIR == blockToConflict)
-				{
-					// This means we are replacing what was there so just consider what is falling.
-					updatedBlock = verticalBlock;
-				}
-				else
-				{
-					// There is some kind of conflict so convert what was into a solid and we are done.
-					updatedBlock = _sourceToSolid.get(conflictType);
-				}
-			}
-			else
-			{
-				// We already know the final state.
-				updatedBlock = newBlock;
-			}
+			// Nothing is there so return air.
+			updatedBlock = env.special.AIR;
 		}
 		return updatedBlock;
 	}
@@ -480,178 +424,23 @@ public class LiquidRegistry
 		return _getFlowStrength(block);
 	}
 
+	/**
+	 * A basic mechanism to ask if a block type is a liquid.
+	 * 
+	 * @param block The block to check.
+	 * @return True if this is a liquid (source or otherwise), false if not.
+	 */
+	public boolean isLiquid(Block block)
+	{
+		// If it is a source or flowing block.
+		return _blocksToSource.containsKey(block);
+	}
+
 
 	private long _flowDelayMillis(Block type)
 	{
 		Block liquidType = _blocksToSource.get(type);
 		return _getFromMap(_sourceToDelayMillis, liquidType, _defaultDelayMillis);
-	}
-
-	private Block _candidateBlockHorizontal(Environment env, Block east, Block west, Block north, Block south, Block above, boolean isAboveSolidBlock)
-	{
-		// Decide what block the horizontal blocks suggest.
-		// Check the adjacent blocks.
-		Block eastType = _getFromMap(_blocksToSource, east, null);
-		Block westType = _getFromMap(_blocksToSource, west, null);
-		Block northType = _getFromMap(_blocksToSource, north, null);
-		Block southType = _getFromMap(_blocksToSource, south, null);
-		
-		Set<Block> adjacentTypes = new HashSet<>();
-		if (null != eastType)
-		{
-			adjacentTypes.add(eastType);
-		}
-		if (null != westType)
-		{
-			adjacentTypes.add(westType);
-		}
-		if (null != northType)
-		{
-			adjacentTypes.add(northType);
-		}
-		if (null != southType)
-		{
-			adjacentTypes.add(southType);
-		}
-		
-		int size = adjacentTypes.size();
-		Block horizontalBlock;
-		if (0 == size)
-		{
-			// There is nothing so suggest an air block.
-			horizontalBlock = env.special.AIR;
-		}
-		else if (1 == size)
-		{
-			// This might become a liquid or it might remain air (if liquid is weak).
-			int eastStrength = _getFlowStrength(east);
-			int westStrength = _getFlowStrength(west);
-			int northStrength = _getFlowStrength(north);
-			int southStrength = _getFlowStrength(south);
-			int maxStrength = Math.max(Math.max(eastStrength, westStrength), Math.max(northStrength, southStrength));
-			if (maxStrength > 1)
-			{
-				// This is going to become the liquid so see if this becomes a source.
-				Block sourceType = adjacentTypes.iterator().next();
-				int idealStrength;
-				if (3 == maxStrength)
-				{
-					// We have at least one adjacent source so see if this should be a source.
-					
-					if (_sourceCreationSources.contains(sourceType))
-					{
-						int sourceCount = 0;
-						if (FLOW_SOURCE == eastStrength)
-						{
-							sourceCount += 1;
-						}
-						if (FLOW_SOURCE == westStrength)
-						{
-							sourceCount += 1;
-						}
-						if (FLOW_SOURCE == northStrength)
-						{
-							sourceCount += 1;
-						}
-						if (FLOW_SOURCE == southStrength)
-						{
-							sourceCount += 1;
-						}
-						if (sourceCount >= 2)
-						{
-							idealStrength = 3;
-						}
-						else
-						{
-							idealStrength = 2;
-						}
-					}
-					else
-					{
-						idealStrength = 2;
-					}
-				}
-				else
-				{
-					idealStrength = maxStrength - 1;
-				}
-				// Account for whether or not this is above an open space for strong flow.
-				if (!isAboveSolidBlock && (2 == idealStrength))
-				{
-					idealStrength = 1;
-				}
-				horizontalBlock = _sourceToFlowStrengths.get(sourceType)[idealStrength];
-			}
-			else
-			{
-				// The flow is too weak so this is air.
-				horizontalBlock = env.special.AIR;
-			}
-		}
-		else
-		{
-			// This will either solidify or remain air (if liquid is weak).
-			// Check the fastest flow type of strength at least 2 and solidify that (air if none are >= 2).
-			long chosenFlowRate = Long.MAX_VALUE;
-			Block chosenBlock = env.special.AIR;
-			if (_getFlowStrength(east) >= FLOW_STRONG)
-			{
-				long flow = _sourceToDelayMillis.get(eastType);
-				if (flow < chosenFlowRate)
-				{
-					chosenFlowRate = flow;
-					chosenBlock = _sourceToSolid.get(eastType);
-				}
-			}
-			if (_getFlowStrength(west) >= FLOW_STRONG)
-			{
-				long flow = _sourceToDelayMillis.get(westType);
-				if (flow < chosenFlowRate)
-				{
-					chosenFlowRate = flow;
-					chosenBlock = _sourceToSolid.get(westType);
-				}
-			}
-			if (_getFlowStrength(north) >= FLOW_STRONG)
-			{
-				long flow = _sourceToDelayMillis.get(northType);
-				if (flow < chosenFlowRate)
-				{
-					chosenFlowRate = flow;
-					chosenBlock = _sourceToSolid.get(northType);
-				}
-			}
-			if (_getFlowStrength(south) >= FLOW_STRONG)
-			{
-				long flow = _sourceToDelayMillis.get(southType);
-				if (flow < chosenFlowRate)
-				{
-					chosenFlowRate = flow;
-					chosenBlock = _sourceToSolid.get(southType);
-				}
-			}
-			horizontalBlock = chosenBlock;
-		}
-		return horizontalBlock;
-	}
-
-	private Block _candidateBlockVertical(Environment env, Block above, boolean isAboveSolidBlock)
-	{
-		// See what what is flowing from above and if it interacts with what we have here.
-		Block aboveType = _getFromMap(_blocksToSource, above, null);
-		Block verticalBlock;
-		if (null != aboveType)
-		{
-			// Above is always a weak flow unless it hits a solid block.
-			int strength = isAboveSolidBlock ? 2 : 1;
-			verticalBlock = _sourceToFlowStrengths.get(aboveType)[strength];
-		}
-		else
-		{
-			// Just default to air.
-			verticalBlock = env.special.AIR;
-		}
-		return verticalBlock;
 	}
 
 	private static <T> T _getFromMap(Map<Block, T> map, Block key, T defaultValue)
@@ -665,5 +454,160 @@ public class LiquidRegistry
 			? _blocksToStrength.getOrDefault(block, FLOW_NONE)
 			: FLOW_NONE
 		;
+	}
+
+
+	private class _FlowCollector
+	{
+		private final boolean _isOnSolid;
+		private Set<Block> _relevantSourceTypes;
+		private Block _previousStartType;
+		private Block _sourceType;
+		private int _flowStrength;
+		private int _adjacentSources;
+		private Block _solidType;
+		public _FlowCollector(Block start, boolean isOnSolid)
+		{
+			_isOnSolid = isOnSolid;
+			_relevantSourceTypes = new HashSet<>();
+			
+			// We only consider the starting value if it is a source since we will otherwise recalculate it.
+			if (null != start)
+			{
+				_previousStartType = _blocksToSource.get(start);
+				if (_sourceToDelayMillis.containsKey(start))
+				{
+					_sourceType = _previousStartType;
+					_flowStrength = _blocksToStrength.get(start);
+				}
+				if (null != _previousStartType)
+				{
+					_relevantSourceTypes.add(_previousStartType);
+				}
+			}
+		}
+		public void addAdjacent(Block liquid, boolean fromAbove)
+		{
+			if (null == liquid)
+			{
+				// We allow this to be called with null just to simplify the caller.
+			}
+			else if (null != _solidType)
+			{
+				// Once we have set the solid type once, we assume that we are done and can ignore all other calls.
+			}
+			else
+			{
+				// We apply our logic based on source and flow strength, independently.
+				Block sourceType = _blocksToSource.get(liquid);
+				int flowStrength = _blocksToStrength.get(liquid);
+				// (track the flow strength if the liquid were to flow into this block)
+				int insideStrength = flowStrength - 1;
+				
+				if ((null != _previousStartType) && (sourceType != _previousStartType))
+				{
+					// This is a special-case where we allow solidification of the previous liquid, even if there was no source to maintain it.
+					_solidType = _sourceToSolid.get(_previousStartType);
+				}
+				else if (null == _sourceType)
+				{
+					// We are flowing into air.
+					if (fromAbove)
+					{
+						// Flowing from above is always weak flow unless we hit a solid, when it becomes strong.
+						_sourceType = sourceType;
+						if (_isOnSolid)
+						{
+							_flowStrength = FLOW_STRONG;
+						}
+						else
+						{
+							_flowStrength = FLOW_WEAK;
+						}
+					}
+					else if (insideStrength > FLOW_NONE)
+					{
+						// This is just flowing from the side so it always tapers, and will always become weak when not on solid block.
+						_sourceType = sourceType;
+						if (_isOnSolid)
+						{
+							_flowStrength = insideStrength;
+						}
+						else
+						{
+							_flowStrength = FLOW_WEAK;
+						}
+						_accumulateSources(flowStrength);
+					}
+				}
+				else if (_sourceType == sourceType)
+				{
+					// We are just flowing into the same type.
+					_flowStrength = Math.max(_flowStrength, insideStrength);
+					if (!fromAbove)
+					{
+						_accumulateSources(flowStrength);
+					}
+				}
+				else
+				{
+					// We are colliding and need to solidify.
+					// WARNING:  We are comparing the flow rate to determine which block should be "first in the block"
+					// to become solidified but this won't work as well if there are more than 2 colliding liquids as it
+					// will only make the decision once, based on implementation.
+					Block typeToSolidify;
+					if (insideStrength > FLOW_NONE)
+					{
+						// Both types will be "in" the block so figure out which to solidify.
+						long originalFlow = _flowDelayMillis(_sourceType);
+						long newFlow = _flowDelayMillis(sourceType);
+						typeToSolidify = (originalFlow < newFlow)
+							? _sourceType
+							: sourceType
+						;
+					}
+					else
+					{
+						// This new liquid is flowing to the edge, so it will solidify what is already there, unambiguously.
+						typeToSolidify = _sourceType;
+					}
+					_solidType = _sourceToSolid.get(typeToSolidify);
+				}
+				
+				// Handle the case where a liquid is flowing in but should be solidified by an adjacent liquid we already observed.
+				_relevantSourceTypes.add(sourceType);
+				if ((null == _solidType) && (null != _sourceType) && (_relevantSourceTypes.size() > 1))
+				{
+					// This happens when there are other liquids around this but not flowing in.
+					_solidType = _sourceToSolid.get(_sourceType);
+				}
+			}
+		}
+		public Block getSolid()
+		{
+			return _solidType;
+		}
+		public Block getLiquid()
+		{
+			Block liquid = null;
+			if (null != _sourceType)
+			{
+				Block[] strengths = _sourceToFlowStrengths.get(_sourceType);
+				liquid = strengths[_flowStrength];
+			}
+			return liquid;
+		}
+		private void _accumulateSources(int flowStrength)
+		{
+			if (FLOW_SOURCE == flowStrength)
+			{
+				// If this is the second adjacent source block of a type which creates sources, create that now.
+				_adjacentSources += 1;
+				if ((_adjacentSources >= 2) && _sourceCreationSources.contains(_sourceType))
+				{
+					_flowStrength = FLOW_SOURCE;
+				}
+			}
+		}
 	}
 }

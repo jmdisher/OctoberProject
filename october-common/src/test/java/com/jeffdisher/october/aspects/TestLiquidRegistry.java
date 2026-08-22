@@ -48,10 +48,10 @@ public class TestLiquidRegistry
 	public void infiniteSourceNotLava() throws Throwable
 	{
 		// Water creates infinite sources, not lava.
-		Block target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, WATER_SOURCE, WATER_SOURCE, STONE, STONE, ENV.special.AIR, STONE);
+		Block target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, WATER_SOURCE, WATER_SOURCE, null, null, null, STONE);
 		Assert.assertEquals(WATER_SOURCE, target);
 		
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, LAVA_SOURCE, LAVA_SOURCE, STONE, STONE, ENV.special.AIR, STONE);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, LAVA_SOURCE, LAVA_SOURCE, null, null, null, STONE);
 		Assert.assertEquals(LAVA_STRONG, target);
 	}
 
@@ -59,11 +59,11 @@ public class TestLiquidRegistry
 	public void solidification() throws Throwable
 	{
 		// Convert water.
-		Block target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_SOURCE, STONE, STONE, STONE, STONE, LAVA_WEAK, STONE);
+		Block target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_SOURCE, null, null, null, null, LAVA_WEAK, STONE);
 		Assert.assertEquals(STONE, target);
 		
 		// Convert lava.
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, LAVA_STRONG, STONE, STONE, STONE, STONE, WATER_WEAK, STONE);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, LAVA_STRONG, null, null, null, null, WATER_WEAK, STONE);
 		Assert.assertEquals(BASALT, target);
 	}
 
@@ -72,23 +72,23 @@ public class TestLiquidRegistry
 	{
 		// We show what happens in different falling water scenarios.
 		// Under a water source.
-		Block target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, WATER_SOURCE, ENV.special.AIR);
+		Block target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, null, null, null, null, WATER_SOURCE, null);
 		Assert.assertEquals(WATER_WEAK, target);
 		
 		// Under water strong.
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, WATER_STRONG, ENV.special.AIR);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, null, null, null, null, WATER_STRONG, null);
 		Assert.assertEquals(WATER_WEAK, target);
 		
 		// Under water weak.
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, WATER_WEAK, ENV.special.AIR);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, null, null, null, null, WATER_WEAK, null);
 		Assert.assertEquals(WATER_WEAK, target);
 		
 		// Next to water source.
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, WATER_SOURCE, ENV.special.AIR, ENV.special.AIR);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, null, null, null, WATER_SOURCE, null, null);
 		Assert.assertEquals(WATER_WEAK, target);
 		
 		// Next to water strong.
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, WATER_STRONG, ENV.special.AIR, ENV.special.AIR);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, null, null, null, WATER_STRONG, null, null);
 		Assert.assertEquals(WATER_WEAK, target);
 	}
 
@@ -113,15 +113,15 @@ public class TestLiquidRegistry
 	{
 		// Show what happens when water flows over lava.
 		// -we should flow weak over a lava flow.
-		Block target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, WATER_SOURCE, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, LAVA_WEAK);
+		Block target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, WATER_SOURCE, null, null, null, null, null);
 		Assert.assertEquals(WATER_WEAK, target);
 		
 		// -the lava should update to basalt.
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, LAVA_WEAK, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, WATER_WEAK, ENV.special.AIR);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, LAVA_WEAK, null, null, null, null, WATER_WEAK, null);
 		Assert.assertEquals(BASALT, target);
 		
 		// -the weak flow above should now be strong.
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_WEAK, WATER_SOURCE, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, BASALT);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_WEAK, WATER_SOURCE, null, null, null, null, BASALT);
 		Assert.assertEquals(WATER_STRONG, target);
 	}
 
@@ -130,19 +130,40 @@ public class TestLiquidRegistry
 	{
 		// We want to see what happens when we update a single location with no sources around it.
 		// -weak flow surrounded by blocks
-		Block target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_WEAK, STONE, STONE, STONE, STONE, STONE, STONE);
+		Block target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_WEAK, null, null, null, null, null, STONE);
 		Assert.assertEquals(ENV.special.AIR, target);
 		
 		// -weak flow with no blocks around
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_WEAK, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_WEAK, null, null, null, null, null, null);
 		Assert.assertEquals(ENV.special.AIR, target);
 		
 		// -source surrounded by blocks
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_SOURCE, STONE, STONE, STONE, STONE, STONE, STONE);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_SOURCE, null, null, null, null, null, STONE);
 		Assert.assertEquals(WATER_SOURCE, target);
 		
 		// -source without blocks
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_SOURCE, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_SOURCE, null, null, null, null, null, null);
 		Assert.assertEquals(WATER_SOURCE, target);
+	}
+
+	@Test
+	public void solidByAdjacentOnly() throws Throwable
+	{
+		// Show that we will convert a new liquid flowing into a block if adjacent blocks conflict.
+		// Convert water.
+		Block target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, null, LAVA_WEAK, null, WATER_STRONG, null, STONE);
+		Assert.assertEquals(STONE, target);
+		
+		// Convert lava.
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, null, WATER_WEAK, null, LAVA_STRONG, null, STONE);
+		Assert.assertEquals(BASALT, target);
+		
+		// Convert water late.
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_WEAK, null, LAVA_WEAK, null, WATER_STRONG, null, STONE);
+		Assert.assertEquals(STONE, target);
+		
+		// Convert lava late.
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, LAVA_WEAK, null, WATER_WEAK, null, LAVA_STRONG, null, STONE);
+		Assert.assertEquals(BASALT, target);
 	}
 }

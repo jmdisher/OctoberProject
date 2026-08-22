@@ -344,23 +344,47 @@ public class CommonBlockMutationHelpers
 	private static Block _determineEmptyBlockType(TickProcessingContext context, AbsoluteLocation location, Block currentBlock)
 	{
 		Environment env = Environment.getShared();
-		Block east = _getBlockOrNull(context, location.getRelative(1, 0, 0));
-		Block west = _getBlockOrNull(context, location.getRelative(-1, 0, 0));
-		Block north = _getBlockOrNull(context, location.getRelative(0, 1, 0));
-		Block south = _getBlockOrNull(context, location.getRelative(0, -1, 0));
-		Block up = _getBlockOrNull(context, location.getRelative(0, 0, 1));
-		Block down = _getBlockOrNull(context, location.getRelative(0, 0, -1));
 		
-		return env.liquids.chooseEmptyLiquidBlock(env, currentBlock, east, west, north, south, up, down);
+		Block result;
+		if (env.blocks.canBeReplaced(currentBlock))
+		{
+			Block east = _getLiquidOrNull(env, context, location.getRelative(1, 0, 0));
+			Block west = _getLiquidOrNull(env, context, location.getRelative(-1, 0, 0));
+			Block north = _getLiquidOrNull(env, context, location.getRelative(0, 1, 0));
+			Block south = _getLiquidOrNull(env, context, location.getRelative(0, -1, 0));
+			Block up = _getLiquidOrNull(env, context, location.getRelative(0, 0, 1));
+			
+			BlockProxy downProxy = context.previousBlockLookUp.readBlock(location.getRelative(0, 0, -1));
+			Block down = (null != downProxy)
+				? downProxy.getBlock()
+				: null
+			;
+			if ((null != down) && env.blocks.canBeReplaced(down))
+			{
+				down = null;
+			}
+			result = env.liquids.chooseEmptyLiquidBlock(env, currentBlock, east, west, north, south, up, down);
+		}
+		else
+		{
+			result = currentBlock;
+		}
+		return result;
 	}
 
-	private static Block _getBlockOrNull(TickProcessingContext context, AbsoluteLocation location)
+	private static Block _getLiquidOrNull(Environment env, TickProcessingContext context, AbsoluteLocation location)
 	{
 		BlockProxy proxy = context.previousBlockLookUp.readBlock(location);
-		return (null != proxy)
-				? proxy.getBlock()
-				: null
+		Block block = (null != proxy)
+			? proxy.getBlock()
+			: null
 		;
+		// We want to skip this if it isn't a liquid block.
+		if ((null != block) && !env.liquids.isLiquid(block))
+		{
+			block = null;
+		}
+		return block;
 	}
 
 	private static void _dropBlockInventoriesAsPassives(TickProcessingContext context, AbsoluteLocation location, IBlockProxy block)
