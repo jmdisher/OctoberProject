@@ -6,6 +6,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.Pair;
 
 
 /**
@@ -48,48 +49,65 @@ public class TestLiquidRegistry
 	public void infiniteSourceNotLava() throws Throwable
 	{
 		// Water creates infinite sources, not lava.
-		Block target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, WATER_SOURCE, WATER_SOURCE, null, null, null, STONE);
-		Assert.assertEquals(WATER_SOURCE, target);
+		LiquidRegistry.LiquidBlock waterSource = ENV.liquids.liquidFromBlock(WATER_SOURCE);
+		LiquidRegistry.LiquidBlock lavaSource = ENV.liquids.liquidFromBlock(LAVA_SOURCE);
+		Pair<Block, LiquidRegistry.LiquidBlock> target = ENV.liquids.chooseEmptyLiquidBlock(ENV, null, waterSource, waterSource, null, null, null, STONE);
+		Assert.assertEquals(WATER_SOURCE, target.two().sourceType());
+		Assert.assertEquals(0, target.two().distance());
 		
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, LAVA_SOURCE, LAVA_SOURCE, null, null, null, STONE);
-		Assert.assertEquals(LAVA_STRONG, target);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, null, lavaSource, lavaSource, null, null, null, STONE);
+		Assert.assertEquals(LAVA_SOURCE, target.two().sourceType());
+		Assert.assertEquals(1, target.two().distance());
 	}
 
 	@Test
 	public void solidification() throws Throwable
 	{
 		// Convert water.
-		Block target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_SOURCE, null, null, null, null, LAVA_WEAK, STONE);
-		Assert.assertEquals(STONE, target);
+		LiquidRegistry.LiquidBlock waterSource = ENV.liquids.liquidFromBlock(WATER_SOURCE);
+		LiquidRegistry.LiquidBlock lavaWeak = ENV.liquids.liquidFromBlock(LAVA_WEAK);
+		LiquidRegistry.LiquidBlock lavaStrong = ENV.liquids.liquidFromBlock(LAVA_STRONG);
+		LiquidRegistry.LiquidBlock waterWeak = ENV.liquids.liquidFromBlock(WATER_WEAK);
+		Pair<Block, LiquidRegistry.LiquidBlock> target = ENV.liquids.chooseEmptyLiquidBlock(ENV, waterSource, null, null, null, null, lavaWeak, STONE);
+		Assert.assertEquals(STONE, target.one());
 		
 		// Convert lava.
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, LAVA_STRONG, null, null, null, null, WATER_WEAK, STONE);
-		Assert.assertEquals(BASALT, target);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, lavaStrong, null, null, null, null, waterWeak, STONE);
+		Assert.assertEquals(BASALT, target.one());
 	}
 
 	@Test
 	public void fallingWater() throws Throwable
 	{
 		// We show what happens in different falling water scenarios.
+		LiquidRegistry.LiquidBlock waterSource = ENV.liquids.liquidFromBlock(WATER_SOURCE);
+		LiquidRegistry.LiquidBlock waterStrong = ENV.liquids.liquidFromBlock(WATER_STRONG);
+		LiquidRegistry.LiquidBlock waterWeak = ENV.liquids.liquidFromBlock(WATER_WEAK);
+		
 		// Under a water source.
-		Block target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, null, null, null, null, WATER_SOURCE, null);
-		Assert.assertEquals(WATER_WEAK, target);
+		Pair<Block, LiquidRegistry.LiquidBlock> target = ENV.liquids.chooseEmptyLiquidBlock(ENV, null, null, null, null, null, waterSource, null);
+		Assert.assertEquals(WATER_SOURCE, target.two().sourceType());
+		Assert.assertEquals(2, target.two().distance());
 		
 		// Under water strong.
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, null, null, null, null, WATER_STRONG, null);
-		Assert.assertEquals(WATER_WEAK, target);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, null, null, null, null, null, waterStrong, null);
+		Assert.assertEquals(WATER_SOURCE, target.two().sourceType());
+		Assert.assertEquals(2, target.two().distance());
 		
 		// Under water weak.
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, null, null, null, null, WATER_WEAK, null);
-		Assert.assertEquals(WATER_WEAK, target);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, null, null, null, null, null, waterWeak, null);
+		Assert.assertEquals(WATER_SOURCE, target.two().sourceType());
+		Assert.assertEquals(2, target.two().distance());
 		
 		// Next to water source.
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, null, null, null, WATER_SOURCE, null, null);
-		Assert.assertEquals(WATER_WEAK, target);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, null, null, null, null, waterSource, null, null);
+		Assert.assertEquals(WATER_SOURCE, target.two().sourceType());
+		Assert.assertEquals(2, target.two().distance());
 		
 		// Next to water strong.
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, null, null, null, WATER_STRONG, null, null);
-		Assert.assertEquals(WATER_WEAK, target);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, null, null, null, null, waterStrong, null, null);
+		Assert.assertEquals(WATER_SOURCE, target.two().sourceType());
+		Assert.assertEquals(2, target.two().distance());
 	}
 
 	@Test
@@ -112,58 +130,74 @@ public class TestLiquidRegistry
 	public void reflowOnUpdate() throws Throwable
 	{
 		// Show what happens when water flows over lava.
+		LiquidRegistry.LiquidBlock waterSource = ENV.liquids.liquidFromBlock(WATER_SOURCE);
+		LiquidRegistry.LiquidBlock waterWeak = ENV.liquids.liquidFromBlock(WATER_WEAK);
+		LiquidRegistry.LiquidBlock lavaWeak = ENV.liquids.liquidFromBlock(LAVA_WEAK);
+		
 		// -we should flow weak over a lava flow.
-		Block target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, WATER_SOURCE, null, null, null, null, null);
-		Assert.assertEquals(WATER_WEAK, target);
+		Pair<Block, LiquidRegistry.LiquidBlock> target = ENV.liquids.chooseEmptyLiquidBlock(ENV, null, waterSource, null, null, null, null, null);
+		Assert.assertEquals(WATER_SOURCE, target.two().sourceType());
+		Assert.assertEquals(2, target.two().distance());
 		
 		// -the lava should update to basalt.
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, LAVA_WEAK, null, null, null, null, WATER_WEAK, null);
-		Assert.assertEquals(BASALT, target);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, lavaWeak, null, null, null, null, waterWeak, null);
+		Assert.assertEquals(BASALT, target.one());
 		
 		// -the weak flow above should now be strong.
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_WEAK, WATER_SOURCE, null, null, null, null, BASALT);
-		Assert.assertEquals(WATER_STRONG, target);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, waterWeak, waterSource, null, null, null, null, BASALT);
+		Assert.assertEquals(WATER_SOURCE, target.two().sourceType());
+		Assert.assertEquals(1, target.two().distance());
 	}
 
 	@Test
 	public void standalone() throws Throwable
 	{
 		// We want to see what happens when we update a single location with no sources around it.
+		LiquidRegistry.LiquidBlock waterSource = ENV.liquids.liquidFromBlock(WATER_SOURCE);
+		LiquidRegistry.LiquidBlock waterWeak = ENV.liquids.liquidFromBlock(WATER_WEAK);
+		
 		// -weak flow surrounded by blocks
-		Block target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_WEAK, null, null, null, null, null, STONE);
-		Assert.assertEquals(ENV.special.AIR, target);
+		Pair<Block, LiquidRegistry.LiquidBlock> target = ENV.liquids.chooseEmptyLiquidBlock(ENV, waterWeak, null, null, null, null, null, STONE);
+		Assert.assertEquals(ENV.special.AIR, target.one());
 		
 		// -weak flow with no blocks around
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_WEAK, null, null, null, null, null, null);
-		Assert.assertEquals(ENV.special.AIR, target);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, waterWeak, null, null, null, null, null, null);
+		Assert.assertEquals(ENV.special.AIR, target.one());
 		
 		// -source surrounded by blocks
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_SOURCE, null, null, null, null, null, STONE);
-		Assert.assertEquals(WATER_SOURCE, target);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, waterSource, null, null, null, null, null, STONE);
+		Assert.assertEquals(WATER_SOURCE, target.two().sourceType());
+		Assert.assertEquals(0, target.two().distance());
 		
 		// -source without blocks
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_SOURCE, null, null, null, null, null, null);
-		Assert.assertEquals(WATER_SOURCE, target);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, waterSource, null, null, null, null, null, null);
+		Assert.assertEquals(WATER_SOURCE, target.two().sourceType());
+		Assert.assertEquals(0, target.two().distance());
 	}
 
 	@Test
 	public void solidByAdjacentOnly() throws Throwable
 	{
 		// Show that we will convert a new liquid flowing into a block if adjacent blocks conflict.
+		LiquidRegistry.LiquidBlock waterStrong = ENV.liquids.liquidFromBlock(WATER_STRONG);
+		LiquidRegistry.LiquidBlock waterWeak = ENV.liquids.liquidFromBlock(WATER_WEAK);
+		LiquidRegistry.LiquidBlock lavaStrong = ENV.liquids.liquidFromBlock(LAVA_STRONG);
+		LiquidRegistry.LiquidBlock lavaWeak = ENV.liquids.liquidFromBlock(LAVA_WEAK);
+		
 		// Convert water.
-		Block target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, null, LAVA_WEAK, null, WATER_STRONG, null, STONE);
-		Assert.assertEquals(STONE, target);
+		Pair<Block, LiquidRegistry.LiquidBlock> target = ENV.liquids.chooseEmptyLiquidBlock(ENV, null, null, lavaWeak, null, waterStrong, null, STONE);
+		Assert.assertEquals(STONE, target.one());
 		
 		// Convert lava.
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, null, WATER_WEAK, null, LAVA_STRONG, null, STONE);
-		Assert.assertEquals(BASALT, target);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, null, null, waterWeak, null, lavaStrong, null, STONE);
+		Assert.assertEquals(BASALT, target.one());
 		
 		// Convert water late.
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_WEAK, null, LAVA_WEAK, null, WATER_STRONG, null, STONE);
-		Assert.assertEquals(STONE, target);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, waterWeak, null, lavaWeak, null, waterStrong, null, STONE);
+		Assert.assertEquals(STONE, target.one());
 		
 		// Convert lava late.
-		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, LAVA_WEAK, null, WATER_WEAK, null, LAVA_STRONG, null, STONE);
-		Assert.assertEquals(BASALT, target);
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, lavaWeak, null, waterWeak, null, lavaStrong, null, STONE);
+		Assert.assertEquals(BASALT, target.one());
 	}
 }

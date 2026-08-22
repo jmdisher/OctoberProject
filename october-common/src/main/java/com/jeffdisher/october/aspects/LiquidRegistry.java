@@ -10,6 +10,7 @@ import java.util.Set;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.Pair;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -250,25 +251,18 @@ public class LiquidRegistry
 	 * @param south Block to the South (null if not a liquid).
 	 * @param above Block above (null if not a liquid).
 	 * @param below Block below (null if replaceable).
-	 * @return The block type (never null).
+	 * @return The block or liquid block type (never null).
 	 */
-	public Block chooseEmptyLiquidBlock(Environment env
-		, Block currentBlock
-		, Block east
-		, Block west
-		, Block north
-		, Block south
-		, Block above
+	public Pair<Block, LiquidBlock> chooseEmptyLiquidBlock(Environment env
+		, LiquidBlock currentBlock
+		, LiquidBlock east
+		, LiquidBlock west
+		, LiquidBlock north
+		, LiquidBlock south
+		, LiquidBlock above
 		, Block below
 	)
 	{
-		// Verify the assumptions of our interface.
-		Assert.assertTrue(env.blocks.canBeReplaced(currentBlock));
-		Assert.assertTrue((null == east) || _blocksToSource.containsKey(east));
-		Assert.assertTrue((null == west) || _blocksToSource.containsKey(west));
-		Assert.assertTrue((null == north) || _blocksToSource.containsKey(north));
-		Assert.assertTrue((null == south) || _blocksToSource.containsKey(south));
-		Assert.assertTrue((null == above) || _blocksToSource.containsKey(above));
 		Assert.assertTrue((null == below) || !env.blocks.canBeReplaced(below));
 		
 		// This takes a few steps:
@@ -286,17 +280,17 @@ public class LiquidRegistry
 		collector.addAdjacent(above, true);
 		
 		// If there is a solid, we prefer that.
-		Block updatedBlock = collector.getSolid();
-		if (null == updatedBlock)
+		Block nonLiquid = collector.getSolid();
+		LiquidBlock liquid = null;
+		if (null == nonLiquid)
 		{
-			updatedBlock = collector.getLiquid();
+			liquid = collector.getLiquid();
+			if (null == liquid)
+			{
+				nonLiquid = env.special.AIR;
+			}
 		}
-		if (null == updatedBlock)
-		{
-			// Nothing is there so return air.
-			updatedBlock = env.special.AIR;
-		}
-		return updatedBlock;
+		return new Pair<>(nonLiquid, liquid);
 	}
 
 	/**
@@ -436,6 +430,40 @@ public class LiquidRegistry
 		return _blocksToSource.containsKey(block);
 	}
 
+	/**
+	 * Converts the common Block object into a LiquidBlock object, returning null if it is not a liquid.
+	 * 
+	 * @param block The block.
+	 * @return The LiquidBlock or null, if not a liquid.
+	 */
+	public LiquidBlock liquidFromBlock(Block block)
+	{
+		LiquidBlock liquid = null;
+		if (_blocksToStrength.containsKey(block))
+		{
+			// TODO:  Change this when flow distance becomes variable by source type.
+			int flowStrength = _blocksToStrength.get(block);
+			Assert.assertTrue(flowStrength <= FLOW_SOURCE);
+			byte flowDistance = (byte)(FLOW_SOURCE - flowStrength);
+			Block sourceType = _blocksToSource.get(block);
+			liquid = new LiquidBlock(sourceType, flowDistance);
+		}
+		return liquid;
+	}
+
+	/**
+	 * Converts a LiquidBlock object into a common Block object.
+	 * 
+	 * @param liquid The liquid (cannot be null).
+	 * @return The Block.
+	 */
+	public Block blockFromLiquid(LiquidBlock liquid)
+	{
+		Block[] strengths = _sourceToFlowStrengths.get(liquid.sourceType);
+		int index = FLOW_SOURCE - liquid.distance;
+		return strengths[index];
+	}
+
 
 	private long _flowDelayMillis(Block type)
 	{
@@ -466,19 +494,19 @@ public class LiquidRegistry
 		private int _flowStrength;
 		private int _adjacentSources;
 		private Block _solidType;
-		public _FlowCollector(Block start, boolean isOnSolid)
+		public _FlowCollector(LiquidBlock startLiquid, boolean isOnSolid)
 		{
 			_isOnSolid = isOnSolid;
 			_relevantSourceTypes = new HashSet<>();
 			
 			// We only consider the starting value if it is a source since we will otherwise recalculate it.
-			if (null != start)
+			if (null != startLiquid)
 			{
-				_previousStartType = _blocksToSource.get(start);
-				if (_sourceToDelayMillis.containsKey(start))
+				_previousStartType = startLiquid.sourceType;
+				if (0 == startLiquid.distance)
 				{
 					_sourceType = _previousStartType;
-					_flowStrength = _blocksToStrength.get(start);
+					_flowStrength = FLOW_SOURCE - startLiquid.distance;
 				}
 				if (null != _previousStartType)
 				{
@@ -486,7 +514,7 @@ public class LiquidRegistry
 				}
 			}
 		}
-		public void addAdjacent(Block liquid, boolean fromAbove)
+		public void addAdjacent(LiquidBlock liquid, boolean fromAbove)
 		{
 			if (null == liquid)
 			{
@@ -499,8 +527,8 @@ public class LiquidRegistry
 			else
 			{
 				// We apply our logic based on source and flow strength, independently.
-				Block sourceType = _blocksToSource.get(liquid);
-				int flowStrength = _blocksToStrength.get(liquid);
+				Block sourceType = liquid.sourceType;
+				int flowStrength = FLOW_SOURCE - liquid.distance;
 				// (track the flow strength if the liquid were to flow into this block)
 				int insideStrength = flowStrength - 1;
 				
@@ -587,15 +615,12 @@ public class LiquidRegistry
 		{
 			return _solidType;
 		}
-		public Block getLiquid()
+		public LiquidBlock getLiquid()
 		{
-			Block liquid = null;
-			if (null != _sourceType)
-			{
-				Block[] strengths = _sourceToFlowStrengths.get(_sourceType);
-				liquid = strengths[_flowStrength];
-			}
-			return liquid;
+			return (null != _sourceType)
+				? new LiquidBlock(_sourceType, (byte)(FLOW_SOURCE - _flowStrength))
+				: null
+			;
 		}
 		private void _accumulateSources(int flowStrength)
 		{
@@ -609,5 +634,11 @@ public class LiquidRegistry
 				}
 			}
 		}
+	}
+
+	public static record LiquidBlock(Block sourceType
+		, byte distance
+	)
+	{
 	}
 }

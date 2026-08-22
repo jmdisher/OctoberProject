@@ -5,7 +5,9 @@ import java.util.List;
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
+import com.jeffdisher.october.aspects.LiquidRegistry;
 import com.jeffdisher.october.aspects.LogicAspect;
+import com.jeffdisher.october.aspects.LiquidRegistry.LiquidBlock;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.FireHelpers;
 import com.jeffdisher.october.logic.GroundCoverHelpers;
@@ -21,6 +23,7 @@ import com.jeffdisher.october.types.IBlockProxy;
 import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.ItemSlot;
+import com.jeffdisher.october.types.Pair;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -348,11 +351,12 @@ public class CommonBlockMutationHelpers
 		Block result;
 		if (env.blocks.canBeReplaced(currentBlock))
 		{
-			Block east = _getLiquidOrNull(env, context, location.getRelative(1, 0, 0));
-			Block west = _getLiquidOrNull(env, context, location.getRelative(-1, 0, 0));
-			Block north = _getLiquidOrNull(env, context, location.getRelative(0, 1, 0));
-			Block south = _getLiquidOrNull(env, context, location.getRelative(0, -1, 0));
-			Block up = _getLiquidOrNull(env, context, location.getRelative(0, 0, 1));
+			LiquidRegistry.LiquidBlock currentLiquid = env.liquids.liquidFromBlock(currentBlock);
+			LiquidRegistry.LiquidBlock east = _getLiquidOrNull(env, context, location.getRelative(1, 0, 0));
+			LiquidRegistry.LiquidBlock west = _getLiquidOrNull(env, context, location.getRelative(-1, 0, 0));
+			LiquidRegistry.LiquidBlock north = _getLiquidOrNull(env, context, location.getRelative(0, 1, 0));
+			LiquidRegistry.LiquidBlock south = _getLiquidOrNull(env, context, location.getRelative(0, -1, 0));
+			LiquidRegistry.LiquidBlock up = _getLiquidOrNull(env, context, location.getRelative(0, 0, 1));
 			
 			BlockProxy downProxy = context.previousBlockLookUp.readBlock(location.getRelative(0, 0, -1));
 			Block down = (null != downProxy)
@@ -363,7 +367,11 @@ public class CommonBlockMutationHelpers
 			{
 				down = null;
 			}
-			result = env.liquids.chooseEmptyLiquidBlock(env, currentBlock, east, west, north, south, up, down);
+			Pair<Block, LiquidBlock> pair = env.liquids.chooseEmptyLiquidBlock(env, currentLiquid, east, west, north, south, up, down);
+			result = (null != pair.one())
+				? pair.one()
+				: env.liquids.blockFromLiquid(pair.two())
+			;
 		}
 		else
 		{
@@ -372,7 +380,7 @@ public class CommonBlockMutationHelpers
 		return result;
 	}
 
-	private static Block _getLiquidOrNull(Environment env, TickProcessingContext context, AbsoluteLocation location)
+	private static LiquidRegistry.LiquidBlock _getLiquidOrNull(Environment env, TickProcessingContext context, AbsoluteLocation location)
 	{
 		BlockProxy proxy = context.previousBlockLookUp.readBlock(location);
 		Block block = (null != proxy)
@@ -380,11 +388,10 @@ public class CommonBlockMutationHelpers
 			: null
 		;
 		// We want to skip this if it isn't a liquid block.
-		if ((null != block) && !env.liquids.isLiquid(block))
-		{
-			block = null;
-		}
-		return block;
+		return (null != block)
+			? env.liquids.liquidFromBlock(block)
+			: null
+		;
 	}
 
 	private static void _dropBlockInventoriesAsPassives(TickProcessingContext context, AbsoluteLocation location, IBlockProxy block)
