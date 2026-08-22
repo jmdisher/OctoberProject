@@ -100,7 +100,7 @@ public class TestTickRunner
 	private static Item TILLED_SOIL_ITEM;
 	private static Item WHEAT_SEED_ITEM;
 	private static Item WHEAT_SEEDLING_ITEM;
-	private static Item WATER_STRONG;
+	private static Item WATER_WEAK;
 	private static Item VOID_LAMP_ITEM;
 	private static Block STONE;
 	private static Block WATER_SOURCE;
@@ -117,7 +117,7 @@ public class TestTickRunner
 		TILLED_SOIL_ITEM = ENV.items.getItemById("op.tilled_soil");
 		WHEAT_SEED_ITEM = ENV.items.getItemById("op.wheat_seed");
 		WHEAT_SEEDLING_ITEM = ENV.items.getItemById("op.wheat_seedling");
-		WATER_STRONG = ENV.items.getItemById("op.water_strong");
+		WATER_WEAK = ENV.items.getItemById("op.water_weak");
 		VOID_LAMP_ITEM = ENV.items.getItemById("op.void_lamp");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
@@ -877,7 +877,7 @@ public class TestTickRunner
 		// (we should see the update scheduled, but no change).
 		Assert.assertEquals(0, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
 		Assert.assertEquals(1, snapshot.cuboids().values().iterator().next().blockChanges().size());
-		Assert.assertEquals(WATER_STRONG.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
+		Assert.assertEquals(WATER_WEAK.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
 		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, leafLocation.getBlockAddress()));
 		
 		runner.shutdown();

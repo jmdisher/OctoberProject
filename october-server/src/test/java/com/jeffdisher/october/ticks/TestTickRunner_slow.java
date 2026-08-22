@@ -77,7 +77,7 @@ public class TestTickRunner_slow
 	private static Item WHEAT_SEEDLING_ITEM;
 	private static Item WHEAT_YOUNG_ITEM;
 	private static Item WHEAT_MATURE_ITEM;
-	private static Item WATER_STRONG;
+	private static Item WATER_WEAK;
 	private static Block STONE;
 	private static Block WATER_SOURCE;
 	@BeforeClass
@@ -98,7 +98,7 @@ public class TestTickRunner_slow
 		WHEAT_SEEDLING_ITEM = ENV.items.getItemById("op.wheat_seedling");
 		WHEAT_YOUNG_ITEM = ENV.items.getItemById("op.wheat_young");
 		WHEAT_MATURE_ITEM = ENV.items.getItemById("op.wheat_mature");
-		WATER_STRONG = ENV.items.getItemById("op.water_strong");
+		WATER_WEAK = ENV.items.getItemById("op.water_weak");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
 	}
@@ -474,7 +474,7 @@ public class TestTickRunner_slow
 		Assert.assertEquals(2, snapshot.cuboids().size());
 		Assert.assertNull(snapshot.cuboids().get(address0).blockChanges());
 		Assert.assertNull(snapshot.cuboids().get(address1).blockChanges());
-		Assert.assertEquals(WATER_STRONG.number(), snapshot.cuboids().get(address1).completed().getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0)));
+		Assert.assertEquals(WATER_WEAK.number(), snapshot.cuboids().get(address1).completed().getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0)));
 		
 		runner.shutdown();
 	}
@@ -519,10 +519,10 @@ public class TestTickRunner_slow
 		Assert.assertEquals(1, snapshot.stats().countOfEntityActionsRun());
 		
 		// Wait for this to trickle through the cuboid.
-		// This will take 33 steps, with some ticks between to allow flow - found experimentally.
+		// This will take 32 steps, with some ticks between to allow flow - found experimentally.
 		long millisToFlow = ENV.liquids.flowDelayMillis(WATER_SOURCE);
 		int ticksToPass = (int)(millisToFlow / MILLIS_PER_TICK);
-		for (int i = 0; i < 33; ++i)
+		for (int i = 0; i < 32; ++i)
 		{
 			// Allow the break of update to happen.
 			runner.startNextTick();
@@ -599,10 +599,10 @@ public class TestTickRunner_slow
 		Assert.assertEquals(1, snapshot.stats().countOfEntityActionsRun());
 		
 		// Wait for this to trickle through the cuboid.
-		// This will take 65 steps, with some ticks between to allow flow - found experimentally.
+		// This will take 64 steps, with some ticks between to allow flow - found experimentally.
 		long millisToFlow = ENV.liquids.flowDelayMillis(WATER_SOURCE);
 		int ticksToPass = (int)(millisToFlow / MILLIS_PER_TICK);
-		for (int i = 0; i < 65; ++i)
+		for (int i = 0; i < 64; ++i)
 		{
 			// Allow the break of update to happen.
 			runner.startNextTick();

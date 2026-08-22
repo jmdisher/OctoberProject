@@ -269,7 +269,7 @@ public class LiquidRegistry
 		{
 			// Since we need to work on this block, see what type it is.
 			Block currentType = _blocksToSource.get(currentBlock);
-			boolean isAboveSolidBlock = !env.blocks.canBeReplaced(below);
+			boolean isAboveSolidBlock = (null != below) && !env.blocks.canBeReplaced(below);
 			boolean isCurrentlySource = _sourceToSolid.containsKey(currentBlock);
 			
 			// We first need to see what the adjacent horizontal blocks thing should be selected.
