@@ -291,17 +291,25 @@ public class LiquidRegistry
 	 * 
 	 * @param env The environment.
 	 * @param possibleBucket The item which may be a bucket.
-	 * @param possibleSource The block which may be a liquid.
+	 * @param possibleSource The liquid block (may be a source or not and null for non-liquid block).
 	 * @return True if possibleBucket can be used on this possibleSource.
 	 */
-	public boolean isBucketForUseOneBlock(Environment env, Item possibleBucket, Block possibleSource)
+	public boolean isBucketForUseOnBlock(Environment env, Item possibleBucket, LiquidBlock possibleSource)
 	{
-		Item requiredEmptyBucket = _sourceToEmptyBucket.get(possibleSource);
-		boolean isEmptyBucket = (requiredEmptyBucket == possibleBucket);
-		boolean canBeReplaced = env.blocks.canBeReplaced(possibleSource);
+		// See if this is an empty bucket which can scoop up the source.
+		boolean isEmptyBucket = false;
+		boolean canBeScooped = false;
+		if (null != possibleSource)
+		{
+			Item requiredEmptyBucket = _sourceToEmptyBucket.get(possibleSource.sourceType);
+			isEmptyBucket = (requiredEmptyBucket == possibleBucket);
+			canBeScooped = (0 == possibleSource.distance) && _sourceToFullBucket.containsKey(possibleSource.sourceType);
+		}
+		
+		// See if this is a full bucket which can be placed.
 		Block outputBlock = _fullBucketToSource.get(possibleBucket);
-		boolean canBeScooped = _sourceToFullBucket.containsKey(possibleSource);
-		return (isEmptyBucket && canBeScooped) || (canBeReplaced && (null != outputBlock));
+		
+		return (isEmptyBucket && canBeScooped) || (null != outputBlock);
 	}
 
 	/**
@@ -310,23 +318,29 @@ public class LiquidRegistry
 	 * 
 	 * @param env The environment.
 	 * @param possibleBucket The item which may be a bucket.
-	 * @param possibleSource The block which may be a liquid.
+	 * @param possibleSource The liquid block (may be a source or not and null for non-liquid block).
 	 * @return The updated bucket, after the action (null if this request was invalid).
 	 */
-	public Item bucketAfterUse(Environment env, Item possibleBucket, Block possibleSource)
+	public Item bucketAfterUse(Environment env, Item possibleBucket, LiquidBlock possibleSource)
 	{
-		Item requiredEmptyBucket = _sourceToEmptyBucket.get(possibleSource);
-		boolean isEmptyBucket = (requiredEmptyBucket == possibleBucket);
-		boolean canBeReplaced = env.blocks.canBeReplaced(possibleSource);
-		Item bucketAfterPickup = _sourceToFullBucket.get(possibleSource);
+		boolean isEmptyBucket = false;
+		Item bucketAfterPickup = null;
+		boolean isBlockSource = false;
+		if (null != possibleSource)
+		{
+			Item requiredEmptyBucket = _sourceToEmptyBucket.get(possibleSource.sourceType);
+			isEmptyBucket = (requiredEmptyBucket == possibleBucket);
+			bucketAfterPickup = _sourceToFullBucket.get(possibleSource.sourceType);
+			isBlockSource = (0 == possibleSource.distance());
+		}
 		
 		Item outputBucket;
-		if (isEmptyBucket && (null != bucketAfterPickup))
+		if (isEmptyBucket && isBlockSource && (null != bucketAfterPickup))
 		{
 			// We can pick up this block as a liquid source.
 			outputBucket = bucketAfterPickup;
 		}
-		else if (canBeReplaced && _fullBucketToSource.containsKey(possibleBucket))
+		else if (_fullBucketToSource.containsKey(possibleBucket))
 		{
 			// This is a full bucket and we can place it.
 			// This means we need to find the empty bucket from this source type we create in placement.
@@ -346,23 +360,30 @@ public class LiquidRegistry
 	 * 
 	 * @param env The environment.
 	 * @param possibleBucket The item which may be a bucket.
-	 * @param possibleSource The block which may be a liquid.
+	 * @param possibleSource The liquid block (may be a source or not and null for non-liquid block).
 	 * @return The updated block type, after the action (null if this request was invalid).
 	 */
-	public Block blockAfterBucketUse(Environment env, Item possibleBucket, Block possibleSource)
+	public Block blockAfterBucketUse(Environment env, Item possibleBucket, LiquidBlock possibleSource)
 	{
-		Item requiredEmptyBucket = _sourceToEmptyBucket.get(possibleSource);
-		boolean isEmptyBucket = (requiredEmptyBucket == possibleBucket);
-		boolean canBeReplaced = env.blocks.canBeReplaced(possibleSource);
+		boolean isEmptyBucket = false;
+		Item bucketAfterPickup = null;
+		boolean isBlockSource = false;
+		if (null != possibleSource)
+		{
+			Item requiredEmptyBucket = _sourceToEmptyBucket.get(possibleSource.sourceType);
+			isEmptyBucket = (requiredEmptyBucket == possibleBucket);
+			bucketAfterPickup = _sourceToFullBucket.get(possibleSource.sourceType);
+			isBlockSource = (0 == possibleSource.distance());
+		}
 		Block sourceAfterDrop = _fullBucketToSource.get(possibleBucket);
 		
 		Block outputBlock;
-		if (isEmptyBucket && _sourceToFullBucket.containsKey(possibleSource))
+		if (isEmptyBucket && isBlockSource && (null != bucketAfterPickup))
 		{
 			// We can pick up this block as a liquid source so make it air.
 			outputBlock = env.special.AIR;
 		}
-		else if (canBeReplaced && (null != sourceAfterDrop))
+		else if (null != sourceAfterDrop)
 		{
 			// This is what we placed.
 			outputBlock = sourceAfterDrop;

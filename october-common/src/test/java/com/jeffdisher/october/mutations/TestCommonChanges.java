@@ -28,6 +28,7 @@ import com.jeffdisher.october.actions.passive.PassiveActionPickUp;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
+import com.jeffdisher.october.aspects.LiquidRegistry;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.aspects.TradingRegistry;
@@ -106,6 +107,7 @@ import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
+import com.jeffdisher.october.types.Pair;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.PassiveEntity;
@@ -1420,12 +1422,15 @@ public class TestCommonChanges
 		Block wheatYoung = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.wheat_young"));
 		Block wheatMature = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.wheat_mature"));
 		
-		Assert.assertTrue(EntitySubActionUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, WATER_SOURCE));
-		Assert.assertTrue(EntitySubActionUseSelectedItemOnBlock.canUseOnBlock(waterBucket, WATER_WEAK));
-		Assert.assertFalse(EntitySubActionUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, WATER_WEAK));
-		Assert.assertFalse(EntitySubActionUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, WATER_WEAK));
-		Assert.assertTrue(EntitySubActionUseSelectedItemOnBlock.canUseOnBlock(fertilizerItem, wheatYoung));
-		Assert.assertFalse(EntitySubActionUseSelectedItemOnBlock.canUseOnBlock(fertilizerItem, wheatMature));
+		LiquidRegistry.LiquidBlock waterSource = ENV.liquids.liquidBlockForSource(WATER_SOURCE);
+		LiquidRegistry.LiquidBlock waterWeak = ENV.liquids.test_liquidBlock(WATER_SOURCE, 2);
+		
+		Assert.assertTrue(EntitySubActionUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, new Pair<>(null, waterSource)));
+		Assert.assertTrue(EntitySubActionUseSelectedItemOnBlock.canUseOnBlock(waterBucket, new Pair<>(null, waterWeak)));
+		Assert.assertFalse(EntitySubActionUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, new Pair<>(null, waterWeak)));
+		Assert.assertFalse(EntitySubActionUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, new Pair<>(null, waterWeak)));
+		Assert.assertTrue(EntitySubActionUseSelectedItemOnBlock.canUseOnBlock(fertilizerItem, new Pair<>(wheatYoung, null)));
+		Assert.assertFalse(EntitySubActionUseSelectedItemOnBlock.canUseOnBlock(fertilizerItem, new Pair<>(wheatMature, null)));
 		
 		Assert.assertTrue(EntitySubActionUseSelectedItemOnSelf.canBeUsedOnSelf(breadItem));
 		Assert.assertFalse(EntitySubActionUseSelectedItemOnSelf.canBeUsedOnSelf(waterBucket));

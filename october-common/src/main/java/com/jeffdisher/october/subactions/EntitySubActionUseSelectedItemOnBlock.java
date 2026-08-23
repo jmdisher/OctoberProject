@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.LiquidRegistry;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.DeserializationContext;
@@ -25,6 +26,7 @@ import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
 import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.NonStackableItem;
+import com.jeffdisher.october.types.Pair;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -50,23 +52,23 @@ public class EntitySubActionUseSelectedItemOnBlock implements IEntitySubAction<I
 	 * A helper to determine if the given item can be used on a specific block with this entity mutation.
 	 * 
 	 * @param item The item.
-	 * @param block The target block.
+	 * @param block The target block (could be liquid).
 	 * @return True if this mutation can be used to apply the item to the block.
 	 */
-	public static boolean canUseOnBlock(Item item, Block block)
+	public static boolean canUseOnBlock(Item item, Pair<Block, LiquidRegistry.LiquidBlock> block)
 	{
 		Environment env = Environment.getShared();
 		
 		boolean canUse;
-		if ((env.special.itemFertilizer == item) && (env.plants.growthDivisor(block) > 0))
+		if ((env.special.itemFertilizer == item) && (env.plants.growthDivisor(block.one()) > 0))
 		{
 			canUse = true;
 		}
-		else if (env.liquids.isBucketForUseOneBlock(env, item, block))
+		else if ((null != block.two()) && env.liquids.isBucketForUseOnBlock(env, item, block.two()))
 		{
 			canUse = true;
 		}
-		else if ((env.special.itemStoneHoe == item) && ((env.special.blockDirt == block) || (env.special.blockGrass == block)))
+		else if ((env.special.itemStoneHoe == item) && ((env.special.blockDirt == block.one()) || (env.special.blockGrass == block.one())))
 		{
 			canUse = true;
 		}
@@ -153,20 +155,35 @@ public class EntitySubActionUseSelectedItemOnBlock implements IEntitySubAction<I
 		;
 		boolean isFertilizer = (env.special.itemFertilizer == type);
 		BlockProxy proxy = context.previousBlockLookUp.readBlock(_target);
-		Block block = (null != proxy) ? proxy.getBlock() : null;
+		Pair<Block, LiquidRegistry.LiquidBlock> pair = (null != proxy)
+			? env.liquids.pairFrom(proxy)
+			: null
+		;
+		Block block = (null != pair)
+			? pair.one()
+			: null
+		;
+		LiquidRegistry.LiquidBlock liquid = (null != pair)
+			? pair.two()
+			: null
+		;
 		boolean isGrowable = (env.plants.growthDivisor(block) > 0);
 		
 		boolean didApply = false;
-		if (env.liquids.isBucketForUseOneBlock(env, type, block))
+		if (env.liquids.isBucketForUseOnBlock(env, type, liquid))
 		{
 			// This is a bucket related action so just find out the output types.
-			Item outputBucket = env.liquids.bucketAfterUse(env, type, block);
-			Block outputBlock = env.liquids.blockAfterBucketUse(env, type, block);
+			Item outputBucket = env.liquids.bucketAfterUse(env, type, liquid);
+			Block outputBlock = env.liquids.blockAfterBucketUse(env, type, liquid);
 			Assert.assertTrue(null != outputBucket);
 			Assert.assertTrue(null != outputBlock);
 			// We can place down the bucket.
 			slotManager.replaceNonStackable(selectedKey, PropertyHelpers.newItemWithDefaults(env, outputBucket));
-			context.mutationSink.next(new MutationBlockReplace(_target, block, outputBlock));
+			Block originalType = (null != liquid)
+				? liquid.sourceType()
+				: block
+			;
+			context.mutationSink.next(new MutationBlockReplace(_target, originalType, outputBlock));
 			didApply = true;
 		}
 		else if (isFertilizer && isGrowable)
