@@ -88,6 +88,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		_setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, null);
 		_setDataSpecial(AspectRegistry.SPECIAL_ITEM_SLOT, null);
 		_setDataSpecial(AspectRegistry.ENCHANTING, null);
+		_setData7(AspectRegistry.BLOCK_DEFINED_BYTE, (byte)0);
 	}
 
 	@Override
@@ -282,6 +283,18 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	}
 
 	@Override
+	public byte getBlockDefinedByte()
+	{
+		return _getData7(AspectRegistry.BLOCK_DEFINED_BYTE);
+	}
+
+	@Override
+	public void setBlockDefinedByte(byte value)
+	{
+		_setData7(AspectRegistry.BLOCK_DEFINED_BYTE, value);
+	}
+
+	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		// Note that we don't want to send all the data if it didn't all change (since things like lighting updates are common).
@@ -419,8 +432,10 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	{
 		// We want to trigger updates on BLOCK changes, since that often changes adjacent blocks.
 		// We also want to include INVENTORY changes, since that can impact things like hoppers.
+		// We will add the BLOCK_DEFINED_BYTE since that is essentially an extension of BLOCK.
 		return (null != _writes[AspectRegistry.BLOCK.index()])
-				|| (null != _writes[AspectRegistry.INVENTORY.index()])
+			|| (null != _writes[AspectRegistry.INVENTORY.index()])
+			|| (null != _writes[AspectRegistry.BLOCK_DEFINED_BYTE.index()])
 		;
 	}
 

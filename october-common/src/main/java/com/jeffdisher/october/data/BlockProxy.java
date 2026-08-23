@@ -201,6 +201,12 @@ public class BlockProxy implements IBlockProxy
 		return _getDataSpecial(AspectRegistry.ENCHANTING);
 	}
 
+	@Override
+	public byte getBlockDefinedByte()
+	{
+		return _getData7(AspectRegistry.BLOCK_DEFINED_BYTE);
+	}
+
 
 	private byte _getData7(Aspect<Byte, ?> type)
 	{

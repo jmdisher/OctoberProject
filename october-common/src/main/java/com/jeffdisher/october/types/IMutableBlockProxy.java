@@ -97,4 +97,8 @@ public interface IMutableBlockProxy extends IBlockProxy
 	 * @param operation The new enchanting operation (can be null).
 	 */
 	void setEnchantingOperation(EnchantingOperation operation);
+	/**
+	 * @param value The block-defined byte for this proxy (BLOCK_DEFINED_BYTE aspect).
+	 */
+	void setBlockDefinedByte(byte value);
 }

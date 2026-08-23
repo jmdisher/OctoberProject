@@ -60,4 +60,8 @@ public interface IBlockProxy
 	 * @return The current enchanting operation for this block (usually null).
 	 */
 	EnchantingOperation getEnchantingOperation();
+	/**
+	 * @return The block-defined byte for this proxy (BLOCK_DEFINED_BYTE aspect).
+	 */
+	byte getBlockDefinedByte();
 }
