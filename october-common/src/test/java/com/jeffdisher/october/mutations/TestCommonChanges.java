@@ -130,8 +130,6 @@ public class TestCommonChanges
 	private static Block STONE;
 	private static Block LADDER;
 	private static Block WATER_SOURCE;
-	private static Block WATER_STRONG;
-	private static Block WATER_WEAK;
 	private static EntityType COW;
 	private static EntityType COW_BABY;
 	@BeforeClass
@@ -147,8 +145,6 @@ public class TestCommonChanges
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 		LADDER = ENV.blocks.fromItem(ENV.items.getItemById("op.ladder"));
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
-		WATER_STRONG = ENV.blocks.fromItem(ENV.items.getItemById("op.water_strong"));
-		WATER_WEAK = ENV.blocks.fromItem(ENV.items.getItemById("op.water_weak"));
 		COW = ENV.creatures.getTypeById("op.cow");
 		COW_BABY = ENV.creatures.getTypeById("op.cow_baby");
 	}
@@ -3411,9 +3407,12 @@ public class TestCommonChanges
 		newEntity.newLocation = oldLocation;
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0), WATER_SOURCE.item().number());
-		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 1, 0), WATER_STRONG.item().number());
-		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 0, 0), WATER_STRONG.item().number());
-		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 0), WATER_WEAK.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 1, 0), WATER_SOURCE.item().number());
+		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, BlockAddress.fromInt(0, 1, 0), (byte)1);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 0, 0), WATER_SOURCE.item().number());
+		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, BlockAddress.fromInt(1, 0, 0), (byte)1);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 0), WATER_SOURCE.item().number());
+		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, BlockAddress.fromInt(1, 1, 0), (byte)2);
 		TickProcessingContext context = _createSingleCuboidContext(cuboid);
 		EntityActionSimpleMove<IMutablePlayerEntity> action = new EntityActionSimpleMove<>(0.0f
 			, 0.0f

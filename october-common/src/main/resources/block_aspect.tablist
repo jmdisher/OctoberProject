@@ -59,10 +59,6 @@ op.tilled_soil
 	special_drop	100	op.dirt
 op.water_source	can_be_replaced	stops_fire
 	viscosity	50
-op.water_strong	can_be_replaced	stops_fire
-	viscosity	50
-op.water_weak	can_be_replaced	stops_fire
-	viscosity	50
 op.lantern
 # op.iron_ingot
 op.sapling	is_flammable
@@ -119,12 +115,6 @@ op.carrot_mature
 	special_drop	100	op.carrot_seed	50	op.carrot_seed	100	op.carrot_item	100	op.carrot_item
 	viscosity	10
 op.lava_source	can_be_replaced	is_fire_source
-	viscosity	80
-	damage	10
-op.lava_strong	can_be_replaced	is_fire_source
-	viscosity	80
-	damage	10
-op.lava_weak	can_be_replaced	is_fire_source
 	viscosity	80
 	damage	10
 op.double_door_base	is_multiblock

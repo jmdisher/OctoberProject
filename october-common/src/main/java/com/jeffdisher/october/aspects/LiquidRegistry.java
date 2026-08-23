@@ -24,10 +24,10 @@ public class LiquidRegistry
 	public static final String SUB_FLOW_DELAY_MILLIS = "flow_delay_millis";
 	public static final String SUB_FULL_BUCKET = "full_bucket";
 	public static final String SUB_EMPTY_BUCKET = "empty_bucket";
-	public static final String SUB_STRONG_FLOW = "strong_flow";
-	public static final String SUB_WEAK_FLOW = "weak_flow";
 	public static final String SUB_SOLID_BLOCK = "solid_block";
+	public static final String SUB_FLOW_DISTANCE = "flow_distance";
 
+	// TODO:  Replace these with lookups of the actual per-liquid flow distance since they will eventually diverge.
 	public static final int FLOW_SOURCE = 3;
 	public static final int FLOW_STRONG = 2;
 	public static final int FLOW_WEAK = 1;
@@ -39,10 +39,9 @@ public class LiquidRegistry
 		{
 			throw new IOException("Resource missing");
 		}
-		Map<Block, Block> blocksToSource = new HashMap<>();
-		Map<Block, Integer> blocksToStrength = new HashMap<>();
 		Map<Block, Block> sourceToSolid = new HashMap<>();
 		Map<Block, Long> sourceToDelayMillis = new HashMap<>();
+		Map<Block, Byte> sourceToFlowDistance = new HashMap<>();
 		Set<Block> sourceCreationSources = new HashSet<>();
 		Map<Item, Block> fullBucketToSource = new HashMap<>();
 		Map<Block, Item> sourceToFullBucket = new HashMap<>();
@@ -50,15 +49,12 @@ public class LiquidRegistry
 		
 		TabListReader.readEntireFile(new TabListReader.IParseCallbacks() {
 			private Block _currentSource;
-			private Block _strongFlow;
-			private Block _weakFlow;
+			private byte _flowDistance;
 			@Override
 			public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
 			{
 				Assert.assertTrue(null == _currentSource);
 				_currentSource = _getBlock(name);
-				blocksToSource.put(_currentSource, _currentSource);
-				blocksToStrength.put(_currentSource, 3);
 				
 				// Read the flag list.
 				for (String value : parameters)
@@ -77,12 +73,10 @@ public class LiquidRegistry
 			public void endRecord() throws TabListReader.TabListException
 			{
 				Assert.assertTrue(null != _currentSource);
-				Assert.assertTrue(null != _strongFlow);
-				Assert.assertTrue(null != _weakFlow);
+				Assert.assertTrue(_flowDistance > 0);
 				
 				_currentSource = null;
-				_strongFlow = null;
-				_weakFlow = null;
+				_flowDistance = 0;
 			}
 			@Override
 			public void processSubRecord(String name, String[] parameters) throws TabListReader.TabListException
@@ -109,21 +103,23 @@ public class LiquidRegistry
 					Item bucket = _getItem(emptyBucket);
 					sourceToEmptyBucket.put(_currentSource, bucket);
 				}
-				else if (SUB_STRONG_FLOW.equals(name))
+				else if (SUB_FLOW_DISTANCE.equals(name))
 				{
-					Assert.assertTrue(null == _strongFlow);
-					String strongFlow = _getSingleParam(SUB_STRONG_FLOW, name, parameters);
-					_strongFlow = _getBlock(strongFlow);
-					blocksToSource.put(_strongFlow, _currentSource);
-					blocksToStrength.put(_strongFlow, 2);
-				}
-				else if (SUB_WEAK_FLOW.equals(name))
-				{
-					Assert.assertTrue(null == _weakFlow);
-					String weakFlow = _getSingleParam(SUB_WEAK_FLOW, name, parameters);
-					_weakFlow = _getBlock(weakFlow);
-					blocksToSource.put(_weakFlow, _currentSource);
-					blocksToStrength.put(_weakFlow, 1);
+					Assert.assertTrue(0 == _flowDistance);
+					String flowDistance = _getSingleParam(SUB_FLOW_DISTANCE, name, parameters);
+					try
+					{
+						_flowDistance = Byte.parseByte(flowDistance);
+					}
+					catch (NumberFormatException e)
+					{
+						_flowDistance = -1;
+					}
+					if (_flowDistance <= 0)
+					{
+						throw new TabListReader.TabListException("flow_distance must be positive byte: \"" + flowDistance + "\"");
+					}
+					sourceToFlowDistance.put(_currentSource, _flowDistance);
 				}
 				else if (SUB_SOLID_BLOCK.equals(name))
 				{
@@ -174,10 +170,9 @@ public class LiquidRegistry
 			}
 		}, stream);
 		
-		return new LiquidRegistry(blocksToSource
-			, blocksToStrength
-			, sourceToSolid
+		return new LiquidRegistry(sourceToSolid
 			, sourceToDelayMillis
+			, sourceToFlowDistance
 			, sourceCreationSources
 			, fullBucketToSource
 			, sourceToFullBucket
@@ -186,20 +181,18 @@ public class LiquidRegistry
 	}
 
 
-	private final Map<Block, Block> _blocksToSource;
-	private final Map<Block, Integer> _blocksToStrength;
 	private final Map<Block, Block> _sourceToSolid;
 	private final Map<Block, Long> _sourceToDelayMillis;
+	private final Map<Block, Byte> _sourceToFlowDistance;
 	private final Set<Block> _sourceCreationSources;
 	private final Map<Item, Block> _fullBucketToSource;
 	private final Map<Block, Item> _sourceToFullBucket;
 	private final Map<Block, Item> _sourceToEmptyBucket;
 	private final long _defaultDelayMillis;
 
-	private LiquidRegistry(Map<Block, Block> blocksToSource
-			, Map<Block, Integer> blocksToStrength
-			, Map<Block, Block> sourceToSolid
+	private LiquidRegistry(Map<Block, Block> sourceToSolid
 			, Map<Block, Long> sourceToDelayMillis
+			, Map<Block, Byte> sourceToFlowDistance
 			, Set<Block> sourceCreationSources
 			, Map<Item, Block> fullBucketToSource
 			, Map<Block, Item> sourceToFullBucket
@@ -208,10 +201,9 @@ public class LiquidRegistry
 	{
 		Assert.assertTrue(!sourceToDelayMillis.isEmpty());
 		
-		_blocksToSource = Map.copyOf(blocksToSource);
-		_blocksToStrength = Map.copyOf(blocksToStrength);
 		_sourceToSolid = Map.copyOf(sourceToSolid);
 		_sourceToDelayMillis = Map.copyOf(sourceToDelayMillis);
+		_sourceToFlowDistance = Map.copyOf(sourceToFlowDistance);
 		_sourceCreationSources = Set.copyOf(sourceCreationSources);
 		_fullBucketToSource = Map.copyOf(fullBucketToSource);
 		_sourceToFullBucket = Map.copyOf(sourceToFullBucket);
@@ -424,12 +416,12 @@ public class LiquidRegistry
 	 * A basic mechanism to ask if a block type is a liquid.
 	 * 
 	 * @param block The block to check.
-	 * @return True if this is a liquid (source or otherwise), false if not.
+	 * @return True if this is a liquid source block type, false if not.
 	 */
 	public boolean isLiquid(Block block)
 	{
-		// If it is a source or flowing block.
-		return _blocksToSource.containsKey(block);
+		// All liquids just use the source block.
+		return _sourceToFlowDistance.containsKey(block);
 	}
 
 	/**
@@ -442,14 +434,12 @@ public class LiquidRegistry
 	{
 		Block block = proxy.getBlock();
 		Pair<Block, LiquidBlock> result;
-		if (_blocksToStrength.containsKey(block))
+		if (_sourceToFlowDistance.containsKey(block))
 		{
-			// TODO:  Change this when flow distance becomes variable by source type.
-			int flowStrength = _blocksToStrength.get(block);
-			Assert.assertTrue(flowStrength <= FLOW_SOURCE);
-			byte flowDistance = (byte)(FLOW_SOURCE - flowStrength);
-			Block sourceType = _blocksToSource.get(block);
-			result = new Pair<>(null, new LiquidBlock(sourceType, flowDistance));
+			// We need to load the distance from the block-specific byte.
+			byte flowDistance = proxy.getBlockDefinedByte();
+			Assert.assertTrue(flowDistance <= _sourceToFlowDistance.get(block));
+			result = new Pair<>(null, new LiquidBlock(block, flowDistance));
 		}
 		else
 		{
@@ -486,9 +476,8 @@ public class LiquidRegistry
 	}
 
 
-	private long _flowDelayMillis(Block type)
+	private long _flowDelayMillis(Block liquidType)
 	{
-		Block liquidType = _blocksToSource.get(type);
 		return _getFromMap(_sourceToDelayMillis, liquidType, _defaultDelayMillis);
 	}
 

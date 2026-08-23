@@ -70,8 +70,6 @@ public class TestEngineCreatures
 	private static Block AIR;
 	private static Block STONE;
 	private static Block WATER_SOURCE;
-	private static Block WATER_STRONG;
-	private static Block WATER_WEAK;
 	private static EntityType COW;
 	private static EntityType COW_BABY;
 	private static EntityType ORC;
@@ -82,8 +80,6 @@ public class TestEngineCreatures
 		AIR = ENV.blocks.fromItem(ENV.items.getItemById("op.air"));
 		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
-		WATER_STRONG = ENV.blocks.fromItem(ENV.items.getItemById("op.water_strong"));
-		WATER_WEAK = ENV.blocks.fromItem(ENV.items.getItemById("op.water_weak"));
 		COW = ENV.creatures.getTypeById("op.cow");
 		COW_BABY = ENV.creatures.getTypeById("op.cow_baby");
 		ORC = ENV.creatures.getTypeById("op.orc");
@@ -1044,9 +1040,12 @@ public class TestEngineCreatures
 		
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0), WATER_SOURCE.item().number());
-		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 1, 0), WATER_STRONG.item().number());
-		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 0, 0), WATER_STRONG.item().number());
-		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 0), WATER_WEAK.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 1, 0), WATER_SOURCE.item().number());
+		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, BlockAddress.fromInt(0, 1, 0), (byte)1);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 0, 0), WATER_SOURCE.item().number());
+		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, BlockAddress.fromInt(1, 0, 0), (byte)1);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 0), WATER_SOURCE.item().number());
+		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, BlockAddress.fromInt(1, 1, 0), (byte)2);
 		long tickNumber = 1L;
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(tickNumber)

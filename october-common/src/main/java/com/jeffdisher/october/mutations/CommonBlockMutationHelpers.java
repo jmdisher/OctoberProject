@@ -229,10 +229,9 @@ public class CommonBlockMutationHelpers
 	{
 		Block oldType = proxy.getBlock();
 		
-		// TODO:  Replace this logic once the liquids are no longer just block values.
-		int index = newType.sourceType().item().number() + newType.distance();
-		Block blockToSet = env.blocks.fromItem(env.items.ITEMS_BY_TYPE[index]);
-		proxy.setBlockAndClear(blockToSet);
+		// Set the block first since it clears the block-defined byte.
+		proxy.setBlockAndClear(newType.sourceType());
+		proxy.setBlockDefinedByte(newType.distance());
 		
 		// We will do the fire check with the source.
 		Block source = newType.sourceType();

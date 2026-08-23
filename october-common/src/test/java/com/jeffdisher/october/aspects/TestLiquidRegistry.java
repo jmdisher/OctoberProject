@@ -18,11 +18,7 @@ public class TestLiquidRegistry
 	private static Environment ENV;
 
 	private static Block WATER_SOURCE;
-	private static Block WATER_STRONG;
-	private static Block WATER_WEAK;
 	private static Block LAVA_SOURCE;
-	private static Block LAVA_STRONG;
-	private static Block LAVA_WEAK;
 	private static Block STONE;
 	private static Block BASALT;
 
@@ -31,11 +27,7 @@ public class TestLiquidRegistry
 	{
 		ENV = Environment.createSharedInstance();
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
-		WATER_STRONG = ENV.blocks.fromItem(ENV.items.getItemById("op.water_strong"));
-		WATER_WEAK = ENV.blocks.fromItem(ENV.items.getItemById("op.water_weak"));
 		LAVA_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_source"));
-		LAVA_STRONG = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_strong"));
-		LAVA_WEAK = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_weak"));
 		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 		BASALT = ENV.blocks.fromItem(ENV.items.getItemById("op.basalt"));
 	}
@@ -115,11 +107,7 @@ public class TestLiquidRegistry
 	{
 		// Check the millisecond delays on flows (based on known constants in the config).
 		Assert.assertEquals(100L, ENV.liquids.flowDelayMillis(WATER_SOURCE));
-		Assert.assertEquals(100L, ENV.liquids.flowDelayMillis(WATER_STRONG));
-		Assert.assertEquals(100L, ENV.liquids.flowDelayMillis(WATER_WEAK));
 		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(LAVA_SOURCE));
-		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(LAVA_STRONG));
-		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(LAVA_WEAK));
 		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(ENV.special.AIR));
 		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(STONE));
 		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(BASALT));

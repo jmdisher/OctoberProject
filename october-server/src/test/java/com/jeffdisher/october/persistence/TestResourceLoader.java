@@ -1236,8 +1236,8 @@ public class TestResourceLoader
 		Item torch = ENV.items.getItemById("op.torch");
 		Item stairs = ENV.items.getItemById("op.stone_brick_stair");
 		Item waterSource = ENV.items.getItemById("op.water_source");
-		Item waterStrong = ENV.items.getItemById("op.water_strong");
-		Item waterWeak = ENV.items.getItemById("op.water_weak");
+		Item waterStrong = ENV.items.getItemById("DEPRECATED.op.water_strong");
+		Item waterWeak = ENV.items.getItemById("DEPRECATED.op.water_weak");
 		
 		File clusterFile = new File(new File(new File(worldDirectory, "cuboids"), "region_0_0_0.cd8"), "cluster_0_0_0.c4");
 		clusterFile.getParentFile().mkdirs();

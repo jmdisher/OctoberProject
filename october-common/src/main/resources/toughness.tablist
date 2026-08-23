@@ -20,8 +20,6 @@ op.coal_ore	40000
 op.iron_ore	60000
 op.dirt	3000
 op.water_source	0
-op.water_strong	0
-op.water_weak	0
 op.lantern	100
 op.sapling	50
 op.leaf	100
@@ -42,8 +40,6 @@ op.carrot_mature	50
 op.bed	2000
 op.basalt	60000
 op.lava_source	0
-op.lava_strong	0
-op.lava_weak	0
 op.double_door_base	3000
 op.grass	3500
 op.tilled_soil	3000

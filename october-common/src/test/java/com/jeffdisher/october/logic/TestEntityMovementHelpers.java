@@ -436,13 +436,14 @@ public class TestEntityMovementHelpers
 	public void environmentVector()
 	{
 		// Tests the velocity vector added due to flowing water.
-		Block waterStrong = ENV.blocks.fromItem(ENV.items.getItemById("op.water_strong"));
-		Block waterWeak = ENV.blocks.fromItem(ENV.items.getItemById("op.water_weak"));
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 1), WATER_SOURCE.item().number());
-		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0), waterStrong.item().number());
-		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 1, 0), waterWeak.item().number());
-		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 0, 0), waterWeak.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0), WATER_SOURCE.item().number());
+		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, BlockAddress.fromInt(0, 0, 0), (byte)1);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 1, 0), WATER_SOURCE.item().number());
+		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, BlockAddress.fromInt(0, 1, 0), (byte)2);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 0, 0), WATER_SOURCE.item().number());
+		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, BlockAddress.fromInt(1, 0, 0), (byte)2);
 		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
 			return BlockProxy.load(location.getBlockAddress(), cuboid);
 		});

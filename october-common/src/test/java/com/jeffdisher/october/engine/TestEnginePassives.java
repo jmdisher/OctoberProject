@@ -50,7 +50,6 @@ public class TestEnginePassives
 	private static Block STONE;
 	private static Block LAVA_SOURCE;
 	private static Block WATER_SOURCE;
-	private static Block WATER_STRONG;
 	@BeforeClass
 	public static void setup() throws Throwable
 	{
@@ -59,7 +58,6 @@ public class TestEnginePassives
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 		LAVA_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_source"));
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
-		WATER_STRONG = ENV.blocks.fromItem(ENV.items.getItemById("op.water_strong"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -427,7 +425,8 @@ public class TestEnginePassives
 		AbsoluteLocation strongLocation = passiveLocation.getBlockLocation();
 		AbsoluteLocation sourceLocation = strongLocation.getRelative(1, 0, 0);
 		cuboid.setData15(AspectRegistry.BLOCK, sourceLocation.getBlockAddress(), WATER_SOURCE.item().number());
-		cuboid.setData15(AspectRegistry.BLOCK, strongLocation.getBlockAddress(), WATER_STRONG.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, strongLocation.getBlockAddress(), WATER_SOURCE.item().number());
+		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, strongLocation.getBlockAddress(), (byte)1);
 		long tickNumber = 1L;
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(tickNumber)

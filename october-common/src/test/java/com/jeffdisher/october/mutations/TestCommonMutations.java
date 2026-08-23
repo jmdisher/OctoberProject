@@ -80,8 +80,6 @@ public class TestCommonMutations
 	private static Item CHARCOAL_ITEM;
 	private static Block STONE;
 	private static Block WATER_SOURCE;
-	private static Block WATER_STRONG;
-	private static Block WATER_WEAK;
 	@BeforeClass
 	public static void setup() throws Throwable
 	{
@@ -89,8 +87,6 @@ public class TestCommonMutations
 		STONE_ITEM = ENV.items.getItemById("op.stone");
 		CHARCOAL_ITEM = ENV.items.getItemById("op.charcoal");
 		WATER_SOURCE = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.water_source"));
-		WATER_STRONG = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.water_strong"));
-		WATER_WEAK = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.water_weak"));
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 	}
 	@AfterClass
@@ -255,8 +251,10 @@ public class TestCommonMutations
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), STONE);
 		AbsoluteLocation down = target.getRelative(0, 0, -1);
 		AbsoluteLocation downOver = target.getRelative(1, 0, -1);
-		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(-1, 0, 1).getBlockAddress(), WATER_STRONG.item().number());
-		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress(), WATER_WEAK.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(-1, 0, 1).getBlockAddress(), WATER_SOURCE.item().number());
+		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, target.getRelative(-1, 0, 1).getBlockAddress(), (byte)1);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress(), WATER_SOURCE.item().number());
+		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, target.getRelative(0, 0, 1).getBlockAddress(), (byte)2);
 		cuboid.setData15(AspectRegistry.BLOCK, down.getBlockAddress(), ENV.special.AIR.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, downOver.getBlockAddress(), ENV.special.AIR.item().number());
 		
@@ -314,7 +312,8 @@ public class TestCommonMutations
 		proxy.writeBack(cuboid);
 		
 		// If we break a block under any strength of flow, we expect it to be weak flow.
-		Assert.assertEquals(WATER_WEAK, proxy.getBlock());
+		Assert.assertEquals(WATER_SOURCE, proxy.getBlock());
+		Assert.assertEquals((byte)2, proxy.getBlockDefinedByte());
 		
 		// Run an update on the other blocks below to verify it flows through them, creating strong flow when it touches the solid block.
 		proxy = new MutableBlockProxy(down, cuboid);
@@ -331,7 +330,8 @@ public class TestCommonMutations
 		internal.applyMutation(context, proxy);
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(WATER_STRONG, proxy.getBlock());
+		Assert.assertEquals(WATER_SOURCE, proxy.getBlock());
+		Assert.assertEquals((byte)1, proxy.getBlockDefinedByte());
 		
 		proxy = new MutableBlockProxy(downOver, cuboid);
 		new MutationBlockUpdate(downOver).applyMutation(context, proxy);
@@ -345,7 +345,8 @@ public class TestCommonMutations
 		internal.applyMutation(context, proxy);
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(WATER_WEAK, proxy.getBlock());
+		Assert.assertEquals(WATER_SOURCE, proxy.getBlock());
+		Assert.assertEquals((byte)2, proxy.getBlockDefinedByte());
 	}
 
 	@Test
@@ -895,7 +896,8 @@ public class TestCommonMutations
 		proxy2.writeBack(cuboid);
 		Assert.assertNull(out_mutation[0]);
 		Assert.assertEquals(4, out_passives.size());
-		Assert.assertEquals(WATER_STRONG, proxy2.getBlock());
+		Assert.assertEquals(WATER_SOURCE, proxy2.getBlock());
+		Assert.assertEquals((byte)1, proxy2.getBlockDefinedByte());
 	}
 
 	@Test
@@ -2318,7 +2320,8 @@ public class TestCommonMutations
 		// Apply these to a new cuboid, with different kinds of blocks to overwrite.
 		CuboidData outputCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		outputCuboid.setData15(AspectRegistry.BLOCK, furnaceLocation.getBlockAddress(), WATER_SOURCE.item().number());
-		outputCuboid.setData15(AspectRegistry.BLOCK, craftingTableLocation.getBlockAddress(), WATER_WEAK.item().number());
+		outputCuboid.setData15(AspectRegistry.BLOCK, craftingTableLocation.getBlockAddress(), WATER_SOURCE.item().number());
+		outputCuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, craftingTableLocation.getBlockAddress(), (byte)2);
 		outputCuboid.setData15(AspectRegistry.BLOCK, pedestalLocation.getBlockAddress(), STONE.item().number());
 		PassiveEntity[] out_passive = new PassiveEntity[1];
 		TickProcessingContext context = ContextBuilder.build()
@@ -2514,7 +2517,8 @@ public class TestCommonMutations
 		proxy.writeBack(cuboid);
 		
 		// (this will be weak since it isn't falling onto a solid block)
-		Assert.assertEquals(WATER_WEAK.item().number(), cuboid.getData15(AspectRegistry.BLOCK, sandBlock.getBlockAddress()));
+		Assert.assertEquals(WATER_SOURCE.item().number(), cuboid.getData15(AspectRegistry.BLOCK, sandBlock.getBlockAddress()));
+		Assert.assertEquals((byte)2, cuboid.getData7(AspectRegistry.BLOCK_DEFINED_BYTE, sandBlock.getBlockAddress()));
 		Assert.assertNull(out_mutation[0]);
 		Assert.assertNull(out_passive[0]);
 	}

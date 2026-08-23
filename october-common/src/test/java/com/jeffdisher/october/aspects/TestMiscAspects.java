@@ -73,12 +73,12 @@ public class TestMiscAspects
 		Block sapling = ENV.blocks.fromItem(ENV.items.getItemById("op.sapling"));
 		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 		Block air = ENV.blocks.fromItem(ENV.items.getItemById("op.air"));
-		Block lavaWeak = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_weak"));
+		Block lavaSource = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_source"));
 		
 		Assert.assertArrayEquals(new DropChance[] {new DropChance(sapling.item(), 100)}, ENV.blocks.possibleDropsOnBreak(sapling));
 		Assert.assertArrayEquals(new DropChance[] {new DropChance(stone.item(), 100)}, ENV.blocks.possibleDropsOnBreak(stone));
 		Assert.assertArrayEquals(new DropChance[] {}, ENV.blocks.possibleDropsOnBreak(air));
-		Assert.assertArrayEquals(new DropChance[] {}, ENV.blocks.possibleDropsOnBreak(lavaWeak));
+		Assert.assertArrayEquals(new DropChance[] {}, ENV.blocks.possibleDropsOnBreak(lavaSource));
 	}
 
 	@Test
@@ -86,11 +86,11 @@ public class TestMiscAspects
 	{
 		Block air = ENV.special.AIR;
 		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
-		Block lavaWeak = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_weak"));
+		Block lavaSource = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_source"));
 		
 		Assert.assertEquals(0, ENV.blocks.getBlockDamage(air));
 		Assert.assertEquals(0, ENV.blocks.getBlockDamage(waterSource));
-		Assert.assertEquals(10, ENV.blocks.getBlockDamage(lavaWeak));
+		Assert.assertEquals(10, ENV.blocks.getBlockDamage(lavaSource));
 	}
 
 	@Test
@@ -189,17 +189,18 @@ public class TestMiscAspects
 		// Show liquid flow strength.
 		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
-		Block waterStrong = ENV.blocks.fromItem(ENV.items.getItemById("op.water_strong"));
-		Block waterWeak = ENV.blocks.fromItem(ENV.items.getItemById("op.water_weak"));
+		AbsoluteLocation proxyLocation = new AbsoluteLocation(1, 1, 1);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), stone);
 		CuboidData sourceCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), waterSource);
-		CuboidData strongCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), waterStrong);
-		CuboidData weakCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), waterWeak);
+		CuboidData strongCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), waterSource);
+		strongCuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, proxyLocation.getBlockAddress(), (byte)1);
+		CuboidData weakCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), waterSource);
+		weakCuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, proxyLocation.getBlockAddress(), (byte)2);
 		
 		Assert.assertNull(ENV.liquids.pairFrom(new MutableBlockProxy(new AbsoluteLocation(1, 1, 1), stoneCuboid)).two());
-		Assert.assertEquals(LiquidRegistry.FLOW_SOURCE - LiquidRegistry.FLOW_WEAK, ENV.liquids.pairFrom(new MutableBlockProxy(new AbsoluteLocation(1, 1, 1), weakCuboid)).two().distance());
-		Assert.assertEquals(LiquidRegistry.FLOW_SOURCE - LiquidRegistry.FLOW_STRONG, ENV.liquids.pairFrom(new MutableBlockProxy(new AbsoluteLocation(1, 1, 1), strongCuboid)).two().distance());
-		Assert.assertEquals(LiquidRegistry.FLOW_SOURCE - LiquidRegistry.FLOW_SOURCE, ENV.liquids.pairFrom(new MutableBlockProxy(new AbsoluteLocation(1, 1, 1), sourceCuboid)).two().distance());
+		Assert.assertEquals(LiquidRegistry.FLOW_SOURCE - LiquidRegistry.FLOW_WEAK, ENV.liquids.pairFrom(new MutableBlockProxy(proxyLocation, weakCuboid)).two().distance());
+		Assert.assertEquals(LiquidRegistry.FLOW_SOURCE - LiquidRegistry.FLOW_STRONG, ENV.liquids.pairFrom(new MutableBlockProxy(proxyLocation, strongCuboid)).two().distance());
+		Assert.assertEquals(LiquidRegistry.FLOW_SOURCE - LiquidRegistry.FLOW_SOURCE, ENV.liquids.pairFrom(new MutableBlockProxy(proxyLocation, sourceCuboid)).two().distance());
 	}
 
 	@Test

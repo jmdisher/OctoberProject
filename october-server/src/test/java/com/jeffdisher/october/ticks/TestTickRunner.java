@@ -100,7 +100,6 @@ public class TestTickRunner
 	private static Item TILLED_SOIL_ITEM;
 	private static Item WHEAT_SEED_ITEM;
 	private static Item WHEAT_SEEDLING_ITEM;
-	private static Item WATER_WEAK;
 	private static Item VOID_LAMP_ITEM;
 	private static Block STONE;
 	private static Block WATER_SOURCE;
@@ -117,7 +116,6 @@ public class TestTickRunner
 		TILLED_SOIL_ITEM = ENV.items.getItemById("op.tilled_soil");
 		WHEAT_SEED_ITEM = ENV.items.getItemById("op.wheat_seed");
 		WHEAT_SEEDLING_ITEM = ENV.items.getItemById("op.wheat_seedling");
-		WATER_WEAK = ENV.items.getItemById("op.water_weak");
 		VOID_LAMP_ITEM = ENV.items.getItemById("op.void_lamp");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
@@ -877,7 +875,8 @@ public class TestTickRunner
 		// (we should see the update scheduled, but no change).
 		Assert.assertEquals(0, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
 		Assert.assertEquals(1, snapshot.cuboids().values().iterator().next().blockChanges().size());
-		Assert.assertEquals(WATER_WEAK.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
+		Assert.assertEquals(WATER_SOURCE.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
+		Assert.assertEquals((byte)2, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.BLOCK_DEFINED_BYTE, emptyLocation.getBlockAddress()));
 		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, leafLocation.getBlockAddress()));
 		
 		runner.shutdown();
@@ -1368,8 +1367,6 @@ public class TestTickRunner
 	{
 		// Show that lava retains its light level, despite being opaque, as it flows.
 		Block lavaSource = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_source"));
-		Block lavaStrong = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_strong"));
-		Block lavaWeak = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_weak"));
 		WorldConfig config = new WorldConfig();
 		TickRunner runner = _createTestRunnerWithConfig(config);
 		runner.start();
@@ -1414,12 +1411,14 @@ public class TestTickRunner
 		Assert.assertEquals(lavaSource.item().number(), topCuboid.getData15(AspectRegistry.BLOCK, centre.getBlockAddress()));
 		Assert.assertEquals(ENV.lighting.getLightEmission(lavaSource, false), topCuboid.getData7(AspectRegistry.LIGHT, centre.getBlockAddress()));
 		Assert.assertEquals(ENV.lighting.getLightEmission(lavaSource, false) - 1, topCuboid.getData7(AspectRegistry.LIGHT, centre.getRelative(0, 0, 1).getBlockAddress()));
-		Assert.assertEquals(lavaStrong.item().number(), topCuboid.getData15(AspectRegistry.BLOCK, strong.getBlockAddress()));
-		Assert.assertEquals(ENV.lighting.getLightEmission(lavaStrong, false), topCuboid.getData7(AspectRegistry.LIGHT, strong.getBlockAddress()));
-		Assert.assertEquals(ENV.lighting.getLightEmission(lavaSource, false) - 2, topCuboid.getData7(AspectRegistry.LIGHT, strong.getRelative(0, 0, 1).getBlockAddress()));
-		Assert.assertEquals(lavaWeak.item().number(), topCuboid.getData15(AspectRegistry.BLOCK, weak.getBlockAddress()));
-		Assert.assertEquals(ENV.lighting.getLightEmission(lavaWeak, false), topCuboid.getData7(AspectRegistry.LIGHT, weak.getBlockAddress()));
-		Assert.assertEquals(ENV.lighting.getLightEmission(lavaSource, false) - 3, topCuboid.getData7(AspectRegistry.LIGHT, weak.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(lavaSource.item().number(), topCuboid.getData15(AspectRegistry.BLOCK, strong.getBlockAddress()));
+		Assert.assertEquals((byte)1, topCuboid.getData7(AspectRegistry.BLOCK_DEFINED_BYTE, strong.getBlockAddress()));
+		Assert.assertEquals(ENV.lighting.getLightEmission(lavaSource, false), topCuboid.getData7(AspectRegistry.LIGHT, strong.getBlockAddress()));
+		Assert.assertEquals(ENV.lighting.getLightEmission(lavaSource, false) - 1, topCuboid.getData7(AspectRegistry.LIGHT, strong.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(lavaSource.item().number(), topCuboid.getData15(AspectRegistry.BLOCK, weak.getBlockAddress()));
+		Assert.assertEquals((byte)2, topCuboid.getData7(AspectRegistry.BLOCK_DEFINED_BYTE, weak.getBlockAddress()));
+		Assert.assertEquals(ENV.lighting.getLightEmission(lavaSource, false), topCuboid.getData7(AspectRegistry.LIGHT, weak.getBlockAddress()));
+		Assert.assertEquals(ENV.lighting.getLightEmission(lavaSource, false) - 1, topCuboid.getData7(AspectRegistry.LIGHT, weak.getRelative(0, 0, 1).getBlockAddress()));
 		
 		runner.shutdown();
 	}
