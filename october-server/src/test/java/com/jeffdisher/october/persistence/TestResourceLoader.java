@@ -1236,8 +1236,6 @@ public class TestResourceLoader
 		Item torch = ENV.items.getItemById("op.torch");
 		Item stairs = ENV.items.getItemById("op.stone_brick_stair");
 		Item waterSource = ENV.items.getItemById("op.water_source");
-		Item waterStrong = ENV.items.getItemById("DEPRECATED.op.water_strong");
-		Item waterWeak = ENV.items.getItemById("DEPRECATED.op.water_weak");
 		
 		File clusterFile = new File(new File(new File(worldDirectory, "cuboids"), "region_0_0_0.cd8"), "cluster_0_0_0.c4");
 		clusterFile.getParentFile().mkdirs();
@@ -1309,7 +1307,9 @@ public class TestResourceLoader
 		Assert.assertEquals(1, cuboidResults.size());
 		Assert.assertEquals(0, entityResults.size());
 		
-		// Verify the state of the cuboid -  we should see anything related to Craft disappear.
+		// Verify the state of the cuboid:
+		// -check torch orientation
+		// -verify non-source liquids cleared
 		SuspendedCuboid<CuboidData> cuboidData = cuboidResults.get(0);
 		CuboidData cuboid = cuboidData.cuboid();
 		Assert.assertEquals(torch.number(), cuboid.getData15(AspectRegistry.BLOCK, torchLocation));
@@ -1317,8 +1317,8 @@ public class TestResourceLoader
 		Assert.assertEquals(stairs.number(), cuboid.getData15(AspectRegistry.BLOCK, stairLocation));
 		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.WEST), cuboid.getData7(AspectRegistry.ORIENTATION, stairLocation));
 		Assert.assertEquals(waterSource.number(), cuboid.getData15(AspectRegistry.BLOCK, waterSourceLocation));
-		Assert.assertEquals(waterStrong.number(), cuboid.getData15(AspectRegistry.BLOCK, waterStrongLocation));
-		Assert.assertEquals(waterWeak.number(), cuboid.getData15(AspectRegistry.BLOCK, waterWeakLocation));
+		Assert.assertEquals((short)0, cuboid.getData15(AspectRegistry.BLOCK, waterStrongLocation));
+		Assert.assertEquals((short)0, cuboid.getData15(AspectRegistry.BLOCK, waterWeakLocation));
 	}
 
 

@@ -279,13 +279,36 @@ public class CuboidTranslator
 	private static void _remapBlockChanges(Environment env, CuboidData cuboid)
 	{
 		short torch = env.items.getItemById("op.torch").number();
+		
+		short waterStrong = env.items.getItemById("DEPRECATED.op.water_strong").number();
+		short waterWeak = env.items.getItemById("DEPRECATED.op.water_weak").number();
+		short lavaStrong = env.items.getItemById("DEPRECATED.op.lava_strong").number();
+		short lavaWeak = env.items.getItemById("DEPRECATED.op.lava_weak").number();
+		List<BlockAddress> clearLocations = new ArrayList<>();
+		
 		cuboid.walkData(AspectRegistry.BLOCK, (BlockAddress base, byte size, Short value) -> {
 			if (value == torch)
 			{
 				Assert.assertTrue(1 == size);
 				cuboid.setData7(AspectRegistry.ORIENTATION, base, FacingDirection.directionToByte(FacingDirection.DOWN));
 			}
+			else if ((value == waterStrong)
+				|| (value == waterWeak)
+				|| (value == lavaStrong)
+				|| (value == lavaWeak)
+			)
+			{
+				// We will just clear these and wait for activity to cause an update to re-flow.
+				// We could update these but that won't work if the flow distance is changed.
+				Assert.assertTrue(1 == size);
+				clearLocations.add(base);
+			}
 		}, (short)0);
+		
+		for (BlockAddress clear : clearLocations)
+		{
+			cuboid.setData15(AspectRegistry.BLOCK, clear, (short)0);
+		}
 	}
 
 	private static List<CreatureEntity> _readCreaturesV8(DeserializationContext context, CreatureIdAssigner creatureIdAssigner)
