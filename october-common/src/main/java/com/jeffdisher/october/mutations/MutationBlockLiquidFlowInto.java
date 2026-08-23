@@ -3,12 +3,14 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.LiquidRegistry;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.IMutationBlock;
+import com.jeffdisher.october.types.Pair;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -51,23 +53,40 @@ public class MutationBlockLiquidFlowInto implements IMutationBlock
 		Block thisBlock = newBlock.getBlock();
 		if (env.blocks.canBeReplaced(thisBlock))
 		{
-			Block newType = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, thisBlock);
-			if (newType != thisBlock)
+			LiquidRegistry.LiquidBlock liquidBlock = env.liquids.pairFrom(newBlock).two();
+			Pair<Block, LiquidRegistry.LiquidBlock> newType = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, liquidBlock);
+			
+			if (null != newType.one())
 			{
-				_updateBlock(env, context, newBlock, newType);
+				_updateBlock(env, context, newBlock, newType.one());
+			}
+			else
+			{
+				CommonBlockMutationHelpers.setLiquidWithFollowUps(env, context, _blockLocation, newBlock, newType.two());
 			}
 		}
 		else if (env.blocks.isBrokenByFlowingLiquid(thisBlock))
 		{
 			// This block can be destroyed by flowing liquids so see if something should flow here.
-			Block emptyBlock = env.special.AIR;
-			Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, emptyBlock);
-			if (emptyBlock != eventualBlock)
+			LiquidRegistry.LiquidBlock emptyBlock = null;
+			Pair<Block, LiquidRegistry.LiquidBlock> eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, emptyBlock);
+			
+			if (null != eventualBlock.one())
+			{
+				if (eventualBlock.one() != env.special.AIR)
+				{
+					CommonBlockMutationHelpers.dropAsPassivesWhenBreakingBlock(env, context, _blockLocation, thisBlock);
+					CommonBlockMutationHelpers.dropBlockInventoriesAsPassives(context, _blockLocation, newBlock);
+					
+					_updateBlock(env, context, newBlock, eventualBlock.one());
+				}
+			}
+			else
 			{
 				CommonBlockMutationHelpers.dropAsPassivesWhenBreakingBlock(env, context, _blockLocation, thisBlock);
 				CommonBlockMutationHelpers.dropBlockInventoriesAsPassives(context, _blockLocation, newBlock);
 				
-				_updateBlock(env, context, newBlock, eventualBlock);
+				CommonBlockMutationHelpers.setLiquidWithFollowUps(env, context, _blockLocation, newBlock, eventualBlock.two());
 			}
 		}
 	}
@@ -97,10 +116,6 @@ public class MutationBlockLiquidFlowInto implements IMutationBlock
 		if (env.special.AIR == newBlock)
 		{
 			CommonBlockMutationHelpers.setEmptyBlock(env, context, _blockLocation, proxy);
-		}
-		else if (env.liquids.getFlowStrength(newBlock) > 0)
-		{
-			CommonBlockMutationHelpers.setLiquidWithFollowUps(env, context, _blockLocation, proxy, newBlock);
 		}
 		else
 		{

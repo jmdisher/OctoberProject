@@ -49,8 +49,8 @@ public class TestLiquidRegistry
 	public void infiniteSourceNotLava() throws Throwable
 	{
 		// Water creates infinite sources, not lava.
-		LiquidRegistry.LiquidBlock waterSource = ENV.liquids.liquidFromBlock(WATER_SOURCE);
-		LiquidRegistry.LiquidBlock lavaSource = ENV.liquids.liquidFromBlock(LAVA_SOURCE);
+		LiquidRegistry.LiquidBlock waterSource = ENV.liquids.test_liquidBlock(WATER_SOURCE, 0);
+		LiquidRegistry.LiquidBlock lavaSource = ENV.liquids.test_liquidBlock(LAVA_SOURCE, 0);
 		Pair<Block, LiquidRegistry.LiquidBlock> target = ENV.liquids.chooseEmptyLiquidBlock(ENV, null, waterSource, waterSource, null, null, null, STONE);
 		Assert.assertEquals(WATER_SOURCE, target.two().sourceType());
 		Assert.assertEquals(0, target.two().distance());
@@ -64,10 +64,10 @@ public class TestLiquidRegistry
 	public void solidification() throws Throwable
 	{
 		// Convert water.
-		LiquidRegistry.LiquidBlock waterSource = ENV.liquids.liquidFromBlock(WATER_SOURCE);
-		LiquidRegistry.LiquidBlock lavaWeak = ENV.liquids.liquidFromBlock(LAVA_WEAK);
-		LiquidRegistry.LiquidBlock lavaStrong = ENV.liquids.liquidFromBlock(LAVA_STRONG);
-		LiquidRegistry.LiquidBlock waterWeak = ENV.liquids.liquidFromBlock(WATER_WEAK);
+		LiquidRegistry.LiquidBlock waterSource = ENV.liquids.test_liquidBlock(WATER_SOURCE, 0);
+		LiquidRegistry.LiquidBlock lavaWeak = ENV.liquids.test_liquidBlock(LAVA_SOURCE, 2);
+		LiquidRegistry.LiquidBlock lavaStrong = ENV.liquids.test_liquidBlock(LAVA_SOURCE, 0);
+		LiquidRegistry.LiquidBlock waterWeak = ENV.liquids.test_liquidBlock(WATER_SOURCE, 2);
 		Pair<Block, LiquidRegistry.LiquidBlock> target = ENV.liquids.chooseEmptyLiquidBlock(ENV, waterSource, null, null, null, null, lavaWeak, STONE);
 		Assert.assertEquals(STONE, target.one());
 		
@@ -80,9 +80,9 @@ public class TestLiquidRegistry
 	public void fallingWater() throws Throwable
 	{
 		// We show what happens in different falling water scenarios.
-		LiquidRegistry.LiquidBlock waterSource = ENV.liquids.liquidFromBlock(WATER_SOURCE);
-		LiquidRegistry.LiquidBlock waterStrong = ENV.liquids.liquidFromBlock(WATER_STRONG);
-		LiquidRegistry.LiquidBlock waterWeak = ENV.liquids.liquidFromBlock(WATER_WEAK);
+		LiquidRegistry.LiquidBlock waterSource = ENV.liquids.test_liquidBlock(WATER_SOURCE, 0);
+		LiquidRegistry.LiquidBlock waterStrong = ENV.liquids.test_liquidBlock(WATER_SOURCE, 1);
+		LiquidRegistry.LiquidBlock waterWeak = ENV.liquids.test_liquidBlock(WATER_SOURCE, 2);
 		
 		// Under a water source.
 		Pair<Block, LiquidRegistry.LiquidBlock> target = ENV.liquids.chooseEmptyLiquidBlock(ENV, null, null, null, null, null, waterSource, null);
@@ -130,9 +130,9 @@ public class TestLiquidRegistry
 	public void reflowOnUpdate() throws Throwable
 	{
 		// Show what happens when water flows over lava.
-		LiquidRegistry.LiquidBlock waterSource = ENV.liquids.liquidFromBlock(WATER_SOURCE);
-		LiquidRegistry.LiquidBlock waterWeak = ENV.liquids.liquidFromBlock(WATER_WEAK);
-		LiquidRegistry.LiquidBlock lavaWeak = ENV.liquids.liquidFromBlock(LAVA_WEAK);
+		LiquidRegistry.LiquidBlock waterSource = ENV.liquids.test_liquidBlock(WATER_SOURCE, 0);
+		LiquidRegistry.LiquidBlock waterWeak = ENV.liquids.test_liquidBlock(WATER_SOURCE, 2);
+		LiquidRegistry.LiquidBlock lavaWeak = ENV.liquids.test_liquidBlock(LAVA_SOURCE, 2);
 		
 		// -we should flow weak over a lava flow.
 		Pair<Block, LiquidRegistry.LiquidBlock> target = ENV.liquids.chooseEmptyLiquidBlock(ENV, null, waterSource, null, null, null, null, null);
@@ -153,8 +153,8 @@ public class TestLiquidRegistry
 	public void standalone() throws Throwable
 	{
 		// We want to see what happens when we update a single location with no sources around it.
-		LiquidRegistry.LiquidBlock waterSource = ENV.liquids.liquidFromBlock(WATER_SOURCE);
-		LiquidRegistry.LiquidBlock waterWeak = ENV.liquids.liquidFromBlock(WATER_WEAK);
+		LiquidRegistry.LiquidBlock waterSource = ENV.liquids.test_liquidBlock(WATER_SOURCE, 0);
+		LiquidRegistry.LiquidBlock waterWeak = ENV.liquids.test_liquidBlock(WATER_SOURCE, 2);
 		
 		// -weak flow surrounded by blocks
 		Pair<Block, LiquidRegistry.LiquidBlock> target = ENV.liquids.chooseEmptyLiquidBlock(ENV, waterWeak, null, null, null, null, null, STONE);
@@ -179,10 +179,10 @@ public class TestLiquidRegistry
 	public void solidByAdjacentOnly() throws Throwable
 	{
 		// Show that we will convert a new liquid flowing into a block if adjacent blocks conflict.
-		LiquidRegistry.LiquidBlock waterStrong = ENV.liquids.liquidFromBlock(WATER_STRONG);
-		LiquidRegistry.LiquidBlock waterWeak = ENV.liquids.liquidFromBlock(WATER_WEAK);
-		LiquidRegistry.LiquidBlock lavaStrong = ENV.liquids.liquidFromBlock(LAVA_STRONG);
-		LiquidRegistry.LiquidBlock lavaWeak = ENV.liquids.liquidFromBlock(LAVA_WEAK);
+		LiquidRegistry.LiquidBlock waterStrong = ENV.liquids.test_liquidBlock(WATER_SOURCE, 1);
+		LiquidRegistry.LiquidBlock waterWeak = ENV.liquids.test_liquidBlock(WATER_SOURCE, 2);
+		LiquidRegistry.LiquidBlock lavaStrong = ENV.liquids.test_liquidBlock(LAVA_SOURCE, 1);
+		LiquidRegistry.LiquidBlock lavaWeak = ENV.liquids.test_liquidBlock(LAVA_SOURCE, 2);
 		
 		// Convert water.
 		Pair<Block, LiquidRegistry.LiquidBlock> target = ENV.liquids.chooseEmptyLiquidBlock(ENV, null, null, lavaWeak, null, waterStrong, null, STONE);

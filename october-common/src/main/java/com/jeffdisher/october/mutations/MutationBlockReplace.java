@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.LiquidRegistry;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -63,7 +64,8 @@ public class MutationBlockReplace implements IMutationBlock
 			}
 			else if (env.liquids.isSource(_newType))
 			{
-				CommonBlockMutationHelpers.setLiquidWithFollowUps(env, context, _location, newBlock, _newType);
+				LiquidRegistry.LiquidBlock source = env.liquids.liquidBlockForSource(_newType);
+				CommonBlockMutationHelpers.setLiquidWithFollowUps(env, context, _location, newBlock, source);
 			}
 			else
 			{

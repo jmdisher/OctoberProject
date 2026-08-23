@@ -8,14 +8,18 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockVolume;
 import com.jeffdisher.october.types.BodyPart;
+import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.DropChance;
 import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.SubBlock;
+import com.jeffdisher.october.utils.CuboidGenerator;
 
 
 public class TestMiscAspects
@@ -187,11 +191,15 @@ public class TestMiscAspects
 		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
 		Block waterStrong = ENV.blocks.fromItem(ENV.items.getItemById("op.water_strong"));
 		Block waterWeak = ENV.blocks.fromItem(ENV.items.getItemById("op.water_weak"));
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), stone);
+		CuboidData sourceCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), waterSource);
+		CuboidData strongCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), waterStrong);
+		CuboidData weakCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), waterWeak);
 		
-		Assert.assertEquals(LiquidRegistry.FLOW_NONE, ENV.liquids.getFlowStrength(stone));
-		Assert.assertEquals(LiquidRegistry.FLOW_WEAK, ENV.liquids.getFlowStrength(waterWeak));
-		Assert.assertEquals(LiquidRegistry.FLOW_STRONG, ENV.liquids.getFlowStrength(waterStrong));
-		Assert.assertEquals(LiquidRegistry.FLOW_SOURCE, ENV.liquids.getFlowStrength(waterSource));
+		Assert.assertNull(ENV.liquids.pairFrom(new MutableBlockProxy(new AbsoluteLocation(1, 1, 1), stoneCuboid)).two());
+		Assert.assertEquals(LiquidRegistry.FLOW_SOURCE - LiquidRegistry.FLOW_WEAK, ENV.liquids.pairFrom(new MutableBlockProxy(new AbsoluteLocation(1, 1, 1), weakCuboid)).two().distance());
+		Assert.assertEquals(LiquidRegistry.FLOW_SOURCE - LiquidRegistry.FLOW_STRONG, ENV.liquids.pairFrom(new MutableBlockProxy(new AbsoluteLocation(1, 1, 1), strongCuboid)).two().distance());
+		Assert.assertEquals(LiquidRegistry.FLOW_SOURCE - LiquidRegistry.FLOW_SOURCE, ENV.liquids.pairFrom(new MutableBlockProxy(new AbsoluteLocation(1, 1, 1), sourceCuboid)).two().distance());
 	}
 
 	@Test

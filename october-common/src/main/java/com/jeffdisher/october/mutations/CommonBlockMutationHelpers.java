@@ -46,7 +46,7 @@ public class CommonBlockMutationHelpers
 	 * @param currentBlock The current block contents (not read from context since it could be changing in caller).
 	 * @return The block type which the surrounding blocks imply the location should become.
 	 */
-	public static Block determineEmptyBlockType(TickProcessingContext context, AbsoluteLocation location, Block currentBlock)
+	public static Pair<Block, LiquidRegistry.LiquidBlock> determineEmptyBlockType(TickProcessingContext context, AbsoluteLocation location, LiquidRegistry.LiquidBlock currentBlock)
 	{
 		return _determineEmptyBlockType(context, location, currentBlock);
 	}
@@ -207,7 +207,7 @@ public class CommonBlockMutationHelpers
 		Block oldType = proxy.getBlock();
 		Block newType = env.special.AIR;
 		proxy.setBlockAndClear(newType);
-		_didScheduleFlowInForReplaceable(env, context, location, oldType, newType);
+		_didScheduleFlowInForReplaceable(env, context, location, oldType, proxy);
 	}
 
 	/**
@@ -218,20 +218,25 @@ public class CommonBlockMutationHelpers
 	 * @param context The context for looking up blocks and scheduling mutations.
 	 * @param location The location of proxy.
 	 * @param proxy The block to modify.
+	 * @param newType The new liquid value to set.
 	 */
 	public static void setLiquidWithFollowUps(Environment env
 		, TickProcessingContext context
 		, AbsoluteLocation location
 		, IMutableBlockProxy proxy
-		, Block newType
+		, LiquidRegistry.LiquidBlock newType
 	)
 	{
-		// Can only be used for liquids.
-		Assert.assertTrue(env.liquids.getFlowStrength(newType) > 0);
-		
 		Block oldType = proxy.getBlock();
-		proxy.setBlockAndClear(newType);
-		_scheduleFireIfNewSource(env, context, location, oldType, newType);
+		
+		// TODO:  Replace this logic once the liquids are no longer just block values.
+		int index = newType.sourceType().item().number() + newType.distance();
+		Block blockToSet = env.blocks.fromItem(env.items.ITEMS_BY_TYPE[index]);
+		proxy.setBlockAndClear(blockToSet);
+		
+		// We will do the fire check with the source.
+		Block source = newType.sourceType();
+		_scheduleFireIfNewSource(env, context, location, oldType, source);
 	}
 
 	/**
@@ -293,20 +298,21 @@ public class CommonBlockMutationHelpers
 	 * @param env The environment.
 	 * @param context The context for looking up blocks and scheduling mutations.
 	 * @param location The location of the check.
-	 * @param blockType The current type of block (must be replaceable).
+	 * @param proxy The proxy for the block to check.
 	 * @return True if a MutationBlockLiquidFlowInto was scheduled for this block.
 	 */
 	public static boolean didScheduleFlowInForReplaceable(Environment env
 		, TickProcessingContext context
 		, AbsoluteLocation location
-		, Block blockType
+		, IBlockProxy proxy
 	)
 	{
 		// We expect that this is only called when the block can be replaced.
+		Block blockType = proxy.getBlock();
 		Assert.assertTrue(env.blocks.canBeReplaced(blockType));
 		
 		// This case is used when not changing the type so we use the same for new and old (only used to choose a delay).
-		return _didScheduleFlowInForReplaceable(env, context, location, blockType, blockType);
+		return _didScheduleFlowInForReplaceable(env, context, location, blockType, proxy);
 	}
 
 	/**
@@ -344,52 +350,33 @@ public class CommonBlockMutationHelpers
 		}
 	}
 
-	private static Block _determineEmptyBlockType(TickProcessingContext context, AbsoluteLocation location, Block currentBlock)
+	private static Pair<Block, LiquidRegistry.LiquidBlock> _determineEmptyBlockType(TickProcessingContext context, AbsoluteLocation location, LiquidRegistry.LiquidBlock currentBlock)
 	{
 		Environment env = Environment.getShared();
 		
-		Block result;
-		if (env.blocks.canBeReplaced(currentBlock))
+		LiquidRegistry.LiquidBlock east = _getLiquidOrNull(env, context, location.getRelative(1, 0, 0));
+		LiquidRegistry.LiquidBlock west = _getLiquidOrNull(env, context, location.getRelative(-1, 0, 0));
+		LiquidRegistry.LiquidBlock north = _getLiquidOrNull(env, context, location.getRelative(0, 1, 0));
+		LiquidRegistry.LiquidBlock south = _getLiquidOrNull(env, context, location.getRelative(0, -1, 0));
+		LiquidRegistry.LiquidBlock up = _getLiquidOrNull(env, context, location.getRelative(0, 0, 1));
+		
+		BlockProxy downProxy = context.previousBlockLookUp.readBlock(location.getRelative(0, 0, -1));
+		Block down = (null != downProxy)
+			? downProxy.getBlock()
+			: null
+		;
+		if ((null != down) && env.blocks.canBeReplaced(down))
 		{
-			LiquidRegistry.LiquidBlock currentLiquid = env.liquids.liquidFromBlock(currentBlock);
-			LiquidRegistry.LiquidBlock east = _getLiquidOrNull(env, context, location.getRelative(1, 0, 0));
-			LiquidRegistry.LiquidBlock west = _getLiquidOrNull(env, context, location.getRelative(-1, 0, 0));
-			LiquidRegistry.LiquidBlock north = _getLiquidOrNull(env, context, location.getRelative(0, 1, 0));
-			LiquidRegistry.LiquidBlock south = _getLiquidOrNull(env, context, location.getRelative(0, -1, 0));
-			LiquidRegistry.LiquidBlock up = _getLiquidOrNull(env, context, location.getRelative(0, 0, 1));
-			
-			BlockProxy downProxy = context.previousBlockLookUp.readBlock(location.getRelative(0, 0, -1));
-			Block down = (null != downProxy)
-				? downProxy.getBlock()
-				: null
-			;
-			if ((null != down) && env.blocks.canBeReplaced(down))
-			{
-				down = null;
-			}
-			Pair<Block, LiquidBlock> pair = env.liquids.chooseEmptyLiquidBlock(env, currentLiquid, east, west, north, south, up, down);
-			result = (null != pair.one())
-				? pair.one()
-				: env.liquids.blockFromLiquid(pair.two())
-			;
+			down = null;
 		}
-		else
-		{
-			result = currentBlock;
-		}
-		return result;
+		return env.liquids.chooseEmptyLiquidBlock(env, currentBlock, east, west, north, south, up, down);
 	}
 
 	private static LiquidRegistry.LiquidBlock _getLiquidOrNull(Environment env, TickProcessingContext context, AbsoluteLocation location)
 	{
 		BlockProxy proxy = context.previousBlockLookUp.readBlock(location);
-		Block block = (null != proxy)
-			? proxy.getBlock()
-			: null
-		;
-		// We want to skip this if it isn't a liquid block.
-		return (null != block)
-			? env.liquids.liquidFromBlock(block)
+		return (null != proxy)
+			? env.liquids.pairFrom(proxy).two()
 			: null
 		;
 	}
@@ -521,7 +508,7 @@ public class CommonBlockMutationHelpers
 		boolean didScheduleLiquid = false;
 		if (env.blocks.canBeReplaced(newType))
 		{
-			didScheduleLiquid = _didScheduleFlowInForReplaceable(env, context, location, oldType, newType);
+			didScheduleLiquid = _didScheduleFlowInForReplaceable(env, context, location, oldType, proxy);
 		}
 		// See if this block might actually need to be broken, now, due to neighbours.
 		if (!didScheduleLiquid && env.blocks.isBrokenByFlowingLiquid(newType))
@@ -549,20 +536,12 @@ public class CommonBlockMutationHelpers
 		, TickProcessingContext context
 		, AbsoluteLocation location
 		, Block oldType
-		, Block newType
+		, IBlockProxy proxy
 	)
 	{
 		// We need to make sure that the eventual type is a mismatch but also that it has a flow rate (otherwise, placing a water source surrounded by air will think it should be air, meaning it should reflow immediately).
-		Block eventualType = _determineEmptyBlockType(context, location, newType);
-		boolean didScheduleLiquid = false;
-		if (newType != eventualType)
-		{
-			long millisDelay = env.liquids.minFlowDelayMillis(eventualType, oldType);
-			Assert.assertTrue(millisDelay > 0L);
-			context.mutationSink.future(new MutationBlockLiquidFlowInto(location), millisDelay);
-			didScheduleLiquid = true;
-		}
-		return didScheduleLiquid;
+		LiquidRegistry.LiquidBlock currentLiquid = env.liquids.pairFrom(proxy).two();
+		return _didScheduleFlowInto(env, context, location, currentLiquid);
 	}
 
 	private static boolean _didScheduleFlowInToBreak(Environment env
@@ -571,16 +550,8 @@ public class CommonBlockMutationHelpers
 		, Block blockType
 	)
 	{
-		Block emptyBlock = env.special.AIR;
-		Block eventualType = _determineEmptyBlockType(context, location, emptyBlock);
-		boolean didScheduleLiquid = false;
-		if (emptyBlock != eventualType)
-		{
-			long millisDelay = env.liquids.minFlowDelayMillis(eventualType, blockType);
-			context.mutationSink.future(new MutationBlockLiquidFlowInto(location), millisDelay);
-			didScheduleLiquid = true;
-		}
-		return didScheduleLiquid;
+		LiquidRegistry.LiquidBlock emptyBlock = null;
+		return _didScheduleFlowInto(env, context, location, emptyBlock);
 	}
 
 	private static void _scheduleFireIfNewSource(Environment env, TickProcessingContext context, AbsoluteLocation location, Block oldType, Block newType)
@@ -594,5 +565,69 @@ public class CommonBlockMutationHelpers
 				context.mutationSink.future(startFire, MutationBlockStartFire.IGNITION_DELAY_MILLIS);
 			}
 		}
+	}
+
+	private static boolean _didScheduleFlowInto(Environment env, TickProcessingContext context, AbsoluteLocation location, LiquidRegistry.LiquidBlock currentLiquid)
+	{
+		Pair<Block, LiquidRegistry.LiquidBlock> eventualType = _determineEmptyBlockType(context, location, currentLiquid);
+		LiquidRegistry.LiquidBlock eventualLiquid = eventualType.two();
+		Block eventualBlock = eventualType.one();
+		if (env.special.AIR == eventualBlock)
+		{
+			eventualBlock = null;
+		}
+		
+		boolean didScheduleLiquid = false;
+		if ((null != eventualBlock) || !_doLiquidsMatch(currentLiquid, eventualLiquid))
+		{
+			Block currentLiquidSource = (null != currentLiquid)
+				? currentLiquid.sourceType()
+				: null
+			;
+			Block eventualLiquidSource = (null != eventualLiquid)
+				? eventualLiquid.sourceType()
+				: null
+			;
+			
+			// It is possible that neither of these exist (if this is a solid forming from 2 flowing neighbours), so pick a good default.
+			long millisDelay = 1000L;
+			if (null != currentLiquidSource)
+			{
+				long currentMillis = env.liquids.flowDelayMillis(currentLiquidSource);
+				millisDelay = Math.min(millisDelay, currentMillis);
+			}
+			if (null != eventualLiquidSource)
+			{
+				long eventualMillis = env.liquids.flowDelayMillis(eventualLiquidSource);
+				millisDelay = Math.min(millisDelay, eventualMillis);
+			}
+			Assert.assertTrue(millisDelay > 0L);
+			
+			context.mutationSink.future(new MutationBlockLiquidFlowInto(location), millisDelay);
+			didScheduleLiquid = true;
+		}
+		return didScheduleLiquid;
+	}
+
+	private static boolean _doLiquidsMatch(LiquidBlock one, LiquidBlock two)
+	{
+		Block oneBlock = (null != one)
+			? one.sourceType()
+			: null
+		;
+		byte oneDistance = (null != one)
+			? one.distance()
+			: LiquidRegistry.FLOW_NONE
+		;
+		Block twoBlock = (null != two)
+			? two.sourceType()
+			: null
+		;
+		byte twoDistance = (null != two)
+			? two.distance()
+			: LiquidRegistry.FLOW_NONE
+		;
+		
+		return ((oneBlock == twoBlock) && (oneDistance == twoDistance));
 	}
 }

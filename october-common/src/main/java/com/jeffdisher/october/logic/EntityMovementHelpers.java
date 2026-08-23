@@ -267,7 +267,11 @@ public class EntityMovementHelpers
 			BlockProxy proxy = proxies.get(location);
 			if (null != proxy)
 			{
-				int strength = env.liquids.getFlowStrength(proxy.getBlock());
+				LiquidRegistry.LiquidBlock liquid = env.liquids.pairFrom(proxy).two();
+				int strength = (null != liquid)
+					? LiquidRegistry.FLOW_SOURCE - liquid.distance()
+					: LiquidRegistry.FLOW_NONE
+				;
 				if ((LiquidRegistry.FLOW_WEAK == strength) || (LiquidRegistry.FLOW_STRONG == strength))
 				{
 					// This has a liquid so see if an adjacent block is "flowing in" to it.
@@ -554,8 +558,12 @@ public class EntityMovementHelpers
 
 	private static float _accumulateFlow(Environment env, BlockProxy proxy, int testAgainst)
 	{
-		int flow = (null != proxy)
-			? env.liquids.getFlowStrength(proxy.getBlock())
+		LiquidRegistry.LiquidBlock liquid = (null != proxy)
+			? env.liquids.pairFrom(proxy).two()
+			: null
+		;
+		int flow = (null != liquid)
+			? LiquidRegistry.FLOW_SOURCE - liquid.distance()
 			: LiquidRegistry.FLOW_NONE
 		;
 		return (flow > testAgainst)

@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.LiquidRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -85,7 +86,8 @@ public class MutationBlockPhase2Multi implements IMutationBlock
 			}
 			else if (env.liquids.isSource(_revertType))
 			{
-				CommonBlockMutationHelpers.setLiquidWithFollowUps(env, context, _location, newBlock, _revertType);
+				LiquidRegistry.LiquidBlock source = env.liquids.liquidBlockForSource(_revertType);
+				CommonBlockMutationHelpers.setLiquidWithFollowUps(env, context, _location, newBlock, source);
 			}
 			else
 			{

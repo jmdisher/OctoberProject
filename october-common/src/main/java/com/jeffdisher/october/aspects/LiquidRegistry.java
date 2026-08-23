@@ -9,6 +9,7 @@ import java.util.Set;
 
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.IBlockProxy;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Pair;
 import com.jeffdisher.october.utils.Assert;
@@ -41,7 +42,6 @@ public class LiquidRegistry
 		Map<Block, Block> blocksToSource = new HashMap<>();
 		Map<Block, Integer> blocksToStrength = new HashMap<>();
 		Map<Block, Block> sourceToSolid = new HashMap<>();
-		Map<Block, Block[]> sourceToFlowStrengths = new HashMap<>();
 		Map<Block, Long> sourceToDelayMillis = new HashMap<>();
 		Set<Block> sourceCreationSources = new HashSet<>();
 		Map<Item, Block> fullBucketToSource = new HashMap<>();
@@ -79,9 +79,6 @@ public class LiquidRegistry
 				Assert.assertTrue(null != _currentSource);
 				Assert.assertTrue(null != _strongFlow);
 				Assert.assertTrue(null != _weakFlow);
-				
-				Block[] strengths = new Block[] {null, _weakFlow, _strongFlow, _currentSource };
-				sourceToFlowStrengths.put(_currentSource, strengths);
 				
 				_currentSource = null;
 				_strongFlow = null;
@@ -180,7 +177,6 @@ public class LiquidRegistry
 		return new LiquidRegistry(blocksToSource
 			, blocksToStrength
 			, sourceToSolid
-			, sourceToFlowStrengths
 			, sourceToDelayMillis
 			, sourceCreationSources
 			, fullBucketToSource
@@ -193,7 +189,6 @@ public class LiquidRegistry
 	private final Map<Block, Block> _blocksToSource;
 	private final Map<Block, Integer> _blocksToStrength;
 	private final Map<Block, Block> _sourceToSolid;
-	private final Map<Block, Block[]> _sourceToFlowStrengths;
 	private final Map<Block, Long> _sourceToDelayMillis;
 	private final Set<Block> _sourceCreationSources;
 	private final Map<Item, Block> _fullBucketToSource;
@@ -204,7 +199,6 @@ public class LiquidRegistry
 	private LiquidRegistry(Map<Block, Block> blocksToSource
 			, Map<Block, Integer> blocksToStrength
 			, Map<Block, Block> sourceToSolid
-			, Map<Block, Block[]> sourceToFlowStrengths
 			, Map<Block, Long> sourceToDelayMillis
 			, Set<Block> sourceCreationSources
 			, Map<Item, Block> fullBucketToSource
@@ -217,7 +211,6 @@ public class LiquidRegistry
 		_blocksToSource = Map.copyOf(blocksToSource);
 		_blocksToStrength = Map.copyOf(blocksToStrength);
 		_sourceToSolid = Map.copyOf(sourceToSolid);
-		_sourceToFlowStrengths = Map.copyOf(sourceToFlowStrengths);
 		_sourceToDelayMillis = Map.copyOf(sourceToDelayMillis);
 		_sourceCreationSources = Set.copyOf(sourceCreationSources);
 		_fullBucketToSource = Map.copyOf(fullBucketToSource);
@@ -407,18 +400,6 @@ public class LiquidRegistry
 	}
 
 	/**
-	 * Returns an integer representing the flow strength of the given block.  This is an integer since it is usually
-	 * used in maximum value calculations or direct comparisons.
-	 * 
-	 * @param block The block type to check.
-	 * @return The flow strength (0 if not a liquid, 1 for weak, 2 for strong, 3 for source).
-	 */
-	public int getFlowStrength(Block block)
-	{
-		return _getFlowStrength(block);
-	}
-
-	/**
 	 * A basic mechanism to ask if a block type is a liquid.
 	 * 
 	 * @param block The block to check.
@@ -431,14 +412,15 @@ public class LiquidRegistry
 	}
 
 	/**
-	 * Converts the common Block object into a LiquidBlock object, returning null if it is not a liquid.
+	 * Loads a liquid or solid block from a proxy, returning a pair containing which one was found.
 	 * 
-	 * @param block The block.
-	 * @return The LiquidBlock or null, if not a liquid.
+	 * @param proxy The proxy from which the liquid should be loaded.
+	 * @return A Pair containing either a Block or a LiquidBlock.
 	 */
-	public LiquidBlock liquidFromBlock(Block block)
+	public Pair<Block, LiquidBlock> pairFrom(IBlockProxy proxy)
 	{
-		LiquidBlock liquid = null;
+		Block block = proxy.getBlock();
+		Pair<Block, LiquidBlock> result;
 		if (_blocksToStrength.containsKey(block))
 		{
 			// TODO:  Change this when flow distance becomes variable by source type.
@@ -446,22 +428,40 @@ public class LiquidRegistry
 			Assert.assertTrue(flowStrength <= FLOW_SOURCE);
 			byte flowDistance = (byte)(FLOW_SOURCE - flowStrength);
 			Block sourceType = _blocksToSource.get(block);
-			liquid = new LiquidBlock(sourceType, flowDistance);
+			result = new Pair<>(null, new LiquidBlock(sourceType, flowDistance));
 		}
-		return liquid;
+		else
+		{
+			result = new Pair<>(block, null);
+		}
+		return result;
 	}
 
 	/**
-	 * Converts a LiquidBlock object into a common Block object.
+	 * Creates a liquid block defined as a source of the given block type.
 	 * 
-	 * @param liquid The liquid (cannot be null).
-	 * @return The Block.
+	 * @param source The source type (MUST be a liquid block).
+	 * @return The LiquidBlock describing this liquid type as a source.
 	 */
-	public Block blockFromLiquid(LiquidBlock liquid)
+	public LiquidBlock liquidBlockForSource(Block source)
 	{
-		Block[] strengths = _sourceToFlowStrengths.get(liquid.sourceType);
-		int index = FLOW_SOURCE - liquid.distance;
-		return strengths[index];
+		Assert.assertTrue(_sourceToDelayMillis.containsKey(source));
+		return new LiquidBlock(source, (byte)0);
+	}
+
+	/**
+	 * A helper used by tests to create LiquidBlock instances.
+	 * 
+	 * @param source The source type (MUST be a liquid block).
+	 * @param distance The distance from the source (0 means it is the source - must be less than FLOW_SOURCE).
+	 * @return
+	 */
+	public LiquidBlock test_liquidBlock(Block source, int distance)
+	{
+		Assert.assertTrue(_sourceToDelayMillis.containsKey(source));
+		Assert.assertTrue(distance >= 0);
+		Assert.assertTrue(distance < FLOW_SOURCE);
+		return new LiquidBlock(source, (byte)distance);
 	}
 
 
@@ -474,14 +474,6 @@ public class LiquidRegistry
 	private static <T> T _getFromMap(Map<Block, T> map, Block key, T defaultValue)
 	{
 		return (null != key) ? map.getOrDefault(key, defaultValue) : defaultValue;
-	}
-
-	private int _getFlowStrength(Block block)
-	{
-		return (null != block)
-			? _blocksToStrength.getOrDefault(block, FLOW_NONE)
-			: FLOW_NONE
-		;
 	}
 
 

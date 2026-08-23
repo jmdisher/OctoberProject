@@ -57,7 +57,7 @@ public class MutationBlockUpdate implements IMutationBlock
 		if (env.blocks.canBeReplaced(thisBlock))
 		{
 			// This is an "empty" type so see if the "empty" blocks around it should influence its type.
-			didApply = CommonBlockMutationHelpers.didScheduleFlowInForReplaceable(env, context, _blockLocation, thisBlock);
+			didApply = CommonBlockMutationHelpers.didScheduleFlowInForReplaceable(env, context, _blockLocation, newBlock);
 		}
 		
 		if (!didApply)
@@ -87,7 +87,6 @@ public class MutationBlockUpdate implements IMutationBlock
 			{
 				// The block isn't supported so break it (replace with air) and then see if a liquid needs to change anything).
 				Block emptyBlock = env.special.AIR;
-				CommonBlockMutationHelpers.didScheduleFlowInForReplaceable(env, context, _blockLocation, emptyBlock);
 				
 				// Determine if this is a block which breaks normally or if we need to use a special multi-block breaking idiom.
 				if (MultiBlockUtils.isMultiBlockRoot(env, newBlock))
@@ -104,6 +103,8 @@ public class MutationBlockUpdate implements IMutationBlock
 					
 					// Destroy the block.
 					CommonBlockMutationHelpers.setEmptyBlock(env, context, _blockLocation, newBlock);
+					
+					CommonBlockMutationHelpers.didScheduleFlowInForReplaceable(env, context, _blockLocation, newBlock);
 				}
 				didApply = true;
 			}
