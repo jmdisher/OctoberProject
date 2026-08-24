@@ -1423,6 +1423,8 @@ public class TestCommonChanges
 		
 		Assert.assertTrue(EntitySubActionUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, new Pair<>(null, waterSource)));
 		Assert.assertTrue(EntitySubActionUseSelectedItemOnBlock.canUseOnBlock(waterBucket, new Pair<>(null, waterWeak)));
+		Assert.assertTrue(EntitySubActionUseSelectedItemOnBlock.canUseOnBlock(waterBucket, new Pair<>(ENV.special.AIR, null)));
+		Assert.assertFalse(EntitySubActionUseSelectedItemOnBlock.canUseOnBlock(waterBucket, new Pair<>(STONE, null)));
 		Assert.assertFalse(EntitySubActionUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, new Pair<>(null, waterWeak)));
 		Assert.assertFalse(EntitySubActionUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, new Pair<>(null, waterWeak)));
 		Assert.assertTrue(EntitySubActionUseSelectedItemOnBlock.canUseOnBlock(fertilizerItem, new Pair<>(wheatYoung, null)));

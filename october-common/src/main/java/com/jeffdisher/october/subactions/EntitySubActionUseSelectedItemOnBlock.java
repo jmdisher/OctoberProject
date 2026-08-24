@@ -59,16 +59,23 @@ public class EntitySubActionUseSelectedItemOnBlock implements IEntitySubAction<I
 	{
 		Environment env = Environment.getShared();
 		
+		// We want to treat an air block as null so that we fall into the bucket check without as many checks.
+		Block one = block.one();
+		if (env.special.AIR == one)
+		{
+			one = null;
+		}
+		
 		boolean canUse;
-		if ((env.special.itemFertilizer == item) && (env.plants.growthDivisor(block.one()) > 0))
+		if ((env.special.itemFertilizer == item) && (env.plants.growthDivisor(one) > 0))
 		{
 			canUse = true;
 		}
-		else if ((null != block.two()) && env.liquids.isBucketForUseOnBlock(env, item, block.two()))
+		else if ((null == one) && env.liquids.isBucketForUseOnBlock(env, item, block.two()))
 		{
 			canUse = true;
 		}
-		else if ((env.special.itemStoneHoe == item) && ((env.special.blockDirt == block.one()) || (env.special.blockGrass == block.one())))
+		else if ((env.special.itemStoneHoe == item) && ((env.special.blockDirt == one) || (env.special.blockGrass == one)))
 		{
 			canUse = true;
 		}
