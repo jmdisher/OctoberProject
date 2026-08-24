@@ -161,7 +161,7 @@ public class TestStructureLoader
 		Assert.assertTrue(periodicMutationMillis.keySet().contains(wait2.getBlockAddress()));
 		
 		Assert.assertEquals(DIRT.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
-		Assert.assertEquals(ENV.items.getItemById("op.wheat_seedling").number(), cuboid.getData15(AspectRegistry.BLOCK, wait1.getBlockAddress()));
+		Assert.assertEquals(ENV.items.getItemById("op.wheat_young").number(), cuboid.getData15(AspectRegistry.BLOCK, wait1.getBlockAddress()));
 		Assert.assertEquals(ENV.items.getItemById("op.sapling").number(), cuboid.getData15(AspectRegistry.BLOCK, wait2.getBlockAddress()));
 		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, wait3.getBlockAddress()));
 	}
@@ -558,9 +558,9 @@ public class TestStructureLoader
 		Assert.assertTrue(null == mappings.put('W', _wrapBlockWithNulls(terrainBindings.waterSourceBlock)));
 		Assert.assertTrue(null == mappings.put('B', _wrapBlockWithNulls(ENV.blocks.fromItem(ENV.items.getItemById("op.stone_brick")))));
 		Assert.assertTrue(null == mappings.put('L', _wrapBlockWithNulls(ENV.blocks.fromItem(ENV.items.getItemById("op.lantern")))));
-		Assert.assertTrue(null == mappings.put('P', _wrapBlockWithNulls(ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_seedling")))));
+		Assert.assertTrue(null == mappings.put('P', _wrapBlockWithNulls(ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_young")))));
 		Assert.assertTrue(null == mappings.put('S', _wrapBlockWithNulls(ENV.blocks.fromItem(ENV.items.getItemById("op.sapling")))));
-		Assert.assertTrue(null == mappings.put('C', _wrapBlockWithNulls(ENV.blocks.fromItem(ENV.items.getItemById("op.carrot_seedling")))));
+		Assert.assertTrue(null == mappings.put('C', _wrapBlockWithNulls(ENV.blocks.fromItem(ENV.items.getItemById("op.carrot_young")))));
 		Assert.assertTrue(null == mappings.put('A', _wrapBlockWithNulls(terrainBindings.coalOreBlock)));
 		Assert.assertTrue(null == mappings.put('I', _wrapBlockWithNulls(terrainBindings.ironOreBlock)));
 		Assert.assertTrue(null == mappings.put('T', _wrapBlockWithNulls(terrainBindings.logBlock)));

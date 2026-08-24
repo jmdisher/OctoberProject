@@ -24,7 +24,7 @@ op.sapling	2
 op.leaf	0
 op.wheat_seed	1
 op.wheat_item	2
-op.wheat_seedling	0
+DEPRECATED.op.wheat_seedling	0
 op.wheat_young	0
 op.wheat_mature	0
 op.bread	2
@@ -61,7 +61,7 @@ op.torch	1
 op.fertilizer	2
 op.carrot_seed	1
 op.carrot_item	2
-op.carrot_seedling	0
+DEPRECATED.op.carrot_seedling	0
 op.carrot_young	0
 op.carrot_mature	0
 op.bed	10

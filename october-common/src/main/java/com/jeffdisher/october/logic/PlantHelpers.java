@@ -85,23 +85,33 @@ public class PlantHelpers
 	{
 		boolean shouldReschedule;
 		Block block = newBlock.getBlock();
-		Block nextPhase = env.plants.nextPhaseForPlant(block);
-		if (null != nextPhase)
-		{
-			// Become that next phase.
-			CommonBlockMutationHelpers.plantGrowthWithFollowUps(env, context, location, newBlock);
-			// Reschedule if that block is also growable.
-			shouldReschedule = (env.plants.growthDivisor(nextPhase) > 0);
-		}
-		else if (env.plants.isTree(block))
+		
+		// Check the different ways that this might need to grow.
+		if (env.plants.isTree(block))
 		{
 			_growTree(context, location, newBlock);
 			shouldReschedule = false;
 		}
 		else
 		{
-			// This shouldn't be possible since we must be growing into something.
-			throw Assert.unreachable();
+			// If not a tree, we are using the staged growth system so load our count of completed growth stages.
+			byte growthPhasesCompleted = newBlock.getBlockDefinedByte();
+			
+			// We will add 1 and check if this means we are done.
+			growthPhasesCompleted += 1;
+			if (growthPhasesCompleted >= env.plants.growthStagesForPlant(block))
+			{
+				// Replace this with the mature block type.
+				Block matureBlock = env.plants.matureBlockForPlant(block);
+				CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, location, newBlock, matureBlock);
+				shouldReschedule = (env.plants.growthDivisor(matureBlock) > 0);
+			}
+			else
+			{
+				// Not done yet so just resave the growth progress.
+				newBlock.setBlockDefinedByte(growthPhasesCompleted);
+				shouldReschedule = true;
+			}
 		}
 		return shouldReschedule;
 	}

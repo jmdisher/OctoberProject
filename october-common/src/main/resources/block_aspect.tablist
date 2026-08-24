@@ -67,14 +67,8 @@ op.sapling	is_flammable
 op.leaf	is_flammable
 	block_material	AXE
 	special_drop	50	op.sapling	20	op.stick	10	op.apple
-# op.wheat_seed
-# op.wheat_item
-op.wheat_seedling
-	placed_from	op.wheat_seed
-	requires_support	op.tilled_soil
-	special_drop	100	op.wheat_seed
-	viscosity	10
 op.wheat_young
+	placed_from	op.wheat_seed
 	requires_support	op.tilled_soil
 	special_drop	100	op.wheat_seed
 	viscosity	10
@@ -100,13 +94,8 @@ op.copper_ore
 op.diamond_ore
 	block_material	PICKAXE
 	special_drop	100	op.diamond
-# op.carrot
-op.carrot_seedling
-	placed_from	op.carrot_seed
-	requires_support	op.tilled_soil
-	special_drop	100	op.carrot_seed
-	viscosity	10
 op.carrot_young
+	placed_from	op.carrot_seed
 	requires_support	op.tilled_soil
 	special_drop	100	op.carrot_seed
 	viscosity	10

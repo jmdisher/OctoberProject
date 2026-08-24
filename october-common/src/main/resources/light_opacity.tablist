@@ -22,15 +22,11 @@ op.water_source	2
 # op.iron_ingot
 op.sapling	2
 op.leaf	4
-# op.wheat_seed
-# op.wheat_item
-op.wheat_seedling	2
 op.wheat_young	3
 op.wheat_mature	4
 op.gate	2
 op.lamp	2
 op.logic_wire	1
-op.carrot_seedling	2
 op.carrot_young	2
 op.carrot_mature	2
 op.bed	8

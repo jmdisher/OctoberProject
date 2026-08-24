@@ -23,7 +23,6 @@ op.water_source	0
 op.lantern	100
 op.sapling	50
 op.leaf	100
-op.wheat_seedling	50
 op.wheat_young	50
 op.wheat_mature	50
 op.chest	2000
@@ -34,7 +33,6 @@ op.lamp	100
 op.logic_wire	50
 op.quern	8000
 op.torch	50
-op.carrot_seedling	50
 op.carrot_young	50
 op.carrot_mature	50
 op.bed	2000

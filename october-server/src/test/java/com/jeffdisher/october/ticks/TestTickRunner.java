@@ -99,7 +99,7 @@ public class TestTickRunner
 	private static Item LEAF_ITEM;
 	private static Item TILLED_SOIL_ITEM;
 	private static Item WHEAT_SEED_ITEM;
-	private static Item WHEAT_SEEDLING_ITEM;
+	private static Item WHEAT_YOUNG_ITEM;
 	private static Item VOID_LAMP_ITEM;
 	private static Block STONE;
 	private static Block WATER_SOURCE;
@@ -115,7 +115,7 @@ public class TestTickRunner
 		LEAF_ITEM = ENV.items.getItemById("op.leaf");
 		TILLED_SOIL_ITEM = ENV.items.getItemById("op.tilled_soil");
 		WHEAT_SEED_ITEM = ENV.items.getItemById("op.wheat_seed");
-		WHEAT_SEEDLING_ITEM = ENV.items.getItemById("op.wheat_seedling");
+		WHEAT_YOUNG_ITEM = ENV.items.getItemById("op.wheat_young");
 		VOID_LAMP_ITEM = ENV.items.getItemById("op.void_lamp");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
@@ -922,7 +922,8 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		// We should see the seed for one tick before it grows.
 		Assert.assertEquals(1, snapshot.stats().countOfCuboidMutationsRun());
-		Assert.assertEquals(WHEAT_SEEDLING_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(WHEAT_YOUNG_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.BLOCK_DEFINED_BYTE, location.getBlockAddress()));
 		
 		// Now, break the dirt block.
 		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, entity, dirtLocation, ENV.damage.getToughness(ENV.blocks.fromItem(TILLED_SOIL_ITEM)));
@@ -934,7 +935,8 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.stats().countOfCuboidMutationsRun());
 		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
-		Assert.assertEquals(WHEAT_SEEDLING_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(WHEAT_YOUNG_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.BLOCK_DEFINED_BYTE, location.getBlockAddress()));
 		Assert.assertEquals(0, snapshot.passives().size());
 		
 		// Run another tick and see the seedling break and spawn as a passive.
@@ -1299,7 +1301,7 @@ public class TestTickRunner
 		AbsoluteLocation location = address.getBase().getRelative(0, 6, 7);
 		AbsoluteLocation dirtLocation = location.getRelative(0, 0, -1);
 		cuboid.setData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress(), DIRT_ITEM.number());
-		cuboid.setData15(AspectRegistry.BLOCK, location.getBlockAddress(), WHEAT_SEEDLING_ITEM.number());
+		cuboid.setData15(AspectRegistry.BLOCK, location.getBlockAddress(), WHEAT_YOUNG_ITEM.number());
 		
 		WorldConfig config = new WorldConfig();
 		TickRunner runner = _createTestRunnerWithConfig(config);

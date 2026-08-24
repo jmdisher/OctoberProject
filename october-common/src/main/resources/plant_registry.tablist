@@ -2,28 +2,27 @@
 # ID
 # <TAB>growth_divisor<TAB>int
 # [<TAB>grow_as_tree]
-# [<TAB>next_phase<TAB>id]
+# [<TAB>growth_stages<TAB>int]
+# [<TAB>mature_block<TAB>id]
 #
 # The int given for growth_divisor is the divisor used to calculate whether a plant should grow during a growth tick.
 # The value must be a positive integer.  This value is used to randomly decide to grow in "1/divisor" growth ticks.
 # "grow_as_tree" is present if the tree growth logic should be applied when growing.
-# "next_phase" gives the ID of the next phase block for this plant.
-# While "grow_as_tree" and "next_phase" are both optional, exactly one of them must be specified to indicate how to
-# grow.
+# "growth_stages" gives the int describing the number of stages of growth to run within this block type (minimum is 1
+#  since the block is placed and exists before a growth mutation).
+# "mature_block" gives the ID of the block which will replace this once growth stages finishes.
+# While "grow_as_tree", "growth_stages", and "mature_block" are all optional, explicitly grow_as_tree XOR the other 2
+# must be specified..
 # Note that the ID references are against item_registry.tablist but must appear in block_aspect.tablist to have meaning.
 
 op.sapling
 	growth_divisor	100
 	grow_as_tree
-op.wheat_seedling
-	growth_divisor	6
-	next_phase	op.wheat_young
 op.wheat_young
 	growth_divisor	12
-	next_phase	op.wheat_mature
-op.carrot_seedling
-	growth_divisor	10
-	next_phase	op.carrot_young
+	growth_stages	2
+	mature_block	op.wheat_mature
 op.carrot_young
 	growth_divisor	20
-	next_phase	op.carrot_mature
+	growth_stages	2
+	mature_block	op.carrot_mature

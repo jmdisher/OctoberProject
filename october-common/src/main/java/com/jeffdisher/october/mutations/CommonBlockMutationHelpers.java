@@ -165,31 +165,6 @@ public class CommonBlockMutationHelpers
 	}
 
 	/**
-	 * Advances the plant growth phase of the block in proxy to the next phase.  Internally runs any follow-up
-	 * processing logic, as well.
-	 * Note that this can only be used on a block which contains a normal plant which isn't fully mature, yet.
-	 * 
-	 * @param env The environment.
-	 * @param context The context for looking up blocks and scheduling mutations.
-	 * @param location The location of proxy.
-	 * @param proxy The block to modify.
-	 */
-	public static void plantGrowthWithFollowUps(Environment env
-		, TickProcessingContext context
-		, AbsoluteLocation location
-		, IMutableBlockProxy proxy
-	)
-	{
-		// We only call this for plants which can grow.
-		Block nextPhase = env.plants.nextPhaseForPlant(proxy.getBlock());
-		Assert.assertTrue(null != nextPhase);
-		
-		// This isn't an explicit block placement, so it has no direction.
-		FacingDirection outputDirection = null;
-		_setBlockWithFollowUps(env, context, location, proxy, nextPhase, outputDirection);
-	}
-
-	/**
 	 * Clears the block in proxy to be an air block.  Internally runs any follow-up liquid flow-in scheduling, as well.
 	 * 
 	 * @param env The environment.

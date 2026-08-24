@@ -83,9 +83,9 @@ block_def	i
 	block	op.torch
 	facing_direction	DOWN
 block_def	w
-	block	op.wheat_seedling
+	block	op.wheat_young
 block_def	c
-	block	op.carrot_seedling
+	block	op.carrot_young
 block_def	t
 	block	op.sapling
 block_def	O

@@ -356,9 +356,9 @@ public class TestCommonMutations
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
 		
-		Block wheatSeedling = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_seedling"));
+		Block wheatYoung = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_young"));
 		int entityId = 1;
-		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(target, wheatSeedling, null, entityId);
+		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(target, wheatYoung, null, entityId);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
@@ -381,7 +381,8 @@ public class TestCommonMutations
 		events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, target, 0, entityId));
 		mutation.applyMutation(context, proxy);
 		Assert.assertTrue(proxy.didChange());
-		Assert.assertEquals(wheatSeedling, proxy.getBlock());
+		Assert.assertEquals(wheatYoung, proxy.getBlock());
+		Assert.assertEquals(0, proxy.getBlockDefinedByte());
 		Assert.assertEquals(10000L, proxy.periodicDelayMillis);
 	}
 
@@ -474,10 +475,9 @@ public class TestCommonMutations
 		// We will place a wheat seedling and run a MutationBlockGrow mutation against it to verify it checks the right things with/without light.
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 1);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
-		Block wheatSeedling = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_seedling"));
 		Block wheatYoung = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_young"));
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 0), STONE.item().number());
-		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 1), wheatSeedling.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 1), wheatYoung.item().number());
 		
 		// First, we want to make sure that the wheat fails to grow due to darkness.
 		TickProcessingContext context = ContextBuilder.build()
@@ -505,7 +505,8 @@ public class TestCommonMutations
 		MutationBlockPeriodic mutation = new MutationBlockPeriodic(target);
 		mutation.applyMutation(context, proxy);
 		Assert.assertFalse(proxy.didChange());
-		Assert.assertEquals(wheatSeedling, proxy.getBlock());
+		Assert.assertEquals(wheatYoung, proxy.getBlock());
+		Assert.assertEquals(0, proxy.getBlockDefinedByte());
 		Assert.assertEquals(PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS, proxy.periodicDelayMillis);
 		
 		// Now, show that it works if there is light.
@@ -517,6 +518,7 @@ public class TestCommonMutations
 		mutation.applyMutation(context, proxy);
 		Assert.assertTrue(proxy.didChange());
 		Assert.assertEquals(wheatYoung, proxy.getBlock());
+		Assert.assertEquals(1, proxy.getBlockDefinedByte());
 		Assert.assertEquals(PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS, proxy.periodicDelayMillis);
 	}
 
@@ -527,9 +529,9 @@ public class TestCommonMutations
 		// We should always result in the "soonest" being kept.
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 1);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
-		Block wheatSeedling = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_seedling"));
+		Block wheatYoung = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_young"));
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 0), STONE.item().number());
-		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 1), wheatSeedling.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 1), wheatYoung.item().number());
 		
 		// First, we want to make sure that the wheat fails to grow due to darkness.
 		TickProcessingContext context = ContextBuilder.build()
@@ -544,21 +546,24 @@ public class TestCommonMutations
 		MutationBlockPeriodic mutation = new MutationBlockPeriodic(target);
 		mutation.applyMutation(context, proxy);
 		Assert.assertFalse(proxy.didChange());
-		Assert.assertEquals(wheatSeedling, proxy.getBlock());
+		Assert.assertEquals(wheatYoung, proxy.getBlock());
+		Assert.assertEquals(0, proxy.getBlockDefinedByte());
 		Assert.assertEquals(PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS, proxy.periodicDelayMillis);
 		
 		// Now change the update delay to a later one and observe that re-running this will cause it to update it.
 		proxy.periodicDelayMillis = 2 * PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS;
 		mutation.applyMutation(context, proxy);
 		Assert.assertFalse(proxy.didChange());
-		Assert.assertEquals(wheatSeedling, proxy.getBlock());
+		Assert.assertEquals(wheatYoung, proxy.getBlock());
+		Assert.assertEquals(0, proxy.getBlockDefinedByte());
 		Assert.assertEquals(PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS, proxy.periodicDelayMillis);
 		
 		// We can also show that a sooner value will not be updated.
 		proxy.periodicDelayMillis = PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS / 2;
 		mutation.applyMutation(context, proxy);
 		Assert.assertFalse(proxy.didChange());
-		Assert.assertEquals(wheatSeedling, proxy.getBlock());
+		Assert.assertEquals(wheatYoung, proxy.getBlock());
+		Assert.assertEquals(0, proxy.getBlockDefinedByte());
 		Assert.assertEquals(PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS / 2, proxy.periodicDelayMillis);
 	}
 

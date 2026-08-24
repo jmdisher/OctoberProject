@@ -74,7 +74,6 @@ public class TestTickRunner_slow
 	private static Item TILLED_SOIL_ITEM;
 	private static Item WHEAT_SEED_ITEM;
 	private static Item WHEAT_ITEM_ITEM;
-	private static Item WHEAT_SEEDLING_ITEM;
 	private static Item WHEAT_YOUNG_ITEM;
 	private static Item WHEAT_MATURE_ITEM;
 	private static Block STONE;
@@ -94,7 +93,6 @@ public class TestTickRunner_slow
 		TILLED_SOIL_ITEM = ENV.items.getItemById("op.tilled_soil");
 		WHEAT_SEED_ITEM = ENV.items.getItemById("op.wheat_seed");
 		WHEAT_ITEM_ITEM = ENV.items.getItemById("op.wheat_item");
-		WHEAT_SEEDLING_ITEM = ENV.items.getItemById("op.wheat_seedling");
 		WHEAT_YOUNG_ITEM = ENV.items.getItemById("op.wheat_young");
 		WHEAT_MATURE_ITEM = ENV.items.getItemById("op.wheat_mature");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
@@ -816,7 +814,8 @@ public class TestTickRunner_slow
 		snapshot = runner.waitForPreviousTick();
 		// We should see the seed for one tick before it grows.
 		Assert.assertEquals(1, snapshot.stats().countOfCuboidMutationsRun());
-		Assert.assertEquals(WHEAT_SEEDLING_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(WHEAT_YOUNG_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.BLOCK_DEFINED_BYTE, location.getBlockAddress()));
 		
 		// The last call will have enqueued a growth tick so we want to skip ahead 500 ticks to see the growth.
 		// We will just set the random number to 1 to easily watch it go through all phases.
@@ -826,13 +825,15 @@ public class TestTickRunner_slow
 			runner.startNextTick();
 			snapshot = runner.waitForPreviousTick();
 		}
-		Assert.assertEquals(WHEAT_SEEDLING_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(WHEAT_YOUNG_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.BLOCK_DEFINED_BYTE, location.getBlockAddress()));
 		
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		// Here, we should see the sapling replaced with a log but the leaves are only placed next tick.
 		Assert.assertEquals(1, snapshot.cuboids().get(address).blockChanges().size());
 		Assert.assertEquals(WHEAT_YOUNG_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(1, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.BLOCK_DEFINED_BYTE, location.getBlockAddress()));
 		
 		// Wait another 500 ticks to see the next growth.
 		for (int i = 0; i < ticksBetweenGrowthCalls; ++i)
@@ -841,6 +842,7 @@ public class TestTickRunner_slow
 			snapshot = runner.waitForPreviousTick();
 		}
 		Assert.assertEquals(WHEAT_YOUNG_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(1, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.BLOCK_DEFINED_BYTE, location.getBlockAddress()));
 		
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();

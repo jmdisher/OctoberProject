@@ -284,6 +284,8 @@ public class CuboidTranslator
 		short waterWeak = env.items.getItemById("DEPRECATED.op.water_weak").number();
 		short lavaStrong = env.items.getItemById("DEPRECATED.op.lava_strong").number();
 		short lavaWeak = env.items.getItemById("DEPRECATED.op.lava_weak").number();
+		short wheatSeedling = env.items.getItemById("DEPRECATED.op.wheat_seedling").number();
+		short carrotSeedling = env.items.getItemById("DEPRECATED.op.carrot_seedling").number();
 		List<BlockAddress> clearLocations = new ArrayList<>();
 		
 		cuboid.walkData(AspectRegistry.BLOCK, (BlockAddress base, byte size, Short value) -> {
@@ -296,10 +298,13 @@ public class CuboidTranslator
 				|| (value == waterWeak)
 				|| (value == lavaStrong)
 				|| (value == lavaWeak)
+				|| (value == wheatSeedling)
+				|| (value == carrotSeedling)
 			)
 			{
-				// We will just clear these and wait for activity to cause an update to re-flow.
+				// We will just clear these and wait for activity to cause an update to re-flow the liquids.
 				// We could update these but that won't work if the flow distance is changed.
+				// In the case of plants, these are corner-cases so we will just delete them instead of migrating them.
 				Assert.assertTrue(1 == size);
 				clearLocations.add(base);
 			}
