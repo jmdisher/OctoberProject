@@ -2528,6 +2528,30 @@ public class TestCommonMutations
 		Assert.assertNull(out_passive[0]);
 	}
 
+	@Test
+	public void overwriteMisc()
+	{
+		// Show that our purely internal "misc" overwrite mutation works correctly.
+		// (we will use a stair since it has orientation and the helper just passes the block-defined value through - stair doesn't use it)
+		Block stair = ENV.blocks.fromItem(ENV.items.getItemById("op.stone_brick_stair"));
+		AbsoluteLocation target = new AbsoluteLocation(5, 5, 5);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
+			.finish()
+		;
+		
+		byte defined = 2;
+		MutationBlockOverwriteMisc misc = new MutationBlockOverwriteMisc(target, stair, FacingDirection.SOUTH, defined);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		misc.applyMutation(context, proxy);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(stair.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.SOUTH), cuboid.getData7(AspectRegistry.ORIENTATION, target.getBlockAddress()));
+		Assert.assertEquals(defined, cuboid.getData7(AspectRegistry.BLOCK_DEFINED_BYTE, target.getBlockAddress()));
+	}
+
 
 	private static Set<AbsoluteLocation> _getEastFacingPortalVoidStones(AbsoluteLocation keystoneLocation)
 	{

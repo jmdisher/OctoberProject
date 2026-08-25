@@ -74,7 +74,7 @@ public class MutationBlockPlaceMultiBlock implements IMutationBlock
 		boolean isRoot = _rootLocation.equals(_location);
 		Block oldBlock = newBlock.getBlock();
 		boolean isMultiBlockExtension = !isRoot;
-		boolean didApply = CommonBlockMutationHelpers.overwriteBlockIfReplaceableWithFollowUps(context, newBlock, _location, _direction, _blockType, isMultiBlockExtension);
+		boolean didApply = CommonBlockMutationHelpers.overwriteBlockIfReplaceableWithFollowUps(context, newBlock, _location, _blockType, _direction, (byte)0, isMultiBlockExtension);
 		if (didApply)
 		{
 			if (isRoot)

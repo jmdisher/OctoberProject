@@ -71,16 +71,18 @@ public class CommonBlockMutationHelpers
 	 * @param context The context wherein the change should be applied.
 	 * @param proxy The block being written.
 	 * @param location The location of the block being written.
-	 * @param outputDirection The output directly of the block in location (can be null).
 	 * @param blockType The new block type to write.
+	 * @param outputDirection The output directly of the block in location (can be null).
+	 * @param blockDefined The block-defined byte to write (0 if not relevant).
 	 * @param isMultiBlockExtension True if this is a multi-block extension (since they ignore block support rules).
 	 * @return True if the block was written or false if the write was aborted.
 	 */
 	public static boolean overwriteBlockIfReplaceableWithFollowUps(TickProcessingContext context
 		, IMutableBlockProxy proxy
 		, AbsoluteLocation location
-		, FacingDirection outputDirection
 		, Block blockType
+		, FacingDirection outputDirection
+		, byte blockDefined
 		, boolean isMultiBlockExtension
 	)
 	{
@@ -118,7 +120,7 @@ public class CommonBlockMutationHelpers
 		boolean didApply = false;
 		if (shouldSet)
 		{
-			_setBlockWithFollowUps(env, context, location, proxy, blockType, outputDirection);
+			_setBlockWithFollowUps(env, context, location, proxy, blockType, outputDirection, blockDefined);
 			
 			didApply = true;
 		}
@@ -161,7 +163,8 @@ public class CommonBlockMutationHelpers
 		
 		// This isn't an explicit block placement, so it has no direction.
 		FacingDirection outputDirection = null;
-		_setBlockWithFollowUps(env, context, location, proxy, newType, outputDirection);
+		byte blockDefined = 0;
+		_setBlockWithFollowUps(env, context, location, proxy, newType, outputDirection, blockDefined);
 	}
 
 	/**
@@ -262,7 +265,8 @@ public class CommonBlockMutationHelpers
 		// NOTE:  We use this common helper just as a consistent idiom but setting to air never starts fires.
 		// This isn't an explicit block placement, so it has no direction.
 		FacingDirection outputDirection = null;
-		_setBlockWithFollowUps(env, context, location, proxy, emptyBlock, outputDirection);
+		byte blockDefined = 0;
+		_setBlockWithFollowUps(env, context, location, proxy, emptyBlock, outputDirection, blockDefined);
 	}
 
 	/**
@@ -395,6 +399,7 @@ public class CommonBlockMutationHelpers
 		, IMutableBlockProxy proxy
 		, Block newType
 		, FacingDirection outputDirection
+		, byte blockDefined
 	)
 	{
 		// Collect the information from the previous state or which isn't dependent on the state of this block, at all.
@@ -407,6 +412,10 @@ public class CommonBlockMutationHelpers
 		if (null != outputDirection)
 		{
 			proxy.setOrientation(outputDirection);
+		}
+		if (0 != blockDefined)
+		{
+			proxy.setBlockDefinedByte(blockDefined);
 		}
 		if (shouldSetHigh)
 		{

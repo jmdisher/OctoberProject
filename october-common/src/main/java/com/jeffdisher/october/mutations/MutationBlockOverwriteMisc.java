@@ -12,24 +12,28 @@ import com.jeffdisher.october.utils.Assert;
 
 
 /**
- * A mutation to replace a block with the given data.  This is used explicitly by the world generator and is not
- * persistent so that new data can be added for other aspects, as needed.  Since this should be run immediately after
- * generation, there should never be a need to serialize this, anyway.
+ * A mutation to replace a block with the given data.  This is for use in purely-internal cases where there isn't a need
+ * (either ever, or at least currently) to persist the mutation.
+ * The reason for this is that it creates a cheap mutation which can easily have data added or removed as there is NO
+ * DISK REPRESENTATION.
  */
-public class MutationBlockOverwriteWorldGeneration implements IMutationBlock
+public class MutationBlockOverwriteMisc implements IMutationBlock
 {
 	private final AbsoluteLocation _location;
 	private final Block _blockType;
 	private final FacingDirection _outputDirection;
+	private final byte _blockDefined;
 
-	public MutationBlockOverwriteWorldGeneration(AbsoluteLocation location
+	public MutationBlockOverwriteMisc(AbsoluteLocation location
 		, Block blockType
 		, FacingDirection outputDirection
+		, byte blockDefined
 	)
 	{
 		_location = location;
 		_blockType = blockType;
 		_outputDirection = outputDirection;
+		_blockDefined = blockDefined;
 	}
 
 	@Override
@@ -42,7 +46,7 @@ public class MutationBlockOverwriteWorldGeneration implements IMutationBlock
 	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		// We ignore the return value of whether or not the change applied.
-		CommonBlockMutationHelpers.overwriteBlockIfReplaceableWithFollowUps(context, newBlock, _location, _blockType, _outputDirection, (byte)0, false);
+		CommonBlockMutationHelpers.overwriteBlockIfReplaceableWithFollowUps(context, newBlock, _location, _blockType, _outputDirection, _blockDefined, false);
 	}
 
 	@Override
@@ -62,7 +66,9 @@ public class MutationBlockOverwriteWorldGeneration implements IMutationBlock
 	@Override
 	public boolean canSaveToDisk()
 	{
-		// We don't expect this kind of mutation to ever even be considered for serialization.
-		throw Assert.unreachable();
+		// It is possible that a write will be attempted but we will just drop this, in that case.
+		// In the future, we may want to persist this if the included aspect data is solidified (as leaving this easy to
+		// update is the main reason not to persist).
+		return false;
 	}
 }
