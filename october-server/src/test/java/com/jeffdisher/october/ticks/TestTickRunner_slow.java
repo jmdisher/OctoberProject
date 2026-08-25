@@ -70,7 +70,6 @@ public class TestTickRunner_slow
 	private static Item DIRT_ITEM;
 	private static Item SAPLING_ITEM;
 	private static Item LANTERN_ITEM;
-	private static Item LEAF_ITEM;
 	private static Item TILLED_SOIL_ITEM;
 	private static Item WHEAT_SEED_ITEM;
 	private static Item WHEAT_ITEM_ITEM;
@@ -89,7 +88,6 @@ public class TestTickRunner_slow
 		DIRT_ITEM = ENV.items.getItemById("op.dirt");
 		SAPLING_ITEM = ENV.items.getItemById("op.sapling");
 		LANTERN_ITEM = ENV.items.getItemById("op.lantern");
-		LEAF_ITEM = ENV.items.getItemById("op.leaf");
 		TILLED_SOIL_ITEM = ENV.items.getItemById("op.tilled_soil");
 		WHEAT_SEED_ITEM = ENV.items.getItemById("op.wheat_seed");
 		WHEAT_ITEM_ITEM = ENV.items.getItemById("op.wheat_item");
@@ -755,16 +753,19 @@ public class TestTickRunner_slow
 		randomHolder[0] = 1;
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		// Here, we should see the sapling replaced with a log but the leaves are only placed next tick.
+		// Here, we should see the sapling replaced with a log but the branch is only placed next tick.
 		Assert.assertEquals(1, snapshot.cuboids().get(address).blockChanges().size());
 		Assert.assertEquals(LOG_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		// There should no longer be a periodic request for this block
+		Assert.assertFalse(snapshot.cuboids().get(address).periodicMutationMillis().containsKey(location.getBlockAddress()));
 		
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		// Now, we should see the leaf blocks which could be placed in the cuboid.
-		Assert.assertEquals(4, snapshot.cuboids().get(address).blockChanges().size());
-		Assert.assertEquals(LOG_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getRelative(0, 0, 1).getBlockAddress()));
-		Assert.assertEquals(LEAF_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getRelative(1, 0, 1).getBlockAddress()));
+		// Now, we should see the branch placed now.
+		Assert.assertEquals(1, snapshot.cuboids().get(address).blockChanges().size());
+		Assert.assertEquals(ENV.items.getItemById("op.branch").number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getRelative(0, 0, 1).getBlockAddress()));
+		// We should see the periodic request.
+		Assert.assertEquals(PeriodicBehaviourPlant.MILLIS_BETWEEN_GROWTH_CALLS, snapshot.cuboids().get(address).periodicMutationMillis().get(location.getRelative(0, 0, 1).getBlockAddress()).longValue());
 		
 		runner.shutdown();
 	}

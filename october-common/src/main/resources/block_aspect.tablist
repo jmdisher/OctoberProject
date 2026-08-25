@@ -157,3 +157,8 @@ op.wood_plank_slab
 op.wood_plank_stair
 	block_material	AXE
 	sub_blocks	0xff00ff00ffffffff
+op.branch
+	block_material	AXE
+	requires_support	op.log
+	special_drop	50	op.sapling
+	viscosity	20

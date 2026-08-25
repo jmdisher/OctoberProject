@@ -21,6 +21,7 @@ public class PlantRegistry
 	public static final String FIELD_GROWTH_DIVISOR = "growth_divisor";
 	public static final String FIELD_REQUIRES_LIGHT = "requires_light";
 	public static final String FIELD_GROW_AS_TREE = "grow_as_tree";
+	public static final String FIELD_GROW_AS_BRANCH = "grow_as_branch";
 	public static final String FIELD_GROWTH_STAGES = "growth_stages";
 	public static final String FIELD_MATURE_BLOCK = "mature_block";
 
@@ -47,33 +48,40 @@ public class PlantRegistry
 		SimpleTabListCallbacks.SubRecordCapture<Block, Integer> growthDivisors = callbacks.captureSubRecord(FIELD_GROWTH_DIVISOR, divisorTransformer, true);
 		SimpleTabListCallbacks.SubRecordCapture<Block, Block> requiresLightSet = callbacks.captureSubRecord(FIELD_REQUIRES_LIGHT, null, false);
 		SimpleTabListCallbacks.SubRecordCapture<Block, Block> treeSet = callbacks.captureSubRecord(FIELD_GROW_AS_TREE, null, false);
+		SimpleTabListCallbacks.SubRecordCapture<Block, Block> branchSet = callbacks.captureSubRecord(FIELD_GROW_AS_BRANCH, null, false);
 		SimpleTabListCallbacks.SubRecordCapture<Block, Byte> growthStages = callbacks.captureSubRecord(FIELD_GROWTH_STAGES, stagesTransformer, false);
 		SimpleTabListCallbacks.SubRecordCapture<Block, Block> matureBlocks= callbacks.captureSubRecord(FIELD_MATURE_BLOCK, matureBlocksTransformer, false);
 		
 		TabListReader.readEntireFile(callbacks, stream);
 		
 		// Verify that the rules around the optional fields are honoured.
-		Set<Block> tempSet = new HashSet<>(treeSet.recordData.keySet());
-		boolean shouldFail = tempSet.removeAll(growthStages.recordData.keySet());
-		shouldFail |= tempSet.removeAll(matureBlocks.recordData.keySet());
-		if (shouldFail)
+		Set<Block> stagedSet = new HashSet<>();
+		stagedSet.addAll(growthStages.recordData.keySet());
+		stagedSet.addAll(matureBlocks.recordData.keySet());
+		if ((stagedSet.size() != growthStages.recordData.size()) || (stagedSet.size() != matureBlocks.recordData.size()))
 		{
-			throw new TabListReader.TabListException("Trees and staged plants must be dijoint sets");
+			throw new TabListReader.TabListException("growth_stages and mature_block must always be present together");
 		}
 		
-		shouldFail = (growthStages.recordData.size() != matureBlocks.recordData.size());
-		tempSet = new HashSet<>(growthStages.recordData.keySet());
-		tempSet.removeAll(matureBlocks.recordData.keySet());
-		shouldFail |= !tempSet.isEmpty();
-		if (shouldFail)
+		Set<Block> exclusiveSet = new HashSet<>();
+		exclusiveSet.addAll(treeSet.recordData.keySet());
+		exclusiveSet.addAll(branchSet.recordData.keySet());
+		exclusiveSet.addAll(stagedSet);
+		if (exclusiveSet.size() != (treeSet.recordData.size() + branchSet.recordData.size() + stagedSet.size()))
 		{
-			throw new TabListReader.TabListException("All staged plants must specify growth_stages and mature_block");
+			throw new TabListReader.TabListException("There can be no overlap between trees, branches, and staged growth");
+		}
+		
+		if (exclusiveSet.size() != growthDivisors.recordData.size())
+		{
+			throw new TabListReader.TabListException("Each plant must be either a tree, a branch, or staged");
 		}
 		
 		// We can just pass these in, directly.
 		return new PlantRegistry(growthDivisors.recordData
 			, requiresLightSet.recordData.keySet()
 			, treeSet.recordData.keySet()
+			, branchSet.recordData.keySet()
 			, growthStages.recordData
 			, matureBlocks.recordData
 		);
@@ -83,12 +91,14 @@ public class PlantRegistry
 	private final Map<Block, Integer> _growthDivisors;
 	private final Set<Block> _requiresLightSet;
 	private final Set<Block> _treeSet;
+	private final Set<Block> _branchSet;
 	private final Map<Block, Byte> _stagesCount;
 	private final Map<Block, Block> _stagesMaturity;
 
 	private PlantRegistry(Map<Block, Integer> growthDivisors
 		, Set<Block> requiresLightSet
 		, Set<Block> treeSet
+		, Set<Block> branchSet
 		, Map<Block, Byte> stagesCount
 		, Map<Block, Block> stagesMaturity
 	)
@@ -96,6 +106,7 @@ public class PlantRegistry
 		_growthDivisors = growthDivisors;
 		_requiresLightSet = requiresLightSet;
 		_treeSet = treeSet;
+		_branchSet = branchSet;
 		_stagesCount = stagesCount;
 		_stagesMaturity = stagesMaturity;
 	}
@@ -135,6 +146,17 @@ public class PlantRegistry
 	public boolean isTree(Block block)
 	{
 		return _treeSet.contains(block);
+	}
+
+	/**
+	 * Checks if the given block uses the special branch growth mechanic.
+	 * 
+	 * @param block The block.
+	 * @return True if this block grows using the special branch growth mechanic.
+	 */
+	public boolean isBranch(Block block)
+	{
+		return _branchSet.contains(block);
 	}
 
 	/**

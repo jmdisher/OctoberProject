@@ -12,6 +12,7 @@ block_air	op.air
 block_hopper	op.hopper
 block_log	op.log
 block_leaf	op.leaf
+block_branch	op.branch
 block_portal_keystone	op.portal_keystone
 block_portal_surface	op.portal_surface
 block_cuboid_loader	op.cuboid_loader

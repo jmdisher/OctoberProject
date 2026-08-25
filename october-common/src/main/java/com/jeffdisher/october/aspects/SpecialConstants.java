@@ -26,6 +26,7 @@ public class SpecialConstants
 	public static final String KEY_BLOCK_HOPPER = "block_hopper";
 	public static final String KEY_BLOCK_LOG = "block_log";
 	public static final String KEY_BLOCK_LEAF = "block_leaf";
+	public static final String KEY_BLOCK_BRANCH = "block_branch";
 	public static final String KEY_BLOCK_PORTAL_KEYSTONE = "block_portal_keystone";
 	public static final String KEY_BLOCK_PORTAL_SURFACE = "block_portal_surface";
 	public static final String KEY_BLOCK_CUBOID_LOADER = "block_cuboid_loader";
@@ -57,6 +58,7 @@ public class SpecialConstants
 		Block blockHopper = _removeAsBlock(blocks, map, KEY_BLOCK_HOPPER);
 		Block blockLog = _removeAsBlock(blocks, map, KEY_BLOCK_LOG);
 		Block blockLeaf = _removeAsBlock(blocks, map, KEY_BLOCK_LEAF);
+		Block blockBranch = _removeAsBlock(blocks, map, KEY_BLOCK_BRANCH);
 		Block blockPortalKeystone = _removeAsBlock(blocks, map, KEY_BLOCK_PORTAL_KEYSTONE);
 		Block blockPortalSurface = _removeAsBlock(blocks, map, KEY_BLOCK_PORTAL_SURFACE);
 		Block blockCuboidLoader = _removeAsBlock(blocks, map, KEY_BLOCK_CUBOID_LOADER);
@@ -80,6 +82,7 @@ public class SpecialConstants
 			, blockHopper
 			, blockLog
 			, blockLeaf
+			, blockBranch
 			, blockPortalKeystone
 			, blockPortalSurface
 			, blockCuboidLoader
@@ -126,6 +129,10 @@ public class SpecialConstants
 	 */
 	public final Block blockLeaf;
 	/**
+	 * Used in plant growth logic.
+	 */
+	public final Block blockBranch;
+	/**
 	 * Has special use in portal logic.
 	 */
 	public final Block blockPortalKeystone;
@@ -163,6 +170,7 @@ public class SpecialConstants
 		, Block blockHopper
 		, Block blockLog
 		, Block blockLeaf
+		, Block blockBranch
 		, Block blockPortalKeystone
 		, Block blockPortalSurface
 		, Block blockCuboidLoader
@@ -181,6 +189,7 @@ public class SpecialConstants
 		this.blockHopper = blockHopper;
 		this.blockLog = blockLog;
 		this.blockLeaf = blockLeaf;
+		this.blockBranch = blockBranch;
 		this.blockPortalKeystone = blockPortalKeystone;
 		this.blockPortalSurface = blockPortalSurface;
 		this.blockCuboidLoader = blockCuboidLoader;

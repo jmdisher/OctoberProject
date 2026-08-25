@@ -3,9 +3,10 @@ package com.jeffdisher.october.logic;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.mutations.CommonBlockMutationHelpers;
-import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
+import com.jeffdisher.october.mutations.MutationBlockOverwriteMisc;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -17,6 +18,14 @@ import com.jeffdisher.october.utils.Assert;
 public class PlantHelpers
 {
 	public static final byte MIN_LIGHT = 5;
+
+	// Constants related to branch growth.
+	public static final byte BRANCH_GROWTH_COUNT = 3;
+	public static final byte BRANCH_CHOICE_DIVISOR = 100;
+	public static final byte BRANCH_CHANCE_UP = 50;
+	public static final byte BRANCH_CHANCE_SIDE = 20;
+	public static final byte BRANCH_CHANCE_PER_GROWTH = 10;
+	public static final byte BRANCH_CHANCE_BONUS_DIRECTION = 40;
 
 	/**
 	 * Used to check if the given block type is one which can grow.
@@ -98,6 +107,11 @@ public class PlantHelpers
 			_growTree(context, location, newBlock);
 			shouldReschedule = false;
 		}
+		else if (env.plants.isBranch(block))
+		{
+			_growBranch(context, location, newBlock);
+			shouldReschedule = false;
+		}
 		else
 		{
 			// If not a tree, we are using the staged growth system so load our count of completed growth stages.
@@ -126,28 +140,110 @@ public class PlantHelpers
 	{
 		Environment env = Environment.getShared();
 		Block log = env.special.blockLog;
-		Block leaf = env.special.blockLeaf;
-		// Replace this with a log and leaf blocks.
-		// TODO:  Figure out how to make more interesting trees.
+		Block branch = env.special.blockBranch;
+		AbsoluteLocation branchLocation = location.getRelative(0, 0, 1);
+		// Replace this with a log for the trunk base and a branch to start random growth.
 		
 		CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, location, newBlock, log);
-		_tryScheduleBlockOverwrite(env, context, location,  log,  0,  0,  1);
-		_tryScheduleBlockOverwrite(env, context, location, leaf, -1,  0,  1);
-		_tryScheduleBlockOverwrite(env, context, location, leaf,  1,  0,  1);
-		_tryScheduleBlockOverwrite(env, context, location, leaf,  0, -1,  1);
-		_tryScheduleBlockOverwrite(env, context, location, leaf,  0,  1,  1);
+		MutationBlockOverwriteMisc mutation = new MutationBlockOverwriteMisc(branchLocation, branch, FacingDirection.DOWN, (byte)0);
+		context.mutationSink.next(mutation);
 	}
 
-	private static void _tryScheduleBlockOverwrite(Environment env, TickProcessingContext context, AbsoluteLocation topLocation, Block blockType, int x, int y, int z)
+	private static void _growBranch(TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 	{
-		AbsoluteLocation location = topLocation.getRelative(x, y, z);
-		BlockProxy proxy = context.previousBlockLookUp.readBlock(location);
+		// The branch has a few rules it applies:
+		// -determine if it should branch again using the block-defined byte against BRANCH_GROWTH_COUNT
+		// -check the orientation of the branch (points to trunk)
+		// -choose random weight for growth into other 5 blocks:
+		// --never grow in any direction if we reached BRANCH_GROWTH_COUNT
+		// --never allow "down" (branches can't grow down)
+		// --bias to favour "up"
+		// --bias to favour current growth (opposite orientation)
+		// -roll for all 5 non-replaceable blocks (we don't want to overwrite real blocks):
+		// --if accepted, grow a branch pointing back at us
+		// --if rejected, grow a leaf
+		Environment env = Environment.getShared();
+		Block log = env.special.blockLog;
+		Block leaf = env.special.blockLeaf;
+		
+		Block branch = newBlock.getBlock();
+		byte currentGrowth = newBlock.getBlockDefinedByte();
+		FacingDirection trunkDirection = newBlock.getOrientation();
+		
+		// We want the tree to mostly grow upward but also fan out more as it grows.
+		int currentFanning = BRANCH_CHANCE_PER_GROWTH * currentGrowth;
+		int upRandom = BRANCH_CHANCE_UP;
+		int eastRandom = BRANCH_CHANCE_SIDE + currentFanning;
+		int westRandom = BRANCH_CHANCE_SIDE + currentFanning;
+		int northRandom = BRANCH_CHANCE_SIDE + currentFanning;
+		int southRandom = BRANCH_CHANCE_SIDE + currentFanning;
+		switch (trunkDirection)
+		{
+		case UP:
+			// The branches never grow down from the trunk.
+			throw Assert.unreachable();
+		case DOWN:
+			upRandom += BRANCH_CHANCE_BONUS_DIRECTION;
+			break;
+		case EAST:
+			westRandom += BRANCH_CHANCE_BONUS_DIRECTION;
+			break;
+		case WEST:
+			eastRandom += BRANCH_CHANCE_BONUS_DIRECTION;
+			break;
+		case NORTH:
+			southRandom += BRANCH_CHANCE_BONUS_DIRECTION;
+			break;
+		case SOUTH:
+			northRandom += BRANCH_CHANCE_BONUS_DIRECTION;
+			break;
+		}
+		
+		CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, location, newBlock, log);
+		_tryGrowBranch(env, context, branch, leaf, location, currentGrowth, FacingDirection.UP, FacingDirection.DOWN, upRandom, BRANCH_CHOICE_DIVISOR);
+		_tryGrowBranch(env, context, branch, leaf, location, currentGrowth, FacingDirection.EAST, FacingDirection.WEST, eastRandom, BRANCH_CHOICE_DIVISOR);
+		_tryGrowBranch(env, context, branch, leaf, location, currentGrowth, FacingDirection.WEST, FacingDirection.EAST, westRandom, BRANCH_CHOICE_DIVISOR);
+		_tryGrowBranch(env, context, branch, leaf, location, currentGrowth, FacingDirection.NORTH, FacingDirection.SOUTH, northRandom, BRANCH_CHOICE_DIVISOR);
+		_tryGrowBranch(env, context, branch, leaf, location, currentGrowth, FacingDirection.SOUTH, FacingDirection.NORTH, southRandom, BRANCH_CHOICE_DIVISOR);
+	}
+
+	private static void _tryGrowBranch(Environment env
+		, TickProcessingContext context
+		, Block branch
+		, Block leaf
+		, AbsoluteLocation trunk
+		, byte currentGrowth
+		, FacingDirection growthDirection
+		, FacingDirection trunkDirection
+		, int randomCheck
+		, int randomDivisor
+	)
+	{
+		AbsoluteLocation branchLocation = growthDirection.getOutputBlockLocation(trunk);
+		BlockProxy proxy = context.previousBlockLookUp.readBlock(branchLocation);
 		if (null != proxy)
 		{
 			Block block = proxy.getBlock();
 			if (env.blocks.canBeReplaced(block))
 			{
-				context.mutationSink.next(new MutationBlockOverwriteInternal(location, blockType));
+				// We can place something here so figure out what (we will never grow in local projections).
+				int random = (null != context.randomInt)
+					? context.randomInt.applyAsInt(randomDivisor)
+					: randomDivisor
+				;
+				
+				MutationBlockOverwriteMisc mutation;
+				if ((random < randomCheck) && (currentGrowth < BRANCH_GROWTH_COUNT))
+				{
+					// Branch.
+					mutation = new MutationBlockOverwriteMisc(branchLocation, branch, trunkDirection, (byte)(currentGrowth + 1));
+				}
+				else
+				{
+					// Leaf.
+					mutation = new MutationBlockOverwriteMisc(branchLocation, leaf, null, (byte)0);
+				}
+				context.mutationSink.next(mutation);
 			}
 		}
 	}

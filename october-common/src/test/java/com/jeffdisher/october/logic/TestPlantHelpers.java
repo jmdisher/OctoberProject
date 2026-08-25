@@ -12,11 +12,12 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
-import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
+import com.jeffdisher.october.mutations.MutationBlockOverwriteMisc;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
@@ -30,6 +31,7 @@ public class TestPlantHelpers
 	private static Block WHEAT_MATURE;
 	private static Block LEAF;
 	private static Block LOG;
+	private static Block BRANCH;
 	@BeforeClass
 	public static void setup() throws Throwable
 	{
@@ -39,6 +41,7 @@ public class TestPlantHelpers
 		WHEAT_MATURE = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_mature"));
 		LEAF = ENV.blocks.fromItem(ENV.items.getItemById("op.leaf"));
 		LOG = ENV.blocks.fromItem(ENV.items.getItemById("op.log"));
+		BRANCH = ENV.blocks.fromItem(ENV.items.getItemById("op.branch"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -54,6 +57,7 @@ public class TestPlantHelpers
 		Assert.assertFalse(PlantHelpers.canGrow(ENV, WHEAT_MATURE));
 		Assert.assertFalse(PlantHelpers.canGrow(ENV, LEAF));
 		Assert.assertFalse(PlantHelpers.canGrow(ENV, LOG));
+		Assert.assertTrue(PlantHelpers.canGrow(ENV, BRANCH));
 	}
 
 	@Test
@@ -62,7 +66,7 @@ public class TestPlantHelpers
 		// Show what happens when a sapling gets a growth event, whether in the light or dark.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		byte[] refLight = new byte[] {15};
-		List<MutationBlockOverwriteInternal> mutations = new ArrayList<>();
+		List<MutationBlockOverwriteMisc> mutations = new ArrayList<>();
 		TickProcessingContext context = _buildContext(cuboid, refLight, mutations);
 		AbsoluteLocation target = new AbsoluteLocation(10, 10, 10);
 		
@@ -72,7 +76,7 @@ public class TestPlantHelpers
 		boolean reschedule = PlantHelpers.shouldRescheduleAfterPlantPeriodic(ENV, context, target, proxy);
 		Assert.assertFalse(reschedule);
 		Assert.assertEquals(LOG, proxy.getBlock());
-		Assert.assertEquals(5, mutations.size());
+		Assert.assertEquals(1, mutations.size());
 		mutations.clear();
 		
 		// Dark.
@@ -142,8 +146,41 @@ public class TestPlantHelpers
 		Assert.assertEquals(finalGrowth, proxy.getBlockDefinedByte());
 	}
 
+	@Test
+	public void growBranch()
+	{
+		// Show what happens when a branch gets a growth event, whether in the light or dark (should be the same).
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		byte[] refLight = new byte[] {15};
+		List<MutationBlockOverwriteMisc> mutations = new ArrayList<>();
+		TickProcessingContext context = _buildContext(cuboid, refLight, mutations);
+		AbsoluteLocation target = new AbsoluteLocation(10, 10, 10);
+		
+		// Light.
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		proxy.setBlockAndClear(BRANCH);
+		proxy.setOrientation(FacingDirection.DOWN);
+		boolean reschedule = PlantHelpers.shouldRescheduleAfterPlantPeriodic(ENV, context, target, proxy);
+		Assert.assertFalse(reschedule);
+		Assert.assertEquals(LOG, proxy.getBlock());
+		Assert.assertEquals((byte)0, proxy.getBlockDefinedByte());
+		Assert.assertEquals(5, mutations.size());
+		mutations.clear();
+		
+		// Dark.
+		refLight[0] = 0;
+		proxy = new MutableBlockProxy(target, cuboid);
+		proxy.setBlockAndClear(BRANCH);
+		proxy.setOrientation(FacingDirection.DOWN);
+		reschedule = PlantHelpers.shouldRescheduleAfterPlantPeriodic(ENV, context, target, proxy);
+		Assert.assertFalse(reschedule);
+		Assert.assertEquals(LOG, proxy.getBlock());
+		Assert.assertEquals((byte)0, proxy.getBlockDefinedByte());
+		Assert.assertEquals(5, mutations.size());
+	}
 
-	private static TickProcessingContext _buildContext(CuboidData cuboid, byte[] refLight, List<MutationBlockOverwriteInternal> out_mutations)
+
+	private static TickProcessingContext _buildContext(CuboidData cuboid, byte[] refLight, List<MutationBlockOverwriteMisc> out_mutations)
 	{
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
@@ -153,7 +190,7 @@ public class TestPlantHelpers
 				@Override
 				public boolean next(IMutationBlock mutation)
 				{
-					out_mutations.add((MutationBlockOverwriteInternal) mutation);
+					out_mutations.add((MutationBlockOverwriteMisc) mutation);
 					return true;
 				}
 				@Override
