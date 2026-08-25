@@ -367,11 +367,11 @@ public class BasicWorldGenerator implements IWorldGenerator
 						{
 							// Choose the block above the dirt.
 							int absoluteZ = dirtBlockZ + 1;
-							// The tree is a 3x3 structure with the tree in the middle so step back by one.
-							AbsoluteLocation rootLocation = new AbsoluteLocation(sideBase.x() + relativeX - 1, sideBase.y() + relativeY - 1, absoluteZ);
+							// The tree is a 5x5 structure with the tree in the middle so step back by 2.
+							AbsoluteLocation rootLocation = new AbsoluteLocation(sideBase.x() + relativeX - 2, sideBase.y() + relativeY - 2, absoluteZ);
 							// Make sure that these are over dirt.
-							// (re-add the +1 to reach the trunk)
-							AbsoluteLocation dirtLocation = new AbsoluteLocation(rootLocation.x() + 1, rootLocation.y() + 1, rootLocation.z() - 1);
+							// (re-add the +2 to reach the trunk)
+							AbsoluteLocation dirtLocation = new AbsoluteLocation(rootLocation.x() + 2, rootLocation.y() + 2, rootLocation.z() - 1);
 							// TODO:  To determine if this dirtLocation is _actually_ dirt, we would need to do a more
 							// complete generation of these other cuboids.  As it stands, this could generate trees
 							// floating over caves.

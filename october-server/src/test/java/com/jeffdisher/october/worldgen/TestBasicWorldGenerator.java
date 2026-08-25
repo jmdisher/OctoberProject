@@ -192,8 +192,8 @@ public class TestBasicWorldGenerator
 		Assert.assertEquals(69, copperCount);
 		Assert.assertEquals(0, ironCount);
 		Assert.assertEquals(0, diamondCount);
-		Assert.assertEquals(36, logCount);
-		Assert.assertEquals(66, leafCount);
+		Assert.assertEquals(152, logCount);
+		Assert.assertEquals(267, leafCount);
 	}
 
 	@Test
@@ -257,7 +257,7 @@ public class TestBasicWorldGenerator
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, CuboidAddress.fromInt(-10, -9, 0), 0L);
 		CuboidData cuboid = suspended.cuboid();
 		int dirtBlocks = 18;
-		_checkBlockTypes(cuboid, 5992, 22, 40, 0, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - dirtBlocks, dirtBlocks, 0, 34, 69, 0, 0, 0);
+		_checkBlockTypes(cuboid, 5992, 22, 40, 0, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - dirtBlocks, dirtBlocks, 0, 145, 281, 0, 0, 0);
 	}
 
 	@Test
@@ -285,7 +285,7 @@ public class TestBasicWorldGenerator
 		// This is a large field (56 in gully + 4).
 		int blocksPlanted = 56 + 4;
 		int grassCount = Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - blocksPlanted;
-		_checkBlockTypes(cuboid, 4995, 33, 50, 0, 0, grassCount, 0, blocksPlanted, 0, 2, blocksPlanted, 0, 0);
+		_checkBlockTypes(cuboid, 4995, 33, 50, 0, 0, grassCount, 0, blocksPlanted, 2, 9, blocksPlanted, 0, 0);
 		
 		// Verify that cows are spawned.
 		List<CreatureEntity> creatures = suspended.creatures();
@@ -319,7 +319,7 @@ public class TestBasicWorldGenerator
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, CuboidAddress.fromInt(1, -1, 0), 0L);
 		CuboidData cuboid = suspended.cuboid();
 		int dirtBlocks = 17;
-		_checkBlockTypes(cuboid, 11687, 93, 163, 0, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - 10 - dirtBlocks, dirtBlocks, 0, 34, 69, 0, 0, 0);
+		_checkBlockTypes(cuboid, 11687, 93, 163, 0, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - 10 - dirtBlocks, dirtBlocks, 0, 152, 288, 0, 0, 0);
 	}
 
 	@Test
@@ -402,7 +402,7 @@ public class TestBasicWorldGenerator
 		int wheatCount = 4;
 		int missingSurface = 12;
 		int grassCount = Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - wheatCount - missingSurface;
-		_checkBlockTypes(cuboid, 8424, 56, 45, 0, 0, grassCount, 0, wheatCount, 0, 0, wheatCount, 0, 0);
+		_checkBlockTypes(cuboid, 8424, 56, 45, 0, 0, grassCount, 0, wheatCount, 0, 2, wheatCount, 0, 0);
 	}
 
 	@Test
