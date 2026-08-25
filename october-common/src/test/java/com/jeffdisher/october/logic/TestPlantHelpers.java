@@ -73,8 +73,7 @@ public class TestPlantHelpers
 		// Light.
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		proxy.setBlockAndClear(SAPLING);
-		boolean reschedule = PlantHelpers.shouldRescheduleAfterPlantPeriodic(ENV, context, target, proxy);
-		Assert.assertFalse(reschedule);
+		PlantHelpers.runPlantPeriodic(ENV, context, target, proxy);
 		Assert.assertEquals(LOG, proxy.getBlock());
 		Assert.assertEquals(1, mutations.size());
 		mutations.clear();
@@ -83,8 +82,7 @@ public class TestPlantHelpers
 		refLight[0] = 0;
 		proxy = new MutableBlockProxy(target, cuboid);
 		proxy.setBlockAndClear(SAPLING);
-		reschedule = PlantHelpers.shouldRescheduleAfterPlantPeriodic(ENV, context, target, proxy);
-		Assert.assertTrue(reschedule);
+		PlantHelpers.runPlantPeriodic(ENV, context, target, proxy);
 		Assert.assertEquals(SAPLING, proxy.getBlock());
 		Assert.assertEquals(0, mutations.size());
 	}
@@ -101,8 +99,7 @@ public class TestPlantHelpers
 		// Light.
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		proxy.setBlockAndClear(WHEAT_YOUNG);
-		boolean reschedule = PlantHelpers.shouldRescheduleAfterPlantPeriodic(ENV, context, target, proxy);
-		Assert.assertTrue(reschedule);
+		PlantHelpers.runPlantPeriodic(ENV, context, target, proxy);
 		Assert.assertEquals(WHEAT_YOUNG, proxy.getBlock());
 		Assert.assertEquals((byte)1, proxy.getBlockDefinedByte());
 		
@@ -110,8 +107,7 @@ public class TestPlantHelpers
 		refLight[0] = 0;
 		proxy = new MutableBlockProxy(target, cuboid);
 		proxy.setBlockAndClear(WHEAT_YOUNG);
-		reschedule = PlantHelpers.shouldRescheduleAfterPlantPeriodic(ENV, context, target, proxy);
-		Assert.assertTrue(reschedule);
+		PlantHelpers.runPlantPeriodic(ENV, context, target, proxy);
 		Assert.assertEquals(WHEAT_YOUNG, proxy.getBlock());
 		Assert.assertEquals((byte)0, proxy.getBlockDefinedByte());
 	}
@@ -130,8 +126,7 @@ public class TestPlantHelpers
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		proxy.setBlockAndClear(WHEAT_YOUNG);
 		proxy.setBlockDefinedByte(finalGrowth);
-		boolean reschedule = PlantHelpers.shouldRescheduleAfterPlantPeriodic(ENV, context, target, proxy);
-		Assert.assertFalse(reschedule);
+		PlantHelpers.runPlantPeriodic(ENV, context, target, proxy);
 		Assert.assertEquals(WHEAT_MATURE, proxy.getBlock());
 		Assert.assertEquals((byte)0, proxy.getBlockDefinedByte());
 		
@@ -140,8 +135,7 @@ public class TestPlantHelpers
 		proxy = new MutableBlockProxy(target, cuboid);
 		proxy.setBlockAndClear(WHEAT_YOUNG);
 		proxy.setBlockDefinedByte(finalGrowth);
-		reschedule = PlantHelpers.shouldRescheduleAfterPlantPeriodic(ENV, context, target, proxy);
-		Assert.assertTrue(reschedule);
+		PlantHelpers.runPlantPeriodic(ENV, context, target, proxy);
 		Assert.assertEquals(WHEAT_YOUNG, proxy.getBlock());
 		Assert.assertEquals(finalGrowth, proxy.getBlockDefinedByte());
 	}
@@ -160,8 +154,7 @@ public class TestPlantHelpers
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		proxy.setBlockAndClear(BRANCH);
 		proxy.setOrientation(FacingDirection.DOWN);
-		boolean reschedule = PlantHelpers.shouldRescheduleAfterPlantPeriodic(ENV, context, target, proxy);
-		Assert.assertFalse(reschedule);
+		PlantHelpers.runPlantPeriodic(ENV, context, target, proxy);
 		Assert.assertEquals(LOG, proxy.getBlock());
 		Assert.assertEquals((byte)0, proxy.getBlockDefinedByte());
 		Assert.assertEquals(5, mutations.size());
@@ -172,8 +165,7 @@ public class TestPlantHelpers
 		proxy = new MutableBlockProxy(target, cuboid);
 		proxy.setBlockAndClear(BRANCH);
 		proxy.setOrientation(FacingDirection.DOWN);
-		reschedule = PlantHelpers.shouldRescheduleAfterPlantPeriodic(ENV, context, target, proxy);
-		Assert.assertFalse(reschedule);
+		PlantHelpers.runPlantPeriodic(ENV, context, target, proxy);
 		Assert.assertEquals(LOG, proxy.getBlock());
 		Assert.assertEquals((byte)0, proxy.getBlockDefinedByte());
 		Assert.assertEquals(5, mutations.size());
