@@ -43,13 +43,19 @@ public class PlantHelpers
 	 */
 	public static boolean shouldRescheduleAfterPlantPeriodic(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 	{
-		// See if the random generator says we should grow this tick or try again later.
-		// We will only bother if the block is lit.
-		boolean isLit = (newBlock.getLight() >= MIN_LIGHT) || (context.skyLight.lookup(location) >= MIN_LIGHT);
 		int growthDivisor = env.plants.growthDivisor(newBlock.getBlock());
 		// This MUST be something which can grow.
 		Assert.assertTrue(growthDivisor > 0);
+		
+		// See if this type of block requires light in order to grow.
+		boolean isLit = env.plants.requiresLight(newBlock.getBlock())
+			? ((newBlock.getLight() >= MIN_LIGHT) || (context.skyLight.lookup(location) >= MIN_LIGHT))
+			: true
+		;
+		
+		// See if the random generator says we should grow this tick or try again later.
 		int randomBits = context.randomInt.applyAsInt(growthDivisor);
+		
 		boolean canGrow = isLit && (1 == randomBits);
 		boolean shouldReschedule;
 		if (canGrow)

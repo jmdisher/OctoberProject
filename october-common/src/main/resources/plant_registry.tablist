@@ -1,6 +1,7 @@
 # Entries here have the form:
 # ID
 # <TAB>growth_divisor<TAB>int
+# [<TAB>requires_light]
 # [<TAB>grow_as_tree]
 # [<TAB>growth_stages<TAB>int]
 # [<TAB>mature_block<TAB>id]
@@ -17,12 +18,15 @@
 
 op.sapling
 	growth_divisor	100
+	requires_light
 	grow_as_tree
 op.wheat_young
 	growth_divisor	12
+	requires_light
 	growth_stages	2
 	mature_block	op.wheat_mature
 op.carrot_young
 	growth_divisor	20
+	requires_light
 	growth_stages	2
 	mature_block	op.carrot_mature

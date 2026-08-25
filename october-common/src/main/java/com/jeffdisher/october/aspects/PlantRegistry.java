@@ -19,6 +19,7 @@ import com.jeffdisher.october.types.Block;
 public class PlantRegistry
 {
 	public static final String FIELD_GROWTH_DIVISOR = "growth_divisor";
+	public static final String FIELD_REQUIRES_LIGHT = "requires_light";
 	public static final String FIELD_GROW_AS_TREE = "grow_as_tree";
 	public static final String FIELD_GROWTH_STAGES = "growth_stages";
 	public static final String FIELD_MATURE_BLOCK = "mature_block";
@@ -44,6 +45,7 @@ public class PlantRegistry
 		
 		SimpleTabListCallbacks<Block, Void> callbacks = new SimpleTabListCallbacks<>(keyTransformer, null);
 		SimpleTabListCallbacks.SubRecordCapture<Block, Integer> growthDivisors = callbacks.captureSubRecord(FIELD_GROWTH_DIVISOR, divisorTransformer, true);
+		SimpleTabListCallbacks.SubRecordCapture<Block, Block> requiresLightSet = callbacks.captureSubRecord(FIELD_REQUIRES_LIGHT, null, false);
 		SimpleTabListCallbacks.SubRecordCapture<Block, Block> treeSet = callbacks.captureSubRecord(FIELD_GROW_AS_TREE, null, false);
 		SimpleTabListCallbacks.SubRecordCapture<Block, Byte> growthStages = callbacks.captureSubRecord(FIELD_GROWTH_STAGES, stagesTransformer, false);
 		SimpleTabListCallbacks.SubRecordCapture<Block, Block> matureBlocks= callbacks.captureSubRecord(FIELD_MATURE_BLOCK, matureBlocksTransformer, false);
@@ -70,6 +72,7 @@ public class PlantRegistry
 		
 		// We can just pass these in, directly.
 		return new PlantRegistry(growthDivisors.recordData
+			, requiresLightSet.recordData.keySet()
 			, treeSet.recordData.keySet()
 			, growthStages.recordData
 			, matureBlocks.recordData
@@ -78,17 +81,20 @@ public class PlantRegistry
 
 
 	private final Map<Block, Integer> _growthDivisors;
+	private final Set<Block> _requiresLightSet;
 	private final Set<Block> _treeSet;
 	private final Map<Block, Byte> _stagesCount;
 	private final Map<Block, Block> _stagesMaturity;
 
 	private PlantRegistry(Map<Block, Integer> growthDivisors
+		, Set<Block> requiresLightSet
 		, Set<Block> treeSet
 		, Map<Block, Byte> stagesCount
 		, Map<Block, Block> stagesMaturity
 	)
 	{
 		_growthDivisors = growthDivisors;
+		_requiresLightSet = requiresLightSet;
 		_treeSet = treeSet;
 		_stagesCount = stagesCount;
 		_stagesMaturity = stagesMaturity;
@@ -107,6 +113,17 @@ public class PlantRegistry
 				? _growthDivisors.get(block)
 				: 0
 		;
+	}
+
+	/**
+	 * Checks if the given block requires light in order to grow.
+	 * 
+	 * @param block The block.
+	 * @return True if this block requires light to grow.
+	 */
+	public boolean requiresLight(Block block)
+	{
+		return _requiresLightSet.contains(block);
 	}
 
 	/**
