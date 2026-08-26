@@ -405,7 +405,6 @@ public class CommonBlockMutationHelpers
 		// Collect the information from the previous state or which isn't dependent on the state of this block, at all.
 		Block oldType = proxy.getBlock();
 		BlockProxy belowBlock = context.previousBlockLookUp.readBlock(location.getRelative(0, 0, -1));
-		boolean shouldSetHigh = LogicLayerHelpers.shouldSetActive(env, context.previousBlockLookUp, location, outputDirection, newType);
 		
 		// Set the changes to the block type.
 		proxy.setBlockAndClear(newType);
@@ -417,6 +416,11 @@ public class CommonBlockMutationHelpers
 		{
 			proxy.setBlockDefinedByte(blockDefined);
 		}
+		
+		// Handle any follow-up actions or special handling for this block type.
+		env.periodic.behaviour(newType).doInitialRegistration(context, proxy);
+		
+		boolean shouldSetHigh = LogicLayerHelpers.shouldSetActive(env, context.previousBlockLookUp, location, outputDirection, newType);
 		if (shouldSetHigh)
 		{
 			// Setting the block clears the flags so we are always setting this.
@@ -435,11 +439,6 @@ public class CommonBlockMutationHelpers
 		{
 			env.composites.processCornerstoneUpdate(env, context, location, proxy);
 		}
-		
-		// Handle the setting of periodic updates.
-		env.periodic.behaviour(newType).doInitialRegistration(context, proxy);
-		
-		// Handle any other follow-up actions.
 		
 		// If this changed into a fire source block, schedule the ignition mutations around it.
 		_scheduleFireIfNewSource(env, context, location, oldType, newType);

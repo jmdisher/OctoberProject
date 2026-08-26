@@ -46,16 +46,11 @@ public class LogicLayerHelpers
 		// Only sinks can be set to active during placement (sources can be changed to active by a user).
 		boolean isActive = false;
 		
-		// See if this is a logic block.
-		if (env.logic.isAware(type))
+		// Check the signal placement helper.
+		LogicAspect.ISignalChangeCallback logic = env.logic.initialPlacementHandler(type);
+		if (null != logic)
 		{
-			// Check the signal placement helper.
-			LogicAspect.ISignalChangeCallback logic = env.logic.initialPlacementHandler(type);
-			
-			if (null != logic)
-			{
-				isActive = logic.shouldStoreHighSignal(env, proxyLookup, location, outputDirection);
-			}
+			isActive = logic.shouldStoreHighSignal(env, proxyLookup, location, outputDirection);
 		}
 		return isActive;
 	}
