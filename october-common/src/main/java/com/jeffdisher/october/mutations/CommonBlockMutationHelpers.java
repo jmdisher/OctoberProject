@@ -1,7 +1,5 @@
 package com.jeffdisher.october.mutations;
 
-import java.util.List;
-
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LiquidRegistry;
@@ -414,26 +412,12 @@ public class CommonBlockMutationHelpers
 		// Handle any follow-up actions or special handling for this block type.
 		env.hooks.didSetBlock(env, context, location, proxy, oldType);
 		
-		// Check if there is anything changing related to ground cover.
-		// First, see if this can spread ground cover.
-		if (env.groundCover.isGroundCover(newType))
+		// Check if this can become ground cover.
+		Block shouldBecome = GroundCoverHelpers.findPotentialGroundCoverType(env, context.previousBlockLookUp, location, newType);
+		if (null != shouldBecome)
 		{
-			List<AbsoluteLocation> targets = GroundCoverHelpers.findSpreadNeighbours(env, context.previousBlockLookUp, location, newType);
-			for (AbsoluteLocation neighbour : targets)
-			{
-				MutationBlockGrowGroundCover grow = new MutationBlockGrowGroundCover(neighbour, newType);
-				context.mutationSink.future(grow, MutationBlockGrowGroundCover.SPREAD_DELAY_MILLIS);
-			}
-		}
-		else
-		{
-			// Otherwise, check if this block can become ground cover.
-			Block shouldBecome = GroundCoverHelpers.findPotentialGroundCoverType(env, context.previousBlockLookUp, location, newType);
-			if (null != shouldBecome)
-			{
-				MutationBlockGrowGroundCover grow = new MutationBlockGrowGroundCover(location, shouldBecome);
-				context.mutationSink.future(grow, MutationBlockGrowGroundCover.SPREAD_DELAY_MILLIS);
-			}
+			MutationBlockGrowGroundCover grow = new MutationBlockGrowGroundCover(location, shouldBecome);
+			context.mutationSink.future(grow, MutationBlockGrowGroundCover.SPREAD_DELAY_MILLIS);
 		}
 		
 		// Gravity blocks are placed once and then fall after an update, so see if that matters here.

@@ -282,6 +282,7 @@ public class Environment
 			, this.plants
 			, this.logic
 			, this.composites
+			, this.groundCover
 			, this.special
 		);
 	}

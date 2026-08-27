@@ -15,6 +15,7 @@ import com.jeffdisher.october.block_periodic.PeriodicBehaviourPortalKeystone;
 import com.jeffdisher.october.block_set.BlockSetBehaviourCornerstone;
 import com.jeffdisher.october.block_set.BlockSetBehaviourFireSource;
 import com.jeffdisher.october.block_set.BlockSetBehaviourFlammable;
+import com.jeffdisher.october.block_set.BlockSetBehaviourGroundCoverSource;
 import com.jeffdisher.october.block_set.BlockSetBehaviourLogic;
 import com.jeffdisher.october.block_set.BlockSetBehaviourPeriodicWrapper;
 import com.jeffdisher.october.block_set.IBlockSetBehaviour;
@@ -39,6 +40,7 @@ public class HookRegistry
 		, PlantRegistry plants
 		, LogicAspect logic
 		, CompositeRegistry composites
+		, GroundCoverRegistry groundCover
 		, SpecialConstants special
 	)
 	{
@@ -82,6 +84,12 @@ public class HookRegistry
 				if (blocks.isFlammable(block))
 				{
 					setBlockList.add(new BlockSetBehaviourFlammable());
+				}
+				
+				// Handle blocks which can spread ground cover.
+				if (groundCover.isGroundCover(block))
+				{
+					setBlockList.add(new BlockSetBehaviourGroundCoverSource());
 				}
 				
 				// Move this data into maps.
