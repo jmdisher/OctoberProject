@@ -419,12 +419,6 @@ public class CommonBlockMutationHelpers
 		// Handle any follow-up actions or special handling for this block type.
 		env.hooks.didSetBlock(env, context, location, proxy, oldType);
 		
-		// If this is the cornerstone of a composition, check the composition state and schedule a periodic update.
-		if (env.composites.isActiveCornerstone(newType))
-		{
-			env.composites.processCornerstoneUpdate(env, context, location, proxy);
-		}
-		
 		// If this changed into a fire source block, schedule the ignition mutations around it.
 		_scheduleFireIfNewSource(env, context, location, oldType, newType);
 		

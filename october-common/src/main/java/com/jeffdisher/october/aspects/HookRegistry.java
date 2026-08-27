@@ -12,6 +12,7 @@ import com.jeffdisher.october.block_periodic.PeriodicBehaviourCuboidLoader;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourHopper;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourPlant;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourPortalKeystone;
+import com.jeffdisher.october.block_set.BlockSetBehaviourCornerstone;
 import com.jeffdisher.october.block_set.BlockSetBehaviourLogic;
 import com.jeffdisher.october.block_set.BlockSetBehaviourPeriodicWrapper;
 import com.jeffdisher.october.block_set.IBlockSetBehaviour;
@@ -61,6 +62,12 @@ public class HookRegistry
 				if (null != placementHandler)
 				{
 					setBlockList.add(new BlockSetBehaviourLogic(placementHandler));
+				}
+				
+				// The composite cornerstone is a simple one but we still want it in this general mechanism.
+				if (composites.isActiveCornerstone(block))
+				{
+					setBlockList.add(new BlockSetBehaviourCornerstone());
 				}
 				
 				// Move this data into maps.
