@@ -99,6 +99,7 @@ public class Environment
 	public final SpecialConstants special;
 	// TODO:  Move this earlier once the dependency on later parts is removed.
 	public final PeriodicBlockRegistry periodic;
+	public final HookRegistry hooks;
 
 	private Environment(ModLayer[] mods) throws IOException, TabListReader.TabListException
 	{
@@ -277,6 +278,7 @@ public class Environment
 		}
 		// TODO:  Move this earlier once the dependency on later parts is removed.
 		this.periodic = PeriodicBlockRegistry.loadRegistry(this.items, this.blocks, this.plants, this.special, this.composites);
+		this.hooks = HookRegistry.setupHooks();
 	}
 
 	private static InputStream _openModded(ClassLoader loader, ModLayer[] mods, String fileName)

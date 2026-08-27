@@ -6,7 +6,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -47,10 +46,7 @@ public class MutationBlockPeriodic implements IMutationBlock
 	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
-		
-		// Make sure that this is a block which can grow.
-		Block block = newBlock.getBlock();
-		env.periodic.behaviour(block).runPeriodic(env, context, _location, newBlock);
+		env.hooks.doRunPeriodic(env, context, _location, newBlock);
 	}
 
 	@Override

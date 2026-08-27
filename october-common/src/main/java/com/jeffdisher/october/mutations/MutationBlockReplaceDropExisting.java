@@ -71,6 +71,7 @@ public class MutationBlockReplaceDropExisting implements IMutationBlock
 			
 			// Overwrite the block with the new type.
 			newBlock.setBlockAndClear(_newType);
+			env.hooks.didSetBlock(env, context, _location, newBlock, oldType);
 			
 			// Handle the case where this is a gravity block.
 			if (env.blocks.hasGravity(_newType))

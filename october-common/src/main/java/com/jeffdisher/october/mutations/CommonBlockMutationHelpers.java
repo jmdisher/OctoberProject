@@ -185,6 +185,7 @@ public class CommonBlockMutationHelpers
 		Block oldType = proxy.getBlock();
 		Block newType = env.special.AIR;
 		proxy.setBlockAndClear(newType);
+		env.hooks.didSetBlock(env, context, location, proxy, oldType);
 		_didScheduleFlowInForReplaceable(env, context, location, oldType, proxy);
 	}
 
@@ -210,6 +211,7 @@ public class CommonBlockMutationHelpers
 		// Set the block first since it clears the block-defined byte.
 		proxy.setBlockAndClear(newType.sourceType());
 		proxy.setBlockDefinedByte(newType.distance());
+		env.hooks.didSetBlock(env, context, location, proxy, oldType);
 		
 		// We will do the fire check with the source.
 		Block source = newType.sourceType();
@@ -418,7 +420,7 @@ public class CommonBlockMutationHelpers
 		}
 		
 		// Handle any follow-up actions or special handling for this block type.
-		env.periodic.behaviour(newType).doInitialRegistration(context, proxy);
+		env.hooks.didSetBlock(env, context, location, proxy, oldType);
 		
 		boolean shouldSetHigh = LogicLayerHelpers.shouldSetActive(env, context.previousBlockLookUp, location, outputDirection, newType);
 		if (shouldSetHigh)
