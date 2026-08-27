@@ -27,6 +27,5 @@ public class PeriodicBehaviourCompositeCornerstone implements IBlockPeriodicBeha
 	{
 		// See if we need to change the state of the composite.
 		env.composites.processCornerstoneUpdate(env, context, location, newBlock);
-		newBlock.requestFutureMutation(COMPOSITE_CHECK_FREQUENCY);
 	}
 }

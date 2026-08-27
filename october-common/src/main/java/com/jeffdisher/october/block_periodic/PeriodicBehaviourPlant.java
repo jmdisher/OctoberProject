@@ -22,11 +22,5 @@ public class PeriodicBehaviourPlant implements IBlockPeriodicBehaviour
 	{
 		// Run the growth attempt (this will change newBlock to advance growth).
 		PlantHelpers.runPlantPeriodic(env, context, location, newBlock);
-		
-		// Reschedule this if the block is still one which grows.
-		if (env.plants.growthDivisor(newBlock.getBlock()) > 0)
-		{
-			newBlock.requestFutureMutation(MILLIS_BETWEEN_GROWTH_CALLS);
-		}
 	}
 }

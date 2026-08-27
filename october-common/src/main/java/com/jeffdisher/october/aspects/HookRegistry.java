@@ -19,6 +19,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -134,15 +135,7 @@ public class HookRegistry
 
 	public void didSetBlock(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy, Block replacedType)
 	{
-		Block newType = proxy.getBlock();
-		List<IBlockSetBehaviour> list = _didSetBlock.get(newType);
-		if (null != list)
-		{
-			for (IBlockSetBehaviour set : list)
-			{
-				set.didSetBlock(env, context, location, proxy, replacedType);
-			}
-		}
+		_didSetBlock(env, context, location, proxy, replacedType);
 	}
 
 	public void doRunPeriodic(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
@@ -152,6 +145,36 @@ public class HookRegistry
 		if (null != behaviour)
 		{
 			behaviour.runPeriodic(env, context, location, proxy);
+			
+			// Note that the periodic event is allowed to change the block.
+			// Since we need to re-register the callback, do that unless we are going to call the set-block handlers.
+			if (proxy.getBlock() == newType)
+			{
+				// Unchanged, so just do the usual registration.
+				behaviour.doInitialRegistration(context, proxy);
+			}
+			else
+			{
+				// This changed so run the set-block.
+				_didSetBlock(env, context, location, proxy, newType);
+			}
+		}
+	}
+
+
+	private void _didSetBlock(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy, Block replacedType)
+	{
+		Block newType = proxy.getBlock();
+		List<IBlockSetBehaviour> list = _didSetBlock.get(newType);
+		if (null != list)
+		{
+			for (IBlockSetBehaviour set : list)
+			{
+				set.didSetBlock(env, context, location, proxy, replacedType);
+			}
+			
+			// It is not acceptable change the block in the post-set-block hooks.
+			Assert.assertTrue(proxy.getBlock() == newType);
 		}
 	}
 

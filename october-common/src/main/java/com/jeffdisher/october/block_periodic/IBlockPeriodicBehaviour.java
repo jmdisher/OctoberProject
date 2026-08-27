@@ -9,8 +9,8 @@ import com.jeffdisher.october.types.TickProcessingContext;
 /**
  * Called by MutationBlockPeriodic when a periodic mutation should be applied.
  * The implementation chosen in based on the current block type when the mutation started running.
- * The implementation is responsible for whatever action should be taken by that block type, periodically, as well as
- * rescheduling the next periodic mutation.
+ * The implementation is responsible for whatever action should be taken by that block type, periodically, but the call
+ * to re-register the callback will be made from the outside, so an implementation should NOT do that.
  */
 public interface IBlockPeriodicBehaviour
 {

@@ -21,6 +21,5 @@ public class PeriodicBehaviourHopper implements IBlockPeriodicBehaviour
 	public void runPeriodic(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 	{
 		HopperHelpers.tryProcessHopper(context, location, newBlock);
-		newBlock.requestFutureMutation(MILLIS_BETWEEN_HOPPER_CALLS);
 	}
 }

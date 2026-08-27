@@ -26,6 +26,5 @@ public class PeriodicBehaviourCuboidLoader implements IBlockPeriodicBehaviour
 		{
 			context.keepAliveSink.accept(location.getCuboidAddress());
 		}
-		newBlock.requestFutureMutation(MiscConstants.CUBOID_KEEP_ALIVE_MILLIS - context.millisPerTick);
 	}
 }
