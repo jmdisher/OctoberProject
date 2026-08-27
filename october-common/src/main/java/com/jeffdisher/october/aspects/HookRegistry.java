@@ -16,6 +16,7 @@ import com.jeffdisher.october.block_set.BlockSetBehaviourCornerstone;
 import com.jeffdisher.october.block_set.BlockSetBehaviourFireSource;
 import com.jeffdisher.october.block_set.BlockSetBehaviourFlammable;
 import com.jeffdisher.october.block_set.BlockSetBehaviourGroundCoverSource;
+import com.jeffdisher.october.block_set.BlockSetBehaviourGroundCoverTarget;
 import com.jeffdisher.october.block_set.BlockSetBehaviourLogic;
 import com.jeffdisher.october.block_set.BlockSetBehaviourPeriodicWrapper;
 import com.jeffdisher.october.block_set.IBlockSetBehaviour;
@@ -90,6 +91,12 @@ public class HookRegistry
 				if (groundCover.isGroundCover(block))
 				{
 					setBlockList.add(new BlockSetBehaviourGroundCoverSource());
+				}
+				
+				// Handle the blocks which can receive ground cover.
+				if (null != groundCover.canGrowGroundCover(block))
+				{
+					setBlockList.add(new BlockSetBehaviourGroundCoverTarget());
 				}
 				
 				// Move this data into maps.

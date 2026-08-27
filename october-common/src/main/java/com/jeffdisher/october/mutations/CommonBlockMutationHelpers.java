@@ -5,7 +5,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LiquidRegistry;
 import com.jeffdisher.october.aspects.LiquidRegistry.LiquidBlock;
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.logic.GroundCoverHelpers;
 import com.jeffdisher.october.logic.MiscHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -411,14 +410,6 @@ public class CommonBlockMutationHelpers
 		
 		// Handle any follow-up actions or special handling for this block type.
 		env.hooks.didSetBlock(env, context, location, proxy, oldType);
-		
-		// Check if this can become ground cover.
-		Block shouldBecome = GroundCoverHelpers.findPotentialGroundCoverType(env, context.previousBlockLookUp, location, newType);
-		if (null != shouldBecome)
-		{
-			MutationBlockGrowGroundCover grow = new MutationBlockGrowGroundCover(location, shouldBecome);
-			context.mutationSink.future(grow, MutationBlockGrowGroundCover.SPREAD_DELAY_MILLIS);
-		}
 		
 		// Gravity blocks are placed once and then fall after an update, so see if that matters here.
 		if (env.blocks.hasGravity(newType))
