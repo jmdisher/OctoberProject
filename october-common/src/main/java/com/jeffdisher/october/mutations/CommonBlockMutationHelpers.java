@@ -209,10 +209,6 @@ public class CommonBlockMutationHelpers
 		proxy.setBlockAndClear(newType.sourceType());
 		proxy.setBlockDefinedByte(newType.distance());
 		env.hooks.didSetBlock(env, context, location, proxy, oldType);
-		
-		// We will do the fire check with the source.
-		Block source = newType.sourceType();
-		_scheduleFireIfNewSource(env, context, location, oldType, source);
 	}
 
 	/**
@@ -419,9 +415,6 @@ public class CommonBlockMutationHelpers
 		// Handle any follow-up actions or special handling for this block type.
 		env.hooks.didSetBlock(env, context, location, proxy, oldType);
 		
-		// If this changed into a fire source block, schedule the ignition mutations around it.
-		_scheduleFireIfNewSource(env, context, location, oldType, newType);
-		
 		// If this block changed into a flammable type, see if it should receive an ignition mutation.
 		// (set type first since this helper reads it).
 		if (!env.blocks.isFlammable(oldType) && FireHelpers.canIgnite(env, context, location, proxy))
@@ -513,19 +506,6 @@ public class CommonBlockMutationHelpers
 	{
 		LiquidRegistry.LiquidBlock emptyBlock = null;
 		return _didScheduleFlowInto(env, context, location, emptyBlock);
-	}
-
-	private static void _scheduleFireIfNewSource(Environment env, TickProcessingContext context, AbsoluteLocation location, Block oldType, Block newType)
-	{
-		if (env.blocks.isFireSource(newType) && !env.blocks.isFireSource(oldType))
-		{
-			List<AbsoluteLocation> flammable = FireHelpers.findFlammableNeighbours(env, context, location);
-			for (AbsoluteLocation neighour : flammable)
-			{
-				MutationBlockStartFire startFire = new MutationBlockStartFire(neighour);
-				context.mutationSink.future(startFire, MutationBlockStartFire.IGNITION_DELAY_MILLIS);
-			}
-		}
 	}
 
 	private static boolean _didScheduleFlowInto(Environment env, TickProcessingContext context, AbsoluteLocation location, LiquidRegistry.LiquidBlock currentLiquid)

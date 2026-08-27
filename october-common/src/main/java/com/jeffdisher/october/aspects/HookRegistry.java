@@ -13,6 +13,7 @@ import com.jeffdisher.october.block_periodic.PeriodicBehaviourHopper;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourPlant;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourPortalKeystone;
 import com.jeffdisher.october.block_set.BlockSetBehaviourCornerstone;
+import com.jeffdisher.october.block_set.BlockSetBehaviourFireSource;
 import com.jeffdisher.october.block_set.BlockSetBehaviourLogic;
 import com.jeffdisher.october.block_set.BlockSetBehaviourPeriodicWrapper;
 import com.jeffdisher.october.block_set.IBlockSetBehaviour;
@@ -68,6 +69,12 @@ public class HookRegistry
 				if (composites.isActiveCornerstone(block))
 				{
 					setBlockList.add(new BlockSetBehaviourCornerstone());
+				}
+				
+				// Fire sources have extra checks when invoked but are based on their block type.
+				if (blocks.isFireSource(block))
+				{
+					setBlockList.add(new BlockSetBehaviourFireSource());
 				}
 				
 				// Move this data into maps.
