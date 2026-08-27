@@ -280,8 +280,9 @@ public class Environment
 		this.hooks = HookRegistry.setupHooks(this.items
 			, this.blocks
 			, this.plants
-			, this.special
+			, this.logic
 			, this.composites
+			, this.special
 		);
 	}
 

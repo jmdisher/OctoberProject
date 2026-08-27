@@ -12,6 +12,7 @@ import com.jeffdisher.october.block_periodic.PeriodicBehaviourCuboidLoader;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourHopper;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourPlant;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourPortalKeystone;
+import com.jeffdisher.october.block_set.BlockSetBehaviourLogic;
 import com.jeffdisher.october.block_set.BlockSetBehaviourPeriodicWrapper;
 import com.jeffdisher.october.block_set.IBlockSetBehaviour;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -33,8 +34,9 @@ public class HookRegistry
 	public static HookRegistry setupHooks(ItemRegistry items
 		, BlockAspect blocks
 		, PlantRegistry plants
-		, SpecialConstants special
+		, LogicAspect logic
 		, CompositeRegistry composites
+		, SpecialConstants special
 	)
 	{
 		
@@ -47,10 +49,18 @@ public class HookRegistry
 			{
 				List<IBlockSetBehaviour> setBlockList = new ArrayList<>();
 				
+				// Check if this block type has periodic behaviour.
 				IBlockPeriodicBehaviour periodic = _periodicBehaviourForBlock(plants, special, composites, block);
 				if (null != periodic)
 				{
 					setBlockList.add(new BlockSetBehaviourPeriodicWrapper(periodic));
+				}
+				
+				// Check if this has a logic handler for when first placed.
+				LogicAspect.ISignalChangeCallback placementHandler = logic.initialPlacementHandler(block);
+				if (null != placementHandler)
+				{
+					setBlockList.add(new BlockSetBehaviourLogic(placementHandler));
 				}
 				
 				// Move this data into maps.

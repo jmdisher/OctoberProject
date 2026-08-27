@@ -4,14 +4,11 @@ import java.util.List;
 
 import com.jeffdisher.october.actions.EntityActionStoreToInventory;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LiquidRegistry;
-import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.aspects.LiquidRegistry.LiquidBlock;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.FireHelpers;
 import com.jeffdisher.october.logic.GroundCoverHelpers;
-import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.logic.MiscHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -421,20 +418,6 @@ public class CommonBlockMutationHelpers
 		
 		// Handle any follow-up actions or special handling for this block type.
 		env.hooks.didSetBlock(env, context, location, proxy, oldType);
-		
-		boolean shouldSetHigh = LogicLayerHelpers.shouldSetActive(env, context.previousBlockLookUp, location, outputDirection, newType);
-		if (shouldSetHigh)
-		{
-			// Setting the block clears the flags so we are always setting this.
-			byte newFlags = FlagsAspect.FLAG_ACTIVE;
-			proxy.setFlags(newFlags);
-			
-			LogicAspect.IActiveFlagChangeCallback changeState = env.logic.flagChangeHandler(newType);
-			if (null != changeState)
-			{
-				changeState.activeFlagDidChange(context, proxy, location, shouldSetHigh);
-			}
-		}
 		
 		// If this is the cornerstone of a composition, check the composition state and schedule a periodic update.
 		if (env.composites.isActiveCornerstone(newType))

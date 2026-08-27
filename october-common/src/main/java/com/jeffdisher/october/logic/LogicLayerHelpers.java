@@ -6,7 +6,6 @@ import java.util.Set;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
-import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -30,30 +29,6 @@ public class LogicLayerHelpers
 	public static final byte LOGIC_BIT_SOUTH = 0x10;
 	public static final byte LOGIC_BIT_UP = 0x20;
 	public static final byte LOGIC_BIT_DOWN = 0x40;
-
-	/**
-	 * Called to check if this block should have its active flag set when placed.
-	 * 
-	 * @param env The environment.
-	 * @param proxyLookup A look-up for that last tick's output proxies.
-	 * @param location The location where the block is being placed.
-	 * @param outputDirection The output where the block is facing.
-	 * @param type The type of block being placed.
-	 * @return True if the active flag should be set when placing the block.
-	 */
-	public static boolean shouldSetActive(Environment env, TickProcessingContext.IBlockFetcher proxyLookup, AbsoluteLocation location, FacingDirection outputDirection, Block type)
-	{
-		// Only sinks can be set to active during placement (sources can be changed to active by a user).
-		boolean isActive = false;
-		
-		// Check the signal placement helper.
-		LogicAspect.ISignalChangeCallback logic = env.logic.initialPlacementHandler(type);
-		if (null != logic)
-		{
-			isActive = logic.shouldStoreHighSignal(env, proxyLookup, location, outputDirection);
-		}
-		return isActive;
-	}
 
 	/**
 	 * Checks if a high signal is entering a block at location from adjacent block.
