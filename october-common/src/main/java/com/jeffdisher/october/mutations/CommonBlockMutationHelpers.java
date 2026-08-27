@@ -395,7 +395,6 @@ public class CommonBlockMutationHelpers
 	{
 		// Collect the information from the previous state or which isn't dependent on the state of this block, at all.
 		Block oldType = proxy.getBlock();
-		BlockProxy belowBlock = context.previousBlockLookUp.readBlock(location.getRelative(0, 0, -1));
 		
 		// Set the changes to the block type.
 		proxy.setBlockAndClear(newType);
@@ -410,19 +409,6 @@ public class CommonBlockMutationHelpers
 		
 		// Handle any follow-up actions or special handling for this block type.
 		env.hooks.didSetBlock(env, context, location, proxy, oldType);
-		
-		// Gravity blocks are placed once and then fall after an update, so see if that matters here.
-		if (env.blocks.hasGravity(newType))
-		{
-			// If we think that this should fall, schedule the apply gravity mutation.
-			if (null != belowBlock)
-			{
-				if (!env.blocks.isSupportedAgainstGravity(newType, belowBlock.getBlock()))
-				{
-					context.mutationSink.next(new MutationBlockApplyGravity(location));
-				}
-			}
-		}
 		
 		// Handle the cases where this triggered a liquid to flow.
 		boolean didScheduleLiquid = false;

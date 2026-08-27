@@ -15,6 +15,7 @@ import com.jeffdisher.october.block_periodic.PeriodicBehaviourPortalKeystone;
 import com.jeffdisher.october.block_set.BlockSetBehaviourCornerstone;
 import com.jeffdisher.october.block_set.BlockSetBehaviourFireSource;
 import com.jeffdisher.october.block_set.BlockSetBehaviourFlammable;
+import com.jeffdisher.october.block_set.BlockSetBehaviourGravity;
 import com.jeffdisher.october.block_set.BlockSetBehaviourGroundCoverSource;
 import com.jeffdisher.october.block_set.BlockSetBehaviourGroundCoverTarget;
 import com.jeffdisher.october.block_set.BlockSetBehaviourLogic;
@@ -97,6 +98,12 @@ public class HookRegistry
 				if (null != groundCover.canGrowGroundCover(block))
 				{
 					setBlockList.add(new BlockSetBehaviourGroundCoverTarget());
+				}
+				
+				// Handle the gravity blocks.
+				if (blocks.hasGravity(block))
+				{
+					setBlockList.add(new BlockSetBehaviourGravity());
 				}
 				
 				// Move this data into maps.
