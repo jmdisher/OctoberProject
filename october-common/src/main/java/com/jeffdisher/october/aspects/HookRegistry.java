@@ -1,8 +1,23 @@
 package com.jeffdisher.october.aspects;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.jeffdisher.october.block_periodic.IBlockPeriodicBehaviour;
+import com.jeffdisher.october.block_periodic.PeriodicBehaviourCompositeCornerstone;
+import com.jeffdisher.october.block_periodic.PeriodicBehaviourCuboidLoader;
+import com.jeffdisher.october.block_periodic.PeriodicBehaviourHopper;
+import com.jeffdisher.october.block_periodic.PeriodicBehaviourPlant;
+import com.jeffdisher.october.block_periodic.PeriodicBehaviourPortalKeystone;
+import com.jeffdisher.october.block_set.BlockSetBehaviourPeriodicWrapper;
+import com.jeffdisher.october.block_set.IBlockSetBehaviour;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.IMutableBlockProxy;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -14,27 +29,160 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class HookRegistry
 {
-	public static HookRegistry setupHooks(
+	public static HookRegistry setupHooks(ItemRegistry items
+		, BlockAspect blocks
+		, PlantRegistry plants
+		, SpecialConstants special
+		, CompositeRegistry composites
 	)
 	{
-		return new HookRegistry();
+		
+		Map<Block, List<IBlockSetBehaviour>> didSetBlock = new HashMap<>();
+		Map<Block, IBlockPeriodicBehaviour> doRunPeriodic = new HashMap<>();
+		for (Item item : items.ITEMS_BY_TYPE)
+		{
+			Block block = blocks.fromItem(item);
+			if (null != block)
+			{
+				List<IBlockSetBehaviour> setBlockList = new ArrayList<>();
+				
+				IBlockPeriodicBehaviour periodic = _periodicBehaviourForBlock(plants, special, composites, block);
+				if (null != periodic)
+				{
+					setBlockList.add(new BlockSetBehaviourPeriodicWrapper(periodic));
+				}
+				
+				// Move this data into maps.
+				if (!setBlockList.isEmpty())
+				{
+					didSetBlock.put(block, Collections.unmodifiableList(setBlockList));
+				}
+				if (null != periodic)
+				{
+					doRunPeriodic.put(block, periodic);
+				}
+			}
+		}
+		return new HookRegistry(Collections.unmodifiableMap(didSetBlock)
+			, Collections.unmodifiableMap(doRunPeriodic)
+		);
+	}
+
+	private static IBlockPeriodicBehaviour _periodicBehaviourForBlock(PlantRegistry plants
+		, SpecialConstants special
+		, CompositeRegistry composites
+		, Block block
+	)
+	{
+		List<IBlockPeriodicBehaviour> list = new ArrayList<>();
+		
+		// NOTE:  We need to check the cornerstone first (in the multi case) since it might change the block's state which other behaviours depend on.
+		if (composites.isActiveCornerstone(block))
+		{
+			list.add(new PeriodicBehaviourCompositeCornerstone());
+		}
+		
+		if (plants.growthDivisor(block) > 0)
+		{
+			// This is a plant.
+			list.add(new PeriodicBehaviourPlant());
+		}
+		if (special.blockCuboidLoader == block)
+		{
+			list.add(new PeriodicBehaviourCuboidLoader());
+		}
+		if (special.blockHopper == block)
+		{
+			list.add(new PeriodicBehaviourHopper());
+		}
+		if (special.blockPortalKeystone == block)
+		{
+			list.add(new PeriodicBehaviourPortalKeystone());
+		}
+		
+		IBlockPeriodicBehaviour behaviour;
+		if (0 == list.size())
+		{
+			// Not a periodic case.
+			behaviour = null;
+		}
+		else if (1 == list.size())
+		{
+			// We will just inline the single handler.
+			behaviour = list.get(0);
+		}
+		else
+		{
+			// This is a multi-handler so create that wrapper.
+			behaviour = new _MultiBehaviour(Collections.unmodifiableList(list));
+		}
+		return behaviour;
 	}
 
 
-	private HookRegistry(
+	private final Map<Block, List<IBlockSetBehaviour>> _didSetBlock;
+
+	private final Map<Block, IBlockPeriodicBehaviour> _doRunPeriodic;
+
+	private HookRegistry(Map<Block, List<IBlockSetBehaviour>> didSetBlock
+		, Map<Block, IBlockPeriodicBehaviour> doRunPeriodic
 	)
 	{
+		_didSetBlock = didSetBlock;
+		_doRunPeriodic = doRunPeriodic;
 	}
 
 	public void didSetBlock(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy, Block replacedType)
 	{
 		Block newType = proxy.getBlock();
-		env.periodic.behaviour(newType).doInitialRegistration(context, proxy);
+		List<IBlockSetBehaviour> list = _didSetBlock.get(newType);
+		if (null != list)
+		{
+			for (IBlockSetBehaviour set : list)
+			{
+				set.didSetBlock(env, context, location, proxy, replacedType);
+			}
+		}
 	}
 
 	public void doRunPeriodic(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
 	{
-		Block block = proxy.getBlock();
-		env.periodic.behaviour(block).runPeriodic(env, context, location, proxy);
+		Block newType = proxy.getBlock();
+		IBlockPeriodicBehaviour behaviour = _doRunPeriodic.get(newType);
+		if (null != behaviour)
+		{
+			behaviour.runPeriodic(env, context, location, proxy);
+		}
+	}
+
+
+	/**
+	 * Note that some of the blocks handle these periodic updates in multiple ways (consider a portal keystone:  A
+	 * composite cornerstone and maintains portal surface) so we will compose those cases into a multi-behaviour.
+	 */
+	private static class _MultiBehaviour implements IBlockPeriodicBehaviour
+	{
+		private final List<IBlockPeriodicBehaviour> _components;
+		
+		public _MultiBehaviour(List<IBlockPeriodicBehaviour> components)
+		{
+			_components = components;
+		}
+		@Override
+		public void doInitialRegistration(TickProcessingContext context, IMutableBlockProxy newBlock)
+		{
+			for (IBlockPeriodicBehaviour sub : _components)
+			{
+				sub.doInitialRegistration(context, newBlock);
+			}
+		}
+		@Override
+		public void runPeriodic(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
+		{
+			for (IBlockPeriodicBehaviour sub : _components)
+			{
+				sub.runPeriodic(env, context, location, newBlock);
+			}
+		}
 	}
 }

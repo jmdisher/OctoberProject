@@ -97,8 +97,7 @@ public class Environment
 	public final EnchantmentRegistry enchantments;
 	public final OrientationAspect orientations;
 	public final SpecialConstants special;
-	// TODO:  Move this earlier once the dependency on later parts is removed.
-	public final PeriodicBlockRegistry periodic;
+
 	public final HookRegistry hooks;
 
 	private Environment(ModLayer[] mods) throws IOException, TabListReader.TabListException
@@ -276,9 +275,14 @@ public class Environment
 				, specialConstantsStream
 			);
 		}
-		// TODO:  Move this earlier once the dependency on later parts is removed.
-		this.periodic = PeriodicBlockRegistry.loadRegistry(this.items, this.blocks, this.plants, this.special, this.composites);
-		this.hooks = HookRegistry.setupHooks();
+		
+		// Hooks are last since they are logic based on the rest of the environment.
+		this.hooks = HookRegistry.setupHooks(this.items
+			, this.blocks
+			, this.plants
+			, this.special
+			, this.composites
+		);
 	}
 
 	private static InputStream _openModded(ClassLoader loader, ModLayer[] mods, String fileName)
