@@ -7,7 +7,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LiquidRegistry;
 import com.jeffdisher.october.aspects.LiquidRegistry.LiquidBlock;
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.logic.FireHelpers;
 import com.jeffdisher.october.logic.GroundCoverHelpers;
 import com.jeffdisher.october.logic.MiscHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -414,14 +413,6 @@ public class CommonBlockMutationHelpers
 		
 		// Handle any follow-up actions or special handling for this block type.
 		env.hooks.didSetBlock(env, context, location, proxy, oldType);
-		
-		// If this block changed into a flammable type, see if it should receive an ignition mutation.
-		// (set type first since this helper reads it).
-		if (!env.blocks.isFlammable(oldType) && FireHelpers.canIgnite(env, context, location, proxy))
-		{
-			MutationBlockStartFire startFire = new MutationBlockStartFire(location);
-			context.mutationSink.future(startFire, MutationBlockStartFire.IGNITION_DELAY_MILLIS);
-		}
 		
 		// Check if there is anything changing related to ground cover.
 		// First, see if this can spread ground cover.

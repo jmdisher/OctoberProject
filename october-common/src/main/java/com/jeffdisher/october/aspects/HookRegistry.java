@@ -14,6 +14,7 @@ import com.jeffdisher.october.block_periodic.PeriodicBehaviourPlant;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourPortalKeystone;
 import com.jeffdisher.october.block_set.BlockSetBehaviourCornerstone;
 import com.jeffdisher.october.block_set.BlockSetBehaviourFireSource;
+import com.jeffdisher.october.block_set.BlockSetBehaviourFlammable;
 import com.jeffdisher.october.block_set.BlockSetBehaviourLogic;
 import com.jeffdisher.october.block_set.BlockSetBehaviourPeriodicWrapper;
 import com.jeffdisher.october.block_set.IBlockSetBehaviour;
@@ -75,6 +76,12 @@ public class HookRegistry
 				if (blocks.isFireSource(block))
 				{
 					setBlockList.add(new BlockSetBehaviourFireSource());
+				}
+				
+				// Check flammable blocks.
+				if (blocks.isFlammable(block))
+				{
+					setBlockList.add(new BlockSetBehaviourFlammable());
 				}
 				
 				// Move this data into maps.
