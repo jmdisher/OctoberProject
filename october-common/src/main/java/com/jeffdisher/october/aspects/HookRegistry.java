@@ -21,7 +21,14 @@ import com.jeffdisher.october.block_set.BlockSetBehaviourGroundCoverTarget;
 import com.jeffdisher.october.block_set.BlockSetBehaviourLogic;
 import com.jeffdisher.october.block_set.BlockSetBehaviourPeriodicWrapper;
 import com.jeffdisher.october.block_set.IBlockSetBehaviour;
+import com.jeffdisher.october.block_update.BlockUpdateBehaviourBecomeGroundcover;
 import com.jeffdisher.october.block_update.BlockUpdateBehaviourCheckSupported;
+import com.jeffdisher.october.block_update.BlockUpdateBehaviourExtinguish;
+import com.jeffdisher.october.block_update.BlockUpdateBehaviourFlowBrokenByLiquids;
+import com.jeffdisher.october.block_update.BlockUpdateBehaviourFlowInReplaceable;
+import com.jeffdisher.october.block_update.BlockUpdateBehaviourGravity;
+import com.jeffdisher.october.block_update.BlockUpdateBehaviourLogicUpdate;
+import com.jeffdisher.october.block_update.BlockUpdateBehaviourRevertGroundcover;
 import com.jeffdisher.october.block_update.IBlockUpdateBehaviour;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -114,6 +121,35 @@ public class HookRegistry
 				if (blocks.doesRequireSupport(block))
 				{
 					updateList.add(new BlockUpdateBehaviourCheckSupported());
+				}
+				if (blocks.canBeReplaced(block))
+				{
+					updateList.add(new BlockUpdateBehaviourFlowInReplaceable());
+				}
+				if (blocks.isBrokenByFlowingLiquid(block))
+				{
+					updateList.add(new BlockUpdateBehaviourFlowBrokenByLiquids());
+				}
+				if (blocks.hasGravity(block))
+				{
+					updateList.add(new BlockUpdateBehaviourGravity());
+				}
+				if (blocks.isFlammable(block))
+				{
+					updateList.add(new BlockUpdateBehaviourExtinguish());
+				}
+				if (groundCover.isGroundCover(block))
+				{
+					updateList.add(new BlockUpdateBehaviourRevertGroundcover());
+				}
+				if (null != groundCover.canGrowGroundCover(block))
+				{
+					updateList.add(new BlockUpdateBehaviourBecomeGroundcover());
+				}
+				LogicAspect.ISignalChangeCallback handler = logic.blockUpdateHandler(block);
+				if (null != handler)
+				{
+					updateList.add(new BlockUpdateBehaviourLogicUpdate(handler));
 				}
 				
 				// Move this data into maps.
@@ -241,10 +277,16 @@ public class HookRegistry
 			for (IBlockUpdateBehaviour update : list)
 			{
 				update.doRunUpdate(env, context, location, proxy);
+				
+				// The block can be changed (generally broken) by the update.  Usually, the update just schedules a
+				// follow-up mutation but some changes are applied inline.  There is no point in continuing to process
+				// update events once the block has been replaced (since other aspects are cleared when this happens).
+				// TODO:  Can we move the didSetBlock() call to this level, to only call once after all updates?
+				if (proxy.getBlock() != type)
+				{
+					break;
+				}
 			}
-			
-			// NOTE:  The block can be broken by an update.
-			// TODO:  Should we move the didSetBlock() call to this level, to only call once after all updates?
 		}
 	}
 
