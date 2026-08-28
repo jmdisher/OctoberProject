@@ -163,7 +163,6 @@ public class CommonBlockMutationHelpers
 		Block newType = env.special.AIR;
 		proxy.setBlockAndClear(newType);
 		env.hooks.didSetBlock(env, context, location, proxy, oldType);
-		_didScheduleFlowInForReplaceable(env, context, location, oldType, proxy);
 	}
 
 	/**
@@ -265,7 +264,9 @@ public class CommonBlockMutationHelpers
 		Assert.assertTrue(env.blocks.canBeReplaced(blockType));
 		
 		// This case is used when not changing the type so we use the same for new and old (only used to choose a delay).
-		return _didScheduleFlowInForReplaceable(env, context, location, blockType, proxy);
+		// We need to make sure that the eventual type is a mismatch but also that it has a flow rate (otherwise, placing a water source surrounded by air will think it should be air, meaning it should reflow immediately).
+		LiquidRegistry.LiquidBlock currentLiquid = env.liquids.pairFrom(proxy).two();
+		return _didScheduleFlowInto(env, context, location, currentLiquid);
 	}
 
 	/**
@@ -287,7 +288,8 @@ public class CommonBlockMutationHelpers
 		// We expect that this is only called when the block can be broken by liquids.
 		Assert.assertTrue(env.blocks.isBrokenByFlowingLiquid(blockType));
 		
-		return _didScheduleFlowInToBreak(env, context, location, blockType);
+		LiquidRegistry.LiquidBlock emptyBlock = null;
+		return _didScheduleFlowInto(env, context, location, emptyBlock);
 	}
 
 
@@ -362,18 +364,6 @@ public class CommonBlockMutationHelpers
 		
 		// Handle any follow-up actions or special handling for this block type.
 		env.hooks.didSetBlock(env, context, location, proxy, oldType);
-		
-		// Handle the cases where this triggered a liquid to flow.
-		boolean didScheduleLiquid = false;
-		if (env.blocks.canBeReplaced(newType))
-		{
-			didScheduleLiquid = _didScheduleFlowInForReplaceable(env, context, location, oldType, proxy);
-		}
-		// See if this block might actually need to be broken, now, due to neighbours.
-		if (!didScheduleLiquid && env.blocks.isBrokenByFlowingLiquid(newType))
-		{
-			didScheduleLiquid = _didScheduleFlowInToBreak(env, context, location, oldType);
-		}
 	}
 
 	private static void _dropAsPassivesWhenBreakingBlock(Environment env, TickProcessingContext context, AbsoluteLocation location, Block block)
@@ -389,28 +379,6 @@ public class CommonBlockMutationHelpers
 		EntityLocation passiveLocation = location.toEntityLocation();
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 		context.passiveSpawner.spawnPassive(PassiveType.ITEM_SLOT, passiveLocation, velocity, slot);
-	}
-
-	private static boolean _didScheduleFlowInForReplaceable(Environment env
-		, TickProcessingContext context
-		, AbsoluteLocation location
-		, Block oldType
-		, IBlockProxy proxy
-	)
-	{
-		// We need to make sure that the eventual type is a mismatch but also that it has a flow rate (otherwise, placing a water source surrounded by air will think it should be air, meaning it should reflow immediately).
-		LiquidRegistry.LiquidBlock currentLiquid = env.liquids.pairFrom(proxy).two();
-		return _didScheduleFlowInto(env, context, location, currentLiquid);
-	}
-
-	private static boolean _didScheduleFlowInToBreak(Environment env
-		, TickProcessingContext context
-		, AbsoluteLocation location
-		, Block blockType
-	)
-	{
-		LiquidRegistry.LiquidBlock emptyBlock = null;
-		return _didScheduleFlowInto(env, context, location, emptyBlock);
 	}
 
 	private static boolean _didScheduleFlowInto(Environment env, TickProcessingContext context, AbsoluteLocation location, LiquidRegistry.LiquidBlock currentLiquid)

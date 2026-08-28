@@ -15,6 +15,8 @@ import com.jeffdisher.october.block_periodic.PeriodicBehaviourPortalKeystone;
 import com.jeffdisher.october.block_set.BlockSetBehaviourCornerstone;
 import com.jeffdisher.october.block_set.BlockSetBehaviourFireSource;
 import com.jeffdisher.october.block_set.BlockSetBehaviourFlammable;
+import com.jeffdisher.october.block_set.BlockSetBehaviourFlowBrokenByLiquids;
+import com.jeffdisher.october.block_set.BlockSetBehaviourFlowInReplaceable;
 import com.jeffdisher.october.block_set.BlockSetBehaviourGravity;
 import com.jeffdisher.october.block_set.BlockSetBehaviourGroundCoverSource;
 import com.jeffdisher.october.block_set.BlockSetBehaviourGroundCoverTarget;
@@ -115,6 +117,14 @@ public class HookRegistry
 				if (blocks.hasGravity(block))
 				{
 					setBlockList.add(new BlockSetBehaviourGravity());
+				}
+				if (blocks.canBeReplaced(block))
+				{
+					setBlockList.add(new BlockSetBehaviourFlowInReplaceable());
+				}
+				if (blocks.isBrokenByFlowingLiquid(block))
+				{
+					setBlockList.add(new BlockSetBehaviourFlowBrokenByLiquids());
 				}
 				
 				// Handle update checks if the block is supported.
