@@ -1,5 +1,7 @@
 package com.jeffdisher.october.block_set;
 
+import java.util.List;
+
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.block_periodic.IBlockPeriodicBehaviour;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -13,16 +15,19 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class BlockSetBehaviourPeriodicWrapper implements IBlockSetBehaviour
 {
-	private final IBlockPeriodicBehaviour _periodic;
+	private final List<IBlockPeriodicBehaviour> _periodicList;
 
-	public BlockSetBehaviourPeriodicWrapper(IBlockPeriodicBehaviour periodic)
+	public BlockSetBehaviourPeriodicWrapper(List<IBlockPeriodicBehaviour> periodicList)
 	{
-		_periodic = periodic;
+		_periodicList = periodicList;
 	}
 
 	@Override
 	public void didSetBlock(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy, Block replacedType)
 	{
-		_periodic.doInitialRegistration(context, proxy);
+		for (IBlockPeriodicBehaviour periodic : _periodicList)
+		{
+			periodic.doInitialRegistration(context, proxy);
+		}
 	}
 }
