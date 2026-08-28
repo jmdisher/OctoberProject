@@ -1,7 +1,7 @@
 package com.jeffdisher.october.block_set;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.mutations.CommonBlockMutationHelpers;
+import com.jeffdisher.october.mutations.MutationBlockLiquidFlowInto;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.IMutableBlockProxy;
@@ -13,6 +13,6 @@ public class BlockSetBehaviourFlowInReplaceable implements IBlockSetBehaviour
 	@Override
 	public void didSetBlock(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy, Block replacedType)
 	{
-		CommonBlockMutationHelpers.didScheduleFlowInForReplaceable(env, context, location, proxy);
+		MutationBlockLiquidFlowInto.didScheduleFlowInForReplaceable(env, context, location, proxy);
 	}
 }

@@ -9,10 +9,12 @@ import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.IBlockProxy;
 import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.Pair;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -33,19 +35,52 @@ public class MutationBlockLiquidFlowInto implements IMutationBlock
 	}
 
 	/**
-	 * Looks at the blocks around the given location to determine what the correct "empty" block type should be put in
-	 * this location.
-	 * Note that this doesn't account for the current block type in the location so this shouldn't be used if that value
-	 * should not be over-ridden.
+	 * Checks to see if a replaceable block is adjacent to liquids which should flow into it and interact.  Returns true
+	 * if the follow-up mutation to accomplish this was scheduled in the given context.
 	 * 
-	 * @param context The context.
-	 * @param location The location to investigate.
-	 * @param currentBlock The current block contents (not read from context since it could be changing in caller).
-	 * @return The block type which the surrounding blocks imply the location should become.
+	 * @param env The environment.
+	 * @param context The context for looking up blocks and scheduling mutations.
+	 * @param location The location of the check.
+	 * @param proxy The proxy for the block to check.
+	 * @return True if a MutationBlockLiquidFlowInto was scheduled for this block.
 	 */
-	public static Pair<Block, LiquidRegistry.LiquidBlock> determineEmptyBlockType(TickProcessingContext context, AbsoluteLocation location, LiquidRegistry.LiquidBlock currentBlock)
+	public static boolean didScheduleFlowInForReplaceable(Environment env
+		, TickProcessingContext context
+		, AbsoluteLocation location
+		, IBlockProxy proxy
+	)
 	{
-		return _determineEmptyBlockType(context, location, currentBlock);
+		// We expect that this is only called when the block can be replaced.
+		Block blockType = proxy.getBlock();
+		Assert.assertTrue(env.blocks.canBeReplaced(blockType));
+		
+		// This case is used when not changing the type so we use the same for new and old (only used to choose a delay).
+		// We need to make sure that the eventual type is a mismatch but also that it has a flow rate (otherwise, placing a water source surrounded by air will think it should be air, meaning it should reflow immediately).
+		LiquidRegistry.LiquidBlock currentLiquid = env.liquids.pairFrom(proxy).two();
+		return _didScheduleFlowInto(env, context, location, currentLiquid);
+	}
+
+	/**
+	 * Checks to see if a block which can be broken by liquids is adjacent to liquids which should flow into it and
+	 * interact.  Returns true if the follow-up mutation to accomplish this was scheduled in the given context.
+	 * 
+	 * @param env The environment.
+	 * @param context The context for looking up blocks and scheduling mutations.
+	 * @param location The location of the check.
+	 * @param blockType The current type of block (must be replaceable).
+	 * @return True if a MutationBlockLiquidFlowInto was scheduled for this block.
+	 */
+	public static boolean didScheduleFlowInToBreak(Environment env
+		, TickProcessingContext context
+		, AbsoluteLocation location
+		, Block blockType
+	)
+	{
+		// We expect that this is only called when the block can be broken by liquids.
+		Assert.assertTrue(env.blocks.isBrokenByFlowingLiquid(blockType));
+		
+		LiquidRegistry.LiquidBlock emptyBlock = null;
+		return _didScheduleFlowInto(env, context, location, emptyBlock);
 	}
 
 
@@ -169,5 +204,69 @@ public class MutationBlockLiquidFlowInto implements IMutationBlock
 			? env.liquids.pairFrom(proxy).two()
 			: null
 		;
+	}
+
+	private static boolean _didScheduleFlowInto(Environment env, TickProcessingContext context, AbsoluteLocation location, LiquidRegistry.LiquidBlock currentLiquid)
+	{
+		Pair<Block, LiquidRegistry.LiquidBlock> eventualType = _determineEmptyBlockType(context, location, currentLiquid);
+		LiquidRegistry.LiquidBlock eventualLiquid = eventualType.two();
+		Block eventualBlock = eventualType.one();
+		if (env.special.AIR == eventualBlock)
+		{
+			eventualBlock = null;
+		}
+		
+		boolean didScheduleLiquid = false;
+		if ((null != eventualBlock) || !_doLiquidsMatch(currentLiquid, eventualLiquid))
+		{
+			Block currentLiquidSource = (null != currentLiquid)
+				? currentLiquid.sourceType()
+				: null
+			;
+			Block eventualLiquidSource = (null != eventualLiquid)
+				? eventualLiquid.sourceType()
+				: null
+			;
+			
+			// It is possible that neither of these exist (if this is a solid forming from 2 flowing neighbours), so pick a good default.
+			long millisDelay = 1000L;
+			if (null != currentLiquidSource)
+			{
+				long currentMillis = env.liquids.flowDelayMillis(currentLiquidSource);
+				millisDelay = Math.min(millisDelay, currentMillis);
+			}
+			if (null != eventualLiquidSource)
+			{
+				long eventualMillis = env.liquids.flowDelayMillis(eventualLiquidSource);
+				millisDelay = Math.min(millisDelay, eventualMillis);
+			}
+			Assert.assertTrue(millisDelay > 0L);
+			
+			context.mutationSink.future(new MutationBlockLiquidFlowInto(location), millisDelay);
+			didScheduleLiquid = true;
+		}
+		return didScheduleLiquid;
+	}
+
+	private static boolean _doLiquidsMatch(LiquidRegistry.LiquidBlock one, LiquidRegistry.LiquidBlock two)
+	{
+		Block oneBlock = (null != one)
+			? one.sourceType()
+			: null
+		;
+		byte oneDistance = (null != one)
+			? one.distance()
+			: LiquidRegistry.FLOW_NONE
+		;
+		Block twoBlock = (null != two)
+			? two.sourceType()
+			: null
+		;
+		byte twoDistance = (null != two)
+			? two.distance()
+			: LiquidRegistry.FLOW_NONE
+		;
+		
+		return ((oneBlock == twoBlock) && (oneDistance == twoDistance));
 	}
 }

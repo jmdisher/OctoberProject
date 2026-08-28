@@ -4,6 +4,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.mutations.CommonBlockMutationHelpers;
 import com.jeffdisher.october.mutations.MultiBlockUtils;
+import com.jeffdisher.october.mutations.MutationBlockLiquidFlowInto;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FacingDirection;
@@ -56,7 +57,7 @@ public class BlockUpdateBehaviourCheckSupported implements IBlockUpdateBehaviour
 				// Destroy the block.
 				CommonBlockMutationHelpers.setEmptyBlock(env, context, location, proxy);
 				
-				CommonBlockMutationHelpers.didScheduleFlowInForReplaceable(env, context, location, proxy);
+				MutationBlockLiquidFlowInto.didScheduleFlowInForReplaceable(env, context, location, proxy);
 			}
 		}
 	}
