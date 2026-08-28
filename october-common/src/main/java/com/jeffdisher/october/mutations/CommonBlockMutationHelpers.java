@@ -29,22 +29,6 @@ import com.jeffdisher.october.utils.Assert;
 public class CommonBlockMutationHelpers
 {
 	/**
-	 * Looks at the blocks around the given location to determine what the correct "empty" block type should be put in
-	 * this location.
-	 * Note that this doesn't account for the current block type in the location so this shouldn't be used if that value
-	 * should not be over-ridden.
-	 * 
-	 * @param context The context.
-	 * @param location The location to investigate.
-	 * @param currentBlock The current block contents (not read from context since it could be changing in caller).
-	 * @return The block type which the surrounding blocks imply the location should become.
-	 */
-	public static Pair<Block, LiquidRegistry.LiquidBlock> determineEmptyBlockType(TickProcessingContext context, AbsoluteLocation location, LiquidRegistry.LiquidBlock currentBlock)
-	{
-		return _determineEmptyBlockType(context, location, currentBlock);
-	}
-
-	/**
 	 * Drops all the given inventories (normal, fuel, but also special slot) of the given block as passives at the given
 	 * location.
 	 * 
@@ -319,37 +303,6 @@ public class CommonBlockMutationHelpers
 		}
 	}
 
-	private static Pair<Block, LiquidRegistry.LiquidBlock> _determineEmptyBlockType(TickProcessingContext context, AbsoluteLocation location, LiquidRegistry.LiquidBlock currentBlock)
-	{
-		Environment env = Environment.getShared();
-		
-		LiquidRegistry.LiquidBlock east = _getLiquidOrNull(env, context, location.getRelative(1, 0, 0));
-		LiquidRegistry.LiquidBlock west = _getLiquidOrNull(env, context, location.getRelative(-1, 0, 0));
-		LiquidRegistry.LiquidBlock north = _getLiquidOrNull(env, context, location.getRelative(0, 1, 0));
-		LiquidRegistry.LiquidBlock south = _getLiquidOrNull(env, context, location.getRelative(0, -1, 0));
-		LiquidRegistry.LiquidBlock up = _getLiquidOrNull(env, context, location.getRelative(0, 0, 1));
-		
-		BlockProxy downProxy = context.previousBlockLookUp.readBlock(location.getRelative(0, 0, -1));
-		Block down = (null != downProxy)
-			? downProxy.getBlock()
-			: null
-		;
-		if ((null != down) && env.blocks.canBeReplaced(down))
-		{
-			down = null;
-		}
-		return env.liquids.chooseEmptyLiquidBlock(env, currentBlock, east, west, north, south, up, down);
-	}
-
-	private static LiquidRegistry.LiquidBlock _getLiquidOrNull(Environment env, TickProcessingContext context, AbsoluteLocation location)
-	{
-		BlockProxy proxy = context.previousBlockLookUp.readBlock(location);
-		return (null != proxy)
-			? env.liquids.pairFrom(proxy).two()
-			: null
-		;
-	}
-
 	private static void _dropBlockInventoriesAsPassives(TickProcessingContext context, AbsoluteLocation location, IBlockProxy block)
 	{
 		Inventory oldInventory = block.getInventory();
@@ -462,7 +415,7 @@ public class CommonBlockMutationHelpers
 
 	private static boolean _didScheduleFlowInto(Environment env, TickProcessingContext context, AbsoluteLocation location, LiquidRegistry.LiquidBlock currentLiquid)
 	{
-		Pair<Block, LiquidRegistry.LiquidBlock> eventualType = _determineEmptyBlockType(context, location, currentLiquid);
+		Pair<Block, LiquidRegistry.LiquidBlock> eventualType = MutationBlockLiquidFlowInto.determineEmptyBlockType(context, location, currentLiquid);
 		LiquidRegistry.LiquidBlock eventualLiquid = eventualType.two();
 		Block eventualBlock = eventualType.one();
 		if (env.special.AIR == eventualBlock)
