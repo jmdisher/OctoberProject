@@ -6,6 +6,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.jeffdisher.october.block_hybrid.BlockHybridBehaviourBecomeGroundcover;
+import com.jeffdisher.october.block_hybrid.BlockHybridBehaviourFlowBrokenByLiquids;
+import com.jeffdisher.october.block_hybrid.BlockHybridBehaviourFlowInReplaceable;
+import com.jeffdisher.october.block_hybrid.BlockHybridBehaviourGravity;
+import com.jeffdisher.october.block_hybrid.BlockHybridBehaviourLogic;
 import com.jeffdisher.october.block_periodic.IBlockPeriodicBehaviour;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourCompositeCornerstone;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourCuboidLoader;
@@ -15,21 +20,11 @@ import com.jeffdisher.october.block_periodic.PeriodicBehaviourPortalKeystone;
 import com.jeffdisher.october.block_set.BlockSetBehaviourCornerstone;
 import com.jeffdisher.october.block_set.BlockSetBehaviourFireSource;
 import com.jeffdisher.october.block_set.BlockSetBehaviourFlammable;
-import com.jeffdisher.october.block_set.BlockSetBehaviourFlowBrokenByLiquids;
-import com.jeffdisher.october.block_set.BlockSetBehaviourFlowInReplaceable;
-import com.jeffdisher.october.block_set.BlockSetBehaviourGravity;
 import com.jeffdisher.october.block_set.BlockSetBehaviourGroundCoverSource;
-import com.jeffdisher.october.block_set.BlockSetBehaviourGroundCoverTarget;
-import com.jeffdisher.october.block_set.BlockSetBehaviourLogic;
 import com.jeffdisher.october.block_set.BlockSetBehaviourPeriodicWrapper;
 import com.jeffdisher.october.block_set.IBlockSetBehaviour;
-import com.jeffdisher.october.block_update.BlockUpdateBehaviourBecomeGroundcover;
 import com.jeffdisher.october.block_update.BlockUpdateBehaviourCheckSupported;
 import com.jeffdisher.october.block_update.BlockUpdateBehaviourExtinguish;
-import com.jeffdisher.october.block_update.BlockUpdateBehaviourFlowBrokenByLiquids;
-import com.jeffdisher.october.block_update.BlockUpdateBehaviourFlowInReplaceable;
-import com.jeffdisher.october.block_update.BlockUpdateBehaviourGravity;
-import com.jeffdisher.october.block_update.BlockUpdateBehaviourLogicUpdate;
 import com.jeffdisher.october.block_update.BlockUpdateBehaviourRevertGroundcover;
 import com.jeffdisher.october.block_update.IBlockUpdateBehaviour;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -80,7 +75,7 @@ public class HookRegistry
 				LogicAspect.ISignalChangeCallback placementHandler = logic.initialPlacementHandler(block);
 				if (null != placementHandler)
 				{
-					setBlockList.add(new BlockSetBehaviourLogic(placementHandler));
+					setBlockList.add(new BlockHybridBehaviourLogic(placementHandler));
 				}
 				
 				// The composite cornerstone is a simple one but we still want it in this general mechanism.
@@ -110,21 +105,21 @@ public class HookRegistry
 				// Handle the blocks which can receive ground cover.
 				if (null != groundCover.canGrowGroundCover(block))
 				{
-					setBlockList.add(new BlockSetBehaviourGroundCoverTarget());
+					setBlockList.add(new BlockHybridBehaviourBecomeGroundcover());
 				}
 				
 				// Handle the gravity blocks.
 				if (blocks.hasGravity(block))
 				{
-					setBlockList.add(new BlockSetBehaviourGravity());
+					setBlockList.add(new BlockHybridBehaviourGravity());
 				}
 				if (blocks.canBeReplaced(block))
 				{
-					setBlockList.add(new BlockSetBehaviourFlowInReplaceable());
+					setBlockList.add(new BlockHybridBehaviourFlowInReplaceable());
 				}
 				if (blocks.isBrokenByFlowingLiquid(block))
 				{
-					setBlockList.add(new BlockSetBehaviourFlowBrokenByLiquids());
+					setBlockList.add(new BlockHybridBehaviourFlowBrokenByLiquids());
 				}
 				
 				// Handle update checks if the block is supported.
@@ -134,15 +129,15 @@ public class HookRegistry
 				}
 				if (blocks.canBeReplaced(block))
 				{
-					updateList.add(new BlockUpdateBehaviourFlowInReplaceable());
+					updateList.add(new BlockHybridBehaviourFlowInReplaceable());
 				}
 				if (blocks.isBrokenByFlowingLiquid(block))
 				{
-					updateList.add(new BlockUpdateBehaviourFlowBrokenByLiquids());
+					updateList.add(new BlockHybridBehaviourFlowBrokenByLiquids());
 				}
 				if (blocks.hasGravity(block))
 				{
-					updateList.add(new BlockUpdateBehaviourGravity());
+					updateList.add(new BlockHybridBehaviourGravity());
 				}
 				if (blocks.isFlammable(block))
 				{
@@ -154,12 +149,12 @@ public class HookRegistry
 				}
 				if (null != groundCover.canGrowGroundCover(block))
 				{
-					updateList.add(new BlockUpdateBehaviourBecomeGroundcover());
+					updateList.add(new BlockHybridBehaviourBecomeGroundcover());
 				}
 				LogicAspect.ISignalChangeCallback handler = logic.blockUpdateHandler(block);
 				if (null != handler)
 				{
-					updateList.add(new BlockUpdateBehaviourLogicUpdate(handler));
+					updateList.add(new BlockHybridBehaviourLogic(handler));
 				}
 				
 				// Move this data into maps.
