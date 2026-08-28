@@ -51,6 +51,7 @@ public class MutationBlockUpdate implements IMutationBlock
 	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
+		env.hooks.doRunUpdate(env, context, _blockLocation, newBlock);
 		
 		// Make sure that this block can be supported - see if we can read the orientation.
 		AbsoluteLocation supportLocation;

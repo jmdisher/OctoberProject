@@ -21,6 +21,7 @@ import com.jeffdisher.october.block_set.BlockSetBehaviourGroundCoverTarget;
 import com.jeffdisher.october.block_set.BlockSetBehaviourLogic;
 import com.jeffdisher.october.block_set.BlockSetBehaviourPeriodicWrapper;
 import com.jeffdisher.october.block_set.IBlockSetBehaviour;
+import com.jeffdisher.october.block_update.IBlockUpdateBehaviour;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.IMutableBlockProxy;
@@ -49,12 +50,14 @@ public class HookRegistry
 		
 		Map<Block, List<IBlockSetBehaviour>> didSetBlock = new HashMap<>();
 		Map<Block, IBlockPeriodicBehaviour> doRunPeriodic = new HashMap<>();
+		Map<Block, List<IBlockUpdateBehaviour>> doRunUpdate = new HashMap<>();
 		for (Item item : items.ITEMS_BY_TYPE)
 		{
 			Block block = blocks.fromItem(item);
 			if (null != block)
 			{
 				List<IBlockSetBehaviour> setBlockList = new ArrayList<>();
+				List<IBlockUpdateBehaviour> updateList = new ArrayList<>();
 				
 				// Check if this block type has periodic behaviour.
 				IBlockPeriodicBehaviour periodic = _periodicBehaviourForBlock(plants, special, composites, block);
@@ -115,10 +118,15 @@ public class HookRegistry
 				{
 					doRunPeriodic.put(block, periodic);
 				}
+				if (!updateList.isEmpty())
+				{
+					doRunUpdate.put(block, Collections.unmodifiableList(updateList));
+				}
 			}
 		}
 		return new HookRegistry(Collections.unmodifiableMap(didSetBlock)
 			, Collections.unmodifiableMap(doRunPeriodic)
+			, Collections.unmodifiableMap(doRunUpdate)
 		);
 	}
 
@@ -177,13 +185,16 @@ public class HookRegistry
 	private final Map<Block, List<IBlockSetBehaviour>> _didSetBlock;
 
 	private final Map<Block, IBlockPeriodicBehaviour> _doRunPeriodic;
+	private final Map<Block, List<IBlockUpdateBehaviour>> _doRunUpdate;
 
 	private HookRegistry(Map<Block, List<IBlockSetBehaviour>> didSetBlock
 		, Map<Block, IBlockPeriodicBehaviour> doRunPeriodic
+		, Map<Block, List<IBlockUpdateBehaviour>> doRunUpdate
 	)
 	{
 		_didSetBlock = didSetBlock;
 		_doRunPeriodic = doRunPeriodic;
+		_doRunUpdate = doRunUpdate;
 	}
 
 	public void didSetBlock(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy, Block replacedType)
@@ -211,6 +222,22 @@ public class HookRegistry
 				// This changed so run the set-block.
 				_didSetBlock(env, context, location, proxy, newType);
 			}
+		}
+	}
+
+	public void doRunUpdate(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
+	{
+		Block type = proxy.getBlock();
+		List<IBlockUpdateBehaviour> list = _doRunUpdate.get(type);
+		if (null != list)
+		{
+			for (IBlockUpdateBehaviour update : list)
+			{
+				update.doRunUpdate(env, context, location, proxy);
+			}
+			
+			// NOTE:  The block can be broken by an update.
+			// TODO:  Should we move the didSetBlock() call to this level, to only call once after all updates?
 		}
 	}
 
