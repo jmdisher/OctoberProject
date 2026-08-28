@@ -440,6 +440,17 @@ public class BlockAspect
 	}
 
 	/**
+	 * Returns whether there are any special support rules for this block type.
+	 * 
+	 * @param block The block to check.
+	 * @return True if some special block support is required.
+	 */
+	public boolean doesRequireSupport(Block block)
+	{
+		return _specialBlockSupport.containsKey(block);
+	}
+
+	/**
 	 * Used to check if a flowing liquid should implicitly break this block type.
 	 * 
 	 * @param block The block to check.

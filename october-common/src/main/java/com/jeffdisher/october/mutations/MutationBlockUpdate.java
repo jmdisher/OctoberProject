@@ -53,50 +53,6 @@ public class MutationBlockUpdate implements IMutationBlock
 		Environment env = Environment.getShared();
 		env.hooks.doRunUpdate(env, context, _blockLocation, newBlock);
 		
-		// Make sure that this block can be supported - see if we can read the orientation.
-		AbsoluteLocation supportLocation;
-		if (env.orientations.doesSingleBlockRequireOrientation(newBlock.getBlock()))
-		{
-			FacingDirection output = newBlock.getOrientation();
-			supportLocation = output.getOutputBlockLocation(_blockLocation);
-		}
-		else
-		{
-			supportLocation = _blockLocation.getRelative(0, 0, -1);
-		}
-		
-		BlockProxy supportBlock = context.previousBlockLookUp.readBlock(supportLocation);
-		
-		// Note that multi-blocks also can require "existing on block", but only if they are the root block.
-		boolean blockIsSupported = env.blocks.canExistOnBlock(newBlock.getBlock(), (null != supportBlock) ? supportBlock.getBlock() : null);
-		if (MultiBlockUtils.isMultiBlockExtension(env, newBlock))
-		{
-			blockIsSupported = true;
-		}
-		
-		if (!blockIsSupported)
-		{
-			// Determine if this is a block which breaks normally or if we need to use a special multi-block breaking idiom.
-			if (MultiBlockUtils.isMultiBlockRoot(env, newBlock))
-			{
-				// We will enqueue the MultiBlockReplace for each block in the multi-block, forcing them into air.
-				Block existingBlock = newBlock.getBlock();
-				Block emptyBlock = env.special.AIR;
-				MultiBlockUtils.replaceMultiBlock(env, context, _blockLocation, existingBlock, emptyBlock);
-			}
-			else
-			{
-				// Create a temporary inventory to drain everything.
-				CommonBlockMutationHelpers.dropAsPassivesWhenBreakingBlock(env, context, _blockLocation, newBlock.getBlock());
-				CommonBlockMutationHelpers.dropBlockInventoriesAsPassives(context, _blockLocation, newBlock);
-				
-				// Destroy the block.
-				CommonBlockMutationHelpers.setEmptyBlock(env, context, _blockLocation, newBlock);
-				
-				CommonBlockMutationHelpers.didScheduleFlowInForReplaceable(env, context, _blockLocation, newBlock);
-			}
-		}
-		
 		// Check to see if this block needs to change into a different type due to water, etc.
 		if (env.blocks.canBeReplaced(newBlock.getBlock()))
 		{

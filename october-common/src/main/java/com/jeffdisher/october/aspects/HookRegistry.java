@@ -21,6 +21,7 @@ import com.jeffdisher.october.block_set.BlockSetBehaviourGroundCoverTarget;
 import com.jeffdisher.october.block_set.BlockSetBehaviourLogic;
 import com.jeffdisher.october.block_set.BlockSetBehaviourPeriodicWrapper;
 import com.jeffdisher.october.block_set.IBlockSetBehaviour;
+import com.jeffdisher.october.block_update.BlockUpdateBehaviourCheckSupported;
 import com.jeffdisher.october.block_update.IBlockUpdateBehaviour;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -107,6 +108,12 @@ public class HookRegistry
 				if (blocks.hasGravity(block))
 				{
 					setBlockList.add(new BlockSetBehaviourGravity());
+				}
+				
+				// Handle update checks if the block is supported.
+				if (blocks.doesRequireSupport(block))
+				{
+					updateList.add(new BlockUpdateBehaviourCheckSupported());
 				}
 				
 				// Move this data into maps.
