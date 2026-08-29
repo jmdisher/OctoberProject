@@ -150,10 +150,7 @@ public class PlantHelpers
 	 */
 	public static boolean isSoilHydrated(Environment env, IBlockProxy proxy)
 	{
-		// We will only check the hydrated bit if this is tilled soil (this should always be the case but could be a race condition - we haven't yet run the update for it changing).
-		return (env.special.blockTilledSoil == proxy.getBlock())
-			&& (BLOCK_HYDRATED_BYTE == proxy.getBlockDefinedByte())
-		;
+		return _isSoilHydrated(env, proxy);
 	}
 
 
@@ -175,18 +172,26 @@ public class PlantHelpers
 			// If not a tree, we are using the staged growth system so load our count of completed growth stages.
 			byte growthPhasesCompleted = newBlock.getBlockDefinedByte();
 			
-			// We will add 1 and check if this means we are done.
-			growthPhasesCompleted += 1;
-			if (growthPhasesCompleted >= env.plants.growthStagesForPlant(block))
+			// These all depend on sitting on hydrated tilled soil so check that it is hydrated before growing.
+			// (in the future, we probably want this to be part of the plant configuration).
+			BlockProxy belowProxy = context.previousBlockLookUp.readBlock(location.getRelative(0, 0, -1));
+			boolean isHydrated = _isSoilHydrated(env, belowProxy);
+			
+			if (isHydrated)
 			{
-				// Replace this with the mature block type.
-				Block matureBlock = env.plants.matureBlockForPlant(block);
-				CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, location, newBlock, matureBlock);
-			}
-			else
-			{
-				// Not done yet so just resave the growth progress.
-				newBlock.setBlockDefinedByte(growthPhasesCompleted);
+				// We will add 1 and check if this means we are done.
+				growthPhasesCompleted += 1;
+				if (growthPhasesCompleted >= env.plants.growthStagesForPlant(block))
+				{
+					// Replace this with the mature block type.
+					Block matureBlock = env.plants.matureBlockForPlant(block);
+					CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, location, newBlock, matureBlock);
+				}
+				else
+				{
+					// Not done yet so just resave the growth progress.
+					newBlock.setBlockDefinedByte(growthPhasesCompleted);
+				}
 			}
 		}
 	}
@@ -301,5 +306,14 @@ public class PlantHelpers
 				context.mutationSink.next(mutation);
 			}
 		}
+	}
+
+	private static boolean _isSoilHydrated(Environment env, IBlockProxy proxy)
+	{
+		// We will only check the hydrated bit if this is tilled soil (this should always be the case but could be a race condition - we haven't yet run the update for it changing).
+		return (null != proxy)
+			&& (env.special.blockTilledSoil == proxy.getBlock())
+			&& (BLOCK_HYDRATED_BYTE == proxy.getBlockDefinedByte())
+		;
 	}
 }

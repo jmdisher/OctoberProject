@@ -23,6 +23,7 @@ import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.PassiveIdAssigner;
+import com.jeffdisher.october.logic.PlantHelpers;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
@@ -779,6 +780,7 @@ public class TestTickRunner_slow
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation location = address.getBase().getRelative(0, 6, 7);
 		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(0, 0, -1).getBlockAddress(), TILLED_SOIL_ITEM.number());
+		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, location.getRelative(0, 0, -1).getBlockAddress(), PlantHelpers.BLOCK_HYDRATED_BYTE);
 		
 		int[] randomHolder = new int[] {0};
 		WorldConfig config = new WorldConfig();
@@ -1034,7 +1036,6 @@ public class TestTickRunner_slow
 		Assert.assertEquals((byte)2, waterBlobCuboid.getData7(AspectRegistry.BLOCK_DEFINED_BYTE, waterPlace.getRelative(2, 0, 0).getBlockAddress()));
 		Assert.assertEquals(lavaSource.item().number(), lavaBlobCuboid.getData15(AspectRegistry.BLOCK, lavaPlace.getRelative(1, 0, 0).getBlockAddress()));
 		Assert.assertEquals((byte)1, lavaBlobCuboid.getData7(AspectRegistry.BLOCK_DEFINED_BYTE, lavaPlace.getRelative(1, 0, 0).getBlockAddress()));
-		System.out.println("CHECK: " + lavaPlace.getRelative(2, 0, 0));
 		Assert.assertEquals(lavaSource.item().number(), lavaBlobCuboid.getData15(AspectRegistry.BLOCK, lavaPlace.getRelative(2, 0, 0).getBlockAddress()));
 		Assert.assertEquals((byte)2, lavaBlobCuboid.getData7(AspectRegistry.BLOCK_DEFINED_BYTE, lavaPlace.getRelative(2, 0, 0).getBlockAddress()));
 		

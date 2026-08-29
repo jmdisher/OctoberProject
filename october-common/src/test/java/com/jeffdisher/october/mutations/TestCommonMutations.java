@@ -476,31 +476,32 @@ public class TestCommonMutations
 		// We will place a wheat seedling and run a MutationBlockGrow mutation against it to verify it checks the right things with/without light.
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 1);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
+		Block tilledSoil = ENV.blocks.fromItem(ENV.items.getItemById("op.tilled_soil"));
 		Block wheatYoung = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_young"));
-		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 0), STONE.item().number());
-		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 1), wheatYoung.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), tilledSoil.item().number());
+		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, target.getRelative(0, 0, -1).getBlockAddress(), PlantHelpers.BLOCK_HYDRATED_BYTE);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), wheatYoung.item().number());
 		
 		// First, we want to make sure that the wheat fails to grow due to darkness.
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
-						return BlockProxy.load(blockLocation.getBlockAddress(), cuboid);
-					}), null, null)
-				.skyLight((AbsoluteLocation blockLocation) -> (byte)0)
-				.sinks(new TickProcessingContext.IMutationSink() {
-							@Override
-							public boolean next(IMutationBlock mutation)
-							{
-								throw new AssertionError("Not expected in test");
-							}
-							@Override
-							public boolean future(IMutationBlock mutation, long millisToDelay)
-							{
-								throw new AssertionError("Not expected in test");
-							}
-						}
-						, null)
-				.fixedRandom(1)
-				.finish()
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
+				return BlockProxy.load(blockLocation.getBlockAddress(), cuboid);
+			}), null, null)
+			.skyLight((AbsoluteLocation blockLocation) -> (byte)0)
+			.sinks(new TickProcessingContext.IMutationSink() {
+				@Override
+				public boolean next(IMutationBlock mutation)
+				{
+					throw new AssertionError("Not expected in test");
+				}
+				@Override
+				public boolean future(IMutationBlock mutation, long millisToDelay)
+				{
+					throw new AssertionError("Not expected in test");
+				}
+			}, null)
+			.fixedRandom(1)
+			.finish()
 		;
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		MutationBlockPeriodic mutation = new MutationBlockPeriodic(target);
@@ -513,8 +514,8 @@ public class TestCommonMutations
 		// Now, show that it works if there is light.
 		proxy.periodicDelayMillis = 0L;
 		context = ContextBuilder.nextTick(context, 1L)
-				.skyLight((AbsoluteLocation blockLocation) -> PlantHelpers.MIN_LIGHT)
-				.finish()
+			.skyLight((AbsoluteLocation blockLocation) -> PlantHelpers.MIN_LIGHT)
+			.finish()
 		;
 		mutation.applyMutation(context, proxy);
 		Assert.assertTrue(proxy.didChange());

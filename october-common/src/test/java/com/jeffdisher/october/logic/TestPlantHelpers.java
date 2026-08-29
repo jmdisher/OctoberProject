@@ -100,6 +100,8 @@ public class TestPlantHelpers
 		byte[] refLight = new byte[] {15};
 		TickProcessingContext context = _buildContext(cuboid, refLight, null);
 		AbsoluteLocation target = new AbsoluteLocation(10, 10, 10);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), TILLED_SOIL.item().number());
+		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, target.getRelative(0, 0, -1).getBlockAddress(), PlantHelpers.BLOCK_HYDRATED_BYTE);
 		
 		// Light.
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
@@ -126,6 +128,8 @@ public class TestPlantHelpers
 		TickProcessingContext context = _buildContext(cuboid, refLight, null);
 		AbsoluteLocation target = new AbsoluteLocation(10, 10, 10);
 		byte finalGrowth = (byte)(ENV.plants.growthStagesForPlant(WHEAT_YOUNG) - 1);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), TILLED_SOIL.item().number());
+		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, target.getRelative(0, 0, -1).getBlockAddress(), PlantHelpers.BLOCK_HYDRATED_BYTE);
 		
 		// Light.
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
@@ -203,6 +207,36 @@ public class TestPlantHelpers
 		PlantHelpers.runSoilHydrationPeriodic(ENV, context, water, proxy);
 		Assert.assertFalse(PlantHelpers.isSoilHydrated(ENV, proxy));
 		proxy.writeBack(cuboid);
+	}
+
+	@Test
+	public void growFailGrowthDry()
+	{
+		// Show that we fail to grow when the soil under us is dry.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
+			.fixedRandom(1)
+			.skyLight((AbsoluteLocation location) -> 15)
+			.finish()
+		;
+		AbsoluteLocation target = new AbsoluteLocation(10, 10, 10);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), TILLED_SOIL.item().number());
+		
+		// Dry.
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		proxy.setBlockAndClear(WHEAT_YOUNG);
+		PlantHelpers.runPlantPeriodic(ENV, context, target, proxy);
+		Assert.assertEquals(WHEAT_YOUNG, proxy.getBlock());
+		Assert.assertEquals((byte)0, proxy.getBlockDefinedByte());
+		
+		// Hydrated.
+		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, target.getRelative(0, 0, -1).getBlockAddress(), PlantHelpers.BLOCK_HYDRATED_BYTE);
+		proxy = new MutableBlockProxy(target, cuboid);
+		proxy.setBlockAndClear(WHEAT_YOUNG);
+		PlantHelpers.runPlantPeriodic(ENV, context, target, proxy);
+		Assert.assertEquals(WHEAT_YOUNG, proxy.getBlock());
+		Assert.assertEquals((byte)1, proxy.getBlockDefinedByte());
 	}
 
 
