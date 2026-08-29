@@ -1,5 +1,9 @@
 package com.jeffdisher.october.logic;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.mutations.CommonBlockMutationHelpers;
@@ -7,6 +11,7 @@ import com.jeffdisher.october.mutations.MutationBlockOverwriteMisc;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FacingDirection;
+import com.jeffdisher.october.types.IBlockProxy;
 import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -26,6 +31,9 @@ public class PlantHelpers
 	public static final byte BRANCH_CHANCE_SIDE = 20;
 	public static final byte BRANCH_CHANCE_PER_GROWTH = 10;
 	public static final byte BRANCH_CHANCE_BONUS_DIRECTION = 40;
+
+	public static final byte BLOCK_DRY_BYTE = 0x0;
+	public static final byte BLOCK_HYDRATED_BYTE = 0x1;
 
 	/**
 	 * Used to check if the given block type is one which can grow.
@@ -85,6 +93,67 @@ public class PlantHelpers
 		// This MUST be something which can grow.
 		Assert.assertTrue(growthDivisor > 0);
 		_doGrowth(env, context, location, newBlock);
+	}
+
+	/**
+	 * Attempts to update the hydrated status of the current tilled soil block (this MUST be tilled soil).  Note that
+	 * this will change newBlock to update the hydrated status (in BLOCK_DEFINED_BYTE).
+	 * 
+	 * @param env The environment.
+	 * @param context The context.
+	 * @param location The location where the check is happening.
+	 * @param newBlock The mutable block which we should check (only BLOCK_DEFINED_BYTE is modified).
+	 */
+	public static void runSoilHydrationPeriodic(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
+	{
+		// Verify that this is only called on tilled soil.
+		Assert.assertTrue(env.special.blockTilledSoil == newBlock.getBlock());
+		
+		// We want to look for any water block within a 4-block square in the same z-level of this block.
+		List<AbsoluteLocation> locations = new ArrayList<>();
+		for (int y = -4; y <= 4; ++y)
+		{
+			for (int x = -4; x <= 4; ++x)
+			{
+				AbsoluteLocation one = location.getRelative(x, y, 0);
+				locations.add(one);
+			}
+		}
+		
+		// TODO:  This is very expensive so we might want to add a search helper and maybe some kind of cached result since we always recheck this when wet.
+		boolean foundWater = false;
+		Map<AbsoluteLocation, BlockProxy> proxies = context.previousBlockLookUp.readBlockBatch(locations);
+		for (BlockProxy proxy : proxies.values())
+		{
+			if (env.special.blockWaterSource == proxy.getBlock())
+			{
+				foundWater = true;
+				break;
+			}
+		}
+		
+		// We use the block-defined byte for this, but only the lowest bit (maybe use the others for fertilizer, in the future).
+		// NOTE:  This is done instead of a new block type (since that doesn't seem quite right) or a new flag (since that would only apply to this case).
+		byte expectedByte = foundWater ? BLOCK_HYDRATED_BYTE : BLOCK_DRY_BYTE;
+		if (newBlock.getBlockDefinedByte() != expectedByte)
+		{
+			newBlock.setBlockDefinedByte(expectedByte);
+		}
+	}
+
+	/**
+	 * Checks if the block in proxy is a hydrated tilled soil block, returning false if not both are true.
+	 * 
+	 * @param env The environment.
+	 * @param proxy The proxy to read.
+	 * @return True if this block is both tilled soil and hydrated.
+	 */
+	public static boolean isSoilHydrated(Environment env, IBlockProxy proxy)
+	{
+		// We will only check the hydrated bit if this is tilled soil (this should always be the case but could be a race condition - we haven't yet run the update for it changing).
+		return (env.special.blockTilledSoil == proxy.getBlock())
+			&& (BLOCK_HYDRATED_BYTE == proxy.getBlockDefinedByte())
+		;
 	}
 
 

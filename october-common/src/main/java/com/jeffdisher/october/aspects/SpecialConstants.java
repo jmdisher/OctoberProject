@@ -34,6 +34,7 @@ public class SpecialConstants
 	public static final String KEY_BLOCK_DIRT = "block_dirt";
 	public static final String KEY_BLOCK_GRASS = "block_grass";
 	public static final String KEY_BLOCK_TILLED_SOIL = "block_tilled_soil";
+	public static final String KEY_BLOCK_WATER_SOURCE = "block_water_source";
 
 	public static SpecialConstants load(ItemRegistry items
 		, BlockAspect blocks
@@ -66,6 +67,7 @@ public class SpecialConstants
 		Block blockDirt = _removeAsBlock(blocks, map, KEY_BLOCK_DIRT);
 		Block blockGrass = _removeAsBlock(blocks, map, KEY_BLOCK_GRASS);
 		Block blockTilledSoil = _removeAsBlock(blocks, map, KEY_BLOCK_TILLED_SOIL);
+		Block blockWaterSource = _removeAsBlock(blocks, map, KEY_BLOCK_WATER_SOURCE);
 		
 		// If anything else is here, it is an error.
 		for (String key : map.keySet())
@@ -90,6 +92,7 @@ public class SpecialConstants
 			, blockDirt
 			, blockGrass
 			, blockTilledSoil
+			, blockWaterSource
 		);
 	}
 
@@ -160,6 +163,10 @@ public class SpecialConstants
 	 * Special "use on block" case.
 	 */
 	public final Block blockTilledSoil;
+	/**
+	 * Special "update soil hydration" case.
+	 */
+	public final Block blockWaterSource;
 
 	private SpecialConstants(Item itemArrow
 		, Item itemPortalOrb
@@ -178,6 +185,7 @@ public class SpecialConstants
 		, Block blockDirt
 		, Block blockGrass
 		, Block blockTilledSoil
+		, Block blockWaterSource
 	)
 	{
 		this.itemArrow = itemArrow;
@@ -197,6 +205,7 @@ public class SpecialConstants
 		this.blockDirt = blockDirt;
 		this.blockGrass = blockGrass;
 		this.blockTilledSoil = blockTilledSoil;
+		this.blockWaterSource = blockWaterSource;
 	}
 
 

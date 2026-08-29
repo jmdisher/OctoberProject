@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -32,6 +33,8 @@ public class TestPlantHelpers
 	private static Block LEAF;
 	private static Block LOG;
 	private static Block BRANCH;
+	private static Block TILLED_SOIL;
+	private static Block WATER_SOURCE;
 	@BeforeClass
 	public static void setup() throws Throwable
 	{
@@ -42,6 +45,8 @@ public class TestPlantHelpers
 		LEAF = ENV.blocks.fromItem(ENV.items.getItemById("op.leaf"));
 		LOG = ENV.blocks.fromItem(ENV.items.getItemById("op.log"));
 		BRANCH = ENV.blocks.fromItem(ENV.items.getItemById("op.branch"));
+		TILLED_SOIL = ENV.blocks.fromItem(ENV.items.getItemById("op.tilled_soil"));
+		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -169,6 +174,35 @@ public class TestPlantHelpers
 		Assert.assertEquals(LOG, proxy.getBlock());
 		Assert.assertEquals((byte)0, proxy.getBlockDefinedByte());
 		Assert.assertEquals(5, mutations.size());
+	}
+
+	@Test
+	public void hydrateGround()
+	{
+		// Show that we set the hydrated bit and then clear it based on checking tilled soil and finding water appear and then disappear.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		AbsoluteLocation soil = new AbsoluteLocation(1, 2, 3);
+		AbsoluteLocation water = soil.getRelative(4, 4, 0);
+		cuboid.setData15(AspectRegistry.BLOCK, soil.getBlockAddress(), TILLED_SOIL.item().number());
+		
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
+			.finish()
+		;
+		
+		// Set the block hydrated.
+		cuboid.setData15(AspectRegistry.BLOCK, water.getBlockAddress(), WATER_SOURCE.item().number());
+		MutableBlockProxy proxy = new MutableBlockProxy(soil, cuboid);
+		PlantHelpers.runSoilHydrationPeriodic(ENV, context, water, proxy);
+		Assert.assertTrue(PlantHelpers.isSoilHydrated(ENV, proxy));
+		proxy.writeBack(cuboid);
+		
+		// Set the block dry.
+		cuboid.setData15(AspectRegistry.BLOCK, water.getBlockAddress(), ENV.special.AIR.item().number());
+		proxy = new MutableBlockProxy(soil, cuboid);
+		PlantHelpers.runSoilHydrationPeriodic(ENV, context, water, proxy);
+		Assert.assertFalse(PlantHelpers.isSoilHydrated(ENV, proxy));
+		proxy.writeBack(cuboid);
 	}
 
 

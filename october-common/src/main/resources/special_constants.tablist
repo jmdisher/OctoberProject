@@ -20,3 +20,4 @@ block_bed	op.bed
 block_dirt	op.dirt
 block_grass	op.grass
 block_tilled_soil	op.tilled_soil
+block_water_source	op.water_source
