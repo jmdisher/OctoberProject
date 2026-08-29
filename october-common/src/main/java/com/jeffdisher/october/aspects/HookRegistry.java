@@ -17,6 +17,7 @@ import com.jeffdisher.october.block_periodic.PeriodicBehaviourCuboidLoader;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourHopper;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourPlant;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourPortalKeystone;
+import com.jeffdisher.october.block_periodic.PeriodicBehaviourTilledSoil;
 import com.jeffdisher.october.block_set.BlockSetBehaviourCornerstone;
 import com.jeffdisher.october.block_set.BlockSetBehaviourFireSource;
 import com.jeffdisher.october.block_set.BlockSetBehaviourFlammable;
@@ -172,6 +173,10 @@ public class HookRegistry
 				if (special.blockPortalKeystone == block)
 				{
 					periodicList.add(new PeriodicBehaviourPortalKeystone());
+				}
+				if (special.blockTilledSoil == block)
+				{
+					periodicList.add(new PeriodicBehaviourTilledSoil());
 				}
 				if (!periodicList.isEmpty())
 				{

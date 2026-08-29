@@ -27,6 +27,7 @@ import com.jeffdisher.october.block_movement.MutationBlockPushEntities;
 import com.jeffdisher.october.block_movement.PassiveActionPush;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourCompositeCornerstone;
 import com.jeffdisher.october.block_periodic.PeriodicBehaviourPlant;
+import com.jeffdisher.october.block_periodic.PeriodicBehaviourTilledSoil;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.DeserializationContext;
@@ -2550,6 +2551,33 @@ public class TestCommonMutations
 		Assert.assertEquals(stair.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(FacingDirection.directionToByte(FacingDirection.SOUTH), cuboid.getData7(AspectRegistry.ORIENTATION, target.getBlockAddress()));
 		Assert.assertEquals(defined, cuboid.getData7(AspectRegistry.BLOCK_DEFINED_BYTE, target.getBlockAddress()));
+	}
+
+	@Test
+	public void periodicSoilHydration()
+	{
+		// Demonstrate interaction with the periodic soil hydration check.
+		AbsoluteLocation target = new AbsoluteLocation(1, 1, 1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
+		Block tilledSoil = ENV.blocks.fromItem(ENV.items.getItemById("op.tilled_soil"));
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), tilledSoil.item().number());
+		
+		// First, we want to make sure that the wheat fails to grow due to darkness.
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
+				return BlockProxy.load(blockLocation.getBlockAddress(), cuboid);
+			}), null, null)
+			.finish()
+		;
+		
+		// Call with no water present, just to see the event scheduled.
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		MutationBlockPeriodic mutation = new MutationBlockPeriodic(target);
+		mutation.applyMutation(context, proxy);
+		Assert.assertFalse(proxy.didChange());
+		Assert.assertEquals(tilledSoil, proxy.getBlock());
+		Assert.assertEquals(0, proxy.getBlockDefinedByte());
+		Assert.assertEquals(PeriodicBehaviourTilledSoil.MILLIS_BETWEEN_CHECK_CALLS, proxy.periodicDelayMillis);
 	}
 
 
