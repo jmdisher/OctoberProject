@@ -32,19 +32,25 @@ public class FuelAspect
 	) throws IOException, TabListReader.TabListException
 	{
 		SimpleTabListCallbacks<Item, Integer> callbacks = new SimpleTabListCallbacks<>(new IValueTransformer.ItemTransformer(items), new IValueTransformer.IntegerTransformer("fuel"));
+		SimpleTabListCallbacks.SubRecordCapture<Item, Item> resultCapture = callbacks.captureSubRecord("result", new IValueTransformer.ItemTransformer(items), false);
 		TabListReader.readEntireFile(callbacks, stream);
 		
 		Map<Item, Integer> burnMillisByItemType = callbacks.topLevel;
+		Map<Item, Item> resultTypeByFuelType = resultCapture.recordData;
 		return new FuelAspect(burnMillisByItemType
+			, resultTypeByFuelType
 		);
 	}
 
 	private final Map<Item, Integer> _burnMillisByItemType;
+	private final Map<Item, Item> _resultTypeByFuelType;
 
 	private FuelAspect(Map<Item, Integer> burnMillisByItemType
+		, Map<Item, Item> resultTypeByFuelType
 	)
 	{
 		_burnMillisByItemType = burnMillisByItemType;
+		_resultTypeByFuelType = resultTypeByFuelType;
 	}
 
 	/**
@@ -57,6 +63,17 @@ public class FuelAspect
 	public int millisOfFuel(Item item)
 	{
 		return _millisOfFuel(item);
+	}
+
+	/**
+	 * Used to determine what item is produced by burning up the given fuel type item (usually nothing).
+	 * 
+	 * @param item The fuel item type.
+	 * @return The result item type from burning this or null, if nothing.
+	 */
+	public Item resultOfFuel(Item item)
+	{
+		return _resultTypeByFuelType.get(item);
 	}
 
 	/**

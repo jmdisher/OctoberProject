@@ -368,8 +368,14 @@ public class TestMiscAspects
 		// Test a few basic queries about fuel types.
 		Item stone = ENV.items.getItemById("op.stone");
 		Item charcoal = ENV.items.getItemById("op.charcoal");
+		Item lavaBucket = ENV.items.getItemById("op.bucket_lava");
+		Item emptyBucket = ENV.items.getItemById("op.bucket_empty");
 		
 		Assert.assertEquals(0, ENV.fuel.millisOfFuel(stone));
+		Assert.assertNull(ENV.fuel.resultOfFuel(stone));
 		Assert.assertEquals(8000, ENV.fuel.millisOfFuel(charcoal));
+		Assert.assertNull(ENV.fuel.resultOfFuel(charcoal));
+		Assert.assertEquals(32000, ENV.fuel.millisOfFuel(lavaBucket));
+		Assert.assertEquals(emptyBucket, ENV.fuel.resultOfFuel(lavaBucket));
 	}
 }

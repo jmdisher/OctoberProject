@@ -2581,6 +2581,72 @@ public class TestCommonMutations
 		Assert.assertEquals(PeriodicBehaviourTilledSoil.MILLIS_BETWEEN_CHECK_CALLS, proxy.periodicDelayMillis);
 	}
 
+	@Test
+	public void furnaceBurnLava()
+	{
+		// Show that we get an empty bucket in the output when a lava bucket is burned.
+		AbsoluteLocation target = new AbsoluteLocation(15, 15, 15);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), STONE);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), ENV.items.getItemById("op.furnace").number());
+		Item log = ENV.items.getItemById("op.log");
+		Item lavaBucket = ENV.items.getItemById("op.bucket_lava");
+		Item emptyBucket = ENV.items.getItemById("op.bucket_empty");
+		Inventory inv = Inventory.start(50).addStackable(log, 1).finish();
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress(), inv);
+		MutationBlockFurnaceCraft[] holder = new MutationBlockFurnaceCraft[1];
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
+			.sinks(new TickProcessingContext.IMutationSink() {
+				@Override
+				public boolean next(IMutationBlock mutation)
+				{
+					holder[0] = (MutationBlockFurnaceCraft) mutation;
+					return true;
+				}
+				@Override
+				public boolean future(IMutationBlock mutation, long millisToDelay)
+				{
+					throw new AssertionError("Not expected in test");
+				}
+			}, null)
+			.finish()
+		;
+		
+		// We store the fuel in to kick this off the normal way.
+		NonStackableItem inputBucket = PropertyHelpers.newItemWithDefaults(ENV, lavaBucket);
+		MutationBlockStoreItems storeFuel = new MutationBlockStoreItems(target, null, inputBucket, Inventory.INVENTORY_ASPECT_FUEL);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		storeFuel.applyMutation(context, proxy);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		
+		// This shouldn't yet be using the fuel, but it should be present.
+		FuelState fuel = proxy.getFuel();
+		Assert.assertEquals(0, fuel.millisFuelled());
+		Assert.assertEquals(4, fuel.fuelInventory().currentEncumbrance);
+		CraftOperation runningCraft = proxy.getCrafting();
+		Assert.assertNull(runningCraft);
+		
+		// Apply the craft call and see the inventories change.
+		MutationBlockFurnaceCraft craft = holder[0];
+		holder[0] = null;
+		proxy = new MutableBlockProxy(target, cuboid);
+		craft.applyMutation(context, proxy);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		
+		// Check that we are running the craft, consumed the fuel, and produced the output.
+		fuel = proxy.getFuel();
+		runningCraft = proxy.getCrafting();
+		Assert.assertEquals(32000 - context.millisPerTick, fuel.millisFuelled());
+		Assert.assertEquals(0, fuel.fuelInventory().currentEncumbrance);
+		Assert.assertNotNull(holder[0]);
+		Assert.assertNotNull(runningCraft);
+		inv = proxy.getInventory();
+		Assert.assertEquals(1, inv.getCount(log));
+		Assert.assertEquals(emptyBucket, inv.getNonStackableForKey(2).type());
+	}
+
 
 	private static Set<AbsoluteLocation> _getEastFacingPortalVoidStones(AbsoluteLocation keystoneLocation)
 	{

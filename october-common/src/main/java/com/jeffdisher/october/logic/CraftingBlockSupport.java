@@ -160,18 +160,36 @@ public class CraftingBlockSupport
 					int firstKey = inv.sortedKeys().get(0);
 					Items stack = inv.getStackForKey(firstKey);
 					Item fuelType;
-					NonStackableItem nonStack = inv.getNonStackableForKey(firstKey);
 					if (null != stack)
 					{
 						fuelType = stack.type();
+						fuelInventory.removeStackableItems(fuelType, 1);
 					}
 					else
 					{
+						NonStackableItem nonStack = inv.getNonStackableForKey(firstKey);
 						fuelType = nonStack.type();
+						fuelInventory.removeNonStackableItems(firstKey);
 					}
 					fuelAvailable = env.fuel.millisOfFuel(fuelType);
-					fuelInventory.removeStackableItems(fuelType, 1);
 					fuel = new FuelState(fuelAvailable, fuelType, fuelInventory.freeze());
+					
+					// If this kind of fuel produces an output, create that.
+					Item fuelResultType = env.fuel.resultOfFuel(fuelType);
+					if (null != fuelResultType)
+					{
+						// We will drop this item in the standard output.
+						MutableInventory mutableOutput = new MutableInventory(newBlock.getInventory());
+						if (env.durability.isStackable(fuelResultType))
+						{
+							mutableOutput.addItemsAllowingOverflow(fuelResultType, 1);
+						}
+						else
+						{
+							mutableOutput.addNonStackableAllowingOverflow(PropertyHelpers.newItemWithDefaults(env, fuelResultType));
+						}
+						newBlock.setInventory(mutableOutput.freeze());
+					}
 				}
 				
 				long millisRequired = craft.selectedCraft().millisPerCraft - craft.completedMillis();
