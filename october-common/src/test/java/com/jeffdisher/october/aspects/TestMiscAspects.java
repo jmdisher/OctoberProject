@@ -361,4 +361,15 @@ public class TestMiscAspects
 		}
 		Assert.assertEquals(6, validatedCount);
 	}
+
+	@Test
+	public void fuelBasics() throws Throwable
+	{
+		// Test a few basic queries about fuel types.
+		Item stone = ENV.items.getItemById("op.stone");
+		Item charcoal = ENV.items.getItemById("op.charcoal");
+		
+		Assert.assertEquals(0, ENV.fuel.millisOfFuel(stone));
+		Assert.assertEquals(8000, ENV.fuel.millisOfFuel(charcoal));
+	}
 }

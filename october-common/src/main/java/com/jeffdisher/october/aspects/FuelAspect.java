@@ -4,12 +4,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 
-import com.jeffdisher.october.config.FlatTabListCallbacks;
 import com.jeffdisher.october.config.IValueTransformer;
+import com.jeffdisher.october.config.SimpleTabListCallbacks;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -32,28 +31,18 @@ public class FuelAspect
 			, InputStream stream
 	) throws IOException, TabListReader.TabListException
 	{
-		FlatTabListCallbacks<Item, Integer> callbacks = new FlatTabListCallbacks<>(new IValueTransformer.ItemTransformer(items), new IValueTransformer.IntegerTransformer("fuel"));
+		SimpleTabListCallbacks<Item, Integer> callbacks = new SimpleTabListCallbacks<>(new IValueTransformer.ItemTransformer(items), new IValueTransformer.IntegerTransformer("fuel"));
 		TabListReader.readEntireFile(callbacks, stream);
 		
-		int[] burnMillisByItemType = new int[items.ITEMS_BY_TYPE.length];
-		for (int i = 0; i < burnMillisByItemType.length; ++i)
-		{
-			burnMillisByItemType[i] = 0;
-		}
-		
-		// Now, over-write with the values from the file.
-		for (Map.Entry<Item, Integer> elt : callbacks.data.entrySet())
-		{
-			int value = elt.getValue();
-			Assert.assertTrue(value >= 0);
-			burnMillisByItemType[elt.getKey().number()] = value;
-		}
-		return new FuelAspect(burnMillisByItemType);
+		Map<Item, Integer> burnMillisByItemType = callbacks.topLevel;
+		return new FuelAspect(burnMillisByItemType
+		);
 	}
 
-	private final int[] _burnMillisByItemType;
+	private final Map<Item, Integer> _burnMillisByItemType;
 
-	private FuelAspect(int[] burnMillisByItemType)
+	private FuelAspect(Map<Item, Integer> burnMillisByItemType
+	)
 	{
 		_burnMillisByItemType = burnMillisByItemType;
 	}
@@ -91,6 +80,6 @@ public class FuelAspect
 
 	private int _millisOfFuel(Item item)
 	{
-		return _burnMillisByItemType[item.number()];
+		return _burnMillisByItemType.getOrDefault(item, 0);
 	}
 }
