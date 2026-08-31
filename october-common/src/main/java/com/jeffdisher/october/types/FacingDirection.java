@@ -77,6 +77,46 @@ public enum FacingDirection
 			, 0, -1, 0
 		}
 	),
+	FLIPPED_NORTH(new int[] {1, 0, 0
+			, 0, 1, 0
+			, 0, 0, -1
+		}
+		, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(0, 1, 0)
+		, new byte[] {1, 0, 0
+			, 0, 1, 0
+			, 0, 0, -1
+		}
+	),
+	FLIPPED_WEST(new int[] {0, -1, 0
+			, 1, 0, 0
+			, 0, 0, -1
+		}
+		, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(-1, 0, 0)
+		, new byte[] {0, 1, 0
+			, -1, 0, 0
+			, 0, 0, -1
+		}
+	),
+	FLIPPED_SOUTH(new int[] {-1, 0, 0
+			, 0, -1, 0
+			, 0, 0, -1
+		}
+		, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(0, -1, 0)
+		, new byte[] {-1, 0, 0
+			, 0, -1, 0
+			, 0, 0, -1
+		}
+	),
+	FLIPPED_EAST(new int[] {0, 1, 0
+			, -1, 0, 0
+			, 0, 0, -1
+		}
+		, (AbsoluteLocation thisLocation) -> thisLocation.getRelative(1, 0, 0)
+		, new byte[] {0, -1, 0
+			, 1, 0, 0
+			, 0, 0, -1
+		}
+	),
 	;
 
 	/**
@@ -178,9 +218,10 @@ public enum FacingDirection
 	 */
 	public AbsoluteLocation rotateAboutZ(AbsoluteLocation in)
 	{
-		int x = _threeDRotationMatrix[0] * in.x() + _threeDRotationMatrix[1] * in.y();
-		int y = _threeDRotationMatrix[3] * in.x() + _threeDRotationMatrix[4] * in.y();
-		return new AbsoluteLocation(x, y, in.z());
+		int x = _threeDRotationMatrix[0] * in.x() + _threeDRotationMatrix[1] * in.y() + _threeDRotationMatrix[2] * in.z();
+		int y = _threeDRotationMatrix[3] * in.x() + _threeDRotationMatrix[4] * in.y() + _threeDRotationMatrix[5] * in.z();
+		int z = _threeDRotationMatrix[6] * in.x() + _threeDRotationMatrix[7] * in.y() + _threeDRotationMatrix[8] * in.z();
+		return new AbsoluteLocation(x, y, z);
 	}
 
 	/**
@@ -205,15 +246,72 @@ public enum FacingDirection
 
 	public FacingDirection rotateOrientation(FacingDirection orientation)
 	{
-		FacingDirection rotated;
-		if (DOWN == orientation)
+		// This is called during world-gen to rotate the orientation blocks with direction relative to the rotation of their placement.
+		
+		int baseRotation;
+		switch (this)
 		{
-			rotated = orientation;
+		case UP:
+		case DOWN:
+			// These cases don't rotate so leave them as-in.
+			baseRotation = 0;
+			break;
+		case EAST:
+		case NORTH:
+		case SOUTH:
+		case WEST:{
+			// Just step these forward by ordinal (they are ordered such that this is correct).
+			int base = NORTH.ordinal();
+			baseRotation = this.ordinal() - base;
+			break;
 		}
-		else
+		case FLIPPED_EAST:
+		case FLIPPED_NORTH:
+		case FLIPPED_SOUTH:
+		case FLIPPED_WEST: {
+			// Just step these forward by ordinal (they are ordered such that this is correct).
+			int base = FLIPPED_NORTH.ordinal();
+			baseRotation = this.ordinal() - base;
+			break;
+		}
+		default:
+			// Unknown.
+			throw Assert.unreachable();
+		}
+		
+		FacingDirection rotated;
+		switch (orientation)
 		{
-			int index = (orientation.ordinal() + this.ordinal()) % 4;
-			rotated = FacingDirection.values()[index];
+		case UP:
+		case DOWN:
+			// These cases don't rotate so leave them as-in.
+			rotated = orientation;
+			break;
+		case EAST:
+		case NORTH:
+		case SOUTH:
+		case WEST:{
+			// Just step these forward by ordinal (they are ordered such that this is correct).
+			int base = NORTH.ordinal();
+			int arg = orientation.ordinal() - base;
+			int index = (arg + baseRotation) % 4;
+			rotated = FacingDirection.values()[index + base];
+			break;
+		}
+		case FLIPPED_EAST:
+		case FLIPPED_NORTH:
+		case FLIPPED_SOUTH:
+		case FLIPPED_WEST: {
+			// Just step these forward by ordinal (they are ordered such that this is correct).
+			int base = FLIPPED_NORTH.ordinal();
+			int arg = orientation.ordinal() - base;
+			int index = (arg + baseRotation) % 4;
+			rotated = FacingDirection.values()[index + base];
+			break;
+		}
+		default:
+			// Unknown.
+			throw Assert.unreachable();
 		}
 		return rotated;
 	}

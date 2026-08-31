@@ -123,4 +123,57 @@ public class TestFacingDirection
 		Assert.assertEquals(zzz, FacingDirection.SOUTH.inverseRotateInSubBlock(ppz));
 		Assert.assertEquals(zzp, FacingDirection.SOUTH.inverseRotateInSubBlock(ppp));
 	}
+
+	@Test
+	public void subBlockFlippedWestRotation()
+	{
+		// Select the 8 vertices of of the cube and show that they rotate onto each other as expected.
+		SubBlock zzz = SubBlock.fromInt(0, 0, 0);
+		SubBlock zzp = SubBlock.fromInt(0, 0, 3);
+		SubBlock zpz = SubBlock.fromInt(0, 3, 0);
+		SubBlock zpp = SubBlock.fromInt(0, 3, 3);
+		SubBlock pzz = SubBlock.fromInt(3, 0, 0);
+		SubBlock pzp = SubBlock.fromInt(3, 0, 3);
+		SubBlock ppz = SubBlock.fromInt(3, 3, 0);
+		SubBlock ppp = SubBlock.fromInt(3, 3, 3);
+		
+		// Rotate AbsoluteLocation.
+		AbsoluteLocation location = new AbsoluteLocation(1, 2, 3);
+		Assert.assertEquals(new AbsoluteLocation(-2, 1, 3), FacingDirection.WEST.rotateAboutZ(location));
+		Assert.assertEquals(new AbsoluteLocation(-2, 1, -3), FacingDirection.FLIPPED_WEST.rotateAboutZ(location));
+		
+		// Rotate triplet.
+		float[] triplet = new float[] {1.0f, 2.0f, 3.0f};
+		Assert.assertArrayEquals(new float[] {-2.0f, 1.0f, 3.0f }, FacingDirection.WEST.rotateTripletAboutZ(triplet), 0.01f);
+		Assert.assertArrayEquals(new float[] {-2.0f, 1.0f, -3.0f }, FacingDirection.FLIPPED_WEST.rotateTripletAboutZ(triplet), 0.01f);
+		
+		// Output location - flip has no impact.
+		AbsoluteLocation blockLocation = new AbsoluteLocation(1, 2, 3);
+		Assert.assertEquals(new AbsoluteLocation(0, 2, 3), FacingDirection.WEST.getOutputBlockLocation(blockLocation));
+		Assert.assertEquals(new AbsoluteLocation(0, 2, 3), FacingDirection.FLIPPED_WEST.getOutputBlockLocation(blockLocation));
+		
+		// Orientation.
+		Assert.assertEquals(FacingDirection.SOUTH, FacingDirection.WEST.rotateOrientation(FacingDirection.WEST));
+		Assert.assertEquals(FacingDirection.SOUTH, FacingDirection.FLIPPED_WEST.rotateOrientation(FacingDirection.WEST));
+		
+		// Show the basic west orientation, to start.
+		Assert.assertEquals(zpz, FacingDirection.WEST.inverseRotateInSubBlock(zzz));
+		Assert.assertEquals(zpp, FacingDirection.WEST.inverseRotateInSubBlock(zzp));
+		Assert.assertEquals(ppz, FacingDirection.WEST.inverseRotateInSubBlock(zpz));
+		Assert.assertEquals(ppp, FacingDirection.WEST.inverseRotateInSubBlock(zpp));
+		Assert.assertEquals(zzz, FacingDirection.WEST.inverseRotateInSubBlock(pzz));
+		Assert.assertEquals(zzp, FacingDirection.WEST.inverseRotateInSubBlock(pzp));
+		Assert.assertEquals(pzz, FacingDirection.WEST.inverseRotateInSubBlock(ppz));
+		Assert.assertEquals(pzp, FacingDirection.WEST.inverseRotateInSubBlock(ppp));
+		
+		// The "flipped" west orientation rotates to the west and then flips the Z-axis so it will be similar.
+		Assert.assertEquals(zpp, FacingDirection.FLIPPED_WEST.inverseRotateInSubBlock(zzz));
+		Assert.assertEquals(zpz, FacingDirection.FLIPPED_WEST.inverseRotateInSubBlock(zzp));
+		Assert.assertEquals(ppp, FacingDirection.FLIPPED_WEST.inverseRotateInSubBlock(zpz));
+		Assert.assertEquals(ppz, FacingDirection.FLIPPED_WEST.inverseRotateInSubBlock(zpp));
+		Assert.assertEquals(zzp, FacingDirection.FLIPPED_WEST.inverseRotateInSubBlock(pzz));
+		Assert.assertEquals(zzz, FacingDirection.FLIPPED_WEST.inverseRotateInSubBlock(pzp));
+		Assert.assertEquals(pzp, FacingDirection.FLIPPED_WEST.inverseRotateInSubBlock(ppz));
+		Assert.assertEquals(pzz, FacingDirection.FLIPPED_WEST.inverseRotateInSubBlock(ppp));
+	}
 }

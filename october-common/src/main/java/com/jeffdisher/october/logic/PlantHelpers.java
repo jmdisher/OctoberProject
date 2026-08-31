@@ -257,6 +257,12 @@ public class PlantHelpers
 		case SOUTH:
 			northRandom += BRANCH_CHANCE_BONUS_DIRECTION;
 			break;
+		case FLIPPED_EAST:
+		case FLIPPED_NORTH:
+		case FLIPPED_SOUTH:
+		case FLIPPED_WEST:
+			// Branches cannot use the flipped orientation.
+			throw Assert.unreachable();
 		}
 		
 		CommonBlockMutationHelpers.setBlockWithFollowUps(env, context, location, newBlock, log);
