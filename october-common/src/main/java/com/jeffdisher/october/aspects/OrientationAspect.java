@@ -21,6 +21,7 @@ public class OrientationAspect
 {
 	public static final String FLAG_ALLOWS_DOWN = "allows_down";
 	public static final String FLAG_ALLOWS_UP = "allows_up";
+	public static final String FLAG_ALLOWS_FLIPPED = "allows_flipped";
 
 	public static OrientationAspect load(ItemRegistry items
 		, BlockAspect blocks
@@ -30,6 +31,7 @@ public class OrientationAspect
 		Set<Block> hasOrientation = new HashSet<>();
 		Set<Block> allowsDown = new HashSet<>();
 		Set<Block> allowsUp = new HashSet<>();
+		Set<Block> allowsFlipped = new HashSet<>();
 		
 		TabListReader.IParseCallbacks callbacks = new TabListReader.IParseCallbacks() {
 			@Override
@@ -59,6 +61,14 @@ public class OrientationAspect
 					else if (FLAG_ALLOWS_UP.equals(param))
 					{
 						boolean wasAdded = allowsUp.add(block);
+						if (!wasAdded)
+						{
+							throw new TabListReader.TabListException("Duplicate flag \"" + param + "\" for: \"" + name + "\"");
+						}
+					}
+					else if (FLAG_ALLOWS_FLIPPED.equals(param))
+					{
+						boolean wasAdded = allowsFlipped.add(block);
 						if (!wasAdded)
 						{
 							throw new TabListReader.TabListException("Duplicate flag \"" + param + "\" for: \"" + name + "\"");
@@ -96,22 +106,25 @@ public class OrientationAspect
 		};
 		TabListReader.readEntireFile(callbacks, stream);
 		
-		return new OrientationAspect(hasOrientation, allowsDown, allowsUp);
+		return new OrientationAspect(hasOrientation, allowsDown, allowsUp, allowsFlipped);
 	}
 
 
 	private final Set<Block> _hasOrientation;
 	private final Set<Block> _allowsDown;
 	private final Set<Block> _allowsUp;
+	private final Set<Block> _allowsFlipped;
 
 	private OrientationAspect(Set<Block> hasOrientation
 		, Set<Block> allowsDown
 		, Set<Block> allowsUp
+		, Set<Block> allowsFlipped
 	)
 	{
 		_hasOrientation = Collections.unmodifiableSet(hasOrientation);
 		_allowsDown = Collections.unmodifiableSet(allowsDown);
 		_allowsUp = Collections.unmodifiableSet(allowsUp);
+		_allowsFlipped = Collections.unmodifiableSet(allowsFlipped);
 	}
 
 	/**
@@ -150,5 +163,17 @@ public class OrientationAspect
 	public boolean doesAllowUpwardOutput(Block blockType)
 	{
 		return _allowsUp.contains(blockType);
+	}
+
+	/**
+	 * Checks if the given block can be oriented with a flipped horizontal orientation instead of just flat orientation.
+	 * This can only be called for single blocks (not multi-blocks).
+	 * 
+	 * @param blockType The block type.
+	 * @return True if this MUST store an orientation byte and can store a flipped orientation.
+	 */
+	public boolean doesAllowFlippedHorizontal(Block blockType)
+	{
+		return _allowsFlipped.contains(blockType);
 	}
 }

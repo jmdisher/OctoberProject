@@ -392,4 +392,32 @@ public class TestMiscAspects
 		Assert.assertTrue(ENV.orientations.doesAllowDownwardOutput(slab));
 		Assert.assertTrue(ENV.orientations.doesAllowUpwardOutput(slab));
 	}
+
+	@Test
+	public void stairSubBlocksFlipped() throws Throwable
+	{
+		Block stair = ENV.blocks.fromItem(ENV.items.getItemById("op.wood_plank_stair"));
+		long bits = ENV.blocks.getSubBlocks(stair, false);
+		
+		// Show how the collision with sub-blocks works with flipped and normal rotations.
+		SubBlock end = SubBlock.fromInt(3, 3, 0);
+		SubBlock enu = SubBlock.fromInt(3, 3, 3);
+		SubBlock wnd = SubBlock.fromInt(0, 3, 0);
+		SubBlock wnu = SubBlock.fromInt(0, 3, 3);
+		
+		Assert.assertEquals(0L, bits & FacingDirection.FLIPPED_WEST.inverseRotateInSubBlock(end).getMask());
+		Assert.assertNotEquals(0L, bits & FacingDirection.FLIPPED_WEST.inverseRotateInSubBlock(enu).getMask());
+		Assert.assertNotEquals(0L, bits & FacingDirection.FLIPPED_WEST.inverseRotateInSubBlock(wnd).getMask());
+		Assert.assertNotEquals(0L, bits & FacingDirection.FLIPPED_WEST.inverseRotateInSubBlock(wnu).getMask());
+		
+		Assert.assertNotEquals(0L, bits & FacingDirection.WEST.inverseRotateInSubBlock(end).getMask());
+		Assert.assertEquals(0L, bits & FacingDirection.WEST.inverseRotateInSubBlock(enu).getMask());
+		Assert.assertNotEquals(0L, bits & FacingDirection.WEST.inverseRotateInSubBlock(wnd).getMask());
+		Assert.assertNotEquals(0L, bits & FacingDirection.WEST.inverseRotateInSubBlock(wnu).getMask());
+		
+		Assert.assertNotEquals(0L, bits & FacingDirection.EAST.inverseRotateInSubBlock(end).getMask());
+		Assert.assertNotEquals(0L, bits & FacingDirection.EAST.inverseRotateInSubBlock(enu).getMask());
+		Assert.assertNotEquals(0L, bits & FacingDirection.EAST.inverseRotateInSubBlock(wnd).getMask());
+		Assert.assertEquals(0L, bits & FacingDirection.EAST.inverseRotateInSubBlock(wnu).getMask());
+	}
 }

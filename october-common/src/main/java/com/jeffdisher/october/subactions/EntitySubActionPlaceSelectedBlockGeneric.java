@@ -284,6 +284,8 @@ public class EntitySubActionPlaceSelectedBlockGeneric implements IEntitySubActio
 				case FLIPPED_WEST:
 				case FLIPPED_SOUTH:
 				case FLIPPED_EAST:
+					isValid = env.orientations.doesAllowFlippedHorizontal(placeableBlock);
+					break;
 				default:
 					// Not used yet.
 					throw Assert.unreachable();

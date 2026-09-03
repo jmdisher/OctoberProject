@@ -4131,6 +4131,27 @@ public class TestCommonChanges
 		holder.passive = null;
 	}
 
+	@Test
+	public void placeFlippedStair()
+	{
+		// Show that stairs can be placed flipped.
+		int entityId = 1;
+		Block stair = ENV.blocks.fromItem(ENV.items.getItemById("op.wood_plank_stair"));
+		MutableEntity newEntity = MutableEntity.createForTest(entityId);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		newEntity.newInventory.addAllItems(stair.item(), 1);
+		newEntity.slotManager.setSelectedKey(1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
+		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
+		
+		// This should require an orientation.
+		Assert.assertFalse(new EntitySubActionPlaceSelectedBlockGeneric(target, null).applyChange(holder.context, newEntity));
+		Assert.assertNull(holder.mutation);
+		Assert.assertTrue(new EntitySubActionPlaceSelectedBlockGeneric(target, FacingDirection.FLIPPED_WEST).applyChange(holder.context, newEntity));
+		Assert.assertEquals("OverwriteByEntity @AbsoluteLocation[x=1, y=1, z=10] with Block(Wood Plank Stair) (facing FLIPPED_WEST) placed by 1", holder.mutation.toString());
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{
