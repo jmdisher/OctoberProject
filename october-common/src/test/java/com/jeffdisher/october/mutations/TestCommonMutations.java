@@ -768,13 +768,23 @@ public class TestCommonMutations
 		MutationBlockIncrementalRepair repairNoDamange = new MutationBlockIncrementalRepair(noDamage, repairMillis);
 		repairNoDamange.applyMutation(null, noDamangeProxy);
 		
-		// Try valid
+		// Try valid (note that we need the event sink to see the final repair event).
+		List<EventRecord> out_events = new ArrayList<>();
+		TickProcessingContext context = ContextBuilder.build()
+			.eventSink((EventRecord event) -> out_events.add(event))
+			.finish()
+		;
 		MutationBlockIncrementalRepair repairValid = new MutationBlockIncrementalRepair(valid, repairMillis);
-		repairValid.applyMutation(null, validProxy);
+		repairValid.applyMutation(context, validProxy);
 		Assert.assertEquals((short)50, validProxy.getDamage());
-		repairValid.applyMutation(null, validProxy);
+		repairValid.applyMutation(context, validProxy);
 		Assert.assertEquals((short)0, validProxy.getDamage());
-		repairValid.applyMutation(null, validProxy);
+		repairValid.applyMutation(context, validProxy);
+		
+		// We should see that final event.
+		Assert.assertEquals(1, out_events.size());
+		Assert.assertEquals(EventRecord.Type.BLOCK_REPAIRED, out_events.get(0).type());
+		Assert.assertEquals(valid, out_events.get(0).location());
 	}
 
 	@Test

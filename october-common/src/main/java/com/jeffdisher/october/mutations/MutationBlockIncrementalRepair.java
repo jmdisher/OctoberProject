@@ -8,6 +8,7 @@ import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.FireHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutableBlockProxy;
 import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -58,6 +59,17 @@ public class MutationBlockIncrementalRepair implements IMutationBlock
 			short repair = (short)Math.min(_damageToRepair, damage);
 			short updatedDamage = (short)(damage - repair);
 			newBlock.setDamage(updatedDamage);
+			
+			// We will emit an event if this finished the repair so that the user can be shown in the client.
+			if (0 == updatedDamage)
+			{
+				context.eventSink.post(new EventRecord(EventRecord.Type.BLOCK_REPAIRED
+					, EventRecord.Cause.NONE
+					, _location
+					, 0
+					, 0
+				));
+			}
 		}
 		
 		// We also use this path to extinguish a fire in the block.

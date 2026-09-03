@@ -1,6 +1,10 @@
 package com.jeffdisher.october.types;
 
 
+/**
+ * Events describing notable activities completing on the server.  Note that these are sent over the network but are
+ * never persisted so they can be re-ordered or re-interpreted as needed.
+ */
 public record EventRecord(Type type
 		, Cause cause
 		, AbsoluteLocation location
@@ -11,6 +15,7 @@ public record EventRecord(Type type
 	{
 		BLOCK_BROKEN,
 		BLOCK_PLACED,
+		BLOCK_REPAIRED,
 		/**
 		 * entityTarget took damage from entitySource (may be 0 if environmental).
 		 */
