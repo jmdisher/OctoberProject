@@ -39,18 +39,22 @@ op.diamond_axe	1000000
 # Helmets:
 op.copper_helmet	500
 op.iron_helmet	2000
+op.leather_cap	1000
 
 # Chestplates:
 op.copper_chestplate	500
 op.iron_chestplate	2000
+op.leather_tunic	1000
 
 # Greaves:
 op.copper_greaves	500
 op.iron_greaves	2000
+op.leather_pants	1000
 
 # Boots:
 op.copper_boots	500
 op.iron_boots	2000
+op.leather_boots	1000
 
 # Buckets:
 op.bucket_empty	0

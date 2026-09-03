@@ -1043,10 +1043,7 @@ public class TestTickRunner
 		
 		// We should see the creature is now gone and their drops have appeared as passives.
 		Assert.assertNull(snapshot.creatures().get(creatureId));
-		Assert.assertEquals(1, snapshot.passives().size());
-		ItemSlot drop = (ItemSlot)snapshot.passives().values().iterator().next().completed().extendedData();
-		Assert.assertEquals(5, drop.getCount());
-		Assert.assertEquals(ENV.items.getItemById("op.beef"), drop.getType());
+		Assert.assertEquals(2, snapshot.passives().size());
 		
 		runner.shutdown();
 	}

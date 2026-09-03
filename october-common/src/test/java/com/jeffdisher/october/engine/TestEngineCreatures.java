@@ -156,8 +156,28 @@ public class TestEngineCreatures
 		);
 		
 		Assert.assertNull(result.updatedEntity());
-		// This is a cow so we should see it drop an item.
-		Assert.assertEquals(1, out_passives.size());
+		// This is a cow so we should see it drop a stack of beef and a stack of leather.
+		Assert.assertEquals(2, out_passives.size());
+		Item beefItem = ENV.items.getItemById("op.beef");
+		Item leatherItem = ENV.items.getItemById("op.leather");
+		int beefCount = 0;
+		int leatherCount = 0;
+		for (PassiveEntity passive : out_passives)
+		{
+			ItemSlot slot = (ItemSlot) passive.extendedData();
+			if (beefItem == slot.getType())
+			{
+				Assert.assertEquals(0, beefCount);
+				beefCount = slot.getCount();
+			}
+			else if (leatherItem == slot.getType())
+			{
+				Assert.assertEquals(0, leatherCount);
+				leatherCount = slot.getCount();
+			}
+		}
+		Assert.assertTrue(beefCount >= 10);
+		Assert.assertTrue(leatherCount >= 1);
 	}
 
 	@Test

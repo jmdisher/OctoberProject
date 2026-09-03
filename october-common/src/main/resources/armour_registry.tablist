@@ -21,3 +21,11 @@ op.copper_greaves	LEGS
 	reduction	7
 op.copper_boots	FEET
 	reduction	7
+op.leather_cap	HEAD
+	reduction	4
+op.leather_tunic	TORSO
+	reduction	4
+op.leather_pants	LEGS
+	reduction	4
+op.leather_boots	FEET
+	reduction	4

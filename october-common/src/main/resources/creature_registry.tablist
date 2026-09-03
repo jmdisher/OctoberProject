@@ -21,7 +21,7 @@ op.cow	Cow
 	view_distance	8.0
 	action_distance	1.0
 	action_cooldown_millis	1000
-	drops	100	op.beef	100	op.beef	100	op.beef	100	op.beef	50	op.beef
+	drops	100	op.beef	100	op.beef	100	op.beef	100	op.beef	100	op.beef	100	op.beef	100	op.beef	100	op.beef	100	op.beef	100	op.beef	50	op.beef	50	op.beef	100	op.leather	80	op.leather
 	extension	livestock	op.wheat_item
 op.orc	Orc
 	volume	0.7	0.4

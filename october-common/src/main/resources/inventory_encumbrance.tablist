@@ -127,3 +127,8 @@ op.coin	1
 op.branch	0
 op.gravel	2
 op.glass	2
+op.leather	3
+op.leather_cap	3
+op.leather_tunic	5
+op.leather_pants	5
+op.leather_boots	3

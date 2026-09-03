@@ -254,6 +254,22 @@ op.c051	COMMON
 	input	op.plank
 	output	op.wood_plank_stair
 	millis	2000
+op.c052	COMMON
+	input	op.leather	op.leather
+	output	op.leather_cap
+	millis	10000
+op.c053	COMMON
+	input	op.leather	op.leather	op.leather	op.leather
+	output	op.leather_tunic
+	millis	40000
+op.c054	COMMON
+	input	op.leather	op.leather	op.leather
+	output	op.leather_pants
+	millis	20000
+op.c055	COMMON
+	input	op.leather	op.leather
+	output	op.leather_boots
+	millis	10000
 
 # Fueled furnace crafting (referenced in station_registry for use furnaces, requiring fuel):
 op.f000	FUELLED_FURNACE
