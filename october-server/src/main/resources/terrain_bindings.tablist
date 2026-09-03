@@ -19,3 +19,4 @@ lavaSourceBlock	op.lava_source
 wheatMatureBlock	op.wheat_mature
 carrotMatureBlock	op.carrot_mature
 logBlock	op.log
+gravelBlock	op.gravel

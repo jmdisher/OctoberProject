@@ -500,6 +500,28 @@ public class TestBasicWorldGenerator
 		Assert.assertEquals(root.getRelative(2, 2, 1).toEntityLocation(), creatures.get(0).location());
 	}
 
+	@Test
+	public void checkGravel() throws Throwable
+	{
+		// Show that gravel generates deeper under water.
+		int seed = 42;
+		BasicWorldGenerator generator = _worldGeneratorWithSeed(seed);
+		CreatureIdAssigner creatureIdAssigner = new CreatureIdAssigner();
+		CuboidAddress address = CuboidAddress.fromInt(86, 0, -1);
+		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(creatureIdAssigner, address, 0L);
+		CuboidData cuboid = suspended.cuboid();
+		
+		short[] search = new short[] { ENV.items.getItemById("op.water_source").number()
+			, ENV.items.getItemById("op.sand").number()
+			, ENV.items.getItemById("op.gravel").number()
+		};
+		
+		int[] counts = _countSpecificBlocks(cuboid, search);
+		Assert.assertEquals(4739, counts[0]);
+		Assert.assertEquals(405, counts[1]);
+		Assert.assertEquals(484, counts[2]);
+	}
+
 
 	private static void _checkBlockTypes(CuboidData data
 		, int stone

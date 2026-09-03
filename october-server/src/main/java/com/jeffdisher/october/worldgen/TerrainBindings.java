@@ -26,6 +26,7 @@ public class TerrainBindings
 	public final Block basaltBlock;
 	public final Block coalOreBlock;
 	public final Block ironOreBlock;
+	public final Block gravelBlock;
 
 	public final Block waterSourceBlock;
 	public final Block lavaSourceBlock;
@@ -54,6 +55,7 @@ public class TerrainBindings
 		this.basaltBlock = _requiredBlock(mapping, "basaltBlock");
 		this.coalOreBlock = _requiredBlock(mapping, "coalOreBlock");
 		this.ironOreBlock = _requiredBlock(mapping, "ironOreBlock");
+		this.gravelBlock = _requiredBlock(mapping, "gravelBlock");
 		
 		this.waterSourceBlock = _requiredBlock(mapping, "waterSourceBlock");
 		this.lavaSourceBlock = _requiredBlock(mapping, "lavaSourceBlock");

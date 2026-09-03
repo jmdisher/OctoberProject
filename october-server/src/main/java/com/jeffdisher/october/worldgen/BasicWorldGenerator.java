@@ -63,6 +63,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 	public static final int WATER_Z_LEVEL = 0;
 	public static final int STONE_PEAK_Z_LEVEL = 16;
 	public static final int LAVA_Z_DEPTH = -200;
+	public static final int SAND_DEPTH = 5;
 
 	// We generate ores in column segments, generating a certain number of ore nodes in the given segment.
 	public static final int COAL1_NODES = 40;
@@ -100,6 +101,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 	private final Block _blockDirt;
 	private final Block _blockSoil;
 	private final Block _blockSand;
+	private final Block _blockGravel;
 	private final Block _blockWheatMature;
 	private final Block _blockCarrotMature;
 	private final Block _blockWaterSource;
@@ -130,6 +132,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		_blockDirt = worldGenConfig.terrainBindings.dirtBlock;
 		_blockSoil = worldGenConfig.terrainBindings.tilledSoilBlock;
 		_blockSand = worldGenConfig.terrainBindings.sandBlock;
+		_blockGravel = worldGenConfig.terrainBindings.gravelBlock;
 		_blockWheatMature = worldGenConfig.terrainBindings.wheatMatureBlock;
 		_blockCarrotMature = worldGenConfig.terrainBindings.carrotMatureBlock;
 		_blockWaterSource = worldGenConfig.terrainBindings.waterSourceBlock;
@@ -754,6 +757,11 @@ public class BasicWorldGenerator implements IWorldGenerator
 						{
 							// Stone peak.
 							blockToWrite = _blockStone;
+						}
+						else if (thisZ < (WATER_Z_LEVEL - SAND_DEPTH))
+						{
+							// Gravel is deep under water.
+							blockToWrite = _blockGravel;
 						}
 						else if (thisZ < (WATER_Z_LEVEL - 1))
 						{
