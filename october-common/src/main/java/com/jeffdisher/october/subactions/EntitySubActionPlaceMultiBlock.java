@@ -93,24 +93,24 @@ public class EntitySubActionPlaceMultiBlock implements IEntitySubAction<IMutable
 		if (isLocationClose && isMultiBlock)
 		{
 			List<AbsoluteLocation> extensions = env.multiBlocks.getExtensions(blockType, _targetBlock, _orientation);
-			boolean isSafeLocation = _canPlace(env, newEntity, _targetBlock, extensions, blockType);
+			boolean isSafeLocation = _canBlocksBeReplaced(env, context, _targetBlock, extensions)
+				&& _canPlace(env, newEntity, _targetBlock, extensions, blockType)
+			;
 			
 			if (isSafeLocation)
 			{
 				// This means that this worked so create the mutations to place all the blocks.
 				// WARNING:  If this mutation fails in a later phase, the item will have been destroyed.
 				int entityId = newEntity.getId();
-				boolean didAttempt = MultiBlockUtils.send2PhaseMultiBlock(env, context, blockType, _targetBlock, _orientation, entityId);
-				if (didAttempt)
-				{
-					// We can now remove from the inventory and place the blocks.
-					slotManager.removeStackable(itemType, 1);
-					
-					// Do other state reset.
-					newEntity.setCurrentCraftingOperation(null);
-					
-					didApply = true;
-				}
+				MultiBlockUtils.send2PhaseMultiBlock(env, context, blockType, _targetBlock, _orientation, entityId);
+				
+				// We can now remove from the inventory and place the blocks.
+				slotManager.removeStackable(itemType, 1);
+				
+				// Do other state reset.
+				newEntity.setCurrentCraftingOperation(null);
+				
+				didApply = true;
 			}
 		}
 		return didApply;
@@ -193,5 +193,16 @@ public class EntitySubActionPlaceMultiBlock implements IEntitySubAction<IMutable
 		};
 		ViscosityReader reader = new ViscosityReader(env, blockLookup);
 		return SpatialHelpers.canExistInLocation(reader, newEntity.getLocation(), newEntity.getType().volume());
+	}
+
+	private static boolean _canBlocksBeReplaced(Environment env, TickProcessingContext context, AbsoluteLocation root, List<AbsoluteLocation> extensions)
+	{
+		boolean canBeReplaced = env.blocks.canBeReplaced(context.previousBlockLookUp.readBlock(root).getBlock());
+		for (AbsoluteLocation location : extensions)
+		{
+			BlockProxy one = context.previousBlockLookUp.readBlock(location);
+			canBeReplaced &= (null != one) && env.blocks.canBeReplaced(one.getBlock());
+		}
+		return canBeReplaced;
 	}
 }
