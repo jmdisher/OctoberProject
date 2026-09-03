@@ -518,7 +518,7 @@ public class TestBasicWorldGenerator
 		
 		int[] counts = _countSpecificBlocks(cuboid, search);
 		Assert.assertEquals(4739, counts[0]);
-		Assert.assertEquals(405, counts[1]);
+		Assert.assertEquals(413, counts[1]);
 		Assert.assertEquals(484, counts[2]);
 	}
 

@@ -172,6 +172,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		PerColumnRandomSeedField seeds = PerColumnRandomSeedField.buildSeedField9x9(_seed, address.x(), address.y());
 		PerColumnRandomSeedField.View subField = seeds.view();
 		LazyColumnHeightMapGrid heightMaps = new LazyColumnHeightMapGrid(subField);
+		Biomes.Biome biome = Biomes.chooseBiomeFromSeeds5x5(subField);
 		
 		// Generate the starting-point of the cuboid, containing only stone and empty (air/water/lava) blocks.
 		CuboidData data = _generateStoneCrustCuboid(address, heightMaps);
@@ -182,7 +183,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		
 		// Replace the top and bottom of the crust with the appropriate transition blocks.
 		int cuboidZ = cuboidBase.z();
-		_replaceCrustTopAndBottom(heightMaps, data, cuboidZ);
+		_replaceCrustTopAndBottom(heightMaps, data, cuboidZ, biome);
 		
 		// Generate the ore nodes and other structures (including trees).
 		Structure.FollowUp followOne = _generateOreNodesAndStructures(subField, heightMaps, address, data);
@@ -728,11 +729,24 @@ public class BasicWorldGenerator implements IWorldGenerator
 		_batchWriteUpdates(data, updates);
 	}
 
-	private void _replaceCrustTopAndBottom(LazyColumnHeightMapGrid heightMaps, CuboidData data, int cuboidZ)
+	private void _replaceCrustTopAndBottom(LazyColumnHeightMapGrid heightMaps, CuboidData data, int cuboidZ, Biomes.Biome biome)
 	{
 		// This function replaces the top block and bottom block of the crust with the appropriate block.
 		// It assumes that the crust is completely made of stone and will only replace stone (meaning gaps or special blocks will NOT be replaced).
 		short stoneValue = _blockStone.item().number();
+		int sandDistance;
+		if (biome.heightOffset() < 0)
+		{
+			sandDistance = 3;
+		}
+		else if (0 == biome.heightOffset())
+		{
+			sandDistance = 1;
+		}
+		else
+		{
+			sandDistance = 0;
+		}
 		ColumnHeightMap heightMap = heightMaps.fetchHeightMapForCuboidColumn(0, 0);
 		List<BlockAddress> readList = new ArrayList<>();
 		Map<BlockAddress, Block> blocksToWrite = new HashMap<>();
@@ -771,7 +785,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 						else if (thisZ == (WATER_Z_LEVEL - 1))
 						{
 							// This _is_ the level where the water surface blocks generate so make it sand if there is water nearby.
-							if (_isAdjacentHeightLess(thisZ, heightMaps, x, y))
+							if (_isAdjacentHeightLess(thisZ, heightMaps, x, y, sandDistance))
 							{
 								// An adjacent block is below thisZ so we assume it is water, meaning this should be sand.
 								blockToWrite = _blockSand;
@@ -969,13 +983,13 @@ public class BasicWorldGenerator implements IWorldGenerator
 		return Arrays.hashCode(buffer.array());
 	}
 
-	private static boolean _isAdjacentHeightLess(int compareZ, LazyColumnHeightMapGrid heightMaps, int localX, int localY)
+	private static boolean _isAdjacentHeightLess(int compareZ, LazyColumnHeightMapGrid heightMaps, int localX, int localY, int distance)
 	{
-		// We want to check all 8 blocks around this and see if they are less than compareZ.
+		// We want to check all blocks within distance of this and see if they are less than compareZ.
 		boolean isLess = false;
-		for (int y = -1; !isLess && (y <= 1); ++y)
+		for (int y = -distance; !isLess && (y <= distance); ++y)
 		{
-			for (int x = -1; !isLess && (x <= 1); ++x)
+			for (int x = -distance; !isLess && (x <= distance); ++x)
 			{
 				if ((0 != y) || (0 != x))
 				{
