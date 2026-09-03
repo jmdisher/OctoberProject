@@ -32,10 +32,10 @@ import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.subactions.EntitySubActionIncrementalBlockBreak;
+import com.jeffdisher.october.subactions.EntitySubActionPlaceSelectedBlockGeneric;
 import com.jeffdisher.october.subactions.EntityChangeMutation;
 import com.jeffdisher.october.subactions.EntitySubActionSetBlockLogicState;
 import com.jeffdisher.october.subactions.EntitySubActionPushItems;
-import com.jeffdisher.october.subactions.EntitySubActionPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -727,7 +727,7 @@ public class TestTickRunner_slow
 		);
 		runner.start();
 		runner.waitForPreviousTick();
-		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntitySubActionPlaceSelectedBlock(location, location)), 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntitySubActionPlaceSelectedBlockGeneric(location, null)), 1L);
 		runner.startNextTick();
 		
 		// (run an extra tick to unwrap the entity change)
@@ -807,7 +807,7 @@ public class TestTickRunner_slow
 		);
 		runner.start();
 		runner.waitForPreviousTick();
-		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntitySubActionPlaceSelectedBlock(location, location)), 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntitySubActionPlaceSelectedBlockGeneric(location, null)), 1L);
 		runner.startNextTick();
 		
 		// (run an extra tick to unwrap the entity change)
@@ -1130,9 +1130,9 @@ public class TestTickRunner_slow
 		
 		// We will run these changes in 3 batches:  (1) place gates, (2) flip one switch, (3) flip second switch.
 		// Run phase1.
-		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new EntitySubActionPlaceSelectedBlock(andGate, andGate.getRelative(1, 0, 0))), 1L);
-		runner.enqueueEntityChange(2, _wrapSubAction(entity2, new EntitySubActionPlaceSelectedBlock(orGate, orGate.getRelative(1, 0, 0))), 1L);
-		runner.enqueueEntityChange(3, _wrapSubAction(entity3, new EntitySubActionPlaceSelectedBlock(notGate, notGate.getRelative(1, 0, 0))), 1L);
+		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new EntitySubActionPlaceSelectedBlockGeneric(andGate, FacingDirection.EAST)), 1L);
+		runner.enqueueEntityChange(2, _wrapSubAction(entity2, new EntitySubActionPlaceSelectedBlockGeneric(orGate, FacingDirection.EAST)), 1L);
+		runner.enqueueEntityChange(3, _wrapSubAction(entity3, new EntitySubActionPlaceSelectedBlockGeneric(notGate, FacingDirection.EAST)), 1L);
 		
 		// Now, run enough ticks that this first batch is complete (this is how many ticks it takes for the NOT to propagate).
 		// 1) Run MutationPlaceSelectedBlock.

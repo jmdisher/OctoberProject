@@ -43,12 +43,11 @@ import com.jeffdisher.october.subactions.EntitySubActionCraft;
 import com.jeffdisher.october.subactions.EntitySubActionCraftInBlock;
 import com.jeffdisher.october.subactions.EntitySubActionIncrementalBlockBreak;
 import com.jeffdisher.october.subactions.EntityChangeMutation;
-import com.jeffdisher.october.subactions.EntitySubActionPlaceMultiBlock;
+import com.jeffdisher.october.subactions.EntitySubActionPlaceSelectedBlockGeneric;
 import com.jeffdisher.october.subactions.EntityChangeSendItem;
 import com.jeffdisher.october.subactions.EntitySubActionDropItemsAsPassive;
 import com.jeffdisher.october.subactions.EntitySubActionReleaseWeapon;
 import com.jeffdisher.october.subactions.EntitySubActionPushItems;
-import com.jeffdisher.october.subactions.EntitySubActionPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -1254,7 +1253,7 @@ public class TestSpeculativeProjection
 		
 		// Apply the local change.
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
-		EntitySubActionPlaceSelectedBlock place = new EntitySubActionPlaceSelectedBlock(location, location);
+		EntitySubActionPlaceSelectedBlockGeneric place = new EntitySubActionPlaceSelectedBlockGeneric(location, null);
 		long commit1 = _wrapAndApply(projector, entity, currentTimeMillis, place);
 		Assert.assertEquals(1, commit1);
 		// (verify that it fails if we try to run it again.
@@ -1307,7 +1306,7 @@ public class TestSpeculativeProjection
 		// Place the crafting table.
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 0);
 		BlockAddress blockLocation = location.getBlockAddress();
-		EntitySubActionPlaceSelectedBlock place = new EntitySubActionPlaceSelectedBlock(location, location);
+		EntitySubActionPlaceSelectedBlockGeneric place = new EntitySubActionPlaceSelectedBlockGeneric(location, null);
 		long commit1 = _wrapAndApply(projector, entity, currentTimeMillis, place);
 		Assert.assertEquals(1L, commit1);
 		
@@ -1444,7 +1443,7 @@ public class TestSpeculativeProjection
 		// Place the furnace.
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 0);
 		BlockAddress blockLocation = location.getBlockAddress();
-		EntitySubActionPlaceSelectedBlock place = new EntitySubActionPlaceSelectedBlock(location, location);
+		EntitySubActionPlaceSelectedBlockGeneric place = new EntitySubActionPlaceSelectedBlockGeneric(location, null);
 		long commit1 = _wrapAndApply(projector, entity, currentTimeMillis, place);
 		Assert.assertEquals(1L, commit1);
 		
@@ -2040,7 +2039,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(EventRecord.Type.BLOCK_BROKEN, listener.events.get(0).type());
 		Assert.assertEquals(ENV.special.AIR.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
 		Assert.assertEquals(1, listener.thisEntityState.inventory().getCount(dirt));
-		EntitySubActionPlaceSelectedBlock placeBlock = new EntitySubActionPlaceSelectedBlock(dirtLocation, dirtLocation);
+		EntitySubActionPlaceSelectedBlockGeneric placeBlock = new EntitySubActionPlaceSelectedBlockGeneric(dirtLocation, null);
 		long commit1 = _wrapAndApply(projector, entity, currentTimeMillis, placeBlock);
 		Assert.assertEquals(hitsToBreak + 1, commit1);
 		Assert.assertEquals(dirt.number(), listener.lastData.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
@@ -2140,7 +2139,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, FakeUpdateFactories.entityUpdate(Map.of(address, serverCuboid), serverEntity, _wrap(serverEntity, new EntitySubActionPlaceSelectedBlock(dirtLocation, dirtLocation)))
+				, FakeUpdateFactories.entityUpdate(Map.of(address, serverCuboid), serverEntity, _wrap(serverEntity, new EntitySubActionPlaceSelectedBlockGeneric(dirtLocation, null)))
 				, List.of()
 				, List.of()
 				, List.of()
@@ -2370,7 +2369,7 @@ public class TestSpeculativeProjection
 		
 		// Place the block and verify the other blocks go dark.
 		currentTimeMillis += 100L;
-		EntitySubActionPlaceSelectedBlock placeBlock = new EntitySubActionPlaceSelectedBlock(targetLocation, torchLocation);
+		EntitySubActionPlaceSelectedBlockGeneric placeBlock = new EntitySubActionPlaceSelectedBlockGeneric(targetLocation, null);
 		long commit1 = _wrapAndApply(projector, entity, currentTimeMillis, placeBlock);
 		Assert.assertEquals(1, commit1);
 		Assert.assertEquals(1, listener.changeCount);
@@ -2436,7 +2435,7 @@ public class TestSpeculativeProjection
 		for (int i = 0; i < iterationCount; ++i)
 		{
 			currentTimeMillis += 100L;
-			EntitySubActionPlaceSelectedBlock placeBlock = new EntitySubActionPlaceSelectedBlock(lanternLocation, lanternLocation);
+			EntitySubActionPlaceSelectedBlockGeneric placeBlock = new EntitySubActionPlaceSelectedBlockGeneric(lanternLocation, null);
 			long commit1 = _wrapAndApply(projector, entity, currentTimeMillis, placeBlock);
 			Assert.assertEquals(nextCommit, commit1);
 			nextCommit += 1;
@@ -2507,7 +2506,7 @@ public class TestSpeculativeProjection
 		
 		// Place the block and verify the full placement completes.
 		currentTimeMillis += 100L;
-		EntitySubActionPlaceMultiBlock placeBlock = new EntitySubActionPlaceMultiBlock(targetLocation, FacingDirection.EAST);
+		EntitySubActionPlaceSelectedBlockGeneric placeBlock = new EntitySubActionPlaceSelectedBlockGeneric(targetLocation, FacingDirection.EAST);
 		long commit1 = _wrapAndApply(projector, entity, currentTimeMillis, placeBlock);
 		Assert.assertEquals(1, commit1);
 		Assert.assertEquals(1, listener.changeCount);

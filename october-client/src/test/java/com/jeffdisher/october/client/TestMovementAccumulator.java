@@ -32,9 +32,9 @@ import com.jeffdisher.october.subactions.EntitySubActionCraft;
 import com.jeffdisher.october.subactions.EntitySubActionCraftInBlock;
 import com.jeffdisher.october.subactions.EntitySubActionIncrementalBlockBreak;
 import com.jeffdisher.october.subactions.EntitySubActionJump;
+import com.jeffdisher.october.subactions.EntitySubActionPlaceSelectedBlockGeneric;
 import com.jeffdisher.october.subactions.EntitySubActionSwim;
 import com.jeffdisher.october.subactions.EntitySubActionPopOutOfBlock;
-import com.jeffdisher.october.subactions.EntitySubActionPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -456,7 +456,7 @@ public class TestMovementAccumulator
 		// Place a block and verify that the output information is correct for local accumulation.
 		long millisPerMove = 60L;
 		currentTimeMillis += millisPerMove;
-		accumulator.setSubActionIfClear(new EntitySubActionPlaceSelectedBlock(new AbsoluteLocation(15, 15, 15), new AbsoluteLocation(15, 16, 15)), currentTimeMillis);
+		accumulator.setSubActionIfClear(new EntitySubActionPlaceSelectedBlockGeneric(new AbsoluteLocation(15, 15, 15), null), currentTimeMillis);
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
@@ -470,7 +470,7 @@ public class TestMovementAccumulator
 		currentTimeMillis += millisPerMove;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
-		Assert.assertTrue(out.getSubAction() instanceof EntitySubActionPlaceSelectedBlock);
+		Assert.assertTrue(out.getSubAction() instanceof EntitySubActionPlaceSelectedBlockGeneric);
 		entity = _applyToEntityAndUpdateCuboid(millisPerTick, currentTimeMillis, cuboid, entity, out, commonCache, listener);
 		accumulator.applyLocalAccumulation();
 		
@@ -822,7 +822,7 @@ public class TestMovementAccumulator
 		// Enqueue and then stand around for a bit (enough that we will properly collide with the ground).
 		currentTimeMillis += 25L;
 		AbsoluteLocation targetLocation = new AbsoluteLocation(4, 5, 7);
-		accumulator.setSubActionIfClear(new EntitySubActionPlaceSelectedBlock(targetLocation, targetLocation.getRelative(0, 0, -1)), currentTimeMillis);
+		accumulator.setSubActionIfClear(new EntitySubActionPlaceSelectedBlockGeneric(targetLocation, null), currentTimeMillis);
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		// Note that this will produce nothing and will actually reset the accumulation since it changes nothing about the entity - it will cue up the sub-action, though.
 		Assert.assertNull(out);
@@ -832,7 +832,7 @@ public class TestMovementAccumulator
 		currentTimeMillis += 25L;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
-		Assert.assertTrue(out.getSubAction() instanceof EntitySubActionPlaceSelectedBlock);
+		Assert.assertTrue(out.getSubAction() instanceof EntitySubActionPlaceSelectedBlockGeneric);
 		entity = _applyToEntityAndUpdateCuboid(millisPerTick, currentTimeMillis, cuboid, entity, out, commonCache, listener);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(STONE_ITEM.number(), listener.loadedCuboids.get(targetLocation.getCuboidAddress()).getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
@@ -1386,7 +1386,7 @@ public class TestMovementAccumulator
 		
 		// If we fail to place a block where we are standing, we should see this still accepted, just not change to the projection.
 		AbsoluteLocation footBlock = entity.location().getBlockLocation();
-		boolean didSet = accumulator.setSubActionIfClear(new EntitySubActionPlaceSelectedBlock(footBlock, null), currentTimeMillis);
+		boolean didSet = accumulator.setSubActionIfClear(new EntitySubActionPlaceSelectedBlockGeneric(footBlock, null), currentTimeMillis);
 		Assert.assertTrue(didSet);
 		currentTimeMillis += 10L;
 		EntityActionSimpleMove<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
@@ -1396,7 +1396,7 @@ public class TestMovementAccumulator
 		
 		// We should be able to set a correct location.
 		AbsoluteLocation freeBlock = footBlock.getRelative(1, 1, 1);
-		didSet = accumulator.setSubActionIfClear(new EntitySubActionPlaceSelectedBlock(freeBlock, null), currentTimeMillis);
+		didSet = accumulator.setSubActionIfClear(new EntitySubActionPlaceSelectedBlockGeneric(freeBlock, null), currentTimeMillis);
 		Assert.assertTrue(didSet);
 		currentTimeMillis += 10L;
 		out = accumulator.stand(currentTimeMillis);
@@ -1405,7 +1405,7 @@ public class TestMovementAccumulator
 		Assert.assertEquals(1, listener.thisEntity.inventory().getCount(STONE_ITEM));
 		
 		// Trying this again will fail since there is already a sub-action in the accumulator.
-		didSet = accumulator.setSubActionIfClear(new EntitySubActionPlaceSelectedBlock(freeBlock, null), currentTimeMillis);
+		didSet = accumulator.setSubActionIfClear(new EntitySubActionPlaceSelectedBlockGeneric(freeBlock, null), currentTimeMillis);
 		Assert.assertFalse(didSet);
 		currentTimeMillis += 10L;
 		out = accumulator.stand(currentTimeMillis);

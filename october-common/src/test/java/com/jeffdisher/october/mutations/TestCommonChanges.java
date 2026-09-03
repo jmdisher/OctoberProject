@@ -55,7 +55,7 @@ import com.jeffdisher.october.subactions.EntitySubActionCraftInBlock;
 import com.jeffdisher.october.subactions.EntitySubActionIncrementalBlockBreak;
 import com.jeffdisher.october.subactions.EntitySubActionIncrementalBlockRepair;
 import com.jeffdisher.october.subactions.EntitySubActionJump;
-import com.jeffdisher.october.subactions.EntitySubActionPlaceMultiBlock;
+import com.jeffdisher.october.subactions.EntitySubActionPlaceSelectedBlockGeneric;
 import com.jeffdisher.october.subactions.EntitySubActionSetBlockLogicState;
 import com.jeffdisher.october.subactions.EntitySubActionSetDayAndSpawn;
 import com.jeffdisher.october.subactions.EntitySubActionSwapArmour;
@@ -77,7 +77,6 @@ import com.jeffdisher.october.subactions.EntitySubActionTravelViaBlock;
 import com.jeffdisher.october.subactions.EntitySubActionPushItems;
 import com.jeffdisher.october.subactions.EntitySubActionRequestItemPickUp;
 import com.jeffdisher.october.subactions.EntitySubActionSelectItem;
-import com.jeffdisher.october.subactions.EntitySubActionPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -265,7 +264,7 @@ public class TestCommonChanges
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
-		EntitySubActionPlaceSelectedBlock place = new EntitySubActionPlaceSelectedBlock(target, target);
+		EntitySubActionPlaceSelectedBlockGeneric place = new EntitySubActionPlaceSelectedBlockGeneric(target, null);
 		Assert.assertTrue(place.applyChange(holder.context, newEntity));
 		
 		// We also need to apply the actual mutation.
@@ -451,24 +450,24 @@ public class TestCommonChanges
 		
 		// Try too close (colliding).
 		AbsoluteLocation tooClose = new AbsoluteLocation(0, 0, 10);
-		EntitySubActionPlaceSelectedBlock placeTooClose = new EntitySubActionPlaceSelectedBlock(tooClose, tooClose);
+		EntitySubActionPlaceSelectedBlockGeneric placeTooClose = new EntitySubActionPlaceSelectedBlockGeneric(tooClose, null);
 		Assert.assertFalse(placeTooClose.applyChange(holder.context, newEntity));
 		
 		// Try too far.
 		AbsoluteLocation tooFar = new AbsoluteLocation(0, 0, 15);
-		EntitySubActionPlaceSelectedBlock placeTooFar = new EntitySubActionPlaceSelectedBlock(tooFar, tooFar);
+		EntitySubActionPlaceSelectedBlockGeneric placeTooFar = new EntitySubActionPlaceSelectedBlockGeneric(tooFar, null);
 		Assert.assertFalse(placeTooFar.applyChange(holder.context, newEntity));
 		
 		// Try reasonable location.
 		AbsoluteLocation reasonable = new AbsoluteLocation(1, 1, 8);
-		EntitySubActionPlaceSelectedBlock placeReasonable = new EntitySubActionPlaceSelectedBlock(reasonable, reasonable);
+		EntitySubActionPlaceSelectedBlockGeneric placeReasonable = new EntitySubActionPlaceSelectedBlockGeneric(reasonable, null);
 		Assert.assertTrue(placeReasonable.applyChange(holder.context, newEntity));
 		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwriteByEntity);
 		holder.mutation = null;
 		
 		// Make sure we fail if there is no selection.
 		reasonable = new AbsoluteLocation(1, 1, 8);
-		placeReasonable = new EntitySubActionPlaceSelectedBlock(reasonable, reasonable);
+		placeReasonable = new EntitySubActionPlaceSelectedBlockGeneric(reasonable, null);
 		newEntity.slotManager.setSelectedKey(Entity.NO_SELECTION);
 		Assert.assertFalse(placeReasonable.applyChange(holder.context, newEntity));
 	}
@@ -561,7 +560,7 @@ public class TestCommonChanges
 		
 		// Fail to place the charcoal item on the ground.
 		AbsoluteLocation air = new AbsoluteLocation(1, 0, 10);
-		EntitySubActionPlaceSelectedBlock place = new EntitySubActionPlaceSelectedBlock(air, air);
+		EntitySubActionPlaceSelectedBlockGeneric place = new EntitySubActionPlaceSelectedBlockGeneric(air, null);
 		Assert.assertFalse(place.applyChange(holder.context, newEntity));
 		
 		// Change the selection to the log and prove that this works.
@@ -1491,7 +1490,7 @@ public class TestCommonChanges
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
-		EntitySubActionPlaceSelectedBlock place = new EntitySubActionPlaceSelectedBlock(target, target);
+		EntitySubActionPlaceSelectedBlockGeneric place = new EntitySubActionPlaceSelectedBlockGeneric(target, null);
 		Assert.assertTrue(place.applyChange(holder.context, newEntity));
 		
 		// We also need to apply the actual mutation.
@@ -1574,7 +1573,7 @@ public class TestCommonChanges
 		AbsoluteLocation centreTarget = new AbsoluteLocation(1, 1, 10);
 		
 		// Face north.
-		EntitySubActionPlaceSelectedBlock north = new EntitySubActionPlaceSelectedBlock(centreTarget.getRelative(0, -1, 0), centreTarget);
+		EntitySubActionPlaceSelectedBlockGeneric north = new EntitySubActionPlaceSelectedBlockGeneric(centreTarget.getRelative(0, -1, 0), FacingDirection.NORTH);
 		Assert.assertTrue(north.applyChange(holder.context, newEntity));
 		MutableBlockProxy proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(0, -1, 0), 0, entityId));
@@ -1585,7 +1584,7 @@ public class TestCommonChanges
 		holder.mutation = null;
 		
 		// Face south.
-		EntitySubActionPlaceSelectedBlock south = new EntitySubActionPlaceSelectedBlock(centreTarget.getRelative(0, 1, 0), centreTarget);
+		EntitySubActionPlaceSelectedBlockGeneric south = new EntitySubActionPlaceSelectedBlockGeneric(centreTarget.getRelative(0, 1, 0), FacingDirection.SOUTH);
 		Assert.assertTrue(south.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(0, 1, 0), 0, entityId));
@@ -1596,7 +1595,7 @@ public class TestCommonChanges
 		holder.mutation = null;
 		
 		// Face east.
-		EntitySubActionPlaceSelectedBlock east = new EntitySubActionPlaceSelectedBlock(centreTarget.getRelative(-1, 0, 0), centreTarget);
+		EntitySubActionPlaceSelectedBlockGeneric east = new EntitySubActionPlaceSelectedBlockGeneric(centreTarget.getRelative(-1, 0, 0), FacingDirection.EAST);
 		Assert.assertTrue(east.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(-1, 0, 0), 0, entityId));
@@ -1607,7 +1606,7 @@ public class TestCommonChanges
 		holder.mutation = null;
 		
 		// Face west.
-		EntitySubActionPlaceSelectedBlock west = new EntitySubActionPlaceSelectedBlock(centreTarget.getRelative(1, 0, 0), centreTarget);
+		EntitySubActionPlaceSelectedBlockGeneric west = new EntitySubActionPlaceSelectedBlockGeneric(centreTarget.getRelative(1, 0, 0), FacingDirection.WEST);
 		Assert.assertTrue(west.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(1, 0, 0), 0, entityId));
@@ -1618,7 +1617,7 @@ public class TestCommonChanges
 		holder.mutation = null;
 		
 		// Face down - this case, the target just needs to match z.
-		EntitySubActionPlaceSelectedBlock down = new EntitySubActionPlaceSelectedBlock(centreTarget.getRelative(0, 0, 1), centreTarget);
+		EntitySubActionPlaceSelectedBlockGeneric down = new EntitySubActionPlaceSelectedBlockGeneric(centreTarget.getRelative(0, 0, 1), FacingDirection.DOWN);
 		Assert.assertTrue(down.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(0, 0, 1), 0, entityId));
@@ -2271,12 +2270,12 @@ public class TestCommonChanges
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
 		
 		// Show that we fail to place when using the wrong helper.
-		EntitySubActionPlaceSelectedBlock fail = new EntitySubActionPlaceSelectedBlock(target, target);
+		EntitySubActionPlaceSelectedBlockGeneric fail = new EntitySubActionPlaceSelectedBlockGeneric(target, null);
 		Assert.assertFalse(fail.applyChange(context, newEntity));
 		Assert.assertEquals(0, mutations.size());
 		
 		// Show that we correctly place when using the right helper.
-		EntitySubActionPlaceMultiBlock place = new EntitySubActionPlaceMultiBlock(target, FacingDirection.NORTH);
+		EntitySubActionPlaceSelectedBlockGeneric place = new EntitySubActionPlaceSelectedBlockGeneric(target, FacingDirection.NORTH);
 		Assert.assertTrue(place.applyChange(context, newEntity));
 		
 		// We also need to apply the actual mutations.
@@ -2842,12 +2841,12 @@ public class TestCommonChanges
 		AbsoluteLocation centreTarget = new AbsoluteLocation(1, 1, 10);
 		
 		// Face no direction, failing to place.
-		EntitySubActionPlaceSelectedBlock fail = new EntitySubActionPlaceSelectedBlock(centreTarget.getRelative(0, -1, 0), null);
+		EntitySubActionPlaceSelectedBlockGeneric fail = new EntitySubActionPlaceSelectedBlockGeneric(centreTarget.getRelative(0, -1, 0), null);
 		Assert.assertFalse(fail.applyChange(holder.context, newEntity));
 		Assert.assertNull(holder.mutation);
 		
 		// Face north.
-		EntitySubActionPlaceSelectedBlock north = new EntitySubActionPlaceSelectedBlock(centreTarget.getRelative(0, -1, 0), centreTarget);
+		EntitySubActionPlaceSelectedBlockGeneric north = new EntitySubActionPlaceSelectedBlockGeneric(centreTarget.getRelative(0, -1, 0), FacingDirection.NORTH);
 		Assert.assertTrue(north.applyChange(holder.context, newEntity));
 		MutableBlockProxy proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(0, -1, 0), 0, entityId));
@@ -2858,7 +2857,7 @@ public class TestCommonChanges
 		holder.mutation = null;
 		
 		// Face east.
-		EntitySubActionPlaceSelectedBlock east = new EntitySubActionPlaceSelectedBlock(centreTarget.getRelative(-1, 0, 0), centreTarget);
+		EntitySubActionPlaceSelectedBlockGeneric east = new EntitySubActionPlaceSelectedBlockGeneric(centreTarget.getRelative(-1, 0, 0), FacingDirection.EAST);
 		Assert.assertTrue(east.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(-1, 0, 0), 0, entityId));
@@ -3719,7 +3718,7 @@ public class TestCommonChanges
 		
 		// Move the target location away and show that this fails and has no impact.
 		AbsoluteLocation target = new AbsoluteLocation(100, 100, 10);
-		EntitySubActionPlaceSelectedBlock place = new EntitySubActionPlaceSelectedBlock(target, target);
+		EntitySubActionPlaceSelectedBlockGeneric place = new EntitySubActionPlaceSelectedBlockGeneric(target, null);
 		Assert.assertFalse(place.applyChange(context, newEntity));
 		Assert.assertEquals(1, newEntity.freeze().inventory().getCount(LOG_ITEM));
 		Assert.assertEquals(1, newEntity.slotManager.getSelectedKey());
@@ -3781,37 +3780,37 @@ public class TestCommonChanges
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
 		AbsoluteLocation east = newEntity.newLocation.getBlockLocation().getRelative(1, 0, 0);
-		EntitySubActionPlaceSelectedBlock placeEast = new EntitySubActionPlaceSelectedBlock(east, east.getRelative(1, 0, 0));
+		EntitySubActionPlaceSelectedBlockGeneric placeEast = new EntitySubActionPlaceSelectedBlockGeneric(east, FacingDirection.EAST);
 		Assert.assertTrue(placeEast.applyChange(holder.context, newEntity));
 		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwriteByEntity);
 		holder.mutation = null;
 		
 		AbsoluteLocation west = newEntity.newLocation.getBlockLocation().getRelative(-1, 0, 0);
-		EntitySubActionPlaceSelectedBlock placeWest = new EntitySubActionPlaceSelectedBlock(west, west.getRelative(-1, 0, 0));
+		EntitySubActionPlaceSelectedBlockGeneric placeWest = new EntitySubActionPlaceSelectedBlockGeneric(west, FacingDirection.WEST);
 		Assert.assertTrue(placeWest.applyChange(holder.context, newEntity));
 		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwriteByEntity);
 		holder.mutation = null;
 		
 		AbsoluteLocation north = newEntity.newLocation.getBlockLocation().getRelative(0, 1, 0);
-		EntitySubActionPlaceSelectedBlock placeNorth = new EntitySubActionPlaceSelectedBlock(north, north.getRelative(0, 1, 0));
+		EntitySubActionPlaceSelectedBlockGeneric placeNorth = new EntitySubActionPlaceSelectedBlockGeneric(north, FacingDirection.NORTH);
 		Assert.assertTrue(placeNorth.applyChange(holder.context, newEntity));
 		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwriteByEntity);
 		holder.mutation = null;
 		
 		AbsoluteLocation south = newEntity.newLocation.getBlockLocation().getRelative(0, -1, 0);
-		EntitySubActionPlaceSelectedBlock placeSouth = new EntitySubActionPlaceSelectedBlock(south, south.getRelative(0, -1, 0));
+		EntitySubActionPlaceSelectedBlockGeneric placeSouth = new EntitySubActionPlaceSelectedBlockGeneric(south, FacingDirection.SOUTH);
 		Assert.assertTrue(placeSouth.applyChange(holder.context, newEntity));
 		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwriteByEntity);
 		holder.mutation = null;
 		
 		AbsoluteLocation up = newEntity.newLocation.getBlockLocation().getRelative(0, 0, 2);
-		EntitySubActionPlaceSelectedBlock placeUp = new EntitySubActionPlaceSelectedBlock(up, up.getRelative(0, 0, 1));
+		EntitySubActionPlaceSelectedBlockGeneric placeUp = new EntitySubActionPlaceSelectedBlockGeneric(up, FacingDirection.UP);
 		Assert.assertTrue(placeUp.applyChange(holder.context, newEntity));
 		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwriteByEntity);
 		holder.mutation = null;
 		
 		AbsoluteLocation down = newEntity.newLocation.getBlockLocation().getRelative(0, 0, -1);
-		EntitySubActionPlaceSelectedBlock placeDown = new EntitySubActionPlaceSelectedBlock(down, down.getRelative(0, 0, -1));
+		EntitySubActionPlaceSelectedBlockGeneric placeDown = new EntitySubActionPlaceSelectedBlockGeneric(down, FacingDirection.DOWN);
 		Assert.assertTrue(placeDown.applyChange(holder.context, newEntity));
 		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwriteByEntity);
 		holder.mutation = null;
@@ -4035,7 +4034,7 @@ public class TestCommonChanges
 		
 		// Top face.
 		AbsoluteLocation topTorch = dirtLocation.getRelative(0, 0, 1);
-		EntitySubActionPlaceSelectedBlock top = new EntitySubActionPlaceSelectedBlock(topTorch, dirtLocation);
+		EntitySubActionPlaceSelectedBlockGeneric top = new EntitySubActionPlaceSelectedBlockGeneric(topTorch, FacingDirection.DOWN);
 		Assert.assertTrue(top.applyChange(holder.context, newEntity));
 		MutableBlockProxy proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, topTorch, 0, entityId));
@@ -4047,7 +4046,7 @@ public class TestCommonChanges
 		
 		// North face.
 		AbsoluteLocation northTorch = dirtLocation.getRelative(0, 1, 0);
-		EntitySubActionPlaceSelectedBlock north = new EntitySubActionPlaceSelectedBlock(northTorch, dirtLocation);
+		EntitySubActionPlaceSelectedBlockGeneric north = new EntitySubActionPlaceSelectedBlockGeneric(northTorch, FacingDirection.SOUTH);
 		Assert.assertTrue(north.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, northTorch, 0, entityId));
@@ -4059,7 +4058,7 @@ public class TestCommonChanges
 		
 		// South face.
 		AbsoluteLocation southTorch = dirtLocation.getRelative(0, -1, 0);
-		EntitySubActionPlaceSelectedBlock south = new EntitySubActionPlaceSelectedBlock(southTorch, dirtLocation);
+		EntitySubActionPlaceSelectedBlockGeneric south = new EntitySubActionPlaceSelectedBlockGeneric(southTorch, FacingDirection.NORTH);
 		Assert.assertTrue(south.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, southTorch, 0, entityId));
@@ -4071,7 +4070,7 @@ public class TestCommonChanges
 		
 		// East face.
 		AbsoluteLocation eastTorch = dirtLocation.getRelative(1, 0, 0);
-		EntitySubActionPlaceSelectedBlock east = new EntitySubActionPlaceSelectedBlock(eastTorch, dirtLocation);
+		EntitySubActionPlaceSelectedBlockGeneric east = new EntitySubActionPlaceSelectedBlockGeneric(eastTorch, FacingDirection.WEST);
 		Assert.assertTrue(east.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, eastTorch, 0, entityId));
@@ -4083,7 +4082,7 @@ public class TestCommonChanges
 		
 		// West face.
 		AbsoluteLocation westTorch = dirtLocation.getRelative(-1, 0, 0);
-		EntitySubActionPlaceSelectedBlock west = new EntitySubActionPlaceSelectedBlock(westTorch, dirtLocation);
+		EntitySubActionPlaceSelectedBlockGeneric west = new EntitySubActionPlaceSelectedBlockGeneric(westTorch, FacingDirection.EAST);
 		Assert.assertTrue(west.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, westTorch, 0, entityId));

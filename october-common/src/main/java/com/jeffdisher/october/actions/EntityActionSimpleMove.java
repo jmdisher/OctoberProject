@@ -36,7 +36,6 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 	public static final Set<EntitySubActionType> ALLOWED_TYPES = Arrays.stream(new EntitySubActionType[] {
 		EntitySubActionType.JUMP,
 		EntitySubActionType.SWIM,
-		EntitySubActionType.BLOCK_PLACE,
 		EntitySubActionType.CRAFT,
 		EntitySubActionType.SELECT_ITEM,
 		EntitySubActionType.ITEMS_REQUEST_PUSH,
@@ -52,7 +51,7 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 		EntitySubActionType.SET_BLOCK_LOGIC_STATE,
 		EntitySubActionType.SET_DAY_AND_SPAWN,
 		EntitySubActionType.INCREMENTAL_REPAIR_BLOCK,
-		EntitySubActionType.MULTI_BLOCK_PLACE,
+		EntitySubActionType.PLACE_SELECTED_BLOCK_GENERIC,
 		EntitySubActionType.LADDER_ASCEND,
 		EntitySubActionType.LADDER_DESCEND,
 		EntitySubActionType.ITEM_SLOT_REQUEST_SWAP,

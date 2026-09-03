@@ -13,8 +13,8 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.process.ClientProcess;
 import com.jeffdisher.october.subactions.EntitySubActionIncrementalBlockBreak;
+import com.jeffdisher.october.subactions.EntitySubActionPlaceSelectedBlockGeneric;
 import com.jeffdisher.october.subactions.EntitySubActionSelectItem;
-import com.jeffdisher.october.subactions.EntitySubActionPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -156,7 +156,7 @@ public class AutoWalkingClient
 					break;
 				case BRICK:
 				case LANTERN:
-					client.sendAction(new EntitySubActionPlaceSelectedBlock(lastBlock, lastBlock), currentTimeMillis);
+					client.sendAction(new EntitySubActionPlaceSelectedBlockGeneric(lastBlock, null), currentTimeMillis);
 					break;
 					default:
 						throw Assert.unreachable();

@@ -34,7 +34,6 @@ public class EntityActionCreativeFlight implements IEntityActionFromClient<IMuta
 	 * EntityActionSimpleMove, removing those related to movement related to collision or gravity.
 	 */
 	public static final Set<EntitySubActionType> ALLOWED_TYPES = Arrays.stream(new EntitySubActionType[] {
-		EntitySubActionType.BLOCK_PLACE,
 		EntitySubActionType.CRAFT,
 		EntitySubActionType.SELECT_ITEM,
 		EntitySubActionType.ITEMS_REQUEST_PUSH,
@@ -50,7 +49,7 @@ public class EntityActionCreativeFlight implements IEntityActionFromClient<IMuta
 		EntitySubActionType.SET_BLOCK_LOGIC_STATE,
 		EntitySubActionType.SET_DAY_AND_SPAWN,
 		EntitySubActionType.INCREMENTAL_REPAIR_BLOCK,
-		EntitySubActionType.MULTI_BLOCK_PLACE,
+		EntitySubActionType.PLACE_SELECTED_BLOCK_GENERIC,
 		EntitySubActionType.ITEM_SLOT_REQUEST_SWAP,
 		EntitySubActionType.TRAVEL_VIA_BLOCK,
 		EntitySubActionType.DROP_ITEMS_AS_PASSIVE,

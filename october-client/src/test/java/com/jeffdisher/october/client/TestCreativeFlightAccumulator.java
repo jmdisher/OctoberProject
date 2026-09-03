@@ -20,7 +20,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.subactions.EntitySubActionPlaceSelectedBlock;
+import com.jeffdisher.october.subactions.EntitySubActionPlaceSelectedBlockGeneric;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -273,7 +273,7 @@ public class TestCreativeFlightAccumulator
 		byte yaw = 5;
 		byte pitch = 6;
 		accumulator.setOrientation(yaw, pitch);
-		boolean didAdd = accumulator.setSubActionIfClear(currentTimeMillis, new EntitySubActionPlaceSelectedBlock(entity.location().getBlockLocation().getRelative(1, 0, 0), null));
+		boolean didAdd = accumulator.setSubActionIfClear(currentTimeMillis, new EntitySubActionPlaceSelectedBlockGeneric(entity.location().getBlockLocation().getRelative(1, 0, 0), null));
 		Assert.assertTrue(didAdd);
 		
 		currentTimeMillis += 60L;
