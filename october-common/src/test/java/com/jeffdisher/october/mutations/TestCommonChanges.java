@@ -2270,11 +2270,13 @@ public class TestCommonChanges
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
 		
 		// Show that we fail to place when using the wrong helper.
+		Assert.assertFalse(EntitySubActionPlaceSelectedBlockGeneric.isValidOrientationForBlock(ENV, door, null));
 		EntitySubActionPlaceSelectedBlockGeneric fail = new EntitySubActionPlaceSelectedBlockGeneric(target, null);
 		Assert.assertFalse(fail.applyChange(context, newEntity));
 		Assert.assertEquals(0, mutations.size());
 		
 		// Show that we correctly place when using the right helper.
+		Assert.assertTrue(EntitySubActionPlaceSelectedBlockGeneric.isValidOrientationForBlock(ENV, door, FacingDirection.NORTH));
 		EntitySubActionPlaceSelectedBlockGeneric place = new EntitySubActionPlaceSelectedBlockGeneric(target, FacingDirection.NORTH);
 		Assert.assertTrue(place.applyChange(context, newEntity));
 		
@@ -2828,6 +2830,7 @@ public class TestCommonChanges
 	{
 		// Place a portal keystone, showing that it requires orientation.
 		Item itemKeystone = ENV.items.getItemById("op.portal_keystone");
+		Block keystone= ENV.blocks.fromItem(itemKeystone);
 		
 		int entityId = 1;
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
@@ -2841,11 +2844,13 @@ public class TestCommonChanges
 		AbsoluteLocation centreTarget = new AbsoluteLocation(1, 1, 10);
 		
 		// Face no direction, failing to place.
+		Assert.assertFalse(EntitySubActionPlaceSelectedBlockGeneric.isValidOrientationForBlock(ENV, keystone, null));
 		EntitySubActionPlaceSelectedBlockGeneric fail = new EntitySubActionPlaceSelectedBlockGeneric(centreTarget.getRelative(0, -1, 0), null);
 		Assert.assertFalse(fail.applyChange(holder.context, newEntity));
 		Assert.assertNull(holder.mutation);
 		
 		// Face north.
+		Assert.assertTrue(EntitySubActionPlaceSelectedBlockGeneric.isValidOrientationForBlock(ENV, keystone, FacingDirection.NORTH));
 		EntitySubActionPlaceSelectedBlockGeneric north = new EntitySubActionPlaceSelectedBlockGeneric(centreTarget.getRelative(0, -1, 0), FacingDirection.NORTH);
 		Assert.assertTrue(north.applyChange(holder.context, newEntity));
 		MutableBlockProxy proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
@@ -2857,6 +2862,7 @@ public class TestCommonChanges
 		holder.mutation = null;
 		
 		// Face east.
+		Assert.assertTrue(EntitySubActionPlaceSelectedBlockGeneric.isValidOrientationForBlock(ENV, keystone, FacingDirection.EAST));
 		EntitySubActionPlaceSelectedBlockGeneric east = new EntitySubActionPlaceSelectedBlockGeneric(centreTarget.getRelative(-1, 0, 0), FacingDirection.EAST);
 		Assert.assertTrue(east.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
@@ -4146,8 +4152,10 @@ public class TestCommonChanges
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
 		
 		// This should require an orientation.
+		Assert.assertFalse(EntitySubActionPlaceSelectedBlockGeneric.isValidOrientationForBlock(ENV, stair, null));
 		Assert.assertFalse(new EntitySubActionPlaceSelectedBlockGeneric(target, null).applyChange(holder.context, newEntity));
 		Assert.assertNull(holder.mutation);
+		Assert.assertTrue(EntitySubActionPlaceSelectedBlockGeneric.isValidOrientationForBlock(ENV, stair, FacingDirection.FLIPPED_WEST));
 		Assert.assertTrue(new EntitySubActionPlaceSelectedBlockGeneric(target, FacingDirection.FLIPPED_WEST).applyChange(holder.context, newEntity));
 		Assert.assertEquals("OverwriteByEntity @AbsoluteLocation[x=1, y=1, z=10] with Block(Wood Plank Stair) (facing FLIPPED_WEST) placed by 1", holder.mutation.toString());
 	}

@@ -56,6 +56,21 @@ public class EntitySubActionPlaceSelectedBlockGeneric implements IEntitySubActio
 		return new EntitySubActionPlaceSelectedBlockGeneric(target, orientation);
 	}
 
+	/**
+	 * A basic helper to use when selecting an orientation for placing a block.
+	 * 
+	 * @param env The environment.
+	 * @param block The block to place (cannot be null).
+	 * @param orientation The orientation to use (can be null for no orientation).
+	 * @return True if this is a valid combination.
+	 */
+	public static boolean isValidOrientationForBlock(Environment env, Block block, FacingDirection orientation)
+	{
+		Assert.assertTrue(null != block);
+		
+		return _isValidOrientationForBlock(env, block, orientation);
+	}
+
 
 	private final AbsoluteLocation _targetBlock;
 	private final FacingDirection _orientation;
@@ -262,45 +277,7 @@ public class EntitySubActionPlaceSelectedBlockGeneric implements IEntitySubActio
 		if (isInRange && (null != placeableBlock))
 		{
 			// Check if the orientation specified is valid for this block type.
-			boolean requiresHorizontalOrientations = env.blocks.isMultiBlock(placeableBlock) || env.orientations.doesSingleBlockRequireOrientation(placeableBlock);
-			boolean isValid;
-			if (null != _orientation)
-			{
-				switch (_orientation)
-				{
-				case NORTH:
-				case WEST:
-				case SOUTH:
-				case EAST:
-					isValid = requiresHorizontalOrientations;
-					break;
-				case DOWN:
-					isValid = env.orientations.doesAllowDownwardOutput(placeableBlock);
-					break;
-				case UP:
-					isValid = env.orientations.doesAllowUpwardOutput(placeableBlock);
-					break;
-				case FLIPPED_NORTH:
-				case FLIPPED_WEST:
-				case FLIPPED_SOUTH:
-				case FLIPPED_EAST:
-					isValid = env.orientations.doesAllowFlippedHorizontal(placeableBlock);
-					break;
-				default:
-					// Not used yet.
-					throw Assert.unreachable();
-				}
-			}
-			else if (!requiresHorizontalOrientations)
-			{
-				isValid = true;
-			}
-			else
-			{
-				// Mismatch.
-				isValid = false;
-			}
-			
+			boolean isValid = _isValidOrientationForBlock(env, placeableBlock, _orientation);
 			validOrientationBlock = isValid ? placeableBlock : null;
 		}
 		return validOrientationBlock;
@@ -315,5 +292,48 @@ public class EntitySubActionPlaceSelectedBlockGeneric implements IEntitySubActio
 			canBeReplaced &= (null != one) && env.blocks.canBeReplaced(one.getBlock());
 		}
 		return canBeReplaced;
+	}
+
+	private static boolean _isValidOrientationForBlock(Environment env, Block block, FacingDirection orientation)
+	{
+		boolean requiresHorizontalOrientations = env.blocks.isMultiBlock(block) || env.orientations.doesSingleBlockRequireOrientation(block);
+		boolean isValid;
+		if (null != orientation)
+		{
+			switch (orientation)
+			{
+			case NORTH:
+			case WEST:
+			case SOUTH:
+			case EAST:
+				isValid = requiresHorizontalOrientations;
+				break;
+			case DOWN:
+				isValid = env.orientations.doesAllowDownwardOutput(block);
+				break;
+			case UP:
+				isValid = env.orientations.doesAllowUpwardOutput(block);
+				break;
+			case FLIPPED_NORTH:
+			case FLIPPED_WEST:
+			case FLIPPED_SOUTH:
+			case FLIPPED_EAST:
+				isValid = env.orientations.doesAllowFlippedHorizontal(block);
+				break;
+			default:
+				// Not used yet.
+				throw Assert.unreachable();
+			}
+		}
+		else if (!requiresHorizontalOrientations)
+		{
+			isValid = true;
+		}
+		else
+		{
+			// Mismatch.
+			isValid = false;
+		}
+		return isValid;
 	}
 }
