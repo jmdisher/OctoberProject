@@ -284,6 +284,10 @@ op.f006	FUELLED_FURNACE
 	input	op.copper_dust	op.copper_dust
 	output	op.copper_ingot
 	millis	1000
+op.f007	FUELLED_FURNACE
+	input	op.sand
+	output	op.glass
+	millis	2000
 
 # Grinding crafting (referenced in station_registry for use in querns):
 op.g000	GRINDING

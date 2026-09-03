@@ -137,13 +137,16 @@ op.enchanting_table
 	block_material	PICKAXE
 op.gravel	has_gravity
 	block_material	SHOVEL
+op.glass
+	block_material	PICKAXE
+	special_drop	0	op.glass
 op.bed	is_flammable
-	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick	op.grass	op.basalt	op.copper_ore	op.diamond_ore	op.portal_stone	op.sand	op.gravel
+	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick	op.grass	op.basalt	op.copper_ore	op.diamond_ore	op.portal_stone	op.sand	op.gravel	op.glass
 	block_material	AXE
 	sub_blocks	0xffffffffffff
 op.torch
 	block_material	AXE
-	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick	op.grass	op.basalt	op.copper_ore	op.diamond_ore	op.portal_stone	op.sand	op.gravel
+	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick	op.grass	op.basalt	op.copper_ore	op.diamond_ore	op.portal_stone	op.sand	op.gravel	op.glass
 	viscosity	0
 op.block_mover
 	block_material	PICKAXE
