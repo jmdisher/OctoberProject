@@ -8,9 +8,7 @@ import java.util.Set;
 
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.config.TabListReader.TabListException;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
-import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.Item;
 
 
@@ -151,43 +149,6 @@ public class OrientationAspect
 	 */
 	public boolean doesAllowUpwardOutput(Block blockType)
 	{
-		return _allowsDown.contains(blockType);
-	}
-
-	/**
-	 * Finds the appropriate direction for placing a block of blockType in blockLocation, facing targetLocation, if that
-	 * is applicable for this kind of block.
-	 * This can only be called for single blocks (not multi-blocks).
-	 * 
-	 * @param blockType The block type.
-	 * @param blockLocation The location where the block is being stored.
-	 * @param outputLocation The location where the block is "facing" (output).
-	 * @return The Direction enum for this block or null, if it shouldn't use one or doesn't have a valid output.
-	 */
-	public FacingDirection getDirectionIfApplicableToSingle(Block blockType, AbsoluteLocation blockLocation, AbsoluteLocation outputLocation)
-	{
-		FacingDirection outputDirection;
-		if (null == outputLocation)
-		{
-			// This is kind of a degenerate case where we allow this to be called with null so the caller can avoid extra checks.
-			outputDirection = null;
-		}
-		else if (_hasOrientation.contains(blockType))
-		{
-			outputDirection = FacingDirection.getRelativeDirection(blockLocation, outputLocation);
-			if (((FacingDirection.DOWN == outputDirection) && !_allowsDown.contains(blockType))
-				|| ((FacingDirection.UP == outputDirection) && !_allowsUp.contains(blockType))
-			)
-			{
-				// This is an invalid case so just return null so the caller can check and realize the request is invalid.
-				outputDirection = null;
-			}
-		}
-		else
-		{
-			// Common case.
-			outputDirection = null;
-		}
-		return outputDirection;
+		return _allowsUp.contains(blockType);
 	}
 }

@@ -118,4 +118,10 @@ public class MutationBlockOverwriteByEntity implements IMutationBlock
 		// This references an entity so we can't save it.
 		return false;
 	}
+
+	@Override
+	public String toString()
+	{
+		return String.format("OverwriteByEntity @%s with %s (facing %s) placed by %d", _location, _blockType, _outputDirection, _entityId);
+	}
 }

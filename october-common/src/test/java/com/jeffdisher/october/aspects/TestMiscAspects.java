@@ -378,4 +378,18 @@ public class TestMiscAspects
 		Assert.assertEquals(32000, ENV.fuel.millisOfFuel(lavaBucket));
 		Assert.assertEquals(emptyBucket, ENV.fuel.resultOfFuel(lavaBucket));
 	}
+
+	@Test
+	public void orientationFlags() throws Throwable
+	{
+		Block hopper = ENV.blocks.fromItem(ENV.items.getItemById("op.hopper"));
+		Assert.assertTrue(ENV.orientations.doesSingleBlockRequireOrientation(hopper));
+		Assert.assertTrue(ENV.orientations.doesAllowDownwardOutput(hopper));
+		Assert.assertFalse(ENV.orientations.doesAllowUpwardOutput(hopper));
+		
+		Block slab = ENV.blocks.fromItem(ENV.items.getItemById("op.stone_brick_slab"));
+		Assert.assertTrue(ENV.orientations.doesSingleBlockRequireOrientation(slab));
+		Assert.assertTrue(ENV.orientations.doesAllowDownwardOutput(slab));
+		Assert.assertTrue(ENV.orientations.doesAllowUpwardOutput(slab));
+	}
 }
