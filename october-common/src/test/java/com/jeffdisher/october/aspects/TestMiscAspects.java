@@ -61,9 +61,9 @@ public class TestMiscAspects
 		
 		DropChance[] leafChances = ENV.blocks.possibleDropsOnBreak(leaf);
 		Assert.assertEquals(3, leafChances.length);
-		Assert.assertEquals(new DropChance(sapling, 50), leafChances[0]);
-		Assert.assertEquals(new DropChance(stick, 20), leafChances[1]);
-		Assert.assertEquals(new DropChance(apple, 10), leafChances[2]);
+		Assert.assertEquals(new DropChance(sapling, 20), leafChances[0]);
+		Assert.assertEquals(new DropChance(stick, 10), leafChances[1]);
+		Assert.assertEquals(new DropChance(apple, 2), leafChances[2]);
 	}
 
 	@Test
