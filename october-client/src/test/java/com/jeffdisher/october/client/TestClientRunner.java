@@ -651,7 +651,7 @@ public class TestClientRunner
 		network.client.receivedEntityUpdate(FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.thisEntity, network.toSend));
 		network.client.receivedEndOfTick(3L, 1L);
 		runnerList.runFullQueue(currentTimeMillis);
-		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalRepair(changeLocation, (short)100)));
+		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalRepair(changeLocation, (short)100, 0)));
 		network.client.receivedEndOfTick(4L, 1L);
 		runnerList.runFullQueue(currentTimeMillis);
 		

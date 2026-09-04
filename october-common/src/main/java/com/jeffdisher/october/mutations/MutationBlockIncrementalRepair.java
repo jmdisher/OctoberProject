@@ -27,17 +27,21 @@ public class MutationBlockIncrementalRepair implements IMutationBlock
 		ByteBuffer buffer = context.buffer();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		short damageToRepair = buffer.getShort();
-		return new MutationBlockIncrementalRepair(location, damageToRepair);
+		// We only ever deserialize mutations from disk where we don't want to use the entity reference.
+		int optionalEntityId = 0;
+		return new MutationBlockIncrementalRepair(location, damageToRepair, optionalEntityId);
 	}
 
 
 	private final AbsoluteLocation _location;
 	private final short _damageToRepair;
+	private final int _optionalEntityId;
 
-	public MutationBlockIncrementalRepair(AbsoluteLocation location, short damageToRepair)
+	public MutationBlockIncrementalRepair(AbsoluteLocation location, short damageToRepair, int optionalEntityId)
 	{
 		_location = location;
 		_damageToRepair = damageToRepair;
+		_optionalEntityId = optionalEntityId;
 	}
 
 	@Override
@@ -61,13 +65,13 @@ public class MutationBlockIncrementalRepair implements IMutationBlock
 			newBlock.setDamage(updatedDamage);
 			
 			// We will emit an event if this finished the repair so that the user can be shown in the client.
-			if (0 == updatedDamage)
+			if ((0 == updatedDamage) && (0 != _optionalEntityId))
 			{
 				context.eventSink.post(new EventRecord(EventRecord.Type.BLOCK_REPAIRED
 					, EventRecord.Cause.NONE
 					, _location
 					, 0
-					, 0
+					, _optionalEntityId
 				));
 			}
 		}

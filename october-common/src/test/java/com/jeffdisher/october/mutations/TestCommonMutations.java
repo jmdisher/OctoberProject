@@ -760,12 +760,13 @@ public class TestCommonMutations
 		MutableBlockProxy noDamangeProxy = new MutableBlockProxy(noDamage, cuboid);
 		MutableBlockProxy validProxy = new MutableBlockProxy(valid, cuboid);
 		
+		int entityId = 1;
 		// Try wrong type.
-		MutationBlockIncrementalRepair repairWrongType = new MutationBlockIncrementalRepair(wrongType, repairMillis);
+		MutationBlockIncrementalRepair repairWrongType = new MutationBlockIncrementalRepair(wrongType, repairMillis, entityId);
 		repairWrongType.applyMutation(null, wrongProxy);
 		
 		// Try undamaged
-		MutationBlockIncrementalRepair repairNoDamange = new MutationBlockIncrementalRepair(noDamage, repairMillis);
+		MutationBlockIncrementalRepair repairNoDamange = new MutationBlockIncrementalRepair(noDamage, repairMillis, entityId);
 		repairNoDamange.applyMutation(null, noDamangeProxy);
 		
 		// Try valid (note that we need the event sink to see the final repair event).
@@ -774,7 +775,7 @@ public class TestCommonMutations
 			.eventSink((EventRecord event) -> out_events.add(event))
 			.finish()
 		;
-		MutationBlockIncrementalRepair repairValid = new MutationBlockIncrementalRepair(valid, repairMillis);
+		MutationBlockIncrementalRepair repairValid = new MutationBlockIncrementalRepair(valid, repairMillis, entityId);
 		repairValid.applyMutation(context, validProxy);
 		Assert.assertEquals((short)50, validProxy.getDamage());
 		repairValid.applyMutation(context, validProxy);
@@ -785,6 +786,7 @@ public class TestCommonMutations
 		Assert.assertEquals(1, out_events.size());
 		Assert.assertEquals(EventRecord.Type.BLOCK_REPAIRED, out_events.get(0).type());
 		Assert.assertEquals(valid, out_events.get(0).location());
+		Assert.assertEquals(entityId, out_events.get(0).entitySource());
 	}
 
 	@Test

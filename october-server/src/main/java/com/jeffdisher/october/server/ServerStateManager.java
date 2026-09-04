@@ -569,6 +569,7 @@ public class ServerStateManager
 			{
 			case BLOCK_BROKEN:
 			case BLOCK_PLACED:
+			case BLOCK_REPAIRED:
 			case LIQUID_REMOVED:
 			case LIQUID_PLACED:
 			case CRAFT_IN_BLOCK_COMPLETE:

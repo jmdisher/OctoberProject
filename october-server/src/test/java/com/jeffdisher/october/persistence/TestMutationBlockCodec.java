@@ -150,7 +150,8 @@ public class TestMutationBlockCodec
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
 		short damage = 150;
-		MutationBlockIncrementalRepair mutation = new MutationBlockIncrementalRepair(location, damage);
+		int noEntityWhenStored = 0;
+		MutationBlockIncrementalRepair mutation = new MutationBlockIncrementalRepair(location, damage, noEntityWhenStored);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);

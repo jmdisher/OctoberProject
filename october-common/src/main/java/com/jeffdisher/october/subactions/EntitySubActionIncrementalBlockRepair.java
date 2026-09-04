@@ -80,7 +80,7 @@ public class EntitySubActionIncrementalBlockRepair implements IEntitySubAction<I
 			int breakingMillis = (int)context.millisPerTick;
 			// We can do something so send the mutation to the block (it will apply the change with bounds checks).
 			MultiBlockUtils.sendMutationToAll(context, (AbsoluteLocation location) -> {
-				MutationBlockIncrementalRepair mutation = new MutationBlockIncrementalRepair(location, (short)breakingMillis);
+				MutationBlockIncrementalRepair mutation = new MutationBlockIncrementalRepair(location, (short)breakingMillis, newEntity.getId());
 				return mutation;
 			}, lookup);
 			didApply = true;
