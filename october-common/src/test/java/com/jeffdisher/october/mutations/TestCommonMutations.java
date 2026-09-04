@@ -2659,6 +2659,37 @@ public class TestCommonMutations
 		Assert.assertEquals(emptyBucket, inv.getNonStackableForKey(2).type());
 	}
 
+	@Test
+	public void blockUpdateLeaf()
+	{
+		// Show that a block update will break a leaf block if there are no logs near it.
+		AbsoluteLocation target = new AbsoluteLocation(15, 15, 15);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), ENV.items.getItemById("op.leaf").number());
+		
+		List<ItemSlot> out_slots = new ArrayList<>();
+		TickProcessingContext context = ContextBuilder.build()
+			.fixedRandom(0)
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
+			.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+				Assert.assertEquals(PassiveType.ITEM_SLOT, type);
+				Assert.assertEquals(target, location.getBlockLocation());
+				Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), velocity);
+				out_slots.add((ItemSlot) extendedData);
+			})
+			.finish()
+		;
+		
+		MutationBlockUpdate update = new MutationBlockUpdate(target);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		update.applyMutation(context, proxy);
+		Assert.assertTrue(proxy.didChange());
+		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
+		Assert.assertEquals(new Items(ENV.items.getItemById("op.stick"), 1), out_slots.get(0).stack);
+		Assert.assertEquals(new Items(ENV.items.getItemById("op.sapling"), 1), out_slots.get(1).stack);
+		Assert.assertEquals(new Items(ENV.items.getItemById("op.apple"), 1), out_slots.get(2).stack);
+	}
+
 
 	private static Set<AbsoluteLocation> _getEastFacingPortalVoidStones(AbsoluteLocation keystoneLocation)
 	{

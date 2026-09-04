@@ -26,6 +26,7 @@ import com.jeffdisher.october.block_set.BlockSetBehaviourPeriodicWrapper;
 import com.jeffdisher.october.block_set.IBlockSetBehaviour;
 import com.jeffdisher.october.block_update.BlockUpdateBehaviourCheckSupported;
 import com.jeffdisher.october.block_update.BlockUpdateBehaviourExtinguish;
+import com.jeffdisher.october.block_update.BlockUpdateBehaviourOrphanLeaf;
 import com.jeffdisher.october.block_update.BlockUpdateBehaviourRevertGroundcover;
 import com.jeffdisher.october.block_update.IBlockUpdateBehaviour;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -150,6 +151,10 @@ public class HookRegistry
 				if (null != handler)
 				{
 					updateList.add(new BlockHybridBehaviourLogic(handler));
+				}
+				if (special.blockLeaf == block)
+				{
+					updateList.add(new BlockUpdateBehaviourOrphanLeaf());
 				}
 				
 				// Populate the periodic callback list.
