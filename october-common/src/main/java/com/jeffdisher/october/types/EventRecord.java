@@ -50,6 +50,12 @@ public record EventRecord(Type type
 		 */
 		TRADE_RECEIVED,
 		ENCHANT_COMPLETE,
+		/**
+		 * Note that entityTarget is the ID of the entity holding the tool while entitySource is left at 0.
+		 * This somewhat strange approach is because these events cannot be generated on the client (due to random not
+		 * being provided) so we don't want to filter them out as though they were.
+		 */
+		ENTITY_BROKE_TOOL,
 	}
 
 	/**

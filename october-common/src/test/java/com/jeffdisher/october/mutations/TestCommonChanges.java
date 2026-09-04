@@ -1014,6 +1014,7 @@ public class TestCommonChanges
 		
 		// Do the break with enough time to break the block.
 		EntitySubActionIncrementalBlockBreak breakReasonable = new EntitySubActionIncrementalBlockBreak(target);
+		holder.events.expected(new EventRecord(EventRecord.Type.ENTITY_BROKE_TOOL, EventRecord.Cause.NONE, newEntity.newLocation.getBlockLocation(), newEntity.getId(), 0));
 		Assert.assertTrue(breakReasonable.applyChange(holder.context, newEntity));
 		Assert.assertNotNull(holder.mutation);
 		Assert.assertEquals(0, newEntity.slotManager.getSelectedKey());
@@ -2613,7 +2614,7 @@ public class TestCommonChanges
 		Entity baselineTarget = target.freeze();
 		Map<Integer, Entity> targetsById = Map.of(targetId, baselineTarget);
 		List<IEntityAction<IMutablePlayerEntity>> outChanges = new ArrayList<>();
-		int[] eventCounter = new int[1];
+		List<EventRecord> out_events = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(5L)
 			.lookups(null, new LazyEntityIndex(targetsById, Map.of()), null)
@@ -2646,7 +2647,7 @@ public class TestCommonChanges
 				@Override
 				public void post(EventRecord event)
 				{
-					eventCounter[0] += 1;
+					out_events.add(event);
 				}
 			})
 			.finish()
@@ -2658,7 +2659,9 @@ public class TestCommonChanges
 		Assert.assertTrue(new EntitySubActionAttackEntity(targetId).applyChange(context, stoneAttacker));
 		Assert.assertTrue(new EntitySubActionAttackEntity(targetId).applyChange(context, enchantedSwordAttacker));
 		Assert.assertEquals(8, outChanges.size());
-		Assert.assertEquals(0, eventCounter[0]);
+		Assert.assertEquals(1, out_events.size());
+		Assert.assertEquals(new EventRecord(EventRecord.Type.ENTITY_BROKE_TOOL, EventRecord.Cause.NONE, axeAttacker.newLocation.getBlockLocation(), axeAttackerId, 0), out_events.get(0));
+		out_events.clear();
 		
 		// Check applying these to the entity to see the damage they do.
 		Assert.assertEquals(100, target.newHealth);
@@ -2678,7 +2681,11 @@ public class TestCommonChanges
 		Assert.assertTrue(outChanges.remove(0).applyChange(context, target));
 		Assert.assertTrue(outChanges.remove(0).applyChange(context, target));
 		Assert.assertEquals(87, target.newHealth);
-		Assert.assertEquals(4, eventCounter[0]);
+		Assert.assertEquals(4, out_events.size());
+		Assert.assertEquals(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, target.newLocation.getBlockLocation(), targetId, swordAttackerId), out_events.get(0));
+		Assert.assertEquals(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, target.newLocation.getBlockLocation(), targetId, axeAttackerId), out_events.get(1));
+		Assert.assertEquals(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, target.newLocation.getBlockLocation(), targetId, stoneAttackerId), out_events.get(2));
+		Assert.assertEquals(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, target.newLocation.getBlockLocation(), targetId, enchantedSwordAttackerId), out_events.get(3));
 	}
 
 	@Test

@@ -3,6 +3,7 @@ package com.jeffdisher.october.subactions;
 import com.jeffdisher.october.aspects.BlockMaterial;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.PropertyHelpers;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.NonStackableItem;
@@ -56,6 +57,17 @@ public class CommonEntitySubActionHelpers
 				{
 					// Remove this and clear the selection.
 					slotManager.removeNonStackable(toolInventoryKey);
+					
+					// Since this is a broken tool/weapon, trigger the event.
+					// NOTE:  We set the entitySource to 0 since this can't run on the client (see the check on
+					// context.randomInt, above), and we normally use that field to filter server echoes of client-side
+					// events.
+					context.eventSink.post(new EventRecord(EventRecord.Type.ENTITY_BROKE_TOOL
+						, EventRecord.Cause.NONE
+						, mutableEntity.getLocation().getBlockLocation()
+						, mutableEntity.getId()
+						, 0
+					));
 				}
 			}
 		}
