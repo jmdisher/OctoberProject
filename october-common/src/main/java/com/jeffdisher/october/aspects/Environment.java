@@ -36,13 +36,19 @@ public class Environment
 	 * Asserts that the environment does NOT exist.
 	 * 
 	 * @return The shared instance of the environment.
-	 * @throws IOException Error accessing local resources.
-	 * @throws TabListReader.TabListException Local resources have invalid definition.
 	 */
-	public static Environment createSharedInstance() throws IOException, TabListReader.TabListException
+	public static Environment createSharedInstance()
 	{
 		Assert.assertTrue(null == INSTANCE);
-		INSTANCE = new Environment(new ModLayer[0]);
+		try
+		{
+			INSTANCE = new Environment(new ModLayer[0]);
+		}
+		catch (IOException | TabListReader.TabListException e)
+		{
+			// Failure to read our core components is a static error within the installation so just fail out.
+			throw Assert.unexpected(e);
+		}
 		return INSTANCE;
 	}
 

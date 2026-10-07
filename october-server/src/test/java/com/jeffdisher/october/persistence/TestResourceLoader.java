@@ -614,6 +614,37 @@ public class TestResourceLoader
 	}
 
 	@Test
+	public void configParseErrors() throws Throwable
+	{
+		File resourceDirectory = DIRECTORY.newFolder();
+		WorldConfig config = new WorldConfig();
+		ResourceLoader loader = new ResourceLoader(resourceDirectory, new PreloadedWorldGenerator(), config);
+		File configFile = new File(resourceDirectory, "config.tablist");
+		
+		// We will show a few of the parse errors we can see.
+		String bogusEnum = "difficulty\tBOGUS\n";
+		String invalidTablist = "just a text file\n";
+		String numberFormat = "world_spawn\t5,h,7\n";
+		String failedLimit = "client_view_distance_maximum\t2\n";
+		
+		for (String test : new String[] {bogusEnum, invalidTablist, numberFormat, failedLimit})
+		{
+			Files.writeString(configFile.toPath(), test);
+			try
+			{
+				ResourceLoader.populateWorldConfig(resourceDirectory, config);
+				Assert.fail();
+			}
+			catch (WorldConfig.ParseError e)
+			{
+				// Expected.
+			}
+		}
+		
+		loader.shutdown();
+	}
+
+	@Test
 	public void creativeMode() throws Throwable
 	{
 		File worldDirectory = DIRECTORY.newFolder();

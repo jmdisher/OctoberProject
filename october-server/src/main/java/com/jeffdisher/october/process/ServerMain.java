@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.server.MonitoringAgent;
@@ -51,7 +50,7 @@ public class ServerMain
 					ResourceLoader.storeWorldConfig(worldDirectory, config);
 				}
 			}
-			catch (IOException | TabListReader.TabListException e)
+			catch (WorldConfig.ParseError e)
 			{
 				// This is a fatal error.
 				throw new FatalStartupError("Pre-start loading", e);

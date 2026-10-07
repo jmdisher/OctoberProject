@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Random;
 
 import com.jeffdisher.october.aspects.MiscConstants;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -126,44 +125,52 @@ public class WorldConfig
 		this.defaultPlayerMode = DefaultPlayerMode.SURVIVAL;
 	}
 
-	public void loadOverrides(Map<String, String> overrides)
+	public void loadOverrides(Map<String, String> overrides) throws ParseError
 	{
 		if (overrides.containsKey(KEY_DIFFICULTY))
 		{
-			this.difficulty = Difficulty.valueOf(overrides.get(KEY_DIFFICULTY));
+			try
+			{
+				this.difficulty = Difficulty.valueOf(overrides.get(KEY_DIFFICULTY));
+			}
+			catch (IllegalArgumentException e)
+			{
+				String error = String.format("Error in key \"%s\": %s", KEY_DIFFICULTY, e.getMessage());
+				throw new ParseError(error);
+			}
 		}
 		if (overrides.containsKey(KEY_HOSTILES_PER_CUBOID_TARGET))
 		{
-			this.hostilesPerCuboidTarget = Integer.parseInt(overrides.get(KEY_HOSTILES_PER_CUBOID_TARGET));
+			this.hostilesPerCuboidTarget = _parseInt(KEY_HOSTILES_PER_CUBOID_TARGET, overrides.get(KEY_HOSTILES_PER_CUBOID_TARGET));
 		}
 		if (overrides.containsKey(KEY_HOSTILES_PER_CUBOID_LIMIT))
 		{
-			this.hostilesPerCuboidLimit = Integer.parseInt(overrides.get(KEY_HOSTILES_PER_CUBOID_LIMIT));
+			this.hostilesPerCuboidLimit = _parseInt(KEY_HOSTILES_PER_CUBOID_LIMIT, overrides.get(KEY_HOSTILES_PER_CUBOID_LIMIT));
 		}
 		if (overrides.containsKey(KEY_BASIC_SEED))
 		{
-			this.basicSeed = Integer.parseInt(overrides.get(KEY_BASIC_SEED));
+			this.basicSeed = _parseInt(KEY_BASIC_SEED, overrides.get(KEY_BASIC_SEED));
 		}
 		if (overrides.containsKey(KEY_WORLD_SPAWN))
 		{
 			// Split this value over ","
 			String raw = overrides.get(KEY_WORLD_SPAWN);
 			String[] parts = raw.split(",");
-			Assert.assertTrue(3 == parts.length);
-			this.worldSpawn = new AbsoluteLocation(Integer.parseInt(parts[0])
-					, Integer.parseInt(parts[1])
-					, Integer.parseInt(parts[2])
+			_check(3 == parts.length, KEY_WORLD_SPAWN, "Must be 3 ,-delimited ints");
+			this.worldSpawn = new AbsoluteLocation(_parseInt(KEY_WORLD_SPAWN, parts[0])
+				, _parseInt(KEY_WORLD_SPAWN, parts[1])
+				, _parseInt(KEY_WORLD_SPAWN, parts[2])
 			);
 		}
 		if (overrides.containsKey(KEY_TICKS_PER_DAY))
 		{
-			this.ticksPerDay = Integer.parseInt(overrides.get(KEY_TICKS_PER_DAY));
-			Assert.assertTrue(this.ticksPerDay > 0);
+			this.ticksPerDay = _parseInt(KEY_TICKS_PER_DAY, overrides.get(KEY_TICKS_PER_DAY));
+			_check(this.ticksPerDay > 0, KEY_TICKS_PER_DAY, "Must be positive");
 		}
 		if (overrides.containsKey(KEY_DAY_START_TICK))
 		{
-			this.dayStartTick = Integer.parseInt(overrides.get(KEY_DAY_START_TICK));
-			Assert.assertTrue(this.dayStartTick >= 0);
+			this.dayStartTick = _parseInt(KEY_DAY_START_TICK, overrides.get(KEY_DAY_START_TICK));
+			_check(this.dayStartTick >= 0, KEY_DAY_START_TICK, "Must be positive");
 		}
 		if (overrides.containsKey(KEY_WORLD_GENERATOR_NAME))
 		{
@@ -175,9 +182,9 @@ public class WorldConfig
 		}
 		if (overrides.containsKey(KEY_CLIENT_VIEW_DISTANCE_MAXIMUM))
 		{
-			this.clientViewDistanceMaximum = Integer.parseInt(overrides.get(KEY_CLIENT_VIEW_DISTANCE_MAXIMUM));
-			Assert.assertTrue(this.clientViewDistanceMaximum >= MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
-			Assert.assertTrue(this.clientViewDistanceMaximum <= MAX_CLIENT_VIEW_DISTANCE_MAXIMUM);
+			this.clientViewDistanceMaximum = _parseInt(KEY_CLIENT_VIEW_DISTANCE_MAXIMUM, overrides.get(KEY_CLIENT_VIEW_DISTANCE_MAXIMUM));
+			_check(this.clientViewDistanceMaximum >= MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE, KEY_CLIENT_VIEW_DISTANCE_MAXIMUM, "Must be >= " + MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+			_check(this.clientViewDistanceMaximum <= MAX_CLIENT_VIEW_DISTANCE_MAXIMUM, KEY_CLIENT_VIEW_DISTANCE_MAXIMUM, "Must be <= " + MAX_CLIENT_VIEW_DISTANCE_MAXIMUM);
 		}
 		if (overrides.containsKey(KEY_SERVER_NAME))
 		{
@@ -209,6 +216,29 @@ public class WorldConfig
 	}
 
 
+	private static int _parseInt(String key, String value) throws ParseError
+	{
+		try
+		{
+			return Integer.parseInt(value);
+		}
+		catch (NumberFormatException e)
+		{
+			String error = String.format("Error in key \"%s\": %s is not an int", key, value);
+			throw new ParseError(error);
+		}
+	}
+
+	private static void _check(boolean flag, String key, String description) throws ParseError
+	{
+		if (!flag)
+		{
+			String error = String.format("Error in key \"%s\": %s", key, description);
+			throw new ParseError(error);
+		}
+	}
+
+
 	public static enum WorldGeneratorName
 	{
 		BASIC,
@@ -219,5 +249,17 @@ public class WorldConfig
 	{
 		SURVIVAL,
 		CREATIVE,
+	}
+
+	/**
+	 * An exception for parse errors in the config.
+	 */
+	public static class ParseError extends Exception
+	{
+		private static final long serialVersionUID = 1L;
+		public ParseError(String string)
+		{
+			super(string);
+		}
 	}
 }

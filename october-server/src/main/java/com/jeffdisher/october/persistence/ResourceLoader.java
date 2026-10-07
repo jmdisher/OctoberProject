@@ -2,6 +2,7 @@ package com.jeffdisher.october.persistence;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -22,7 +23,6 @@ import com.jeffdisher.october.actions.EntityActionPeriodic;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.config.FlatTabListCallbacks;
 import com.jeffdisher.october.config.TabListReader;
-import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
@@ -350,9 +350,9 @@ public class ResourceLoader
 	 * @param saveDirectory The directory where the world data is stored.
 	 * @param config A WorldConfig object to modify.
 	 * @return True if the config was loaded from disk or false if the default was left untouched.
-	 * @throws IOException There was a problem loading the file.
+	 * @throws WorldConfig.ParseError There was a problem reading the config file.
 	 */
-	public static boolean populateWorldConfig(File saveDirectory, WorldConfig config) throws IOException
+	public static boolean populateWorldConfig(File saveDirectory, WorldConfig config) throws WorldConfig.ParseError
 	{
 		boolean didLoad = false;
 		File configFile = _getConfigFile(saveDirectory);
@@ -365,9 +365,19 @@ public class ResourceLoader
 				TabListReader.readEntireFile(callbacks, stream);
 				overrides = callbacks.data;
 			}
-			catch (TabListException e)
+			catch (TabListReader.TabListException e)
 			{
-				// We will treat this as a static start-up failure.
+				// The config file can be manually changed by the user so describe the error.
+				throw new WorldConfig.ParseError("Config file is not a valid tablist");
+			}
+			catch (FileNotFoundException e)
+			{
+				// We just checked that this exists so this can't happen.
+				throw Assert.unexpected(e);
+			}
+			catch (IOException e)
+			{
+				// We will treat this as a static error in start-up.
 				throw Assert.unexpected(e);
 			}
 			config.loadOverrides(overrides);
@@ -382,9 +392,8 @@ public class ResourceLoader
 	 * 
 	 * @param saveDirectory The directory where the world data is stored.
 	 * @param config A WorldConfig object to save to disk.
-	 * @throws IOException There was a problem saving the file.
 	 */
-	public static void storeWorldConfig(File saveDirectory, WorldConfig config) throws IOException
+	public static void storeWorldConfig(File saveDirectory, WorldConfig config)
 	{
 		File configFile = _getConfigFile(saveDirectory);
 		Map<String, String> options = config.getRawOptions();
@@ -396,6 +405,11 @@ public class ResourceLoader
 				String line = elt.getKey() + "\t" + elt.getValue() + "\n";
 				stream.write(line.getBytes(StandardCharsets.UTF_8));
 			}
+		}
+		catch (IOException e)
+		{
+			// We don't have any good way to handle such an error.
+			throw Assert.unexpected(e);
 		}
 	}
 

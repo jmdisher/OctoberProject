@@ -19,10 +19,8 @@ public class WorldGenHelpers
 	 * @param env The environment.
 	 * @param config The config, containing information related to the world generator.
 	 * @return The new world generator instance (never null).
-	 * @throws IOException There was an error while reading generated structure definitions.
-	 * @throws TabListReader.TabListException Local structure definitions are invalid.
 	 */
-	public static IWorldGenerator createConfiguredWorldGenerator(Environment env, WorldConfig config) throws IOException, TabListReader.TabListException
+	public static IWorldGenerator createConfiguredWorldGenerator(Environment env, WorldConfig config)
 	{
 		WorldGenConfig worldGenConfig = _buildDefaultWorldGenConfig(env);
 		
@@ -41,18 +39,34 @@ public class WorldGenHelpers
 		return worldGen;
 	}
 
-	public static WorldGenConfig buildDefaultWorldGenConfig(Environment env) throws IOException, TabListReader.TabListException
+	public static WorldGenConfig buildDefaultWorldGenConfig(Environment env)
 	{
 		return _buildDefaultWorldGenConfig(env);
 	}
 
 
-	private static WorldGenConfig _buildDefaultWorldGenConfig(Environment env) throws IOException, TabListReader.TabListException
+	private static WorldGenConfig _buildDefaultWorldGenConfig(Environment env)
 	{
 		// Look up the various data required for world gen.
-		TerrainBindings terrainBindings = new TerrainBindings(env);
-		CommonStructures commonStructures = new CommonStructures(env);
-		CreatureBindings creatureBindings = new CreatureBindings(env);
+		TerrainBindings terrainBindings;
+		CommonStructures commonStructures;
+		CreatureBindings creatureBindings;
+		try
+		{
+			terrainBindings = new TerrainBindings(env);
+			commonStructures = new CommonStructures(env);
+			creatureBindings = new CreatureBindings(env);
+		}
+		catch (TabListReader.TabListException e)
+		{
+			// We consider these structure definitions part of the core system so a failure to load them is a static error in the installation.
+			throw Assert.unexpected(e);
+		}
+		catch (IOException e)
+		{
+			// We will treat this as a static error in start-up.
+			throw Assert.unexpected(e);
+		}
 		WorldGenConfig worldGenConfig = new WorldGenConfig(env
 			, terrainBindings
 			, commonStructures
