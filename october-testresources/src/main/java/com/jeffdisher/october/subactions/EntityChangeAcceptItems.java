@@ -26,7 +26,12 @@ public class EntityChangeAcceptItems implements IEntitySubAction<IMutablePlayerE
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		MutableSlotManager slotManager = newEntity.getSlotManager();
-		boolean didAdd = slotManager.addStackableItems(_items.type(), _items.count());
+		boolean didAdd = false;
+		if (slotManager.maxVacancyForItem(_items.type()) >= _items.count())
+		{
+			slotManager.addStackableItemsAllowingOverflow(_items.type(), _items.count());
+			didAdd = true;
+		}
 		return didAdd;
 	}
 

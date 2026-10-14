@@ -5,6 +5,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -73,5 +74,39 @@ public class TestCraftAspect
 		Assert.assertEquals(2, inv.sortedKeys().size());
 		Assert.assertEquals(1, inv.getCount(dirtItem));
 		Assert.assertEquals(pick, inv.getNonStackableForKey(3).type());
+	}
+
+	@Test
+	public void overFill() throws Throwable
+	{
+		// Demonstrates the change we made to allow craft operations to overflow output inventories.
+		Item emptyBucketItem = ENV.items.getItemById("op.bucket_empty");
+		Item sandItem = ENV.items.getItemById("op.sand");
+		Item glassItem = ENV.items.getItemById("op.glass");
+		Craft craft = new Craft("Glass"
+			, "FUELLED_FURNACE"
+			, new Items[] { new Items(sandItem, 1) }
+			, new Item[] { glassItem }
+			, 2000L
+		);
+		
+		// Load the furnace.
+		int sandEncumbrance = ENV.encumbrance.getEncumbrance(sandItem);
+		int sandCount = 20;
+		Inventory inv = Inventory.start(sandCount * sandEncumbrance).addStackable(sandItem, sandCount).finish();
+		
+		// Add the empty bucket the way that CraftingBlockSupport would.
+		MutableInventory mutable = new MutableInventory(inv);
+		mutable.addNonStackableAllowingOverflow(PropertyHelpers.newItemWithDefaults(ENV, emptyBucketItem));
+		
+		// Now, produce the output.
+		MutableSlotManager slotManager = new MutableSlotManager(mutable, new int[0], 0);
+		Assert.assertTrue(CraftAspect.canApply(craft, slotManager));
+		CraftAspect.craft(ENV, craft, slotManager);
+		inv = mutable.freeze();
+		Assert.assertEquals(3, inv.sortedKeys().size());
+		Assert.assertEquals(sandCount - 1, inv.getCount(sandItem));
+		Assert.assertEquals(1, inv.getCount(glassItem));
+		Assert.assertEquals(emptyBucketItem, inv.getNonStackableForKey(2).type());
 	}
 }

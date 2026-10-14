@@ -36,7 +36,8 @@ public class TestMutableSlotManager
 		
 		NonStackableItem sword = PropertyHelpers.newItemWithDefaults(ENV, SWORD_ITEM);
 		
-		Assert.assertTrue(manager.addStackableItems(STONE_ITEM, 5));
+		// For stackable items, we either do best efforts or allow overflow.
+		manager.addStackableItemsAllowingOverflow(STONE_ITEM, 5);
 		Assert.assertTrue(manager.addNonStackable(sword));
 		
 		Assert.assertEquals(Entity.NO_SELECTION, manager.getSelectedKey());

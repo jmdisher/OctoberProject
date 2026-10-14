@@ -212,15 +212,14 @@ public class MutableSlotManager implements ISlotManager
 	}
 
 	/**
-	 * Adds all of the given items to the inventory, failing if they can't all be added.
+	 * Adds all of the given items to the inventory, ignoring the limits on what can fit in the inventory.
 	 * 
 	 * @param type The type of item to add.
 	 * @param count The number of items of that type.
-	 * @return True if the items were all added, false if none were.
 	 */
-	public boolean addStackableItems(Item stackable, int count)
+	public void addStackableItemsAllowingOverflow(Item stackable, int count)
 	{
-		return _inventory.addAllItems(stackable, count);
+		_inventory.addItemsAllowingOverflow(stackable, count);
 	}
 
 	/**

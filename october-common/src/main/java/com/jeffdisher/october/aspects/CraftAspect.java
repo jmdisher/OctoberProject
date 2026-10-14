@@ -264,18 +264,16 @@ public class CraftAspect
 			}
 			for (Item item : craft.output)
 			{
-				boolean didAdd;
+				// Note that it is possible that we will overflow the inventory, but that is considered reasonable in this case.
 				if (env.durability.isStackable(item))
 				{
-					didAdd = inv.addStackableItems(item, 1);
+					inv.addStackableItemsAllowingOverflow(item, 1);
 				}
 				else
 				{
 					NonStackableItem newItem = PropertyHelpers.newItemWithDefaults(env, item);
-					didAdd = inv.addNonStackable(newItem);
+					inv.addNonStackableAllowingOverflow(newItem);
 				}
-				// We can't fail to add here.
-				Assert.assertTrue(didAdd);
 			}
 			didCraft = true;
 		}

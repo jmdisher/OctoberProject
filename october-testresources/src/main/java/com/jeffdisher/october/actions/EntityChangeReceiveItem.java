@@ -41,7 +41,11 @@ public class EntityChangeReceiveItem implements IEntityAction<IMutablePlayerEnti
 		if (0 == slotManager.getCount(_itemType))
 		{
 			// Try to add them.
-			didApply = slotManager.addStackableItems(_itemType, _itemCount);
+			if (slotManager.maxVacancyForItem(_itemType) >= _itemCount)
+			{
+				slotManager.addStackableItemsAllowingOverflow(_itemType, _itemCount);
+				didApply = true;
+			}
 		}
 		return didApply;
 	}
