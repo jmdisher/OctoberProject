@@ -2690,6 +2690,24 @@ public class TestCommonMutations
 		Assert.assertEquals(new Items(ENV.items.getItemById("op.apple"), 1), out_slots.get(2).stack);
 	}
 
+	@Test
+	public void furnaceCraftAfterBlockBroken()
+	{
+		// Show that a furnace crafting mutation does nothing when run on a non-furnace block.
+		AbsoluteLocation target = new AbsoluteLocation(15, 15, 15);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), STONE);
+		
+		MutationBlockFurnaceCraft craft = new MutationBlockFurnaceCraft(target);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups(ContextBuilder.buildFetcher(
+				(AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
+			.finish()
+		;
+		craft.applyMutation(context, proxy);
+		Assert.assertFalse(proxy.didChange());
+	}
+
 
 	private static Set<AbsoluteLocation> _getEastFacingPortalVoidStones(AbsoluteLocation keystoneLocation)
 	{

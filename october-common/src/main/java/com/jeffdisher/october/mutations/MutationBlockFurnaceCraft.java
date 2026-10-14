@@ -45,10 +45,16 @@ public class MutationBlockFurnaceCraft implements IMutationBlock
 	@Override
 	public void applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
-		CraftingBlockSupport.FuelledResult result = CraftingBlockSupport.runFuelled(Environment.getShared(), context, newBlock, _blockLocation, context.millisPerTick);
-		if (result.shouldReschedule())
+		Environment env = Environment.getShared();
+		
+		// We only want to apply the crafting block support to fueled inventory blocks.
+		if (env.stations.getFuelInventorySize(newBlock.getBlock()) > 0)
 		{
-			context.mutationSink.next(new MutationBlockFurnaceCraft(_blockLocation));
+			CraftingBlockSupport.FuelledResult result = CraftingBlockSupport.runFuelled(env, context, newBlock, _blockLocation, context.millisPerTick);
+			if (result.shouldReschedule())
+			{
+				context.mutationSink.next(new MutationBlockFurnaceCraft(_blockLocation));
+			}
 		}
 	}
 
