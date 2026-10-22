@@ -43,26 +43,6 @@ public class PathFinder
 
 	/**
 	 * Finds the path, in block locations, of every step from source to target which can be occupied by checking the
-	 * blockKind function.
-	 * 
-	 * @param blockKind Returns the kind of block at the given location.
-	 * @param source The source location of the entity.
-	 * @param target The target location of the entity.
-	 * @return The path to follow to reach the target, starting with the current location, null if no path exists.
-	 */
-	public static List<AbsoluteLocation> findPath(Function<AbsoluteLocation, BlockKind> blockKind, EntityLocation source, EntityLocation target)
-	{
-		// We will limit algorithm by a limit of 2x the manhattan distance, so we don't walk too far around obstacles.
-		float manhattan = Math.abs(source.x() - target.x())
-				+ Math.abs(source.y() - target.y())
-				+ Math.abs(source.z() - target.z())
-		;
-		float limit = 2 * manhattan;
-		return _findPathWithLimit(blockKind, source, target, limit);
-	}
-
-	/**
-	 * Finds the path, in block locations, of every step from source to target which can be occupied by checking the
 	 * blockKind function, limiting the search distance to the given limit of steps.
 	 * 
 	 * @param blockKind Returns the kind of block at the given location.

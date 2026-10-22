@@ -37,7 +37,8 @@ public class TestPathFinder
 		EntityLocation target = new EntityLocation(4.5f, 6.5f, 5.0f);
 		int floor = 4;
 		Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsUser = (AbsoluteLocation location) -> (floor == location.z()) ? PathFinder.BlockKind.SOLID : PathFinder.BlockKind.WALKABLE;
-		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, source, target);
+		float limit = _getTestingDistance(source, target);
+		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockPermitsUser, source, target, limit);
 		
 		// We expect to see 29 steps, since the source counts as a step.
 		int xSteps = 4 + 11;
@@ -52,7 +53,8 @@ public class TestPathFinder
 		EntityLocation source = new EntityLocation(-10.5f, -6.5f, -5.0f);
 		EntityLocation target = new EntityLocation(4.5f, 6.5f, 7.0f);
 		Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsUser = (AbsoluteLocation location) -> (location.y() == location.z()) ? PathFinder.BlockKind.SOLID : PathFinder.BlockKind.WALKABLE;
-		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, source, target);
+		float limit = _getTestingDistance(source, target);
+		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockPermitsUser, source, target, limit);
 		
 		// This is walking directly so the path should involve as many steps as difference in each axis (+1 for the start).
 		int xSteps = 4 + 11;
@@ -74,7 +76,8 @@ public class TestPathFinder
 					: PathFinder.BlockKind.WALKABLE
 			;
 		};
-		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, source, target);
+		float limit = _getTestingDistance(source, target);
+		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockPermitsUser, source, target, limit);
 		Assert.assertNull(path);
 	}
 
@@ -91,7 +94,8 @@ public class TestPathFinder
 					: PathFinder.BlockKind.WALKABLE
 			;
 		};
-		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, source, target);
+		float limit = _getTestingDistance(source, target);
+		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockPermitsUser, source, target, limit);
 		Assert.assertNull(path);
 	}
 
@@ -113,7 +117,8 @@ public class TestPathFinder
 				"AAAASAAAAA",
 				"AAAAAAAAAA",
 		});
-		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, source, target);
+		float limit = _getTestingDistance(source, target);
+		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockPermitsUser, source, target, limit);
 		_printMap2D(9, 9, path);
 	}
 
@@ -168,7 +173,8 @@ public class TestPathFinder
 					"SSSSS",
 			}
 		});
-		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, source, target);
+		float limit = _getTestingDistance(source, target);
+		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockPermitsUser, source, target, limit);
 		// This is a direct walk, with a fall in the middle, so it should just be the difference in locations +1 to start.
 		int xSteps = 2;
 		int ySteps = 0;
@@ -265,7 +271,8 @@ public class TestPathFinder
 					"SSSSS",
 			}
 		});
-		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, source, target);
+		float limit = _getTestingDistance(source, target);
+		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockPermitsUser, source, target, limit);
 		int xSteps = 2;
 		int ySteps = 0;
 		int zSteps = 3;
@@ -311,7 +318,8 @@ public class TestPathFinder
 					"SSSSS",
 			}
 		});
-		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, source, target);
+		float limit = _getTestingDistance(source, target);
+		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockPermitsUser, source, target, limit);
 		int xSteps = 2;
 		int ySteps = 0;
 		int zSteps = 0;
@@ -331,7 +339,8 @@ public class TestPathFinder
 			: PathFinder.BlockKind.WALKABLE
 		;
 		
-		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, source, target);
+		float limit = _getTestingDistance(source, target);
+		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockPermitsUser, source, target, limit);
 		Assert.assertNull(path);
 		
 		Map<AbsoluteLocation, AbsoluteLocation> possiblePaths = PathFinder.findPlacesWithinLimit(blockPermitsUser
@@ -447,6 +456,16 @@ public class TestPathFinder
 			}
 			System.out.println();
 		}
+	}
+
+	private static float _getTestingDistance(EntityLocation source, EntityLocation target)
+	{
+		// We will limit algorithm by a limit of 2x the manhattan distance, so we don't walk too far around obstacles.
+		float manhattan = Math.abs(source.x() - target.x())
+				+ Math.abs(source.y() - target.y())
+				+ Math.abs(source.z() - target.z())
+		;
+		return 2 * manhattan;
 	}
 
 
