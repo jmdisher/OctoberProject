@@ -10,17 +10,31 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.ContextBuilder;
+import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.CuboidGenerator;
+import com.jeffdisher.october.utils.Encoding;
 
 
 public class TestPathFinder
 {
+	private static Environment ENV;
+	private static Block STONE;
 	@BeforeClass
 	public static void setup() throws Throwable
 	{
-		Environment.createSharedInstance();
+		ENV = Environment.createSharedInstance();
+		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -396,6 +410,46 @@ public class TestPathFinder
 			Assert.assertTrue(key.x() <= start.x());
 			Assert.assertTrue(key.y() >= start.y());
 		}
+	}
+
+	@Test
+	public void gapHandlingCommonKindLookup()
+	{
+		// We want to show how the CommonKindLookup handles gaps.
+		EntityLocation sourceBase = new EntityLocation(10.0f, 6.0f, 5.0f);
+		EntityLocation sourceCentre = new EntityLocation(10.5f, 6.5f, 5.0f);
+		EntityLocation targetBase = new EntityLocation(16.0f, 6.0f, 5.0f);
+		EntityLocation targetCentre = new EntityLocation(16.5f, 6.5f, 5.0f);
+		EntityVolume volume = new EntityVolume(1.2f, 0.9f);
+		
+		// Generate a cuboid for this test.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0,0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)4, STONE);
+		for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
+		{
+			if (6 != y)
+			{
+				cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)13, y, (byte)5), STONE.item().number());
+				cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)13, y, (byte)6), STONE.item().number());
+			}
+		}
+		
+		float limit = 8.0f;
+		TickProcessingContext.IBlockFetcher blockFetcher = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
+			return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
+				? BlockProxy.load(location.getBlockAddress(), cuboid)
+				: null
+			;
+		});
+		
+		CommonKindLookup baseLookup = new CommonKindLookup(blockFetcher, sourceBase, volume);
+		List<AbsoluteLocation> basePath = PathFinder.findPathWithLimit(baseLookup, sourceBase, targetBase, limit);
+		Assert.assertEquals(7, basePath.size());
+		
+		// TODO:  This path should be possible but the internal adjustment never moves by less than a block so it thinks it will collide with the wall.
+		CommonKindLookup centreLookup = new CommonKindLookup(blockFetcher, sourceCentre, volume);
+		List<AbsoluteLocation> centrePath = PathFinder.findPathWithLimit(centreLookup, sourceCentre, targetCentre, limit);
+		Assert.assertNull(centrePath);
 	}
 
 

@@ -7,24 +7,19 @@ import java.util.Map;
 import java.util.function.Function;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.CreatureMovementHelpers;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
-import com.jeffdisher.october.logic.VolumeIterator;
+import com.jeffdisher.october.pathing.CommonKindLookup;
 import com.jeffdisher.october.pathing.PathFinder;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
-import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -110,7 +105,7 @@ public class CreatureLogic
 		else if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
 		{
 			// We can derive the action directly from this plan.
-			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), mutable.getType().volume());
+			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, mutable.getLocation(), mutable.getType().volume());
 			action = _produceNextAction(context, blockKindLookup, mutable, mutable.movementPlan, timeLimitMillis);
 		}
 		else
@@ -189,7 +184,7 @@ public class CreatureLogic
 			if (null == mutable.movementPlan)
 			{
 				// We have no plan so make a new one.
-				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), creatureType.volume());
+				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, mutable.getLocation(), creatureType.volume());
 				mutable.movementPlan = _makeMovementPlan(context, blockKindLookup, entityCollection, mutable);
 			}
 		}
@@ -206,7 +201,7 @@ public class CreatureLogic
 	 */
 	public static List<AbsoluteLocation> test_findPathToRandomSpot(TickProcessingContext context, EntityLocation location, EntityType type)
 	{
-		Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, location.getOffsetIntoBlock(), type.volume());
+		Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, location, type.volume());
 		return _findPathToRandomSpot(context
 			, blockKindLookup
 			, location
@@ -681,7 +676,7 @@ public class CreatureLogic
 			&& ((null != mutable.movementPlan.directLocation()) || (null != mutable.movementPlan.fullPlan()))
 		)
 		{
-			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), mutable.getType().volume());
+			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, mutable.getLocation(), mutable.getType().volume());
 			AbsoluteLocation currentLocation = mutable.newLocation.getBlockLocation();
 			PathFinder.BlockKind currentKind = blockKindLookup.apply(currentLocation);
 			
@@ -713,7 +708,7 @@ public class CreatureLogic
 				if (isAdjacent)
 				{
 					// Just make sure we can move into this next step.
-					Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, mutable.getLocation().getOffsetIntoBlock(), mutable.getType().volume());
+					Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, mutable.getLocation(), mutable.getType().volume());
 					PathFinder.BlockKind nextKind = blockKindLookup.apply(thisStep);
 					if (PathFinder.BlockKind.SOLID == nextKind)
 					{
@@ -881,7 +876,7 @@ public class CreatureLogic
 	)
 	{
 		// This has moved so update the plan in response.
-		Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new _LookupHelper(context, currentLocation.getOffsetIntoBlock(), creatureType.volume());
+		Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, currentLocation, creatureType.volume());
 		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockKindLookup, currentLocation, targetLocation, creatureType.getPathDistance());
 		
 		// The path will come back null if they are unreachable.
@@ -939,77 +934,5 @@ public class CreatureLogic
 			movementPlan = _planWithDistantTarget(Collections.unmodifiableList(updatedPlan), targetId, targetLocation);
 		}
 		return movementPlan;
-	}
-
-
-	private static class _LookupHelper implements Function<AbsoluteLocation, PathFinder.BlockKind>
-	{
-		private final BlockAspect _blocks;
-		private final TickProcessingContext.IBlockFetcher _previousBlockLookUp;
-		private final EntityLocation _offsetBias;
-		private final EntityVolume _volume;
-		
-		public _LookupHelper(TickProcessingContext context, EntityLocation offsetBias, EntityVolume volume)
-		{
-			_blocks = Environment.getShared().blocks;
-			_previousBlockLookUp = context.previousBlockLookUp;
-			_offsetBias = offsetBias;
-			_volume = volume;
-		}
-		@Override
-		public PathFinder.BlockKind apply(AbsoluteLocation location)
-		{
-			// We default to assuming that the path is walkable, unless we find anything more interesting.
-			PathFinder.BlockKind kind = PathFinder.BlockKind.WALKABLE;
-			
-			// We will apply the offset bias since this entity might be straddling blocks in a way which spills across more than usual.
-			EntityLocation blockBase = location.toEntityLocation();
-			EntityLocation adjustedBase = blockBase.getRelativeForLocation(_offsetBias);
-			List<AbsoluteLocation> interior = VolumeIterator.getAllInVolume(adjustedBase, _volume);
-			Map<AbsoluteLocation, BlockProxy> proxies = _previousBlockLookUp.readBlockBatch(interior);
-			for (AbsoluteLocation loc : interior)
-			{
-				PathFinder.BlockKind sub = _singleBlock(proxies.get(loc));
-				if (PathFinder.BlockKind.SOLID == sub)
-				{
-					// We saturate to solid so break if we hit this.
-					kind = sub;
-					break;
-				}
-				else if (PathFinder.BlockKind.WALKABLE == kind)
-				{
-					// If we are still walkable, switch to whatever this is.
-					kind = sub;
-				}
-			}
-			return kind;
-		}
-		private PathFinder.BlockKind _singleBlock(BlockProxy proxy)
-		{
-			PathFinder.BlockKind kind;
-			if (null == proxy)
-			{
-				// If we can't find the proxy, we will treat this as solid.
-				kind = PathFinder.BlockKind.SOLID;
-			}
-			else
-			{
-				Block block = proxy.getBlock();
-				boolean isActive = FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE);
-				if (_blocks.isSolid(block, isActive))
-				{
-					kind = PathFinder.BlockKind.SOLID;
-				}
-				else if (_blocks.canSwimInBlock(block, isActive))
-				{
-					kind = PathFinder.BlockKind.SWIMMABLE;
-				}
-				else
-				{
-					kind = PathFinder.BlockKind.WALKABLE;
-				}
-			}
-			return kind;
-		}
 	}
 }
