@@ -1,4 +1,4 @@
-package com.jeffdisher.october.logic;
+package com.jeffdisher.october.pathing;
 
 import java.util.Collection;
 import java.util.List;
