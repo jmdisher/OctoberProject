@@ -1,7 +1,5 @@
 package com.jeffdisher.october.pathing;
 
-import java.util.function.Function;
-
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.ViscosityReader;
@@ -15,7 +13,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * This common implementation of the BlockKind lookup routine is kept here so it can be more easily tested or considered
  * in isolation.  It was originally extracted from CreatureLogic.
  */
-public class CommonKindLookup implements Function<AbsoluteLocation, WalkingNavigator.BlockKind>
+public class CommonKindLookup implements WalkingNavigator.IKindReader
 {
 	private final TickProcessingContext.IBlockFetcher _previousBlockLookUp;
 	private final EntityVolume _volume;
@@ -35,6 +33,7 @@ public class CommonKindLookup implements Function<AbsoluteLocation, WalkingNavig
 		return _findKindFromBase(blockBase);
 	}
 
+	@Override
 	public WalkingNavigator.BlockKind checkFromBase(EntityLocation entityBase)
 	{
 		return _findKindFromBase(entityBase);

@@ -30,11 +30,15 @@ public class TestPathFinder
 {
 	private static Environment ENV;
 	private static Block STONE;
+	private static Block WATER;
+	private static EntityVolume VOLUME;
 	@BeforeClass
 	public static void setup() throws Throwable
 	{
 		ENV = Environment.createSharedInstance();
 		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		WATER = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		VOLUME = new EntityVolume(0.1f, 0.1f);
 	}
 	@AfterClass
 	public static void tearDown()
@@ -52,7 +56,7 @@ public class TestPathFinder
 		int floor = 4;
 		Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockPermitsUser = (AbsoluteLocation location) -> (floor == location.z()) ? WalkingNavigator.BlockKind.SOLID : WalkingNavigator.BlockKind.WALKABLE;
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(blockPermitsUser
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
 			, source
 			, target
 			, limit
@@ -77,7 +81,7 @@ public class TestPathFinder
 		EntityLocation target = new EntityLocation(4.5f, 6.5f, 7.0f);
 		Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockPermitsUser = (AbsoluteLocation location) -> (location.y() == location.z()) ? WalkingNavigator.BlockKind.SOLID : WalkingNavigator.BlockKind.WALKABLE;
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(blockPermitsUser
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
 			, source
 			, target
 			, limit
@@ -109,7 +113,7 @@ public class TestPathFinder
 			;
 		};
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(blockPermitsUser
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
 			, source
 			, target
 			, limit
@@ -136,7 +140,7 @@ public class TestPathFinder
 			;
 		};
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(blockPermitsUser
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
 			, source
 			, target
 			, limit
@@ -168,7 +172,7 @@ public class TestPathFinder
 				"AAAAAAAAAA",
 		});
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(blockPermitsUser
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
 			, source
 			, target
 			, limit
@@ -233,7 +237,7 @@ public class TestPathFinder
 			}
 		});
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(blockPermitsUser
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
 			, source
 			, target
 			, limit
@@ -268,7 +272,7 @@ public class TestPathFinder
 				"AAAAAAAAAA",
 		});
 		// We want to show what is reachable in the maze for different distances.
-		WalkingNavigator navigator = new WalkingNavigator(blockPermitsUser
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
 			, source
 			, null
 			, 2.0f
@@ -281,7 +285,7 @@ public class TestPathFinder
 			, source
 		);
 		_printStepMap2D(10, 9, 5, places);
-		navigator = new WalkingNavigator(blockPermitsUser
+		navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
 			, source
 			, null
 			, 4.0f
@@ -348,7 +352,7 @@ public class TestPathFinder
 			}
 		});
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(blockPermitsUser
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
 			, source
 			, target
 			, limit
@@ -404,7 +408,7 @@ public class TestPathFinder
 			}
 		});
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(blockPermitsUser
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
 			, source
 			, target
 			, limit
@@ -434,7 +438,7 @@ public class TestPathFinder
 		;
 		
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(blockPermitsUser
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
 			, source
 			, target
 			, limit
@@ -446,7 +450,7 @@ public class TestPathFinder
 		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
 		Assert.assertNull(path);
 		
-		navigator = new WalkingNavigator(blockPermitsUser
+		navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
 			, source
 			, null
 			, 50.0f
@@ -474,7 +478,7 @@ public class TestPathFinder
 		
 		// Get normal count, unrestricted.
 		float limitSteps = 4.0f;
-		WalkingNavigator navigator = new WalkingNavigator(blockPermitsUser
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
 			, source
 			, null
 			, limitSteps
@@ -489,7 +493,7 @@ public class TestPathFinder
 		Assert.assertEquals(54, allPaths.size());
 		
 		// Only allow north-west.
-		navigator = new WalkingNavigator(blockPermitsUser
+		navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
 			, source
 			, null
 			, limitSteps
@@ -636,6 +640,33 @@ public class TestPathFinder
 				+ Math.abs(source.z() - target.z())
 		;
 		return 2 * manhattan;
+	}
+
+	private static CommonKindLookup _createKindLookup(Function<AbsoluteLocation, WalkingNavigator.BlockKind> reader, EntityVolume volume)
+	{
+		// Note that we fake up a reader from a basic BlockKind as a stop-gap while this interface is changed.
+		// WARNING:  We cheat this cuboid just so we can look-up flags.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		TickProcessingContext.IBlockFetcher fetcher = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
+			WalkingNavigator.BlockKind kind = reader.apply(location);
+			Block type;
+			switch (kind)
+			{
+			case SOLID:
+				type = STONE;
+				break;
+			case SWIMMABLE:
+				type = WATER;
+				break;
+			case WALKABLE:
+				type = ENV.special.AIR;
+				break;
+			default:
+				throw new AssertionError("Unknown");
+			}
+			return BlockProxy.init(location.getBlockAddress(), cuboid, type.item().number());
+		});
+		return new CommonKindLookup(fetcher, volume);
 	}
 
 

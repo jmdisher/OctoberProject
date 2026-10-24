@@ -97,7 +97,6 @@ public class PathFinder
 		, EntityLocation entityTarget
 	)
 	{
-		AbsoluteLocation start = entitySource.getBlockLocation();
 		AbsoluteLocation target = (null != entityTarget) ? entityTarget.getBlockLocation() : null;
 		
 		// Key is destination.
@@ -114,7 +113,14 @@ public class PathFinder
 			}
 			return signum;
 		});
-		_addIfValid(walkBackward, workQueue, navigator, null, start);
+		T startSpot = navigator.startSpot(entitySource);
+		if (null != startSpot)
+		{
+			AbsoluteLocation old = walkBackward.put(startSpot.location, null);
+			// This was empty.
+			Assert.assertTrue(null == old);
+			workQueue.add(startSpot);
+		}
 		
 		T targetSpot = null;
 		while ((null == targetSpot) && !workQueue.isEmpty())
@@ -154,7 +160,7 @@ public class PathFinder
 			T thisSpot = navigator.enterSpot(previous, location);
 			if (null != thisSpot)
 			{
-				AbsoluteLocation old = walkBackward.put(location, (null != previous) ? previous.location : null);
+				AbsoluteLocation old = walkBackward.put(location, previous.location);
 				// This was checked above.
 				Assert.assertTrue(null == old);
 				workQueue.add(thisSpot);
@@ -187,8 +193,16 @@ public class PathFinder
 	public static interface INavigator <T extends ASpot>
 	{
 		/**
+		 * Creates a new ASpot instance if this navigator can start with an entity based at entityBase.
+		 * 
+		 * @param entityBase The starting base location of the entity.
+		 * @return The new ASpot instance for location, or null if the navigator cannot place an entity at entityBase.
+		 */
+		T startSpot(EntityLocation entityBase);
+		/**
 		 * Creates a new ASpot instance if this navigator can enter the block at location from "from".
-		 * @param from An existing ASpot the navigator is moving from (null if this is the first location).
+		 * 
+		 * @param from An existing ASpot the navigator is moving from (never null).
 		 * @param location The location to navigate into.
 		 * @return The new ASpot instance for location, or null if the navigator cannot enter location.
 		 */

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.Environment;
@@ -106,7 +105,7 @@ public class CreatureLogic
 		else if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
 		{
 			// We can derive the action directly from this plan.
-			Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, mutable.getType().volume());
+			CommonKindLookup blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, mutable.getType().volume());
 			action = _produceNextAction(context, blockKindLookup, mutable, mutable.movementPlan, timeLimitMillis);
 		}
 		else
@@ -186,12 +185,7 @@ public class CreatureLogic
 			{
 				// We have no plan so make a new one.
 				CommonKindLookup blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, creatureType.volume());
-				
-				// Make sure that we aren't currently stuck in a block.
-				if (WalkingNavigator.BlockKind.SOLID != blockKindLookup.checkFromBase(mutable.newLocation))
-				{
-					mutable.movementPlan = _makeMovementPlan(context, blockKindLookup, entityCollection, mutable);
-				}
+				mutable.movementPlan = _makeMovementPlan(context, blockKindLookup, entityCollection, mutable);
 			}
 		}
 		return isDone;
@@ -207,7 +201,7 @@ public class CreatureLogic
 	 */
 	public static List<AbsoluteLocation> test_findPathToRandomSpot(TickProcessingContext context, EntityLocation location, EntityType type)
 	{
-		Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, type.volume());
+		CommonKindLookup blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, type.volume());
 		return _findPathToRandomSpot(context
 			, blockKindLookup
 			, location
@@ -235,9 +229,9 @@ public class CreatureLogic
 
 
 	private static CreatureEntity.MovementPlan _makeMovementPlan(TickProcessingContext context
-			, Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKindLookup
-			, EntityCollection entityCollection
-			, MutableCreature mutable
+		, CommonKindLookup blockKindLookup
+		, EntityCollection entityCollection
+		, MutableCreature mutable
 	)
 	{
 		// We will first see if they can make a deliberate plan.
@@ -302,7 +296,7 @@ public class CreatureLogic
 	}
 
 	private static CreatureEntity.MovementPlan _findRandomPathAsPlan(TickProcessingContext context
-		, Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKindLookup
+		, CommonKindLookup blockKindLookup
 		, MutableCreature mutable
 		, boolean allowWest
 		, boolean allowEast
@@ -336,10 +330,10 @@ public class CreatureLogic
 	}
 
 	private static EntityActionSimpleMove<MutableCreature> _produceNextAction(TickProcessingContext context
-			, Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKindLookup
-			, MutableCreature mutable
-			, CreatureEntity.MovementPlan oldPlan
-			, long timeLimitMillis
+		, CommonKindLookup blockKindLookup
+		, MutableCreature mutable
+		, CreatureEntity.MovementPlan oldPlan
+		, long timeLimitMillis
 	)
 	{
 		List<AbsoluteLocation> existingPlan = oldPlan.fullPlan();
@@ -385,9 +379,9 @@ public class CreatureLogic
 
 	// NOTE:  This will return an empty path if it made a decision but the decision has no steps.
 	private static CreatureEntity.MovementPlan _buildDeliberatePath(TickProcessingContext context
-			, Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockPermitsPassage
-			, EntityCollection entityCollection
-			, MutableCreature mutable
+		, CommonKindLookup blockPermitsPassage
+		, EntityCollection entityCollection
+		, MutableCreature mutable
 	)
 	{
 		EntityType type = mutable.getType();
@@ -425,7 +419,7 @@ public class CreatureLogic
 	}
 
 	private static List<AbsoluteLocation> _findPathToRandomSpot(TickProcessingContext context
-		, Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockPermitsUser
+		, CommonKindLookup blockPermitsUser
 		, EntityLocation creatureLocation
 		, boolean allowWest
 		, boolean allowEast
@@ -483,7 +477,7 @@ public class CreatureLogic
 		return plannedPath;
 	}
 
-	private static EntityActionSimpleMove<MutableCreature> _planNextStep(Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKindLookup
+	private static EntityActionSimpleMove<MutableCreature> _planNextStep(CommonKindLookup blockKindLookup
 		, ViscosityReader reader
 		, EntityLocation entityLocation
 		, EntityLocation entityVelocity
@@ -506,9 +500,9 @@ public class CreatureLogic
 		return CreatureMovementHelpers.moveToNextLocation(reader, entityLocation, entityVelocity, yaw, pitch, type, thisStep, timeLimitMillis, viscosity, intensity, isSwimmable);
 	}
 
-	private static List<AbsoluteLocation> _extractAcceptablePathTargets(Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockPermitsUser
-			, Map<AbsoluteLocation, AbsoluteLocation> possiblePaths
-			, AbsoluteLocation currentLocation
+	private static List<AbsoluteLocation> _extractAcceptablePathTargets(CommonKindLookup blockPermitsUser
+		, Map<AbsoluteLocation, AbsoluteLocation> possiblePaths
+		, AbsoluteLocation currentLocation
 	)
 	{
 		// We will only choose paths which don't end in air above air (jumping into the air for no reason) or in water (since none of our creatures can breathe under water).
@@ -726,7 +720,7 @@ public class CreatureLogic
 				if (isAdjacent)
 				{
 					// Just make sure we can move into this next step.
-					Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, mutable.getType().volume());
+					CommonKindLookup blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, mutable.getType().volume());
 					WalkingNavigator.BlockKind nextKind = blockKindLookup.apply(thisStep);
 					if (WalkingNavigator.BlockKind.SOLID == nextKind)
 					{
@@ -894,7 +888,7 @@ public class CreatureLogic
 	)
 	{
 		// This has moved so update the plan in response.
-		Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, creatureType.volume());
+		CommonKindLookup blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, creatureType.volume());
 		WalkingNavigator navigator = new WalkingNavigator(blockKindLookup
 			, currentLocation
 			, targetLocation

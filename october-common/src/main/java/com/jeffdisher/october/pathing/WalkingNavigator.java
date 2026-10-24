@@ -1,9 +1,8 @@
 package com.jeffdisher.october.pathing;
 
-import java.util.function.Function;
-
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -25,14 +24,14 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 	public static final float COST_STEP_FLAT = 1.0f;
 
 
-	private final Function<AbsoluteLocation, BlockKind> _blockKind;
+	private final IKindReader _blockKind;
 	private final float _limit;
 	private final boolean _allowWest;
 	private final boolean _allowEast;
 	private final boolean _allowSouth;
 	private final boolean _allowNorth;
 
-	public WalkingNavigator(Function<AbsoluteLocation, BlockKind> blockKind
+	public WalkingNavigator(IKindReader blockKind
 		, EntityLocation source
 		, EntityLocation target
 		, float limit
@@ -51,13 +50,28 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 	}
 
 	@Override
+	public BasicSpot startSpot(EntityLocation entityBase)
+	{
+		// We can start here so long as it isn't stuck in a block.
+		BlockKind locationKind = _blockKind.checkFromBase(entityBase);
+		boolean isAllowed = (BlockKind.SOLID != locationKind);
+		return isAllowed
+			? new BasicSpot(entityBase.getBlockLocation(), 0.0f)
+			: null
+		;
+	}
+
+	@Override
 	public BasicSpot enterSpot(BasicSpot from, AbsoluteLocation location)
 	{
+		// This helper never receives null.
+		Assert.assertTrue(null != from);
+		
 		// We will only bother trying this if the current location is not solid.
 		BlockKind locationKind = _blockKind.apply(location);
 		boolean isAllowed = (BlockKind.SOLID != locationKind);
 		float cost = 0.0f;
-		if (isAllowed && (null != from))
+		if (isAllowed)
 		{
 			// First, we will apply our checks around directions.
 			AbsoluteLocation previousStep = from.location;
@@ -123,10 +137,7 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 		BasicSpot result = null;
 		if (isAllowed)
 		{
-			float previousDistance = (null != from)
-				? from.distance
-				: 0.0f
-			;
+			float previousDistance = from.distance;
 			float distance = previousDistance + cost;
 			if (distance <= _limit)
 			{
@@ -154,5 +165,15 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 		 * A block which is "WALKABLE" but also allows swimming (and is not breathable).
 		 */
 		SWIMMABLE,
+	}
+
+	/**
+	 * A temporary interface to align the capabilities of CommonKindLookup and WalkingNavigator before the former can
+	 * be inlined into the latter.
+	 */
+	public static interface IKindReader
+	{
+		public WalkingNavigator.BlockKind apply(AbsoluteLocation location);
+		public WalkingNavigator.BlockKind checkFromBase(EntityLocation entityBase);
 	}
 }
