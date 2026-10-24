@@ -35,7 +35,7 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 	public WalkingNavigator(Function<AbsoluteLocation, BlockKind> blockKind
 		, EntityLocation source
 		, EntityLocation target
-		, float existingLimit
+		, float limit
 		, boolean allowWest
 		, boolean allowEast
 		, boolean allowSouth
@@ -43,7 +43,7 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 	)
 	{
 		_blockKind = blockKind;
-		_limit = _getStartingLimit(source, target, existingLimit);
+		_limit = limit;
 		_allowWest = allowWest;
 		_allowEast = allowEast;
 		_allowSouth = allowSouth;
@@ -134,27 +134,6 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 			}
 		}
 		return result;
-	}
-
-
-	private static float _getStartingLimit(EntityLocation source, EntityLocation target, float existingLimit)
-	{
-		float distance;
-		if (null != target)
-		{
-			// We need to translate the source into the relative location of the destination.
-			EntityLocation sourceOffset = source.getOffsetIntoBlock();
-			EntityLocation targetOffset = target.getOffsetIntoBlock();
-			distance = (targetOffset.x() - sourceOffset.x())
-				+ (targetOffset.y() - sourceOffset.y())
-				+ (targetOffset.z() - sourceOffset.z())
-			;
-		}
-		else
-		{
-			distance = 0.0f;
-		}
-		return existingLimit - distance;
 	}
 
 

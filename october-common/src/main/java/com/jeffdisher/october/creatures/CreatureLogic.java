@@ -106,7 +106,7 @@ public class CreatureLogic
 		else if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
 		{
 			// We can derive the action directly from this plan.
-			Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, mutable.getLocation(), mutable.getType().volume());
+			Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, mutable.getType().volume());
 			action = _produceNextAction(context, blockKindLookup, mutable, mutable.movementPlan, timeLimitMillis);
 		}
 		else
@@ -185,8 +185,13 @@ public class CreatureLogic
 			if (null == mutable.movementPlan)
 			{
 				// We have no plan so make a new one.
-				Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, mutable.getLocation(), creatureType.volume());
-				mutable.movementPlan = _makeMovementPlan(context, blockKindLookup, entityCollection, mutable);
+				CommonKindLookup blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, creatureType.volume());
+				
+				// Make sure that we aren't currently stuck in a block.
+				if (WalkingNavigator.BlockKind.SOLID != blockKindLookup.checkFromBase(mutable.newLocation))
+				{
+					mutable.movementPlan = _makeMovementPlan(context, blockKindLookup, entityCollection, mutable);
+				}
 			}
 		}
 		return isDone;
@@ -202,7 +207,7 @@ public class CreatureLogic
 	 */
 	public static List<AbsoluteLocation> test_findPathToRandomSpot(TickProcessingContext context, EntityLocation location, EntityType type)
 	{
-		Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, location, type.volume());
+		Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, type.volume());
 		return _findPathToRandomSpot(context
 			, blockKindLookup
 			, location
@@ -690,9 +695,8 @@ public class CreatureLogic
 			&& ((null != mutable.movementPlan.directLocation()) || (null != mutable.movementPlan.fullPlan()))
 		)
 		{
-			Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, mutable.getLocation(), mutable.getType().volume());
-			AbsoluteLocation currentLocation = mutable.newLocation.getBlockLocation();
-			WalkingNavigator.BlockKind currentKind = blockKindLookup.apply(currentLocation);
+			CommonKindLookup blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, mutable.getType().volume());
+			WalkingNavigator.BlockKind currentKind = blockKindLookup.checkFromBase(mutable.newLocation);
 			
 			if (WalkingNavigator.BlockKind.SOLID == currentKind)
 			{
@@ -722,7 +726,7 @@ public class CreatureLogic
 				if (isAdjacent)
 				{
 					// Just make sure we can move into this next step.
-					Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, mutable.getLocation(), mutable.getType().volume());
+					Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, mutable.getType().volume());
 					WalkingNavigator.BlockKind nextKind = blockKindLookup.apply(thisStep);
 					if (WalkingNavigator.BlockKind.SOLID == nextKind)
 					{
@@ -890,7 +894,7 @@ public class CreatureLogic
 	)
 	{
 		// This has moved so update the plan in response.
-		Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, currentLocation, creatureType.volume());
+		Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, creatureType.volume());
 		WalkingNavigator navigator = new WalkingNavigator(blockKindLookup
 			, currentLocation
 			, targetLocation

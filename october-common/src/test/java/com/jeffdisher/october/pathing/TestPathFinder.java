@@ -541,7 +541,7 @@ public class TestPathFinder
 			;
 		});
 		
-		CommonKindLookup baseLookup = new CommonKindLookup(blockFetcher, sourceBase, volume);
+		CommonKindLookup baseLookup = new CommonKindLookup(blockFetcher, volume);
 		WalkingNavigator baseNavigator = new WalkingNavigator(baseLookup
 			, sourceBase
 			, targetBase
@@ -554,8 +554,7 @@ public class TestPathFinder
 		List<AbsoluteLocation> basePath = PathFinder.findPathWithLimit(baseNavigator, sourceBase, targetBase);
 		Assert.assertEquals(7, basePath.size());
 		
-		// TODO:  This path should be possible but the internal adjustment never moves by less than a block so it thinks it will collide with the wall.
-		CommonKindLookup centreLookup = new CommonKindLookup(blockFetcher, sourceCentre, volume);
+		CommonKindLookup centreLookup = new CommonKindLookup(blockFetcher, volume);
 		WalkingNavigator centreNavigator = new WalkingNavigator(centreLookup
 			, sourceCentre
 			, targetCentre
@@ -566,7 +565,7 @@ public class TestPathFinder
 			, true
 		);
 		List<AbsoluteLocation> centrePath = PathFinder.findPathWithLimit(centreNavigator, sourceCentre, targetCentre);
-		Assert.assertNull(centrePath);
+		Assert.assertEquals(7, centrePath.size());
 	}
 
 

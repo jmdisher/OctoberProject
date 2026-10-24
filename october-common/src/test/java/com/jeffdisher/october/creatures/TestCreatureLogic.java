@@ -404,6 +404,9 @@ public class TestCreatureLogic
 	@Test
 	public void sendImpregnate()
 	{
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		EntityLocation fatherLocation = new EntityLocation(0.8f, 0.0f, 0.0f);
 		CreatureEntity father = CreatureEntity.create(assigner.next(), COW, fatherLocation, 0L);
@@ -434,36 +437,42 @@ public class TestCreatureLogic
 		
 		int[] targetId = new int[1];
 		IEntityAction<?>[] message = new IEntityAction<?>[1];
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
+			return blockLocation.getCuboidAddress().equals(cuboidAddress)
+				? BlockProxy.load(blockLocation.getBlockAddress(), input)
+				: null
+			;
+		});
 		TickProcessingContext context = ContextBuilder.build()
-				.sinks(null, new TickProcessingContext.IChangeSink() {
-					@Override
-					public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
-					{
-						throw new AssertionError();
-					}
-					@Override
-					public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
-					{
-						throw new AssertionError();
-					}
-					@Override
-					public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
-					{
-						Assert.assertEquals(0, targetId[0]);
-						Assert.assertNull(message[0]);
-						targetId[0] = targetCreatureId;
-						message[0] = change;
-						return true;
-					}
-					@Override
-					public boolean passive(int targetPassiveId, IPassiveAction action)
-					{
-						throw new AssertionError();
-					}
-				})
-				.lookups(null, new LazyEntityIndex(Map.of(), creatures), null)
-				.fixedRandom(2)
-				.finish()
+			.sinks(null, new TickProcessingContext.IChangeSink() {
+				@Override
+				public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+				{
+					throw new AssertionError();
+				}
+				@Override
+				public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+				{
+					throw new AssertionError();
+				}
+				@Override
+				public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
+				{
+					Assert.assertEquals(0, targetId[0]);
+					Assert.assertNull(message[0]);
+					targetId[0] = targetCreatureId;
+					message[0] = change;
+					return true;
+				}
+				@Override
+				public boolean passive(int targetPassiveId, IPassiveAction action)
+				{
+					throw new AssertionError();
+				}
+			})
+			.lookups(previousBlockLookUp, new LazyEntityIndex(Map.of(), creatures), null)
+			.fixedRandom(2)
+			.finish()
 		;
 		
 		// We should see the father sending a message

@@ -19,34 +19,41 @@ import com.jeffdisher.october.types.TickProcessingContext;
 /**
  * This common implementation of the BlockKind lookup routine is kept here so it can be more easily tested or considered
  * in isolation.  It was originally extracted from CreatureLogic.
- * TODO:  This implementation currently has a limitation where it won't shift over in a block to avoid colliding with an
- * adjacent block.
  */
 public class CommonKindLookup implements Function<AbsoluteLocation, WalkingNavigator.BlockKind>
 {
 	private final BlockAspect _blocks;
 	private final TickProcessingContext.IBlockFetcher _previousBlockLookUp;
-	private final EntityLocation _offsetBias;
 	private final EntityVolume _volume;
 
-	public CommonKindLookup(TickProcessingContext.IBlockFetcher previousBlockLookUp, EntityLocation startLocation, EntityVolume volume)
+	public CommonKindLookup(TickProcessingContext.IBlockFetcher previousBlockLookUp, EntityVolume volume)
 	{
 		_blocks = Environment.getShared().blocks;
 		_previousBlockLookUp = previousBlockLookUp;
-		_offsetBias = startLocation.getOffsetIntoBlock();
 		_volume = volume;
 	}
 
 	@Override
 	public WalkingNavigator.BlockKind apply(AbsoluteLocation location)
 	{
+		// We will apply the offset bias since this entity might be straddling blocks in a way which spills across more than usual.
+		EntityLocation blockBase = location.toEntityLocation();
+		
+		return _findKindFromBase(blockBase);
+	}
+
+	public WalkingNavigator.BlockKind checkFromBase(EntityLocation entityBase)
+	{
+		return _findKindFromBase(entityBase);
+	}
+
+
+	private WalkingNavigator.BlockKind _findKindFromBase(EntityLocation blockBase)
+	{
 		// We default to assuming that the path is walkable, unless we find anything more interesting.
 		WalkingNavigator.BlockKind kind = WalkingNavigator.BlockKind.WALKABLE;
 		
-		// We will apply the offset bias since this entity might be straddling blocks in a way which spills across more than usual.
-		EntityLocation blockBase = location.toEntityLocation();
-		EntityLocation adjustedBase = blockBase.getRelativeForLocation(_offsetBias);
-		List<AbsoluteLocation> interior = VolumeIterator.getAllInVolume(adjustedBase, _volume);
+		List<AbsoluteLocation> interior = VolumeIterator.getAllInVolume(blockBase, _volume);
 		Map<AbsoluteLocation, BlockProxy> proxies = _previousBlockLookUp.readBlockBatch(interior);
 		for (AbsoluteLocation loc : interior)
 		{
