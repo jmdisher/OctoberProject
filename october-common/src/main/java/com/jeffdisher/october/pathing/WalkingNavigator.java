@@ -1,7 +1,12 @@
 package com.jeffdisher.october.pathing;
 
+import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -24,16 +29,16 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 	public static final float COST_STEP_FLAT = 1.0f;
 
 
-	private final IKindReader _blockKind;
+	private final TickProcessingContext.IBlockFetcher _previousBlockLookUp;
+	private final EntityVolume _volume;
 	private final float _limit;
 	private final boolean _allowWest;
 	private final boolean _allowEast;
 	private final boolean _allowSouth;
 	private final boolean _allowNorth;
 
-	public WalkingNavigator(IKindReader blockKind
-		, EntityLocation source
-		, EntityLocation target
+	public WalkingNavigator(TickProcessingContext.IBlockFetcher previousBlockLookUp
+		, EntityVolume volume
 		, float limit
 		, boolean allowWest
 		, boolean allowEast
@@ -41,7 +46,8 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 		, boolean allowNorth
 	)
 	{
-		_blockKind = blockKind;
+		_previousBlockLookUp = previousBlockLookUp;
+		_volume = volume;
 		_limit = limit;
 		_allowWest = allowWest;
 		_allowEast = allowEast;
@@ -53,8 +59,8 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 	public BasicSpot startSpot(EntityLocation entityBase)
 	{
 		// We can start here so long as it isn't stuck in a block.
-		BlockKind locationKind = _blockKind.checkFromBase(entityBase);
-		boolean isAllowed = (BlockKind.SOLID != locationKind);
+		float viscosity = _findMaxViscosityFromBase(entityBase);
+		boolean isAllowed = (viscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
 		return isAllowed
 			? new BasicSpot(entityBase.getBlockLocation(), 0.0f)
 			: null
@@ -68,8 +74,8 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 		Assert.assertTrue(null != from);
 		
 		// We will only bother trying this if the current location is not solid.
-		BlockKind locationKind = _blockKind.apply(location);
-		boolean isAllowed = (BlockKind.SOLID != locationKind);
+		float viscosity = _findMaxViscosityFromBlock(location);
+		boolean isAllowed = (viscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
 		float cost = 0.0f;
 		if (isAllowed)
 		{
@@ -105,8 +111,8 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 				{
 					// This is a jump so make sure that the previous location was on solid block or swimmable.
 					AbsoluteLocation previousDown = previousStep.getRelative(0, 0, -1);
-					boolean wasOnSolidBlock = (BlockKind.SOLID == _blockKind.apply(previousDown));
-					boolean wasSwimmable = (BlockKind.SWIMMABLE == _blockKind.apply(previousStep));
+					boolean wasOnSolidBlock = (BlockAspect.VISOSITY_FLOAT_SOLID == _findMaxViscosityFromBlock(previousDown));
+					boolean wasSwimmable = _isSwimmable(_findMaxViscosityFromBlock(previousStep));
 					
 					isAllowed = (wasOnSolidBlock || wasSwimmable);
 					cost = COST_JUMP;
@@ -122,12 +128,12 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 			{
 				// Make sure that we aren't flying.
 				AbsoluteLocation down = location.getRelative(0, 0, -1);
-				boolean isOnSolidBlock = (BlockKind.SOLID == _blockKind.apply(down));
-				boolean isSwimmable = (BlockKind.SWIMMABLE == locationKind);
+				boolean isOnSolidBlock = (BlockAspect.VISOSITY_FLOAT_SOLID == _findMaxViscosityFromBlock(down));
+				boolean isSwimmable = _isSwimmable(viscosity);
 				
 				AbsoluteLocation previousDown = previousStep.getRelative(0, 0, -1);
-				boolean wasOnSolidBlock = (BlockKind.SOLID == _blockKind.apply(previousDown));
-				boolean wasSwimmable = (BlockKind.SWIMMABLE == _blockKind.apply(previousStep));
+				boolean wasOnSolidBlock = (BlockAspect.VISOSITY_FLOAT_SOLID == _findMaxViscosityFromBlock(previousDown));
+				boolean wasSwimmable = _isSwimmable(_findMaxViscosityFromBlock(previousStep));
 				
 				// One of these needs to be solid/swimmable or we couldn't move between them.
 				isAllowed = (isOnSolidBlock || isSwimmable) || (wasOnSolidBlock || wasSwimmable);
@@ -147,33 +153,33 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 		return result;
 	}
 
-
 	/**
-	 * An enum describing the block kinds which are relevant for basic walking navigation.
+	 * A method which allows callers to rely on the same viscosity check logic the receiver will use, internally.  This
+	 * is primarily to avoid needing to pass a duplicated ViscosityReader around with the receiver.
+	 * 
+	 * @param base The base location of the entity.
+	 * @return The maximum viscosity of the entity the receiver checks based at the given base location.
 	 */
-	public static enum BlockKind
+	public float getViscosityAtBase(EntityLocation base)
 	{
-		/**
-		 * A block which can be traversed easily.
-		 */
-		WALKABLE,
-		/**
-		 * A block which cannot be passed through and which supports an entity.
-		 */
-		SOLID,
-		/**
-		 * A block which is "WALKABLE" but also allows swimming (and is not breathable).
-		 */
-		SWIMMABLE,
+		return _findMaxViscosityFromBase(base);
 	}
 
-	/**
-	 * A temporary interface to align the capabilities of CommonKindLookup and WalkingNavigator before the former can
-	 * be inlined into the latter.
-	 */
-	public static interface IKindReader
+
+	private float _findMaxViscosityFromBlock(AbsoluteLocation block)
 	{
-		public WalkingNavigator.BlockKind apply(AbsoluteLocation location);
-		public WalkingNavigator.BlockKind checkFromBase(EntityLocation entityBase);
+		return _findMaxViscosityFromBase(block.toEntityLocation());
+	}
+
+	private float _findMaxViscosityFromBase(EntityLocation blockBase)
+	{
+		// We just use the common ViscosityReader and convert those results to these high-level thresholds.
+		ViscosityReader reader = new ViscosityReader(Environment.getShared(), _previousBlockLookUp);
+		return reader.getMaxStillViscosityInVolume(blockBase, _volume);
+	}
+
+	private boolean _isSwimmable(float viscosity)
+	{
+		return (viscosity >= BlockAspect.VISOSITY_FLOAT_SWIMMABLE) && (viscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
 	}
 }

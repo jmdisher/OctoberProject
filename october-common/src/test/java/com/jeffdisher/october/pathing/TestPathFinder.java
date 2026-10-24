@@ -54,11 +54,10 @@ public class TestPathFinder
 		EntityLocation source = new EntityLocation(-10.5f, -6.5f, 5.0f);
 		EntityLocation target = new EntityLocation(4.5f, 6.5f, 5.0f);
 		int floor = 4;
-		Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockPermitsUser = (AbsoluteLocation location) -> (floor == location.z()) ? WalkingNavigator.BlockKind.SOLID : WalkingNavigator.BlockKind.WALKABLE;
+		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = (AbsoluteLocation location) -> (floor == location.z()) ? _BlockKind.SOLID : _BlockKind.WALKABLE;
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
-			, source
-			, target
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+			, VOLUME
 			, limit
 			, true
 			, true
@@ -79,11 +78,10 @@ public class TestPathFinder
 		// The block location is the "base" of the block, much like the entity z is the base of the block where it is standing.
 		EntityLocation source = new EntityLocation(-10.5f, -6.5f, -5.0f);
 		EntityLocation target = new EntityLocation(4.5f, 6.5f, 7.0f);
-		Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockPermitsUser = (AbsoluteLocation location) -> (location.y() == location.z()) ? WalkingNavigator.BlockKind.SOLID : WalkingNavigator.BlockKind.WALKABLE;
+		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = (AbsoluteLocation location) -> (location.y() == location.z()) ? _BlockKind.SOLID : _BlockKind.WALKABLE;
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
-			, source
-			, target
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+			, VOLUME
 			, limit
 			, true
 			, true
@@ -106,16 +104,15 @@ public class TestPathFinder
 		EntityLocation source = new EntityLocation(-10.5f, -6.5f, 5.0f);
 		EntityLocation target = new EntityLocation(4.5f, 6.5f, 5.0f);
 		int floor = 4;
-		Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockPermitsUser = (AbsoluteLocation location) -> {
+		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = (AbsoluteLocation location) -> {
 			return ((floor == location.z()) || (0 == location.y()))
-					? WalkingNavigator.BlockKind.SOLID
-					: WalkingNavigator.BlockKind.WALKABLE
+					? _BlockKind.SOLID
+					: _BlockKind.WALKABLE
 			;
 		};
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
-			, source
-			, target
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+			, VOLUME
 			, limit
 			, true
 			, true
@@ -133,16 +130,15 @@ public class TestPathFinder
 		EntityLocation source = new EntityLocation(-10.5f, -6.5f, 5.0f);
 		EntityLocation target = new EntityLocation(4.5f, 6.5f, 5.0f);
 		int floor = 4;
-		Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockPermitsUser = (AbsoluteLocation location) -> {
+		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = (AbsoluteLocation location) -> {
 			return ((floor == location.z()) || (0 == location.y()))
-					? WalkingNavigator.BlockKind.SOLID
-					: WalkingNavigator.BlockKind.WALKABLE
+					? _BlockKind.SOLID
+					: _BlockKind.WALKABLE
 			;
 		};
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
-			, source
-			, target
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+			, VOLUME
 			, limit
 			, true
 			, true
@@ -160,7 +156,7 @@ public class TestPathFinder
 		EntityLocation source = new EntityLocation(0.0f, 1.0f, 5.0f);
 		EntityLocation target = new EntityLocation(4.0f, 6.0f, 5.0f);
 		int floor = 4;
-		Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockPermitsUser = new MapResolver(floor, new String[] {
+		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = new MapResolver(floor, new String[] {
 				"AAAAAAAAAA",
 				"AAAAAAAAAA",
 				"ASSSSSSSSS",
@@ -172,9 +168,8 @@ public class TestPathFinder
 				"AAAAAAAAAA",
 		});
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
-			, source
-			, target
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+			, VOLUME
 			, limit
 			, true
 			, true
@@ -191,7 +186,7 @@ public class TestPathFinder
 		// We want to fall through a small hole, go down a few layers, and then catch the ledge.
 		EntityLocation source = new EntityLocation(1.5f, 2.5f, 4.0f);
 		EntityLocation target = new EntityLocation(3.5f, 2.5f, 1.0f);
-		Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockPermitsUser = new MapResolver3D(new String[][] {
+		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = new MapResolver3D(new String[][] {
 			new String[] {
 					"SSSSS",
 					"SSSSS",
@@ -237,9 +232,8 @@ public class TestPathFinder
 			}
 		});
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
-			, source
-			, target
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+			, VOLUME
 			, limit
 			, true
 			, true
@@ -260,7 +254,7 @@ public class TestPathFinder
 		// The block location is the "base" of the block, much like the entity z is the base of the block where it is standing.
 		EntityLocation source = new EntityLocation(5.5f, 5.5f, 5.0f);
 		int floor = 4;
-		Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockPermitsUser = new MapResolver(floor, new String[] {
+		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = new MapResolver(floor, new String[] {
 				"AAAAAAAAAA",
 				"AAAAAAAAAA",
 				"ASSSSSSSSS",
@@ -272,9 +266,8 @@ public class TestPathFinder
 				"AAAAAAAAAA",
 		});
 		// We want to show what is reachable in the maze for different distances.
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
-			, source
-			, null
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+			, VOLUME
 			, 2.0f
 			, true
 			, true
@@ -285,9 +278,8 @@ public class TestPathFinder
 			, source
 		);
 		_printStepMap2D(10, 9, 5, places);
-		navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
-			, source
-			, null
+		navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+			, VOLUME
 			, 4.0f
 			, true
 			, true
@@ -306,7 +298,7 @@ public class TestPathFinder
 		// We want to swim up a tube in some stone.
 		EntityLocation source = new EntityLocation(3.5f, 2.5f, 1.0f);
 		EntityLocation target = new EntityLocation(1.5f, 2.5f, 4.0f);
-		Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockPermitsUser = new MapResolver3D(new String[][] {
+		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = new MapResolver3D(new String[][] {
 			new String[] {
 					"SSSSS",
 					"SSSSS",
@@ -352,9 +344,8 @@ public class TestPathFinder
 			}
 		});
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
-			, source
-			, target
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+			, VOLUME
 			, limit
 			, true
 			, true
@@ -374,7 +365,7 @@ public class TestPathFinder
 		// Show that we can swim over an air block hole.
 		EntityLocation source = new EntityLocation(1.5f, 2.5f, 2.0f);
 		EntityLocation target = new EntityLocation(3.5f, 2.5f, 2.0f);
-		Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockPermitsUser = new MapResolver3D(new String[][] {
+		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = new MapResolver3D(new String[][] {
 			new String[] {
 					"SSSSS",
 					"SSSSS",
@@ -408,9 +399,8 @@ public class TestPathFinder
 			}
 		});
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
-			, source
-			, target
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+			, VOLUME
 			, limit
 			, true
 			, true
@@ -432,15 +422,14 @@ public class TestPathFinder
 		EntityLocation target = new EntityLocation(4.5f, 6.5f, 5.0f);
 		AbsoluteLocation startLocation = source.getBlockLocation();
 		int floor = 4;
-		Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockPermitsUser = (AbsoluteLocation location) -> ((floor == location.z()) || location.equals(startLocation))
-			? WalkingNavigator.BlockKind.SOLID
-			: WalkingNavigator.BlockKind.WALKABLE
+		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = (AbsoluteLocation location) -> ((floor == location.z()) || location.equals(startLocation))
+			? _BlockKind.SOLID
+			: _BlockKind.WALKABLE
 		;
 		
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
-			, source
-			, target
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+			, VOLUME
 			, limit
 			, true
 			, true
@@ -450,9 +439,8 @@ public class TestPathFinder
 		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
 		Assert.assertNull(path);
 		
-		navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
-			, source
-			, null
+		navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+			, VOLUME
 			, 50.0f
 			, true
 			, true
@@ -471,16 +459,15 @@ public class TestPathFinder
 		// Show that we can constrain possible places with control flags.
 		EntityLocation source = new EntityLocation(-10.5f, -6.5f, 5.0f);
 		int floor = 4;
-		Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockPermitsUser = (AbsoluteLocation location) -> (floor == location.z())
-			? WalkingNavigator.BlockKind.SOLID
-			: WalkingNavigator.BlockKind.WALKABLE
+		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = (AbsoluteLocation location) -> (floor == location.z())
+			? _BlockKind.SOLID
+			: _BlockKind.WALKABLE
 		;
 		
 		// Get normal count, unrestricted.
 		float limitSteps = 4.0f;
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
-			, source
-			, null
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+			, VOLUME
 			, limitSteps
 			, true
 			, true
@@ -493,9 +480,8 @@ public class TestPathFinder
 		Assert.assertEquals(54, allPaths.size());
 		
 		// Only allow north-west.
-		navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser, VOLUME)
-			, source
-			, null
+		navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+			, VOLUME
 			, limitSteps
 			, true
 			, false
@@ -545,10 +531,8 @@ public class TestPathFinder
 			;
 		});
 		
-		CommonKindLookup baseLookup = new CommonKindLookup(blockFetcher, volume);
-		WalkingNavigator baseNavigator = new WalkingNavigator(baseLookup
-			, sourceBase
-			, targetBase
+		WalkingNavigator baseNavigator = new WalkingNavigator(blockFetcher
+			, volume
 			, limit
 			, true
 			, true
@@ -558,10 +542,8 @@ public class TestPathFinder
 		List<AbsoluteLocation> basePath = PathFinder.findPathWithLimit(baseNavigator, sourceBase, targetBase);
 		Assert.assertEquals(7, basePath.size());
 		
-		CommonKindLookup centreLookup = new CommonKindLookup(blockFetcher, volume);
-		WalkingNavigator centreNavigator = new WalkingNavigator(centreLookup
-			, sourceCentre
-			, targetCentre
+		WalkingNavigator centreNavigator = new WalkingNavigator(blockFetcher
+			, volume
 			, limit
 			, true
 			, true
@@ -642,13 +624,13 @@ public class TestPathFinder
 		return 2 * manhattan;
 	}
 
-	private static CommonKindLookup _createKindLookup(Function<AbsoluteLocation, WalkingNavigator.BlockKind> reader, EntityVolume volume)
+	private static TickProcessingContext.IBlockFetcher _createKindLookup(Function<AbsoluteLocation, _BlockKind> reader)
 	{
 		// Note that we fake up a reader from a basic BlockKind as a stop-gap while this interface is changed.
 		// WARNING:  We cheat this cuboid just so we can look-up flags.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		TickProcessingContext.IBlockFetcher fetcher = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			WalkingNavigator.BlockKind kind = reader.apply(location);
+		return ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
+			_BlockKind kind = reader.apply(location);
 			Block type;
 			switch (kind)
 			{
@@ -666,19 +648,18 @@ public class TestPathFinder
 			}
 			return BlockProxy.init(location.getBlockAddress(), cuboid, type.item().number());
 		});
-		return new CommonKindLookup(fetcher, volume);
 	}
 
 
-	private static record MapResolver(int floorZ, String[] map) implements Function<AbsoluteLocation, WalkingNavigator.BlockKind>
+	private static record MapResolver(int floorZ, String[] map) implements Function<AbsoluteLocation, _BlockKind>
 	{
 		@Override
-		public WalkingNavigator.BlockKind apply(AbsoluteLocation l)
+		public _BlockKind apply(AbsoluteLocation l)
 		{
-			WalkingNavigator.BlockKind kind = WalkingNavigator.BlockKind.WALKABLE;
+			_BlockKind kind = _BlockKind.WALKABLE;
 			if (this.floorZ == l.z())
 			{
-				kind = WalkingNavigator.BlockKind.SOLID;
+				kind = _BlockKind.SOLID;
 			}
 			else
 			{
@@ -690,16 +671,16 @@ public class TestPathFinder
 					char c = this.map[l.y()].charAt(l.x());
 					if ('S' == c)
 					{
-						kind = WalkingNavigator.BlockKind.SOLID;
+						kind = _BlockKind.SOLID;
 					}
 					else if ('W' == c)
 					{
-						kind = WalkingNavigator.BlockKind.SWIMMABLE;
+						kind = _BlockKind.SWIMMABLE;
 					}
 				}
 				else
 				{
-					kind = WalkingNavigator.BlockKind.SOLID;
+					kind = _BlockKind.SOLID;
 				}
 			}
 			return kind;
@@ -707,10 +688,10 @@ public class TestPathFinder
 	}
 
 
-	private static record MapResolver3D(String[][] map) implements Function<AbsoluteLocation, WalkingNavigator.BlockKind>
+	private static record MapResolver3D(String[][] map) implements Function<AbsoluteLocation, _BlockKind>
 	{
 		@Override
-		public WalkingNavigator.BlockKind apply(AbsoluteLocation l)
+		public _BlockKind apply(AbsoluteLocation l)
 		{
 			String[] layer = this.map[l.z()];
 			int x = l.x();
@@ -718,20 +699,31 @@ public class TestPathFinder
 			Assert.assertTrue((x >= 0) && (x < layer[0].length())
 					&& (y >= 0) && (y < layer.length)
 			);
-			WalkingNavigator.BlockKind kind;
+			_BlockKind kind;
 			char c = layer[l.y()].charAt(l.x());
 			switch (c)
 			{
 				case 'S':
-					kind = WalkingNavigator.BlockKind.SOLID;
+					kind = _BlockKind.SOLID;
 					break;
 				case 'W':
-					kind = WalkingNavigator.BlockKind.SWIMMABLE;
+					kind = _BlockKind.SWIMMABLE;
 					break;
 				default:
-					kind = WalkingNavigator.BlockKind.WALKABLE;
+					kind = _BlockKind.WALKABLE;
 			}
 			return kind;
 		}
+	}
+
+	/**
+	 * This is to replace _BlockKind since it no longer exists but these tests are simplified by having
+	 * it.
+	 */
+	private static enum _BlockKind
+	{
+		SOLID,
+		SWIMMABLE,
+		WALKABLE,
 	}
 }
