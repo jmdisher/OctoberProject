@@ -51,7 +51,7 @@ public class PathFinder
 	 * @param limitSteps The maximum distance which can be travelled, in units of total blocks.
 	 * @return The path to follow to reach the target, starting with the current location, null if no path exists.
 	 */
-	public static List<AbsoluteLocation> findPathWithLimit(Function<AbsoluteLocation, BlockKind> blockKind, EntityLocation source, EntityLocation target, float limitSteps)
+	public static List<AbsoluteLocation> findPathWithLimit(Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKind, EntityLocation source, EntityLocation target, float limitSteps)
 	{
 		return _findPathWithLimit(blockKind, source, target, limitSteps);
 	}
@@ -71,7 +71,7 @@ public class PathFinder
 	 * @param allowNorth Whether steps to the north should be allowed.
 	 * @return The walk-back map.
 	 */
-	public static Map<AbsoluteLocation, AbsoluteLocation> findPlacesWithinLimit(Function<AbsoluteLocation, BlockKind> blockKind
+	public static Map<AbsoluteLocation, AbsoluteLocation> findPlacesWithinLimit(Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKind
 		, EntityLocation source
 		, float limitSteps
 		, boolean allowWest
@@ -107,7 +107,7 @@ public class PathFinder
 		;
 	}
 
-	private static List<AbsoluteLocation> _findPathWithLimit(Function<AbsoluteLocation, BlockKind> blockKind, EntityLocation entitySource, EntityLocation entityTarget, float limit)
+	private static List<AbsoluteLocation> _findPathWithLimit(Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKind, EntityLocation entitySource, EntityLocation entityTarget, float limit)
 	{
 		// Key is destination.
 		Map<AbsoluteLocation, AbsoluteLocation> walkBackward = new HashMap<>();
@@ -138,7 +138,7 @@ public class PathFinder
 	}
 
 	private static Spot _populateWalkbackMap(Map<AbsoluteLocation, AbsoluteLocation> walkBackward
-		, Function<AbsoluteLocation, BlockKind> blockKind
+		, Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKind
 		, EntityLocation entitySource
 		, EntityLocation entityTarget
 		, float limit
@@ -170,7 +170,7 @@ public class PathFinder
 		walkBackward.put(start, null);
 		
 		// We only want to start this if the starting location isn't solid.
-		if (BlockKind.SOLID != blockKind.apply(start))
+		if (WalkingNavigator.BlockKind.SOLID != blockKind.apply(start))
 		{
 			workQueue.add(new Spot(start, initialDistance));
 		}
@@ -197,8 +197,8 @@ public class PathFinder
 				// just stepped into a hole so we can't immediately step out (can in later steps but we can't step right
 				// over a gap).
 				// (we just check the down block for solid, assuming anything walkabe 
-				boolean isStandingOnAir = (BlockKind.SOLID != blockKind.apply(down));
-				boolean isSwimmable = (BlockKind.SWIMMABLE == blockKind.apply(spotLocation));
+				boolean isStandingOnAir = (WalkingNavigator.BlockKind.SOLID != blockKind.apply(down));
+				boolean isSwimmable = (WalkingNavigator.BlockKind.SWIMMABLE == blockKind.apply(spotLocation));
 				AbsoluteLocation previousStep = walkBackward.get(spotLocation);
 				boolean wasXyStep = (null != previousStep) && (previousStep.z() == spotLocation.z());
 				boolean didStepIntoHole = (isStandingOnAir && wasXyStep);
@@ -240,13 +240,13 @@ public class PathFinder
 	}
 
 
-	private static void _tryAddSpot(Map<AbsoluteLocation, AbsoluteLocation> walkBackward, PriorityQueue<Spot> workQueue, Function<AbsoluteLocation, BlockKind> blockKind, float limit, Spot start, AbsoluteLocation target, float scoreToAdd)
+	private static void _tryAddSpot(Map<AbsoluteLocation, AbsoluteLocation> walkBackward, PriorityQueue<Spot> workQueue, Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKind, float limit, Spot start, AbsoluteLocation target, float scoreToAdd)
 	{
 		// Make sure that we haven't already reached this desintation via an earlier path.
 		if (!walkBackward.containsKey(target))
 		{
 			// Make sure that we can fit here.
-			if (BlockKind.SOLID != blockKind.apply(target))
+			if (WalkingNavigator.BlockKind.SOLID != blockKind.apply(target))
 			{
 				// Add this target spot unless we have gone too far.
 				float newDistance = start.distance + scoreToAdd;
@@ -262,22 +262,6 @@ public class PathFinder
 		}
 	}
 
-
-	public static enum BlockKind
-	{
-		/**
-		 * A block which can be traversed easily.
-		 */
-		WALKABLE,
-		/**
-		 * A block which cannot be passed through and which supports an entity.
-		 */
-		SOLID,
-		/**
-		 * A block which is "WALKABLE" but also allows swimming (and is not breathable).
-		 */
-		SWIMMABLE,
-	}
 
 	private record Spot(AbsoluteLocation location, float distance)
 	{

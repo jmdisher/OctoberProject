@@ -22,7 +22,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * TODO:  This implementation currently has a limitation where it won't shift over in a block to avoid colliding with an
  * adjacent block.
  */
-public class CommonKindLookup implements Function<AbsoluteLocation, PathFinder.BlockKind>
+public class CommonKindLookup implements Function<AbsoluteLocation, WalkingNavigator.BlockKind>
 {
 	private final BlockAspect _blocks;
 	private final TickProcessingContext.IBlockFetcher _previousBlockLookUp;
@@ -38,10 +38,10 @@ public class CommonKindLookup implements Function<AbsoluteLocation, PathFinder.B
 	}
 
 	@Override
-	public PathFinder.BlockKind apply(AbsoluteLocation location)
+	public WalkingNavigator.BlockKind apply(AbsoluteLocation location)
 	{
 		// We default to assuming that the path is walkable, unless we find anything more interesting.
-		PathFinder.BlockKind kind = PathFinder.BlockKind.WALKABLE;
+		WalkingNavigator.BlockKind kind = WalkingNavigator.BlockKind.WALKABLE;
 		
 		// We will apply the offset bias since this entity might be straddling blocks in a way which spills across more than usual.
 		EntityLocation blockBase = location.toEntityLocation();
@@ -50,14 +50,14 @@ public class CommonKindLookup implements Function<AbsoluteLocation, PathFinder.B
 		Map<AbsoluteLocation, BlockProxy> proxies = _previousBlockLookUp.readBlockBatch(interior);
 		for (AbsoluteLocation loc : interior)
 		{
-			PathFinder.BlockKind sub = _singleBlock(proxies.get(loc));
-			if (PathFinder.BlockKind.SOLID == sub)
+			WalkingNavigator.BlockKind sub = _singleBlock(proxies.get(loc));
+			if (WalkingNavigator.BlockKind.SOLID == sub)
 			{
 				// We saturate to solid so break if we hit this.
 				kind = sub;
 				break;
 			}
-			else if (PathFinder.BlockKind.WALKABLE == kind)
+			else if (WalkingNavigator.BlockKind.WALKABLE == kind)
 			{
 				// If we are still walkable, switch to whatever this is.
 				kind = sub;
@@ -66,13 +66,13 @@ public class CommonKindLookup implements Function<AbsoluteLocation, PathFinder.B
 		return kind;
 	}
 
-	private PathFinder.BlockKind _singleBlock(BlockProxy proxy)
+	private WalkingNavigator.BlockKind _singleBlock(BlockProxy proxy)
 	{
-		PathFinder.BlockKind kind;
+		WalkingNavigator.BlockKind kind;
 		if (null == proxy)
 		{
 			// If we can't find the proxy, we will treat this as solid.
-			kind = PathFinder.BlockKind.SOLID;
+			kind = WalkingNavigator.BlockKind.SOLID;
 		}
 		else
 		{
@@ -80,15 +80,15 @@ public class CommonKindLookup implements Function<AbsoluteLocation, PathFinder.B
 			boolean isActive = FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE);
 			if (_blocks.isSolid(block, isActive))
 			{
-				kind = PathFinder.BlockKind.SOLID;
+				kind = WalkingNavigator.BlockKind.SOLID;
 			}
 			else if (_blocks.canSwimInBlock(block, isActive))
 			{
-				kind = PathFinder.BlockKind.SWIMMABLE;
+				kind = WalkingNavigator.BlockKind.SWIMMABLE;
 			}
 			else
 			{
-				kind = PathFinder.BlockKind.WALKABLE;
+				kind = WalkingNavigator.BlockKind.WALKABLE;
 			}
 		}
 		return kind;
