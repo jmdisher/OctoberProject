@@ -554,6 +554,42 @@ public class TestPathFinder
 		Assert.assertEquals(7, centrePath.size());
 	}
 
+	@Test
+	public void noJumpingInViscosity()
+	{
+		// Verify that we don't try to jump up a block when in non-zero viscosity (as we are unlikely to make the jump).
+		EntityLocation source = new EntityLocation(10.0f, 6.0f, 5.0f);
+		EntityLocation target = new EntityLocation(11.0f, 6.0f, 6.0f);
+		EntityVolume volume = new EntityVolume(1.2f, 0.9f);
+		
+		// Generate a cuboid for this test.
+		Block wheat = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_mature"));
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0,0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)4, STONE);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), STONE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, source.getBlockLocation().getBlockAddress(), wheat.item().number());
+		
+		float limit = 8.0f;
+		TickProcessingContext.IBlockFetcher blockFetcher = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
+			return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
+				? BlockProxy.load(location.getBlockAddress(), cuboid)
+				: null
+			;
+		});
+		
+		// We should see 5 steps:  That is enough to walk around to another side, whereas 3 would be a direct jump.
+		WalkingNavigator navigator = new WalkingNavigator(blockFetcher
+			, volume
+			, limit
+			, true
+			, true
+			, true
+			, true
+		);
+		List<AbsoluteLocation> basePath = PathFinder.findPathWithLimit(navigator, source, target);
+		Assert.assertEquals(5, basePath.size());
+	}
+
 
 	private static void _printMap2D(int x, int y, Collection<AbsoluteLocation> path)
 	{

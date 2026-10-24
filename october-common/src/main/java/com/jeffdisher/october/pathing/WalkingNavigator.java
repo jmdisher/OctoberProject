@@ -106,15 +106,16 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 			}
 			else
 			{
-				// We aren't jumping or falling so make sure that is legal and determine the cost.
+				// We are jumping or falling so make sure that is legal and determine the cost.
 				if (location.z() > previousStep.z())
 				{
-					// This is a jump so make sure that the previous location was on solid block or swimmable.
+					// This is a jump so make sure that the previous location was on solid block or swimmable, but non-swimmable MUST be zero viscosity.
 					AbsoluteLocation previousDown = previousStep.getRelative(0, 0, -1);
 					boolean wasOnSolidBlock = (BlockAspect.VISOSITY_FLOAT_SOLID == _findMaxViscosityFromBlock(previousDown));
-					boolean wasSwimmable = _isSwimmable(_findMaxViscosityFromBlock(previousStep));
+					float previousBlockViscosity = _findMaxViscosityFromBlock(previousStep);
+					boolean wasSwimmable = _isSwimmable(previousBlockViscosity);
 					
-					isAllowed = (wasOnSolidBlock || wasSwimmable);
+					isAllowed = ((wasOnSolidBlock && (BlockAspect.VISOSITY_FLOAT_ZERO == previousBlockViscosity)) || wasSwimmable);
 					cost = COST_JUMP;
 				}
 				else
