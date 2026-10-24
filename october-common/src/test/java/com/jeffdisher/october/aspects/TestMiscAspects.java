@@ -420,4 +420,31 @@ public class TestMiscAspects
 		Assert.assertNotEquals(0L, bits & FacingDirection.EAST.inverseRotateInSubBlock(wnd).getMask());
 		Assert.assertEquals(0L, bits & FacingDirection.EAST.inverseRotateInSubBlock(wnu).getMask());
 	}
+
+	@Test
+	public void blockViscosity() throws Throwable
+	{
+		// We want to make sure that our relevant float viscosity thresholds don't have any rounding errors (since we
+		// want to use direct float equality, which is dangerous).
+		Block sapling = ENV.blocks.fromItem(ENV.items.getItemById("op.sapling"));
+		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		Block air = ENV.blocks.fromItem(ENV.items.getItemById("op.air"));
+		Block lava = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_source"));
+		Block water = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		
+		float saplingV = ENV.blocks.getViscosityFraction(sapling, false, false);
+		float stoneV = ENV.blocks.getViscosityFraction(stone, false, false);
+		float airV = ENV.blocks.getViscosityFraction(air, false, false);
+		float lavaV = ENV.blocks.getViscosityFraction(lava, false, false);
+		float waterV = ENV.blocks.getViscosityFraction(water, false, false);
+		
+		// We use the direct true since we are comparing floats, directly.
+		Assert.assertTrue(saplingV > BlockAspect.VISOSITY_FLOAT_ZERO);
+		Assert.assertTrue(saplingV < BlockAspect.VISOSITY_FLOAT_SWIMMABLE);
+		Assert.assertTrue(BlockAspect.VISOSITY_FLOAT_SOLID == stoneV);
+		Assert.assertTrue(BlockAspect.VISOSITY_FLOAT_ZERO == airV);
+		Assert.assertTrue(lavaV > BlockAspect.VISOSITY_FLOAT_SWIMMABLE);
+		Assert.assertTrue(lavaV < BlockAspect.VISOSITY_FLOAT_SOLID);
+		Assert.assertTrue(BlockAspect.VISOSITY_FLOAT_SWIMMABLE == waterV);
+	}
 }

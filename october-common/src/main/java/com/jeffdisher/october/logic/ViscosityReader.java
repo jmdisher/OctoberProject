@@ -3,6 +3,7 @@ package com.jeffdisher.october.logic;
 import java.util.List;
 import java.util.Map;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
@@ -39,7 +40,7 @@ public class ViscosityReader
 		if (map.size() < locations.size())
 		{
 			// We were missing something so just default to saying full viscosity.
-			viscosity = 1.0f;
+			viscosity = BlockAspect.VISOSITY_FLOAT_SOLID;
 		}
 		else
 		{
@@ -64,7 +65,7 @@ public class ViscosityReader
 		else
 		{
 			float viscosity = _maxViscosityInVolume(map, base, volume, fromAbove);
-			isSolid = (1.0f == viscosity);
+			isSolid = (BlockAspect.VISOSITY_FLOAT_SOLID == viscosity);
 		}
 		return isSolid;
 	}
@@ -72,7 +73,7 @@ public class ViscosityReader
 
 	private float _maxViscosityInVolume(Map<AbsoluteLocation, BlockProxy> loadedProxies, EntityLocation base, EntityVolume volume, boolean fromAbove)
 	{
-		float viscosity = 0.0f;
+		float viscosity = BlockAspect.VISOSITY_FLOAT_ZERO;
 		boolean isSolid = false;
 		
 		// We want to walk every sub-block within the volume.
@@ -120,7 +121,7 @@ public class ViscosityReader
 			{
 				// No sub-blocks so just use normal viscosity.
 				float one = _env.blocks.getViscosityFraction(block, isActive, fromAbove);
-				if (1.0f == one)
+				if (BlockAspect.VISOSITY_FLOAT_SOLID == one)
 				{
 					isSolid = true;
 					break;
@@ -132,7 +133,7 @@ public class ViscosityReader
 			}
 		}
 		return isSolid
-			? 1.0f
+			? BlockAspect.VISOSITY_FLOAT_SOLID
 			: viscosity
 		;
 	}

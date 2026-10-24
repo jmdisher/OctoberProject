@@ -37,6 +37,18 @@ public class BlockAspect
 	 * A viscosity of at least this level, but less than SOLID is considered to allow and entity to swim.
 	 */
 	public static final int SWIMMABLE_VISCOSITY = 50;
+	/**
+	 * A float representation of solid viscosity.
+	 */
+	public static final float VISOSITY_FLOAT_SOLID = (float)SOLID_VISCOSITY / 100.0f;
+	/**
+	 * A float representation of swimmable viscosity.
+	 */
+	public static final float VISOSITY_FLOAT_SWIMMABLE = (float)SWIMMABLE_VISCOSITY / 100.0f;
+	/**
+	 * A float representation of zero viscosity.
+	 */
+	public static final float VISOSITY_FLOAT_ZERO = 0.0f;
 
 	private static final String FLAG_CAN_BE_REPLACED = "can_be_replaced";
 	private static final String FLAG_IS_FLAMMABLE = "is_flammable";
@@ -306,14 +318,14 @@ public class BlockAspect
 		if (_ladderType.contains(block))
 		{
 			// Ladders are solid from above, since they stop us from falling, but are otherwise empty.
-			viscosity = fromAbove ? 1.0f : 0.0f;
+			viscosity = fromAbove ? VISOSITY_FLOAT_SOLID : VISOSITY_FLOAT_ZERO;
 		}
 		else
 		{
 			Map<Block, Integer> nonSolidViscosity = _nonSolidViscosityMap(isActive);
 			viscosity = (nonSolidViscosity.containsKey(block))
 				? ((float)nonSolidViscosity.get(block) / 100.0f)
-				: 1.0f
+				: VISOSITY_FLOAT_SOLID
 			;
 		}
 		return viscosity;
