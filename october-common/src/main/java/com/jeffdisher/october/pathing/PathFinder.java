@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
-import java.util.function.Function;
 
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
@@ -29,31 +28,17 @@ import com.jeffdisher.october.utils.Assert;
 public class PathFinder
 {
 	/**
-	 * Falling 1 block will still be considered as cost, but a very small one.
-	 */
-	public static final float COST_FALL = 0.5f;
-	/**
-	 * Climbing up a block should be considered expensive.
-	 */
-	public static final float COST_CLIMB = 1.5f;
-	/**
-	 * Walking on flat ground will be the baseline action.
-	 */
-	public static final float COST_STEP_FLAT = 1.0f;
-
-	/**
 	 * Finds the path, in block locations, of every step from source to target which can be occupied by checking the
 	 * blockKind function, limiting the search distance to the given limit of steps.
 	 * 
-	 * @param blockKind Returns the kind of block at the given location.
+	 * @param navigator The navigator helper.
 	 * @param source The source location of the entity.
 	 * @param target The target location of the entity.
-	 * @param limitSteps The maximum distance which can be travelled, in units of total blocks.
 	 * @return The path to follow to reach the target, starting with the current location, null if no path exists.
 	 */
-	public static List<AbsoluteLocation> findPathWithLimit(Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKind, EntityLocation source, EntityLocation target, float limitSteps)
+	public static <T extends ASpot> List<AbsoluteLocation> findPathWithLimit(PathFinder.INavigator<T> navigator, EntityLocation source, EntityLocation target)
 	{
-		return _findPathWithLimit(blockKind, source, target, limitSteps);
+		return _findPathWithLimit(navigator, source, target);
 	}
 
 	/**
@@ -62,65 +47,34 @@ public class PathFinder
 	 * Note that not all target places may make sense since they only also include places like "jumping into the air" as
 	 * a final step.
 	 * 
-	 * @param blockKind Returns the kind of block at the given location.
+	 * @param navigator The navigator helper.
 	 * @param source The starting location of the entity.
-	 * @param limitSteps The movement cost limit.
-	 * @param allowWest Whether steps to the west should be allowed.
-	 * @param allowEast Whether steps to the east should be allowed.
-	 * @param allowSouth Whether steps to the south should be allowed.
-	 * @param allowNorth Whether steps to the north should be allowed.
 	 * @return The walk-back map.
 	 */
-	public static Map<AbsoluteLocation, AbsoluteLocation> findPlacesWithinLimit(Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKind
+	public static <T extends ASpot> Map<AbsoluteLocation, AbsoluteLocation> findPlacesWithinLimit(PathFinder.INavigator<T> navigator
 		, EntityLocation source
-		, float limitSteps
-		, boolean allowWest
-		, boolean allowEast
-		, boolean allowSouth
-		, boolean allowNorth
 	)
 	{
 		Map<AbsoluteLocation, AbsoluteLocation> walkBackward = new HashMap<>();
 		// This will populate the walkBackward map
 		_populateWalkbackMap(walkBackward
-			, blockKind
+			, navigator
 			, source
 			, null
-			, limitSteps
-			, allowWest
-			, allowEast
-			, allowSouth
-			, allowNorth
 		);
 		return walkBackward;
 	}
 
 
-	private static float _getStartingDistance(EntityLocation source, EntityLocation target)
-	{
-		// We need to translate the source into the relative location of the destination.
-		EntityLocation sourceOffset = source.getOffsetIntoBlock();
-		EntityLocation targetOffset = target.getOffsetIntoBlock();
-		return (targetOffset.x() - sourceOffset.x())
-				+ (targetOffset.y() - sourceOffset.y())
-				+ (targetOffset.z() - sourceOffset.z())
-		;
-	}
-
-	private static List<AbsoluteLocation> _findPathWithLimit(Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKind, EntityLocation entitySource, EntityLocation entityTarget, float limit)
+	private static <T extends ASpot> List<AbsoluteLocation> _findPathWithLimit(PathFinder.INavigator<T> navigator, EntityLocation entitySource, EntityLocation entityTarget)
 	{
 		// Key is destination.
 		Map<AbsoluteLocation, AbsoluteLocation> walkBackward = new HashMap<>();
 		// This will populate the walkBackward map and return the final spot for entityTarget, assuming it could be reached.
-		Spot targetSpot = _populateWalkbackMap(walkBackward
-			, blockKind
+		T targetSpot = _populateWalkbackMap(walkBackward
+			, navigator
 			, entitySource
 			, entityTarget
-			, limit
-			, true
-			, true
-			, true
-			, true
 		);
 		List<AbsoluteLocation> path = null;
 		if (null != targetSpot)
@@ -137,24 +91,17 @@ public class PathFinder
 		return path;
 	}
 
-	private static Spot _populateWalkbackMap(Map<AbsoluteLocation, AbsoluteLocation> walkBackward
-		, Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKind
+	private static <T extends ASpot> T _populateWalkbackMap(Map<AbsoluteLocation, AbsoluteLocation> walkBackward
+		, PathFinder.INavigator<T> navigator
 		, EntityLocation entitySource
 		, EntityLocation entityTarget
-		, float limit
-		, boolean allowWest
-		, boolean allowEast
-		, boolean allowSouth
-		, boolean allowNorth
 	)
 	{
 		AbsoluteLocation start = entitySource.getBlockLocation();
 		AbsoluteLocation target = (null != entityTarget) ? entityTarget.getBlockLocation() : null;
 		
-		float initialDistance = (null != target) ? _getStartingDistance(entitySource, entityTarget): 0.0f;
-		
 		// Key is destination.
-		PriorityQueue<Spot> workQueue = new PriorityQueue<>((Spot one, Spot two) -> {
+		PriorityQueue<T> workQueue = new PriorityQueue<>((T one, T two) -> {
 			float difference = one.distance - two.distance;
 			int signum = 0;
 			if (difference < 0.0f)
@@ -167,17 +114,12 @@ public class PathFinder
 			}
 			return signum;
 		});
-		walkBackward.put(start, null);
+		_addIfValid(walkBackward, workQueue, navigator, null, start);
 		
-		// We only want to start this if the starting location isn't solid.
-		if (WalkingNavigator.BlockKind.SOLID != blockKind.apply(start))
-		{
-			workQueue.add(new Spot(start, initialDistance));
-		}
-		Spot targetSpot = null;
+		T targetSpot = null;
 		while ((null == targetSpot) && !workQueue.isEmpty())
 		{
-			Spot spot = workQueue.remove();
+			T spot = workQueue.remove();
 			// If this is the target, we are done (note that target can be null if we are just building the map).
 			if (spot.location.equals(target))
 			{
@@ -187,83 +129,69 @@ public class PathFinder
 			{
 				// We aren't yet at the target so check the spaces around us.
 				AbsoluteLocation spotLocation = spot.location;
-				// We will just check all 6 directions around our current spot with a few caveats:
-				// -NEVER check anything already in our walked set, since we already reached that via a shorter path (since this is a priority queue).
-				// -don't bother checking "up" if we are standing on air since we would have nothing from which to "jump up".
-				
-				AbsoluteLocation down = spotLocation.getRelative(0, 0, -1);
-				
-				// If we are standing on an air block AND the previous step was only XY movement, that means that we
-				// just stepped into a hole so we can't immediately step out (can in later steps but we can't step right
-				// over a gap).
-				// (we just check the down block for solid, assuming anything walkabe 
-				boolean isStandingOnAir = (WalkingNavigator.BlockKind.SOLID != blockKind.apply(down));
-				boolean isSwimmable = (WalkingNavigator.BlockKind.SWIMMABLE == blockKind.apply(spotLocation));
-				AbsoluteLocation previousStep = walkBackward.get(spotLocation);
-				boolean wasXyStep = (null != previousStep) && (previousStep.z() == spotLocation.z());
-				boolean didStepIntoHole = (isStandingOnAir && wasXyStep);
-				
-				// If we are currently in swimmable block, that means we don't need to fall into a hole.
-				if (!didStepIntoHole || isSwimmable)
-				{
-					if (allowWest)
-					{
-						AbsoluteLocation west = spotLocation.getRelative(-1, 0, 0);
-						_tryAddSpot(walkBackward, workQueue, blockKind, limit, spot, west, COST_STEP_FLAT);
-					}
-					if (allowEast)
-					{
-						AbsoluteLocation east = spotLocation.getRelative(1, 0, 0);
-						_tryAddSpot(walkBackward, workQueue, blockKind, limit, spot, east, COST_STEP_FLAT);
-					}
-					if (allowSouth)
-					{
-						AbsoluteLocation south = spotLocation.getRelative(0, -1, 0);
-						_tryAddSpot(walkBackward, workQueue, blockKind, limit, spot, south, COST_STEP_FLAT);
-					}
-					if (allowNorth)
-					{
-						AbsoluteLocation north = spotLocation.getRelative(0, 1, 0);
-						_tryAddSpot(walkBackward, workQueue, blockKind, limit, spot, north, COST_STEP_FLAT);
-					}
-				}
-				// If we are currently in swimmable block, that means we can still "jump" (swim) up.
-				if (!isStandingOnAir || isSwimmable)
-				{
-					AbsoluteLocation up = spotLocation.getRelative(0, 0, 1);
-					_tryAddSpot(walkBackward, workQueue, blockKind, limit, spot, up, COST_CLIMB);
-				}
-				_tryAddSpot(walkBackward, workQueue, blockKind, limit, spot, down, COST_FALL);
+				_addIfValid(walkBackward, workQueue, navigator, spot, spotLocation.getRelative(-1, 0, 0));
+				_addIfValid(walkBackward, workQueue, navigator, spot, spotLocation.getRelative(1, 0, 0));
+				_addIfValid(walkBackward, workQueue, navigator, spot, spotLocation.getRelative(0, -1, 0));
+				_addIfValid(walkBackward, workQueue, navigator, spot, spotLocation.getRelative(0, 1, 0));
+				_addIfValid(walkBackward, workQueue, navigator, spot, spotLocation.getRelative(0, 0, -1));
+				_addIfValid(walkBackward, workQueue, navigator, spot, spotLocation.getRelative(0, 0, 1));
 			}
 		}
 		return targetSpot;
 	}
 
 
-	private static void _tryAddSpot(Map<AbsoluteLocation, AbsoluteLocation> walkBackward, PriorityQueue<Spot> workQueue, Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKind, float limit, Spot start, AbsoluteLocation target, float scoreToAdd)
+	private static <T extends ASpot> void _addIfValid(Map<AbsoluteLocation, AbsoluteLocation> walkBackward
+		, PriorityQueue<T> workQueue
+		, PathFinder.INavigator<T> navigator
+		, T previous
+		, AbsoluteLocation location
+	)
 	{
-		// Make sure that we haven't already reached this desintation via an earlier path.
-		if (!walkBackward.containsKey(target))
+		// Make sure that we haven't already reached this destination via an earlier path.
+		if (!walkBackward.containsKey(location))
 		{
-			// Make sure that we can fit here.
-			if (WalkingNavigator.BlockKind.SOLID != blockKind.apply(target))
+			T thisSpot = navigator.enterSpot(previous, location);
+			if (null != thisSpot)
 			{
-				// Add this target spot unless we have gone too far.
-				float newDistance = start.distance + scoreToAdd;
-				if (newDistance <= limit)
-				{
-					Spot newStep = new Spot(target, newDistance);
-					AbsoluteLocation old = walkBackward.put(target, start.location);
-					// This was checked above.
-					Assert.assertTrue(null == old);
-					workQueue.add(newStep);
-				}
+				AbsoluteLocation old = walkBackward.put(location, (null != previous) ? previous.location : null);
+				// This was checked above.
+				Assert.assertTrue(null == old);
+				workQueue.add(thisSpot);
 			}
 		}
 	}
 
 
-	private record Spot(AbsoluteLocation location, float distance)
+	/**
+	 * This class should probably be an interface but the algorithm needs to directly reach into fetch the distance so
+	 * this just avoids a bit of duplication (we could convert it later if implementations become more complicated and
+	 * if the performance is similar).
+	 */
+	public abstract static class ASpot
 	{
+		public final AbsoluteLocation location;
+		public final float distance;
+		protected ASpot(AbsoluteLocation location, float distance)
+		{
+			this.location = location;
+			this.distance = distance;
+		}
+	}
+
+	/**
+	 * The interface used to determine how a specific navigator type can enter a block.
+	 * 
+	 * @param <T> The ASpot type.
+	 */
+	public static interface INavigator <T extends ASpot>
+	{
+		/**
+		 * Creates a new ASpot instance if this navigator can enter the block at location from "from".
+		 * @param from An existing ASpot the navigator is moving from (null if this is the first location).
+		 * @param location The location to navigate into.
+		 * @return The new ASpot instance for location, or null if the navigator cannot enter location.
+		 */
+		T enterSpot(T from, AbsoluteLocation location);
 	}
 }

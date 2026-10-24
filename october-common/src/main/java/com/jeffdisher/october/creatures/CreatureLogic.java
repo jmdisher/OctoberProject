@@ -398,7 +398,16 @@ public class CreatureLogic
 			EntityLocation targetLocation = newTarget.location();
 			// If this fails, it will return null which is already our failure case.
 			EntityLocation creatureLocation = mutable.getLocation();
-			List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockPermitsPassage, creatureLocation, targetLocation, type.getPathDistance());
+			WalkingNavigator navigator = new WalkingNavigator(blockPermitsPassage
+				, creatureLocation
+				, targetLocation
+				, type.getPathDistance()
+				, true
+				, true
+				, true
+				, true
+			);
+			List<AbsoluteLocation> path = PathFinder.findPathWithLimit(navigator, creatureLocation, targetLocation);
 			if (null != path)
 			{
 				plan = _pruneAndStoreFreshTargetPlan(context, mutable.newLocation, mutable.newType, path, newTarget.id(), targetLocation);
@@ -420,13 +429,17 @@ public class CreatureLogic
 	)
 	{
 		float limitSteps = RANDOM_MOVEMENT_DISTANCE;
-		Map<AbsoluteLocation, AbsoluteLocation> possiblePaths = PathFinder.findPlacesWithinLimit(blockPermitsUser
+		WalkingNavigator navigator = new WalkingNavigator(blockPermitsUser
 			, creatureLocation
+			, null
 			, limitSteps
 			, allowWest
 			, allowEast
 			, allowSouth
 			, allowNorth
+		);
+		Map<AbsoluteLocation, AbsoluteLocation> possiblePaths = PathFinder.findPlacesWithinLimit(navigator
+			, creatureLocation
 		);
 		
 		// Strip out any of the ending positions which we don't want.
@@ -878,7 +891,16 @@ public class CreatureLogic
 	{
 		// This has moved so update the plan in response.
 		Function<AbsoluteLocation, WalkingNavigator.BlockKind> blockKindLookup = new CommonKindLookup(context.previousBlockLookUp, currentLocation, creatureType.volume());
-		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockKindLookup, currentLocation, targetLocation, creatureType.getPathDistance());
+		WalkingNavigator navigator = new WalkingNavigator(blockKindLookup
+			, currentLocation
+			, targetLocation
+			, creatureType.getPathDistance()
+			, true
+			, true
+			, true
+			, true
+		);
+		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(navigator, currentLocation, targetLocation);
 		
 		// The path will come back null if they are unreachable.
 		return (null != path)
