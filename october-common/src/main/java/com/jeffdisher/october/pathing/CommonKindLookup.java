@@ -1,16 +1,11 @@
 package com.jeffdisher.october.pathing;
 
-import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.FlagsAspect;
-import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.logic.VolumeIterator;
+import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -22,13 +17,11 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class CommonKindLookup implements Function<AbsoluteLocation, WalkingNavigator.BlockKind>
 {
-	private final BlockAspect _blocks;
 	private final TickProcessingContext.IBlockFetcher _previousBlockLookUp;
 	private final EntityVolume _volume;
 
 	public CommonKindLookup(TickProcessingContext.IBlockFetcher previousBlockLookUp, EntityVolume volume)
 	{
-		_blocks = Environment.getShared().blocks;
 		_previousBlockLookUp = previousBlockLookUp;
 		_volume = volume;
 	}
@@ -50,53 +43,22 @@ public class CommonKindLookup implements Function<AbsoluteLocation, WalkingNavig
 
 	private WalkingNavigator.BlockKind _findKindFromBase(EntityLocation blockBase)
 	{
-		// We default to assuming that the path is walkable, unless we find anything more interesting.
-		WalkingNavigator.BlockKind kind = WalkingNavigator.BlockKind.WALKABLE;
+		// We just use the common ViscosityReader and convert those results to these high-level thresholds.
+		ViscosityReader reader = new ViscosityReader(Environment.getShared(), _previousBlockLookUp);
+		float maxViscosity = reader.getMaxStillViscosityInVolume(blockBase, _volume);
 		
-		List<AbsoluteLocation> interior = VolumeIterator.getAllInVolume(blockBase, _volume);
-		Map<AbsoluteLocation, BlockProxy> proxies = _previousBlockLookUp.readBlockBatch(interior);
-		for (AbsoluteLocation loc : interior)
-		{
-			WalkingNavigator.BlockKind sub = _singleBlock(proxies.get(loc));
-			if (WalkingNavigator.BlockKind.SOLID == sub)
-			{
-				// We saturate to solid so break if we hit this.
-				kind = sub;
-				break;
-			}
-			else if (WalkingNavigator.BlockKind.WALKABLE == kind)
-			{
-				// If we are still walkable, switch to whatever this is.
-				kind = sub;
-			}
-		}
-		return kind;
-	}
-
-	private WalkingNavigator.BlockKind _singleBlock(BlockProxy proxy)
-	{
 		WalkingNavigator.BlockKind kind;
-		if (null == proxy)
+		if (BlockAspect.VISOSITY_FLOAT_SOLID == maxViscosity)
 		{
-			// If we can't find the proxy, we will treat this as solid.
 			kind = WalkingNavigator.BlockKind.SOLID;
+		}
+		else if (maxViscosity >= BlockAspect.VISOSITY_FLOAT_SWIMMABLE)
+		{
+			kind = WalkingNavigator.BlockKind.SWIMMABLE;
 		}
 		else
 		{
-			Block block = proxy.getBlock();
-			boolean isActive = FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE);
-			if (_blocks.isSolid(block, isActive))
-			{
-				kind = WalkingNavigator.BlockKind.SOLID;
-			}
-			else if (_blocks.canSwimInBlock(block, isActive))
-			{
-				kind = WalkingNavigator.BlockKind.SWIMMABLE;
-			}
-			else
-			{
-				kind = WalkingNavigator.BlockKind.WALKABLE;
-			}
+			kind = WalkingNavigator.BlockKind.WALKABLE;
 		}
 		return kind;
 	}
