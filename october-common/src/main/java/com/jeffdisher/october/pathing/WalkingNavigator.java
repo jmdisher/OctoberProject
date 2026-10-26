@@ -3,9 +3,11 @@ package com.jeffdisher.october.pathing;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.ViscosityReader;
+import com.jeffdisher.october.subactions.EntitySubActionStepUp;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.SubBlock;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -27,6 +29,10 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 	 * Walking on flat ground will be the baseline action.
 	 */
 	public static final float COST_STEP_FLAT = 1.0f;
+	/**
+	 * Due to sub-block collision, we will check if the solid ground is 1/4 the way below the current location.
+	 */
+	public static final float BELOW_Z_OFFSET = -1.0f / SubBlock.SUB_BLOCK_EDGE_FLOAT;
 
 
 	private final TickProcessingContext.IBlockFetcher _previousBlockLookUp;
@@ -65,8 +71,7 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 		BasicSpot result = null;
 		if (isAllowed)
 		{
-			AbsoluteLocation down = entityBase.getBlockLocation().getRelative(0, 0, -1);
-			boolean isOnSolidBlock = (BlockAspect.VISOSITY_FLOAT_SOLID == _findMaxViscosityFromBlock(down));
+			boolean isOnSolidBlock = (BlockAspect.VISOSITY_FLOAT_SOLID == _findMaxViscosityFromBase(entityBase.getRelative(0.0f, 0.0f, BELOW_Z_OFFSET)));
 			result = new BasicSpot(entityBase.getBlockLocation(), 0.0f, isOnSolidBlock, viscosity);
 		}
 		return result;
@@ -79,15 +84,30 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 		Assert.assertTrue(null != from);
 		
 		// We will only bother trying this if the current location is not solid.
-		float viscosity = _findMaxViscosityFromBlock(location);
+		AbsoluteLocation previousStep = from.location;
+		boolean wasXyStep = (previousStep.z() == location.z());
+		EntityLocation realLocation = location.toEntityLocation();
+		float viscosity = _findMaxViscosityFromBase(realLocation);
 		boolean isAllowed = (viscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
+		
+		// If we aren't allowed here, what happens if we take a step up.
+		if (!isAllowed && wasXyStep)
+		{
+			EntityLocation stepLocation = realLocation.getRelative(0.0f, 0.0f, EntitySubActionStepUp.MAX_STEP_HEIGHT);
+			float stepViscosity = _findMaxViscosityFromBase(stepLocation);
+			isAllowed = (stepViscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
+			if (isAllowed)
+			{
+				realLocation = stepLocation;
+				viscosity = stepViscosity;
+			}
+		}
+		
 		boolean isOnSolidBlock;
 		float cost;
 		if (isAllowed)
 		{
 			// First, we will apply our checks around directions.
-			AbsoluteLocation previousStep = from.location;
-			boolean wasXyStep = (previousStep.z() == location.z());
 			if (wasXyStep)
 			{
 				int deltaX = location.x() - previousStep.x();
@@ -132,8 +152,7 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 			
 			if (isAllowed)
 			{
-				AbsoluteLocation down = location.getRelative(0, 0, -1);
-				isOnSolidBlock = (BlockAspect.VISOSITY_FLOAT_SOLID == _findMaxViscosityFromBlock(down));
+				isOnSolidBlock = (BlockAspect.VISOSITY_FLOAT_SOLID == _findMaxViscosityFromBase(realLocation.getRelative(0.0f, 0.0f, BELOW_Z_OFFSET)));
 			}
 			else
 			{
@@ -180,11 +199,6 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 		return _findMaxViscosityFromBase(base);
 	}
 
-
-	private float _findMaxViscosityFromBlock(AbsoluteLocation block)
-	{
-		return _findMaxViscosityFromBase(block.toEntityLocation());
-	}
 
 	private float _findMaxViscosityFromBase(EntityLocation blockBase)
 	{
