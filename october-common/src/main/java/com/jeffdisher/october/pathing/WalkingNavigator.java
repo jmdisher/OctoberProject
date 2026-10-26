@@ -61,10 +61,15 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 		// We can start here so long as it isn't stuck in a block.
 		float viscosity = _findMaxViscosityFromBase(entityBase);
 		boolean isAllowed = (viscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
-		return isAllowed
-			? new BasicSpot(entityBase.getBlockLocation(), 0.0f)
-			: null
-		;
+		
+		BasicSpot result = null;
+		if (isAllowed)
+		{
+			AbsoluteLocation down = entityBase.getBlockLocation().getRelative(0, 0, -1);
+			boolean isOnSolidBlock = (BlockAspect.VISOSITY_FLOAT_SOLID == _findMaxViscosityFromBlock(down));
+			result = new BasicSpot(entityBase.getBlockLocation(), 0.0f, isOnSolidBlock, viscosity);
+		}
+		return result;
 	}
 
 	@Override
@@ -76,7 +81,8 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 		// We will only bother trying this if the current location is not solid.
 		float viscosity = _findMaxViscosityFromBlock(location);
 		boolean isAllowed = (viscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
-		float cost = 0.0f;
+		boolean isOnSolidBlock;
+		float cost;
 		if (isAllowed)
 		{
 			// First, we will apply our checks around directions.
@@ -110,9 +116,8 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 				if (location.z() > previousStep.z())
 				{
 					// This is a jump so make sure that the previous location was on solid block or swimmable, but non-swimmable MUST be zero viscosity.
-					AbsoluteLocation previousDown = previousStep.getRelative(0, 0, -1);
-					boolean wasOnSolidBlock = (BlockAspect.VISOSITY_FLOAT_SOLID == _findMaxViscosityFromBlock(previousDown));
-					float previousBlockViscosity = _findMaxViscosityFromBlock(previousStep);
+					boolean wasOnSolidBlock = from.isOnGround;
+					float previousBlockViscosity = from.viscosity;
 					boolean wasSwimmable = _isSwimmable(previousBlockViscosity);
 					
 					isAllowed = ((wasOnSolidBlock && (BlockAspect.VISOSITY_FLOAT_ZERO == previousBlockViscosity)) || wasSwimmable);
@@ -125,20 +130,29 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 				}
 			}
 			
+			if (isAllowed)
+			{
+				AbsoluteLocation down = location.getRelative(0, 0, -1);
+				isOnSolidBlock = (BlockAspect.VISOSITY_FLOAT_SOLID == _findMaxViscosityFromBlock(down));
+			}
+			else
+			{
+				isOnSolidBlock = false;
+			}
 			if (wasXyStep && isAllowed)
 			{
-				// Make sure that we aren't flying.
-				AbsoluteLocation down = location.getRelative(0, 0, -1);
-				boolean isOnSolidBlock = (BlockAspect.VISOSITY_FLOAT_SOLID == _findMaxViscosityFromBlock(down));
 				boolean isSwimmable = _isSwimmable(viscosity);
-				
-				AbsoluteLocation previousDown = previousStep.getRelative(0, 0, -1);
-				boolean wasOnSolidBlock = (BlockAspect.VISOSITY_FLOAT_SOLID == _findMaxViscosityFromBlock(previousDown));
-				boolean wasSwimmable = _isSwimmable(_findMaxViscosityFromBlock(previousStep));
+				boolean wasOnSolidBlock = from.isOnGround;
+				boolean wasSwimmable = _isSwimmable(from.viscosity);
 				
 				// One of these needs to be solid/swimmable or we couldn't move between them.
 				isAllowed = (isOnSolidBlock || isSwimmable) || (wasOnSolidBlock || wasSwimmable);
 			}
+		}
+		else
+		{
+			isOnSolidBlock = false;
+			cost = 0.0f;
 		}
 		
 		BasicSpot result = null;
@@ -148,7 +162,7 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 			float distance = previousDistance + cost;
 			if (distance <= _limit)
 			{
-				result = new BasicSpot(location, distance);
+				result = new BasicSpot(location, distance, isOnSolidBlock, viscosity);
 			}
 		}
 		return result;
