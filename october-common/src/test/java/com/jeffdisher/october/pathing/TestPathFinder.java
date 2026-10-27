@@ -634,6 +634,49 @@ public class TestPathFinder
 		Assert.assertEquals(end, basePath.get(3));
 	}
 
+	@Test
+	public void walkUpStairs()
+	{
+		// Show that we can walk up stairs.
+		EntityLocation source = new EntityLocation(1.2f, 2.2f, 2.0f);
+		EntityLocation target = new EntityLocation(3.2f, 2.2f, 3.0f);
+		EntityVolume volume = new EntityVolume(1.2f, 0.7f);
+		AbsoluteLocation start = source.getBlockLocation();
+		AbsoluteLocation end = target.getBlockLocation();
+		
+		// Generate a cuboid for this test.
+		Block stair = ENV.blocks.fromItem(ENV.items.getItemById("op.stone_brick_stair"));
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0,0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)1, STONE);
+		cuboid.setData15(AspectRegistry.BLOCK, end.getRelative(0, 0, -1).getBlockAddress(), STONE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, start.getRelative(1, 0, 0).getBlockAddress(), stair.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, start.getRelative(1, 0, 0).getBlockAddress(), FacingDirection.directionToByte(FacingDirection.EAST));
+		
+		float limit = 5.0f;
+		TickProcessingContext.IBlockFetcher blockFetcher = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
+			return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
+				? BlockProxy.load(location.getBlockAddress(), cuboid)
+				: null
+			;
+		});
+		
+		// We should see 4 steps.
+		WalkingNavigator navigator = new WalkingNavigator(blockFetcher
+			, volume
+			, limit
+			, true
+			, true
+			, true
+			, true
+		);
+		List<AbsoluteLocation> basePath = PathFinder.findPathWithLimit(navigator, source, target);
+		Assert.assertEquals(4, basePath.size());
+		Assert.assertEquals(start, basePath.get(0));
+		Assert.assertEquals(start.getRelative(1, 0, 0), basePath.get(1));
+		Assert.assertEquals(start.getRelative(1, 0, 1), basePath.get(2));
+		Assert.assertEquals(end, basePath.get(3));
+	}
+
 
 	private static void _printMap2D(int x, int y, Collection<AbsoluteLocation> path)
 	{

@@ -2,6 +2,7 @@ package com.jeffdisher.october.pathing;
 
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.subactions.EntitySubActionStepUp;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -33,6 +34,11 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 	 * Due to sub-block collision, we will check if the solid ground is 1/4 the way below the current location.
 	 */
 	public static final float BELOW_Z_OFFSET = -1.0f / SubBlock.SUB_BLOCK_EDGE_FLOAT;
+	/**
+	 * When climbing stairs, we step back in order to not collide with the high part of the step.  We try to align our
+	 * positive edge with this offset.
+	 */
+	public static final float POSITIVE_STEP_OFFSET = 0.49f;
 
 
 	private final TickProcessingContext.IBlockFetcher _previousBlockLookUp;
@@ -83,24 +89,83 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 		// This helper never receives null.
 		Assert.assertTrue(null != from);
 		
-		// We will only bother trying this if the current location is not solid.
+		// The first thing we check if this is a horizontal movement since some of them are not allowed, no matter the collision.
 		AbsoluteLocation previousStep = from.location;
+		int deltaX = location.x() - previousStep.x();
+		int deltaY = location.y() - previousStep.y();
 		boolean wasXyStep = (previousStep.z() == location.z());
-		EntityLocation realLocation = location.toEntityLocation();
-		float viscosity = _findMaxViscosityFromBase(realLocation);
-		boolean isAllowed = (viscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
-		
-		// If we aren't allowed here, what happens if we take a step up.
-		if (!isAllowed && wasXyStep)
+		boolean isAllowed = true;
+		if (wasXyStep)
 		{
-			EntityLocation stepLocation = realLocation.getRelative(0.0f, 0.0f, EntitySubActionStepUp.MAX_STEP_HEIGHT);
-			float stepViscosity = _findMaxViscosityFromBase(stepLocation);
-			isAllowed = (stepViscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
-			if (isAllowed)
+			if (deltaX < 0)
 			{
-				realLocation = stepLocation;
-				viscosity = stepViscosity;
+				isAllowed = _allowWest;
 			}
+			else if (deltaX > 0)
+			{
+				isAllowed = _allowEast;
+			}
+			else if (deltaY < 0)
+			{
+				isAllowed = _allowSouth;
+			}
+			else if (deltaY > 0)
+			{
+				isAllowed = _allowNorth;
+			}
+		}
+		
+		// Now, we will check if we can move into this block without colliding with anything solid.
+		EntityLocation realLocation = location.toEntityLocation();
+		float viscosity;
+		if (isAllowed)
+		{
+			viscosity = _findMaxViscosityFromBase(realLocation);
+			isAllowed = (viscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
+			
+			// If we aren't allowed here, what happens if we take a step up.
+			if (!isAllowed && wasXyStep)
+			{
+				// Note that this could be a slab or a stair so we want to consider sliding _into_ the block from the other side.
+				float x = realLocation.x();
+				float y = realLocation.y();
+				if (deltaX < 0)
+				{
+					// We are walking toward the West so just put the location at +0.5f.
+					x += 0.5f;
+				}
+				else if (deltaX > 0)
+				{
+					// We are travelling to the East so back off to fit in 0.49f.
+					x = _shavePositive(x);
+				}
+				else if (deltaY < 0)
+				{
+					// We are walking toward the South so just put the location at +0.5f.
+					y += 0.5f;
+				}
+				else if (deltaY > 0)
+				{
+					// We are travelling to the North so back off to fit in 0.49f.
+					y = _shavePositive(y);
+				}
+				
+				EntityLocation stepLocation = new EntityLocation(x
+					, y
+					, realLocation.z() + EntitySubActionStepUp.MAX_STEP_HEIGHT
+				);
+				float stepViscosity = _findMaxViscosityFromBase(stepLocation);
+				isAllowed = (stepViscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
+				if (isAllowed)
+				{
+					realLocation = stepLocation;
+					viscosity = stepViscosity;
+				}
+			}
+		}
+		else
+		{
+			viscosity = 1.0f;
 		}
 		
 		boolean isOnSolidBlock;
@@ -110,24 +175,6 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 			// First, we will apply our checks around directions.
 			if (wasXyStep)
 			{
-				int deltaX = location.x() - previousStep.x();
-				int deltaY = location.y() - previousStep.y();
-				if (deltaX < 0)
-				{
-					isAllowed = _allowWest;
-				}
-				else if (deltaX > 0)
-				{
-					isAllowed = _allowEast;
-				}
-				else if (deltaY < 0)
-				{
-					isAllowed = _allowSouth;
-				}
-				else if (deltaY > 0)
-				{
-					isAllowed = _allowNorth;
-				}
 				cost = COST_STEP_FLAT;
 			}
 			else
@@ -210,5 +257,17 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 	private boolean _isSwimmable(float viscosity)
 	{
 		return (viscosity >= BlockAspect.VISOSITY_FLOAT_SWIMMABLE) && (viscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
+	}
+
+	private float _shavePositive(float f)
+	{
+		float edge = f + _volume.width();
+		float fraction = SpatialHelpers.getPositiveFractionalComponent(edge);
+		if (fraction > POSITIVE_STEP_OFFSET)
+		{
+			float shave = fraction - POSITIVE_STEP_OFFSET;
+			f -= shave;
+		}
+		return f;
 	}
 }
