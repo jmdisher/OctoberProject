@@ -3,8 +3,10 @@ package com.jeffdisher.october.logic;
 import java.util.List;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.logic.EntityMovementHelpers.IInteractiveHelper;
 import com.jeffdisher.october.subactions.EntitySubActionJump;
+import com.jeffdisher.october.subactions.EntitySubActionStepUp;
 import com.jeffdisher.october.subactions.EntitySubActionSwim;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
@@ -54,7 +56,8 @@ public class CreatureMovementHelpers
 	{
 		// Find our current location.
 		AbsoluteLocation baseLocation = creatureLocation.getBlockLocation();
-		float width = creatureType.volume().width();
+		EntityVolume volume = creatureType.volume();
+		float width = volume.width();
 		
 		// First, make sure that any edge of the entity isn't outside of its current block or directionHint.
 		// NOTE:  These bounds are for the specific base location, not width (as it accounts for width).
@@ -144,10 +147,10 @@ public class CreatureMovementHelpers
 		
 		// Now, move.
 		float speed = creatureType.blocksPerSecond();
-		EntityActionSimpleMove<MutableCreature> move = _moveByX(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, targetX, creatureVelocity.x());
+		EntityActionSimpleMove<MutableCreature> move = _moveByX(null, creatureLocation, volume, timeLimitMillis, speed, intensity, viscosityFraction, targetX, creatureVelocity.x());
 		if (null == move)
 		{
-			move = _moveByY(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, targetY, creatureVelocity.y());
+			move = _moveByY(null, creatureLocation, volume, timeLimitMillis, speed, intensity, viscosityFraction, targetY, creatureVelocity.y());
 		}
 		return move;
 	}
@@ -184,12 +187,13 @@ public class CreatureMovementHelpers
 	{
 		// We might need to jump, walk, or do nothing.
 		// If the target is above us and we are on the ground, 
+		EntityVolume volume = creatureType.volume();
 		EntityActionSimpleMove<MutableCreature> change;
 		if (targetBlock.z() > creatureLocation.z())
 		{
 			// We need to go up so see if we should jump, swim, or hope our momentum will get us there.
 			IEntitySubAction<MutableCreature> subAction;
-			if (EntitySubActionJump.canJumpWithReader(supplier, creatureLocation, creatureType.volume(), creatureVelocity))
+			if (EntitySubActionJump.canJumpWithReader(supplier, creatureLocation, volume, creatureVelocity))
 			{
 				// Jump.
 				subAction = new EntitySubActionJump<>();
@@ -219,7 +223,7 @@ public class CreatureMovementHelpers
 			float stepX = creatureLocation.x();
 			float stepY = creatureLocation.y();
 			AbsoluteLocation creatureBase = creatureLocation.getBlockLocation();
-			float width = creatureType.volume().width();
+			float width = volume.width();
 			if (targetBlock.x() > creatureBase.x())
 			{
 				stepX = targetBlock.x() + FLOAT_THRESHOLD;
@@ -248,11 +252,11 @@ public class CreatureMovementHelpers
 				float speed = creatureType.blocksPerSecond();
 				if (maxHorizontal == distanceX)
 				{
-					change = _moveByX(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, stepLocation.x(), creatureVelocity.x());
+					change = _moveByX(supplier, creatureLocation, volume, timeLimitMillis, speed, intensity, viscosityFraction, stepLocation.x(), creatureVelocity.x());
 				}
 				else
 				{
-					change = _moveByY(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, stepLocation.y(), creatureVelocity.y());
+					change = _moveByY(supplier, creatureLocation, volume, timeLimitMillis, speed, intensity, viscosityFraction, stepLocation.y(), creatureVelocity.y());
 				}
 			}
 			else
@@ -295,7 +299,8 @@ public class CreatureMovementHelpers
 			else
 			{
 				// Check that the block under this is solid.
-				if (supplier.isSolidBlockInVolume(next.getRelative(0, 0, -1).toEntityLocation(), new EntityVolume(0.01f, 0.01f), true))
+				float viscosity = supplier.getMaxStillViscosityInVolume(next.toEntityLocation(), creatureType.volume());
+				if ((viscosity < BlockAspect.VISOSITY_FLOAT_SOLID) && supplier.isSolidBlockInVolume(next.getRelative(0, 0, -1).toEntityLocation(), new EntityVolume(0.01f, 0.01f), true))
 				{
 					furthestBlock = next;
 				}
@@ -434,7 +439,16 @@ public class CreatureMovementHelpers
 	}
 
 
-	private static EntityActionSimpleMove<MutableCreature> _moveByX(EntityLocation location, long timeLimitMillis, float creatureSpeed, EntityActionSimpleMove.Intensity intensity, float viscosityFraction, float targetX, float passiveVelocityX)
+	private static EntityActionSimpleMove<MutableCreature> _moveByX(ViscosityReader optionalSupplierForStep
+		, EntityLocation location
+		, EntityVolume volume
+		, long timeLimitMillis
+		, float creatureSpeed
+		, EntityActionSimpleMove.Intensity intensity
+		, float viscosityFraction
+		, float targetX
+		, float passiveVelocityX
+	)
 	{
 		// NOTE:  This call assumes that moving in X is possible (on solid ground or swimming).
 		float moveX = targetX - location.x();
@@ -445,18 +459,33 @@ public class CreatureMovementHelpers
 			// Note that we use viscosity to estimate how far we will move but the actual units of movement are just in terms of our basic speed.
 			float distanceToMove = _findRawMoveInTime(creatureSpeed * intensity.speedMultipler, viscosityFraction, moveX, passiveVelocityX, timeLimitMillis);
 			
+			// See if we need to step up.
+			EntitySubActionStepUp<MutableCreature> step = null;
+			if (null != optionalSupplierForStep)
+			{
+				step = EntitySubActionStepUp.buildStepUpWithReader(optionalSupplierForStep, location, volume, distanceToMove, 0.0f);
+			}
 			move = new EntityActionSimpleMove<>(distanceToMove
 				, 0.0f
 				, intensity
 				, (moveX > 0.0f) ? OrientationHelpers.YAW_EAST : OrientationHelpers.YAW_WEST
 				, OrientationHelpers.PITCH_FLAT
-				, null
+				, step
 			);
 		}
 		return move;
 	}
 
-	private static EntityActionSimpleMove<MutableCreature> _moveByY(EntityLocation location, long timeLimitMillis, float creatureSpeed, EntityActionSimpleMove.Intensity intensity, float viscosityFraction, float targetY, float passiveVelocityY)
+	private static EntityActionSimpleMove<MutableCreature> _moveByY(ViscosityReader optionalSupplierForStep
+		, EntityLocation location
+		, EntityVolume volume
+		, long timeLimitMillis
+		, float creatureSpeed
+		, EntityActionSimpleMove.Intensity intensity
+		, float viscosityFraction
+		, float targetY
+		, float passiveVelocityY
+	)
 	{
 		// NOTE:  This call assumes that moving in Y is possible (on solid ground or swimming).
 		float moveY = targetY - location.y();
@@ -467,12 +496,18 @@ public class CreatureMovementHelpers
 			// Note that we use viscosity to estimate how far we will move but the actual units of movement are just in terms of our basic speed.
 			float distanceToMove = _findRawMoveInTime(creatureSpeed * intensity.speedMultipler, viscosityFraction, moveY, passiveVelocityY, timeLimitMillis);
 			
+			// See if we need to step up.
+			EntitySubActionStepUp<MutableCreature> step = null;
+			if (null != optionalSupplierForStep)
+			{
+				step = EntitySubActionStepUp.buildStepUpWithReader(optionalSupplierForStep, location, volume, 0.0f, distanceToMove);
+			}
 			move = new EntityActionSimpleMove<>(0.0f
 				, distanceToMove
 				, intensity
 				, (moveY > 0.0f) ? OrientationHelpers.YAW_NORTH : OrientationHelpers.YAW_SOUTH
 				, OrientationHelpers.PITCH_FLAT
-				, null
+				, step
 			);
 		}
 		return move;

@@ -677,6 +677,52 @@ public class TestPathFinder
 		Assert.assertEquals(end, basePath.get(3));
 	}
 
+	@Test
+	public void walkingNavigatorHelper()
+	{
+		// This is a test for WalkingNavigator.findTargetLocation, since it is closely related to PathFinder.
+		EntityVolume volume = new EntityVolume(1.2f, 0.7f);
+		AbsoluteLocation startBlock = new AbsoluteLocation(10, 10, 10);
+		AbsoluteLocation stairBlock = startBlock.getRelative(-1, 0, 0);
+		AbsoluteLocation slabBlock = startBlock.getRelative(0, 1, 0);
+		AbsoluteLocation waterBlock = startBlock.getRelative(0, -1, 0);
+		AbsoluteLocation upBlock = startBlock.getRelative(0, 0, 1);
+		
+		// Generate a cuboid for this test.
+		Block stair = ENV.blocks.fromItem(ENV.items.getItemById("op.stone_brick_stair"));
+		Block slab = ENV.blocks.fromItem(ENV.items.getItemById("op.stone_brick_slab"));
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0,0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)9, STONE);
+		cuboid.setData15(AspectRegistry.BLOCK, stairBlock.getBlockAddress(), stair.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, stairBlock.getBlockAddress(), FacingDirection.directionToByte(FacingDirection.WEST));
+		cuboid.setData15(AspectRegistry.BLOCK, slabBlock.getBlockAddress(), slab.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, slabBlock.getBlockAddress(), FacingDirection.directionToByte(FacingDirection.DOWN));
+		cuboid.setData15(AspectRegistry.BLOCK, waterBlock.getBlockAddress(), WATER.item().number());
+		
+		TickProcessingContext.IBlockFetcher blockFetcher = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
+			return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
+				? BlockProxy.load(location.getBlockAddress(), cuboid)
+				: null
+			;
+		});
+		
+		WalkingNavigator.LocationViscosity upLocation = WalkingNavigator.findTargetLocation(blockFetcher, volume, upBlock, 0, 0);
+		Assert.assertEquals(upBlock.toEntityLocation(), upLocation.location());
+		Assert.assertEquals(0.0f, upLocation.viscosity(), 0.01f);
+		
+		WalkingNavigator.LocationViscosity stairLocation = WalkingNavigator.findTargetLocation(blockFetcher, volume, stairBlock, -1, 0);
+		Assert.assertEquals(stairBlock.toEntityLocation().getRelative(0.5f, 0.0f, 0.5f), stairLocation.location());
+		Assert.assertEquals(0.0f, stairLocation.viscosity(), 0.01f);
+		
+		WalkingNavigator.LocationViscosity slabLocation = WalkingNavigator.findTargetLocation(blockFetcher, volume, slabBlock, 0, 1);
+		Assert.assertEquals(slabBlock.toEntityLocation().getRelative(0.0f, -0.21f, 0.5f), slabLocation.location());
+		Assert.assertEquals(0.0f, slabLocation.viscosity(), 0.01f);
+		
+		WalkingNavigator.LocationViscosity waterLocation = WalkingNavigator.findTargetLocation(blockFetcher, volume, waterBlock, 0, -1);
+		Assert.assertEquals(waterBlock.toEntityLocation(), waterLocation.location());
+		Assert.assertEquals(0.5f, waterLocation.viscosity(), 0.01f);
+	}
+
 
 	private static void _printMap2D(int x, int y, Collection<AbsoluteLocation> path)
 	{

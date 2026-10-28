@@ -120,47 +120,22 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 		float viscosity;
 		if (isAllowed)
 		{
-			viscosity = _findMaxViscosityFromBase(realLocation);
-			isAllowed = (viscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
-			
-			// If we aren't allowed here, what happens if we take a step up.
-			if (!isAllowed && wasXyStep)
+			// See if we can directly enter the block or need to step up.
+			LocationViscosity result = _findTargetLocation(_previousBlockLookUp
+				, _volume
+				, location
+				, deltaX
+				, deltaY
+			);
+			if (null != result)
 			{
-				// Note that this could be a slab or a stair so we want to consider sliding _into_ the block from the other side.
-				float x = realLocation.x();
-				float y = realLocation.y();
-				if (deltaX < 0)
-				{
-					// We are walking toward the West so just put the location at +0.5f.
-					x += 0.5f;
-				}
-				else if (deltaX > 0)
-				{
-					// We are travelling to the East so back off to fit in 0.49f.
-					x = _shavePositive(x);
-				}
-				else if (deltaY < 0)
-				{
-					// We are walking toward the South so just put the location at +0.5f.
-					y += 0.5f;
-				}
-				else if (deltaY > 0)
-				{
-					// We are travelling to the North so back off to fit in 0.49f.
-					y = _shavePositive(y);
-				}
-				
-				EntityLocation stepLocation = new EntityLocation(x
-					, y
-					, realLocation.z() + EntitySubActionStepUp.MAX_STEP_HEIGHT
-				);
-				float stepViscosity = _findMaxViscosityFromBase(stepLocation);
-				isAllowed = (stepViscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
-				if (isAllowed)
-				{
-					realLocation = stepLocation;
-					viscosity = stepViscosity;
-				}
+				realLocation = result.location;
+				viscosity = result.viscosity;
+			}
+			else
+			{
+				viscosity = 1.0f;
+				isAllowed = false;
 			}
 		}
 		else
@@ -246,6 +221,36 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 		return _findMaxViscosityFromBase(base);
 	}
 
+	/**
+	 * A static helper which uses the shared internal logic to determine how to move between block locations.  It will
+	 * attempt a direct vertical movement but will attempt to step up on horizontal movement, if needed.
+	 * As a result of this "step up" logic, it is possible that location found will not be based in the target block but
+	 * will allow passage into it (since blocks like stairs won't allow a wide creature to put its south-west corner
+	 * technically "inside" the block.
+	 * Note that the way the move is determined as valid is whether or not it has a non-solid viscosity.
+	 * 
+	 * @param previousBlockLookUp Block lookup routine.
+	 * @param volume The volume of the creature.
+	 * @param targeBlock The target block to be entered (or at least approached).
+	 * @param deltaX The X component of the move from the previous block (0, +/-1).
+	 * @param deltaX The Y component of the move from the previous block (0, +/-1).
+	 * @return A description of the final entity base location and the viscosity it is experiencing.
+	 */
+	public static LocationViscosity findTargetLocation(TickProcessingContext.IBlockFetcher previousBlockLookUp
+		, EntityVolume volume
+		, AbsoluteLocation targeBlock
+		, int deltaX
+		, int deltaY
+	)
+	{
+		return _findTargetLocation(previousBlockLookUp
+			, volume
+			, targeBlock
+			, deltaX
+			, deltaY
+		);
+	}
+
 
 	private float _findMaxViscosityFromBase(EntityLocation blockBase)
 	{
@@ -259,9 +264,9 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 		return (viscosity >= BlockAspect.VISOSITY_FLOAT_SWIMMABLE) && (viscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
 	}
 
-	private float _shavePositive(float f)
+	private static float _shavePositive(EntityVolume volume, float f)
 	{
-		float edge = f + _volume.width();
+		float edge = f + volume.width();
 		float fraction = SpatialHelpers.getPositiveFractionalComponent(edge);
 		if (fraction > POSITIVE_STEP_OFFSET)
 		{
@@ -270,4 +275,64 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 		}
 		return f;
 	}
+
+	private static LocationViscosity _findTargetLocation(TickProcessingContext.IBlockFetcher previousBlockLookUp
+		, EntityVolume volume
+		, AbsoluteLocation targeBlock
+		, int deltaX
+		, int deltaY
+	)
+	{
+		ViscosityReader reader = new ViscosityReader(Environment.getShared(), previousBlockLookUp);
+		
+		// We just start with the base location of the block.
+		EntityLocation realLocation = targeBlock.toEntityLocation();
+		float viscosity = reader.getMaxStillViscosityInVolume(realLocation, volume);
+		
+		// If this is horizontal movement, we can try sliding into the partial block or stepping into it.
+		if ((BlockAspect.VISOSITY_FLOAT_SOLID == viscosity) && ((0 != deltaX) || (0 != deltaY)))
+		{
+			// We couldn't enter that block, so try taking a step up and entering half of it.
+			float x = realLocation.x();
+			float y = realLocation.y();
+			if (deltaX < 0)
+			{
+				// We are walking toward the West so just put the location at +0.5f.
+				x += 0.5f;
+			}
+			else if (deltaX > 0)
+			{
+				// We are travelling to the East so back off to fit in 0.49f.
+				x = _shavePositive(volume, x);
+			}
+			else if (deltaY < 0)
+			{
+				// We are walking toward the South so just put the location at +0.5f.
+				y += 0.5f;
+			}
+			else if (deltaY > 0)
+			{
+				// We are travelling to the North so back off to fit in 0.49f.
+				y = _shavePositive(volume, y);
+			}
+			
+			realLocation = new EntityLocation(x
+				, y
+				, realLocation.z() + EntitySubActionStepUp.MAX_STEP_HEIGHT
+			);
+			viscosity = reader.getMaxStillViscosityInVolume(realLocation, volume);
+		}
+		
+		// If we found a valid target, return it.
+		return (viscosity < BlockAspect.VISOSITY_FLOAT_SOLID)
+			? new LocationViscosity(realLocation, viscosity)
+			: null
+		;
+	}
+
+
+	/**
+	 * The base location (west, south, down corner) of an entity and the viscosity it is experiencing in this location. 
+	 */
+	public static record LocationViscosity(EntityLocation location, float viscosity) {}
 }

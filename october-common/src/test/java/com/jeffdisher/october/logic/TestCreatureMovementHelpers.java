@@ -21,6 +21,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -688,6 +689,44 @@ public class TestCreatureMovementHelpers
 		Assert.assertTrue(didApply);
 		Assert.assertEquals(new EntityLocation(1.04f, 1.02f, 1.0f), mutable.newLocation);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutable.newVelocity);
+	}
+
+	@Test
+	public void moveStepUp()
+	{
+		Block stair = ENV.blocks.fromItem(ENV.items.getItemById("op.stone_brick_stair"));
+		Block slab = ENV.blocks.fromItem(ENV.items.getItemById("op.stone_brick_slab"));
+		AbsoluteLocation centre = new AbsoluteLocation(10, 10, 1);
+		AbsoluteLocation slabBlock = centre.getRelative(-1, 0, 0);
+		AbsoluteLocation stairBlock = centre.getRelative(1, 0, 0);
+		
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		cuboid.setData15(AspectRegistry.BLOCK, slabBlock.getBlockAddress(), slab.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, slabBlock.getBlockAddress(), FacingDirection.directionToByte(FacingDirection.DOWN));
+		cuboid.setData15(AspectRegistry.BLOCK, stairBlock.getBlockAddress(), stair.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, stairBlock.getBlockAddress(), FacingDirection.directionToByte(FacingDirection.EAST));
+		
+		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
+			return address.equals(location.getCuboidAddress())
+				? BlockProxy.load(location.getBlockAddress(), cuboid)
+				: null
+			;
+		}));
+		EntityType player = ENV.creatures.PLAYER;
+		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		byte yaw = 0;
+		byte pitch = 0;
+		
+		EntityLocation slabStart = centre.toEntityLocation();
+		EntityActionSimpleMove<MutableCreature> slabMove = CreatureMovementHelpers.moveToNextLocation(reader, slabStart, velocity, yaw, pitch, player, slabBlock, 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING, false);
+		Assert.assertEquals("SimpleMove(WALKING), by -0.40, 0.00, Sub: Step-up", slabMove.toString());
+		
+		float offset = player.volume().width() + 0.01f;
+		EntityLocation stairStart = centre.toEntityLocation().getRelative(1.0f-offset, 1.0f-offset, 0.0f);
+		EntityActionSimpleMove<MutableCreature> stairMove = CreatureMovementHelpers.moveToNextLocation(reader, stairStart, velocity, yaw, pitch, player, stairBlock, 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING, false);
+		Assert.assertEquals("SimpleMove(WALKING), by 0.40, 0.00, Sub: Step-up", stairMove.toString());
 	}
 
 

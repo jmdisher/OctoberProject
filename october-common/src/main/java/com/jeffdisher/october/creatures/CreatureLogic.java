@@ -693,17 +693,23 @@ public class CreatureLogic
 			// We might not yet have noticed that we have moved into the next step so skip this check in that case.
 			if (!currentLocation.equals(thisStep))
 			{
-				int distanceToNext = Math.abs(currentLocation.x() - thisStep.x())
-					+ Math.abs(currentLocation.y() - thisStep.y())
+				int deltaX = thisStep.x() - currentLocation.x();
+				int deltaY = thisStep.y() - currentLocation.y();
+				int distanceToNext = Math.abs(deltaX)
+					+ Math.abs(deltaY)
 					+ Math.abs(currentLocation.z() - thisStep.z())
 				;
 				boolean isAdjacent = (1 == distanceToNext);
 				if (isAdjacent)
 				{
 					// Just make sure we can move into this next step.
-					ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
-					float nextViscosity = reader.getMaxStillViscosityInVolume(thisStep.toEntityLocation(), mutable.getType().volume());
-					if (BlockAspect.VISOSITY_FLOAT_SOLID == nextViscosity)
+					WalkingNavigator.LocationViscosity result = WalkingNavigator.findTargetLocation(context.previousBlockLookUp
+						, mutable.getType().volume()
+						, thisStep
+						, deltaX
+						, deltaY
+					);
+					if (null == result)
 					{
 						// Something is blocked so clear the plan.
 						mutable.movementPlan = null;
