@@ -21,6 +21,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -52,12 +53,12 @@ public class TestCreatureMovementHelpers
 	{
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = _createCow(location);
-		IEntityAction<MutableCreature> change = CreatureMovementHelpers.prepareForMove(creature.location(), creature.velocity(), creature.type(), location.getBlockLocation(), 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING);
+		IEntityAction<MutableCreature> change = CreatureMovementHelpers.prepareForMove(creature.location(), creature.velocity(), creature.type(), FacingDirection.DOWN, 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING);
 		Assert.assertNull(change);
 		
 		location = new EntityLocation(-1.0f, -1.0f, 1.0f);
 		creature = _createCow(location);
-		change = CreatureMovementHelpers.prepareForMove(creature.location(), creature.velocity(), creature.type(), location.getBlockLocation(), 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING);
+		change = CreatureMovementHelpers.prepareForMove(creature.location(), creature.velocity(), creature.type(), FacingDirection.DOWN, 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING);
 		Assert.assertNull(change);
 	}
 
@@ -66,12 +67,12 @@ public class TestCreatureMovementHelpers
 	{
 		EntityLocation location = new EntityLocation(1.9f, 1.9f, 1.0f);
 		CreatureEntity creature = _createCow(location);
-		IEntityAction<MutableCreature> change = CreatureMovementHelpers.prepareForMove(creature.location(), creature.velocity(), creature.type(), location.getBlockLocation(), 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING);
+		IEntityAction<MutableCreature> change = CreatureMovementHelpers.prepareForMove(creature.location(), creature.velocity(), creature.type(), FacingDirection.DOWN, 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING);
 		Assert.assertNotNull(change);
 		
 		location = new EntityLocation(-1.1f, -1.1f, 1.0f);
 		creature = _createCow(location);
-		change = CreatureMovementHelpers.prepareForMove(creature.location(), creature.velocity(), creature.type(), location.getBlockLocation(), 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING);
+		change = CreatureMovementHelpers.prepareForMove(creature.location(), creature.velocity(), creature.type(), FacingDirection.DOWN, 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING);
 		Assert.assertNotNull(change);
 	}
 
@@ -178,37 +179,37 @@ public class TestCreatureMovementHelpers
 		
 		// Now, check that we can handle hints in all 6 directions for centring.
 		// NORTH
-		AbsoluteLocation directionHint = new AbsoluteLocation(1, 2, 1);
+		FacingDirection directionHint = FacingDirection.NORTH;
 		IEntityAction<MutableCreature> change = CreatureMovementHelpers.prepareForMove(creature.location(), creature.velocity(), creature.type(), directionHint, 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING);
 		// 3 WEST
 		Assert.assertNotNull(change);
 		
 		// EAST
-		directionHint = new AbsoluteLocation(2, 1, 1);
+		directionHint = FacingDirection.EAST;
 		change = CreatureMovementHelpers.prepareForMove(creature.location(), creature.velocity(), creature.type(), directionHint, 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING);
 		// 3 SOUTH
 		Assert.assertNotNull(change);
 		
 		// SOUTH
-		directionHint = new AbsoluteLocation(1, 0, 1);
+		directionHint = FacingDirection.SOUTH;
 		change = CreatureMovementHelpers.prepareForMove(creature.location(), creature.velocity(), creature.type(), directionHint, 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING);
 		// 3 WEST, 4 SOUTH
 		Assert.assertNotNull(change);
 		
 		// WEST
-		directionHint = new AbsoluteLocation(0, 1, 1);
+		directionHint = FacingDirection.WEST;
 		change = CreatureMovementHelpers.prepareForMove(creature.location(), creature.velocity(), creature.type(), directionHint, 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING);
 		// 4 WEST, 3 SOUTH
 		Assert.assertNotNull(change);
 		
 		// UP
-		directionHint = new AbsoluteLocation(1, 1, 2);
+		directionHint = FacingDirection.UP;
 		change = CreatureMovementHelpers.prepareForMove(creature.location(), creature.velocity(), creature.type(), directionHint, 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING);
 		// 3 WEST, 3 SOUTH
 		Assert.assertNotNull(change);
 		
 		// DOWN
-		directionHint = new AbsoluteLocation(1, 1, 0);
+		directionHint = FacingDirection.DOWN;
 		change = CreatureMovementHelpers.prepareForMove(creature.location(), creature.velocity(), creature.type(), directionHint, 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING);
 		// 3 WEST, 3 SOUTH
 		Assert.assertNotNull(change);
@@ -220,7 +221,7 @@ public class TestCreatureMovementHelpers
 		// Shows that our motion is straight-forward when starting with no velocity.
 		EntityLocation creatureLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		MutableCreature mutable = MutableCreature.existing(_createCow(creatureLocation));
-		AbsoluteLocation directionHint = new AbsoluteLocation(1, 0, 0);
+		FacingDirection directionHint = FacingDirection.EAST;
 		long timeLimitMillis = 50L;
 		float viscosityFraction = 0.0f;
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.prepareForMove(mutable.newLocation, mutable.newVelocity, mutable.newType, directionHint, timeLimitMillis, viscosityFraction, EntityActionSimpleMove.Intensity.IDLE_CREATURE);
@@ -241,7 +242,7 @@ public class TestCreatureMovementHelpers
 		EntityLocation creatureLocation = new EntityLocation(143.11f, -106.94f, 0.0f);
 		MutableCreature mutable = MutableCreature.existing(_createCow(creatureLocation));
 		mutable.newVelocity = new EntityLocation(0.54f, 0.2f, 0.0f);
-		AbsoluteLocation directionHint = new AbsoluteLocation(142, -107, 0);
+		FacingDirection directionHint = FacingDirection.WEST;
 		long timeLimitMillis = 50L;
 		float viscosityFraction = 0.0f;
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.prepareForMove(mutable.newLocation, mutable.newVelocity, mutable.newType, directionHint, timeLimitMillis, viscosityFraction, EntityActionSimpleMove.Intensity.IDLE_CREATURE);
@@ -262,7 +263,7 @@ public class TestCreatureMovementHelpers
 		EntityLocation creatureLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		MutableCreature mutable = MutableCreature.existing(_createCow(creatureLocation));
 		mutable.newVelocity = new EntityLocation(5.0f, 0.0f, 0.0f);
-		AbsoluteLocation directionHint = new AbsoluteLocation(1, 0, 0);
+		FacingDirection directionHint = FacingDirection.EAST;
 		long timeLimitMillis = 50L;
 		float viscosityFraction = 0.0f;
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.prepareForMove(mutable.newLocation, mutable.newVelocity, mutable.newType, directionHint, timeLimitMillis, viscosityFraction, EntityActionSimpleMove.Intensity.IDLE_CREATURE);
@@ -284,7 +285,9 @@ public class TestCreatureMovementHelpers
 		EntityLocation creatureLocation = new EntityLocation(0.99f, 0.0f, 0.0f);
 		MutableCreature mutable = MutableCreature.existing(_createCow(creatureLocation));
 		mutable.newVelocity = new EntityLocation(10.0f, 0.0f, 0.0f);
-		AbsoluteLocation directionHint = new AbsoluteLocation(1, 0, 0);
+		AbsoluteLocation target = new AbsoluteLocation(1, 0, 0);
+		FacingDirection directionHint = CreatureMovementHelpers.adjacentDirection(creatureLocation.getBlockLocation(), target);
+		Assert.assertEquals(FacingDirection.EAST, directionHint);
 		long timeLimitMillis = 50L;
 		float viscosityFraction = 0.0f;
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.prepareForMove(mutable.newLocation, mutable.newVelocity, mutable.newType, directionHint, timeLimitMillis, viscosityFraction, EntityActionSimpleMove.Intensity.IDLE_CREATURE);
@@ -297,7 +300,7 @@ public class TestCreatureMovementHelpers
 			, (byte)0
 			, (byte)0
 			, mutable.newType
-			, directionHint
+			, target
 			, timeLimitMillis
 			, viscosityFraction
 			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
@@ -322,7 +325,7 @@ public class TestCreatureMovementHelpers
 		MutableCreature mutable = MutableCreature.existing(_createCow(location));
 		mutable.newVelocity = velocity;
 		CreatureEntity creature = mutable.freeze();
-		AbsoluteLocation target = new AbsoluteLocation(-60, -215, 0);
+		AbsoluteLocation target = new AbsoluteLocation(-61, -216, 0);
 		ViscosityReader reader = _getFixedBlockReader(WATER_SOURCE);
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, EntityActionSimpleMove.Intensity.IDLE_CREATURE, false);
 		Assert.assertNotNull(change);

@@ -10,6 +10,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.utils.Assert;
@@ -37,7 +38,7 @@ public class CreatureMovementHelpers
 	 * @param creatureLocation The creature's location.
 	 * @param creatureVelocity The creature's velocity.
 	 * @param creatureType The type of creature.
-	 * @param directionHint The block we need to eventually enter.
+	 * @param direction The direction we will eventually take (DOWN if it doesn't matter).
 	 * @param timeLimitMillis The number of milliseconds left in the tick.
 	 * @param viscosityFraction The viscosity of the current block ([0.0 .. 1.0]) where 1.0 is solid.
 	 * @param intensity The movement intensity.
@@ -46,7 +47,7 @@ public class CreatureMovementHelpers
 	public static EntityActionSimpleMove<MutableCreature> prepareForMove(EntityLocation creatureLocation
 		, EntityLocation creatureVelocity
 		, EntityType creatureType
-		, AbsoluteLocation directionHint
+		, FacingDirection direction
 		, long timeLimitMillis
 		, float viscosityFraction
 		, EntityActionSimpleMove.Intensity intensity
@@ -67,9 +68,10 @@ public class CreatureMovementHelpers
 		float targetX = creatureLocation.x();
 		float targetY = creatureLocation.y();
 		
-		if (directionHint.y() > baseLocation.y())
+		switch (direction)
 		{
-			// North.
+		case NORTH:
+		{
 			float possibleY = northBound;
 			northBound += 1.0f;
 			// If we are already north of our new possible target, just stay where we are.
@@ -82,9 +84,9 @@ public class CreatureMovementHelpers
 				targetY = possibleY;
 			}
 		}
-		else if (directionHint.x() > baseLocation.x())
+		break;
+		case EAST:
 		{
-			// East.
 			float possibleX = eastBound;
 			eastBound += 1.0f;
 			// If we are already east of our new possible target, just stay where we are.
@@ -97,9 +99,9 @@ public class CreatureMovementHelpers
 				targetX = possibleX;
 			}
 		}
-		else if (directionHint.y() < baseLocation.y())
+		break;
+		case SOUTH:
 		{
-			// South.
 			float possibleY = southBound;
 			southBound -= 1.0f;
 			// If we are already south of our new possible target, just stay where we are.
@@ -112,9 +114,9 @@ public class CreatureMovementHelpers
 				targetY = possibleY;
 			}
 		}
-		else if (directionHint.x() < baseLocation.x())
+		break;
+		case WEST:
 		{
-			// West.
 			float possibleX = westBound;
 			westBound -= 1.0f;
 			// If we are already west of our new possible target, just stay where we are.
@@ -127,9 +129,13 @@ public class CreatureMovementHelpers
 				targetX = possibleX;
 			}
 		}
-		else
-		{
+		break;
+		case DOWN:
+		case UP:
 			// The target is probably above or below us so we don't need horizontal movement.
+			break;
+		default:
+			throw Assert.unreachable();
 		}
 		
 		// Now, make sure that whatever target axes were unchanged still fit within our bounds.
@@ -182,10 +188,13 @@ public class CreatureMovementHelpers
 		, boolean isBlockSwimmable
 	)
 	{
+		AbsoluteLocation starting = creatureLocation.getBlockLocation();
+		FacingDirection direction = _adjacentDirection(starting, targetBlock);
+		
 		// We might need to jump, walk, or do nothing.
 		// If the target is above us and we are on the ground, 
 		EntityActionSimpleMove<MutableCreature> change;
-		if (targetBlock.z() > creatureLocation.z())
+		if (FacingDirection.UP == direction)
 		{
 			// We need to go up so see if we should jump, swim, or hope our momentum will get us there.
 			IEntitySubAction<MutableCreature> subAction;
@@ -218,21 +227,20 @@ public class CreatureMovementHelpers
 			// We will just move over by the axis which differs and otherwise stay where we are in the other axis.
 			float stepX = creatureLocation.x();
 			float stepY = creatureLocation.y();
-			AbsoluteLocation creatureBase = creatureLocation.getBlockLocation();
 			float width = creatureType.volume().width();
-			if (targetBlock.x() > creatureBase.x())
+			if (FacingDirection.EAST == direction)
 			{
 				stepX = targetBlock.x() + FLOAT_THRESHOLD;
 			}
-			else if (targetBlock.x() < creatureBase.x())
+			else if (FacingDirection.WEST == direction)
 			{
 				stepX = targetBlock.x() + 1.0f - FLOAT_THRESHOLD - width;
 			}
-			if (targetBlock.y() > creatureBase.y())
+			else if (FacingDirection.NORTH == direction)
 			{
 				stepY = targetBlock.y() + FLOAT_THRESHOLD;
 			}
-			else if (targetBlock.y() < creatureBase.y())
+			else if (FacingDirection.SOUTH == direction)
 			{
 				stepY = targetBlock.y() + 1.0f - FLOAT_THRESHOLD - width;
 			}
@@ -285,10 +293,12 @@ public class CreatureMovementHelpers
 	{
 		// We just want to find the furthest-away block on the same z-level.
 		AbsoluteLocation startBlock = creatureLocation.getBlockLocation();
+		AbsoluteLocation prev = startBlock;
 		AbsoluteLocation furthestBlock = null;
 		for (AbsoluteLocation next : fullPath)
 		{
-			if (startBlock.z() != next.z())
+			FacingDirection direction = _adjacentDirection(prev, next);
+			if ((FacingDirection.DOWN == direction) || (FacingDirection.UP == direction))
 			{
 				break;
 			}
@@ -304,6 +314,7 @@ public class CreatureMovementHelpers
 					break;
 				}
 			}
+			prev = next;
 		}
 		
 		EntityLocation directTarget;
@@ -433,6 +444,19 @@ public class CreatureMovementHelpers
 		return change;
 	}
 
+	/**
+	 * A helper to determine the direction of travel from from to to.  Note that this internally asserts that these
+	 * blocks are directly adjacent (share a face).
+	 * 
+	 * @param from The starting block.
+	 * @param to The ending block.
+	 * @return The direction of travel (null if blocks are the same).
+	 */
+	public static FacingDirection adjacentDirection(AbsoluteLocation from, AbsoluteLocation to)
+	{
+		return _adjacentDirection(from, to);
+	}
+
 
 	private static EntityActionSimpleMove<MutableCreature> _moveByX(EntityLocation location, long timeLimitMillis, float creatureSpeed, EntityActionSimpleMove.Intensity intensity, float viscosityFraction, float targetX, float passiveVelocityX)
 	{
@@ -508,6 +532,41 @@ public class CreatureMovementHelpers
 		int i = (int)(100.0f * input);
 		float f = (float)i / 100.0f;
 		return f;
+	}
+
+	private static FacingDirection _adjacentDirection(AbsoluteLocation from, AbsoluteLocation to)
+	{
+		FacingDirection direction = null;
+		
+		if (from.x() > to.x())
+		{
+			direction = FacingDirection.WEST;
+		}
+		else if (from.x() < to.x())
+		{
+			direction = FacingDirection.EAST;
+		}
+		if (from.y() > to.y())
+		{
+			Assert.assertTrue(null == direction);
+			direction = FacingDirection.SOUTH;
+		}
+		else if (from.y() < to.y())
+		{
+			Assert.assertTrue(null == direction);
+			direction = FacingDirection.NORTH;
+		}
+		if (from.z() > to.z())
+		{
+			Assert.assertTrue(null == direction);
+			direction = FacingDirection.DOWN;
+		}
+		else if (from.z() < to.z())
+		{
+			Assert.assertTrue(null == direction);
+			direction = FacingDirection.UP;
+		}
+		return direction;
 	}
 
 

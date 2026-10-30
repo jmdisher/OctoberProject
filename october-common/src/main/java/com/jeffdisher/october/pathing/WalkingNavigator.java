@@ -2,10 +2,12 @@ package com.jeffdisher.october.pathing;
 
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.logic.CreatureMovementHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -87,47 +89,47 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 		{
 			// First, we will apply our checks around directions.
 			AbsoluteLocation previousStep = from.location;
-			boolean wasXyStep = (previousStep.z() == location.z());
-			if (wasXyStep)
+			FacingDirection direction = CreatureMovementHelpers.adjacentDirection(previousStep, location);
+			boolean wasXyStep;
+			switch(direction)
 			{
-				int deltaX = location.x() - previousStep.x();
-				int deltaY = location.y() - previousStep.y();
-				if (deltaX < 0)
-				{
-					isAllowed = _allowWest;
-				}
-				else if (deltaX > 0)
-				{
-					isAllowed = _allowEast;
-				}
-				else if (deltaY < 0)
-				{
-					isAllowed = _allowSouth;
-				}
-				else if (deltaY > 0)
-				{
-					isAllowed = _allowNorth;
-				}
+			case WEST:
+				isAllowed = _allowWest;
+				wasXyStep = true;
 				cost = COST_STEP_FLAT;
-			}
-			else
-			{
-				// We are jumping or falling so make sure that is legal and determine the cost.
-				if (location.z() > previousStep.z())
-				{
-					// This is a jump so make sure that the previous location was on solid block or swimmable, but non-swimmable MUST be zero viscosity.
-					boolean wasOnSolidBlock = from.isOnGround;
-					float previousBlockViscosity = from.viscosity;
-					boolean wasSwimmable = _isSwimmable(previousBlockViscosity);
-					
-					isAllowed = ((wasOnSolidBlock && (BlockAspect.VISOSITY_FLOAT_ZERO == previousBlockViscosity)) || wasSwimmable);
-					cost = COST_JUMP;
-				}
-				else
-				{
-					// We will assume a fall is always ok.
-					cost = COST_FALL;
-				}
+				break;
+			case EAST:
+				isAllowed = _allowEast;
+				wasXyStep = true;
+				cost = COST_STEP_FLAT;
+				break;
+			case SOUTH:
+				isAllowed = _allowSouth;
+				wasXyStep = true;
+				cost = COST_STEP_FLAT;
+				break;
+			case NORTH:
+				isAllowed = _allowNorth;
+				wasXyStep = true;
+				cost = COST_STEP_FLAT;
+				break;
+			case UP:
+				// This is a jump so make sure that the previous location was on solid block or swimmable, but non-swimmable MUST be zero viscosity.
+				boolean wasOnSolidBlock = from.isOnGround;
+				float previousBlockViscosity = from.viscosity;
+				boolean wasSwimmable = _isSwimmable(previousBlockViscosity);
+				
+				isAllowed = ((wasOnSolidBlock && (BlockAspect.VISOSITY_FLOAT_ZERO == previousBlockViscosity)) || wasSwimmable);
+				wasXyStep = false;
+				cost = COST_JUMP;
+				break;
+			case DOWN:
+				// We will assume a fall is always ok.
+				wasXyStep = false;
+				cost = COST_FALL;
+				break;
+			default:
+				throw Assert.unreachable();
 			}
 			
 			if (isAllowed)

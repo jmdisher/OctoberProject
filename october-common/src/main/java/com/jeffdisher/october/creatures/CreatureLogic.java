@@ -20,6 +20,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -350,16 +351,24 @@ public class CreatureLogic
 		float viscosity = reader.getMaxStillViscosityInVolume(mutable.newLocation, mutable.getType().volume());
 		
 		// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
-		AbsoluteLocation directionHint = existingPlan.get(0);
-		if ((existingPlan.size() > 1) && (directionHint.z() > Math.floor(mutable.getLocation().z())))
+		EntityLocation currentLocation = mutable.getLocation();
+		AbsoluteLocation first = existingPlan.get(0);
+		FacingDirection direction;
+		if ((existingPlan.size() > 1) && (first.z() > Math.floor(currentLocation.z())))
 		{
 			// This means we are jumping so choose the next place where we want to go for direction hint.
-			directionHint = existingPlan.get(1);
+			AbsoluteLocation second = existingPlan.get(1);
+			direction = CreatureMovementHelpers.adjacentDirection(first, second);
 		}
-		EntityActionSimpleMove<MutableCreature> actionProduced = CreatureMovementHelpers.prepareForMove(mutable.getLocation()
+		else
+		{
+			// Otherwise, we just want to lean into the direction we are currently heading.
+			direction = CreatureMovementHelpers.adjacentDirection(currentLocation.getBlockLocation(), first);
+		}
+		EntityActionSimpleMove<MutableCreature> actionProduced = CreatureMovementHelpers.prepareForMove(currentLocation
 			, mutable.getVelocityVector()
 			, mutable.getType()
-			, directionHint
+			, direction
 			, timeLimitMillis
 			, viscosity
 			, oldPlan.intensity()
@@ -368,7 +377,7 @@ public class CreatureLogic
 		{
 			// If we are already in a reasonable location, proceed to move.
 			actionProduced = _planNextStep(reader
-				, mutable.getLocation()
+				, currentLocation
 				, mutable.getVelocityVector()
 				, mutable.newYaw
 				, mutable.newPitch
