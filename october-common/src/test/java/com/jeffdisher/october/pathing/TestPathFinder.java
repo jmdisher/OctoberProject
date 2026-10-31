@@ -64,7 +64,7 @@ public class TestPathFinder
 			, true
 			, true
 		);
-		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
+		List<PathLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
 		
 		// We expect to see 29 steps, since the source counts as a step.
 		int xSteps = 4 + 11;
@@ -88,7 +88,7 @@ public class TestPathFinder
 			, true
 			, true
 		);
-		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
+		List<PathLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
 		
 		// This is walking directly so the path should involve as many steps as difference in each axis (+1 for the start).
 		int xSteps = 4 + 11;
@@ -119,7 +119,7 @@ public class TestPathFinder
 			, true
 			, true
 		);
-		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
+		List<PathLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
 		Assert.assertNull(path);
 	}
 
@@ -145,7 +145,7 @@ public class TestPathFinder
 			, true
 			, true
 		);
-		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
+		List<PathLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
 		Assert.assertNull(path);
 	}
 
@@ -176,7 +176,7 @@ public class TestPathFinder
 			, true
 			, true
 		);
-		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
+		List<PathLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
 		_printMap2D(9, 9, path);
 	}
 
@@ -240,7 +240,7 @@ public class TestPathFinder
 			, true
 			, true
 		);
-		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
+		List<PathLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
 		// This is a direct walk, with a fall in the middle, so it should just be the difference in locations +1 to start.
 		int xSteps = 2;
 		int ySteps = 0;
@@ -274,7 +274,7 @@ public class TestPathFinder
 			, true
 			, true
 		);
-		Map<AbsoluteLocation, AbsoluteLocation> places = PathFinder.findPlacesWithinLimit(navigator
+		Map<PathLocation, PathLocation> places = PathFinder.findPlacesWithinLimit(navigator
 			, source
 		);
 		_printStepMap2D(10, 9, 5, places);
@@ -352,7 +352,7 @@ public class TestPathFinder
 			, true
 			, true
 		);
-		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
+		List<PathLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
 		int xSteps = 2;
 		int ySteps = 0;
 		int zSteps = 3;
@@ -407,7 +407,7 @@ public class TestPathFinder
 			, true
 			, true
 		);
-		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
+		List<PathLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
 		int xSteps = 2;
 		int ySteps = 0;
 		int zSteps = 0;
@@ -436,7 +436,7 @@ public class TestPathFinder
 			, true
 			, true
 		);
-		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
+		List<PathLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
 		Assert.assertNull(path);
 		
 		navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
@@ -447,7 +447,7 @@ public class TestPathFinder
 			, true
 			, true
 		);
-		Map<AbsoluteLocation, AbsoluteLocation> possiblePaths = PathFinder.findPlacesWithinLimit(navigator
+		Map<PathLocation, PathLocation> possiblePaths = PathFinder.findPlacesWithinLimit(navigator
 			, source
 		);
 		Assert.assertEquals(0, possiblePaths.size());
@@ -474,7 +474,7 @@ public class TestPathFinder
 			, true
 			, true
 		);
-		Map<AbsoluteLocation, AbsoluteLocation> allPaths = PathFinder.findPlacesWithinLimit(navigator
+		Map<PathLocation, PathLocation> allPaths = PathFinder.findPlacesWithinLimit(navigator
 			, source
 		);
 		Assert.assertEquals(54, allPaths.size());
@@ -488,16 +488,17 @@ public class TestPathFinder
 			, false
 			, true
 		);
-		Map<AbsoluteLocation, AbsoluteLocation> restrictedPaths = PathFinder.findPlacesWithinLimit(navigator
+		Map<PathLocation, PathLocation> restrictedPaths = PathFinder.findPlacesWithinLimit(navigator
 			, source
 		);
 		Assert.assertEquals(21, restrictedPaths.size());
 		
-		AbsoluteLocation start = source.getBlockLocation();
-		for (AbsoluteLocation key : restrictedPaths.keySet())
+		EntityLocation start = PathLocation.forEntityBase(source).getBaseLocation();
+		for (PathLocation key : restrictedPaths.keySet())
 		{
-			Assert.assertTrue(key.x() <= start.x());
-			Assert.assertTrue(key.y() >= start.y());
+			EntityLocation base = key.getBaseLocation();
+			Assert.assertTrue(base.x() <= start.x());
+			Assert.assertTrue(base.y() >= start.y());
 		}
 	}
 
@@ -539,7 +540,7 @@ public class TestPathFinder
 			, true
 			, true
 		);
-		List<AbsoluteLocation> basePath = PathFinder.findPathWithLimit(baseNavigator, sourceBase, targetBase);
+		List<PathLocation> basePath = PathFinder.findPathWithLimit(baseNavigator, sourceBase, targetBase);
 		Assert.assertEquals(7, basePath.size());
 		
 		WalkingNavigator centreNavigator = new WalkingNavigator(blockFetcher
@@ -550,7 +551,7 @@ public class TestPathFinder
 			, true
 			, true
 		);
-		List<AbsoluteLocation> centrePath = PathFinder.findPathWithLimit(centreNavigator, sourceCentre, targetCentre);
+		List<PathLocation> centrePath = PathFinder.findPathWithLimit(centreNavigator, sourceCentre, targetCentre);
 		Assert.assertEquals(7, centrePath.size());
 	}
 
@@ -586,12 +587,12 @@ public class TestPathFinder
 			, true
 			, true
 		);
-		List<AbsoluteLocation> basePath = PathFinder.findPathWithLimit(navigator, source, target);
+		List<PathLocation> basePath = PathFinder.findPathWithLimit(navigator, source, target);
 		Assert.assertEquals(5, basePath.size());
 	}
 
 
-	private static void _printMap2D(int x, int y, Collection<AbsoluteLocation> path)
+	private static void _printMap2D(int x, int y, Collection<PathLocation> path)
 	{
 		char[][] map = new char[y][x];
 		for (int i = 0; i < y; ++i)
@@ -601,9 +602,11 @@ public class TestPathFinder
 				map[i][j] = ' ';
 			}
 		}
-		for (AbsoluteLocation step : path)
+		for (PathLocation step : path)
 		{
-			map[step.y()][step.x()] = 'X';
+			int thisX = Math.round(step.getBaseLocation().x() / PathLocation.PATH_UNIT);
+			int thisY = Math.round(step.getBaseLocation().y() / PathLocation.PATH_UNIT);
+			map[thisY][thisX] = 'X';
 		}
 		for (int i = 0; i < y; ++i)
 		{
@@ -615,7 +618,7 @@ public class TestPathFinder
 		}
 	}
 
-	private static void _printStepMap2D(int x, int y, int fixedZ, Map<AbsoluteLocation, AbsoluteLocation> backStepPath)
+	private static void _printStepMap2D(int x, int y, int fixedZ, Map<PathLocation, PathLocation> backStepPath)
 	{
 		char[][] map = new char[y][x];
 		for (int i = 0; i < y; ++i)
@@ -625,19 +628,22 @@ public class TestPathFinder
 				map[i][j] = ' ';
 			}
 		}
-		for (AbsoluteLocation step : backStepPath.keySet())
+		for (PathLocation step : backStepPath.keySet())
 		{
-			if (fixedZ == step.z())
+			int thisX = Math.round(step.getBaseLocation().x() / PathLocation.PATH_UNIT);
+			int thisY = Math.round(step.getBaseLocation().y() / PathLocation.PATH_UNIT);
+			int thisZ = Math.round(step.getBaseLocation().z() / PathLocation.PATH_UNIT);
+			if (fixedZ == thisZ)
 			{
 				// Count how many steps this walks.
 				int count = 0;
-				AbsoluteLocation back = backStepPath.get(step);
+				PathLocation back = backStepPath.get(step);
 				while (null != back)
 				{
 					count += 1;
 					back = backStepPath.get(back);
 				}
-				map[step.y()][step.x()] = Integer.toString(count).charAt(0);
+				map[thisY][thisX] = Integer.toString(count).charAt(0);
 			}
 		}
 		for (int i = 0; i < y; ++i)

@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.MiscConstants;
+import com.jeffdisher.october.pathing.PathLocation;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -77,7 +78,7 @@ public record CreatureEntity(int id
 	 */
 	public static record MovementPlan(
 		// The full plan, starting with the next step the creature must enter.  Can be null but never empty.
-		List<AbsoluteLocation> fullPlan
+		List<PathLocation> fullPlan
 		// The ID of the entity this creature is currently targeting (or NO_TARGET_ENTITY_ID if none).
 		, int targetEntityId
 		// The last location of the target which was used to determine the movementPlan (can be null if we have no

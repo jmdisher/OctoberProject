@@ -2,9 +2,7 @@ package com.jeffdisher.october.pathing;
 
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.logic.CreatureMovementHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.FacingDirection;
@@ -67,15 +65,16 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 		BasicSpot result = null;
 		if (isAllowed)
 		{
-			AbsoluteLocation down = entityBase.getBlockLocation().getRelative(0, 0, -1);
+			PathLocation baseLocation = PathLocation.forEntityBase(entityBase);
+			PathLocation down = baseLocation.getRelative(0, 0, -1);
 			boolean isOnSolidBlock = (BlockAspect.VISOSITY_FLOAT_SOLID == _findMaxViscosityFromBlock(down));
-			result = new BasicSpot(entityBase.getBlockLocation(), 0.0f, isOnSolidBlock, viscosity);
+			result = new BasicSpot(baseLocation, 0.0f, isOnSolidBlock, viscosity);
 		}
 		return result;
 	}
 
 	@Override
-	public BasicSpot enterSpot(BasicSpot from, AbsoluteLocation location)
+	public BasicSpot enterSpot(BasicSpot from, PathLocation location)
 	{
 		// This helper never receives null.
 		Assert.assertTrue(null != from);
@@ -88,8 +87,8 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 		if (isAllowed)
 		{
 			// First, we will apply our checks around directions.
-			AbsoluteLocation previousStep = from.location;
-			FacingDirection direction = CreatureMovementHelpers.adjacentDirection(previousStep, location);
+			PathLocation previousStep = from.location;
+			FacingDirection direction = PathLocation.adjacentDirection(previousStep, location);
 			boolean wasXyStep;
 			switch(direction)
 			{
@@ -134,7 +133,7 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 			
 			if (isAllowed)
 			{
-				AbsoluteLocation down = location.getRelative(0, 0, -1);
+				PathLocation down = location.getRelative(0, 0, -1);
 				isOnSolidBlock = (BlockAspect.VISOSITY_FLOAT_SOLID == _findMaxViscosityFromBlock(down));
 			}
 			else
@@ -183,9 +182,9 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 	}
 
 
-	private float _findMaxViscosityFromBlock(AbsoluteLocation block)
+	private float _findMaxViscosityFromBlock(PathLocation block)
 	{
-		return _findMaxViscosityFromBase(block.toEntityLocation());
+		return _findMaxViscosityFromBase(block.getBaseLocation());
 	}
 
 	private float _findMaxViscosityFromBase(EntityLocation blockBase)

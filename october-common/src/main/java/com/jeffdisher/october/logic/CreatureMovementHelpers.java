@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.logic.EntityMovementHelpers.IInteractiveHelper;
+import com.jeffdisher.october.pathing.PathLocation;
 import com.jeffdisher.october.subactions.EntitySubActionJump;
 import com.jeffdisher.october.subactions.EntitySubActionSwim;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -181,15 +182,15 @@ public class CreatureMovementHelpers
 		, byte yaw
 		, byte pitch
 		, EntityType creatureType
-		, AbsoluteLocation targetBlock
+		, PathLocation targetBlock
 		, long timeLimitMillis
 		, float viscosityFraction
 		, EntityActionSimpleMove.Intensity intensity
 		, boolean isBlockSwimmable
 	)
 	{
-		AbsoluteLocation starting = creatureLocation.getBlockLocation();
-		FacingDirection direction = _adjacentDirection(starting, targetBlock);
+		PathLocation starting = PathLocation.forEntityBase(creatureLocation);
+		FacingDirection direction = PathLocation.adjacentDirection(starting, targetBlock);
 		
 		// We might need to jump, walk, or do nothing.
 		// If the target is above us and we are on the ground, 
@@ -228,23 +229,24 @@ public class CreatureMovementHelpers
 			float stepX = creatureLocation.x();
 			float stepY = creatureLocation.y();
 			float width = creatureType.volume().width();
+			EntityLocation targetBase = targetBlock.getBaseLocation();
 			if (FacingDirection.EAST == direction)
 			{
-				stepX = targetBlock.x() + FLOAT_THRESHOLD;
+				stepX = targetBase.x() + FLOAT_THRESHOLD;
 			}
 			else if (FacingDirection.WEST == direction)
 			{
-				stepX = targetBlock.x() + 1.0f - FLOAT_THRESHOLD - width;
+				stepX = targetBase.x() + PathLocation.PATH_UNIT - FLOAT_THRESHOLD - width;
 			}
 			else if (FacingDirection.NORTH == direction)
 			{
-				stepY = targetBlock.y() + FLOAT_THRESHOLD;
+				stepY = targetBase.y() + FLOAT_THRESHOLD;
 			}
 			else if (FacingDirection.SOUTH == direction)
 			{
-				stepY = targetBlock.y() + 1.0f - FLOAT_THRESHOLD - width;
+				stepY = targetBase.y() + PathLocation.PATH_UNIT - FLOAT_THRESHOLD - width;
 			}
-			float stepZ = targetBlock.z();
+			float stepZ = targetBase.z();
 			EntityLocation stepLocation = new EntityLocation(stepX, stepY, stepZ);
 			float distanceX = Math.abs(stepLocation.x() - creatureLocation.x());
 			float distanceY = Math.abs(stepLocation.y() - creatureLocation.y());
@@ -288,16 +290,16 @@ public class CreatureMovementHelpers
 	public static EntityLocation findDirectTarget(ViscosityReader supplier
 		, EntityLocation creatureLocation
 		, EntityType creatureType
-		, List<AbsoluteLocation> fullPath
+		, List<PathLocation> fullPath
 	)
 	{
 		// We just want to find the furthest-away block on the same z-level.
-		AbsoluteLocation startBlock = creatureLocation.getBlockLocation();
-		AbsoluteLocation prev = startBlock;
-		AbsoluteLocation furthestBlock = null;
-		for (AbsoluteLocation next : fullPath)
+		PathLocation startBlock = PathLocation.forEntityBase(creatureLocation);
+		PathLocation prev = startBlock;
+		PathLocation furthestBlock = null;
+		for (PathLocation next : fullPath)
 		{
-			FacingDirection direction = _adjacentDirection(prev, next);
+			FacingDirection direction = PathLocation.adjacentDirection(prev, next);
 			if ((FacingDirection.DOWN == direction) || (FacingDirection.UP == direction))
 			{
 				break;
@@ -305,7 +307,7 @@ public class CreatureMovementHelpers
 			else
 			{
 				// Check that the block under this is solid.
-				if (supplier.isSolidBlockInVolume(next.getRelative(0, 0, -1).toEntityLocation(), new EntityVolume(0.01f, 0.01f), true))
+				if (supplier.isSolidBlockInVolume(next.getRelative(0, 0, -1).getBaseLocation(), new EntityVolume(0.01f, 0.01f), true))
 				{
 					furthestBlock = next;
 				}
@@ -323,8 +325,8 @@ public class CreatureMovementHelpers
 			// For now, just keep us where we are in the block and walk to the new block.
 			EntityVolume volume = creatureType.volume();
 			// (we recreate the start so we can determine the distance as a whole number)
-			EntityLocation entityStart = startBlock.toEntityLocation();
-			EntityLocation entityEnd = furthestBlock.toEntityLocation();
+			EntityLocation entityStart = startBlock.getBaseLocation();
+			EntityLocation entityEnd = furthestBlock.getBaseLocation();
 			float distanceX = entityEnd.x() - entityStart.x();
 			float distanceY = entityEnd.y() - entityStart.y();
 			EntityLocation totalDistanceToMove = new EntityLocation(distanceX, distanceY, 0.0f);
@@ -444,19 +446,6 @@ public class CreatureMovementHelpers
 		return change;
 	}
 
-	/**
-	 * A helper to determine the direction of travel from from to to.  Note that this internally asserts that these
-	 * blocks are directly adjacent (share a face).
-	 * 
-	 * @param from The starting block.
-	 * @param to The ending block.
-	 * @return The direction of travel (null if blocks are the same).
-	 */
-	public static FacingDirection adjacentDirection(AbsoluteLocation from, AbsoluteLocation to)
-	{
-		return _adjacentDirection(from, to);
-	}
-
 
 	private static EntityActionSimpleMove<MutableCreature> _moveByX(EntityLocation location, long timeLimitMillis, float creatureSpeed, EntityActionSimpleMove.Intensity intensity, float viscosityFraction, float targetX, float passiveVelocityX)
 	{
@@ -532,41 +521,6 @@ public class CreatureMovementHelpers
 		int i = (int)(100.0f * input);
 		float f = (float)i / 100.0f;
 		return f;
-	}
-
-	private static FacingDirection _adjacentDirection(AbsoluteLocation from, AbsoluteLocation to)
-	{
-		FacingDirection direction = null;
-		
-		if (from.x() > to.x())
-		{
-			direction = FacingDirection.WEST;
-		}
-		else if (from.x() < to.x())
-		{
-			direction = FacingDirection.EAST;
-		}
-		if (from.y() > to.y())
-		{
-			Assert.assertTrue(null == direction);
-			direction = FacingDirection.SOUTH;
-		}
-		else if (from.y() < to.y())
-		{
-			Assert.assertTrue(null == direction);
-			direction = FacingDirection.NORTH;
-		}
-		if (from.z() > to.z())
-		{
-			Assert.assertTrue(null == direction);
-			direction = FacingDirection.DOWN;
-		}
-		else if (from.z() < to.z())
-		{
-			Assert.assertTrue(null == direction);
-			direction = FacingDirection.UP;
-		}
-		return direction;
 	}
 
 

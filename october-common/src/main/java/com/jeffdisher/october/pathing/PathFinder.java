@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.utils.Assert;
 
@@ -36,7 +35,7 @@ public class PathFinder
 	 * @param target The target location of the entity.
 	 * @return The path to follow to reach the target, starting with the current location, null if no path exists.
 	 */
-	public static <T extends ASpot> List<AbsoluteLocation> findPathWithLimit(PathFinder.INavigator<T> navigator, EntityLocation source, EntityLocation target)
+	public static <T extends ASpot> List<PathLocation> findPathWithLimit(PathFinder.INavigator<T> navigator, EntityLocation source, EntityLocation target)
 	{
 		return _findPathWithLimit(navigator, source, target);
 	}
@@ -51,11 +50,11 @@ public class PathFinder
 	 * @param source The starting location of the entity.
 	 * @return The walk-back map.
 	 */
-	public static <T extends ASpot> Map<AbsoluteLocation, AbsoluteLocation> findPlacesWithinLimit(PathFinder.INavigator<T> navigator
+	public static <T extends ASpot> Map<PathLocation, PathLocation> findPlacesWithinLimit(PathFinder.INavigator<T> navigator
 		, EntityLocation source
 	)
 	{
-		Map<AbsoluteLocation, AbsoluteLocation> walkBackward = new HashMap<>();
+		Map<PathLocation, PathLocation> walkBackward = new HashMap<>();
 		// This will populate the walkBackward map
 		_populateWalkbackMap(walkBackward
 			, navigator
@@ -66,22 +65,22 @@ public class PathFinder
 	}
 
 
-	private static <T extends ASpot> List<AbsoluteLocation> _findPathWithLimit(PathFinder.INavigator<T> navigator, EntityLocation entitySource, EntityLocation entityTarget)
+	private static <T extends ASpot> List<PathLocation> _findPathWithLimit(PathFinder.INavigator<T> navigator, EntityLocation entitySource, EntityLocation entityTarget)
 	{
 		// Key is destination.
-		Map<AbsoluteLocation, AbsoluteLocation> walkBackward = new HashMap<>();
+		Map<PathLocation, PathLocation> walkBackward = new HashMap<>();
 		// This will populate the walkBackward map and return the final spot for entityTarget, assuming it could be reached.
 		T targetSpot = _populateWalkbackMap(walkBackward
 			, navigator
 			, entitySource
 			, entityTarget
 		);
-		List<AbsoluteLocation> path = null;
+		List<PathLocation> path = null;
 		if (null != targetSpot)
 		{
 			// We found the target so find the path.
 			path = new ArrayList<>();
-			AbsoluteLocation back = targetSpot.location;
+			PathLocation back = targetSpot.location;
 			while (null != back)
 			{
 				path.add(0, back);
@@ -91,13 +90,13 @@ public class PathFinder
 		return path;
 	}
 
-	private static <T extends ASpot> T _populateWalkbackMap(Map<AbsoluteLocation, AbsoluteLocation> walkBackward
+	private static <T extends ASpot> T _populateWalkbackMap(Map<PathLocation, PathLocation> walkBackward
 		, PathFinder.INavigator<T> navigator
 		, EntityLocation entitySource
 		, EntityLocation entityTarget
 	)
 	{
-		AbsoluteLocation target = (null != entityTarget) ? entityTarget.getBlockLocation() : null;
+		PathLocation target = (null != entityTarget) ? PathLocation.forEntityBase(entityTarget) : null;
 		
 		// Key is destination.
 		PriorityQueue<T> workQueue = new PriorityQueue<>((T one, T two) -> {
@@ -116,7 +115,7 @@ public class PathFinder
 		T startSpot = navigator.startSpot(entitySource);
 		if (null != startSpot)
 		{
-			AbsoluteLocation old = walkBackward.put(startSpot.location, null);
+			PathLocation old = walkBackward.put(startSpot.location, null);
 			// This was empty.
 			Assert.assertTrue(null == old);
 			workQueue.add(startSpot);
@@ -134,7 +133,7 @@ public class PathFinder
 			else
 			{
 				// We aren't yet at the target so check the spaces around us.
-				AbsoluteLocation spotLocation = spot.location;
+				PathLocation spotLocation = spot.location;
 				_addIfValid(walkBackward, workQueue, navigator, spot, spotLocation.getRelative(-1, 0, 0));
 				_addIfValid(walkBackward, workQueue, navigator, spot, spotLocation.getRelative(1, 0, 0));
 				_addIfValid(walkBackward, workQueue, navigator, spot, spotLocation.getRelative(0, -1, 0));
@@ -147,11 +146,11 @@ public class PathFinder
 	}
 
 
-	private static <T extends ASpot> void _addIfValid(Map<AbsoluteLocation, AbsoluteLocation> walkBackward
+	private static <T extends ASpot> void _addIfValid(Map<PathLocation, PathLocation> walkBackward
 		, PriorityQueue<T> workQueue
 		, PathFinder.INavigator<T> navigator
 		, T previous
-		, AbsoluteLocation location
+		, PathLocation location
 	)
 	{
 		// Make sure that we haven't already reached this destination via an earlier path.
@@ -160,7 +159,7 @@ public class PathFinder
 			T thisSpot = navigator.enterSpot(previous, location);
 			if (null != thisSpot)
 			{
-				AbsoluteLocation old = walkBackward.put(location, previous.location);
+				PathLocation old = walkBackward.put(location, previous.location);
 				// This was checked above.
 				Assert.assertTrue(null == old);
 				workQueue.add(thisSpot);
@@ -176,9 +175,9 @@ public class PathFinder
 	 */
 	public abstract static class ASpot
 	{
-		public final AbsoluteLocation location;
+		public final PathLocation location;
 		public final float distance;
-		protected ASpot(AbsoluteLocation location, float distance)
+		protected ASpot(PathLocation location, float distance)
 		{
 			this.location = location;
 			this.distance = distance;
@@ -206,6 +205,6 @@ public class PathFinder
 		 * @param location The location to navigate into.
 		 * @return The new ASpot instance for location, or null if the navigator cannot enter location.
 		 */
-		T enterSpot(T from, AbsoluteLocation location);
+		T enterSpot(T from, PathLocation location);
 	}
 }

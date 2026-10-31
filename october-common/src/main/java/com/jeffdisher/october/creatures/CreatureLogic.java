@@ -15,6 +15,7 @@ import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.pathing.PathFinder;
+import com.jeffdisher.october.pathing.PathLocation;
 import com.jeffdisher.october.pathing.WalkingNavigator;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -198,7 +199,7 @@ public class CreatureLogic
 	 * @param type The creature's type.
 	 * @return A path to a randomly selected target.
 	 */
-	public static List<AbsoluteLocation> test_findPathToRandomSpot(TickProcessingContext context, EntityLocation location, EntityType type)
+	public static List<PathLocation> test_findPathToRandomSpot(TickProcessingContext context, EntityLocation location, EntityType type)
 	{
 		WalkingNavigator navigator = new WalkingNavigator(context.previousBlockLookUp
 			, type.volume()
@@ -319,7 +320,7 @@ public class CreatureLogic
 	)
 	{
 		CreatureEntity.MovementPlan movementPlan;
-		List<AbsoluteLocation> steps = _findPathToRandomSpot(context
+		List<PathLocation> steps = _findPathToRandomSpot(context
 			, navigator
 			, mutable.getLocation()
 		);
@@ -344,7 +345,7 @@ public class CreatureLogic
 		, long timeLimitMillis
 	)
 	{
-		List<AbsoluteLocation> existingPlan = oldPlan.fullPlan();
+		List<PathLocation> existingPlan = oldPlan.fullPlan();
 		Assert.assertTrue(!existingPlan.isEmpty());
 		
 		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
@@ -352,18 +353,18 @@ public class CreatureLogic
 		
 		// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
 		EntityLocation currentLocation = mutable.getLocation();
-		AbsoluteLocation first = existingPlan.get(0);
+		PathLocation first = existingPlan.get(0);
 		FacingDirection direction;
-		if ((existingPlan.size() > 1) && (first.z() > Math.floor(currentLocation.z())))
+		if ((existingPlan.size() > 1) && (FacingDirection.UP == PathLocation.adjacentDirection(PathLocation.forEntityBase(currentLocation), first)))
 		{
 			// This means we are jumping so choose the next place where we want to go for direction hint.
-			AbsoluteLocation second = existingPlan.get(1);
-			direction = CreatureMovementHelpers.adjacentDirection(first, second);
+			PathLocation second = existingPlan.get(1);
+			direction = PathLocation.adjacentDirection(first, second);
 		}
 		else
 		{
 			// Otherwise, we just want to lean into the direction we are currently heading.
-			direction = CreatureMovementHelpers.adjacentDirection(currentLocation.getBlockLocation(), first);
+			direction = PathLocation.adjacentDirection(PathLocation.forEntityBase(currentLocation), first);
 		}
 		EntityActionSimpleMove<MutableCreature> actionProduced = CreatureMovementHelpers.prepareForMove(currentLocation
 			, mutable.getVelocityVector()
@@ -412,7 +413,7 @@ public class CreatureLogic
 			EntityLocation targetLocation = newTarget.location();
 			// If this fails, it will return null which is already our failure case.
 			EntityLocation creatureLocation = mutable.getLocation();
-			List<AbsoluteLocation> path = PathFinder.findPathWithLimit(navigator, creatureLocation, targetLocation);
+			List<PathLocation> path = PathFinder.findPathWithLimit(navigator, creatureLocation, targetLocation);
 			if (null != path)
 			{
 				plan = _pruneAndStoreFreshTargetPlan(context, mutable.newLocation, mutable.newType, path, newTarget.id(), targetLocation);
@@ -424,26 +425,26 @@ public class CreatureLogic
 		return plan;
 	}
 
-	private static List<AbsoluteLocation> _findPathToRandomSpot(TickProcessingContext context
+	private static List<PathLocation> _findPathToRandomSpot(TickProcessingContext context
 		, WalkingNavigator navigator
 		, EntityLocation creatureLocation
 	)
 	{
-		Map<AbsoluteLocation, AbsoluteLocation> possiblePaths = PathFinder.findPlacesWithinLimit(navigator
+		Map<PathLocation, PathLocation> possiblePaths = PathFinder.findPlacesWithinLimit(navigator
 			, creatureLocation
 		);
 		
 		// Strip out any of the ending positions which we don't want.
-		List<AbsoluteLocation> goodTargets = _extractAcceptablePathTargets(navigator, possiblePaths, creatureLocation.getBlockLocation());
+		List<PathLocation> goodTargets = _extractAcceptablePathTargets(navigator, possiblePaths, creatureLocation);
 		
 		// Just pick one of these destinations at random, or default to standing still.
 		int size = goodTargets.size();
-		List<AbsoluteLocation> plannedPath;
+		List<PathLocation> plannedPath;
 		if (size > 0)
 		{
 			int selection = context.randomInt.applyAsInt(size);
 			// Skip over this many options (we can't really index into this and choosing the "first" would give a hash-order preference).
-			AbsoluteLocation target = goodTargets.get(selection);
+			PathLocation target = goodTargets.get(selection);
 			
 			// We can now build the plan - note that we build this in reverse since the map is back-pointers.
 			plannedPath = new ArrayList<>();
@@ -475,13 +476,13 @@ public class CreatureLogic
 		, byte yaw
 		, byte pitch
 		, EntityType type
-		, List<AbsoluteLocation> existingPlan
+		, List<PathLocation> existingPlan
 		, long timeLimitMillis
 		, float viscosity
 		, EntityActionSimpleMove.Intensity intensity
 	)
 	{
-		AbsoluteLocation thisStep = existingPlan.get(0);
+		PathLocation thisStep = existingPlan.get(0);
 		AbsoluteLocation currentLocation = entityLocation.getBlockLocation();
 		
 		// We know that this should only be called AFTER updating our planned path.
@@ -491,32 +492,33 @@ public class CreatureLogic
 		return CreatureMovementHelpers.moveToNextLocation(reader, entityLocation, entityVelocity, yaw, pitch, type, thisStep, timeLimitMillis, viscosity, intensity, isSwimmable);
 	}
 
-	private static List<AbsoluteLocation> _extractAcceptablePathTargets(WalkingNavigator navigator
-		, Map<AbsoluteLocation, AbsoluteLocation> possiblePaths
-		, AbsoluteLocation currentLocation
+	private static List<PathLocation> _extractAcceptablePathTargets(WalkingNavigator navigator
+		, Map<PathLocation, PathLocation> possiblePaths
+		, EntityLocation currentLocation
 	)
 	{
 		// We will only choose paths which don't end in air above air (jumping into the air for no reason) or in water (since none of our creatures can breathe under water).
-		List<AbsoluteLocation> goodTargets = new ArrayList<>();
-		for (Map.Entry<AbsoluteLocation, AbsoluteLocation> elt : possiblePaths.entrySet())
+		PathLocation currentPath = PathLocation.forEntityBase(currentLocation);
+		List<PathLocation> goodTargets = new ArrayList<>();
+		for (Map.Entry<PathLocation, PathLocation> elt : possiblePaths.entrySet())
 		{
-			AbsoluteLocation end = elt.getKey();
-			float endViscosity = navigator.getViscosityAtBase(end.toEntityLocation());
+			PathLocation end = elt.getKey();
+			float endViscosity = navigator.getViscosityAtBase(end.getBaseLocation());
 			boolean shouldInclude = true;
 			if (endViscosity >= BlockAspect.VISOSITY_FLOAT_SWIMMABLE)
 			{
 				// This path ends in water so don't include it.
 				shouldInclude = false;
 			}
-			else if (currentLocation.equals(end))
+			else if (currentPath.equals(end))
 			{
 				// We don't want to end where we started.
 				shouldInclude = false;
 			}
 			else
 			{
-				AbsoluteLocation under = end.getRelative(0, 0, -1);
-				float underViscosity = navigator.getViscosityAtBase(under.toEntityLocation());
+				PathLocation under = end.getRelative(0, 0, -1);
+				float underViscosity = navigator.getViscosityAtBase(under.getBaseLocation());
 				if (underViscosity < BlockAspect.VISOSITY_FLOAT_SWIMMABLE)
 				{
 					// This block is over top of a walkable block (meaning it was a jump) so ignore it.
@@ -534,7 +536,7 @@ public class CreatureLogic
 	private static CreatureEntity.MovementPlan _pruneAndStoreFreshTargetPlan(TickProcessingContext context
 		, EntityLocation location
 		, EntityType type
-		, List<AbsoluteLocation> path
+		, List<PathLocation> path
 		, int targetEntityId
 		, EntityLocation targetPreviousLocation
 	)
@@ -557,7 +559,7 @@ public class CreatureLogic
 		return plan;
 	}
 
-	private static CreatureEntity.MovementPlan _planWithoutTarget(List<AbsoluteLocation> path
+	private static CreatureEntity.MovementPlan _planWithoutTarget(List<PathLocation> path
 		, EntityActionSimpleMove.Intensity intensity
 	)
 	{
@@ -572,7 +574,7 @@ public class CreatureLogic
 		);
 	}
 
-	private static CreatureEntity.MovementPlan _planWithDistantTarget(List<AbsoluteLocation> path
+	private static CreatureEntity.MovementPlan _planWithDistantTarget(List<PathLocation> path
 		, int targetEntityId
 		, EntityLocation targetPreviousLocation
 	)
@@ -695,23 +697,20 @@ public class CreatureLogic
 		{
 			EntityLocation entityLocation = mutable.newLocation;
 			
-			List<AbsoluteLocation> existingPlan = mutable.movementPlan.fullPlan();
-			AbsoluteLocation thisStep = existingPlan.get(0);
-			AbsoluteLocation currentLocation = entityLocation.getBlockLocation();
+			List<PathLocation> existingPlan = mutable.movementPlan.fullPlan();
+			PathLocation thisStep = existingPlan.get(0);
+			PathLocation currentLocation = PathLocation.forEntityBase(entityLocation);
 			
 			// We might not yet have noticed that we have moved into the next step so skip this check in that case.
 			if (!currentLocation.equals(thisStep))
 			{
-				int distanceToNext = Math.abs(currentLocation.x() - thisStep.x())
-					+ Math.abs(currentLocation.y() - thisStep.y())
-					+ Math.abs(currentLocation.z() - thisStep.z())
-				;
+				int distanceToNext = PathLocation.pathStepDistance(currentLocation, thisStep);
 				boolean isAdjacent = (1 == distanceToNext);
 				if (isAdjacent)
 				{
 					// Just make sure we can move into this next step.
 					ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
-					float nextViscosity = reader.getMaxStillViscosityInVolume(thisStep.toEntityLocation(), mutable.getType().volume());
+					float nextViscosity = reader.getMaxStillViscosityInVolume(thisStep.getBaseLocation(), mutable.getType().volume());
 					if (BlockAspect.VISOSITY_FLOAT_SOLID == nextViscosity)
 					{
 						// Something is blocked so clear the plan.
@@ -779,9 +778,9 @@ public class CreatureLogic
 		// Check if the plan should be updated due to us stepping into the next block.
 		if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
 		{
-			List<AbsoluteLocation> existingPlan = mutable.movementPlan.fullPlan();
-			AbsoluteLocation thisStep = existingPlan.get(0);
-			AbsoluteLocation currentLocation = mutable.getLocation().getBlockLocation();
+			List<PathLocation> existingPlan = mutable.movementPlan.fullPlan();
+			PathLocation thisStep = existingPlan.get(0);
+			PathLocation currentLocation = PathLocation.forEntityBase(mutable.getLocation());
 			
 			if (currentLocation.equals(thisStep))
 			{
@@ -789,7 +788,7 @@ public class CreatureLogic
 				if (existingPlan.size() > 1)
 				{
 					// Remove this one element and stay in the same plan.
-					List<AbsoluteLocation> updatedPlan = new ArrayList<>(existingPlan);
+					List<PathLocation> updatedPlan = new ArrayList<>(existingPlan);
 					updatedPlan.remove(0);
 					
 					if (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.movementPlan.targetEntityId())
@@ -886,7 +885,7 @@ public class CreatureLogic
 			, true
 			, true
 		);
-		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(navigator, currentLocation, targetLocation);
+		List<PathLocation> path = PathFinder.findPathWithLimit(navigator, currentLocation, targetLocation);
 		
 		// The path will come back null if they are unreachable.
 		return (null != path)
@@ -903,7 +902,7 @@ public class CreatureLogic
 
 	private static CreatureEntity.MovementPlan _decidePlanWithoutTarget(TickProcessingContext context
 		, MutableCreature mutable
-		, List<AbsoluteLocation> steps
+		, List<PathLocation> steps
 		, EntityActionSimpleMove.Intensity intensity
 	)
 	{
@@ -927,7 +926,7 @@ public class CreatureLogic
 		, EntityType type
 		, int targetId
 		, EntityLocation targetLocation
-		, List<AbsoluteLocation> updatedPlan
+		, List<PathLocation> updatedPlan
 	)
 	{
 		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
