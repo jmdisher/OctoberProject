@@ -189,11 +189,13 @@ public class TestCreatureLogic
 				, mutable
 				, 100L
 		);
-		Assert.assertNotNull(action);
-		Assert.assertNull(mutable.movementPlan.fullPlan());
+		Assert.assertEquals("SimpleMove(STANDING), by 0.00, 0.00, Sub: Jump", action.toString());
+		Assert.assertEquals(2, mutable.movementPlan.fullPlan().size());
+		Assert.assertEquals(PathLocation.test_raw(new AbsoluteLocation(16, 16, 1), 0, 0, 1), mutable.movementPlan.fullPlan().get(0));
+		Assert.assertEquals(PathLocation.test_raw(new AbsoluteLocation(16, 16, 2), 0, 0, 0), mutable.movementPlan.fullPlan().get(1));
 		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, mutable.movementPlan.targetEntityId());
 		Assert.assertEquals(null, mutable.movementPlan.targetPreviousLocation());
-		Assert.assertEquals(new EntityLocation(14.0f, 16.0f, 1.0f), mutable.movementPlan.directLocation());
+		Assert.assertEquals(null, mutable.movementPlan.directLocation());
 		Assert.assertEquals(EntityActionSimpleMove.Intensity.IDLE_CREATURE, mutable.movementPlan.intensity());
 	}
 
@@ -908,7 +910,7 @@ public class TestCreatureLogic
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
 		mutable.newVelocity = startVelocity;
-		PathLocation waterPath = PathLocation.test_raw(waterLocation);
+		PathLocation waterPath = PathLocation.test_raw(waterLocation, 0, 0, 0);
 		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(waterPath.getRelative(0, 0, 1), waterPath.getRelative(-1, 0, 1))
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
@@ -1226,7 +1228,7 @@ public class TestCreatureLogic
 		EntityLocation startLocation = new EntityLocation(4.7f, 4.99f, 1.0f);
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
-		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(PathLocation.test_raw(new AbsoluteLocation(4, 5, 1)))
+		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(PathLocation.test_raw(new AbsoluteLocation(4, 5, 1), 1, 0, 0))
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
 			, null
@@ -1264,7 +1266,7 @@ public class TestCreatureLogic
 		EntityLocation startLocation = new EntityLocation(2.79f, 3.01f, 1.0f);
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
-		PathLocation pathBase = PathLocation.test_raw(new AbsoluteLocation(2, 3, 1));
+		PathLocation pathBase = PathLocation.test_raw(new AbsoluteLocation(2, 3, 1), 0, 0, 0);
 		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase, pathBase.getRelative(1, 0, 0))
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
@@ -1305,7 +1307,7 @@ public class TestCreatureLogic
 		EntityLocation startLocation = new EntityLocation(30.9f, 0.0f, 1.0f);
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
-		PathLocation pathBase = PathLocation.test_raw(new AbsoluteLocation(30, 0, 1));
+		PathLocation pathBase = PathLocation.test_raw(new AbsoluteLocation(30, 0, 1), 0, 0, 0);
 		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase, pathBase.getRelative(1, 0, 0))
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
@@ -1426,6 +1428,9 @@ public class TestCreatureLogic
 		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase.getRelative(1, 0, 0)
 				, pathBase.getRelative(2, 0, 0)
 				, pathBase.getRelative(2, 1, 0)
+				, pathBase.getRelative(2, 2, 0)
+				, pathBase.getRelative(3, 2, 0)
+				, pathBase.getRelative(4, 2, 0)
 			)
 			, player.id()
 			, playerLocation
@@ -1441,7 +1446,7 @@ public class TestCreatureLogic
 			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
 			, mutableOrc
 		);
-		Assert.assertEquals(3, mutableOrc.movementPlan.fullPlan().size());
+		Assert.assertEquals(6, mutableOrc.movementPlan.fullPlan().size());
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
 		Assert.assertEquals(playerLocation, mutableOrc.movementPlan.targetPreviousLocation());
 		
@@ -1450,6 +1455,9 @@ public class TestCreatureLogic
 		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase.getRelative(1, 0, 0)
 				, pathBase.getRelative(2, 0, 0)
 				, pathBase.getRelative(2, 1, 0)
+				, pathBase.getRelative(2, 2, 0)
+				, pathBase.getRelative(3, 2, 0)
+				, pathBase.getRelative(4, 2, 0)
 			)
 			, player.id()
 			, playerLocation
@@ -1465,7 +1473,7 @@ public class TestCreatureLogic
 			, EntityCollection.fromMaps(Map.of(player.id(), movedPlayer), Map.of(orc.id(), orc))
 			, mutableOrc
 		);
-		Assert.assertEquals(4, mutableOrc.movementPlan.fullPlan().size());
+		Assert.assertEquals(8, mutableOrc.movementPlan.fullPlan().size());
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
 		Assert.assertEquals(movedPlayerLocation, mutableOrc.movementPlan.targetPreviousLocation());
 		
@@ -1474,6 +1482,9 @@ public class TestCreatureLogic
 		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase.getRelative(1, 0, 0)
 				, pathBase.getRelative(2, 0, 0)
 				, pathBase.getRelative(2, 1, 0)
+				, pathBase.getRelative(2, 2, 0)
+				, pathBase.getRelative(3, 2, 0)
+				, pathBase.getRelative(4, 2, 0)
 			)
 			, player.id()
 			, playerLocation
@@ -1532,8 +1543,12 @@ public class TestCreatureLogic
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
 		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(orcStartLocation.getRelative(1, 0, 0)
 				, orcStartLocation.getRelative(2, 0, 0)
-				, orcStartLocation.getRelative(2, 1, 0)
-				, orcStartLocation.getRelative(3, 1, 0)
+				, orcStartLocation.getRelative(3, 0, 0)
+				, orcStartLocation.getRelative(4, 0, 0)
+				, orcStartLocation.getRelative(5, 0, 0)
+				, orcStartLocation.getRelative(6, 0, 0)
+				, orcStartLocation.getRelative(6, 1, 0)
+				, orcStartLocation.getRelative(6, 2, 0)
 			)
 			, player.id()
 			, playerLocation
@@ -1546,15 +1561,19 @@ public class TestCreatureLogic
 		;
 		boolean didAct = CreatureLogic.didTakeSpecialActions(context, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc)), mutableOrc);
 		Assert.assertFalse(didAct);
-		Assert.assertEquals(4, mutableOrc.movementPlan.fullPlan().size());
+		Assert.assertEquals(8, mutableOrc.movementPlan.fullPlan().size());
 		Assert.assertNull(mutableOrc.movementPlan.directLocation());
 		
 		// Show that the target moved.
 		mutableOrc = MutableCreature.existing(orc);
 		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(orcStartLocation.getRelative(1, 0, 0)
 				, orcStartLocation.getRelative(2, 0, 0)
-				, orcStartLocation.getRelative(2, 1, 0)
-				, orcStartLocation.getRelative(3, 1, 0)
+				, orcStartLocation.getRelative(3, 0, 0)
+				, orcStartLocation.getRelative(4, 0, 0)
+				, orcStartLocation.getRelative(5, 0, 0)
+				, orcStartLocation.getRelative(6, 0, 0)
+				, orcStartLocation.getRelative(6, 1, 0)
+				, orcStartLocation.getRelative(6, 2, 0)
 			)
 			, player.id()
 			, playerLocation
@@ -1572,12 +1591,17 @@ public class TestCreatureLogic
 		
 		// Show that we entered the next step (no direct).
 		mutableOrc = MutableCreature.existing(orc);
-		mutableOrc.newLocation = new EntityLocation(1.0f, 0.0f, 1.0f);
+		mutableOrc.newLocation = new EntityLocation(0.5f, 0.0f, 1.0f);
 		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(orcStartLocation.getRelative(1, 0, 0)
 				, orcStartLocation.getRelative(1, 0, 1)
-				, orcStartLocation.getRelative(2, 0, 1)
-				, orcStartLocation.getRelative(2, 1, 1)
-				, orcStartLocation.getRelative(3, 1, 1)
+				, orcStartLocation.getRelative(1, 0, 2)
+				, orcStartLocation.getRelative(2, 0, 2)
+				, orcStartLocation.getRelative(3, 0, 2)
+				, orcStartLocation.getRelative(3, 1, 2)
+				, orcStartLocation.getRelative(3, 2, 2)
+				, orcStartLocation.getRelative(4, 2, 2)
+				, orcStartLocation.getRelative(5, 2, 2)
+				, orcStartLocation.getRelative(6, 2, 2)
 			)
 			, elevatedPlayer.id()
 			, elevatedPlayerLocation
@@ -1590,16 +1614,20 @@ public class TestCreatureLogic
 		;
 		didAct = CreatureLogic.didTakeSpecialActions(context, EntityCollection.fromMaps(Map.of(elevatedPlayer.id(), elevatedPlayer), Map.of(orc.id(), orc)), mutableOrc);
 		Assert.assertFalse(didAct);
-		Assert.assertEquals(4, mutableOrc.movementPlan.fullPlan().size());
+		Assert.assertEquals(9, mutableOrc.movementPlan.fullPlan().size());
 		Assert.assertNull(mutableOrc.movementPlan.directLocation());
 		
 		// Show that we entered the next step (direct).
 		mutableOrc = MutableCreature.existing(orc);
-		mutableOrc.newLocation = new EntityLocation(1.0f, 0.0f, 1.0f);
+		mutableOrc.newLocation = new EntityLocation(0.5f, 0.0f, 1.0f);
 		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(orcStartLocation.getRelative(1, 0, 0)
 				, orcStartLocation.getRelative(2, 0, 0)
-				, orcStartLocation.getRelative(2, 1, 0)
-				, orcStartLocation.getRelative(3, 1, 0)
+				, orcStartLocation.getRelative(3, 0, 0)
+				, orcStartLocation.getRelative(4, 0, 0)
+				, orcStartLocation.getRelative(5, 0, 0)
+				, orcStartLocation.getRelative(6, 0, 0)
+				, orcStartLocation.getRelative(6, 1, 0)
+				, orcStartLocation.getRelative(6, 2, 0)
 			)
 			, player.id()
 			, playerLocation
@@ -1633,9 +1661,9 @@ public class TestCreatureLogic
 	public void handleDirectChangesZLevel()
 	{
 		// Handle the case where we are in direct mode but have fallen from the same z-level since last planning.
-		EntityLocation playerLocation = new EntityLocation(3.0f, 1.0f, 2.6f);
+		EntityLocation playerLocation = new EntityLocation(3.0f, 1.0f, 2.2f);
 		EntityLocation idleLocation = new EntityLocation(3.0f, 1.0f, 2.0f);
-		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 1.9f);
+		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 1.4f);
 		
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
@@ -1670,7 +1698,7 @@ public class TestCreatureLogic
 		Assert.assertNull(mutableOrc.movementPlan.fullPlan());
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
 		Assert.assertEquals(playerLocation, mutableOrc.movementPlan.targetPreviousLocation());
-		Assert.assertEquals(new EntityLocation(3.0f, 1.0f, 1.9f), mutableOrc.movementPlan.directLocation());
+		Assert.assertEquals(new EntityLocation(3.0f, 1.0f, 1.4f), mutableOrc.movementPlan.directLocation());
 		
 		EntityActionSimpleMove<MutableCreature> action = CreatureLogic.planNextAction(context
 			, mutableOrc
@@ -1748,13 +1776,13 @@ public class TestCreatureLogic
 		Assert.assertEquals(ENV.trading.getProfessionById("op.baker"), internal.profession());
 		Assert.assertEquals(0, internal.inventory().size());
 		
-		// Show basic idle movement of the villager.
+		// Show basic idle movement of the villager - this is just a random destination.
 		didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableVillager);
 		Assert.assertFalse(didAct);
 		Assert.assertNull(mutableVillager.movementPlan.fullPlan());
 		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, mutableVillager.movementPlan.targetEntityId());
 		Assert.assertNull(mutableVillager.movementPlan.targetPreviousLocation());
-		Assert.assertEquals(new EntityLocation(7.0f, 8.0f, 1.0f), mutableVillager.movementPlan.directLocation());
+		Assert.assertEquals(new EntityLocation(7.0f, 6.5f, 1.0f), mutableVillager.movementPlan.directLocation());
 		
 		EntityActionSimpleMove<MutableCreature> action = CreatureLogic.planNextAction(context
 			, mutableVillager
@@ -1762,14 +1790,14 @@ public class TestCreatureLogic
 		);
 		Assert.assertNotNull(action);
 		
-		// Show basic idle movement of the villager baby.
+		// Show basic idle movement of the villager baby - this is just a random destination.
 		MutableCreature mutableVillagerBaby = MutableCreature.existing(villagerBaby);
 		didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableVillagerBaby);
 		Assert.assertFalse(didAct);
 		Assert.assertNull(mutableVillagerBaby.movementPlan.fullPlan());
 		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, mutableVillagerBaby.movementPlan.targetEntityId());
 		Assert.assertNull(mutableVillagerBaby.movementPlan.targetPreviousLocation());
-		Assert.assertEquals(new EntityLocation(7.0f, 8.0f, 1.0f), mutableVillagerBaby.movementPlan.directLocation());
+		Assert.assertEquals(new EntityLocation(7.5f, 6.5f, 1.0f), mutableVillagerBaby.movementPlan.directLocation());
 		
 		action = CreatureLogic.planNextAction(context
 			, mutableVillagerBaby
@@ -1791,7 +1819,7 @@ public class TestCreatureLogic
 		Entity player = mutableEntity.freeze();
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(assigner.next(), COW, new EntityLocation(4.0f, 0.0f, 0.0f), 0L));
 		mutable.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(false, null, 0L));
-		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(PathLocation.test_raw(new AbsoluteLocation(3, 0, 0)))
+		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(PathLocation.test_raw(new AbsoluteLocation(3, 0, 0), 0, 0, 0))
 			, player.id()
 			, player.location()
 			, player.location()
@@ -1875,7 +1903,7 @@ public class TestCreatureLogic
 			, EntityCollection.fromMaps(Map.of(), Map.of(cow0.id(), cow0))
 			, mutable
 		));
-		Assert.assertEquals(new EntityLocation(3.0f, 2.0f, 0.0f), mutable.movementPlan.directLocation());
+		Assert.assertEquals(new EntityLocation(3.0f, 2.5f, 0.0f), mutable.movementPlan.directLocation());
 		Assert.assertEquals(EntityActionSimpleMove.Intensity.RUNNING, mutable.movementPlan.intensity());
 		
 		mutable = MutableCreature.existing(cow0);
@@ -1885,7 +1913,7 @@ public class TestCreatureLogic
 			, EntityCollection.fromMaps(Map.of(), Map.of(cow0.id(), cow0))
 			, mutable
 		));
-		Assert.assertEquals(new EntityLocation(6.0f, 4.0f, 0.0f), mutable.movementPlan.directLocation());
+		Assert.assertEquals(new EntityLocation(5.5f, 2.5f, 0.0f), mutable.movementPlan.directLocation());
 		Assert.assertEquals(EntityActionSimpleMove.Intensity.RUNNING, mutable.movementPlan.intensity());
 	}
 

@@ -355,11 +355,15 @@ public class CreatureLogic
 		EntityLocation currentLocation = mutable.getLocation();
 		PathLocation first = existingPlan.get(0);
 		FacingDirection direction;
-		if ((existingPlan.size() > 1) && (FacingDirection.UP == PathLocation.adjacentDirection(PathLocation.forEntityBase(currentLocation), first)))
+		if ((existingPlan.size() > 2)
+			&& (FacingDirection.UP == PathLocation.adjacentDirection(PathLocation.forEntityBase(currentLocation), first))
+			&& (FacingDirection.UP == PathLocation.adjacentDirection(first, existingPlan.get(1)))
+		)
 		{
 			// This means we are jumping so choose the next place where we want to go for direction hint.
 			PathLocation second = existingPlan.get(1);
-			direction = PathLocation.adjacentDirection(first, second);
+			PathLocation third = existingPlan.get(2);
+			direction = PathLocation.adjacentDirection(second, third);
 		}
 		else
 		{

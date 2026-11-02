@@ -15,7 +15,7 @@ public class PathLocation
 	/**
 	 * The number of path steps along the side of a block.
 	 */
-	public static final int PATH_PER_BLOCK = 1;
+	public static final int PATH_PER_BLOCK = 2;
 	/**
 	 * The edge size of a single instance (1.0f would mean 1-to-1 with other units).
 	 */
@@ -26,11 +26,17 @@ public class PathLocation
 	 * since it assumes internal parameters.
 	 * 
 	 * @param location The absolute location to use.
+	 * @param xOffset The X offset within the block.
+	 * @param yOffset The Y offset within the block.
+	 * @param zOffset The Z offset within the block.
 	 * @return A new instance.
 	 */
-	public static PathLocation test_raw(AbsoluteLocation location)
+	public static PathLocation test_raw(AbsoluteLocation location, int xOffset, int yOffset, int zOffset)
 	{
-		return new PathLocation(location);
+		Assert.assertTrue(xOffset < PATH_PER_BLOCK);
+		Assert.assertTrue(yOffset < PATH_PER_BLOCK);
+		Assert.assertTrue(zOffset < PATH_PER_BLOCK);
+		return new PathLocation(location, xOffset, yOffset, zOffset);
 	}
 
 	/**
@@ -42,7 +48,10 @@ public class PathLocation
 	public static PathLocation forEntityBase(EntityLocation entityBase)
 	{
 		AbsoluteLocation location = entityBase.getBlockLocation();
-		return new PathLocation(location);
+		int xOffset = _getFractionalOffset(entityBase.x());
+		int yOffset = _getFractionalOffset(entityBase.y());
+		int zOffset = _getFractionalOffset(entityBase.z());
+		return new PathLocation(location, xOffset, yOffset, zOffset);
 	}
 
 	/**
@@ -55,12 +64,12 @@ public class PathLocation
 	 */
 	public static int pathStepDistance(PathLocation from, PathLocation to)
 	{
-		int fromXRaw = from._location.x();
-		int fromYRaw = from._location.y();
-		int fromZRaw = from._location.z();
-		int toXRaw = to._location.x();
-		int toYRaw = to._location.y();
-		int toZRaw = to._location.z();
+		int fromXRaw = _getRawLocation(from._location.x(), from._xOffset);
+		int fromYRaw = _getRawLocation(from._location.y(), from._yOffset);
+		int fromZRaw = _getRawLocation(from._location.z(), from._zOffset);
+		int toXRaw = _getRawLocation(to._location.x(), to._xOffset);
+		int toYRaw = _getRawLocation(to._location.y(), to._yOffset);
+		int toZRaw = _getRawLocation(to._location.z(), to._zOffset);
 		
 		return Math.abs(fromXRaw - toXRaw)
 			+ Math.abs(fromYRaw - toYRaw)
@@ -80,12 +89,12 @@ public class PathLocation
 	{
 		FacingDirection direction = null;
 		
-		int fromXRaw = from._location.x();
-		int fromYRaw = from._location.y();
-		int fromZRaw = from._location.z();
-		int toXRaw = to._location.x();
-		int toYRaw = to._location.y();
-		int toZRaw = to._location.z();
+		int fromXRaw = _getRawLocation(from._location.x(), from._xOffset);
+		int fromYRaw = _getRawLocation(from._location.y(), from._yOffset);
+		int fromZRaw = _getRawLocation(from._location.z(), from._zOffset);
+		int toXRaw = _getRawLocation(to._location.x(), to._xOffset);
+		int toYRaw = _getRawLocation(to._location.y(), to._yOffset);
+		int toZRaw = _getRawLocation(to._location.z(), to._zOffset);
 		
 		if (fromXRaw > toXRaw)
 		{
@@ -120,10 +129,23 @@ public class PathLocation
 
 
 	private final AbsoluteLocation _location;
+	private final int _xOffset;
+	private final int _yOffset;
+	private final int _zOffset;
 
-	private PathLocation(AbsoluteLocation location)
+	private PathLocation(AbsoluteLocation location, int xOffset, int yOffset, int zOffset)
 	{
+		Assert.assertTrue(xOffset >= 0);
+		Assert.assertTrue(yOffset >= 0);
+		Assert.assertTrue(zOffset >= 0);
+		Assert.assertTrue(xOffset < PATH_PER_BLOCK);
+		Assert.assertTrue(yOffset < PATH_PER_BLOCK);
+		Assert.assertTrue(zOffset < PATH_PER_BLOCK);
+		
 		_location = location;
+		_xOffset = xOffset;
+		_yOffset = yOffset;
+		_zOffset = zOffset;
 	}
 
 	/**
@@ -136,8 +158,35 @@ public class PathLocation
 	 */
 	public PathLocation getRelative(int x, int y, int z)
 	{
-		AbsoluteLocation newLocation = _location.getRelative(x, y, z);
-		return new PathLocation(newLocation);
+		int combinedX = _xOffset + x;
+		int combinedY = _yOffset + y;
+		int combinedZ = _zOffset + z;
+		
+		int relX = combinedX / PATH_PER_BLOCK;
+		int relY = combinedY / PATH_PER_BLOCK;
+		int relZ = combinedZ / PATH_PER_BLOCK;
+		
+		int xOffset = combinedX % PATH_PER_BLOCK;
+		if (xOffset < 0)
+		{
+			relX -= 1;
+			xOffset += PATH_PER_BLOCK;
+		}
+		int yOffset = combinedY % PATH_PER_BLOCK;
+		if (yOffset < 0)
+		{
+			relY -= 1;
+			yOffset += PATH_PER_BLOCK;
+		}
+		int zOffset = combinedZ % PATH_PER_BLOCK;
+		if (zOffset < 0)
+		{
+			relZ -= 1;
+			zOffset += PATH_PER_BLOCK;
+		}
+		
+		AbsoluteLocation newLocation = _location.getRelative(relX, relY, relZ);
+		return new PathLocation(newLocation, xOffset, yOffset, zOffset);
 	}
 
 	/**
@@ -145,7 +194,11 @@ public class PathLocation
 	 */
 	public EntityLocation getBaseLocation()
 	{
-		return _location.toEntityLocation();
+		float xOffset = PATH_UNIT * (float)_xOffset;
+		float yOffset = PATH_UNIT * (float)_yOffset;
+		float zOffset = PATH_UNIT * (float)_zOffset;
+		
+		return _location.toEntityLocation().getRelative(xOffset, yOffset, zOffset);
 	}
 
 	@Override
@@ -155,7 +208,11 @@ public class PathLocation
 		if ((null != obj) && (obj.getClass() == this.getClass()))
 		{
 			PathLocation other = (PathLocation)obj;
-			isEqual = _location.equals(other._location);
+			isEqual = _location.equals(other._location)
+				&& (_xOffset == other._xOffset)
+				&& (_yOffset == other._yOffset)
+				&& (_zOffset == other._zOffset)
+			;
 		}
 		return isEqual;
 	}
@@ -163,12 +220,28 @@ public class PathLocation
 	@Override
 	public int hashCode()
 	{
-		return _location.hashCode();
+		return _location.hashCode()
+			^ (_xOffset << 16)
+			^ (_yOffset << 8)
+			^ (_zOffset << 0)
+		;
 	}
 
 	@Override
 	public String toString()
 	{
-		return String.format("PathLocation(%s)", _location);
+		return String.format("PathLocation(%s + X=%d Y=%d Z=%d)", _location, _xOffset, _yOffset, _zOffset);
+	}
+
+
+	private static int _getFractionalOffset(float f)
+	{
+		float fraction = f - (float)Math.floor(f);
+		return (int)Math.floor(fraction / PATH_UNIT);
+	}
+
+	private static int _getRawLocation(int loc, int offset)
+	{
+		return PATH_PER_BLOCK * loc + offset;
 	}
 }

@@ -218,7 +218,7 @@ public class TestEngineCreatures
 	{
 		EntityLocation startLocation = new EntityLocation(0.0f, 1.0f, 0.0f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
-		PathLocation pathBase = PathLocation.test_raw(new AbsoluteLocation(0, 1, 0));
+		PathLocation pathBase = PathLocation.test_raw(new AbsoluteLocation(0, 1, 0), 0, 0, 0);
 		CreatureEntity.MovementPlan movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase
 				, pathBase.getRelative(0, 0, 1)
 			)
@@ -264,7 +264,7 @@ public class TestEngineCreatures
 		// In this test, we should just be waiting for a jump to have an effect.
 		EntityLocation startLocation = new EntityLocation(0.0f, 1.0f, 0.441f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 3.92f);
-		CreatureEntity.MovementPlan movementPlan = new CreatureEntity.MovementPlan(List.of(PathLocation.test_raw(new AbsoluteLocation(0, 1, 1)))
+		CreatureEntity.MovementPlan movementPlan = new CreatureEntity.MovementPlan(List.of(PathLocation.test_raw(new AbsoluteLocation(0, 1, 0), 0, 0, 1))
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
 			, null
@@ -306,9 +306,10 @@ public class TestEngineCreatures
 	{
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 1.2f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
-		PathLocation pathBase = PathLocation.test_raw(new AbsoluteLocation(0, 0, 1));
+		PathLocation pathBase = PathLocation.forEntityBase(startLocation);
 		CreatureEntity.MovementPlan movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase
 				, pathBase.getRelative(0, 1, 0)
+				, pathBase.getRelative(0, 2, 0)
 			)
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
@@ -676,25 +677,44 @@ public class TestEngineCreatures
 		}
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(8, 8, 1), AIR.item().number());
 		
-		EntityLocation startLocation = new EntityLocation(8.5f, 8.0f, 1.0f);
+		// We will create an orc and have them chase a player to find a deterministic target outside of the hole.
+		EntityLocation startLocation = new EntityLocation(8.4f, 8.0f, 1.0f);
 		CreatureEntity creature = CreatureEntity.create(-1, ORC, startLocation, 0L);
+		
+		EntityLocation playerLocation = new EntityLocation(6.0f, 8.0f, 2.0f);
+		Entity player = MutableEntity.createWithLocation(1, playerLocation, playerLocation).freeze();
+		
+		Map<Integer, Entity> players = Map.of(player.id(), player);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
-		TickProcessingContext context = _createSingleCuboidContext(cuboid);
+		Map<Integer, MinimalEntity> minimalById = Map.of(player.id(), MinimalEntity.fromEntity(player)
+			, creature.id(), MinimalEntity.fromCreature(creature)
+		);
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(1000)
+			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
+				return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
+					? BlockProxy.load(location.getBlockAddress(), cuboid)
+					: null
+				;
+			}), new _MinimalEntityIndex(minimalById), null)
+			.fixedRandom(1)
+			.finish()
+		;
+		
 		EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
-			, EntityCollection.fromMaps(Map.of(), creaturesById)
+			, EntityCollection.fromMaps(players, creaturesById)
 			, creature
 			, List.of()
 		);
 		
+		// Update this to see it position itself against the wall before the jump.
 		CreatureEntity updated = result.updatedEntity();
-		// The cow should first position itself against the wall before making the jump.
-		// Note that it will take 5 steps, instead of 3, since this is an idle movement (half-speed but also ends in a jump).
-		for (int i = 0; i < 5; ++i)
+		for (int i = 0; i < 2; ++i)
 		{
 			Assert.assertEquals(0.0f, updated.velocity().z(), 0.001f);
 			creaturesById = Map.of(updated.id(), updated);
 			result = EngineCreatures.processOneCreature(context
-				, EntityCollection.fromMaps(Map.of(), creaturesById)
+				, EntityCollection.fromMaps(players, creaturesById)
 				, updated
 				, List.of()
 			);
@@ -709,10 +729,13 @@ public class TestEngineCreatures
 		
 		// Verify that the movement plan is the one we expected (since we depend on knowing which direction we are moving for the test).
 		List<PathLocation> movementPlan = updated.ephemeral().movementPlan().fullPlan();
-		Assert.assertEquals(3, movementPlan.size());
-		Assert.assertEquals(PathLocation.test_raw(new AbsoluteLocation(8, 8, 2)), movementPlan.get(0));
-		Assert.assertEquals(PathLocation.test_raw(new AbsoluteLocation(7, 8, 2)), movementPlan.get(1));
-		Assert.assertEquals(PathLocation.test_raw(new AbsoluteLocation(7, 9, 2)), movementPlan.get(2));
+		Assert.assertEquals(6, movementPlan.size());
+		Assert.assertEquals(PathLocation.test_raw(new AbsoluteLocation(8, 8, 1), 0, 0, 1), movementPlan.get(0));
+		Assert.assertEquals(PathLocation.test_raw(new AbsoluteLocation(8, 8, 2), 0, 0, 0), movementPlan.get(1));
+		Assert.assertEquals(PathLocation.test_raw(new AbsoluteLocation(7, 8, 2), 1, 0, 0), movementPlan.get(2));
+		Assert.assertEquals(PathLocation.test_raw(new AbsoluteLocation(7, 8, 2), 0, 0, 0), movementPlan.get(3));
+		Assert.assertEquals(PathLocation.test_raw(new AbsoluteLocation(6, 8, 2), 1, 0, 0), movementPlan.get(4));
+		Assert.assertEquals(PathLocation.test_raw(new AbsoluteLocation(6, 8, 2), 0, 0, 0), movementPlan.get(5));
 		
 		// Now, allow the entity to continue on its path and verify that it reaches the end of its path.
 		CreatureEntity justUpdated = updated;
@@ -722,7 +745,7 @@ public class TestEngineCreatures
 			// Apply the next step.
 			creaturesById = Map.of(updated.id(), updated);
 			result = EngineCreatures.processOneCreature(context
-				, EntityCollection.fromMaps(Map.of(), creaturesById)
+				, EntityCollection.fromMaps(players, creaturesById)
 				, updated
 				, List.of()
 			);
@@ -735,9 +758,11 @@ public class TestEngineCreatures
 		}
 		
 		// By this point we should be on the ground, in the right block, with no plan.
-		Assert.assertEquals(new EntityLocation(7.01f, 9.0f, 2.0f), updated.location());
+		Assert.assertEquals(new EntityLocation(7.01f, 8.0f, 2.0f), updated.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), updated.velocity());
-		Assert.assertEquals(new AbsoluteLocation(7, 9, 2), updated.location().getBlockLocation());
+		Assert.assertNull(updated.ephemeral().movementPlan().fullPlan());
+		Assert.assertNull(updated.ephemeral().movementPlan().directLocation());
+		Assert.assertEquals(player.id(), updated.ephemeral().movementPlan().targetEntityId());
 	}
 
 	@Test
@@ -812,7 +837,7 @@ public class TestEngineCreatures
 		_setCuboidLayer(cuboid, (byte)1, waterSourceNumber);
 		_setCuboidLayer(cuboid, (byte)2, waterSourceNumber);
 		
-		EntityLocation startLocation = new EntityLocation(8.0f, 8.0f, 1.0f);
+		EntityLocation startLocation = new EntityLocation(8.5f, 8.5f, 1.0f);
 		CreatureEntity creature = CreatureEntity.create(-1, ORC, startLocation, 0L);
 		// We need to reduce their breath to trigger this response.
 		MutableCreature mutable = MutableCreature.existing(creature);
@@ -914,9 +939,11 @@ public class TestEngineCreatures
 		EntityLocation startLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
 		CreatureEntity creature = CreatureEntity.create(-1, COW, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(creature);
-		PathLocation pathBase = PathLocation.test_raw(new AbsoluteLocation(15, 16, 1));
-		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase
-				, pathBase.getRelative(-1, 0, 0)
+		PathLocation pathBase = PathLocation.forEntityBase(startLocation);
+		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase.getRelative(-1, 0, 0)
+				, pathBase.getRelative(-2, 0, 0)
+				, pathBase.getRelative(-3, 0, 0)
+				, pathBase.getRelative(-4, 0, 0)
 			)
 			, target.id()
 			, null

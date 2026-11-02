@@ -18,15 +18,15 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 	/**
 	 * Falling 1 block will still be considered as cost, but a very small one.
 	 */
-	public static final float COST_FALL = 0.5f;
+	public static final float COST_FALL = 0.5f * PathLocation.PATH_UNIT;
 	/**
 	 * Jumping up a block should be considered expensive.
 	 */
-	public static final float COST_JUMP = 1.5f;
+	public static final float COST_JUMP = 1.5f * PathLocation.PATH_UNIT;
 	/**
 	 * Walking on flat ground will be the baseline action.
 	 */
-	public static final float COST_STEP_FLAT = 1.0f;
+	public static final float COST_STEP_FLAT = 1.0f * PathLocation.PATH_UNIT;
 
 
 	private final TickProcessingContext.IBlockFetcher _previousBlockLookUp;
@@ -68,7 +68,8 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 			PathLocation baseLocation = PathLocation.forEntityBase(entityBase);
 			PathLocation down = baseLocation.getRelative(0, 0, -1);
 			boolean isOnSolidBlock = (BlockAspect.VISOSITY_FLOAT_SOLID == _findMaxViscosityFromBlock(down));
-			result = new BasicSpot(baseLocation, 0.0f, isOnSolidBlock, viscosity);
+			boolean canContinueRise = isOnSolidBlock;
+			result = new BasicSpot(baseLocation, 0.0f, isOnSolidBlock, viscosity, canContinueRise);
 		}
 		return result;
 	}
@@ -82,6 +83,7 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 		// We will only bother trying this if the current location is not solid.
 		float viscosity = _findMaxViscosityFromBlock(location);
 		boolean isAllowed = (viscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
+		boolean canContinueRise = true;
 		boolean isOnSolidBlock;
 		float cost;
 		if (isAllowed)
@@ -118,7 +120,8 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 				float previousBlockViscosity = from.viscosity;
 				boolean wasSwimmable = _isSwimmable(previousBlockViscosity);
 				
-				isAllowed = ((wasOnSolidBlock && (BlockAspect.VISOSITY_FLOAT_ZERO == previousBlockViscosity)) || wasSwimmable);
+				isAllowed = (((wasOnSolidBlock || from.canContinueRise) && (BlockAspect.VISOSITY_FLOAT_ZERO == previousBlockViscosity)) || wasSwimmable);
+				canContinueRise = wasOnSolidBlock || _isSwimmable(viscosity);
 				wasXyStep = false;
 				cost = COST_JUMP;
 				break;
@@ -163,7 +166,7 @@ public class WalkingNavigator implements PathFinder.INavigator<BasicSpot>
 			float distance = previousDistance + cost;
 			if (distance <= _limit)
 			{
-				result = new BasicSpot(location, distance, isOnSolidBlock, viscosity);
+				result = new BasicSpot(location, distance, isOnSolidBlock, viscosity, canContinueRise);
 			}
 		}
 		return result;
