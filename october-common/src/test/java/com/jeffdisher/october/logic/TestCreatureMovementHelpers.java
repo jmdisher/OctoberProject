@@ -82,7 +82,7 @@ public class TestCreatureMovementHelpers
 	{
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = _createCow(location);
-		PathLocation target = PathLocation.forBlock(new AbsoluteLocation(1, 2, 1));
+		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(1, 2, 1));
 		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
 		IEntityAction<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING, false);
 		Assert.assertNotNull(change);
@@ -93,7 +93,7 @@ public class TestCreatureMovementHelpers
 	{
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = _createCow(location);
-		PathLocation target = PathLocation.forBlock(new AbsoluteLocation(0, 1, 1));
+		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(0, 1, 1));
 		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
 		IEntityAction<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING, false);
 		// Deliberate movement is 0.2/move.
@@ -105,7 +105,7 @@ public class TestCreatureMovementHelpers
 	{
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = _createCow(location);
-		PathLocation target = PathLocation.forBlock(new AbsoluteLocation(0, 1, 1));
+		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(0, 1, 1));
 		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
 		IEntityAction<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, EntityActionSimpleMove.Intensity.IDLE_CREATURE, false);
 		// Idle movement is 0.1/move and we are moving 0.8 (width) plus a fudge factor (which is rounded down, here).
@@ -117,7 +117,7 @@ public class TestCreatureMovementHelpers
 	{
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 0.0f);
 		CreatureEntity creature = _createCow(location);
-		PathLocation target = PathLocation.forBlock(new AbsoluteLocation(1, 1, 2));
+		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(1, 1, 2));
 		ViscosityReader reader = _getSplitBlockReader(ENV.special.AIR, STONE);
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, EntityActionSimpleMove.Intensity.IDLE_CREATURE, false);
 		Assert.assertNotNull(change);
@@ -130,7 +130,7 @@ public class TestCreatureMovementHelpers
 		// In this case, we will still be rising so we want to jump but can't since we aren't on the ground.
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.5f);
 		CreatureEntity creature = _createCow(location);
-		PathLocation target = PathLocation.forBlock(new AbsoluteLocation(1, 1, 2));
+		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(1, 1, 2));
 		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, EntityActionSimpleMove.Intensity.IDLE_CREATURE, false);
 		Assert.assertNotNull(change);
@@ -142,7 +142,7 @@ public class TestCreatureMovementHelpers
 	{
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 2.2f);
 		CreatureEntity creature = _createCow(location);
-		PathLocation target = PathLocation.forBlock(new AbsoluteLocation(1, 2, 2));
+		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(1, 2, 2));
 		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
 		IEntityAction<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING, false);
 		Assert.assertNotNull(change);
@@ -153,7 +153,7 @@ public class TestCreatureMovementHelpers
 	{
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = _createCow(location);
-		PathLocation target = PathLocation.forBlock(new AbsoluteLocation(1, 1, 0));
+		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(1, 1, 0));
 		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
 		IEntityAction<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, EntityActionSimpleMove.Intensity.IDLE_CREATURE, false);
 		Assert.assertNull(change);
@@ -164,7 +164,7 @@ public class TestCreatureMovementHelpers
 	{
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.1f);
 		CreatureEntity creature = _createCow(location);
-		PathLocation target = PathLocation.forBlock(new AbsoluteLocation(1, 1, 2));
+		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(1, 1, 2));
 		ViscosityReader reader = _getFixedBlockReader(WATER_SOURCE);
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.5f, EntityActionSimpleMove.Intensity.IDLE_CREATURE, true);
 		Assert.assertNotNull(change);
@@ -286,7 +286,7 @@ public class TestCreatureMovementHelpers
 		EntityLocation creatureLocation = new EntityLocation(0.99f, 0.0f, 0.0f);
 		MutableCreature mutable = MutableCreature.existing(_createCow(creatureLocation));
 		mutable.newVelocity = new EntityLocation(10.0f, 0.0f, 0.0f);
-		PathLocation target = PathLocation.forBlock(new AbsoluteLocation(1, 0, 0));
+		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(1, 0, 0));
 		FacingDirection directionHint = PathLocation.adjacentDirection(PathLocation.forEntityBase(creatureLocation), target);
 		Assert.assertEquals(FacingDirection.EAST, directionHint);
 		long timeLimitMillis = 50L;
@@ -326,7 +326,7 @@ public class TestCreatureMovementHelpers
 		MutableCreature mutable = MutableCreature.existing(_createCow(location));
 		mutable.newVelocity = velocity;
 		CreatureEntity creature = mutable.freeze();
-		PathLocation target = PathLocation.forBlock(new AbsoluteLocation(-61, -216, 0));
+		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(-61, -216, 0));
 		ViscosityReader reader = _getFixedBlockReader(WATER_SOURCE);
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, EntityActionSimpleMove.Intensity.IDLE_CREATURE, false);
 		Assert.assertNotNull(change);
@@ -354,7 +354,7 @@ public class TestCreatureMovementHelpers
 	public void walkDiagonalOnFlat()
 	{
 		EntityLocation location = new EntityLocation(1.1f, 1.2f, 0.0f);
-		PathLocation pathBase = PathLocation.forBlock(new AbsoluteLocation(1, 2, 0));
+		PathLocation pathBase = PathLocation.test_raw(new AbsoluteLocation(1, 2, 0));
 		List<PathLocation> path = List.of(pathBase
 			, pathBase.getRelative(0, 1, 0)
 			, pathBase.getRelative(0, 2, 0)
@@ -374,7 +374,7 @@ public class TestCreatureMovementHelpers
 	public void walkDiagonalAroundHole()
 	{
 		EntityLocation location = new EntityLocation(1.1f, 1.2f, 1.0f);
-		PathLocation pathBase = PathLocation.forBlock(new AbsoluteLocation(1, 2, 1));
+		PathLocation pathBase = PathLocation.test_raw(new AbsoluteLocation(1, 2, 1));
 		List<PathLocation> path = List.of(pathBase
 			, pathBase.getRelative(0, 1, 0)
 			, pathBase.getRelative(0, 2, 0)

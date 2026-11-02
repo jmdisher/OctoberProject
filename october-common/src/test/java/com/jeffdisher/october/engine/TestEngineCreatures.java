@@ -218,7 +218,7 @@ public class TestEngineCreatures
 	{
 		EntityLocation startLocation = new EntityLocation(0.0f, 1.0f, 0.0f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
-		PathLocation pathBase = PathLocation.forBlock(new AbsoluteLocation(0, 1, 0));
+		PathLocation pathBase = PathLocation.test_raw(new AbsoluteLocation(0, 1, 0));
 		CreatureEntity.MovementPlan movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase
 				, pathBase.getRelative(0, 0, 1)
 			)
@@ -264,7 +264,7 @@ public class TestEngineCreatures
 		// In this test, we should just be waiting for a jump to have an effect.
 		EntityLocation startLocation = new EntityLocation(0.0f, 1.0f, 0.441f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 3.92f);
-		CreatureEntity.MovementPlan movementPlan = new CreatureEntity.MovementPlan(List.of(PathLocation.forBlock(new AbsoluteLocation(0, 1, 1)))
+		CreatureEntity.MovementPlan movementPlan = new CreatureEntity.MovementPlan(List.of(PathLocation.test_raw(new AbsoluteLocation(0, 1, 1)))
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
 			, null
@@ -306,7 +306,7 @@ public class TestEngineCreatures
 	{
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 1.2f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
-		PathLocation pathBase = PathLocation.forBlock(new AbsoluteLocation(0, 0, 1));
+		PathLocation pathBase = PathLocation.test_raw(new AbsoluteLocation(0, 0, 1));
 		CreatureEntity.MovementPlan movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase
 				, pathBase.getRelative(0, 1, 0)
 			)
@@ -710,9 +710,9 @@ public class TestEngineCreatures
 		// Verify that the movement plan is the one we expected (since we depend on knowing which direction we are moving for the test).
 		List<PathLocation> movementPlan = updated.ephemeral().movementPlan().fullPlan();
 		Assert.assertEquals(3, movementPlan.size());
-		Assert.assertEquals(PathLocation.forBlock(new AbsoluteLocation(8, 8, 2)), movementPlan.get(0));
-		Assert.assertEquals(PathLocation.forBlock(new AbsoluteLocation(7, 8, 2)), movementPlan.get(1));
-		Assert.assertEquals(PathLocation.forBlock(new AbsoluteLocation(7, 9, 2)), movementPlan.get(2));
+		Assert.assertEquals(PathLocation.test_raw(new AbsoluteLocation(8, 8, 2)), movementPlan.get(0));
+		Assert.assertEquals(PathLocation.test_raw(new AbsoluteLocation(7, 8, 2)), movementPlan.get(1));
+		Assert.assertEquals(PathLocation.test_raw(new AbsoluteLocation(7, 9, 2)), movementPlan.get(2));
 		
 		// Now, allow the entity to continue on its path and verify that it reaches the end of its path.
 		CreatureEntity justUpdated = updated;
@@ -914,7 +914,7 @@ public class TestEngineCreatures
 		EntityLocation startLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
 		CreatureEntity creature = CreatureEntity.create(-1, COW, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(creature);
-		PathLocation pathBase = PathLocation.forBlock(new AbsoluteLocation(15, 16, 1));
+		PathLocation pathBase = PathLocation.test_raw(new AbsoluteLocation(15, 16, 1));
 		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase
 				, pathBase.getRelative(-1, 0, 0)
 			)

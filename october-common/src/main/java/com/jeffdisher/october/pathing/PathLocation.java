@@ -13,17 +13,22 @@ import com.jeffdisher.october.utils.Assert;
 public class PathLocation
 {
 	/**
+	 * The number of path steps along the side of a block.
+	 */
+	public static final int PATH_PER_BLOCK = 1;
+	/**
 	 * The edge size of a single instance (1.0f would mean 1-to-1 with other units).
 	 */
-	public static final float PATH_UNIT = 1.0f;
+	public static final float PATH_UNIT = 1.0f / (float)PATH_PER_BLOCK;
 
 	/**
-	 * Creates an instance based on the west-south-bottom corner of the given location.
+	 * Creates an instance with the direct parameters it will internally use.  This is only intended for use in tests
+	 * since it assumes internal parameters.
 	 * 
 	 * @param location The absolute location to use.
 	 * @return A new instance.
 	 */
-	public static PathLocation forBlock(AbsoluteLocation location)
+	public static PathLocation test_raw(AbsoluteLocation location)
 	{
 		return new PathLocation(location);
 	}
@@ -50,9 +55,16 @@ public class PathLocation
 	 */
 	public static int pathStepDistance(PathLocation from, PathLocation to)
 	{
-		return Math.abs(from._location.x() - to._location.x())
-			+ Math.abs(from._location.y() - to._location.y())
-			+ Math.abs(from._location.z() - to._location.z())
+		int fromXRaw = from._location.x();
+		int fromYRaw = from._location.y();
+		int fromZRaw = from._location.z();
+		int toXRaw = to._location.x();
+		int toYRaw = to._location.y();
+		int toZRaw = to._location.z();
+		
+		return Math.abs(fromXRaw - toXRaw)
+			+ Math.abs(fromYRaw - toYRaw)
+			+ Math.abs(fromZRaw - toZRaw)
 		;
 	}
 
@@ -68,30 +80,37 @@ public class PathLocation
 	{
 		FacingDirection direction = null;
 		
-		if (from._location.x() > to._location.x())
+		int fromXRaw = from._location.x();
+		int fromYRaw = from._location.y();
+		int fromZRaw = from._location.z();
+		int toXRaw = to._location.x();
+		int toYRaw = to._location.y();
+		int toZRaw = to._location.z();
+		
+		if (fromXRaw > toXRaw)
 		{
 			direction = FacingDirection.WEST;
 		}
-		else if (from._location.x() < to._location.x())
+		else if (fromXRaw < toXRaw)
 		{
 			direction = FacingDirection.EAST;
 		}
-		if (from._location.y() > to._location.y())
+		if (fromYRaw > toYRaw)
 		{
 			Assert.assertTrue(null == direction);
 			direction = FacingDirection.SOUTH;
 		}
-		else if (from._location.y() < to._location.y())
+		else if (fromYRaw < toYRaw)
 		{
 			Assert.assertTrue(null == direction);
 			direction = FacingDirection.NORTH;
 		}
-		if (from._location.z() > to._location.z())
+		if (fromZRaw > toZRaw)
 		{
 			Assert.assertTrue(null == direction);
 			direction = FacingDirection.DOWN;
 		}
-		else if (from._location.z() < to._location.z())
+		else if (fromZRaw < toZRaw)
 		{
 			Assert.assertTrue(null == direction);
 			direction = FacingDirection.UP;

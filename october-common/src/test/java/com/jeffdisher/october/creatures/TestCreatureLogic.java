@@ -908,7 +908,7 @@ public class TestCreatureLogic
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
 		mutable.newVelocity = startVelocity;
-		PathLocation waterPath = PathLocation.forBlock(waterLocation);
+		PathLocation waterPath = PathLocation.test_raw(waterLocation);
 		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(waterPath.getRelative(0, 0, 1), waterPath.getRelative(-1, 0, 1))
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
@@ -1226,7 +1226,7 @@ public class TestCreatureLogic
 		EntityLocation startLocation = new EntityLocation(4.7f, 4.99f, 1.0f);
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
-		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(PathLocation.forBlock(new AbsoluteLocation(4, 5, 1)))
+		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(PathLocation.test_raw(new AbsoluteLocation(4, 5, 1)))
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
 			, null
@@ -1264,7 +1264,7 @@ public class TestCreatureLogic
 		EntityLocation startLocation = new EntityLocation(2.79f, 3.01f, 1.0f);
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
-		PathLocation pathBase = PathLocation.forBlock(new AbsoluteLocation(2, 3, 1));
+		PathLocation pathBase = PathLocation.test_raw(new AbsoluteLocation(2, 3, 1));
 		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase, pathBase.getRelative(1, 0, 0))
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
@@ -1305,7 +1305,7 @@ public class TestCreatureLogic
 		EntityLocation startLocation = new EntityLocation(30.9f, 0.0f, 1.0f);
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
-		PathLocation pathBase = PathLocation.forBlock(new AbsoluteLocation(30, 0, 1));
+		PathLocation pathBase = PathLocation.test_raw(new AbsoluteLocation(30, 0, 1));
 		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase, pathBase.getRelative(1, 0, 0))
 			, CreatureEntity.NO_TARGET_ENTITY_ID
 			, null
@@ -1791,7 +1791,7 @@ public class TestCreatureLogic
 		Entity player = mutableEntity.freeze();
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(assigner.next(), COW, new EntityLocation(4.0f, 0.0f, 0.0f), 0L));
 		mutable.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(false, null, 0L));
-		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(PathLocation.forBlock(new AbsoluteLocation(3, 0, 0)))
+		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(PathLocation.test_raw(new AbsoluteLocation(3, 0, 0)))
 			, player.id()
 			, player.location()
 			, player.location()
