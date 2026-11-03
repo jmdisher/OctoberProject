@@ -25,6 +25,7 @@ import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.ticks.TickSnapshot;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -513,6 +514,19 @@ public class ConsoleHandler
 			else
 			{
 				out.println("Usage:  <block_id> <x> <y> <z>");
+			}
+		}),
+		LIST_CREATURES((PrintStream out, _ConsoleState state, String[] parameters) -> {
+			// We will list all loaded creatures, their types, IDs, and their current locations.
+			MonitoringAgent monitoringAgent = state.monitoringAgent;
+			TickSnapshot snapshot = monitoringAgent.getLastSnapshot();
+			Map<Integer, TickSnapshot.SnapshotCreature> creatures = snapshot.creatures();
+			out.println("Loaded creatures (" + creatures.size() + "):");
+			for (Map.Entry<Integer, TickSnapshot.SnapshotCreature> elt : creatures.entrySet())
+			{
+				int id = elt.getKey();
+				CreatureEntity creature = elt.getValue().completed();
+				out.printf("\t%d (%s) @%s\n", id, creature.type().id(), creature.location());
 			}
 		}),
 		;

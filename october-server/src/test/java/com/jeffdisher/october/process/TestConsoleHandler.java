@@ -22,8 +22,11 @@ import com.jeffdisher.october.engine.EnginePlayers;
 import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.ticks.TickSnapshot;
 import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
+import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.WorldConfig;
@@ -344,6 +347,38 @@ public class TestConsoleHandler
 		WorldConfig config = new WorldConfig();
 		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, config);
 		Assert.assertArrayEquals("Block found: AbsoluteLocation[x=1, y=-30, z=3]\nShutting down...\n".getBytes(), out.toByteArray());
+	}
+
+	@Test
+	public void listCreatures() throws Throwable
+	{
+		// Verifies the search for block types.
+		InputStream in = new ByteArrayInputStream("!list_creatures\n!stop\n".getBytes());
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		PrintStream printer = new PrintStream(out);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		long tickNumber = 50L;
+		
+		int id = -1;
+		EntityType type = ENV.creatures.getTypeById("op.cow");
+		EntityLocation location = new EntityLocation(1.0f, -5.6f, 9.9f);
+		CreatureEntity creature = new CreatureEntity(id
+			, type
+			, location
+			, null
+			, (byte)0
+			, (byte)1
+			, (byte)2
+			, (byte)3
+			, null
+			, null
+		);
+		Map<Integer, TickSnapshot.SnapshotCreature> creatures = Map.of(creature.id(), new TickSnapshot.SnapshotCreature(creature, null));
+		
+		monitoringAgent.snapshotPublished(new TickSnapshot(tickNumber, null, null, creatures, null, null, null, null, null));
+		WorldConfig config = new WorldConfig();
+		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, config);
+		Assert.assertArrayEquals("Loaded creatures (1):\n\t-1 (op.cow) @EntityLocation[x=1.0, y=-5.6, z=9.9]\nShutting down...\n".getBytes(), out.toByteArray());
 	}
 
 
