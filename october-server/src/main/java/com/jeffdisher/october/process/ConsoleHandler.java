@@ -11,9 +11,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.jeffdisher.october.actions.EntityActionOperatorDeliverAction;
 import com.jeffdisher.october.actions.EntityActionOperatorSetCreative;
 import com.jeffdisher.october.actions.EntityActionOperatorSetLocation;
 import com.jeffdisher.october.actions.EntityActionOperatorSpawnCreature;
+import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.engine.EnginePlayers;
@@ -25,11 +27,13 @@ import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.ticks.TickSnapshot;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
 
@@ -527,6 +531,37 @@ public class ConsoleHandler
 				int id = elt.getKey();
 				CreatureEntity creature = elt.getValue().completed();
 				out.printf("\t%d (%s) @%s\n", id, creature.type().id(), creature.location());
+			}
+		}),
+		KILL_ALL((PrintStream out, _ConsoleState state, String[] parameters) -> {
+			// We want to kill all creatures of the given type.
+			Environment env = Environment.getShared();
+			EntityType type = (1 == parameters.length)
+				? env.creatures.getTypeById(parameters[0])
+				: null
+			;
+			if (null != type)
+			{
+				// Walk all the creatures of this type and send them an operator command to take maximum damage.
+				MonitoringAgent monitoringAgent = state.monitoringAgent;
+				TickSnapshot snapshot = monitoringAgent.getLastSnapshot();
+				Map<Integer, TickSnapshot.SnapshotCreature> creatures = snapshot.creatures();
+				int damageToApply = 1000;
+				EntityActionTakeDamageFromEntity<MutableCreature> command = new EntityActionTakeDamageFromEntity<>(BodyPart.HEAD, damageToApply, EnginePlayers.OPERATOR_ENTITY_ID);
+				for (Map.Entry<Integer, TickSnapshot.SnapshotCreature> elt : creatures.entrySet())
+				{
+					int id = elt.getKey();
+					CreatureEntity creature = elt.getValue().completed();
+					if (creature.type() == type)
+					{
+						EntityActionOperatorDeliverAction deliver = new EntityActionOperatorDeliverAction(id, null, command);
+						monitoringAgent.getCommandSink().submitEntityMutation(EnginePlayers.OPERATOR_ENTITY_ID, deliver);
+					}
+				}
+			}
+			else
+			{
+				out.println("Usage:  <creature_type>");
 			}
 		}),
 		;

@@ -14,6 +14,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.actions.EntityActionOperatorDeliverAction;
 import com.jeffdisher.october.actions.EntityActionOperatorSpawnCreature;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
@@ -379,6 +380,52 @@ public class TestConsoleHandler
 		WorldConfig config = new WorldConfig();
 		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, config);
 		Assert.assertArrayEquals("Loaded creatures (1):\n\t-1 (op.cow) @EntityLocation[x=1.0, y=-5.6, z=9.9]\nShutting down...\n".getBytes(), out.toByteArray());
+	}
+
+	@Test
+	public void killAllCow() throws Throwable
+	{
+		// Issue the command to spawn a cow and see that it correctly ends up in the sink.
+		InputStream in = new ByteArrayInputStream("!kill_all op.cow\n!stop\n".getBytes());
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		PrintStream printer = new PrintStream(out);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		
+		long tickNumber = 50L;
+		int id = -1;
+		EntityType type = ENV.creatures.getTypeById("op.cow");
+		EntityLocation location = new EntityLocation(1.0f, -5.6f, 9.9f);
+		CreatureEntity creature = new CreatureEntity(id
+			, type
+			, location
+			, null
+			, (byte)0
+			, (byte)1
+			, (byte)2
+			, (byte)3
+			, null
+			, null
+		);
+		Map<Integer, TickSnapshot.SnapshotCreature> creatures = Map.of(creature.id(), new TickSnapshot.SnapshotCreature(creature, null));
+		monitoringAgent.snapshotPublished(new TickSnapshot(tickNumber, null, null, creatures, null, null, null, null, null));
+		
+		boolean[] didSend = new boolean[1];
+		monitoringAgent.setOperatorCommandSink(new _TestCommandSink()
+		{
+			@Override
+			public void submitEntityMutation(int clientId, IEntityAction<IMutablePlayerEntity> command)
+			{
+				Assert.assertFalse(didSend[0]);
+				Assert.assertEquals(EnginePlayers.OPERATOR_ENTITY_ID, clientId);
+				Assert.assertTrue(command instanceof EntityActionOperatorDeliverAction);
+				Assert.assertEquals("Operator-Deliver -1: Take 1000 damage to HEAD from -2147483648", command.toString());
+				didSend[0] = true;
+			}
+		});
+		WorldConfig config = new WorldConfig();
+		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, config);
+		Assert.assertArrayEquals("Shutting down...\n".getBytes(), out.toByteArray());
+		Assert.assertTrue(didSend[0]);
 	}
 
 
