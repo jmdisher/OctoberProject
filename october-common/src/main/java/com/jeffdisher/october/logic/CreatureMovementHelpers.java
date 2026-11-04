@@ -6,6 +6,7 @@ import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.logic.EntityMovementHelpers.IInteractiveHelper;
 import com.jeffdisher.october.pathing.PathLocation;
 import com.jeffdisher.october.subactions.EntitySubActionJump;
+import com.jeffdisher.october.subactions.EntitySubActionStepUp;
 import com.jeffdisher.october.subactions.EntitySubActionSwim;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
@@ -151,10 +152,10 @@ public class CreatureMovementHelpers
 		
 		// Now, move.
 		float speed = creatureType.blocksPerSecond();
-		EntityActionSimpleMove<MutableCreature> move = _moveByX(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, targetX, creatureVelocity.x());
+		EntityActionSimpleMove<MutableCreature> move = _moveByX(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, targetX, creatureVelocity.x(), null);
 		if (null == move)
 		{
-			move = _moveByY(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, targetY, creatureVelocity.y());
+			move = _moveByY(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, targetY, creatureVelocity.y(), null);
 		}
 		return move;
 	}
@@ -169,6 +170,7 @@ public class CreatureMovementHelpers
 	 * @param pitch The creature's existing pitch.
 	 * @param creatureType The type of creature.
 	 * @param targetBlock The target location.
+	 * @param nextTargetBlock The target next after the targetBlock, which could be null.
 	 * @param timeLimitMillis The number of milliseconds left in the tick.
 	 * @param viscosityFraction The viscosity of the current block ([0.0 .. 1.0]) where 1.0 is solid.
 	 * @param intensity The movement intensity.
@@ -183,6 +185,7 @@ public class CreatureMovementHelpers
 		, byte pitch
 		, EntityType creatureType
 		, PathLocation targetBlock
+		, PathLocation nextTargetBlock
 		, long timeLimitMillis
 		, float viscosityFraction
 		, EntityActionSimpleMove.Intensity intensity
@@ -193,19 +196,53 @@ public class CreatureMovementHelpers
 		FacingDirection direction = PathLocation.adjacentDirection(starting, targetBlock);
 		
 		// The complicated cases here are related to the cases where we are moving up into the target block.
-		// This could be a jump or could be swimming.
+		// This could be a jump, could be swimming, or could be part of a step up into a partial block.
 		boolean isJump = false;
 		boolean isSwim = false;
+		EntityLocation stepUpTarget = null;
+		EntitySubActionStepUp<MutableCreature> stepUpSubAction = null;
 		if (FacingDirection.UP == direction)
 		{
-			// If we want to jump, make sure that we can.
-			if (EntitySubActionJump.canJumpWithReader(supplier, creatureLocation, creatureType.volume(), creatureVelocity))
+			// This is one of these special-cases so determine which one.
+			if (null != nextTargetBlock)
 			{
+				// Check the next step to see if we are actually going up a full block or just stepping up.
+				FacingDirection nextDirection = PathLocation.adjacentDirection(targetBlock, nextTargetBlock);
+				if (FacingDirection.UP == nextDirection)
+				{
+					// This is a jump case (since we are moving 2 steps up).
+					isJump = true;
+				}
+				else
+				{
+					// This is something else so it is a step.
+					stepUpTarget = _findStepLocation(creatureLocation, creatureType, nextTargetBlock, nextDirection);
+					float deltaX = stepUpTarget.x() - creatureLocation.x();
+					float deltaY = stepUpTarget.y() - creatureLocation.y();
+					stepUpSubAction = EntitySubActionStepUp.buildStepUpWithReader(supplier, creatureLocation, creatureType.volume(), deltaX, deltaY);
+					
+					// If this couldn't step, default to jumping.
+					if (null == stepUpSubAction)
+					{
+						stepUpTarget = null;
+						isJump = true;
+					}
+				}
+			}
+			else
+			{
+				// If there is no other location, just try to jump.
 				isJump = true;
 			}
 			
-			// If not jumping, see if we can swim.
-			if (!isJump && isBlockSwimmable && (creatureVelocity.z() <= 0.0f))
+			// If we want to jump, make sure that we can.
+			if (isJump && !EntitySubActionJump.canJumpWithReader(supplier, creatureLocation, creatureType.volume(), creatureVelocity))
+			{
+				isJump = false;
+			}
+			
+			// If not jumping or stepping up, see if we can swim.
+			if (!isJump && (null == stepUpSubAction) && isBlockSwimmable && (creatureVelocity.z() <= 0.0f))
 			{
 				isSwim = true;
 			}
@@ -234,6 +271,15 @@ public class CreatureMovementHelpers
 				, subAction
 			);
 		}
+		else if (null != stepUpSubAction)
+		{
+			// We want to try to move with a "step up" to the next block.
+			float deltaX = stepUpTarget.x() - creatureLocation.x();
+			float deltaY = stepUpTarget.y() - creatureLocation.y();
+			float distanceX = Math.abs(deltaX);
+			float distanceY = Math.abs(deltaY);
+			change = _buildStep(creatureLocation, creatureVelocity, creatureType, timeLimitMillis, viscosityFraction, intensity, stepUpTarget, distanceX, distanceY, stepUpSubAction);
+		}
 		else if (FacingDirection.DOWN == direction)
 		{
 			// We will fall-through and handle this as a normal "do nothing" action.
@@ -250,7 +296,7 @@ public class CreatureMovementHelpers
 			EntityLocation stepLocation = _findStepLocation(creatureLocation, creatureType, targetBlock, direction);
 			float distanceX = Math.abs(stepLocation.x() - creatureLocation.x());
 			float distanceY = Math.abs(stepLocation.y() - creatureLocation.y());
-			change = _buildStep(creatureLocation, creatureVelocity, creatureType, timeLimitMillis, viscosityFraction, intensity, stepLocation, distanceX, distanceY);
+			change = _buildStep(creatureLocation, creatureVelocity, creatureType, timeLimitMillis, viscosityFraction, intensity, stepLocation, distanceX, distanceY, null);
 		}
 		
 		return change;
@@ -429,7 +475,7 @@ public class CreatureMovementHelpers
 	}
 
 
-	private static EntityActionSimpleMove<MutableCreature> _moveByX(EntityLocation location, long timeLimitMillis, float creatureSpeed, EntityActionSimpleMove.Intensity intensity, float viscosityFraction, float targetX, float passiveVelocityX)
+	private static EntityActionSimpleMove<MutableCreature> _moveByX(EntityLocation location, long timeLimitMillis, float creatureSpeed, EntityActionSimpleMove.Intensity intensity, float viscosityFraction, float targetX, float passiveVelocityX, EntitySubActionStepUp<MutableCreature> subAction)
 	{
 		// NOTE:  This call assumes that moving in X is possible (on solid ground or swimming).
 		float moveX = targetX - location.x();
@@ -445,13 +491,13 @@ public class CreatureMovementHelpers
 				, intensity
 				, (moveX > 0.0f) ? OrientationHelpers.YAW_EAST : OrientationHelpers.YAW_WEST
 				, OrientationHelpers.PITCH_FLAT
-				, null
+				, subAction
 			);
 		}
 		return move;
 	}
 
-	private static EntityActionSimpleMove<MutableCreature> _moveByY(EntityLocation location, long timeLimitMillis, float creatureSpeed, EntityActionSimpleMove.Intensity intensity, float viscosityFraction, float targetY, float passiveVelocityY)
+	private static EntityActionSimpleMove<MutableCreature> _moveByY(EntityLocation location, long timeLimitMillis, float creatureSpeed, EntityActionSimpleMove.Intensity intensity, float viscosityFraction, float targetY, float passiveVelocityY, EntitySubActionStepUp<MutableCreature> subAction)
 	{
 		// NOTE:  This call assumes that moving in Y is possible (on solid ground or swimming).
 		float moveY = targetY - location.y();
@@ -467,7 +513,7 @@ public class CreatureMovementHelpers
 				, intensity
 				, (moveY > 0.0f) ? OrientationHelpers.YAW_NORTH : OrientationHelpers.YAW_SOUTH
 				, OrientationHelpers.PITCH_FLAT
-				, null
+				, subAction
 			);
 		}
 		return move;
@@ -514,6 +560,7 @@ public class CreatureMovementHelpers
 		, EntityLocation stepLocation
 		, float distanceX
 		, float distanceY
+		, EntitySubActionStepUp<MutableCreature> subAction
 	)
 	{
 		EntityActionSimpleMove<MutableCreature> change;
@@ -525,11 +572,11 @@ public class CreatureMovementHelpers
 			float speed = creatureType.blocksPerSecond();
 			if (maxHorizontal == distanceX)
 			{
-				change = _moveByX(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, stepLocation.x(), creatureVelocity.x());
+				change = _moveByX(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, stepLocation.x(), creatureVelocity.x(), subAction);
 			}
 			else
 			{
-				change = _moveByY(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, stepLocation.y(), creatureVelocity.y());
+				change = _moveByY(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, stepLocation.y(), creatureVelocity.y(), subAction);
 			}
 		}
 		else

@@ -17,7 +17,6 @@ import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.pathing.PathFinder;
 import com.jeffdisher.october.pathing.PathLocation;
 import com.jeffdisher.october.pathing.WalkingNavigator;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -353,10 +352,11 @@ public class CreatureLogic
 		
 		// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
 		EntityLocation currentLocation = mutable.getLocation();
+		PathLocation currentInPath = PathLocation.forEntityBase(currentLocation);
 		PathLocation first = existingPlan.get(0);
 		FacingDirection direction;
 		if ((existingPlan.size() > 2)
-			&& (FacingDirection.UP == PathLocation.adjacentDirection(PathLocation.forEntityBase(currentLocation), first))
+			&& (FacingDirection.UP == PathLocation.adjacentDirection(currentInPath, first))
 			&& (FacingDirection.UP == PathLocation.adjacentDirection(first, existingPlan.get(1)))
 		)
 		{
@@ -368,7 +368,7 @@ public class CreatureLogic
 		else
 		{
 			// Otherwise, we just want to lean into the direction we are currently heading.
-			direction = PathLocation.adjacentDirection(PathLocation.forEntityBase(currentLocation), first);
+			direction = PathLocation.adjacentDirection(currentInPath, first);
 		}
 		EntityActionSimpleMove<MutableCreature> actionProduced = CreatureMovementHelpers.prepareForMove(currentLocation
 			, mutable.getVelocityVector()
@@ -487,13 +487,13 @@ public class CreatureLogic
 	)
 	{
 		PathLocation thisStep = existingPlan.get(0);
-		AbsoluteLocation currentLocation = entityLocation.getBlockLocation();
+		PathLocation nextStep = (existingPlan.size() >= 2) ? existingPlan.get(1) : null;
 		
 		// We know that this should only be called AFTER updating our planned path.
-		Assert.assertTrue(!currentLocation.equals(thisStep));
+		Assert.assertTrue(!PathLocation.forEntityBase(entityLocation).equals(thisStep));
 		
 		boolean isSwimmable = (viscosity >= BlockAspect.VISOSITY_FLOAT_SWIMMABLE) && (viscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
-		return CreatureMovementHelpers.moveToNextLocation(reader, entityLocation, entityVelocity, yaw, pitch, type, thisStep, timeLimitMillis, viscosity, intensity, isSwimmable);
+		return CreatureMovementHelpers.moveToNextLocation(reader, entityLocation, entityVelocity, yaw, pitch, type, thisStep, nextStep, timeLimitMillis, viscosity, intensity, isSwimmable);
 	}
 
 	private static List<PathLocation> _extractAcceptablePathTargets(WalkingNavigator navigator
