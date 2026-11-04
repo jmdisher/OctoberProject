@@ -133,8 +133,7 @@ public class TestCreatureMovementHelpers
 		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(1, 1, 2), 0, 0, 0);
 		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, 100L, 0.0f, EntityActionSimpleMove.Intensity.IDLE_CREATURE, false);
-		Assert.assertNotNull(change);
-		Assert.assertNull(change.getSubAction());
+		Assert.assertNull(change);
 	}
 
 	@Test
@@ -330,24 +329,7 @@ public class TestCreatureMovementHelpers
 		ViscosityReader reader = _getFixedBlockReader(WATER_SOURCE);
 		long millisPerTick = 50L;
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, millisPerTick, 0.0f, EntityActionSimpleMove.Intensity.IDLE_CREATURE, false);
-		Assert.assertEquals("SimpleMove(STANDING), by 0.00, 0.00, Sub: null", change.toString());
-		
-		CuboidAddress cuboidAddress = location.getBlockLocation().getCuboidAddress();
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, WATER_SOURCE);
-		TickProcessingContext context = ContextBuilder.build()
-			.millisPerTick(millisPerTick)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
-				return (l.getCuboidAddress().equals(cuboidAddress))
-					? BlockProxy.load(l.getBlockAddress(), cuboid)
-					: null
-				;
-			}), null, null)
-			.finish()
-		;
-		boolean didApply = change.applyChange(context, mutable);
-		Assert.assertTrue(didApply);
-		Assert.assertEquals(new EntityLocation(-60.41f, -215.41f, -0.98f), mutable.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.3f), mutable.newVelocity);
+		Assert.assertNull(change);
 	}
 
 	@Test

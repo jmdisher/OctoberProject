@@ -192,28 +192,29 @@ public class CreatureMovementHelpers
 		PathLocation starting = PathLocation.forEntityBase(creatureLocation);
 		FacingDirection direction = PathLocation.adjacentDirection(starting, targetBlock);
 		
-		// We might need to jump, walk, or do nothing.
-		// If the target is above us and we are on the ground, 
-		EntityActionSimpleMove<MutableCreature> change;
+		// The complicated cases here are related to the cases where we are moving up into the target block.
+		// This could be a jump or could be swimming.
+		boolean isJump = false;
+		boolean isSwim = false;
 		if (FacingDirection.UP == direction)
 		{
-			// We need to go up so see if we should jump, swim, or hope our momentum will get us there.
-			IEntitySubAction<MutableCreature> subAction;
+			// If we want to jump, make sure that we can.
 			if (EntitySubActionJump.canJumpWithReader(supplier, creatureLocation, creatureType.volume(), creatureVelocity))
 			{
-				// Jump.
-				subAction = new EntitySubActionJump<>();
+				isJump = true;
 			}
-			else if (isBlockSwimmable && (creatureVelocity.z() <= 0.0f))
+			
+			// If not jumping, see if we can swim.
+			if (!isJump && isBlockSwimmable && (creatureVelocity.z() <= 0.0f))
 			{
-				// Swim.
-				subAction = new EntitySubActionSwim<>();
+				isSwim = true;
 			}
-			else
-			{
-				// We will have to rely on our momentum to carry us there (or we are just failing to reach it).
-				subAction = null;
-			}
+		}
+		
+		EntityActionSimpleMove<MutableCreature> change;
+		if (isJump)
+		{
+			IEntitySubAction<MutableCreature> subAction = new EntitySubActionJump<>();
 			change = new EntityActionSimpleMove<>(0.0f
 				, 0.0f
 				, EntityActionSimpleMove.Intensity.STANDING
@@ -222,55 +223,36 @@ public class CreatureMovementHelpers
 				, subAction
 			);
 		}
+		else if (isSwim)
+		{
+			IEntitySubAction<MutableCreature> subAction = new EntitySubActionSwim<>();
+			change = new EntityActionSimpleMove<>(0.0f
+				, 0.0f
+				, EntityActionSimpleMove.Intensity.STANDING
+				, yaw
+				, pitch
+				, subAction
+			);
+		}
+		else if (FacingDirection.DOWN == direction)
+		{
+			// We will fall-through and handle this as a normal "do nothing" action.
+			change = null;
+		}
+		else if (FacingDirection.UP == direction)
+		{
+			// We didn't handle any special "up" action so we must be needing to continue to "coast" so make this "do nothing".
+			change = null;
+		}
 		else
 		{
-			// We might need to walk, coast in the air (which is the same as walking), or just fall.
-			// We will just move over by the axis which differs and otherwise stay where we are in the other axis.
-			float stepX = creatureLocation.x();
-			float stepY = creatureLocation.y();
-			float width = creatureType.volume().width();
-			EntityLocation targetBase = targetBlock.getBaseLocation();
-			if (FacingDirection.EAST == direction)
-			{
-				stepX = targetBase.x() + FLOAT_THRESHOLD;
-			}
-			else if (FacingDirection.WEST == direction)
-			{
-				stepX = targetBase.x() + PathLocation.PATH_UNIT - FLOAT_THRESHOLD - width;
-			}
-			else if (FacingDirection.NORTH == direction)
-			{
-				stepY = targetBase.y() + FLOAT_THRESHOLD;
-			}
-			else if (FacingDirection.SOUTH == direction)
-			{
-				stepY = targetBase.y() + PathLocation.PATH_UNIT - FLOAT_THRESHOLD - width;
-			}
-			float stepZ = targetBase.z();
-			EntityLocation stepLocation = new EntityLocation(stepX, stepY, stepZ);
+			// This is a normal horizontal move.
+			EntityLocation stepLocation = _findStepLocation(creatureLocation, creatureType, targetBlock, direction);
 			float distanceX = Math.abs(stepLocation.x() - creatureLocation.x());
 			float distanceY = Math.abs(stepLocation.y() - creatureLocation.y());
-			// We don't want to walk diagonally so just see which is the largest distance.
-			float maxHorizontal = Math.max(distanceX, distanceY);
-			if (maxHorizontal > FLOAT_THRESHOLD)
-			{
-				// We need to move horizontally so figure out which way.
-				float speed = creatureType.blocksPerSecond();
-				if (maxHorizontal == distanceX)
-				{
-					change = _moveByX(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, stepLocation.x(), creatureVelocity.x());
-				}
-				else
-				{
-					change = _moveByY(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, stepLocation.y(), creatureVelocity.y());
-				}
-			}
-			else
-			{
-				// We don't need horizontal movement so just do nothing.
-				change = null;
-			}
+			change = _buildStep(creatureLocation, creatureVelocity, creatureType, timeLimitMillis, viscosityFraction, intensity, stepLocation, distanceX, distanceY);
 		}
+		
 		return change;
 	}
 
@@ -521,6 +503,72 @@ public class CreatureMovementHelpers
 		int i = (int)(100.0f * input);
 		float f = (float)i / 100.0f;
 		return f;
+	}
+
+	private static EntityActionSimpleMove<MutableCreature> _buildStep(EntityLocation creatureLocation
+		, EntityLocation creatureVelocity
+		, EntityType creatureType
+		, long timeLimitMillis
+		, float viscosityFraction
+		, EntityActionSimpleMove.Intensity intensity
+		, EntityLocation stepLocation
+		, float distanceX
+		, float distanceY
+	)
+	{
+		EntityActionSimpleMove<MutableCreature> change;
+		// We don't want to walk diagonally so just see which is the largest distance.
+		float maxHorizontal = Math.max(distanceX, distanceY);
+		if (maxHorizontal > FLOAT_THRESHOLD)
+		{
+			// We need to move horizontally so figure out which way.
+			float speed = creatureType.blocksPerSecond();
+			if (maxHorizontal == distanceX)
+			{
+				change = _moveByX(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, stepLocation.x(), creatureVelocity.x());
+			}
+			else
+			{
+				change = _moveByY(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, stepLocation.y(), creatureVelocity.y());
+			}
+		}
+		else
+		{
+			// We don't need horizontal movement so just do nothing.
+			change = null;
+		}
+		return change;
+	}
+
+	private static EntityLocation _findStepLocation(EntityLocation creatureLocation
+		, EntityType creatureType
+		, PathLocation targetBlock
+		, FacingDirection direction
+	)
+	{
+		float stepX = creatureLocation.x();
+		float stepY = creatureLocation.y();
+		float width = creatureType.volume().width();
+		EntityLocation targetBase = targetBlock.getBaseLocation();
+		if (FacingDirection.EAST == direction)
+		{
+			stepX = targetBase.x() + FLOAT_THRESHOLD;
+		}
+		else if (FacingDirection.WEST == direction)
+		{
+			stepX = targetBase.x() + PathLocation.PATH_UNIT - FLOAT_THRESHOLD - width;
+		}
+		else if (FacingDirection.NORTH == direction)
+		{
+			stepY = targetBase.y() + FLOAT_THRESHOLD;
+		}
+		else if (FacingDirection.SOUTH == direction)
+		{
+			stepY = targetBase.y() + PathLocation.PATH_UNIT - FLOAT_THRESHOLD - width;
+		}
+		float stepZ = targetBase.z();
+		EntityLocation stepLocation = new EntityLocation(stepX, stepY, stepZ);
+		return stepLocation;
 	}
 
 
