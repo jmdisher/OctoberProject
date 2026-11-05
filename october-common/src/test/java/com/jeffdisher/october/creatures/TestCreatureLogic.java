@@ -792,7 +792,8 @@ public class TestCreatureLogic
 		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals(player.id(), mutableCow.movementPlan.targetEntityId());
 		Assert.assertEquals(player.location(), mutableCow.movementPlan.targetPreviousLocation());
-		Assert.assertNull(mutableCow.movementPlan.fullPlan());
+		Assert.assertEquals(1, mutableCow.movementPlan.fullPlan().size());
+		Assert.assertEquals(PathLocation.forEntityBase(player.location()), mutableCow.movementPlan.fullPlan().get(0));
 		
 		// Move far.
 		mutablePlayer.newLocation = new EntityLocation(5.0f, 0.0f, 1.0f);

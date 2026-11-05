@@ -325,6 +325,7 @@ public class CreatureMovementHelpers
 		PathLocation startBlock = PathLocation.forEntityBase(creatureLocation);
 		PathLocation prev = startBlock;
 		PathLocation furthestBlock = null;
+		boolean canSelect = false;
 		for (PathLocation next : fullPath)
 		{
 			FacingDirection direction = PathLocation.adjacentDirection(prev, next);
@@ -337,7 +338,15 @@ public class CreatureMovementHelpers
 				// Check that the block under this is solid.
 				if (supplier.isSolidBlockInVolume(next.getRelative(0, 0, -1).getBaseLocation(), new EntityVolume(0.01f, 0.01f), true))
 				{
-					furthestBlock = next;
+					// We want to avoid the first block, since that would mean discarding the entire plan for potentially only half a step.
+					if (canSelect)
+					{
+						furthestBlock = next;
+					}
+					else
+					{
+						canSelect = true;
+					}
 				}
 				else
 				{
