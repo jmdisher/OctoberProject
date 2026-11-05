@@ -216,16 +216,23 @@ public class CreatureMovementHelpers
 				else
 				{
 					// This is something else so it is a step.
+					// Note that this "realTargetLocation" calculation isn't quite right but needs to be generalized with other calls here, anyway.
 					stepUpTarget = _findStepLocation(creatureLocation, creatureType, nextTargetBlock, nextDirection);
 					float deltaX = stepUpTarget.x() - creatureLocation.x();
 					float deltaY = stepUpTarget.y() - creatureLocation.y();
-					stepUpSubAction = EntitySubActionStepUp.buildStepUpWithReader(supplier, creatureLocation, creatureType.volume(), deltaX, deltaY);
+					float xToMove = _findRawMoveInTime(creatureType.blocksPerSecond() * intensity.speedMultipler, viscosityFraction, deltaX, creatureVelocity.x(), timeLimitMillis);
+					float yToMove = _findRawMoveInTime(creatureType.blocksPerSecond() * intensity.speedMultipler, viscosityFraction, deltaY, creatureVelocity.y(), timeLimitMillis);
+					EntityLocation realTargetLocation = creatureLocation.getRelative(xToMove, yToMove, EntitySubActionStepUp.MAX_STEP_HEIGHT);
 					
-					// If this couldn't step, default to jumping.
-					if (null == stepUpSubAction)
+					if (supplier.isSolidBlockInVolume(realTargetLocation.getRelative(0.0f, 0.0f, -0.1f), new EntityVolume(0.01f, creatureType.volume().width()), true))
 					{
+						stepUpSubAction = EntitySubActionStepUp.buildStepUpWithReader(supplier, creatureLocation, creatureType.volume(), deltaX, deltaY);
+					}
+					else
+					{
+						// We aren't yet close enough to step up here so continue walking in this direction.
 						stepUpTarget = null;
-						isJump = true;
+						direction = nextDirection;
 					}
 				}
 			}

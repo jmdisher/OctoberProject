@@ -32,6 +32,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.IPassiveAction;
@@ -1918,6 +1919,122 @@ public class TestCreatureLogic
 		Assert.assertEquals(EntityActionSimpleMove.Intensity.RUNNING, mutable.movementPlan.intensity());
 	}
 
+	@Test
+	public void walkUpStairsAndSlabs()
+	{
+		// We will just create a stair and slab for different creatures to walk up (they will have fixed movement plans).
+		AbsoluteLocation centreLocation = new AbsoluteLocation(16, 16, 1);
+		AbsoluteLocation slabLocation = centreLocation.getRelative(-1, 0, 0);
+		AbsoluteLocation slabStoneLocation = slabLocation.getRelative(-1, 0, 0);
+		AbsoluteLocation stairLocation = centreLocation.getRelative(1, 0, 0);
+		AbsoluteLocation stairStoneLocation = stairLocation.getRelative(1, 0, 0);
+		CuboidAddress cuboidAddress = centreLocation.getCuboidAddress();
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		Block slab = ENV.blocks.fromItem(ENV.items.getItemById("op.stone_brick_slab"));
+		Block stair = ENV.blocks.fromItem(ENV.items.getItemById("op.stone_brick_stair"));
+		CuboidGenerator.fillPlane(cuboid, (byte)0, stone);
+		cuboid.setData15(AspectRegistry.BLOCK, slabLocation.getBlockAddress(), slab.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, slabLocation.getBlockAddress(), FacingDirection.directionToByte(FacingDirection.DOWN));
+		cuboid.setData15(AspectRegistry.BLOCK, slabStoneLocation.getBlockAddress(), stone.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, stairLocation.getBlockAddress(), stair.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, stairLocation.getBlockAddress(), FacingDirection.directionToByte(FacingDirection.EAST));
+		cuboid.setData15(AspectRegistry.BLOCK, stairStoneLocation.getBlockAddress(), stone.item().number());
+		
+		// We need to create target creatures.
+		Entity entity1 = MutableEntity.createWithLocation(1, slabStoneLocation.getRelative(0, 0, 1).toEntityLocation(), new EntityLocation(0.0f, 0.0f, 0.0f)).freeze();
+		Entity entity2 = MutableEntity.createWithLocation(2, stairStoneLocation.getRelative(0, 0, 1).toEntityLocation(), new EntityLocation(0.0f, 0.0f, 0.0f)).freeze();
+		EntityCollection collection = EntityCollection.fromMaps(Map.of(entity1.id(), entity1
+			, entity2.id(), entity2
+		), Map.of());
+		
+		MutableCreature mutable1 = MutableCreature.existing(CreatureEntity.create(-1, ORC, centreLocation.toEntityLocation().getRelative(0.1f, 0.2f, 0.0f), 0L));
+		PathLocation start1 = PathLocation.forEntityBase(mutable1.newLocation);
+		List<PathLocation> path1 = List.of(start1
+			, start1.getRelative(0, 0, 1)
+			, start1.getRelative(-1, 0, 1)
+			, start1.getRelative(-2, 0, 1)
+			, start1.getRelative(-2, 0, 2)
+			, start1.getRelative(-3, 0, 2)
+			, start1.getRelative(-4, 0, 2)
+		);
+		mutable1.movementPlan = new CreatureEntity.MovementPlan(path1
+			, entity1.id()
+			, entity1.location()
+			, null
+			, EntityActionSimpleMove.Intensity.WALKING
+		);
+		MutableCreature mutable2 = MutableCreature.existing(CreatureEntity.create(-2, ORC, centreLocation.toEntityLocation().getRelative(0.5f, 0.2f, 0.0f), 0L));
+		PathLocation start2 = PathLocation.forEntityBase(mutable2.newLocation);
+		List<PathLocation> path2 = List.of(start2
+			, start2.getRelative(0, 0, 1)
+			, start2.getRelative(1, 0, 1)
+			, start2.getRelative(1, 0, 2)
+			, start2.getRelative(2, 0, 2)
+			, start2.getRelative(3, 0, 2)
+			, start2.getRelative(4, 0, 2)
+		);
+		mutable2.movementPlan = new CreatureEntity.MovementPlan(path2
+			, entity2.id()
+			, entity2.location()
+			, null
+			, EntityActionSimpleMove.Intensity.WALKING
+		);
+		
+		// Create a context at the next time where we can take an action and see that they pick no target if they can't see the other cow..
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
+			return blockLocation.getCuboidAddress().equals(cuboidAddress)
+				? BlockProxy.load(blockLocation.getBlockAddress(), cuboid)
+				: null
+			;
+		});
+		TickProcessingContext.IEntitySearch entitySearch = new TickProcessingContext.IEntitySearch() {
+			@Override
+			public MinimalEntity getById(int id)
+			{
+				return MinimalEntity.fromEntity(collection.getPlayerById(id));
+			}
+			@Override
+			public int[] findEntityIdsInRegion(EntityLocation base, EntityLocation edge)
+			{
+				throw new AssertionError();
+			}
+		};
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(10L)
+			.lookups(previousBlockLookUp, entitySearch, null)
+			.fixedRandom(2)
+			.finish()
+		;
+		
+		EntityLocation[] slabWalkLocations = _collectStepLocations(context, collection, mutable1, 10);
+		Assert.assertNull(mutable1.movementPlan.fullPlan());
+		Assert.assertArrayEquals(new EntityLocation[] {
+			new EntityLocation(15.9f, 16.2f, 1.5f),
+			new EntityLocation(15.7f, 16.2f, 1.5f),
+			new EntityLocation(15.5f, 16.2f, 1.5f),
+			new EntityLocation(15.3f, 16.2f, 1.5f),
+			new EntityLocation(15.1f, 16.2f, 1.5f),
+			new EntityLocation(14.9f, 16.2f, 2.0f),
+			new EntityLocation(14.7f, 16.2f, 2.0f),
+			new EntityLocation(14.5f, 16.2f, 2.0f),
+			new EntityLocation(14.3f, 16.2f, 2.0f),
+			new EntityLocation(14.3f, 16.2f, 2.0f),
+		}, slabWalkLocations);
+		
+		EntityLocation[] stairWalkLocations = _collectStepLocations(context, collection, mutable2, 7);
+		Assert.assertNull(mutable2.movementPlan.fullPlan());
+		Assert.assertArrayEquals(new EntityLocation[] {
+			new EntityLocation(16.7f, 16.2f, 1.5f),
+			new EntityLocation(16.9f, 16.2f, 1.5f),
+			new EntityLocation(17.01f, 16.2f, 1.5f),
+			new EntityLocation(17.21f, 16.2f, 2.0f),
+			new EntityLocation(17.41f, 16.2f, 2.0f),
+			new EntityLocation(17.59f, 16.2f, 2.0f),
+			new EntityLocation(17.59f, 16.2f, 2.0f),
+		}, stairWalkLocations);
+	}
+
 
 	private static TickProcessingContext _createContext(Function<AbsoluteLocation, BlockProxy> function, int random)
 	{
@@ -1957,6 +2074,34 @@ public class TestCreatureLogic
 			)
 		);
 	}
+
+	private static EntityLocation[] _collectStepLocations(TickProcessingContext context, EntityCollection collection, MutableCreature mutable, int stepCount)
+	{
+		EntityLocation[] stairWalkLocations = new EntityLocation[stepCount];
+		for (int i = 0; i < stepCount; ++i)
+		{
+			Assert.assertFalse(CreatureLogic.didTakeSpecialActions(context
+				, collection
+				, mutable
+			));
+			EntityActionSimpleMove<MutableCreature> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
+			if (null == change)
+			{
+				change = new EntityActionSimpleMove<>(0.0f
+					, 0.0f
+					, EntityActionSimpleMove.Intensity.STANDING
+					, mutable.newYaw
+					, mutable.newPitch
+					, null
+				);
+			}
+			boolean didApply = change.applyChange(context, mutable);
+			Assert.assertTrue(didApply);
+			stairWalkLocations[i] = mutable.newLocation;
+		}
+		return stairWalkLocations;
+	}
+
 
 	private static class _MinimalEntityIndex implements TickProcessingContext.IEntitySearch
 	{

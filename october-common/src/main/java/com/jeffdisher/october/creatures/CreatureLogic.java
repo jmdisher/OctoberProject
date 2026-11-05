@@ -17,6 +17,7 @@ import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.pathing.PathFinder;
 import com.jeffdisher.october.pathing.PathLocation;
 import com.jeffdisher.october.pathing.WalkingNavigator;
+import com.jeffdisher.october.subactions.EntitySubActionStepUp;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -391,6 +392,19 @@ public class CreatureLogic
 				, timeLimitMillis
 				, viscosity
 				, oldPlan.intensity()
+			);
+		}
+		// TODO:  This approach is a hack which requires that we rethink this action production design.
+		if ((null != actionProduced) && (actionProduced.getSubAction() instanceof EntitySubActionStepUp))
+		{
+			CreatureEntity.MovementPlan movementPlan = mutable.movementPlan;
+			List<PathLocation> fullPlan = new ArrayList<>(movementPlan.fullPlan());
+			fullPlan.remove(0);
+			mutable.movementPlan = new CreatureEntity.MovementPlan(Collections.unmodifiableList(fullPlan)
+				, movementPlan.targetEntityId()
+				, movementPlan.targetPreviousLocation()
+				, movementPlan.directLocation()
+				, movementPlan.intensity()
 			);
 		}
 		

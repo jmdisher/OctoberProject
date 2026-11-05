@@ -758,7 +758,7 @@ public class TestEngineCreatures
 		}
 		
 		// By this point we should be on the ground, in the right block, with no plan.
-		Assert.assertEquals(new EntityLocation(7.01f, 8.0f, 2.0f), updated.location());
+		Assert.assertEquals(new EntityLocation(7.09f, 8.0f, 2.0f), updated.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), updated.velocity());
 		Assert.assertNull(updated.ephemeral().movementPlan().fullPlan());
 		Assert.assertNull(updated.ephemeral().movementPlan().directLocation());
