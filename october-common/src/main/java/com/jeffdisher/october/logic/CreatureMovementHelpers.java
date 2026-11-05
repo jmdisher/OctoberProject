@@ -289,8 +289,20 @@ public class CreatureMovementHelpers
 		}
 		else if (FacingDirection.DOWN == direction)
 		{
-			// We will fall-through and handle this as a normal "do nothing" action.
-			change = null;
+			// The only thing we need to check here is that we aren't "hanging on the lip" of a neighbouring block.
+			if (supplier.isSolidBlockInVolume(creatureLocation.getRelative(0.0f, 0.0f, -0.1f), new EntityVolume(0.01f, creatureType.volume().width()), true))
+			{
+				// We will try to move toward the west-south corner.
+				EntityLocation stepLocation = creatureLocation.getBlockLocation().toEntityLocation();
+				float distanceX = Math.abs(stepLocation.x() - creatureLocation.x());
+				float distanceY = Math.abs(stepLocation.y() - creatureLocation.y());
+				change = _buildStep(creatureLocation, creatureVelocity, creatureType, timeLimitMillis, viscosityFraction, intensity, stepLocation, distanceX, distanceY, null);
+			}
+			else
+			{
+				// We will fall-through and handle this as a normal "do nothing" action.
+				change = null;
+			}
 		}
 		else if (FacingDirection.UP == direction)
 		{
