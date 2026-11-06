@@ -61,6 +61,9 @@ public class EngineCreatures
 			_runExternalChanges(context, mutable, changesToRun);
 		}
 		
+		// Make sure that our current movement plan is up-to-date.
+		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutable);
+		
 		// Now that we have handled any normally queued up changes acting ON this creature, see if they want to do anything special.
 		boolean didSpecial = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutable);
 		if (didSpecial)

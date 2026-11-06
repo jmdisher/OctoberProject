@@ -133,10 +133,37 @@ public class CreatureLogic
 
 	/**
 	 * Called by CreatureProcessor on each creature in each tick, after any externally-originating actions have been run
+	 * but before any movement/standing-related actions are synthesized and run to allow the creature to update its
+	 * path-finding and goals.
+	 * 
+	 * @param context The context of the current tick.
+	 * @param entityCollection The read-only collection of entities in the world.
+	 * @param mutable The mutable creature object currently being evaluated.
+	 */
+	public static void createOrUpdatePathFinding(TickProcessingContext context
+		, EntityCollection entityCollection
+		, MutableCreature mutable
+	)
+	{
+		// If we have a plan, we want to update it whenever we didn't take any special action.
+		if (null != mutable.movementPlan)
+		{
+			_updateExistingMovementPlanState(context, entityCollection, mutable);
+		}
+		
+		// If we have no plan, try to create a new one.
+		if (null == mutable.movementPlan)
+		{
+			// We have no plan so make a new one.
+			mutable.movementPlan = _makeMovementPlan(context, entityCollection, mutable);
+		}
+	}
+
+	/**
+	 * Called by CreatureProcessor on each creature in each tick, after any externally-originating actions have been run
 	 * but before any movement/standing-related actions are synthesized and run to allow the creature to take special
 	 * actions.
 	 * This includes despawning if hostile in a peaceful world or if the mob is a despawning type and is idle.
-	 * Normally, however, it involves finding a target and/or creating/updating a movement plan.
 	 * 
 	 * @param context The context of the current tick.
 	 * @param entityCollection The read-only collection of entities in the world.
@@ -171,23 +198,6 @@ public class CreatureLogic
 			}
 		}
 		
-		// If we didn't do anything special, we will update our movement plan, potentially creating a new one (only
-		// worth doing if we didn't take an action since we skip movement actions if we return true from here).
-		if (!isDone)
-		{
-			// If we have a plan, we want to update it whenever we didn't take any special action.
-			if (null != mutable.movementPlan)
-			{
-				_updateExistingMovementPlanState(context, entityCollection, mutable);
-			}
-			
-			// If we have no plan, try to create a new one.
-			if (null == mutable.movementPlan)
-			{
-				// We have no plan so make a new one.
-				mutable.movementPlan = _makeMovementPlan(context, entityCollection, mutable);
-			}
-		}
 		return isDone;
 	}
 

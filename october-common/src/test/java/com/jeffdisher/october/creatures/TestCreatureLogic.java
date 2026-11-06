@@ -181,10 +181,9 @@ public class TestCreatureLogic
 		;
 		MutableCreature mutable = MutableCreature.existing(entity);
 		mutable.newBreath -= 1;
-		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, EntityCollection.fromMaps(Map.of(), Map.of(entity.id(), entity))
-				, mutable
-		);
+		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(), Map.of(entity.id(), entity));
+		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutable);
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutable);
 		Assert.assertFalse(didTakeAction);
 		IEntityAction<MutableCreature> action = CreatureLogic.planNextAction(context
 				, mutable
@@ -271,10 +270,9 @@ public class TestCreatureLogic
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
 		
 		// First, choose the target.
-		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
-				, mutableOrc
-		);
+		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc));
+		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableOrc);
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableOrc);
 		Assert.assertFalse(didTakeAction);
 		IEntityAction<MutableCreature> action = CreatureLogic.planNextAction(context
 				, mutableOrc
@@ -313,10 +311,9 @@ public class TestCreatureLogic
 			.fixedRandom(2)
 			.finish()
 		;
-		didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
-				, mutableOrc
-		);
+		entityCollection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc));
+		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableOrc);
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableOrc);
 		Assert.assertFalse(didTakeAction);
 		// We should now see the updated movement plan.
 		Assert.assertNull(mutableOrc.movementPlan.fullPlan());
@@ -590,10 +587,9 @@ public class TestCreatureLogic
 			.finish()
 		;
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
-		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
-				, mutableOrc
-		);
+		EntityCollection collection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc));
+		CreatureLogic.createOrUpdatePathFinding(context, collection, mutableOrc);
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context, collection, mutableOrc);
 		Assert.assertFalse(didTakeAction);
 		EntityActionSimpleMove<MutableCreature> action = CreatureLogic.planNextAction(context
 				, mutableOrc
@@ -673,10 +669,9 @@ public class TestCreatureLogic
 		);
 		
 		// The first attempt to attack should fail since we are still out of range.
-		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
-			, mutableOrc
-		);
+		EntityCollection collection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc));
+		CreatureLogic.createOrUpdatePathFinding(context, collection, mutableOrc);
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context, collection, mutableOrc);
 		Assert.assertFalse(didTakeAction);
 		EntityActionSimpleMove<MutableCreature> action = CreatureLogic.planNextAction(context
 			, mutableOrc
@@ -694,10 +689,9 @@ public class TestCreatureLogic
 		mutableOrc.nextActionMillis = context.currentTickTimeMillis;
 		
 		// Now, allow it to perform the attack.
-		didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
-				, mutableOrc
-		);
+		collection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc));
+		CreatureLogic.createOrUpdatePathFinding(context, collection, mutableOrc);
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context, collection, mutableOrc);
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
 		Assert.assertEquals(context.currentTickTimeMillis + attackCooldownMillis, mutableOrc.nextActionMillis);
@@ -707,10 +701,9 @@ public class TestCreatureLogic
 		outChanges.clear();
 		
 		// A second attack on the following tick should fail since we are on cooldown.
-		didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
-				, mutableOrc
-		);
+		collection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc));
+		CreatureLogic.createOrUpdatePathFinding(context, collection, mutableOrc);
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context, collection, mutableOrc);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
 		Assert.assertEquals(0, outChanges.size());
@@ -723,10 +716,9 @@ public class TestCreatureLogic
 			.fixedRandom(2)
 			.finish()
 		;
-		didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
-				, mutableOrc
-		);
+		collection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc));
+		CreatureLogic.createOrUpdatePathFinding(context, collection, mutableOrc);
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context, collection, mutableOrc);
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
 		Assert.assertEquals(2, outChanges.size());
@@ -770,10 +762,9 @@ public class TestCreatureLogic
 		// Acquire target.
 		entities.put(player.id(), MinimalEntity.fromEntity(player));
 		entities.put(cow.id(), MinimalEntity.fromCreature(cow));
-		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(cow.id(), cow))
-				, mutableCow
-		);
+		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(cow.id(), cow));
+		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableCow);
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableCow);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertNull(mutableCow.movementPlan.fullPlan());
 		Assert.assertEquals(player.id(), mutableCow.movementPlan.targetEntityId());
@@ -786,10 +777,9 @@ public class TestCreatureLogic
 		entities.put(player.id(), MinimalEntity.fromEntity(player));
 		cow = mutableCow.freeze();
 		entities.put(cow.id(), MinimalEntity.fromCreature(cow));
-		didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(cow.id(), cow))
-				, mutableCow
-		);
+		entityCollection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(cow.id(), cow));
+		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableCow);
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableCow);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals(player.id(), mutableCow.movementPlan.targetEntityId());
 		Assert.assertEquals(player.location(), mutableCow.movementPlan.targetPreviousLocation());
@@ -802,10 +792,9 @@ public class TestCreatureLogic
 		entities.put(player.id(), MinimalEntity.fromEntity(player));
 		cow = mutableCow.freeze();
 		entities.put(cow.id(), MinimalEntity.fromCreature(cow));
-		didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(cow.id(), cow))
-				, mutableCow
-		);
+		entityCollection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(cow.id(), cow));
+		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableCow);
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableCow);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertNull(mutableCow.movementPlan.fullPlan());
 		Assert.assertEquals(player.id(), mutableCow.movementPlan.targetEntityId());
@@ -818,10 +807,9 @@ public class TestCreatureLogic
 		entities.put(player.id(), MinimalEntity.fromEntity(player));
 		cow = mutableCow.freeze();
 		entities.put(cow.id(), MinimalEntity.fromCreature(cow));
-		didTakeAction = CreatureLogic.didTakeSpecialActions(context
-				, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(cow.id(), cow))
-				, mutableCow
-		);
+		entityCollection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(cow.id(), cow));
+		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableCow);
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableCow);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertNull(mutableCow.movementPlan);
 	}
@@ -998,18 +986,15 @@ public class TestCreatureLogic
 		
 		// We should see them target each other.
 		mutable = MutableCreature.existing(father);
-		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-			, EntityCollection.fromMaps(Map.of(), creatures)
-			, mutable
-		);
+		EntityCollection collection = EntityCollection.fromMaps(Map.of(), creatures);
+		CreatureLogic.createOrUpdatePathFinding(context, collection, mutable);
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context, collection, mutable);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals(mother.id(), mutable.movementPlan.targetEntityId());
 		
 		mutable = MutableCreature.existing(mother);
-		CreatureLogic.didTakeSpecialActions(context
-			, EntityCollection.fromMaps(Map.of(), creatures)
-			, mutable
-		);
+		CreatureLogic.createOrUpdatePathFinding(context, collection, mutable);
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context, collection, mutable);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals(father.id(), mutable.movementPlan.targetEntityId());
 	}
@@ -1284,10 +1269,9 @@ public class TestCreatureLogic
 			.finish()
 		;
 		
-		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-			, EntityCollection.fromMaps(Map.of(), Map.of(cow.id(), cow))
-			, mutable
-		);
+		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(), Map.of(cow.id(), cow));
+		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutable);
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutable);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertNull(mutable.movementPlan);
 		
@@ -1328,10 +1312,9 @@ public class TestCreatureLogic
 			.finish()
 		;
 		
-		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-			, EntityCollection.fromMaps(Map.of(), Map.of(cow.id(), cow))
-			, mutable
-		);
+		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(), Map.of(cow.id(), cow));
+		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutable);
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutable);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertNull(mutable.movementPlan);
 		
@@ -1382,10 +1365,9 @@ public class TestCreatureLogic
 			, null
 			, EntityActionSimpleMove.Intensity.WALKING
 		);
-		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
-			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
-			, mutableOrc
-		);
+		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc));
+		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableOrc);
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableOrc);
 		
 		// They should have taken no action but dropped the tracking since the target is unreachable.
 		Assert.assertFalse(didTakeAction);
@@ -1561,7 +1543,9 @@ public class TestCreatureLogic
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
 			.finish()
 		;
-		boolean didAct = CreatureLogic.didTakeSpecialActions(context, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc)), mutableOrc);
+		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc));
+		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableOrc);
+		boolean didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableOrc);
 		Assert.assertFalse(didAct);
 		Assert.assertEquals(8, mutableOrc.movementPlan.fullPlan().size());
 		Assert.assertNull(mutableOrc.movementPlan.directLocation());
@@ -1586,7 +1570,9 @@ public class TestCreatureLogic
 			.lookups(previousBlockLookUp, new _PairEntityIndex(movedPlayer, orc), null)
 			.finish()
 		;
-		didAct = CreatureLogic.didTakeSpecialActions(context, EntityCollection.fromMaps(Map.of(movedPlayer.id(), player), Map.of(orc.id(), orc)), mutableOrc);
+		entityCollection = EntityCollection.fromMaps(Map.of(movedPlayer.id(), player), Map.of(orc.id(), orc));
+		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableOrc);
+		didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableOrc);
 		Assert.assertFalse(didAct);
 		Assert.assertNull(mutableOrc.movementPlan.fullPlan());
 		Assert.assertEquals(movedPlayerLocation, mutableOrc.movementPlan.directLocation());
@@ -1614,7 +1600,9 @@ public class TestCreatureLogic
 			.lookups(previousBlockLookUp, new _PairEntityIndex(elevatedPlayer, orc), null)
 			.finish()
 		;
-		didAct = CreatureLogic.didTakeSpecialActions(context, EntityCollection.fromMaps(Map.of(elevatedPlayer.id(), elevatedPlayer), Map.of(orc.id(), orc)), mutableOrc);
+		entityCollection = EntityCollection.fromMaps(Map.of(elevatedPlayer.id(), elevatedPlayer), Map.of(orc.id(), orc));
+		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableOrc);
+		didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableOrc);
 		Assert.assertFalse(didAct);
 		Assert.assertEquals(9, mutableOrc.movementPlan.fullPlan().size());
 		Assert.assertNull(mutableOrc.movementPlan.directLocation());
@@ -1640,7 +1628,9 @@ public class TestCreatureLogic
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
 			.finish()
 		;
-		didAct = CreatureLogic.didTakeSpecialActions(context, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc)), mutableOrc);
+		entityCollection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc));
+		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableOrc);
+		didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableOrc);
 		Assert.assertFalse(didAct);
 		Assert.assertNull(mutableOrc.movementPlan.fullPlan());
 		Assert.assertEquals(playerLocation, mutableOrc.movementPlan.directLocation());
@@ -1653,7 +1643,9 @@ public class TestCreatureLogic
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
 			.finish()
 		;
-		didAct = CreatureLogic.didTakeSpecialActions(context, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc)), mutableOrc);
+		entityCollection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc));
+		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableOrc);
+		didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableOrc);
 		Assert.assertFalse(didAct);
 		Assert.assertNull(mutableOrc.movementPlan.fullPlan());
 		Assert.assertEquals(playerLocation, mutableOrc.movementPlan.directLocation());
@@ -1695,7 +1687,9 @@ public class TestCreatureLogic
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
 			.finish()
 		;
-		boolean didAct = CreatureLogic.didTakeSpecialActions(context, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc)), mutableOrc);
+		EntityCollection collection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc));
+		CreatureLogic.createOrUpdatePathFinding(context, collection, mutableOrc);
+		boolean didAct = CreatureLogic.didTakeSpecialActions(context, collection, mutableOrc);
 		Assert.assertFalse(didAct);
 		Assert.assertNull(mutableOrc.movementPlan.fullPlan());
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
@@ -1722,7 +1716,9 @@ public class TestCreatureLogic
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
 			.finish()
 		;
-		didAct = CreatureLogic.didTakeSpecialActions(context, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc)), mutableOrc);
+		collection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc));
+		CreatureLogic.createOrUpdatePathFinding(context, collection, mutableOrc);
+		didAct = CreatureLogic.didTakeSpecialActions(context, collection, mutableOrc);
 		Assert.assertFalse(didAct);
 		Assert.assertNull(mutableOrc.movementPlan);
 		
@@ -1772,6 +1768,7 @@ public class TestCreatureLogic
 		
 		// Note that the villager will choose its profession on the first didTakeSpecialActions call.
 		MutableCreature mutableVillager = MutableCreature.existing(villager);
+		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableVillager);
 		boolean didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableVillager);
 		Assert.assertTrue(didAct);
 		ExtensionVillager.Data internal = (ExtensionVillager.Data) mutableVillager.newExtendedData;
@@ -1779,6 +1776,7 @@ public class TestCreatureLogic
 		Assert.assertEquals(0, internal.inventory().size());
 		
 		// Show basic idle movement of the villager - this is just a random destination.
+		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableVillager);
 		didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableVillager);
 		Assert.assertFalse(didAct);
 		Assert.assertNull(mutableVillager.movementPlan.fullPlan());
@@ -1794,6 +1792,7 @@ public class TestCreatureLogic
 		
 		// Show basic idle movement of the villager baby - this is just a random destination.
 		MutableCreature mutableVillagerBaby = MutableCreature.existing(villagerBaby);
+		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableVillagerBaby);
 		didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableVillagerBaby);
 		Assert.assertFalse(didAct);
 		Assert.assertNull(mutableVillagerBaby.movementPlan.fullPlan());
@@ -1852,10 +1851,10 @@ public class TestCreatureLogic
 			.finish()
 		;
 		mutable = MutableCreature.existing(cow0);
-		Assert.assertFalse(CreatureLogic.didTakeSpecialActions(context
-			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(cow0.id(), cow0))
-			, mutable
-		));
+		EntityCollection collection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(cow0.id(), cow0));
+		CreatureLogic.createOrUpdatePathFinding(context, collection, mutable);
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context, collection, mutable);
+		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals(null, mutable.movementPlan);
 		
 		// Try again, but this time with the other cow visible.
@@ -1866,10 +1865,10 @@ public class TestCreatureLogic
 			.finish()
 		;
 		mutable = MutableCreature.existing(cow0);
-		Assert.assertFalse(CreatureLogic.didTakeSpecialActions(context
-			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(cow0.id(), cow0, cow1.id(), cow1))
-			, mutable
-		));
+		collection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(cow0.id(), cow0, cow1.id(), cow1));
+		CreatureLogic.createOrUpdatePathFinding(context, collection, mutable);
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context, collection, mutable);
+		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals(cow1.id(), mutable.movementPlan.targetEntityId());
 		Assert.assertEquals(EntityActionSimpleMove.Intensity.WALKING, mutable.movementPlan.intensity());
 	}
@@ -1901,20 +1900,17 @@ public class TestCreatureLogic
 		// We need to set the health before the vector so that it actually does make them move.
 		mutable.setHealth(mutable.newHealth);
 		mutable.storeInjuryVector(new EntityLocation(-0.3f, -0.2f, 1.0f));
-		Assert.assertFalse(CreatureLogic.didTakeSpecialActions(context
-			, EntityCollection.fromMaps(Map.of(), Map.of(cow0.id(), cow0))
-			, mutable
-		));
+		EntityCollection collection = EntityCollection.fromMaps(Map.of(), Map.of(cow0.id(), cow0));
+		CreatureLogic.createOrUpdatePathFinding(context, collection, mutable);
+		Assert.assertFalse(CreatureLogic.didTakeSpecialActions(context, collection, mutable));
 		Assert.assertEquals(new EntityLocation(3.0f, 2.5f, 0.0f), mutable.movementPlan.directLocation());
 		Assert.assertEquals(EntityActionSimpleMove.Intensity.RUNNING, mutable.movementPlan.intensity());
 		
 		mutable = MutableCreature.existing(cow0);
 		mutable.setHealth(mutable.newHealth);
 		mutable.storeInjuryVector(new EntityLocation(0.3f, -0.2f, 1.0f));
-		Assert.assertFalse(CreatureLogic.didTakeSpecialActions(context
-			, EntityCollection.fromMaps(Map.of(), Map.of(cow0.id(), cow0))
-			, mutable
-		));
+		CreatureLogic.createOrUpdatePathFinding(context, collection, mutable);
+		Assert.assertFalse(CreatureLogic.didTakeSpecialActions(context, collection, mutable));
 		Assert.assertEquals(new EntityLocation(5.5f, 2.5f, 0.0f), mutable.movementPlan.directLocation());
 		Assert.assertEquals(EntityActionSimpleMove.Intensity.RUNNING, mutable.movementPlan.intensity());
 	}
@@ -2211,10 +2207,9 @@ public class TestCreatureLogic
 		EntityLocation[] stairWalkLocations = new EntityLocation[stepCount];
 		for (int i = 0; i < stepCount; ++i)
 		{
-			Assert.assertFalse(CreatureLogic.didTakeSpecialActions(context
-				, collection
-				, mutable
-			));
+			CreatureLogic.createOrUpdatePathFinding(context, collection, mutable);
+			boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context, collection, mutable);
+			Assert.assertFalse(didTakeAction);
 			EntityActionSimpleMove<MutableCreature> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
 			if (null == change)
 			{
