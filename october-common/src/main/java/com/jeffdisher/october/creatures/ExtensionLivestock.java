@@ -135,6 +135,7 @@ public class ExtensionLivestock implements EntityType.IExtension
 	public boolean didTakeSpecialAction(MutableCreature creature, TickProcessingContext context, EntityCollection entityCollection)
 	{
 		LivestockData changedData = _newExtendedDataAfterLivestockAction(context
+			, entityCollection
 			, creature
 		);
 		boolean isDone;
@@ -217,6 +218,7 @@ public class ExtensionLivestock implements EntityType.IExtension
 
 	// Returns null if there was no livestock action taken.
 	private LivestockData _newExtendedDataAfterLivestockAction(TickProcessingContext context
+		, EntityCollection entityCollection
 		, MutableCreature creature
 	)
 	{
@@ -224,7 +226,7 @@ public class ExtensionLivestock implements EntityType.IExtension
 		
 		if (null == ifChanged)
 		{
-			ifChanged = _breeding.impregnateTarget(context, creature);
+			ifChanged = _breeding.impregnateTarget(context, entityCollection, creature);
 		}
 		
 		LivestockData changedData = null;

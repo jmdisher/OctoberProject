@@ -252,10 +252,12 @@ public class CommonBreedingLogic
 	 * action distance.
 	 * 
 	 * @param context The current tick's context.
+	 * @param entityCollection The read-only collection of entities in the world.
 	 * @param creature The creature to update.
 	 * @return The new data object if they cleared their love state and sent an action to impregnate their target.
 	 */
 	public Data impregnateTarget(TickProcessingContext context
+		, EntityCollection entityCollection
 		, MutableCreature creature
 	)
 	{
@@ -268,15 +270,14 @@ public class CommonBreedingLogic
 		)
 		{
 			// We are in love mode, and have found a target, so see if we are close enough to impregnate our target.
-			// We have a target so see if we are in love mode and if they are in range to breed.
-			MinimalEntity targetEntity = context.previousEntityLookUp.getById(targetEntityId);
+			CreatureEntity targetEntity = entityCollection.getCreatureById(targetEntityId);
 			// If we got here, they must not have unloaded (we would have observed that in didUpdateTargetLocation.
 			Assert.assertTrue(null != targetEntity);
 			
 			// See if they are within mating distance and we are the father.
 			EntityLocation sourceEyeLocation = SpatialHelpers.getEntityEye(creature);
 			
-			FixedRegion region = FixedRegion.fromMinimal(targetEntity);
+			FixedRegion region = FixedRegion.fromCreature(targetEntity);
 			float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
 			
 			float matingDistance = creature.newType.actionDistance();

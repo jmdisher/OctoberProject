@@ -667,7 +667,7 @@ public class ExtensionVillager implements EntityType.IExtension
 		CommonBreedingLogic.Data ifChanged = _breeding.spawnOffspring(context, creature);
 		if (null == ifChanged)
 		{
-			ifChanged = _breeding.impregnateTarget(context, creature);
+			ifChanged = _breeding.impregnateTarget(context, entityCollection, creature);
 		}
 		if (null != ifChanged)
 		{
