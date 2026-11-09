@@ -51,6 +51,7 @@ import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
+import com.jeffdisher.october.utils.BlockFetcher;
 
 
 /**

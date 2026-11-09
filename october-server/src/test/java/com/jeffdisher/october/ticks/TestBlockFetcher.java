@@ -3,6 +3,7 @@ package com.jeffdisher.october.ticks;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -12,8 +13,10 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.utils.BlockFetcher;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 
@@ -36,7 +39,7 @@ public class TestBlockFetcher
 	{
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
-		BlockFetcher fetcher = new BlockFetcher(Map.of(), Set.of(), Map.of(address, cuboid));
+		BlockFetcher fetcher = new BlockFetcher(Map.of(), Set.of(), _buildSingleLookup(cuboid));
 		
 		AbsoluteLocation mix = new AbsoluteLocation(1, 2, 3);
 		AbsoluteLocation one = new AbsoluteLocation(1, 1, 1);
@@ -55,7 +58,7 @@ public class TestBlockFetcher
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation one = new AbsoluteLocation(1, 1, 1);
 		BlockProxy fake = BlockProxy.init(one.getBlockAddress(), cuboid, (short)1);
-		BlockFetcher fetcher = new BlockFetcher(Map.of(one, fake), Set.of(), Map.of(address, cuboid));
+		BlockFetcher fetcher = new BlockFetcher(Map.of(one, fake), Set.of(), _buildSingleLookup(cuboid));
 		
 		AbsoluteLocation mix = new AbsoluteLocation(1, 2, 3);
 		AbsoluteLocation two = new AbsoluteLocation(2, 2, 2);
@@ -74,7 +77,7 @@ public class TestBlockFetcher
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation one = new AbsoluteLocation(32, 32, 32);
 		BlockProxy fake = BlockProxy.init(one.getBlockAddress(), cuboid, (short)1);
-		BlockFetcher fetcher = new BlockFetcher(Map.of(one, fake), Set.of(), Map.of(address, cuboid));
+		BlockFetcher fetcher = new BlockFetcher(Map.of(one, fake), Set.of(), _buildSingleLookup(cuboid));
 		
 		AbsoluteLocation two = new AbsoluteLocation(2, 2, 2);
 		Map<AbsoluteLocation, BlockProxy> map = fetcher.readBlockBatch(List.of(one, two));
@@ -92,7 +95,7 @@ public class TestBlockFetcher
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation one = new AbsoluteLocation(1, 1, 1);
 		BlockProxy fake = BlockProxy.init(one.getBlockAddress(), cuboid, (short)1);
-		BlockFetcher fetcher = new BlockFetcher(Map.of(one, fake), Set.of(one), Map.of(address, cuboid));
+		BlockFetcher fetcher = new BlockFetcher(Map.of(one, fake), Set.of(one), _buildSingleLookup(cuboid));
 		
 		AbsoluteLocation mix = new AbsoluteLocation(1, 2, 3);
 		AbsoluteLocation two = new AbsoluteLocation(2, 2, 2);
@@ -101,5 +104,18 @@ public class TestBlockFetcher
 		Assert.assertEquals(ENV.special.AIR, map.get(one).getBlock());
 		Assert.assertEquals(ENV.special.AIR, map.get(two).getBlock());
 		Assert.assertNull(fetcher.readBlock(new AbsoluteLocation(100, 4, 5)));
+	}
+
+
+	private final Function<CuboidAddress, IReadOnlyCuboidData> _buildSingleLookup(IReadOnlyCuboidData cuboid)
+	{
+		CuboidAddress cuboidAddress = cuboid.getCuboidAddress();
+		Function<CuboidAddress, IReadOnlyCuboidData> cuboidLookup = (CuboidAddress address) -> {
+			return address.equals(cuboidAddress)
+				? cuboid
+				: null
+			;
+		};
+		return cuboidLookup;
 	}
 }

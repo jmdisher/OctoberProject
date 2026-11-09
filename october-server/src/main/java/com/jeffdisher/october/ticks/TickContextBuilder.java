@@ -5,10 +5,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
@@ -26,6 +28,7 @@ import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
+import com.jeffdisher.october.utils.BlockFetcher;
 import com.jeffdisher.october.utils.LazyEntityIndex;
 import com.jeffdisher.october.utils.LazyPassiveIndex;
 
@@ -92,9 +95,12 @@ public class TickContextBuilder
 
 	public BlockFetcher buildBlockFetcher(Map<AbsoluteLocation, BlockProxy> previousProxyCache)
 	{
+		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = _materials.completedCuboids();
+		Function<CuboidAddress, IReadOnlyCuboidData> cuboidLookup = (CuboidAddress address) -> completedCuboids.get(address);
+		
 		return new BlockFetcher(previousProxyCache
 			, _materials.forceMissBlocksPreviousCache()
-			, _materials.completedCuboids()
+			, cuboidLookup
 		);
 	}
 
