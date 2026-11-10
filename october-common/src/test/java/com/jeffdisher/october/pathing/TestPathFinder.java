@@ -1,9 +1,11 @@
 package com.jeffdisher.october.pathing;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -14,6 +16,7 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -55,9 +58,17 @@ public class TestPathFinder
 		EntityLocation source = new EntityLocation(-10.5f, -6.5f, 5.0f);
 		EntityLocation target = new EntityLocation(4.5f, 6.5f, 5.0f);
 		int floor = 4;
-		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = (AbsoluteLocation location) -> (floor == location.z()) ? _BlockKind.SOLID : _BlockKind.WALKABLE;
+		CuboidData cuboidNN = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, -1, 0), ENV.special.AIR);
+		CuboidData cuboidNZ = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, 0, 0), ENV.special.AIR);
+		CuboidData cuboidZN = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, -1, 0), ENV.special.AIR);
+		CuboidData cuboidZZ = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboidNN, (byte)floor, STONE);
+		CuboidGenerator.fillPlane(cuboidNZ, (byte)floor, STONE);
+		CuboidGenerator.fillPlane(cuboidZN, (byte)floor, STONE);
+		CuboidGenerator.fillPlane(cuboidZZ, (byte)floor, STONE);
+		
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(List.of(cuboidNN, cuboidNZ, cuboidZN, cuboidZZ))
 			, VOLUME
 			, limit
 			, true
@@ -77,11 +88,21 @@ public class TestPathFinder
 	public void incline()
 	{
 		// The block location is the "base" of the block, much like the entity z is the base of the block where it is standing.
-		EntityLocation source = new EntityLocation(-10.5f, -6.5f, -5.0f);
-		EntityLocation target = new EntityLocation(4.5f, 6.5f, 7.0f);
-		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = (AbsoluteLocation location) -> (location.y() == location.z()) ? _BlockKind.SOLID : _BlockKind.WALKABLE;
+		EntityLocation source = new EntityLocation(9.5f, 13.5f, 15.0f);
+		EntityLocation target = new EntityLocation(24.5f, 26.5f, 27.0f);
+		
+		short stoneNumber = STONE.item().number();
+		CuboidData cuboidZZ = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
+		{
+			for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
+			{
+				cuboidZZ.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, y), stoneNumber);
+			}
+		}
+		
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(List.of(cuboidZZ))
 			, VOLUME
 			, limit
 			, true
@@ -105,40 +126,29 @@ public class TestPathFinder
 		EntityLocation source = new EntityLocation(-10.5f, -6.5f, 5.0f);
 		EntityLocation target = new EntityLocation(4.5f, 6.5f, 5.0f);
 		int floor = 4;
-		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = (AbsoluteLocation location) -> {
-			return ((floor == location.z()) || (0 == location.y()))
-					? _BlockKind.SOLID
-					: _BlockKind.WALKABLE
-			;
-		};
+		CuboidData cuboidNN = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, -1, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboidNN, (byte)floor, STONE);
+		CuboidData cuboidNZ = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboidNZ, (byte)floor, STONE);
+		CuboidData cuboidZN = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, -1, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboidZN, (byte)floor, STONE);
+		CuboidData cuboidZZ = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboidZZ, (byte)floor, STONE);
+		
+		// We want to draw a barrier where y=0.
+		short stoneNumber = STONE.item().number();
+		for (int z = floor + 1; z <= (floor + 2); ++z)
+		{
+			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
+			{
+				BlockAddress address = BlockAddress.fromInt(x, 0, z);
+				cuboidNZ.setData15(AspectRegistry.BLOCK, address, stoneNumber);
+				cuboidZZ.setData15(AspectRegistry.BLOCK, address, stoneNumber);
+			}
+		}
+		
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
-			, VOLUME
-			, limit
-			, true
-			, true
-			, true
-			, true
-		);
-		List<PathLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
-		Assert.assertNull(path);
-	}
-
-	@Test
-	public void gap()
-	{
-		// The block location is the "base" of the block, much like the entity z is the base of the block where it is standing.
-		EntityLocation source = new EntityLocation(-10.5f, -6.5f, 5.0f);
-		EntityLocation target = new EntityLocation(4.5f, 6.5f, 5.0f);
-		int floor = 4;
-		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = (AbsoluteLocation location) -> {
-			return ((floor == location.z()) || (0 == location.y()))
-					? _BlockKind.SOLID
-					: _BlockKind.WALKABLE
-			;
-		};
-		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(List.of(cuboidNN, cuboidNZ, cuboidZN, cuboidZZ))
 			, VOLUME
 			, limit
 			, true
@@ -157,7 +167,7 @@ public class TestPathFinder
 		EntityLocation source = new EntityLocation(0.0f, 1.0f, 5.0f);
 		EntityLocation target = new EntityLocation(4.0f, 6.0f, 5.0f);
 		int floor = 4;
-		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = new MapResolver(floor, new String[] {
+		CuboidData cuboid = _cuboidFrom2D(CuboidAddress.fromInt(0, 0, 0), floor, new String[] {
 				"AAAAAAAAAA",
 				"AAAAAAAAAA",
 				"ASSSSSSSSS",
@@ -169,7 +179,7 @@ public class TestPathFinder
 				"AAAAAAAAAA",
 		});
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(List.of(cuboid))
 			, VOLUME
 			, limit
 			, true
@@ -187,7 +197,7 @@ public class TestPathFinder
 		// We want to fall through a small hole, go down a few layers, and then catch the ledge.
 		EntityLocation source = new EntityLocation(1.5f, 2.5f, 4.0f);
 		EntityLocation target = new EntityLocation(3.5f, 2.5f, 1.0f);
-		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = new MapResolver3D(new String[][] {
+		CuboidData cuboid = _cuboidFrom3D(CuboidAddress.fromInt(0, 0, 0), new String[][] {
 			new String[] {
 					"SSSSS",
 					"SSSSS",
@@ -233,7 +243,7 @@ public class TestPathFinder
 			}
 		});
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(List.of(cuboid))
 			, VOLUME
 			, limit
 			, true
@@ -255,7 +265,7 @@ public class TestPathFinder
 		// The block location is the "base" of the block, much like the entity z is the base of the block where it is standing.
 		EntityLocation source = new EntityLocation(5.5f, 5.5f, 5.0f);
 		int floor = 4;
-		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = new MapResolver(floor, new String[] {
+		CuboidData cuboid = _cuboidFrom2D(CuboidAddress.fromInt(0, 0, 0), floor, new String[] {
 				"AAAAAAAAAA",
 				"AAAAAAAAAA",
 				"ASSSSSSSSS",
@@ -267,7 +277,7 @@ public class TestPathFinder
 				"AAAAAAAAAA",
 		});
 		// We want to show what is reachable in the maze for different distances.
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(List.of(cuboid))
 			, VOLUME
 			, 2.0f
 			, true
@@ -279,7 +289,7 @@ public class TestPathFinder
 			, source
 		);
 		_printStepMap2D(10, 9, 5, places);
-		navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+		navigator = new WalkingNavigator(_createKindLookup(List.of(cuboid))
 			, VOLUME
 			, 4.0f
 			, true
@@ -299,7 +309,7 @@ public class TestPathFinder
 		// We want to swim up a tube in some stone.
 		EntityLocation source = new EntityLocation(3.5f, 2.5f, 1.0f);
 		EntityLocation target = new EntityLocation(1.5f, 2.5f, 4.0f);
-		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = new MapResolver3D(new String[][] {
+		CuboidData cuboid = _cuboidFrom3D(CuboidAddress.fromInt(0, 0, 0), new String[][] {
 			new String[] {
 					"SSSSS",
 					"SSSSS",
@@ -345,7 +355,7 @@ public class TestPathFinder
 			}
 		});
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(List.of(cuboid))
 			, VOLUME
 			, limit
 			, true
@@ -366,7 +376,7 @@ public class TestPathFinder
 		// Show that we can swim over an air block hole.
 		EntityLocation source = new EntityLocation(1.5f, 2.5f, 2.0f);
 		EntityLocation target = new EntityLocation(3.5f, 2.5f, 2.0f);
-		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = new MapResolver3D(new String[][] {
+		CuboidData cuboid = _cuboidFrom3D(CuboidAddress.fromInt(0, 0, 0), new String[][] {
 			new String[] {
 					"SSSSS",
 					"SSSSS",
@@ -400,7 +410,7 @@ public class TestPathFinder
 			}
 		});
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(List.of(cuboid))
 			, VOLUME
 			, limit
 			, true
@@ -423,13 +433,18 @@ public class TestPathFinder
 		EntityLocation target = new EntityLocation(4.5f, 6.5f, 5.0f);
 		AbsoluteLocation startLocation = source.getBlockLocation();
 		int floor = 4;
-		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = (AbsoluteLocation location) -> ((floor == location.z()) || location.equals(startLocation))
-			? _BlockKind.SOLID
-			: _BlockKind.WALKABLE
-		;
+		CuboidData cuboidNN = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, -1, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboidNN, (byte)floor, STONE);
+		cuboidNN.setData15(AspectRegistry.BLOCK, startLocation.getBlockAddress(), STONE.item().number());
+		CuboidData cuboidNZ = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboidNZ, (byte)floor, STONE);
+		CuboidData cuboidZN = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, -1, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboidZN, (byte)floor, STONE);
+		CuboidData cuboidZZ = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboidZZ, (byte)floor, STONE);
 		
 		float limit = _getTestingDistance(source, target);
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(List.of(cuboidNN, cuboidNZ, cuboidZN, cuboidZZ))
 			, VOLUME
 			, limit
 			, true
@@ -440,7 +455,7 @@ public class TestPathFinder
 		List<PathLocation> path = PathFinder.findPathWithLimit(navigator, source, target);
 		Assert.assertNull(path);
 		
-		navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+		navigator = new WalkingNavigator(_createKindLookup(List.of(cuboidNN, cuboidNZ, cuboidZN, cuboidZZ))
 			, VOLUME
 			, 50.0f
 			, true
@@ -460,14 +475,12 @@ public class TestPathFinder
 		// Show that we can constrain possible places with control flags.
 		EntityLocation source = new EntityLocation(-10.5f, -6.5f, 5.0f);
 		int floor = 4;
-		Function<AbsoluteLocation, _BlockKind> blockPermitsUser = (AbsoluteLocation location) -> (floor == location.z())
-			? _BlockKind.SOLID
-			: _BlockKind.WALKABLE
-		;
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, -1, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)floor, STONE);
 		
 		// Get normal count, unrestricted.
 		float limitSteps = 4.0f;
-		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+		WalkingNavigator navigator = new WalkingNavigator(_createKindLookup(List.of(cuboid))
 			, VOLUME
 			, limitSteps
 			, true
@@ -481,7 +494,7 @@ public class TestPathFinder
 		Assert.assertEquals(291, allPaths.size());
 		
 		// Only allow north-west.
-		navigator = new WalkingNavigator(_createKindLookup(blockPermitsUser)
+		navigator = new WalkingNavigator(_createKindLookup(List.of(cuboid))
 			, VOLUME
 			, limitSteps
 			, true
@@ -864,106 +877,143 @@ public class TestPathFinder
 		return 2 * manhattan;
 	}
 
-	private static TickProcessingContext.IBlockFetcher _createKindLookup(Function<AbsoluteLocation, _BlockKind> reader)
+	private static TickProcessingContext.IBlockFetcher _createKindLookup(Collection<IReadOnlyCuboidData> cuboids)
 	{
-		// Note that we fake up a reader from a basic BlockKind as a stop-gap while this interface is changed.
-		// WARNING:  We cheat this cuboid just so we can look-up flags.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		Map<CuboidAddress, IReadOnlyCuboidData> map = cuboids.stream()
+			.collect(Collectors.toMap((IReadOnlyCuboidData cuboid) -> cuboid.getCuboidAddress(), (IReadOnlyCuboidData cuboid) -> cuboid))
+		;
 		return ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			_BlockKind kind = reader.apply(location);
-			Block type;
-			switch (kind)
-			{
-			case SOLID:
-				type = STONE;
-				break;
-			case SWIMMABLE:
-				type = WATER;
-				break;
-			case WALKABLE:
-				type = ENV.special.AIR;
-				break;
-			default:
-				throw new AssertionError("Unknown");
-			}
-			return BlockProxy.init(location.getBlockAddress(), cuboid, type.item().number());
+			IReadOnlyCuboidData cuboid = map.get(location.getCuboidAddress());
+			return (null != cuboid)
+				? BlockProxy.load(location.getBlockAddress(), cuboid)
+				: null
+			;
 		});
 	}
 
-
-	private static record MapResolver(int floorZ, String[] map) implements Function<AbsoluteLocation, _BlockKind>
+	private static CuboidData _cuboidFrom2D(CuboidAddress address, int floorZ, String[] map)
 	{
-		@Override
-		public _BlockKind apply(AbsoluteLocation l)
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		short walkableNumber = ENV.special.AIR.item().number();
+		short swimmableNumber = WATER.item().number();
+		short solidNumber = STONE.item().number();
+		
+		List<_Update> updates = new ArrayList<>();
+		for (byte z = 0; z < Encoding.CUBOID_EDGE_SIZE; ++z)
 		{
-			_BlockKind kind = _BlockKind.WALKABLE;
-			if (this.floorZ == l.z())
+			for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 			{
-				kind = _BlockKind.SOLID;
-			}
-			else
-			{
-				int x = l.x();
-				int y = l.y();
-				if ((x >= 0) && (x < this.map[0].length())
-						&& (y >= 0) && (y < this.map.length))
+				for (byte x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 				{
-					char c = this.map[l.y()].charAt(l.x());
-					if ('S' == c)
+					short block = walkableNumber;
+					if (floorZ == z)
 					{
-						kind = _BlockKind.SOLID;
+						block = solidNumber;
 					}
-					else if ('W' == c)
+					else
 					{
-						kind = _BlockKind.SWIMMABLE;
+						if ((y < map.length) && (x < map[y].length()))
+						{
+							char c = map[y].charAt(x);
+							if ('S' == c)
+							{
+								block = solidNumber;
+							}
+							else if ('W' == c)
+							{
+								block = swimmableNumber;
+							}
+						}
+						else
+						{
+							block = solidNumber;
+						}
+					}
+					
+					if (walkableNumber != block)
+					{
+						updates.add(new _Update(new BlockAddress(x, y, z), block));
 					}
 				}
-				else
-				{
-					kind = _BlockKind.SOLID;
-				}
 			}
-			return kind;
 		}
+		_batchWrite(cuboid, updates);
+		
+		return cuboid;
+	}
+
+	private static CuboidData _cuboidFrom3D(CuboidAddress address, String[][] map)
+	{
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		short walkableNumber = ENV.special.AIR.item().number();
+		short swimmableNumber = WATER.item().number();
+		short solidNumber = STONE.item().number();
+		
+		List<_Update> updates = new ArrayList<>();
+		for (byte z = 0; z < Encoding.CUBOID_EDGE_SIZE; ++z)
+		{
+			for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
+			{
+				for (byte x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
+				{
+					short block = walkableNumber;
+					
+					if ((z < map.length) && (y < map[z].length) && (x < map[z][y].length()))
+					{
+						char c = map[z][y].charAt(x);
+						if ('S' == c)
+						{
+							block = solidNumber;
+						}
+						else if ('W' == c)
+						{
+							block = swimmableNumber;
+						}
+						
+					}
+					else
+					{
+						block = solidNumber;
+					}
+					
+					if (walkableNumber != block)
+					{
+						updates.add(new _Update(new BlockAddress(x, y, z), block));
+					}
+				}
+			}
+		}
+		_batchWrite(cuboid, updates);
+		
+		return cuboid;
+	}
+
+	private static void _batchWrite(CuboidData cuboid, List<_Update> updates)
+	{
+		_UpdateComparator writeComparator = new _UpdateComparator();
+		updates.sort(writeComparator);
+		BlockAddress[] addresses = new BlockAddress[updates.size()];
+		short[] values = new short[updates.size()];
+		for (int i = 0; i < values.length; ++i)
+		{
+			_Update update = updates.get(i);
+			addresses[i] = update.address;
+			values[i] = update.blockValue;
+		}
+		cuboid.batchWiteData15(AspectRegistry.BLOCK, addresses, values);
 	}
 
 
-	private static record MapResolver3D(String[][] map) implements Function<AbsoluteLocation, _BlockKind>
+	private static record _Update(BlockAddress address, short blockValue) {}
+
+	private static class _UpdateComparator implements Comparator<_Update>
 	{
 		@Override
-		public _BlockKind apply(AbsoluteLocation l)
+		public int compare(_Update o1, _Update o2)
 		{
-			String[] layer = this.map[l.z()];
-			int x = l.x();
-			int y = l.y();
-			Assert.assertTrue((x >= 0) && (x < layer[0].length())
-					&& (y >= 0) && (y < layer.length)
-			);
-			_BlockKind kind;
-			char c = layer[l.y()].charAt(l.x());
-			switch (c)
-			{
-				case 'S':
-					kind = _BlockKind.SOLID;
-					break;
-				case 'W':
-					kind = _BlockKind.SWIMMABLE;
-					break;
-				default:
-					kind = _BlockKind.WALKABLE;
-			}
-			return kind;
+			int sort1 = IReadOnlyCuboidData.getBatchSortOrder(o1.address);
+			int sort2 = IReadOnlyCuboidData.getBatchSortOrder(o2.address);
+			return sort1 - sort2;
 		}
-	}
-
-	/**
-	 * This is to replace _BlockKind since it no longer exists but these tests are simplified by having
-	 * it.
-	 */
-	private static enum _BlockKind
-	{
-		SOLID,
-		SWIMMABLE,
-		WALKABLE,
 	}
 }
