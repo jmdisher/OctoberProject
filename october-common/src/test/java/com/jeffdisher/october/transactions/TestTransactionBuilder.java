@@ -15,7 +15,6 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
@@ -343,13 +342,7 @@ public class TestTransactionBuilder
 			TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
 			};
 			return ContextBuilder.build()
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-					IReadOnlyCuboidData cuboid = cuboids.get(location.getCuboidAddress());
-					return (null != cuboid)
-						? BlockProxy.load(location.getBlockAddress(), cuboid)
-						: null
-					;
-				}), null, null)
+				.lookups(ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> cuboids.get(address)), null, null)
 				.transactions(transactions)
 				.sinks(_mutationSink, null)
 				.eventSink(eventSink)

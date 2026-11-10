@@ -10,7 +10,6 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.mutations.MutationBlockChargeEnchantment;
@@ -391,10 +390,7 @@ public class TestEnchantingBlockSupport
 		};
 		EventRecord[] out_events = new EventRecord[1];
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
-				Assert.assertEquals(cuboid.getCuboidAddress(), blockLocation.getCuboidAddress());
-				return BlockProxy.load(blockLocation.getBlockAddress(), cuboid);
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.passive(spawner)
 			.eventSink((EventRecord event) -> {
 				Assert.assertNull(out_events[0]);
@@ -470,7 +466,7 @@ public class TestEnchantingBlockSupport
 	{
 		WorldConfig config = new WorldConfig();
 		return new TickProcessingContext(1L
-			, ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid))
+			, ContextBuilder.buildSingleFetcher(cuboid)
 			, null
 			, null
 			, null

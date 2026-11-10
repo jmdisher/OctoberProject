@@ -9,7 +9,6 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -47,9 +46,7 @@ public class TestTickUtils
 	{
 		// Show that we take suffocation damage if not in a breathable space at the end of a tick.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
 		long millisPerTick = 100L;
 		EventRecord[] out_events = new EventRecord[1];
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
@@ -79,9 +76,7 @@ public class TestTickUtils
 	{
 		// Show that we take lava damage at the end of a tick.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), LAVA_SOURCE);
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
 		long millisPerTick = 100L;
 		EventRecord[] out_events = new EventRecord[1];
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
@@ -116,9 +111,7 @@ public class TestTickUtils
 		AbsoluteLocation platform = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
 		cuboid.setData15(AspectRegistry.BLOCK, platform.getBlockAddress(), log.item().number());
 		cuboid.setData7(AspectRegistry.FLAGS, platform.getBlockAddress(), FlagsAspect.FLAG_BURNING);
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
 		long millisPerTick = 100L;
 		EventRecord[] out_events = new EventRecord[1];
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {

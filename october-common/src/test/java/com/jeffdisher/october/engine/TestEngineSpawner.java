@@ -10,7 +10,6 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
@@ -19,7 +18,6 @@ import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.PropagationHelpers;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.ContextBuilder;
@@ -114,16 +112,10 @@ public class TestEngineSpawner
 		WorldConfig config = new WorldConfig();
 		config.difficulty = Difficulty.PEACEFUL;
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-						IReadOnlyCuboidData oneCuboid = completedCuboids.get(location.getCuboidAddress());
-						return (null != oneCuboid)
-								? BlockProxy.load(location.getBlockAddress(), oneCuboid)
-								: null
-						;
-					}), null, null)
-				.boundedRandom(randomValue)
-				.config(config)
-				.finish()
+			.lookups(ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> completedCuboids.get(address)), null, null)
+			.boundedRandom(randomValue)
+			.config(config)
+			.finish()
 		;
 		
 		// This will throw an exception since we have no spawner if it tries to spawn.
@@ -269,13 +261,7 @@ public class TestEngineSpawner
 		};
 		ContextBuilder builder = ContextBuilder.build()
 			.tick(gameTick)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				IReadOnlyCuboidData cuboid = completedCuboids.get(location.getCuboidAddress());
-				return (null != cuboid)
-					? BlockProxy.load(location.getBlockAddress(), cuboid)
-					: null
-				;
-			}), null, null)
+			.lookups(ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> completedCuboids.get(address)), null, null)
 			.spawner(spawner)
 		;
 		
@@ -351,17 +337,11 @@ public class TestEngineSpawner
 			outSpawnedCreature[0] = CreatureEntity.create(idAssigner.next(), type, location, gameTimeMillis);
 		};
 		TickProcessingContext context = ContextBuilder.build()
-				.tick(gameTick)
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-						IReadOnlyCuboidData cuboid = world.get(location.getCuboidAddress());
-						return (null != cuboid)
-								? BlockProxy.load(location.getBlockAddress(), cuboid)
-								: null
-						;
-					}), null, null)
-				.spawner(spawner)
-				.boundedRandom(randomValue)
-				.finish()
+			.tick(gameTick)
+			.lookups(ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> world.get(address)), null, null)
+			.spawner(spawner)
+			.boundedRandom(randomValue)
+			.finish()
 		;
 		return context;
 	}

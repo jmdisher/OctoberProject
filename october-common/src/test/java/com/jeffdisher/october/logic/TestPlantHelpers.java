@@ -10,7 +10,6 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteMisc;
@@ -190,7 +189,7 @@ public class TestPlantHelpers
 		cuboid.setData15(AspectRegistry.BLOCK, soil.getBlockAddress(), TILLED_SOIL.item().number());
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.finish()
 		;
 		
@@ -215,7 +214,7 @@ public class TestPlantHelpers
 		// Show that we fail to grow when the soil under us is dry.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.fixedRandom(1)
 			.skyLight((AbsoluteLocation location) -> 15)
 			.finish()
@@ -243,7 +242,7 @@ public class TestPlantHelpers
 	private static TickProcessingContext _buildContext(CuboidData cuboid, byte[] refLight, List<MutationBlockOverwriteMisc> out_mutations)
 	{
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.fixedRandom(1)
 			.skyLight((AbsoluteLocation location) -> refLight[0])
 			.sinks(new TickProcessingContext.IMutationSink() {

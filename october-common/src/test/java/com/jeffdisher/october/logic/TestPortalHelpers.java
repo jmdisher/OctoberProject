@@ -12,7 +12,6 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.mutations.MutationBlockPhase2Multi;
@@ -83,9 +82,7 @@ public class TestPortalHelpers
 		cuboid.setData15(AspectRegistry.BLOCK, surfaceBase.getBlockAddress(), PORTAL_SURFACE.item().number());
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return BlockProxy.load(location.getBlockAddress(), cuboid);
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.finish()
 		;
 		
@@ -108,9 +105,7 @@ public class TestPortalHelpers
 		Set<AbsoluteLocation> nextLocations = new HashSet<>();
 		Set<AbsoluteLocation> futureLocations = new HashSet<>();
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return BlockProxy.load(location.getBlockAddress(), cuboid);
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)
@@ -152,9 +147,7 @@ public class TestPortalHelpers
 		
 		Set<AbsoluteLocation> nextLocations = new HashSet<>();
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return BlockProxy.load(location.getBlockAddress(), cuboid);
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)
@@ -191,9 +184,7 @@ public class TestPortalHelpers
 		
 		Set<AbsoluteLocation> nextLocations = new HashSet<>();
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return location.getCuboidAddress().equals(cuboidAddress) ? BlockProxy.load(location.getBlockAddress(), cuboid) : null;
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)

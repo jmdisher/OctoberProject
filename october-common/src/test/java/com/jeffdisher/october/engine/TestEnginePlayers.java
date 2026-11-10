@@ -11,13 +11,11 @@ import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.mutations.TickUtils;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.ContextBuilder;
@@ -68,12 +66,7 @@ public class TestEnginePlayers
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
-					? BlockProxy.load(location.getBlockAddress(), cuboid)
-					: null
-				;
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.eventSink(events)
 			.finish()
 		;

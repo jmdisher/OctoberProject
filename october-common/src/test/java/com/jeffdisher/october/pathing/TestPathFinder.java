@@ -14,7 +14,6 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -539,12 +538,7 @@ public class TestPathFinder
 		}
 		
 		float limit = 8.0f;
-		TickProcessingContext.IBlockFetcher blockFetcher = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
-				? BlockProxy.load(location.getBlockAddress(), cuboid)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher blockFetcher = ContextBuilder.buildSingleFetcher(cuboid);
 		
 		WalkingNavigator baseNavigator = new WalkingNavigator(blockFetcher
 			, volume
@@ -586,12 +580,7 @@ public class TestPathFinder
 		cuboid.setData15(AspectRegistry.BLOCK, source.getBlockLocation().getBlockAddress(), wheat.item().number());
 		
 		float limit = 8.0f;
-		TickProcessingContext.IBlockFetcher blockFetcher = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
-				? BlockProxy.load(location.getBlockAddress(), cuboid)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher blockFetcher = ContextBuilder.buildSingleFetcher(cuboid);
 		
 		// We should see 9 steps:  That is enough to walk around to another side, whereas 5 would be a direct jump.
 		WalkingNavigator navigator = new WalkingNavigator(blockFetcher
@@ -625,12 +614,7 @@ public class TestPathFinder
 		cuboid.setData7(AspectRegistry.ORIENTATION, start.getRelative(1, 0, 0).getBlockAddress(), FacingDirection.directionToByte(FacingDirection.DOWN));
 		
 		float limit = 5.0f;
-		TickProcessingContext.IBlockFetcher blockFetcher = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
-				? BlockProxy.load(location.getBlockAddress(), cuboid)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher blockFetcher = ContextBuilder.buildSingleFetcher(cuboid);
 		
 		// We should see 4 steps.
 		WalkingNavigator navigator = new WalkingNavigator(blockFetcher
@@ -673,12 +657,7 @@ public class TestPathFinder
 		cuboid.setData7(AspectRegistry.ORIENTATION, end.getRelative(1, 0, 0).getBlockAddress(), FacingDirection.directionToByte(FacingDirection.DOWN));
 		
 		float limit = 5.0f;
-		TickProcessingContext.IBlockFetcher blockFetcher = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
-				? BlockProxy.load(location.getBlockAddress(), cuboid)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher blockFetcher = ContextBuilder.buildSingleFetcher(cuboid);
 		
 		// We should see 4 steps.
 		WalkingNavigator navigator = new WalkingNavigator(blockFetcher
@@ -721,12 +700,7 @@ public class TestPathFinder
 		cuboid.setData7(AspectRegistry.ORIENTATION, start.getRelative(1, 0, 0).getBlockAddress(), FacingDirection.directionToByte(FacingDirection.EAST));
 		
 		float limit = 5.0f;
-		TickProcessingContext.IBlockFetcher blockFetcher = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
-				? BlockProxy.load(location.getBlockAddress(), cuboid)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher blockFetcher = ContextBuilder.buildSingleFetcher(cuboid);
 		
 		// We should see 4 steps.
 		WalkingNavigator navigator = new WalkingNavigator(blockFetcher
@@ -769,12 +743,7 @@ public class TestPathFinder
 		cuboid.setData7(AspectRegistry.ORIENTATION, end.getRelative(1, 0, 0).getBlockAddress(), FacingDirection.directionToByte(FacingDirection.EAST));
 		
 		float limit = 5.0f;
-		TickProcessingContext.IBlockFetcher blockFetcher = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
-				? BlockProxy.load(location.getBlockAddress(), cuboid)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher blockFetcher = ContextBuilder.buildSingleFetcher(cuboid);
 		
 		// We should see 4 steps.
 		WalkingNavigator navigator = new WalkingNavigator(blockFetcher
@@ -882,13 +851,7 @@ public class TestPathFinder
 		Map<CuboidAddress, IReadOnlyCuboidData> map = cuboids.stream()
 			.collect(Collectors.toMap((IReadOnlyCuboidData cuboid) -> cuboid.getCuboidAddress(), (IReadOnlyCuboidData cuboid) -> cuboid))
 		;
-		return ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			IReadOnlyCuboidData cuboid = map.get(location.getCuboidAddress());
-			return (null != cuboid)
-				? BlockProxy.load(location.getBlockAddress(), cuboid)
-				: null
-			;
-		});
+		return ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> map.get(address));
 	}
 
 	private static CuboidData _cuboidFrom2D(CuboidAddress address, int floorZ, String[] map)

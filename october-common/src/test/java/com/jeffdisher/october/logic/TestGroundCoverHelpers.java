@@ -11,7 +11,6 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -44,9 +43,7 @@ public class TestGroundCoverHelpers
 	{
 		// Check spread targets in a mostly empty cuboid.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
 		
 		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
 		cuboid.setData15(AspectRegistry.BLOCK, centre.getBlockAddress(), GRASS.item().number());
@@ -65,9 +62,7 @@ public class TestGroundCoverHelpers
 	{
 		// Check that we can change when all conditions are met.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
 		
 		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
 		cuboid.setData15(AspectRegistry.BLOCK, centre.getBlockAddress(), DIRT.item().number());
@@ -82,9 +77,7 @@ public class TestGroundCoverHelpers
 	{
 		// Check the cases which will cause the change helper to fail.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
 		
 		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
 		cuboid.setData15(AspectRegistry.BLOCK, centre.getBlockAddress(), DIRT.item().number());
@@ -110,9 +103,7 @@ public class TestGroundCoverHelpers
 	{
 		// Checks that we can find a potential ground cover type only when we see a source.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
 		
 		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
 		cuboid.setData15(AspectRegistry.BLOCK, centre.getBlockAddress(), DIRT.item().number());
@@ -138,9 +129,7 @@ public class TestGroundCoverHelpers
 	{
 		// Checks the behaviour of the revert check helper.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
 		
 		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
 		cuboid.setData15(AspectRegistry.BLOCK, centre.getBlockAddress(), GRASS.item().number());

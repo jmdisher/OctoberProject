@@ -11,7 +11,6 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -53,12 +52,7 @@ public class TestEngineCuboids
 		CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
-					? BlockProxy.load(location.getBlockAddress(), cuboid)
-					: null
-				;
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.eventSink((EventRecord event) -> {})
 			.finish()
 		;
@@ -93,12 +87,7 @@ public class TestEngineCuboids
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
-					? BlockProxy.load(location.getBlockAddress(), cuboid)
-					: null
-				;
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.eventSink((EventRecord event) -> {})
 			.finish()
 		;
@@ -136,12 +125,7 @@ public class TestEngineCuboids
 		CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
-					? BlockProxy.load(location.getBlockAddress(), cuboid)
-					: null
-				;
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.eventSink((EventRecord event) -> {})
 			.finish()
 		;

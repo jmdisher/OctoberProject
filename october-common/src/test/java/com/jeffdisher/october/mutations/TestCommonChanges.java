@@ -613,7 +613,7 @@ public class TestCommonChanges
 		
 		List<IMutationBlock> blockHolder = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid))
+				.lookups(ContextBuilder.buildSingleFetcher(cuboid)
 					, null
 					, null
 				)
@@ -761,21 +761,19 @@ public class TestCommonChanges
 		List<PassiveEntity> out_passives = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(tickNumber)
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) ->
+				.lookups(ContextBuilder.buildFunctionFetcher((CuboidAddress address) ->
 					{
-						CuboidAddress address = location.getCuboidAddress();
-						BlockAddress block = location.getBlockAddress();
-						BlockProxy proxy;
+						IReadOnlyCuboidData result;
 						if (address.equals(airAddress))
 						{
-							proxy = BlockProxy.load(block, airCuboid);
+							result = airCuboid;
 						}
 						else
 						{
 							Assert.assertTrue(address.equals(stoneAddress));
-							proxy = BlockProxy.load(block, stoneCuboid);
+							result = stoneCuboid;
 						}
-						return proxy;
+						return result;
 					}), null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
@@ -2208,12 +2206,7 @@ public class TestCommonChanges
 		EntityActionStoreToInventory[] out_store = new EntityActionStoreToInventory[1];
 		EventRecord[] out_record = new EventRecord[1];
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-					return location.getCuboidAddress().equals(cuboid.getCuboidAddress())
-							? BlockProxy.load(location.getBlockAddress(), cuboid)
-							: null
-					;
-				}), null, null)
+				.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 					@Override
 					public boolean next(IMutationBlock mutation)
@@ -2706,10 +2699,10 @@ public class TestCommonChanges
 		CuboidData stone = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		TickProcessingContext context = ContextBuilder.build()
 			.millisPerTick(50L)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return location.getCuboidAddress().equals(air.getCuboidAddress())
-					? BlockProxy.load(location.getBlockAddress(), air)
-					: BlockProxy.load(location.getBlockAddress(), stone)
+			.lookups(ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> {
+				return address.equals(air.getCuboidAddress())
+					? air
+					: stone
 				;
 			}), null, null)
 			.finish()
@@ -2909,7 +2902,7 @@ public class TestCommonChanges
 		
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(200L)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.finish()
 		;
 		
@@ -2938,7 +2931,7 @@ public class TestCommonChanges
 		
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(200L)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.finish()
 		;
 		
@@ -2958,7 +2951,7 @@ public class TestCommonChanges
 		cuboid.setData15(AspectRegistry.BLOCK, blockLocation.getBlockAddress(), STONE.item().number());
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.finish()
 		;
 		
@@ -3015,7 +3008,7 @@ public class TestCommonChanges
 		
 		TickProcessingContext context = ContextBuilder.build()
 			.millisPerTick(100L)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.finish()
 		;
 		
@@ -3034,7 +3027,7 @@ public class TestCommonChanges
 		// Try again with a different tick rate.
 		context = ContextBuilder.build()
 			.millisPerTick(10L)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.finish()
 		;
 		
@@ -3052,7 +3045,7 @@ public class TestCommonChanges
 		// Test an error case we noticed with sign handling when clamping.
 		context = ContextBuilder.build()
 			.millisPerTick(50L)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.finish()
 		;
 		
@@ -3079,13 +3072,12 @@ public class TestCommonChanges
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		CommonChangeSink changeSink = new CommonChangeSink(Set.of(), Set.of(targetId), Set.of());
 		TickProcessingContext context = ContextBuilder.build()
-				.tick(5L)
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-					CuboidData cuboid = (location.z() >= 0) ? airCuboid : stoneCuboid;
-					return BlockProxy.load(location.getBlockAddress(), cuboid);
-				}), new _RequiredEntityIndex(Map.of(targetId, creature)), null)
-				.sinks(null, changeSink)
-				.finish()
+			.tick(5L)
+			.lookups(ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> {
+				return (address.z() >= 0) ? airCuboid : stoneCuboid;
+			}), new _RequiredEntityIndex(Map.of(targetId, creature)), null)
+			.sinks(null, changeSink)
+			.finish()
 		;
 		
 		// Send a nudge to them and see that they move.
@@ -3291,9 +3283,7 @@ public class TestCommonChanges
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, fixedBlock.getBlockAddress(), STONE.item().number());
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return BlockProxy.load(location.getBlockAddress(), cuboid);
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.finish()
 		;
 		ViscosityReader reader = new ViscosityReader(ENV, context.previousBlockLookUp);
@@ -3749,7 +3739,7 @@ public class TestCommonChanges
 		cuboid.setData7(AspectRegistry.ORIENTATION, BlockAddress.fromInt(4, 5, 1), FacingDirection.directionToByte(FacingDirection.WEST));
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.finish()
 		;
 		
@@ -3887,9 +3877,7 @@ public class TestCommonChanges
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(5L)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return BlockProxy.load(location.getBlockAddress(), airCuboid);
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(airCuboid), null, null)
 			.finish()
 		;
 		
@@ -4187,10 +4175,12 @@ public class TestCommonChanges
 		CuboidData air = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData stone = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		TickProcessingContext context = ContextBuilder.build()
-				.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), (location.z() >= 0) ? air : stone)), null, null)
-				.eventSink(events)
-				.finish()
+			.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
+			.lookups(ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> {
+				return (address.z() >= 0) ? air : stone;
+			}), null, null)
+			.eventSink(events)
+			.finish()
 		;
 		return context;
 	}
@@ -4198,13 +4188,8 @@ public class TestCommonChanges
 	private static TickProcessingContext _createSingleCuboidContext(CuboidData cuboid)
 	{
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-						return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
-								? BlockProxy.load(location.getBlockAddress(), cuboid)
-								: null
-						;
-					}), null, null)
-				.finish()
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
 		;
 		return context;
 	}
@@ -4261,9 +4246,7 @@ public class TestCommonChanges
 				, (AbsoluteLocation location) -> {
 					return lazyMutableBlockCache.apply(location);
 				}
-				, ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-					return holder.context.previousBlockLookUp.readBlock(location);
-				})
+				, ContextBuilder.buildSingleFetcher(cuboid)
 		);
 		
 		for (MutableBlockProxy proxy : lazyMutableBlockCache.extractCache().values())
@@ -4343,7 +4326,7 @@ public class TestCommonChanges
 		{
 			this.context = ContextBuilder.build()
 					.tick(5L)
-					.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), cuboid)), null, null)
+					.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 					.sinks(allowBlockMutation ? new TickProcessingContext.IMutationSink() {
 							@Override
 							public boolean next(IMutationBlock mutation)

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -18,8 +17,8 @@ import com.jeffdisher.october.actions.EntityActionTakeDamageFromEntity;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.pathing.PathLocation;
@@ -88,12 +87,7 @@ public class TestCreatureLogic
 		// We should see 24 possible locations, all at z-level 1 as their final destination, minus where we started.
 		for (int i = 0; i < 24; ++i)
 		{
-			TickProcessingContext context = _createContext((AbsoluteLocation location) -> {
-				return location.getCuboidAddress().equals(cuboidAddress)
-						? BlockProxy.load(location.getBlockAddress(), input)
-						: null
-				;
-			}, i);
+			TickProcessingContext context = _createContext(input, i);
 			List<PathLocation> path = CreatureLogic.test_findPathToRandomSpot(context, entity.location(), entity.type());
 			PathLocation target = path.get(path.size() - 1);
 			Assert.assertEquals(1.0f, target.getBaseLocation().z(), 0.01f);
@@ -101,12 +95,7 @@ public class TestCreatureLogic
 		// Verify that there are only 24.
 		try
 		{
-			TickProcessingContext context = _createContext((AbsoluteLocation location) -> {
-				return location.getCuboidAddress().equals(cuboidAddress)
-						? BlockProxy.load(location.getBlockAddress(), input)
-						: null
-				;
-			}, 24);
+			TickProcessingContext context = _createContext(input, 24);
 			CreatureLogic.test_findPathToRandomSpot(context, entity.location(), entity.type());
 		}
 		catch (AssertionError e)
@@ -129,12 +118,7 @@ public class TestCreatureLogic
 		// We should see 13 possible locations, all at z-level 2 as their final destination.
 		for (int i = 0; i < 13; ++i)
 		{
-			TickProcessingContext context = _createContext((AbsoluteLocation location) -> {
-				return location.getCuboidAddress().equals(cuboidAddress)
-						? BlockProxy.load(location.getBlockAddress(), input)
-						: null
-				;
-			}, i);
+			TickProcessingContext context = _createContext(input, i);
 			List<PathLocation> path = CreatureLogic.test_findPathToRandomSpot(context, entity.location(), entity.type());
 			PathLocation target = path.get(path.size() - 1);
 			Assert.assertEquals(2.0f, target.getBaseLocation().z(), 0.01f);
@@ -142,12 +126,7 @@ public class TestCreatureLogic
 		// Verify that there are only 13.
 		try
 		{
-			TickProcessingContext context = _createContext((AbsoluteLocation location) -> {
-				return location.getCuboidAddress().equals(cuboidAddress)
-						? BlockProxy.load(location.getBlockAddress(), input)
-						: null
-				;
-			}, 13);
+			TickProcessingContext context = _createContext(input, 13);
 			CreatureLogic.test_findPathToRandomSpot(context, entity.location(), entity.type());
 		}
 		catch (AssertionError e)
@@ -170,12 +149,7 @@ public class TestCreatureLogic
 		// Even though this is only the idle timeout, we will see a plan made and that it ends above water.
 		TickProcessingContext context = ContextBuilder.build()
 				.tick((CreatureLogic.MINIMUM_MILLIS_TO_ACTION / 100L) + 1L)
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-					return location.getCuboidAddress().equals(cuboidAddress)
-							? BlockProxy.load(location.getBlockAddress(), input)
-							: null
-					;
-				}), null, null)
+				.lookups(ContextBuilder.buildSingleFetcher(input), null, null)
 				.fixedRandom(0)
 				.finish()
 		;
@@ -215,12 +189,7 @@ public class TestCreatureLogic
 		input.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 2), stoneNumber);
 		
 		// We should see 0 possible locations.
-		TickProcessingContext context = _createContext((AbsoluteLocation location) -> {
-			return location.getCuboidAddress().equals(cuboidAddress)
-					? BlockProxy.load(location.getBlockAddress(), input)
-					: null
-			;
-		}, 0);
+		TickProcessingContext context = _createContext(input, 0);
 		List<PathLocation> path = CreatureLogic.test_findPathToRandomSpot(context, entity.location(), entity.type());
 		Assert.assertNull(path);
 	}
@@ -255,12 +224,7 @@ public class TestCreatureLogic
 		_setLayer(input, (byte)0, "op.stone");
 		
 		// We should see them acquire this target.
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return location.getCuboidAddress().equals(cuboidAddress)
-					? BlockProxy.load(location.getBlockAddress(), input)
-					: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(input);
 		TickProcessingContext context = ContextBuilder.build()
 			.tick((CreatureLogic.MINIMUM_MILLIS_TO_ACTION / 100L) + 1L)
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
@@ -336,12 +300,7 @@ public class TestCreatureLogic
 		CreatureEntity cow = _updateKeepAlive(CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), 0L), startMillis);
 		
 		// We will take a special action where nothing should happen.
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return location.getCuboidAddress().equals(cuboidAddress)
-					? BlockProxy.load(location.getBlockAddress(), input)
-					: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(input);
 		// (we won't expose any of the entities since we don't expect targeting).
 		_MinimalEntityIndex previousEntityLookUp = new _MinimalEntityIndex(Map.of());
 		TickProcessingContext context = ContextBuilder.build()
@@ -438,12 +397,7 @@ public class TestCreatureLogic
 		
 		int[] targetId = new int[1];
 		IEntityAction<?>[] message = new IEntityAction<?>[1];
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
-			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-				? BlockProxy.load(blockLocation.getBlockAddress(), input)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(input);
 		TickProcessingContext context = ContextBuilder.build()
 			.sinks(null, new TickProcessingContext.IChangeSink() {
 				@Override
@@ -571,12 +525,7 @@ public class TestCreatureLogic
 		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
 		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, 0L);
 		
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
-			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-					? BlockProxy.load(blockLocation.getBlockAddress(), input)
-					: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(input);
 		_PairEntityIndex previousEntityLookUp = new _PairEntityIndex(player, orc);
 		long millisPerTick = 100L;
 		TickProcessingContext context = ContextBuilder.build()
@@ -617,12 +566,7 @@ public class TestCreatureLogic
 		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
 		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, 0L);
 		
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
-			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-					? BlockProxy.load(blockLocation.getBlockAddress(), input)
-					: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(input);
 		_PairEntityIndex previousEntityLookUp = new _PairEntityIndex(player, orc);
 		List<IEntityAction<IMutablePlayerEntity>> outChanges = new ArrayList<>();
 		TickProcessingContext.IChangeSink changeSink = new TickProcessingContext.IChangeSink() {
@@ -744,12 +688,7 @@ public class TestCreatureLogic
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, cowLocation, 0L);
 		MutableCreature mutableCow = MutableCreature.existing(cow);
 		
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
-			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-					? BlockProxy.load(blockLocation.getBlockAddress(), input)
-					: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(input);
 		Map<Integer, MinimalEntity> entities = new HashMap<>();
 		_MinimalEntityIndex previousEntityLookUp = new _MinimalEntityIndex(entities);
 		TickProcessingContext context = ContextBuilder.build()
@@ -831,12 +770,7 @@ public class TestCreatureLogic
 		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, 0L);
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
 		
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
-			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-				? BlockProxy.load(blockLocation.getBlockAddress(), input)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(input);
 		Map<Integer, MinimalEntity> entities = new HashMap<>();
 		_MinimalEntityIndex previousEntityLookUp = new _MinimalEntityIndex(entities);
 		TickProcessingContext context = ContextBuilder.build()
@@ -909,9 +843,7 @@ public class TestCreatureLogic
 		);
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return BlockProxy.load(location.getBlockAddress(), input);
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(input), null, null)
 			.fixedRandom(2)
 			.finish()
 		;
@@ -972,12 +904,7 @@ public class TestCreatureLogic
 					throw new AssertionError();
 				}
 			})
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return location.getCuboidAddress().equals(cuboidAddress)
-					? BlockProxy.load(location.getBlockAddress(), input)
-					: null
-				;
-				})
+			.lookups(ContextBuilder.buildSingleFetcher(input)
 				, new LazyEntityIndex(Map.of(), creatures)
 				, null)
 			.fixedRandom(2)
@@ -1053,12 +980,7 @@ public class TestCreatureLogic
 		EntityLocation skeletonLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
 		CreatureEntity skeleton = CreatureEntity.create(assigner.next(), skeletonType, skeletonLocation, 0L);
 		
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
-			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-				? BlockProxy.load(blockLocation.getBlockAddress(), input)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(input);
 		_PairEntityIndex previousEntityLookUp = new _PairEntityIndex(player, skeleton);
 		long millisPerTick = 100L;
 		PassiveEntity[] out = new PassiveEntity[1];
@@ -1149,12 +1071,7 @@ public class TestCreatureLogic
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		_setLayer(input, (byte)0, "op.stone");
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
-			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-				? BlockProxy.load(blockLocation.getBlockAddress(), input)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(input);
 		
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		EntityLocation calfLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
@@ -1223,9 +1140,7 @@ public class TestCreatureLogic
 		);
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return BlockProxy.load(location.getBlockAddress(), input);
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(input), null, null)
 			.fixedRandom(2)
 			.finish()
 		;
@@ -1262,9 +1177,7 @@ public class TestCreatureLogic
 		);
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return BlockProxy.load(location.getBlockAddress(), input);
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(input), null, null)
 			.fixedRandom(2)
 			.finish()
 		;
@@ -1302,12 +1215,7 @@ public class TestCreatureLogic
 		);
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return cuboidAddress.equals(location.getCuboidAddress())
-					? BlockProxy.load(location.getBlockAddress(), input)
-					: null
-				;
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(input), null, null)
 			.fixedRandom(2)
 			.finish()
 		;
@@ -1343,12 +1251,7 @@ public class TestCreatureLogic
 		Entity player = mutable.freeze();
 		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, 0L);
 		
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
-			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-				? BlockProxy.load(blockLocation.getBlockAddress(), input)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(input);
 		_PairEntityIndex previousEntityLookUp = new _PairEntityIndex(player, orc);
 		long millisPerTick = 100L;
 		TickProcessingContext context = ContextBuilder.build()
@@ -1399,12 +1302,7 @@ public class TestCreatureLogic
 		Entity movedPlayer = mutable.freeze();
 		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, 0L);
 		
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
-			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-				? BlockProxy.load(blockLocation.getBlockAddress(), input)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(input);
 		
 		// If the player did NOT move - change nothing.
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
@@ -1516,12 +1414,7 @@ public class TestCreatureLogic
 		Entity elevatedPlayer = mutable.freeze();
 		CreatureEntity orc = CreatureEntity.create(-1, ORC, orcLocation, 0L);
 		
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
-			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-				? BlockProxy.load(blockLocation.getBlockAddress(), input)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(input);
 		
 		// Create the movement plan for the orc to move toward the player but show that they take no special action when at distance.
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
@@ -1667,12 +1560,7 @@ public class TestCreatureLogic
 		mutable.newLocation = playerLocation;
 		Entity player = mutable.freeze();
 		
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
-			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-				? BlockProxy.load(blockLocation.getBlockAddress(), input)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(input);
 		
 		// Try this for the case where there is a target.
 		MutableCreature mutableOrc = MutableCreature.existing(CreatureEntity.create(-1, ORC, orcLocation, 0L));
@@ -1748,12 +1636,7 @@ public class TestCreatureLogic
 		CreatureEntity villager = CreatureEntity.create(-1, VILLAGER, villagerLocation, 0L);
 		CreatureEntity villagerBaby = CreatureEntity.create(-2, VILLAGER_BABY, villagerBabyLocation, 0L);
 		
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
-			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-				? BlockProxy.load(blockLocation.getBlockAddress(), input)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(input);
 		_MinimalEntityIndex previousEntityLookUp = new _MinimalEntityIndex(Map.of(player.id(), MinimalEntity.fromEntity(player)
 			, villager.id(), MinimalEntity.fromCreature(villager)
 			, villagerBaby.id(), MinimalEntity.fromCreature(villagerBaby)
@@ -1838,12 +1721,7 @@ public class TestCreatureLogic
 		cow0 = mutable.freeze();
 		
 		// Create a context at the next time where we can take an action and see that they pick no target if they can't see the other cow..
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
-			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-				? BlockProxy.load(blockLocation.getBlockAddress(), input)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(input);
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(10L)
 			.lookups(previousBlockLookUp, null, null)
@@ -1883,12 +1761,7 @@ public class TestCreatureLogic
 		CreatureEntity cow0 = mutable.freeze();
 		
 		// Create a context at the next time where we can take an action and see that they pick no target if they can't see the other cow..
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
-			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-				? BlockProxy.load(blockLocation.getBlockAddress(), input)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(input);
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(10L)
 			.lookups(previousBlockLookUp, null, null)
@@ -1978,12 +1851,7 @@ public class TestCreatureLogic
 		);
 		
 		// Create a context at the next time where we can take an action and see that they pick no target if they can't see the other cow..
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
-			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-				? BlockProxy.load(blockLocation.getBlockAddress(), cuboid)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
 		TickProcessingContext.IEntitySearch entitySearch = new TickProcessingContext.IEntitySearch() {
 			@Override
 			public MinimalEntity getById(int id)
@@ -2094,12 +1962,7 @@ public class TestCreatureLogic
 		);
 		
 		// Create a context at the next time where we can take an action and see that they pick no target if they can't see the other cow..
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation blockLocation) -> {
-			return blockLocation.getCuboidAddress().equals(cuboidAddress)
-				? BlockProxy.load(blockLocation.getBlockAddress(), cuboid)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
 		TickProcessingContext.IEntitySearch entitySearch = new TickProcessingContext.IEntitySearch() {
 			@Override
 			public MinimalEntity getById(int id)
@@ -2163,9 +2026,9 @@ public class TestCreatureLogic
 	}
 
 
-	private static TickProcessingContext _createContext(Function<AbsoluteLocation, BlockProxy> function, int random)
+	private static TickProcessingContext _createContext(IReadOnlyCuboidData cuboid, int random)
 	{
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher(function);
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups(previousBlockLookUp, null, null)
 				.fixedRandom(random)

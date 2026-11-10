@@ -21,7 +21,6 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.creatures.CreatureLogic;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.EntityCollection;
@@ -120,7 +119,7 @@ public class TestEngineCreatures
 		List<PassiveEntity> out_passives = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), fakeCuboid)), null, null)
+				.lookups(ContextBuilder.buildSingleFetcher(fakeCuboid), null, null)
 				.sinks(new IMutationSink() {
 					@Override
 					public boolean next(IMutationBlock mutation)
@@ -691,12 +690,7 @@ public class TestEngineCreatures
 		);
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(1000)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
-					? BlockProxy.load(location.getBlockAddress(), cuboid)
-					: null
-				;
-			}), new _MinimalEntityIndex(minimalById), null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), new _MinimalEntityIndex(minimalById), null)
 			.fixedRandom(1)
 			.finish()
 		;
@@ -799,16 +793,11 @@ public class TestEngineCreatures
 					, airTarget.id(), MinimalEntity.fromEntity(airTarget)
 			);
 			TickProcessingContext context = ContextBuilder.build()
-					.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
-					.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-							return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
-								? BlockProxy.load(location.getBlockAddress(), cuboid)
-								: null
-							;
-						}), new _MinimalEntityIndex(minimalEntitiesById), null)
-					// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
-					.fixedRandom(1)
-					.finish()
+				.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
+				.lookups(ContextBuilder.buildSingleFetcher(cuboid), new _MinimalEntityIndex(minimalEntitiesById), null)
+				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
+				.fixedRandom(1)
+				.finish()
 			;
 			creaturesById = _runGroup(context, List.of(waterTarget, airTarget), creaturesById, Map.of());
 			float oldWater = waterCreature.location().x();
@@ -852,12 +841,7 @@ public class TestEngineCreatures
 		{
 			TickProcessingContext context = ContextBuilder.build()
 					.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
-					.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-							return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
-								? BlockProxy.load(location.getBlockAddress(), cuboid)
-								: null
-							;
-						}), null, null)
+					.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 					// We return a fixed "0" for the random generator to make sure that we select a reasonable plan for all tests.
 					.fixedRandom(0)
 					.finish()
@@ -905,12 +889,7 @@ public class TestEngineCreatures
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(tickNumber)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
-					? BlockProxy.load(location.getBlockAddress(), cuboid)
-					: null
-				;
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.eventSink(events)
 			.finish()
 		;
@@ -966,12 +945,7 @@ public class TestEngineCreatures
 			}
 		};
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
-					? BlockProxy.load(location.getBlockAddress(), cuboid)
-					: null
-				;
-			}), entitySearch, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), entitySearch, null)
 			.finish()
 		;
 		boolean didChange = false;
@@ -1022,10 +996,10 @@ public class TestEngineCreatures
 		Object[] out = new Object[1];
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(NudgeHelpers.CREATURE_NUDGE_TICK_FREQUENCY - Math.abs(cow2.id()))
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-					return ((short)-1 == location.z())
-						? BlockProxy.load(location.getBlockAddress(), stoneCuboid)
-						: BlockProxy.load(location.getBlockAddress(), airCuboid)
+				.lookups(ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> {
+					return (-1 == address.z())
+						? stoneCuboid
+						: airCuboid
 					;
 				}), null, null)
 				.sinks(null, new TickProcessingContext.IChangeSink() {
@@ -1100,12 +1074,7 @@ public class TestEngineCreatures
 		long tickNumber = 1L;
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(tickNumber)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return cuboid.getCuboidAddress().equals(location.getCuboidAddress())
-					? BlockProxy.load(location.getBlockAddress(), cuboid)
-					: null
-				;
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.finish()
 		;
 		EntityCollection entityCollection = EntityCollection.emptyCollection();
@@ -1131,7 +1100,7 @@ public class TestEngineCreatures
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
 			.fixedRandom(0)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> BlockProxy.load(location.getBlockAddress(), airCuboid)), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(airCuboid), null, null)
 			.eventSink(events)
 			.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
 				Assert.assertNull(out[0]);
@@ -1221,12 +1190,12 @@ public class TestEngineCreatures
 		config.difficulty = difficulty;
 		TickProcessingContext context = ContextBuilder.build()
 				.tick((CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick) + 1L)
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-						return ((short)-1 == location.z())
-							? BlockProxy.load(location.getBlockAddress(), stoneCuboid)
-							: BlockProxy.load(location.getBlockAddress(), airCuboid)
-						;
-					}), null, null)
+				.lookups(ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> {
+					return (-1 == address.z())
+						? stoneCuboid
+						: airCuboid
+					;
+				}), null, null)
 				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 				.fixedRandom(1)
 				.eventSink(events)
@@ -1241,12 +1210,7 @@ public class TestEngineCreatures
 		long millisPerTick = 100L;
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-					return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
-							? BlockProxy.load(location.getBlockAddress(), cuboid)
-							: null
-						;
-					}), null, null)
+				.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 				.fixedRandom(1)
 				.finish()

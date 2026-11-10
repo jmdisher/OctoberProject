@@ -11,6 +11,7 @@ import java.util.function.IntUnaryOperator;
 import org.junit.Assert;
 
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
 
 
 /**
@@ -41,8 +42,45 @@ public class ContextBuilder
 		return builder;
 	}
 
-	public static TickProcessingContext.IBlockFetcher buildFetcher(Function<AbsoluteLocation, BlockProxy> function)
+	public static TickProcessingContext.IBlockFetcher buildSingleFetcher(IReadOnlyCuboidData cuboid)
 	{
+		Function<AbsoluteLocation, BlockProxy> function = (AbsoluteLocation location) -> {
+			return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
+				? BlockProxy.load(location.getBlockAddress(), cuboid)
+				: null
+			;
+		};
+		return new TickProcessingContext.IBlockFetcher() {
+			@Override
+			public BlockProxy readBlock(AbsoluteLocation location)
+			{
+				return function.apply(location);
+			}
+			public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
+			{
+				Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
+				for (AbsoluteLocation location : locations)
+				{
+					BlockProxy proxy = function.apply(location);
+					if (null != proxy)
+					{
+						completed.put(location, proxy);
+					}
+				}
+				return completed;
+			}
+		};
+	}
+
+	public static TickProcessingContext.IBlockFetcher buildFunctionFetcher(Function<CuboidAddress, IReadOnlyCuboidData> cuboidLookup)
+	{
+		Function<AbsoluteLocation, BlockProxy> function = (AbsoluteLocation location) -> {
+			IReadOnlyCuboidData cuboid = cuboidLookup.apply(location.getCuboidAddress());
+			return (null != cuboid)
+				? BlockProxy.load(location.getBlockAddress(), cuboid)
+				: null
+			;
+		};
 		return new TickProcessingContext.IBlockFetcher() {
 			@Override
 			public BlockProxy readBlock(AbsoluteLocation location)

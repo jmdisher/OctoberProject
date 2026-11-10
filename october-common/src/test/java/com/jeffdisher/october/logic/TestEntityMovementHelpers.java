@@ -231,10 +231,10 @@ public class TestEntityMovementHelpers
 		// A basic test of the commonMovementIdiom - walking on the ground.
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return location.getCuboidAddress().equals(airCuboid.getCuboidAddress())
-				? BlockProxy.load(location.getBlockAddress(), airCuboid)
-				: BlockProxy.load(location.getBlockAddress(), stoneCuboid)
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> {
+			return address.equals(airCuboid.getCuboidAddress())
+				? airCuboid
+				: stoneCuboid
 			;
 		});
 		
@@ -267,9 +267,7 @@ public class TestEntityMovementHelpers
 	{
 		// A basic test of the commonMovementIdiom - falling through air.
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return BlockProxy.load(location.getBlockAddress(), airCuboid);
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(airCuboid);
 		
 		EntityLocation startLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
 		EntityLocation startVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
@@ -390,9 +388,7 @@ public class TestEntityMovementHelpers
 		// Test how we coast diagonally through the air with commonMovementIdiom when at terminal velocity.  We expect
 		// that we can't accelerate above terminal velocity and it should be the same, no matter the facing direction.
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return BlockProxy.load(location.getBlockAddress(), airCuboid);
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(airCuboid);
 		ViscosityReader reader = new ViscosityReader(ENV, previousBlockLookUp);
 		EntityVolume volume = new EntityVolume(2.2f, 1.7f);
 		float maxVelocityPerSecond = 4.0f;
@@ -444,9 +440,7 @@ public class TestEntityMovementHelpers
 		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, BlockAddress.fromInt(0, 1, 0), (byte)2);
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 0, 0), WATER_SOURCE.item().number());
 		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, BlockAddress.fromInt(1, 0, 0), (byte)2);
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
 		EntityVolume volume = new EntityVolume(2.2f, 1.7f);
 		
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), EntityMovementHelpers.getEnvironmentalVector(ENV, previousBlockLookUp, new EntityLocation(1.6f, 2.1f, 3.0f), volume));
@@ -484,12 +478,7 @@ public class TestEntityMovementHelpers
 			}
 		}
 		
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return location.getCuboidAddress().equals(cuboid.getCuboidAddress())
-				? BlockProxy.load(location.getBlockAddress(), cuboid)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
 		
 		EntityLocation startLocation = new EntityLocation(1.0f, 1.0f, 0.5f);
 		EntityLocation startVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
@@ -528,12 +517,7 @@ public class TestEntityMovementHelpers
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 1, 1), slab.item().number());
 		cuboid.setData7(AspectRegistry.ORIENTATION, BlockAddress.fromInt(0, 1, 1), FacingDirection.directionToByte(FacingDirection.WEST));
 		
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return location.getCuboidAddress().equals(cuboid.getCuboidAddress())
-				? BlockProxy.load(location.getBlockAddress(), cuboid)
-				: null
-			;
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
 		
 		EntityLocation startLocation = new EntityLocation(0.8f, 0.8f, 1.0f);
 		EntityLocation startVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);

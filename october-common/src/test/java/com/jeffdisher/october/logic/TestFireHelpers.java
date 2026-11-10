@@ -49,9 +49,7 @@ public class TestFireHelpers
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), LOG);
 		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-					return BlockProxy.load(location.getBlockAddress(), cuboid);
-				}), null, null)
+				.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 				.finish()
 		;
 		List<AbsoluteLocation> neighbours = FireHelpers.findFlammableNeighbours(ENV, context, centre);
@@ -66,9 +64,7 @@ public class TestFireHelpers
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
 		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-					return BlockProxy.load(location.getBlockAddress(), cuboid);
-				}), null, null)
+				.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 				.finish()
 		;
 		List<AbsoluteLocation> neighbours = FireHelpers.findFlammableNeighbours(ENV, context, centre);
@@ -83,9 +79,7 @@ public class TestFireHelpers
 		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
 		cuboid.setData7(AspectRegistry.FLAGS, centre.getBlockAddress(), FlagsAspect.FLAG_BURNING);
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-					return BlockProxy.load(location.getBlockAddress(), cuboid);
-				}), null, null)
+				.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 				.finish()
 		;
 		Assert.assertTrue(FireHelpers.isNearFireSource(ENV, context, centre.getRelative(1, 0, 0)));
@@ -105,9 +99,7 @@ public class TestFireHelpers
 		cuboid.setData15(AspectRegistry.BLOCK, cannotStart.getRelative(0, 0, 1).getBlockAddress(), WATER_SOURCE.item().number());
 		cuboid.setData7(AspectRegistry.FLAGS, alreadyBurning.getBlockAddress(), FlagsAspect.FLAG_BURNING);
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-					return BlockProxy.load(location.getBlockAddress(), cuboid);
-				}), null, null)
+				.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 				.finish()
 		;
 		Assert.assertTrue(FireHelpers.canIgnite(ENV, context, canStart, BlockProxy.load(canStart.getBlockAddress(), cuboid)));
@@ -129,9 +121,7 @@ public class TestFireHelpers
 		cuboid.setData7(AspectRegistry.FLAGS, burnWater.getBlockAddress(), FlagsAspect.FLAG_BURNING);
 		cuboid.setData15(AspectRegistry.BLOCK, burnWater.getRelative(0, 0, 1).getBlockAddress(), WATER_SOURCE.item().number());
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-					return BlockProxy.load(location.getBlockAddress(), cuboid);
-				}), null, null)
+				.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 				.finish()
 		;
 		Assert.assertFalse(FireHelpers.shouldExtinguish(ENV, context, burnNoWater, BlockProxy.load(burnNoWater.getBlockAddress(), cuboid)));

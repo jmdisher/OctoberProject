@@ -14,7 +14,6 @@ import com.jeffdisher.october.actions.passive.PassiveActionRequestStoreToInvento
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.block_movement.PassiveActionPush;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.SpatialHelpers;
@@ -164,10 +163,7 @@ public class TestEnginePassives
 		EventRecord[] out_events = new EventRecord[1];
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(1L)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation lookupLocation) -> {
-				Assert.assertEquals(airCuboid.getCuboidAddress(), lookupLocation.getCuboidAddress());
-				return BlockProxy.load(lookupLocation.getBlockAddress(), airCuboid);
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(airCuboid), null, null)
 			.sinks(null, sink)
 			.eventSink((EventRecord event) -> {
 				Assert.assertNull(out_events[0]);
@@ -309,12 +305,7 @@ public class TestEnginePassives
 					throw new AssertionError("Not in test");
 				}
 			}, null)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return cuboid.getCuboidAddress().equals(location.getCuboidAddress())
-					? BlockProxy.load(location.getBlockAddress(), cuboid)
-					: null
-				;
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.finish()
 		;
 		EntityCollection entityCollection = EntityCollection.emptyCollection();
@@ -383,12 +374,7 @@ public class TestEnginePassives
 					throw new AssertionError("Not in test");
 				}
 			}, null)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return cuboid.getCuboidAddress().equals(location.getCuboidAddress())
-					? BlockProxy.load(location.getBlockAddress(), cuboid)
-					: null
-				;
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.finish()
 		;
 		EntityCollection entityCollection = EntityCollection.emptyCollection();
@@ -430,12 +416,7 @@ public class TestEnginePassives
 		long tickNumber = 1L;
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(tickNumber)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return cuboid.getCuboidAddress().equals(location.getCuboidAddress())
-					? BlockProxy.load(location.getBlockAddress(), cuboid)
-					: null
-				;
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.finish()
 		;
 		EntityCollection entityCollection = EntityCollection.emptyCollection();
@@ -466,12 +447,7 @@ public class TestEnginePassives
 		long tickNumber = 1L;
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(tickNumber)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return cuboid.getCuboidAddress().equals(location.getCuboidAddress())
-					? BlockProxy.load(location.getBlockAddress(), cuboid)
-					: null
-				;
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.finish()
 		;
 		EntityCollection entityCollection = EntityCollection.emptyCollection();
@@ -631,10 +607,10 @@ public class TestEnginePassives
 		TickProcessingContext context = ContextBuilder.build()
 			.tick(tickNumber)
 			.sinks(null, changeSink)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return ((short)-1 == location.z())
-					? BlockProxy.load(location.getBlockAddress(), stoneCuboid)
-					: BlockProxy.load(location.getBlockAddress(), airCuboid)
+			.lookups(ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> {
+				return (-1 == address.z())
+					? stoneCuboid
+					: airCuboid
 				;
 			}), null, null)
 			.passive(spawner)

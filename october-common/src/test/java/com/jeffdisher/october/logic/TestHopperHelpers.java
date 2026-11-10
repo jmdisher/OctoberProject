@@ -12,7 +12,6 @@ import org.junit.Test;
 
 import com.jeffdisher.october.actions.passive.PassiveActionRequestStoreToInventory;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.mutations.MutationBlockPushToBlock;
@@ -86,7 +85,7 @@ public class TestHopperHelpers
 		
 		List<IMutationBlock> outMutations = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? BlockProxy.load(location.getBlockAddress(), cuboid) : null)
+				.lookups(ContextBuilder.buildSingleFetcher(cuboid)
 					, null
 					, null
 				)
@@ -203,7 +202,7 @@ public class TestHopperHelpers
 			}
 		};
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? BlockProxy.load(location.getBlockAddress(), cuboid) : null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid)
 				, null
 				, previousPassiveLookUp
 			)

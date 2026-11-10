@@ -57,10 +57,8 @@ public class TestMultiBlockUtils
 		}
 		
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-					return BlockProxy.load(location.getBlockAddress(), cuboid);
-				}), null, null)
-				.finish()
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
 		;
 		
 		MultiBlockUtils.Lookup lookup = MultiBlockUtils.getLoadedRoot(ENV, context, base);
@@ -84,10 +82,8 @@ public class TestMultiBlockUtils
 		cuboid.setData15(AspectRegistry.BLOCK, base.getBlockAddress(), STONE.item().number());
 		
 		TickProcessingContext context = ContextBuilder.build()
-				.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-					return BlockProxy.load(location.getBlockAddress(), cuboid);
-				}), null, null)
-				.finish()
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
 		;
 		
 		MultiBlockUtils.Lookup lookup = MultiBlockUtils.getLoadedRoot(ENV, context, base);
@@ -170,9 +166,7 @@ public class TestMultiBlockUtils
 		Set<AbsoluteLocation> nextLocations = new HashSet<>();
 		Set<AbsoluteLocation> futureLocations = new HashSet<>();
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return BlockProxy.load(location.getBlockAddress(), cuboid);
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)
@@ -222,9 +216,7 @@ public class TestMultiBlockUtils
 		
 		Set<AbsoluteLocation> nextLocations = new HashSet<>();
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return BlockProxy.load(location.getBlockAddress(), cuboid);
-			}), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)

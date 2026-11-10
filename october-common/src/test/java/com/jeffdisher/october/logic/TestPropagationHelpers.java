@@ -54,7 +54,6 @@ public class TestPropagationHelpers
 		_setBlock(lantern, cuboid, blockLantern, false, true, (byte)0x0);
 		
 		Map<AbsoluteLocation, MutableBlockProxy> lazyLocalCache = new HashMap<>();
-		Map<AbsoluteLocation, BlockProxy> lazyGlobalCache = new HashMap<>();
 		PropagationHelpers.processPreviousTickLightUpdates(address
 				, Map.of(address, List.of(lantern))
 				, (AbsoluteLocation location) -> {
@@ -66,15 +65,7 @@ public class TestPropagationHelpers
 					}
 					return proxy;
 				}
-				, ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-					BlockProxy proxy = lazyGlobalCache.get(location);
-					if (null == proxy)
-					{
-						proxy = BlockProxy.load(location.getBlockAddress(), cuboid);
-						lazyGlobalCache.put(location, proxy);
-					}
-					return proxy;
-				})
+				, ContextBuilder.buildSingleFetcher(cuboid)
 		);
 		
 		// Check the updated proxies for light levels.
@@ -128,7 +119,6 @@ public class TestPropagationHelpers
 		
 		List<IMutationBlock> updateMutations = new ArrayList<>();
 		Map<AbsoluteLocation, MutableBlockProxy> lazyLocalCache = new HashMap<>();
-		Map<AbsoluteLocation, BlockProxy> lazyGlobalCache = new HashMap<>();
 		PropagationHelpers.processPreviousTickLogicUpdates((IMutationBlock mutation) -> updateMutations.add(mutation)
 			, address
 			, Map.of(address, List.copyOf(potentialLogicChanges))
@@ -141,15 +131,7 @@ public class TestPropagationHelpers
 				}
 				return proxy;
 			}
-			, ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				BlockProxy proxy = lazyGlobalCache.get(location);
-				if (null == proxy)
-				{
-					proxy = BlockProxy.load(location.getBlockAddress(), cuboid);
-					lazyGlobalCache.put(location, proxy);
-				}
-				return proxy;
-			})
+			, ContextBuilder.buildSingleFetcher(cuboid)
 		);
 		
 		// Verify we only tried looking at these 12 blocks but didn't change anything (no wires).
@@ -202,7 +184,6 @@ public class TestPropagationHelpers
 		
 		List<IMutationBlock> updateMutations = new ArrayList<>();
 		Map<AbsoluteLocation, MutableBlockProxy> lazyLocalCache = new HashMap<>();
-		Map<AbsoluteLocation, BlockProxy> lazyGlobalCache = new HashMap<>();
 		PropagationHelpers.processPreviousTickLogicUpdates((IMutationBlock mutation) -> updateMutations.add(mutation)
 			, address
 			, Map.of(address, List.copyOf(potentialLogicChanges))
@@ -215,15 +196,7 @@ public class TestPropagationHelpers
 				}
 				return proxy;
 			}
-			, ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				BlockProxy proxy = lazyGlobalCache.get(location);
-				if (null == proxy)
-				{
-					proxy = BlockProxy.load(location.getBlockAddress(), cuboid);
-					lazyGlobalCache.put(location, proxy);
-				}
-				return proxy;
-			})
+			, ContextBuilder.buildSingleFetcher(cuboid)
 		);
 		
 		// We only expect the write-back for the wire to actually change anything.
@@ -267,7 +240,6 @@ public class TestPropagationHelpers
 		
 		List<IMutationBlock> updateMutations = new ArrayList<>();
 		Map<AbsoluteLocation, MutableBlockProxy> lazyLocalCache = new HashMap<>();
-		Map<AbsoluteLocation, BlockProxy> lazyGlobalCache = new HashMap<>();
 		PropagationHelpers.processPreviousTickLogicUpdates((IMutationBlock mutation) -> updateMutations.add(mutation)
 			, address
 			, Map.of(address, List.of(brokenWire))
@@ -280,15 +252,7 @@ public class TestPropagationHelpers
 				}
 				return proxy;
 			}
-			, ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				BlockProxy proxy = lazyGlobalCache.get(location);
-				if (null == proxy)
-				{
-					proxy = BlockProxy.load(location.getBlockAddress(), cuboid);
-					lazyGlobalCache.put(location, proxy);
-				}
-				return proxy;
-			})
+			, ContextBuilder.buildSingleFetcher(cuboid)
 		);
 		
 		// Write-back the proxy changes - for the logic write-backs.
@@ -466,7 +430,6 @@ public class TestPropagationHelpers
 		cuboid.setData15(AspectRegistry.BLOCK, wall.getBlockAddress(), ENV.special.AIR.item().number());
 		
 		Map<AbsoluteLocation, MutableBlockProxy> lazyLocalCache = new HashMap<>();
-		Map<AbsoluteLocation, BlockProxy> lazyGlobalCache = new HashMap<>();
 		PropagationHelpers.processPreviousTickLightUpdates(address
 				, Map.of(address, List.of(source, wall))
 				, (AbsoluteLocation location) -> {
@@ -478,15 +441,7 @@ public class TestPropagationHelpers
 					}
 					return proxy;
 				}
-				, ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-					BlockProxy proxy = lazyGlobalCache.get(location);
-					if (null == proxy)
-					{
-						proxy = BlockProxy.load(location.getBlockAddress(), cuboid);
-						lazyGlobalCache.put(location, proxy);
-					}
-					return proxy;
-				})
+				, ContextBuilder.buildSingleFetcher(cuboid)
 		);
 		
 		// See that these have changed to all be dark.

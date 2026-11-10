@@ -10,7 +10,6 @@ import org.junit.Test;
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.pathing.PathLocation;
 import com.jeffdisher.october.subactions.EntitySubActionJump;
@@ -392,9 +391,7 @@ public class TestCreatureMovementHelpers
 		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
 		cuboid.setData15(AspectRegistry.BLOCK, new AbsoluteLocation(3, 5, 0).getBlockAddress(), (short)0);
 		
-		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
-			return BlockProxy.load(l.getBlockAddress(), cuboid);
-		}));
+		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
 		EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, location, COW, path);
 		Assert.assertEquals(new EntityLocation(2.6f, 5.2f, 1.0f), directLocation);
 	}
@@ -410,9 +407,7 @@ public class TestCreatureMovementHelpers
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
 		
-		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
-			return BlockProxy.load(l.getBlockAddress(), cuboid);
-		}));
+		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
 		EntityActionSimpleMove<MutableCreature> shortMove = CreatureMovementHelpers.moveAlongDiagonalPath(reader
 			, location
 			, (byte)5
@@ -436,9 +431,7 @@ public class TestCreatureMovementHelpers
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
 		
-		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
-			return BlockProxy.load(l.getBlockAddress(), cuboid);
-		}));
+		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
 		EntityActionSimpleMove<MutableCreature> noMove = CreatureMovementHelpers.moveAlongDiagonalPath(reader
 			, location
 			, (byte)5
@@ -463,9 +456,7 @@ public class TestCreatureMovementHelpers
 		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
 		cuboid.setData15(AspectRegistry.BLOCK, end.getBlockLocation().getBlockAddress(), STONE.item().number());
 		
-		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
-			return BlockProxy.load(l.getBlockAddress(), cuboid);
-		}));
+		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(reader
 			, location
 			, (byte)5
@@ -489,9 +480,7 @@ public class TestCreatureMovementHelpers
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, location.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), STONE.item().number());
 		
-		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
-			return BlockProxy.load(l.getBlockAddress(), cuboid);
-		}));
+		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(reader
 			, location
 			, (byte)5
@@ -515,9 +504,7 @@ public class TestCreatureMovementHelpers
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
 		
-		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
-			return BlockProxy.load(l.getBlockAddress(), cuboid);
-		}));
+		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(reader
 			, location
 			, (byte)5
@@ -533,9 +520,7 @@ public class TestCreatureMovementHelpers
 		// Make sure that this actually applies correctly.
 		TickProcessingContext context = ContextBuilder.build()
 			.millisPerTick(millisPerTick)
-			.lookups(ContextBuilder.buildFetcher(
-				(AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid)
-			), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.finish()
 		;
 		MutableCreature mutable = MutableCreature.existing(_createCow(location));
@@ -555,9 +540,7 @@ public class TestCreatureMovementHelpers
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
 		
-		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
-			return BlockProxy.load(l.getBlockAddress(), cuboid);
-		}));
+		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(reader
 			, location
 			, (byte)5
@@ -573,9 +556,7 @@ public class TestCreatureMovementHelpers
 		// Make sure that this actually applies correctly.
 		TickProcessingContext context = ContextBuilder.build()
 			.millisPerTick(millisPerTick)
-			.lookups(ContextBuilder.buildFetcher(
-				(AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid)
-			), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.finish()
 		;
 		MutableCreature mutable = MutableCreature.existing(_createCow(location));
@@ -593,9 +574,7 @@ public class TestCreatureMovementHelpers
 		
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
-		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
-			return BlockProxy.load(l.getBlockAddress(), cuboid);
-		}));
+		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
 		
 		byte yaw = OrientationHelpers.getYawBetweenPoints(location, target);
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(reader
@@ -671,9 +650,7 @@ public class TestCreatureMovementHelpers
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
 		
-		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation l) -> {
-			return BlockProxy.load(l.getBlockAddress(), cuboid);
-		}));
+		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(reader
 			, location
 			, (byte)5
@@ -690,9 +667,7 @@ public class TestCreatureMovementHelpers
 		// Make sure that this actually applies correctly.
 		TickProcessingContext context = ContextBuilder.build()
 			.millisPerTick(millisPerTick)
-			.lookups(ContextBuilder.buildFetcher(
-				(AbsoluteLocation l) -> BlockProxy.load(l.getBlockAddress(), cuboid)
-			), null, null)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.finish()
 		;
 		MutableCreature mutable = MutableCreature.existing(_createCow(location));
@@ -719,12 +694,7 @@ public class TestCreatureMovementHelpers
 		cuboid.setData15(AspectRegistry.BLOCK, stairBlock.getBlockAddress(), stair.item().number());
 		cuboid.setData7(AspectRegistry.ORIENTATION, stairBlock.getBlockAddress(), FacingDirection.directionToByte(FacingDirection.EAST));
 		
-		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return address.equals(location.getCuboidAddress())
-				? BlockProxy.load(location.getBlockAddress(), cuboid)
-				: null
-			;
-		}));
+		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
 		EntityType player = ENV.creatures.PLAYER;
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 		byte yaw = 0;
@@ -755,19 +725,17 @@ public class TestCreatureMovementHelpers
 	private static ViscosityReader _getFixedBlockReader(Block block)
 	{
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), block);
-		return new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		}));
+		return new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
 	}
 
 	private static ViscosityReader _getSplitBlockReader(Block positive, Block negative)
 	{
 		CuboidData high = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), positive);
 		CuboidData low = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), negative);
-		return new ViscosityReader(ENV, ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return (location.z() >= 0)
-				? BlockProxy.load(location.getBlockAddress(), high)
-				: BlockProxy.load(location.getBlockAddress(), low)
+		return new ViscosityReader(ENV, ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> {
+			return (address.z() >= 0)
+				? high
+				: low
 			;
 		}));
 	}
@@ -778,10 +746,10 @@ public class TestCreatureMovementHelpers
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		TickProcessingContext context = ContextBuilder.build()
 			.millisPerTick(millisPerTick)
-			.lookups(ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-				return (location.getCuboidAddress().z() >= 0)
-					? BlockProxy.load(location.getBlockAddress(), airCuboid)
-					: BlockProxy.load(location.getBlockAddress(), stoneCuboid)
+			.lookups(ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> {
+				return (address.z() >= 0)
+					? airCuboid
+					: stoneCuboid
 				;
 			}), null, null)
 			.finish()

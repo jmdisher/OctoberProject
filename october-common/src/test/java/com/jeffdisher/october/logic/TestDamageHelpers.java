@@ -9,7 +9,6 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -43,9 +42,7 @@ public class TestDamageHelpers
 	public void noEnvironmentDamage()
 	{
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
 		EntityLocation base = new EntityLocation(2.0f, 2.0f, 2.0f);
 		EntityVolume volume = new EntityVolume(1.5f, 1.2f);
 		
@@ -57,9 +54,7 @@ public class TestDamageHelpers
 	public void fireDamage()
 	{
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
 		EntityLocation base = new EntityLocation(2.0f, 2.0f, 2.0f);
 		EntityVolume volume = new EntityVolume(1.5f, 1.2f);
 		AbsoluteLocation log = base.getBlockLocation().getRelative(0, 0, -1);
@@ -74,9 +69,7 @@ public class TestDamageHelpers
 	public void fireAndLavaDamage()
 	{
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildFetcher((AbsoluteLocation location) -> {
-			return BlockProxy.load(location.getBlockAddress(), cuboid);
-		});
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
 		EntityLocation base = new EntityLocation(2.0f, 2.0f, 2.0f);
 		EntityVolume volume = new EntityVolume(1.5f, 1.2f);
 		AbsoluteLocation log = base.getBlockLocation().getRelative(0, 0, -1);
