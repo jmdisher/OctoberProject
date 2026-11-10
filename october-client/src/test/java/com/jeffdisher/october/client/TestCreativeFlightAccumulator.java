@@ -1,12 +1,12 @@
 package com.jeffdisher.october.client;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -16,12 +16,10 @@ import org.junit.Test;
 import com.jeffdisher.october.actions.EntityActionCreativeFlight;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.subactions.EntitySubActionPlaceSelectedBlockGeneric;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
@@ -35,6 +33,7 @@ import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.BlockFetcher;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 
@@ -362,36 +361,8 @@ public class TestCreativeFlightAccumulator
 		{
 			cuboids.put(cuboid.getCuboidAddress(), cuboid);
 		}
-		TickProcessingContext.IBlockFetcher blockFetcher = new TickProcessingContext.IBlockFetcher() {
-			@Override
-			public BlockProxy readBlock(AbsoluteLocation location)
-			{
-				return _readBlock(location);
-			}
-			@Override
-			public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
-			{
-				Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
-				for (AbsoluteLocation location : locations)
-				{
-					BlockProxy proxy = _readBlock(location);
-					if (null != proxy)
-					{
-						completed.put(location, proxy);
-					}
-				}
-				return completed;
-			}
-			private BlockProxy _readBlock(AbsoluteLocation location)
-			{
-				CuboidAddress address = location.getCuboidAddress();
-				IReadOnlyCuboidData cuboid = cuboids.get(address);
-				return (null != cuboid)
-					? BlockProxy.load(location.getBlockAddress(), cuboid)
-					: null
-				;
-			}
-		};
+		Function<CuboidAddress, IReadOnlyCuboidData> cuboidLookup = (CuboidAddress address) -> cuboids.get(address);
+		TickProcessingContext.IBlockFetcher blockFetcher = new BlockFetcher(Map.of(), Set.of(), cuboidLookup);
 		return new TickProcessingContext(1L
 			, blockFetcher
 			, null

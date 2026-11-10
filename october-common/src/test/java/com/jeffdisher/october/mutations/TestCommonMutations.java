@@ -2,11 +2,11 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -31,6 +31,7 @@ import com.jeffdisher.october.block_periodic.PeriodicBehaviourTilledSoil;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.DeserializationContext;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.PlantHelpers;
 import com.jeffdisher.october.logic.PropertyHelpers;
@@ -64,6 +65,7 @@ import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.BlockFetcher;
 import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.LazyEntityIndex;
 import com.jeffdisher.october.utils.LazyPassiveIndex;
@@ -2227,20 +2229,12 @@ public class TestCommonMutations
 			, stoneCuboid
 		);
 		
+		Function<CuboidAddress, IReadOnlyCuboidData> cuboidLookup = (CuboidAddress address) -> map.get(address);
+		TickProcessingContext.IBlockFetcher blockFetcher = new BlockFetcher(Map.of(), Set.of(), cuboidLookup);
+		
 		MutationBlockLiquidFlowInto[] out_mutation = new MutationBlockLiquidFlowInto[1];
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(new TickProcessingContext.IBlockFetcher() {
-				@Override
-				public BlockProxy readBlock(AbsoluteLocation location)
-				{
-					return BlockProxy.load(location.getBlockAddress(), map.get(location.getCuboidAddress()));
-				}
-				@Override
-				public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
-				{
-					throw new AssertionError("Not in test");
-				}
-			}, null, null)
+			.lookups(blockFetcher, null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)
@@ -2305,20 +2299,18 @@ public class TestCommonMutations
 		outputCuboid.setData15(AspectRegistry.BLOCK, craftingTableLocation.getBlockAddress(), WATER_SOURCE.item().number());
 		outputCuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, craftingTableLocation.getBlockAddress(), (byte)2);
 		outputCuboid.setData15(AspectRegistry.BLOCK, pedestalLocation.getBlockAddress(), STONE.item().number());
+		
+		Function<CuboidAddress, IReadOnlyCuboidData> cuboidLookup = (CuboidAddress address) -> {
+			return outputCuboid.getCuboidAddress().equals(address)
+				? outputCuboid
+				: null
+			;
+		};
+		TickProcessingContext.IBlockFetcher blockFetcher = new BlockFetcher(Map.of(), Set.of(), cuboidLookup);
+		
 		PassiveEntity[] out_passive = new PassiveEntity[1];
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(new TickProcessingContext.IBlockFetcher() {
-				@Override
-				public BlockProxy readBlock(AbsoluteLocation location)
-				{
-					return BlockProxy.load(location.getBlockAddress(), outputCuboid);
-				}
-				@Override
-				public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
-				{
-					throw new AssertionError("Not in test");
-				}
-			}, null, null)
+			.lookups(blockFetcher, null, null)
 			.passive(new TickProcessingContext.IPassiveSpawner() {
 				private int _nextId = 1;
 				@Override

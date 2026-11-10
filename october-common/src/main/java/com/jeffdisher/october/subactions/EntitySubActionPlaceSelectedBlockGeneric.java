@@ -1,10 +1,11 @@
 package com.jeffdisher.october.subactions;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
@@ -12,6 +13,7 @@ import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.DeserializationContext;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.MultiBlockUtils;
@@ -31,6 +33,7 @@ import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableSlotManager;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
+import com.jeffdisher.october.utils.BlockFetcher;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 
@@ -222,33 +225,15 @@ public class EntitySubActionPlaceSelectedBlockGeneric implements IEntitySubActio
 			cuboid.setData15(AspectRegistry.BLOCK, location.getBlockAddress(), blockNumber);
 		}
 		
-		TickProcessingContext.IBlockFetcher blockLookup = new TickProcessingContext.IBlockFetcher() {
-			@Override
-			public BlockProxy readBlock(AbsoluteLocation location)
+		Function<CuboidAddress, IReadOnlyCuboidData> cuboidLookup = (CuboidAddress address) -> {
+			IReadOnlyCuboidData cuboid = map.get(address);
+			if (null == cuboid)
 			{
-				return _readBlock(location);
+				cuboid = emptyCuboid;
 			}
-			@Override
-			public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
-			{
-				Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
-				for (AbsoluteLocation location : locations)
-				{
-					BlockProxy proxy = _readBlock(location);
-					completed.put(location, proxy);
-				}
-				return completed;
-			}
-			private BlockProxy _readBlock(AbsoluteLocation location)
-			{
-				CuboidData cuboid = map.get(location.getCuboidAddress());
-				if (null == cuboid)
-				{
-					cuboid = emptyCuboid;
-				}
-				return BlockProxy.load(location.getBlockAddress(), cuboid);
-			}
+			return cuboid;
 		};
+		TickProcessingContext.IBlockFetcher blockLookup = new BlockFetcher(Map.of(), Set.of(), cuboidLookup);
 		ViscosityReader reader = new ViscosityReader(env, blockLookup);
 		return SpatialHelpers.canExistInLocation(reader, newEntity.getLocation(), newEntity.getType().volume());
 	}

@@ -2,9 +2,10 @@ package com.jeffdisher.october.block_movement;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -13,8 +14,8 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.transactions.MutationBlockTransactionWrapper;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -23,6 +24,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IMutationBlock;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.BlockFetcher;
 import com.jeffdisher.october.utils.CuboidGenerator;
 
 
@@ -190,25 +192,16 @@ public class TestMovableBlockHelpers
 			? (Collection<AbsoluteLocation> locations, int expectedMutations) -> true
 			: null
 		;
+		CuboidAddress cuboidAddress = cuboid.getCuboidAddress();
+		Function<CuboidAddress, IReadOnlyCuboidData> cuboidLookup = (CuboidAddress address) -> {
+			return cuboidAddress.equals(address)
+				? cuboid
+				: null
+			;
+		};
+		TickProcessingContext.IBlockFetcher blockFetcher = new BlockFetcher(Map.of(), Set.of(), cuboidLookup);
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(new TickProcessingContext.IBlockFetcher() {
-				@Override
-				public BlockProxy readBlock(AbsoluteLocation location)
-				{
-					throw new AssertionError("Not in test");
-				}
-				@Override
-				public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
-				{
-					Map<AbsoluteLocation, BlockProxy> map = new HashMap<>();
-					for (AbsoluteLocation location : locations)
-					{
-						BlockProxy proxy = BlockProxy.load(location.getBlockAddress(), cuboid);
-						map.put(location, proxy);
-					}
-					return map;
-				}
-			}, null, null)
+			.lookups(blockFetcher, null, null)
 			.transactions(transactions)
 			.sinks(mutationSink, null)
 			.finish()

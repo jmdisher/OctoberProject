@@ -1,9 +1,9 @@
 package com.jeffdisher.october.client;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -27,6 +27,7 @@ import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
+import com.jeffdisher.october.utils.BlockFetcher;
 
 
 /**
@@ -70,35 +71,8 @@ public class FakeUpdateFactories
 
 	private static TickProcessingContext _createFakeContext(Map<CuboidAddress, IReadOnlyCuboidData> loadedCuboids)
 	{
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = new TickProcessingContext.IBlockFetcher() {
-			@Override
-			public BlockProxy readBlock(AbsoluteLocation location)
-			{
-				return _readBlock(location);
-			}
-			@Override
-			public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
-			{
-				Map<AbsoluteLocation, BlockProxy> completed = new HashMap<>();
-				for (AbsoluteLocation location : locations)
-				{
-					BlockProxy proxy = _readBlock(location);
-					if (null != proxy)
-					{
-						completed.put(location, proxy);
-					}
-				}
-				return completed;
-			}
-			private BlockProxy _readBlock(AbsoluteLocation location)
-			{
-				IReadOnlyCuboidData data = loadedCuboids.get(location.getCuboidAddress());
-				return (null != data)
-					? BlockProxy.load(location.getBlockAddress(), data)
-					: null
-				;
-			}
-		};
+		Function<CuboidAddress, IReadOnlyCuboidData> cuboidLookup = (CuboidAddress address) -> loadedCuboids.get(address);
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = new BlockFetcher(Map.of(), Set.of(), cuboidLookup);
 		
 		// We will just fake up the tick context to be benign (since the speculative projection will drop any new mutations) and only fail when it can't know the answer.
 		TickProcessingContext context = new TickProcessingContext(0L

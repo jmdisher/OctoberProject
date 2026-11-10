@@ -1,12 +1,11 @@
 package com.jeffdisher.october.mutations;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -113,6 +112,7 @@ import com.jeffdisher.october.types.PassiveEntity;
 import com.jeffdisher.october.types.PassiveType;
 import com.jeffdisher.october.types.TargetedAction;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.BlockFetcher;
 import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.LazyEntityIndex;
 
@@ -3585,7 +3585,6 @@ public class TestCommonChanges
 		// We want to show the performance of using EntityActionSimpleMove on a complex base cuboid.
 		boolean infiniteLoopForProfiler = false;
 		boolean longLoopForObjectiveScore = false;
-		boolean useBlockCache = true;
 		
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData complexCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
@@ -3601,65 +3600,11 @@ public class TestCommonChanges
 			, complexCuboid.getCuboidAddress(), complexCuboid
 		);
 		
-		TickProcessingContext.IBlockFetcher fetcher = new TickProcessingContext.IBlockFetcher() {
-			private Map<AbsoluteLocation, BlockProxy> _cache = new HashMap<>();
-			@Override
-			public BlockProxy readBlock(AbsoluteLocation location)
-			{
-				// Not used in test.
-				Assert.fail();
-				return null;
-			}
-			public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
-			{
-				Map<AbsoluteLocation, BlockProxy> result = new HashMap<>();
-				Map<CuboidAddress, List<BlockAddress>> batches = new HashMap<>();
-				
-				for (AbsoluteLocation location : locations)
-				{
-					if (useBlockCache && _cache.containsKey(location))
-					{
-						result.put(location, _cache.get(location));
-					}
-					else
-					{
-						CuboidAddress cuboidAddress = location.getCuboidAddress();
-						List<BlockAddress> batch = batches.get(cuboidAddress);
-						if (null == batch)
-						{
-							batch = new ArrayList<>();
-							batches.put(cuboidAddress, batch);
-						}
-						batch.add(location.getBlockAddress());
-					}
-				}
-				
-				for (Map.Entry<CuboidAddress, List<BlockAddress>> ent : batches.entrySet())
-				{
-					CuboidAddress key = ent.getKey();
-					IReadOnlyCuboidData cuboid = mappedWorld.get(key);
-					BlockAddress[] array = ent.getValue().toArray((int size) -> new BlockAddress[size]);
-					short[] out = cuboid.batchReadData15(AspectRegistry.BLOCK, array);
-					AbsoluteLocation base = key.getBase();
-					for (int i = 0; i < out.length; ++i)
-					{
-						BlockAddress address = array[i];
-						short type = out[i];
-						BlockProxy proxy = BlockProxy.init(address, cuboid, type);
-						AbsoluteLocation location = base.relativeForBlock(address);
-						result.put(location, proxy);
-						if (useBlockCache)
-						{
-							_cache.put(location, proxy);
-						}
-					}
-				}
-				return result;
-			}
-		};
+		Function<CuboidAddress, IReadOnlyCuboidData> cuboidLookup = (CuboidAddress address) -> mappedWorld.get(address);
+		TickProcessingContext.IBlockFetcher blockFetcher = new BlockFetcher(Map.of(), Set.of(), cuboidLookup);
 		
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(fetcher, null, null)
+			.lookups(blockFetcher, null, null)
 			.finish()
 		;
 		
@@ -3703,19 +3648,10 @@ public class TestCommonChanges
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
 		newEntity.slotManager.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
+		Function<CuboidAddress, IReadOnlyCuboidData> cuboidLookup = (CuboidAddress address) -> null;
+		TickProcessingContext.IBlockFetcher blockFetcher = new BlockFetcher(Map.of(), Set.of(), cuboidLookup);
 		TickProcessingContext context = ContextBuilder.build()
-			.lookups(new TickProcessingContext.IBlockFetcher() {
-				@Override
-				public BlockProxy readBlock(AbsoluteLocation location)
-				{
-					return null;
-				}
-				@Override
-				public Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations)
-				{
-					return Map.of();
-				}
-			}, null, null)
+			.lookups(blockFetcher, null, null)
 			.finish()
 		;
 		
