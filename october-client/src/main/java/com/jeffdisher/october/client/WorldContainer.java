@@ -21,7 +21,6 @@ import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Pair;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
-import com.jeffdisher.october.utils.CommonBlockFetcher;
 
 
 /**
@@ -34,7 +33,7 @@ public class WorldContainer
 	private final Map<CuboidAddress, _Tuple> _worldCuboids = new HashMap<>();
 	private final Map<CuboidColumnAddress, Map<Short, _Tuple>> _worldColumns = new HashMap<>();
 	private final Map<CuboidAddress, _Tuple> _projectedCuboids = new HashMap<>();
-	public final TickProcessingContext.IBlockFetcher blockFetcher = new CommonBlockFetcher(new _DataFetcher());
+	public final TickProcessingContext.IBlockFetcher blockFetcher = new StatelessBlockFetcher(new _DataFetcher());
 
 	/**
 	 * @return The set of all cuboid addresses known to the container.

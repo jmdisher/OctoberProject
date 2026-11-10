@@ -21,7 +21,6 @@ import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.PartialPassive;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
-import com.jeffdisher.october.utils.CommonBlockFetcher;
 
 
 /**
@@ -40,7 +39,7 @@ public class CommonClientWorldCache
 	private final Map<Integer, PartialEntity> _otherEntities;
 	private final Map<Integer, PartialPassive> _passives;
 	private final Map<CuboidAddress, Map<BlockAddress, BlockProxy>> _proxyCache;
-	private final CommonBlockFetcher _proxyLookup;
+	private final StatelessBlockFetcher _proxyLookup;
 	public final ViscosityReader reader;
 
 	public CommonClientWorldCache(Environment env
@@ -58,7 +57,7 @@ public class CommonClientWorldCache
 		_passives = new HashMap<>();
 		
 		_proxyCache = new HashMap<>();
-		_proxyLookup = new CommonBlockFetcher(new _DataFetcher());
+		_proxyLookup = new StatelessBlockFetcher(new _DataFetcher());
 		this.reader = new ViscosityReader(env, _proxyLookup);
 	}
 

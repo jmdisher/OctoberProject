@@ -1,4 +1,4 @@
-package com.jeffdisher.october.utils;
+package com.jeffdisher.october.client;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,15 +19,22 @@ import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
- * A utility class to handle a common IBlockFetcher implementation pattern where the higher-level logic is all the same
- * and only how the cache is managed or how the cuboids are resolved in specialized.
- * This per-cuboid cache and authoritative cuboid data is provided by a given Function.
+ * This implementation of IBlockFetcher exists for the client-specific use-case where the data state is externally
+ * managed (and cached) while this only adapts the interface for that data.
+ * The reason why something more generic, like BlockFetcher, cannot be used is 2-fold:
+ * 1) BlockFetcher is designed to be used within a single tick so it internally manages its cache, assuming that the
+ * world isn't changing underneath it.  Instances of this class, on the other hand, are treated as long-lived state-less
+ * objects where the data underneath them is externally changed.
+ * 2) As client-side data is typically invalidated per-cuboid, the underlying data source Function assumes that cached
+ * or fresh data is fetched per-cuboid.
+ * 
+ * Due to its internal caching, BlockFetcher is the preferred implementation, where applicable.
  */
-public class CommonBlockFetcher implements TickProcessingContext.IBlockFetcher
+public class StatelessBlockFetcher implements TickProcessingContext.IBlockFetcher
 {
 	private final Function<CuboidAddress, Pair<IReadOnlyCuboidData, Map<BlockAddress, BlockProxy>>> _dataFetcher;
 
-	public CommonBlockFetcher(Function<CuboidAddress, Pair<IReadOnlyCuboidData, Map<BlockAddress, BlockProxy>>> dataFetcher)
+	public StatelessBlockFetcher(Function<CuboidAddress, Pair<IReadOnlyCuboidData, Map<BlockAddress, BlockProxy>>> dataFetcher)
 	{
 		_dataFetcher = dataFetcher;
 	}
