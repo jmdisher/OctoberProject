@@ -1154,6 +1154,7 @@ public class TestCommonChanges
 		Assert.assertEquals(waterSourceItemNumber, cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		
 		// Try to pick up the water source - note that this should fail unless we clear the last special action time.
+		holder = new _ContextHolder(cuboid, false, true);
 		Assert.assertFalse(exchange.applyChange(holder.context, newEntity));
 		newEntity.ephemeral_lastSpecialActionMillis = 0L;
 		Assert.assertTrue(exchange.applyChange(holder.context, newEntity));
@@ -1167,6 +1168,7 @@ public class TestCommonChanges
 		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		
 		// Place the lava source.
+		holder = new _ContextHolder(cuboid, false, true);
 		newEntity.slotManager.setSelectedKey(2);
 		newEntity.ephemeral_lastSpecialActionMillis = 0L;
 		Assert.assertTrue(exchange.applyChange(holder.context, newEntity));
@@ -1180,6 +1182,7 @@ public class TestCommonChanges
 		Assert.assertEquals(lavaSourceItemNumber, cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		
 		// Try to pick up the lava source.
+		holder = new _ContextHolder(cuboid, false, true);
 		newEntity.ephemeral_lastSpecialActionMillis = 0L;
 		Assert.assertTrue(exchange.applyChange(holder.context, newEntity));
 		Assert.assertNotNull(holder.mutation);
@@ -1500,6 +1503,7 @@ public class TestCommonChanges
 		holder.mutation = null;
 		
 		// Open the door.
+		holder = new _ContextHolder(cuboid, true, true);
 		EntitySubActionSetBlockLogicState open = new EntitySubActionSetBlockLogicState(target, true);
 		Assert.assertTrue(open.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
@@ -2205,55 +2209,53 @@ public class TestCommonChanges
 		List<IMutationBlock> futureMutations = new ArrayList<>();
 		EntityActionStoreToInventory[] out_store = new EntityActionStoreToInventory[1];
 		EventRecord[] out_record = new EventRecord[1];
-		TickProcessingContext context = ContextBuilder.build()
-				.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
-				.sinks(new TickProcessingContext.IMutationSink() {
-					@Override
-					public boolean next(IMutationBlock mutation)
-					{
-						mutations.add(mutation);
-						return true;
-					}
-					@Override
-					public boolean future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.assertTrue(ContextBuilder.DEFAULT_MILLIS_PER_TICK == millisToDelay);
-						futureMutations.add(mutation);
-						return true;
-					}
-				}, new TickProcessingContext.IChangeSink() {
-					@Override
-					public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
-					{
-						Assert.assertNull(out_store[0]);
-						out_store[0] = (EntityActionStoreToInventory) change;
-						return true;
-					}
-					@Override
-					public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
-					{
-						throw new AssertionError("Not in test");
-					}
-					@Override
-					public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
-					{
-						throw new AssertionError("Not in test");
-					}
-					@Override
-					public boolean passive(int targetPassiveId, IPassiveAction action)
-					{
-						throw new AssertionError("Not in test");
-					}
-				})
-				.eventSink(new TickProcessingContext.IEventSink() {
-					@Override
-					public void post(EventRecord event)
-					{
-						Assert.assertNull(out_record[0]);
-						out_record[0] = event;
-					}
-				})
-				.finish()
+		ContextBuilder builder = ContextBuilder.build()
+			.sinks(new TickProcessingContext.IMutationSink() {
+				@Override
+				public boolean next(IMutationBlock mutation)
+				{
+					mutations.add(mutation);
+					return true;
+				}
+				@Override
+				public boolean future(IMutationBlock mutation, long millisToDelay)
+				{
+					Assert.assertTrue(ContextBuilder.DEFAULT_MILLIS_PER_TICK == millisToDelay);
+					futureMutations.add(mutation);
+					return true;
+				}
+			}, new TickProcessingContext.IChangeSink() {
+				@Override
+				public boolean next(int targetEntityId, IEntityAction<IMutablePlayerEntity> change)
+				{
+					Assert.assertNull(out_store[0]);
+					out_store[0] = (EntityActionStoreToInventory) change;
+					return true;
+				}
+				@Override
+				public boolean future(int targetEntityId, IEntityAction<IMutablePlayerEntity> change, long millisToDelay)
+				{
+					throw new AssertionError("Not in test");
+				}
+				@Override
+				public boolean creature(int targetCreatureId, IEntityAction<MutableCreature> change)
+				{
+					throw new AssertionError("Not in test");
+				}
+				@Override
+				public boolean passive(int targetPassiveId, IPassiveAction action)
+				{
+					throw new AssertionError("Not in test");
+				}
+			})
+			.eventSink(new TickProcessingContext.IEventSink() {
+				@Override
+				public void post(EventRecord event)
+				{
+					Assert.assertNull(out_record[0]);
+					out_record[0] = event;
+				}
+			})
 		;
 		
 		int entityId = 1;
@@ -2264,6 +2266,10 @@ public class TestCommonChanges
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
 		
 		// Show that we fail to place when using the wrong helper.
+		TickProcessingContext context = builder
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
+		;
 		Assert.assertFalse(EntitySubActionPlaceSelectedBlockGeneric.isValidOrientationForBlock(ENV, door, null));
 		EntitySubActionPlaceSelectedBlockGeneric fail = new EntitySubActionPlaceSelectedBlockGeneric(target, null);
 		Assert.assertFalse(fail.applyChange(context, newEntity));
@@ -2290,6 +2296,10 @@ public class TestCommonChanges
 		mutations.clear();
 		
 		// Apply the follow-up mutations.
+		context = builder
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
+		;
 		Assert.assertEquals(4, futureMutations.size());
 		for (IMutationBlock mutation : futureMutations)
 		{
@@ -4032,6 +4042,7 @@ public class TestCommonChanges
 		// Now, break the block and run updates against these 5 locations to show that the torches drop.
 		cuboid.setData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress(), (short)0);
 		
+		holder = new _ContextHolder(cuboid, true, true);
 		proxy = new MutableBlockProxy(topTorch, cuboid);
 		new MutationBlockUpdate(topTorch).applyMutation(holder.context, proxy);
 		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());

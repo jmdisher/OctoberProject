@@ -259,37 +259,39 @@ public class TestCommonMutations
 		_Events events = new _Events();
 		List<IMutationBlock> out_mutation = new ArrayList<>();
 		List<PassiveEntity> out_passives = new ArrayList<>();
-		TickProcessingContext context = ContextBuilder.build()
-				.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
-				.sinks(new TickProcessingContext.IMutationSink() {
-						@Override
-						public boolean next(IMutationBlock mutation)
-						{
-							out_mutation.add(mutation);
-							return true;
-						}
-						@Override
-						public boolean future(IMutationBlock mutation, long millisToDelay)
-						{
-							out_mutation.add(mutation);
-							return true;
-						}
-					}, null)
-				.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
-					long lastAliveMillis = 1000L;
-					PassiveEntity passive = new PassiveEntity(out_passives.size() + 1
-						, type
-						, location
-						, velocity
-						, extendedData
-						, lastAliveMillis
-					);
-					out_passives.add(passive);
-				})
-				.eventSink(events)
-				.finish()
+		ContextBuilder builder = ContextBuilder.build()
+			.sinks(new TickProcessingContext.IMutationSink() {
+					@Override
+					public boolean next(IMutationBlock mutation)
+					{
+						out_mutation.add(mutation);
+						return true;
+					}
+					@Override
+					public boolean future(IMutationBlock mutation, long millisToDelay)
+					{
+						out_mutation.add(mutation);
+						return true;
+					}
+				}, null)
+			.passive((PassiveType type, EntityLocation location, EntityLocation velocity, Object extendedData) -> {
+				long lastAliveMillis = 1000L;
+				PassiveEntity passive = new PassiveEntity(out_passives.size() + 1
+					, type
+					, location
+					, velocity
+					, extendedData
+					, lastAliveMillis
+				);
+				out_passives.add(passive);
+			})
+			.eventSink(events)
 		;
 		
+		TickProcessingContext context = builder
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
+		;
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)30000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		events.expected(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, target, 0, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY));
@@ -331,6 +333,10 @@ public class TestCommonMutations
 		Assert.assertEquals(WATER_SOURCE, proxy.getBlock());
 		Assert.assertEquals((byte)1, proxy.getBlockDefinedByte());
 		
+		context = builder
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
+		;
 		proxy = new MutableBlockProxy(downOver, cuboid);
 		new MutationBlockUpdate(downOver).applyMutation(context, proxy);
 		proxy.writeBack(cuboid);
@@ -1157,29 +1163,31 @@ public class TestCommonMutations
 		cuboid.setData15(AspectRegistry.BLOCK, startGrass.getBlockAddress(), grass.item().number());
 		
 		MutationBlockGrowGroundCover[] out_mutations = new MutationBlockGrowGroundCover[1];
-		TickProcessingContext context = ContextBuilder.build()
-				.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
-				.sinks(new TickProcessingContext.IMutationSink() {
-					@Override
-					public boolean next(IMutationBlock mutation)
-					{
-						throw new AssertionError("Not expected in test");
-					}
-					@Override
-					public boolean future(IMutationBlock mutation, long millisToDelay)
-					{
-						// These are only for this one purpose.
-						Assert.assertEquals(MutationBlockGrowGroundCover.SPREAD_DELAY_MILLIS, millisToDelay);
-						Assert.assertNull(out_mutations[0]);
-						out_mutations[0] = (MutationBlockGrowGroundCover) mutation;
-						return true;
-					}
-				}, null)
-				.eventSink((EventRecord event) -> {})
-				.finish()
+		ContextBuilder builder = ContextBuilder.build()
+			.sinks(new TickProcessingContext.IMutationSink() {
+				@Override
+				public boolean next(IMutationBlock mutation)
+				{
+					throw new AssertionError("Not expected in test");
+				}
+				@Override
+				public boolean future(IMutationBlock mutation, long millisToDelay)
+				{
+					// These are only for this one purpose.
+					Assert.assertEquals(MutationBlockGrowGroundCover.SPREAD_DELAY_MILLIS, millisToDelay);
+					Assert.assertNull(out_mutations[0]);
+					out_mutations[0] = (MutationBlockGrowGroundCover) mutation;
+					return true;
+				}
+			}, null)
+			.eventSink((EventRecord event) -> {})
 		;
 		
 		// Test placing dirt next to existing grass.
+		TickProcessingContext context = builder
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
+		;
 		AbsoluteLocation besideGrass = startGrass.getRelative(1, 0, 0);
 		MutableBlockProxy proxy = new MutableBlockProxy(besideGrass, cuboid);
 		MutationBlockOverwriteByEntity write = new MutationBlockOverwriteByEntity(besideGrass, dirt, null, 1);
@@ -1212,6 +1220,10 @@ public class TestCommonMutations
 		Assert.assertEquals(grass.item().number(), cuboid.getData15(AspectRegistry.BLOCK, startDirt.getBlockAddress()));
 		
 		// Test placing dirt on top of existing grass.
+		context = builder
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
+		;
 		AbsoluteLocation aboveGrass = startGrass.getRelative(0, 0, 1);
 		cuboid.setData15(AspectRegistry.BLOCK, aboveGrass.getBlockAddress(), dirt.item().number());
 		proxy = new MutableBlockProxy(startGrass, cuboid);
@@ -1222,6 +1234,10 @@ public class TestCommonMutations
 		
 		// Test removing this dirt block to show that we re-spread it from besideGrass.
 		cuboid.setData15(AspectRegistry.BLOCK, aboveGrass.getBlockAddress(), ENV.special.AIR.item().number());
+		context = builder
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
+		;
 		proxy = new MutableBlockProxy(startGrass, cuboid);
 		blockUpdate = new MutationBlockUpdate(startGrass);
 		blockUpdate.applyMutation(context, proxy);
@@ -1366,8 +1382,7 @@ public class TestCommonMutations
 			cuboid.setData15(AspectRegistry.BLOCK, location.getBlockAddress(), voidBlock.item().number());
 		}
 		
-		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+		ContextBuilder builder = ContextBuilder.build()
 			.eventSink(new TickProcessingContext.IEventSink() {
 				@Override
 				public void post(EventRecord event)
@@ -1375,6 +1390,9 @@ public class TestCommonMutations
 					// Do nothing.
 				}
 			})
+		;
+		TickProcessingContext context = builder
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.finish()
 		;
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
@@ -1390,6 +1408,10 @@ public class TestCommonMutations
 		
 		// Invalidate one of the corners and run the re-check.
 		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 2, 4).getBlockAddress(), STONE.item().number());
+		context = builder
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
+		;
 		MutationBlockPeriodic periodic = new MutationBlockPeriodic(target);
 		proxy = new MutableBlockProxy(target, cuboid);
 		periodic.applyMutation(context, proxy);
@@ -1431,8 +1453,7 @@ public class TestCommonMutations
 		}
 		
 		Set<AbsoluteLocation> replaceLocations = new HashSet<>();
-		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+		ContextBuilder builder = ContextBuilder.build()
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)
@@ -1448,10 +1469,13 @@ public class TestCommonMutations
 					throw new AssertionError("Not expected in test");
 				}
 			}, null)
-			.finish()
 		;
 		
 		// Check the base when there is a keystone.
+		TickProcessingContext context = builder
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
+		;
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		MutationBlockUpdate update = new MutationBlockUpdate(target);
 		update.applyMutation(context, proxy);
@@ -1469,6 +1493,10 @@ public class TestCommonMutations
 		
 		// Check the base when there is a no keystone.
 		cuboid.setData15(AspectRegistry.BLOCK, keystoneLocation.getBlockAddress(), ENV.special.AIR.item().number());
+		context = builder
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
+		;
 		proxy = new MutableBlockProxy(target, cuboid);
 		update = new MutationBlockUpdate(target);
 		update.applyMutation(context, proxy);
@@ -1544,8 +1572,7 @@ public class TestCommonMutations
 		List<MutationBlockReplace> replace = new ArrayList<>();
 		Set<AbsoluteLocation> nextLocations = new HashSet<>();
 		Set<AbsoluteLocation> futureLocations = new HashSet<>();
-		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+		ContextBuilder builder = ContextBuilder.build()
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)
@@ -1574,10 +1601,13 @@ public class TestCommonMutations
 					return true;
 				}
 			}, null)
-			.finish()
 		;
 		
 		// Show that a periodic update will cause it to create the portal surface.
+		TickProcessingContext context = builder
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
+		;
 		MutableBlockProxy proxy = new MutableBlockProxy(keystoneLocation, cuboid);
 		MutationBlockPeriodic periodic = new MutationBlockPeriodic(keystoneLocation);
 		periodic.applyMutation(context, proxy);
@@ -1590,6 +1620,10 @@ public class TestCommonMutations
 		// Now, run these other mutations to build the portal.
 		nextLocations.clear();
 		futureLocations.clear();
+		context = builder
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
+		;
 		for (MutationBlockPlaceMultiBlock mutation : phase1)
 		{
 			proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
@@ -1597,6 +1631,10 @@ public class TestCommonMutations
 			Assert.assertTrue(proxy.didChange());
 			proxy.writeBack(cuboid);
 		}
+		context = builder
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
+		;
 		for (MutationBlockPhase2Multi mutation : phase2)
 		{
 			proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
@@ -1620,6 +1658,10 @@ public class TestCommonMutations
 		
 		// Destroy the corner and show that the the periodic update destroys the portal surface.
 		cuboid.setData15(AspectRegistry.BLOCK, keystoneLocation.getRelative(0, 2, 0).getBlockAddress(), ENV.special.AIR.item().number());
+		context = builder
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
+		;
 		proxy = new MutableBlockProxy(keystoneLocation, cuboid);
 		periodic = new MutationBlockPeriodic(keystoneLocation);
 		periodic.applyMutation(context, proxy);
@@ -1940,9 +1982,8 @@ public class TestCommonMutations
 		
 		List<IMutationBlock> nextOut = new ArrayList<>();
 		List<IMutationBlock> futureOut = new ArrayList<>();
-		TickProcessingContext context = ContextBuilder.build()
+		ContextBuilder builder = ContextBuilder.build()
 			.tick(200L)
-			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
 			.sinks(new TickProcessingContext.IMutationSink() {
 				@Override
 				public boolean next(IMutationBlock mutation)
@@ -1959,11 +2000,14 @@ public class TestCommonMutations
 					return true;
 				}
 			}, null)
-			.finish()
 		;
 		
 		// Keystone blocks use the MutationBlockPeriodic since they are composite keystones (and all composites use this
 		// helper) so synthesize one of those here to show portal activation.
+		TickProcessingContext context = builder
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
+		;
 		MutationBlockPeriodic periodic = new MutationBlockPeriodic(keystoneLocation);
 		MutableBlockProxy proxy = new MutableBlockProxy(keystoneLocation, cuboid);
 		periodic.applyMutation(context, proxy);
@@ -1987,6 +2031,10 @@ public class TestCommonMutations
 			Assert.assertTrue(inner.didChange());
 			inner.writeBack(cuboid);
 		}
+		context = builder
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
+		;
 		for (IMutationBlock mutation : futureList)
 		{
 			MutableBlockProxy inner = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);

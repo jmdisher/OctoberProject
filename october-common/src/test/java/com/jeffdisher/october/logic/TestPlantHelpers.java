@@ -201,6 +201,10 @@ public class TestPlantHelpers
 		proxy.writeBack(cuboid);
 		
 		// Set the block dry.
+		context = ContextBuilder.build()
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
+		;
 		cuboid.setData15(AspectRegistry.BLOCK, water.getBlockAddress(), ENV.special.AIR.item().number());
 		proxy = new MutableBlockProxy(soil, cuboid);
 		PlantHelpers.runSoilHydrationPeriodic(ENV, context, water, proxy);

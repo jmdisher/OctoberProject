@@ -162,6 +162,10 @@ public class TestCompositeRegistry
 		cuboid.setData15(AspectRegistry.BLOCK, centre.getRelative(0, -2, 0).getBlockAddress(), PEDESTAL.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, centre.getRelative(0, 2, 0).getBlockAddress(), PEDESTAL.item().number());
 		
+		context = ContextBuilder.build()
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			.finish()
+		;
 		List<AbsoluteLocation> extensions = ENV.composites.getExtensionsIfValid(ENV, context, centre, proxy);
 		Assert.assertEquals(4, extensions.size());
 		for (AbsoluteLocation loc : extensions)

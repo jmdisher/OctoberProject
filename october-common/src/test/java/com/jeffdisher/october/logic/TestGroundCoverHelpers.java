@@ -115,11 +115,13 @@ public class TestGroundCoverHelpers
 		
 		// Valid source should spread.
 		cuboid.setData15(AspectRegistry.BLOCK, centre.getRelative(0, 1, 1).getBlockAddress(), GRASS.item().number());
+		previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
 		potential = GroundCoverHelpers.findPotentialGroundCoverType(ENV, previousBlockLookUp, centre, DIRT);
 		Assert.assertEquals(GRASS, potential);
 		
 		// Should not spread if covered.
 		cuboid.setData15(AspectRegistry.BLOCK, centre.getRelative(0, 0, 1).getBlockAddress(), DIRT.item().number());
+		previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
 		potential = GroundCoverHelpers.findPotentialGroundCoverType(ENV, previousBlockLookUp, centre, DIRT);
 		Assert.assertNull(potential);
 	}
@@ -140,6 +142,7 @@ public class TestGroundCoverHelpers
 		
 		// Should revert if covered.
 		cuboid.setData15(AspectRegistry.BLOCK, centre.getRelative(0, 0, 1).getBlockAddress(), DIRT.item().number());
+		previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
 		potential = GroundCoverHelpers.checkRevertGroundCover(ENV, previousBlockLookUp, centre, GRASS);
 		Assert.assertEquals(DIRT, potential);
 	}

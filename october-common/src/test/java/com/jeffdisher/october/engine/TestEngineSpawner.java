@@ -289,6 +289,10 @@ public class TestEngineSpawner
 		
 		// If we increase the space, the spawn should now succeed.
 		targetCuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 5, 6), AIR.item().number());
+		context = builder
+			.lookups(ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> completedCuboids.get(address)), null, null)
+			.finish()
+		;
 		EngineSpawner.trySpawnCreature(context
 			, EntityCollection.emptyCollection()
 			, completedCuboids
