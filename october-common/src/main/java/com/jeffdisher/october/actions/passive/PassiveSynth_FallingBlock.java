@@ -82,6 +82,12 @@ public class PassiveSynth_FallingBlock
 				}
 				return completed;
 			}
+			@Override
+			public AbsoluteLocation findFirstMatch(AbsoluteLocation centre, int horizontal, int vertical, Block type)
+			{
+				// This is not used in this specific use-case.
+				throw Assert.unreachable();
+			}
 		};
 		float seconds = (float)context.millisPerTick / EntityMovementHelpers.FLOAT_MILLIS_PER_SECOND;
 		ViscosityReader reader = new ViscosityReader(env, filterLookup);

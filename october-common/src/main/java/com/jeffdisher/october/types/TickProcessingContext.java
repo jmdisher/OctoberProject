@@ -286,6 +286,21 @@ public class TickProcessingContext
 		 * @return A map of BlockProxy instances (missing any not present in the previous tick snapshot).
 		 */
 		Map<AbsoluteLocation, BlockProxy> readBlockBatch(Collection<AbsoluteLocation> locations);
+		/**
+		 * Searches the blocks within horizontal x/y and vertical z blocks of the given centre, returning the first
+		 * location within this range which has a block of the given type.  Note that these ranges are inclusive so, for
+		 * example, a horizontal of 1 and a vertical of 0 will search 9 blocks.
+		 * To be clear, "first" match is implementation-defined and the caller should assume it is a random match within
+		 * the given region.  If there are any matches, one of them will be chosen, if null is returned, it is because
+		 * there were no matches in the range.
+		 * 
+		 * @param centre The centre-point of the search volume.
+		 * @param horizontal The horizontal (x/y) distance from the centre where the search should be performed.
+		 * @param vertical The vertical (z) distance from the centre where the search should be performed.
+		 * @param type The block type to check.
+		 * @return An implementation-defined matching block type location or null if there are no matches in the region.
+		 */
+		AbsoluteLocation findFirstMatch(AbsoluteLocation centre, int horizontal, int vertical, Block type);
 	}
 
 	/**

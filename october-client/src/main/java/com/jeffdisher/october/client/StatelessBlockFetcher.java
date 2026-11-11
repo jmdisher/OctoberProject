@@ -12,10 +12,12 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Pair;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -65,6 +67,13 @@ public class StatelessBlockFetcher implements TickProcessingContext.IBlockFetche
 		// Collect the per-cuboid lookups, first.
 		Map<CuboidAddress, List<BlockAddress>> split = _splitLocationsByCuboid(locations);
 		return _fetchProxiesByCuboid(split);
+	}
+
+	@Override
+	public AbsoluteLocation findFirstMatch(AbsoluteLocation centre, int horizontal, int vertical, Block type)
+	{
+		// This is not currently used in the client-side logic.
+		throw Assert.unreachable();
 	}
 
 

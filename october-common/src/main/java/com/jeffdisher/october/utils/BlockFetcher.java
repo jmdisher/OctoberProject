@@ -14,6 +14,7 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -207,9 +208,113 @@ public class BlockFetcher implements TickProcessingContext.IBlockFetcher
 		return completed;
 	}
 
+	@Override
+	public AbsoluteLocation findFirstMatch(AbsoluteLocation centre, int horizontal, int vertical, Block type)
+	{
+		// Note that these "edge" cases, here, are inclusive.
+		AbsoluteLocation base = centre.getRelative(-horizontal, -horizontal, -vertical);
+		AbsoluteLocation edge = centre.getRelative(horizontal, horizontal, vertical);
+		CuboidAddress lowCuboid = base.getCuboidAddress();
+		CuboidAddress highCuboid = edge.getCuboidAddress();
+		BlockAddress baseBlock = base.getBlockAddress();
+		BlockAddress edgeBlock = edge.getBlockAddress();
+		short blockValue = type.item().number();
+		
+		AbsoluteLocation result = null;
+		for (int z = lowCuboid.z(); (null == result) && (z <= highCuboid.z()); ++z)
+		{
+			byte lowZ = (z == lowCuboid.z())
+				? baseBlock.z()
+				: 0
+			;
+			byte highZ = (z == highCuboid.z())
+				? edgeBlock.z()
+				: (Encoding.CUBOID_EDGE_SIZE - 1)
+			;
+			for (int y = lowCuboid.y(); (null == result) && (y <= highCuboid.y()); ++y)
+			{
+				byte lowY = (y == lowCuboid.y())
+					? baseBlock.y()
+					: 0
+				;
+				byte highY = (y == highCuboid.y())
+					? edgeBlock.y()
+					: (Encoding.CUBOID_EDGE_SIZE - 1)
+				;
+				for (int x = lowCuboid.x(); (null == result) && (x <= highCuboid.x()); ++x)
+				{
+					byte lowX = (x == lowCuboid.x())
+						? baseBlock.x()
+						: 0
+					;
+					byte highX = (x == highCuboid.x())
+						? edgeBlock.x()
+						: (Encoding.CUBOID_EDGE_SIZE - 1)
+					;
+					
+					CuboidAddress address = CuboidAddress.fromInt(x, y, z);
+					IReadOnlyCuboidData cuboid = _cuboidLookup.apply(address);
+					if (null != cuboid)
+					{
+						// TODO:  In the future, we should make a high-level search request to the cuboid but this is a half-step to implementing THIS function.
+						BlockAddress low = new BlockAddress(lowX, lowY, lowZ);
+						BlockAddress high = new BlockAddress(highX, highY, highZ);
+						result = _findFirstMatchInCuboid(cuboid, low, high, blockValue);
+					}
+				}
+			}
+		}
+		return result;
+	}
+
 	public Map<AbsoluteLocation, BlockProxy> extractCache()
 	{
 		return _cache;
+	}
+
+
+	private static AbsoluteLocation _findFirstMatchInCuboid(IReadOnlyCuboidData cuboid
+		, BlockAddress low
+		, BlockAddress high
+		, short blockValue
+	)
+	{
+		// We will create an array of BlockAddress instances and load them for the search.
+		List<BlockAddress> list = new ArrayList<>();
+		for (byte z = low.z(); z <= high.z(); ++z)
+		{
+			for (byte y = low.y(); y <= high.y(); ++y)
+			{
+				for (byte x = low.x(); x <= high.x(); ++x)
+				{
+					BlockAddress address = new BlockAddress(x, y, z);
+					list.add(address);
+				}
+			}
+		}
+		
+		// Sort these for a batch.
+		BlockAddress[] array = list.toArray((int size) -> new BlockAddress[size]);
+		IReadOnlyCuboidData.BlockAddressBatchComparator comparator = new IReadOnlyCuboidData.BlockAddressBatchComparator();
+		Arrays.sort(array, comparator);
+		
+		// Get the raw block values, directly.
+		short[] blocks = cuboid.batchReadData15(AspectRegistry.BLOCK, array);
+		
+		// Walk the results and return the location of the first matching index.
+		int matchIndex = -1;
+		for (int i = 0; (-1 == matchIndex) && (i < blocks.length); ++i)
+		{
+			if (blockValue == blocks[i])
+			{
+				matchIndex=  i;
+			}
+		}
+		
+		return (matchIndex >= 0)
+			? cuboid.getCuboidAddress().getBase().relativeForBlock(array[matchIndex])
+			: null
+		;
 	}
 
 

@@ -1,9 +1,5 @@
 package com.jeffdisher.october.logic;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.mutations.CommonBlockMutationHelpers;
@@ -34,6 +30,9 @@ public class PlantHelpers
 
 	public static final byte BLOCK_DRY_BYTE = 0x0;
 	public static final byte BLOCK_HYDRATED_BYTE = 0x1;
+
+	public static final int PLANT_HYDRATION_RANGE_HORIZONTAL = 4;
+	public static final int PLANT_HYDRATION_RANGE_VERTICAL = 0;
 
 	/**
 	 * Used to check if the given block type is one which can grow.
@@ -110,27 +109,12 @@ public class PlantHelpers
 		Assert.assertTrue(env.special.blockTilledSoil == newBlock.getBlock());
 		
 		// We want to look for any water block within a 4-block square in the same z-level of this block.
-		List<AbsoluteLocation> locations = new ArrayList<>();
-		for (int y = -4; y <= 4; ++y)
-		{
-			for (int x = -4; x <= 4; ++x)
-			{
-				AbsoluteLocation one = location.getRelative(x, y, 0);
-				locations.add(one);
-			}
-		}
-		
-		// TODO:  This is very expensive so we might want to add a search helper and maybe some kind of cached result since we always recheck this when wet.
-		boolean foundWater = false;
-		Map<AbsoluteLocation, BlockProxy> proxies = context.previousBlockLookUp.readBlockBatch(locations);
-		for (BlockProxy proxy : proxies.values())
-		{
-			if (env.special.blockWaterSource == proxy.getBlock())
-			{
-				foundWater = true;
-				break;
-			}
-		}
+		AbsoluteLocation waterMatch = context.previousBlockLookUp.findFirstMatch(location
+			, PLANT_HYDRATION_RANGE_HORIZONTAL
+			, PLANT_HYDRATION_RANGE_VERTICAL
+			, env.special.blockWaterSource
+		);
+		boolean foundWater = (null != waterMatch);
 		
 		// We use the block-defined byte for this, but only the lowest bit (maybe use the others for fertilizer, in the future).
 		// NOTE:  This is done instead of a new block type (since that doesn't seem quite right) or a new flag (since that would only apply to this case).
