@@ -327,4 +327,58 @@ public class TestCuboidData
 		Assert.assertEquals(address5, sorted[7]);
 		Assert.assertEquals(address6, sorted[8]);
 	}
+
+	@Test
+	public void findMatch()
+	{
+		BlockAddress stone1 = BlockAddress.fromInt(1, 2, 3);
+		BlockAddress stone2 = BlockAddress.fromInt(29, 30, 31);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		short stoneNumber = STONE_ITEM.number();
+		input.setData15(AspectRegistry.BLOCK, stone1, stoneNumber);
+		input.setData15(AspectRegistry.BLOCK, stone2, stoneNumber);
+		
+		BlockAddress match = input.findFirstData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0), BlockAddress.fromInt(31, 31, 31), stoneNumber);
+		Assert.assertEquals(stone1, match);
+		
+		match = input.findFirstData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0), BlockAddress.fromInt(0, 1, 2), stoneNumber);
+		Assert.assertNull(match);
+		
+		match = input.findFirstData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0), BlockAddress.fromInt(1, 2, 3), stoneNumber);
+		Assert.assertEquals(stone1, match);
+		
+		match = input.findFirstData15(AspectRegistry.BLOCK, BlockAddress.fromInt(2, 3, 4), BlockAddress.fromInt(28, 29, 30), stoneNumber);
+		Assert.assertNull(match);
+		
+		match = input.findFirstData15(AspectRegistry.BLOCK, BlockAddress.fromInt(28, 28, 28), BlockAddress.fromInt(31, 31, 31), stoneNumber);
+		Assert.assertEquals(stone2, match);
+	}
+
+	@Test
+	public void findMatch2()
+	{
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		short stoneNumber = STONE_ITEM.number();
+		short airNumber = ENV.special.AIR.item().number();
+		
+		BlockAddress match = input.findFirstData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0), BlockAddress.fromInt(31, 31, 31), stoneNumber);
+		Assert.assertNull(match);
+		
+		match = input.findFirstData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0), BlockAddress.fromInt(0, 1, 2), stoneNumber);
+		Assert.assertNull(match);
+		
+		match = input.findFirstData15(AspectRegistry.BLOCK, BlockAddress.fromInt(2, 3, 4), BlockAddress.fromInt(28, 29, 30), stoneNumber);
+		Assert.assertNull(match);
+		
+		match = input.findFirstData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0), BlockAddress.fromInt(31, 31, 31), airNumber);
+		Assert.assertEquals(BlockAddress.fromInt(0, 0, 0), match);
+		
+		match = input.findFirstData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0), BlockAddress.fromInt(0, 1, 2), airNumber);
+		Assert.assertEquals(BlockAddress.fromInt(0, 0, 0), match);
+		
+		match = input.findFirstData15(AspectRegistry.BLOCK, BlockAddress.fromInt(2, 3, 4), BlockAddress.fromInt(28, 29, 30), airNumber);
+		Assert.assertEquals(BlockAddress.fromInt(2, 3, 4), match);
+	}
 }

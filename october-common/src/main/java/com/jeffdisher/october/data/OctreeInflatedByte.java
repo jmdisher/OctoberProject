@@ -172,6 +172,13 @@ public class OctreeInflatedByte implements IOctree<Byte>
 	}
 
 	@Override
+	public BlockAddress findFirstMatch(BlockAddress low, BlockAddress high, Object value)
+	{
+		// We don't use this.
+		throw Assert.unreachable();
+	}
+
+	@Override
 	public void walkData(IWalkerCallback<Byte> callback, Byte valueToSkip)
 	{
 		byte skip = valueToSkip.byteValue();

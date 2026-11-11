@@ -27,6 +27,19 @@ public interface IReadOnlyCuboidData
 	short[] batchReadData15(Aspect<Short, ?> type, BlockAddress[] addresses);
 
 	/**
+	 * Searches for the given value between low and high, inclusive, in the octree of the requested type.
+	 * If an instance of the value is found in this range, the location of first match is returned.  "First match" is
+	 * considered implementation-dependent.  If null if returned, it means there are no matches in the given range.
+	 * 
+	 * @param type The aspect to read.
+	 * @param low The low x/y/z corner of the search (inclusive).
+	 * @param high The high x/y/z corner of the search (inclusive).
+	 * @param value The value to find.
+	 * @return The location of a match in the given range or null if there is no match.
+	 */
+	BlockAddress findFirstData15(Aspect<Short, ?> type, BlockAddress low, BlockAddress high, short value);
+
+	/**
 	 * Walks the tree used to represent the associated aspect, issuing callbacks for every data entry found (in no
 	 * particular order), so long as it isn't valueToSkip.
 	 * 

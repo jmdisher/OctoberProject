@@ -76,6 +76,13 @@ public class OctreeObject<T> implements IOctree<T>
 	}
 
 	@Override
+	public BlockAddress findFirstMatch(BlockAddress low, BlockAddress high, Object value)
+	{
+		// We don't use this.
+		throw Assert.unreachable();
+	}
+
+	@Override
 	public void walkData(IWalkerCallback<T> callback, T valueToSkip)
 	{
 		// In this implementation, it is only appropriate to skip null values (since we can't evaluate equality and have no other use-case).

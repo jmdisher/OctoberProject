@@ -533,6 +533,47 @@ public class OctreeShort implements IOctree<Short>
 	}
 
 	@Override
+	public BlockAddress findFirstMatch(BlockAddress low, BlockAddress high, Object value)
+	{
+		short safeValue = ((Short)value).shortValue();
+		BlockAddress match = null;
+		
+		// We do this search by walking the octree and checking if any match is within the range we were given.
+		if (null != _topLevelTrees)
+		{
+			// Walk the sub-trees until we find a match.
+			byte size = 16;
+			for (int i = 0; (null == match) && (i < _topLevelTrees.length); ++i)
+			{
+				byte x = (byte)((i & 0x4) * 4);
+				byte y = (byte)((i & 0x2) * 8);
+				byte z = (byte)((i & 0x1) * 16);
+				byte highX = (byte)(x + size - 1);
+				byte highY = (byte)(y + size - 1);
+				byte highZ = (byte)(z + size - 1);
+				
+				// We can skip entire subtrees so check that, here.
+				if (((highX >= low.x()) && (x <= high.x()))
+					&& ((highY >= low.y()) && (y <= high.y()))
+					&& ((highZ >= low.z()) && (z <= high.z()))
+				)
+				{
+					match = _findFirstMatch(ByteBuffer.wrap(_topLevelTrees[i]), x, y, z, size, low, high, safeValue);
+				}
+			}
+		}
+		else
+		{
+			// If this matches, just pick the low end.
+			if (safeValue == _inlineCompact)
+			{
+				match = low;
+			}
+		}
+		return match;
+	}
+
+	@Override
 	public void walkData(IWalkerCallback<Short> callback, Short valueToSkip)
 	{
 		short skip = valueToSkip.shortValue();
@@ -1169,6 +1210,53 @@ public class OctreeShort implements IOctree<Short>
 		int targetZ = ((thisZ - baseZ) < half) ? 0 : 1;
 		int treesToSkipAtThisLevel = (targetX * 4) + (targetY * 2) + targetZ;
 		return treesToSkipAtThisLevel;
+	}
+
+	private BlockAddress _findFirstMatch(ByteBuffer buffer, byte x, byte y, byte z, byte size, BlockAddress low, BlockAddress high, short value)
+	{
+		BlockAddress match = null;
+		
+		short oldValue = _loadHeader(buffer);
+		if (oldValue >= 0)
+		{
+			// Inline tree - this is the case we actually care about.
+			if (oldValue == value)
+			{
+				// This matches so see if there is overlap with our range and take the max of the low values.
+				byte highX = (byte)(x + size - 1);
+				byte highY = (byte)(y + size - 1);
+				byte highZ = (byte)(z + size - 1);
+				if (((highX >= low.x()) && (x <= high.x()))
+					&& ((highY >= low.y()) && (y <= high.y()))
+					&& ((highZ >= low.z()) && (z <= high.z()))
+				)
+				{
+					match = BlockAddress.fromInt(Math.max(x, low.x())
+						, Math.max(y, low.y())
+						, Math.max(z, low.z())
+					);
+				}
+			}
+		}
+		else
+		{
+			// Walk subtrees.
+			byte subSize = (byte)(size / 2);
+			for (byte i = 0; (null == match) && (i < 2); ++i)
+			{
+				for (byte j = 0; (null == match) && (j < 2); ++j)
+				{
+					for (byte k = 0; (null == match) && (k < 2); ++k)
+					{
+						byte subX = (byte)(x + (i * subSize));
+						byte subY = (byte)(y + (j * subSize));
+						byte subZ = (byte)(z + (k * subSize));
+						match = _findFirstMatch(buffer, subX, subY, subZ, subSize, low, high, value);
+					}
+				}
+			}
+		}
+		return match;
 	}
 
 

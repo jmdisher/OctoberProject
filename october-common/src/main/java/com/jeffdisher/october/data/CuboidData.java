@@ -134,6 +134,18 @@ public class CuboidData implements IReadOnlyCuboidData
 		return data;
 	}
 
+	@Override
+	public BlockAddress findFirstData15(Aspect<Short, ?> type, BlockAddress low, BlockAddress high, short value)
+	{
+		// Verify the range of the requested blocks.
+		Assert.assertTrue(low.x() <= high.x());
+		Assert.assertTrue(low.y() <= high.y());
+		Assert.assertTrue(low.z() <= high.z());
+		
+		IOctree<Short> tree = type.octreeType().cast(_data[type.index()]);
+		return tree.findFirstMatch(low, high, value);
+	}
+
 	/**
 	 * Writes several 15-bit shorts at the same time.
 	 * Note that the array of addresses given must contain at least 1 element, must be in the "batch sorted order", and

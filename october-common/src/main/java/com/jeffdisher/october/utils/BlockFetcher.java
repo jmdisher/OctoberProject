@@ -256,10 +256,13 @@ public class BlockFetcher implements TickProcessingContext.IBlockFetcher
 					IReadOnlyCuboidData cuboid = _cuboidLookup.apply(address);
 					if (null != cuboid)
 					{
-						// TODO:  In the future, we should make a high-level search request to the cuboid but this is a half-step to implementing THIS function.
 						BlockAddress low = new BlockAddress(lowX, lowY, lowZ);
 						BlockAddress high = new BlockAddress(highX, highY, highZ);
-						result = _findFirstMatchInCuboid(cuboid, low, high, blockValue);
+						BlockAddress match = cuboid.findFirstData15(AspectRegistry.BLOCK, low, high, blockValue);
+						if (null != match)
+						{
+							result = cuboid.getCuboidAddress().getBase().relativeForBlock(match);
+						}
 					}
 				}
 			}
@@ -270,51 +273,6 @@ public class BlockFetcher implements TickProcessingContext.IBlockFetcher
 	public Map<AbsoluteLocation, BlockProxy> extractCache()
 	{
 		return _cache;
-	}
-
-
-	private static AbsoluteLocation _findFirstMatchInCuboid(IReadOnlyCuboidData cuboid
-		, BlockAddress low
-		, BlockAddress high
-		, short blockValue
-	)
-	{
-		// We will create an array of BlockAddress instances and load them for the search.
-		List<BlockAddress> list = new ArrayList<>();
-		for (byte z = low.z(); z <= high.z(); ++z)
-		{
-			for (byte y = low.y(); y <= high.y(); ++y)
-			{
-				for (byte x = low.x(); x <= high.x(); ++x)
-				{
-					BlockAddress address = new BlockAddress(x, y, z);
-					list.add(address);
-				}
-			}
-		}
-		
-		// Sort these for a batch.
-		BlockAddress[] array = list.toArray((int size) -> new BlockAddress[size]);
-		IReadOnlyCuboidData.BlockAddressBatchComparator comparator = new IReadOnlyCuboidData.BlockAddressBatchComparator();
-		Arrays.sort(array, comparator);
-		
-		// Get the raw block values, directly.
-		short[] blocks = cuboid.batchReadData15(AspectRegistry.BLOCK, array);
-		
-		// Walk the results and return the location of the first matching index.
-		int matchIndex = -1;
-		for (int i = 0; (-1 == matchIndex) && (i < blocks.length); ++i)
-		{
-			if (blockValue == blocks[i])
-			{
-				matchIndex=  i;
-			}
-		}
-		
-		return (matchIndex >= 0)
-			? cuboid.getCuboidAddress().getBase().relativeForBlock(array[matchIndex])
-			: null
-		;
 	}
 
 

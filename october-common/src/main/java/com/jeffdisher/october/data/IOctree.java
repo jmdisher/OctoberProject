@@ -50,6 +50,18 @@ public interface IOctree<T>
 	void writeBatch(BlockAddress[] addresses, Object arrayType);
 
 	/**
+	 * Searches for the given value between low and high, inclusive, returning the first location where the given value
+	 * is found.  "First match" is considered implementation-dependent.  If null if returned, it means there are no
+	 * matches in the given range.
+	 * 
+	 * @param low The low x/y/z corner of the search (inclusive).
+	 * @param high The high x/y/z corner of the search (inclusive).
+	 * @param value The value to find.
+	 * @return The location of a match in the given range or null if there is no match.
+	 */
+	BlockAddress findFirstMatch(BlockAddress low, BlockAddress high, Object value);
+
+	/**
 	 * Walks the tree, issuing callbacks for every data entry found (in no particular order), so long as it isn't
 	 * valueToSkip.
 	 * 
