@@ -410,12 +410,18 @@ public class CreatureLogic
 			CreatureEntity.MovementPlan movementPlan = mutable.movementPlan;
 			List<PathLocation> fullPlan = new ArrayList<>(movementPlan.fullPlan());
 			fullPlan.remove(0);
-			mutable.movementPlan = new CreatureEntity.MovementPlan(Collections.unmodifiableList(fullPlan)
-				, movementPlan.targetEntityId()
-				, movementPlan.targetPreviousLocation()
-				, movementPlan.directLocation()
-				, movementPlan.intensity()
-			);
+			Assert.assertTrue(null == movementPlan.directLocation);
+			if (CreatureEntity.NO_TARGET_ENTITY_ID != movementPlan.targetEntityId)
+			{
+				mutable.movementPlan = new PlanWithTarget(fullPlan
+					, movementPlan.targetEntityId
+					, movementPlan.targetPreviousLocation
+				);
+			}
+			else
+			{
+				mutable.movementPlan = new PlanNoTarget(fullPlan, movementPlan.intensity);
+			}
 		}
 		
 		return actionProduced;
@@ -591,15 +597,7 @@ public class CreatureLogic
 		, EntityActionSimpleMove.Intensity intensity
 	)
 	{
-		Assert.assertTrue(!path.isEmpty());
-		
-		EntityLocation directLocation = null;
-		return new CreatureEntity.MovementPlan(path
-			, CreatureEntity.NO_TARGET_ENTITY_ID
-			, null
-			, directLocation
-			, intensity
-		);
+		return new PlanNoTarget(path, intensity);
 	}
 
 	private static CreatureEntity.MovementPlan _planWithDistantTarget(List<PathLocation> path
@@ -607,63 +605,28 @@ public class CreatureLogic
 		, EntityLocation targetPreviousLocation
 	)
 	{
-		Assert.assertTrue(!path.isEmpty());
-		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId);
-		Assert.assertTrue(null != targetPreviousLocation);
-		
-		EntityLocation directLocation = null;
-		return new CreatureEntity.MovementPlan(path
-			, targetEntityId
-			, targetPreviousLocation
-			, directLocation
-			, EntityActionSimpleMove.Intensity.WALKING
-		);
+		return new PlanWithTarget(path, targetEntityId, targetPreviousLocation);
 	}
 
 	private static CreatureEntity.MovementPlan _planWithNearTarget(int targetEntityId
 		, EntityLocation targetPreviousLocation
 	)
 	{
-		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId);
-		Assert.assertTrue(null != targetPreviousLocation);
-		
-		// Switch modes to use the previous location as the direct location since this is "near".
-		EntityLocation directLocation = targetPreviousLocation;
-		return new CreatureEntity.MovementPlan(null
-			, targetEntityId
-			, targetPreviousLocation
-			, directLocation
-			, EntityActionSimpleMove.Intensity.WALKING
-		);
+		return new DirectWithTarget(targetEntityId, targetPreviousLocation);
 	}
 
 	private static CreatureEntity.MovementPlan _planWithInRangeTarget(int targetEntityId
 		, EntityLocation targetPreviousLocation
 	)
 	{
-		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId);
-		Assert.assertTrue(null != targetPreviousLocation);
-		
-		return new CreatureEntity.MovementPlan(null
-			, targetEntityId
-			, targetPreviousLocation
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
-		);
+		return new NearToTarget(targetEntityId, targetPreviousLocation);
 	}
 
 	private static CreatureEntity.MovementPlan _planDirectWithoutTarget(EntityLocation directLocation
 		, EntityActionSimpleMove.Intensity intensity
 	)
 	{
-		Assert.assertTrue(null != directLocation);
-		
-		return new CreatureEntity.MovementPlan(null
-			, CreatureEntity.NO_TARGET_ENTITY_ID
-			, null
-			, directLocation
-			, intensity
-		);
+		return new DirectNoTarget(directLocation, intensity);
 	}
 
 	private static CreatureEntity.MovementPlan _planDirectWithDistantTarget(int targetEntityId
@@ -671,16 +634,7 @@ public class CreatureLogic
 		, EntityLocation directLocation
 	)
 	{
-		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId);
-		Assert.assertTrue(null != targetPreviousLocation);
-		Assert.assertTrue(null != directLocation);
-		
-		return new CreatureEntity.MovementPlan(null
-			, targetEntityId
-			, targetPreviousLocation
-			, directLocation
-			, EntityActionSimpleMove.Intensity.WALKING
-		);
+		return new DirectWithDistantTarget(directLocation, targetEntityId, targetPreviousLocation);
 	}
 
 	private static void _updateExistingMovementPlanState(TickProcessingContext context

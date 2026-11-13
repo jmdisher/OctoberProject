@@ -73,23 +73,45 @@ public record CreatureEntity(int id
 	) {}
 
 	/**
-	 * Contains information related to the movement plan the creature is following.  This includes representations of
-	 * the planned path but also information related to the target (if there is one).
+	 * NOTE:  This will eventually be replaced by an interface.  Using this abstract class in such a way is only for
+	 * incremental design changes.
 	 */
-	public static record MovementPlan(
+	public static abstract class MovementPlan
+	{
 		// The full plan, starting with the next step the creature must enter.  Can be null but never empty.
-		List<PathLocation> fullPlan
+		public final List<PathLocation> fullPlan;
 		// The ID of the entity this creature is currently targeting (or NO_TARGET_ENTITY_ID if none).
-		, int targetEntityId
+		public final int targetEntityId;
 		// The last location of the target which was used to determine the movementPlan (can be null if we have no
 		// target or aren't tracking the current one).
-		, EntityLocation targetPreviousLocation
+		public final EntityLocation targetPreviousLocation;
 		// In the cases where we need a very short walk, or where we are going to take a short-cut through fullPlan, we
 		// use this location.
-		, EntityLocation directLocation
+		public final EntityLocation directLocation;
 		// The intensity of movement to apply if there is any.
-		, EntityActionSimpleMove.Intensity intensity
-	) {}
+		public final EntityActionSimpleMove.Intensity intensity;
+		
+		// These accessors are just here to meet the external assumptions that this has a record shape.
+		public final List<PathLocation> fullPlan() { return this.fullPlan; }
+		public final int targetEntityId() { return this.targetEntityId; }
+		public final EntityLocation targetPreviousLocation() { return this.targetPreviousLocation; }
+		public final EntityLocation directLocation() { return this.directLocation; }
+		public final EntityActionSimpleMove.Intensity intensity() { return this.intensity; }
+		
+		protected MovementPlan(List<PathLocation> fullPlan
+			, int targetEntityId
+			, EntityLocation targetPreviousLocation
+			, EntityLocation directLocation
+			, EntityActionSimpleMove.Intensity intensity
+		)
+		{
+			this.fullPlan = fullPlan;
+			this.targetEntityId = targetEntityId;
+			this.targetPreviousLocation = targetPreviousLocation;
+			this.directLocation = directLocation;
+			this.intensity = intensity;
+		}
+	}
 
 	/**
 	 * A helper to handle the common case of needing to create one of these with default/starting values.

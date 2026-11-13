@@ -374,21 +374,11 @@ public class TestCreatureLogic
 		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, 0L);
 		// Start with them both in a love mode.
 		MutableCreature mutable = MutableCreature.existing(father);
-		mutable.movementPlan = new CreatureEntity.MovementPlan(null
-			, mother.id()
-			, null
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
-		);
+		mutable.movementPlan = new NearToTarget(mother.id(), mother.location());
 		mutable.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(true, null, 0L));
 		father = mutable.freeze();
 		mutable = MutableCreature.existing(mother);
-		mutable.movementPlan = new CreatureEntity.MovementPlan(null
-			, father.id()
-			, null
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
-		);
+		mutable.movementPlan = new NearToTarget(father.id(), father.location());
 		mutable.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(true, null, 0L));
 		mother = mutable.freeze();
 		Map<Integer, CreatureEntity> creatures = new HashMap<>();
@@ -605,12 +595,7 @@ public class TestCreatureLogic
 		
 		// Start with the orc targeting the player.
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
-		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(null
-			, player.id()
-			, null
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
-		);
+		mutableOrc.movementPlan = new DirectWithTarget(player.id(), player.location());
 		
 		// The first attempt to attack should fail since we are still out of range.
 		EntityCollection collection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc));
@@ -781,12 +766,7 @@ public class TestCreatureLogic
 		;
 		
 		// In the bug, the orc had the entity as a target but no movement plan.
-		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(null
-			, entityId
-			, location
-			, location
-			, EntityActionSimpleMove.Intensity.WALKING
-		);
+		mutableOrc.movementPlan = new DirectWithTarget(entityId, location);
 		entities.put(player.id(), MinimalEntity.fromEntity(player));
 		entities.put(orc.id(), MinimalEntity.fromCreature(orc));
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
@@ -835,10 +815,7 @@ public class TestCreatureLogic
 		MutableCreature mutable = MutableCreature.existing(cow);
 		mutable.newVelocity = startVelocity;
 		PathLocation waterPath = PathLocation.test_raw(waterLocation, 0, 0, 0);
-		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(waterPath.getRelative(0, 0, 1), waterPath.getRelative(-1, 0, 1))
-			, CreatureEntity.NO_TARGET_ENTITY_ID
-			, null
-			, null
+		mutable.movementPlan = new PlanNoTarget(List.of(waterPath.getRelative(0, 0, 1), waterPath.getRelative(-1, 0, 1))
 			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
 		);
 		
@@ -1005,12 +982,7 @@ public class TestCreatureLogic
 		
 		// Start with the skeleton targeting the player.
 		MutableCreature mutableSkeleton = MutableCreature.existing(skeleton);
-		mutableSkeleton.movementPlan = new CreatureEntity.MovementPlan(null
-			, player.id()
-			, null
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
-		);
+		mutableSkeleton.movementPlan = new NearToTarget(player.id(), player.location());
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(skeleton.id(), skeleton))
 			, mutableSkeleton
@@ -1132,10 +1104,7 @@ public class TestCreatureLogic
 		EntityLocation startLocation = new EntityLocation(4.7f, 4.99f, 1.0f);
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
-		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(PathLocation.test_raw(new AbsoluteLocation(4, 5, 1), 1, 0, 0))
-			, CreatureEntity.NO_TARGET_ENTITY_ID
-			, null
-			, null
+		mutable.movementPlan = new PlanNoTarget(List.of(PathLocation.test_raw(new AbsoluteLocation(4, 5, 1), 1, 0, 0))
 			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
 		);
 		
@@ -1169,10 +1138,7 @@ public class TestCreatureLogic
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
 		PathLocation pathBase = PathLocation.test_raw(new AbsoluteLocation(2, 3, 1), 0, 0, 0);
-		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase, pathBase.getRelative(1, 0, 0))
-			, CreatureEntity.NO_TARGET_ENTITY_ID
-			, null
-			, null
+		mutable.movementPlan = new PlanNoTarget(List.of(pathBase, pathBase.getRelative(1, 0, 0))
 			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
 		);
 		
@@ -1207,10 +1173,7 @@ public class TestCreatureLogic
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(cow);
 		PathLocation pathBase = PathLocation.test_raw(new AbsoluteLocation(30, 0, 1), 0, 0, 0);
-		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase, pathBase.getRelative(1, 0, 0))
-			, CreatureEntity.NO_TARGET_ENTITY_ID
-			, null
-			, null
+		mutable.movementPlan = new PlanNoTarget(List.of(pathBase, pathBase.getRelative(1, 0, 0))
 			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
 		);
 		
@@ -1262,11 +1225,9 @@ public class TestCreatureLogic
 			.finish()
 		;
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
-		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(PathLocation.forEntityBase(orcLocation).getRelative(1, 0, 0))
+		mutableOrc.movementPlan = new PlanWithTarget(List.of(PathLocation.forEntityBase(orcLocation).getRelative(1, 0, 0))
 			, player.id()
 			, playerLocation.getRelative(1.0f, 0.0f, 0.0f)
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc));
 		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableOrc);
@@ -1307,7 +1268,7 @@ public class TestCreatureLogic
 		// If the player did NOT move - change nothing.
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
 		PathLocation pathBase = PathLocation.forEntityBase(orcLocation);
-		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase.getRelative(1, 0, 0)
+		mutableOrc.movementPlan = new PlanWithTarget(List.of(pathBase.getRelative(1, 0, 0)
 				, pathBase.getRelative(2, 0, 0)
 				, pathBase.getRelative(2, 1, 0)
 				, pathBase.getRelative(2, 2, 0)
@@ -1316,8 +1277,6 @@ public class TestCreatureLogic
 			)
 			, player.id()
 			, playerLocation
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
@@ -1334,7 +1293,7 @@ public class TestCreatureLogic
 		
 		// If the player DID move - change path.
 		mutableOrc = MutableCreature.existing(orc);
-		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase.getRelative(1, 0, 0)
+		mutableOrc.movementPlan = new PlanWithTarget(List.of(pathBase.getRelative(1, 0, 0)
 				, pathBase.getRelative(2, 0, 0)
 				, pathBase.getRelative(2, 1, 0)
 				, pathBase.getRelative(2, 2, 0)
@@ -1343,8 +1302,6 @@ public class TestCreatureLogic
 			)
 			, player.id()
 			, playerLocation
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(movedPlayer, orc), null)
@@ -1361,7 +1318,7 @@ public class TestCreatureLogic
 		
 		// If the player DID disappear - clear path.
 		mutableOrc = MutableCreature.existing(orc);
-		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase.getRelative(1, 0, 0)
+		mutableOrc.movementPlan = new PlanWithTarget(List.of(pathBase.getRelative(1, 0, 0)
 				, pathBase.getRelative(2, 0, 0)
 				, pathBase.getRelative(2, 1, 0)
 				, pathBase.getRelative(2, 2, 0)
@@ -1370,8 +1327,6 @@ public class TestCreatureLogic
 			)
 			, player.id()
 			, playerLocation
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(null, orc), null)
@@ -1418,7 +1373,7 @@ public class TestCreatureLogic
 		
 		// Create the movement plan for the orc to move toward the player but show that they take no special action when at distance.
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
-		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(orcStartLocation.getRelative(1, 0, 0)
+		mutableOrc.movementPlan = new PlanWithTarget(List.of(orcStartLocation.getRelative(1, 0, 0)
 				, orcStartLocation.getRelative(2, 0, 0)
 				, orcStartLocation.getRelative(3, 0, 0)
 				, orcStartLocation.getRelative(4, 0, 0)
@@ -1429,8 +1384,6 @@ public class TestCreatureLogic
 			)
 			, player.id()
 			, playerLocation
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
@@ -1445,7 +1398,7 @@ public class TestCreatureLogic
 		
 		// Show that the target moved.
 		mutableOrc = MutableCreature.existing(orc);
-		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(orcStartLocation.getRelative(1, 0, 0)
+		mutableOrc.movementPlan = new PlanWithTarget(List.of(orcStartLocation.getRelative(1, 0, 0)
 				, orcStartLocation.getRelative(2, 0, 0)
 				, orcStartLocation.getRelative(3, 0, 0)
 				, orcStartLocation.getRelative(4, 0, 0)
@@ -1456,8 +1409,6 @@ public class TestCreatureLogic
 			)
 			, player.id()
 			, playerLocation
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(movedPlayer, orc), null)
@@ -1473,7 +1424,7 @@ public class TestCreatureLogic
 		// Show that we entered the next step (no direct).
 		mutableOrc = MutableCreature.existing(orc);
 		mutableOrc.newLocation = new EntityLocation(0.5f, 0.0f, 1.0f);
-		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(orcStartLocation.getRelative(1, 0, 0)
+		mutableOrc.movementPlan = new PlanWithTarget(List.of(orcStartLocation.getRelative(1, 0, 0)
 				, orcStartLocation.getRelative(1, 0, 1)
 				, orcStartLocation.getRelative(1, 0, 2)
 				, orcStartLocation.getRelative(2, 0, 2)
@@ -1486,8 +1437,6 @@ public class TestCreatureLogic
 			)
 			, elevatedPlayer.id()
 			, elevatedPlayerLocation
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(elevatedPlayer, orc), null)
@@ -1503,7 +1452,7 @@ public class TestCreatureLogic
 		// Show that we entered the next step (direct).
 		mutableOrc = MutableCreature.existing(orc);
 		mutableOrc.newLocation = new EntityLocation(0.5f, 0.0f, 1.0f);
-		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(List.of(orcStartLocation.getRelative(1, 0, 0)
+		mutableOrc.movementPlan = new PlanWithTarget(List.of(orcStartLocation.getRelative(1, 0, 0)
 				, orcStartLocation.getRelative(2, 0, 0)
 				, orcStartLocation.getRelative(3, 0, 0)
 				, orcStartLocation.getRelative(4, 0, 0)
@@ -1514,8 +1463,6 @@ public class TestCreatureLogic
 			)
 			, player.id()
 			, playerLocation
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
@@ -1564,12 +1511,7 @@ public class TestCreatureLogic
 		
 		// Try this for the case where there is a target.
 		MutableCreature mutableOrc = MutableCreature.existing(CreatureEntity.create(-1, ORC, orcLocation, 0L));
-		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(null
-			, player.id()
-			, playerLocation
-			, playerLocation
-			, EntityActionSimpleMove.Intensity.WALKING
-		);
+		mutableOrc.movementPlan = new DirectWithTarget(player.id(), player.location());
 		CreatureEntity orc = mutableOrc.freeze();
 		TickProcessingContext context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
@@ -1592,10 +1534,7 @@ public class TestCreatureLogic
 		
 		// Try the case where we are idly moving (no target).
 		mutableOrc = MutableCreature.existing(CreatureEntity.create(-1, ORC, orcLocation, 0L));
-		mutableOrc.movementPlan = new CreatureEntity.MovementPlan(null
-			, CreatureEntity.NO_TARGET_ENTITY_ID
-			, null
-			, idleLocation
+		mutableOrc.movementPlan = new DirectNoTarget(idleLocation
 			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
 		);
 		mutableOrc.nextMovementPlanMillis = CreatureLogic.MINIMUM_MILLIS_TO_ACTION;
@@ -1703,11 +1642,9 @@ public class TestCreatureLogic
 		Entity player = mutableEntity.freeze();
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(assigner.next(), COW, new EntityLocation(4.0f, 0.0f, 0.0f), 0L));
 		mutable.newExtendedData = new ExtensionLivestock.LivestockData(new CommonBreedingLogic.Data(false, null, 0L));
-		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(PathLocation.test_raw(new AbsoluteLocation(3, 0, 0), 0, 0, 0))
+		mutable.movementPlan = new PlanWithTarget(List.of(PathLocation.test_raw(new AbsoluteLocation(3, 0, 0), 0, 0, 0))
 			, player.id()
 			, player.location()
-			, player.location()
-			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		CreatureEntity cow0 = mutable.freeze();
 		mutable = MutableCreature.existing(CreatureEntity.create(assigner.next(), COW, new EntityLocation(8.0f, 0.0f, 0.0f), 0L));
@@ -1827,11 +1764,9 @@ public class TestCreatureLogic
 			, start1.getRelative(-3, 0, 2)
 			, start1.getRelative(-4, 0, 2)
 		);
-		mutable1.movementPlan = new CreatureEntity.MovementPlan(path1
+		mutable1.movementPlan = new PlanWithTarget(path1
 			, entity1.id()
 			, entity1.location()
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		MutableCreature mutable2 = MutableCreature.existing(CreatureEntity.create(-2, ORC, centreLocation.toEntityLocation().getRelative(0.5f, 0.2f, 0.0f), 0L));
 		PathLocation start2 = PathLocation.forEntityBase(mutable2.newLocation);
@@ -1843,11 +1778,9 @@ public class TestCreatureLogic
 			, start2.getRelative(3, 0, 2)
 			, start2.getRelative(4, 0, 2)
 		);
-		mutable2.movementPlan = new CreatureEntity.MovementPlan(path2
+		mutable2.movementPlan = new PlanWithTarget(path2
 			, entity2.id()
 			, entity2.location()
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		
 		// Create a context at the next time where we can take an action and see that they pick no target if they can't see the other cow..
@@ -1938,11 +1871,9 @@ public class TestCreatureLogic
 			, start1.getRelative(4, 0, -2)
 		);
 		
-		mutable1.movementPlan = new CreatureEntity.MovementPlan(path1
+		mutable1.movementPlan = new PlanWithTarget(path1
 			, targetEntity.id()
 			, targetEntity.location()
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		MutableCreature mutable2 = MutableCreature.existing(CreatureEntity.create(-2, ORC, stairStoneLocation.getRelative(0, 0, 1).toEntityLocation().getRelative(0.0f, 0.2f, 0.0f), 0L));
 		PathLocation start2 = PathLocation.forEntityBase(mutable2.newLocation);
@@ -1954,11 +1885,9 @@ public class TestCreatureLogic
 			, start2.getRelative(-3, 0, -2)
 			, start2.getRelative(-4, 0, -2)
 		);
-		mutable2.movementPlan = new CreatureEntity.MovementPlan(path2
+		mutable2.movementPlan = new PlanWithTarget(path2
 			, targetEntity.id()
 			, targetEntity.location()
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		
 		// Create a context at the next time where we can take an action and see that they pick no target if they can't see the other cow..

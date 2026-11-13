@@ -12,7 +12,9 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.TradingRegistry;
 import com.jeffdisher.october.creatures.CommonBreedingLogic;
+import com.jeffdisher.october.creatures.DirectWithTarget;
 import com.jeffdisher.october.creatures.ExtensionVillager;
+import com.jeffdisher.october.creatures.NearToTarget;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.PropertyHelpers;
@@ -436,12 +438,7 @@ public class TestVillagerActions
 		toolMutable.newExtendedData = ExtensionVillager.test_createData(TOOL_SMITH, Map.of(STONE_HATCHET, 1));
 		
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-2, VILLAGER, new EntityLocation(5.5f, 5.5f, 5.0f), 1000L));
-		mutable.movementPlan = new CreatureEntity.MovementPlan(null
-			, -1
-			, toolMutable.newLocation
-			, toolMutable.newLocation
-			, EntityActionSimpleMove.Intensity.WALKING
-		);
+		mutable.movementPlan = new DirectWithTarget(toolMutable.getId(), toolMutable.newLocation);
 		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER
 			, Map.of(SAPLING, 5)
 			, STONE_HATCHET
@@ -499,18 +496,8 @@ public class TestVillagerActions
 		Assert.assertEquals(toolMutable.newLocation, foresterTarget.location());
 		
 		// Normally, CreatureLogic creates the movement plan which we will rely on to determine our target so create that, now.
-		toolMutable.movementPlan = new CreatureEntity.MovementPlan(null
-			, mutable.getId()
-			, null
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
-		);
-		mutable.movementPlan = new CreatureEntity.MovementPlan(null
-			, toolMutable.getId()
-			, null
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
-		);
+		toolMutable.movementPlan = new NearToTarget(mutable.getId(), mutable.newLocation);
+		mutable.movementPlan = new NearToTarget(toolMutable.getId(), toolMutable.newLocation);
 		
 		// Show that the larger ID will impregnate the lesser.
 		Map<Integer, MinimalEntity> map = Map.of(

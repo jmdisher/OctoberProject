@@ -21,6 +21,8 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.creatures.CreatureLogic;
+import com.jeffdisher.october.creatures.PlanNoTarget;
+import com.jeffdisher.october.creatures.PlanWithTarget;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.EntityCollection;
@@ -218,12 +220,9 @@ public class TestEngineCreatures
 		EntityLocation startLocation = new EntityLocation(0.0f, 1.0f, 0.0f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 		PathLocation pathBase = PathLocation.test_raw(new AbsoluteLocation(0, 1, 0), 0, 0, 0);
-		CreatureEntity.MovementPlan movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase
+		CreatureEntity.MovementPlan movementPlan = new PlanNoTarget(List.of(pathBase
 				, pathBase.getRelative(0, 0, 1)
 			)
-			, CreatureEntity.NO_TARGET_ENTITY_ID
-			, null
-			, null
 			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
 		);
 		CreatureEntity creature = new CreatureEntity(-1
@@ -263,10 +262,7 @@ public class TestEngineCreatures
 		// In this test, we should just be waiting for a jump to have an effect.
 		EntityLocation startLocation = new EntityLocation(0.0f, 1.0f, 0.441f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 3.92f);
-		CreatureEntity.MovementPlan movementPlan = new CreatureEntity.MovementPlan(List.of(PathLocation.test_raw(new AbsoluteLocation(0, 1, 0), 0, 0, 1))
-			, CreatureEntity.NO_TARGET_ENTITY_ID
-			, null
-			, null
+		CreatureEntity.MovementPlan movementPlan = new PlanNoTarget(List.of(PathLocation.test_raw(new AbsoluteLocation(0, 1, 0), 0, 0, 1))
 			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
 		);
 		CreatureEntity creature = new CreatureEntity(-1
@@ -306,13 +302,10 @@ public class TestEngineCreatures
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 1.2f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 		PathLocation pathBase = PathLocation.forEntityBase(startLocation);
-		CreatureEntity.MovementPlan movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase
+		CreatureEntity.MovementPlan movementPlan = new PlanNoTarget(List.of(pathBase
 				, pathBase.getRelative(0, 1, 0)
 				, pathBase.getRelative(0, 2, 0)
 			)
-			, CreatureEntity.NO_TARGET_ENTITY_ID
-			, null
-			, null
 			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
 		);
 		int creatureId = -1;
@@ -919,15 +912,13 @@ public class TestEngineCreatures
 		CreatureEntity creature = CreatureEntity.create(-1, COW, startLocation, 0L);
 		MutableCreature mutable = MutableCreature.existing(creature);
 		PathLocation pathBase = PathLocation.forEntityBase(startLocation);
-		mutable.movementPlan = new CreatureEntity.MovementPlan(List.of(pathBase.getRelative(-1, 0, 0)
+		mutable.movementPlan = new PlanWithTarget(List.of(pathBase.getRelative(-1, 0, 0)
 				, pathBase.getRelative(-2, 0, 0)
 				, pathBase.getRelative(-3, 0, 0)
 				, pathBase.getRelative(-4, 0, 0)
 			)
 			, target.id()
-			, null
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
+			, target.location()
 		);
 		creature = mutable.freeze();
 		
