@@ -91,12 +91,13 @@ public record CreatureEntity(int id
 		// The intensity of movement to apply if there is any.
 		public final EntityActionSimpleMove.Intensity intensity;
 		
-		// These accessors are just here to meet the external assumptions that this has a record shape.
-		public final List<PathLocation> fullPlan() { return this.fullPlan; }
+		/**
+		 * The ID of the target entity is exposed for various cases where external logic, related to special actions and
+		 * not movement or movement planning, so it is exposed directly using this helper.
+		 * 
+		 * @return The target entity ID (NO_TARGET_ENTITY_ID if there isn't one).
+		 */
 		public final int targetEntityId() { return this.targetEntityId; }
-		public final EntityLocation targetPreviousLocation() { return this.targetPreviousLocation; }
-		public final EntityLocation directLocation() { return this.directLocation; }
-		public final EntityActionSimpleMove.Intensity intensity() { return this.intensity; }
 		
 		protected MovementPlan(List<PathLocation> fullPlan
 			, int targetEntityId

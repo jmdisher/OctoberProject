@@ -69,11 +69,11 @@ public class CreatureLogic
 		EntityLocation currentLocation = mutable.getLocation();
 		
 		EntityActionSimpleMove<MutableCreature> action;
-		if ((null != mutable.movementPlan) && (null != mutable.movementPlan.directLocation()))
+		if ((null != mutable.movementPlan) && (null != mutable.movementPlan.directLocation))
 		{
 			// We prioritize walking "directly" before following the conventional plan.
 			CreatureEntity.MovementPlan oldPlan = mutable.movementPlan;
-			EntityLocation targetLocation = oldPlan.directLocation();
+			EntityLocation targetLocation = oldPlan.directLocation;
 			
 			float viscosity = reader.getMaxStillViscosityInVolume(currentLocation, type.volume());
 			
@@ -86,7 +86,7 @@ public class CreatureLogic
 				, targetLocation
 				, timeLimitMillis
 				, viscosity
-				, oldPlan.intensity()
+				, oldPlan.intensity
 			);
 			
 			if (null == action)
@@ -96,11 +96,11 @@ public class CreatureLogic
 				mutable.movementPlan = null;
 			}
 		}
-		else if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
+		else if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan))
 		{
 			// We can derive the action directly from this plan.
 			CreatureEntity.MovementPlan oldPlan = mutable.movementPlan;
-			List<PathLocation> existingPlan = oldPlan.fullPlan();
+			List<PathLocation> existingPlan = oldPlan.fullPlan;
 			Assert.assertTrue(!existingPlan.isEmpty());
 			
 			EntityActionSimpleMove.Intensity intensity = oldPlan.intensity;
@@ -234,7 +234,7 @@ public class CreatureLogic
 			
 			// Invalidate:  Verify that we aren't stuck in a block.
 			if ((null != mutable.movementPlan)
-				&& ((null != mutable.movementPlan.directLocation()) || (null != mutable.movementPlan.fullPlan()))
+				&& ((null != mutable.movementPlan.directLocation) || (null != mutable.movementPlan.fullPlan))
 			)
 			{
 				float viscosity = reader.getMaxStillViscosityInVolume(currentLocation, type.volume());
@@ -248,9 +248,9 @@ public class CreatureLogic
 			}
 			
 			// Invalidate:  Verify that we are in range of the next step and it isn't solid.
-			if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
+			if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan))
 			{
-				List<PathLocation> existingPlan = mutable.movementPlan.fullPlan();
+				List<PathLocation> existingPlan = mutable.movementPlan.fullPlan;
 				PathLocation thisStep = existingPlan.get(0);
 				PathLocation pathBase = PathLocation.forEntityBase(currentLocation);
 				
@@ -291,7 +291,7 @@ public class CreatureLogic
 				// The target validity was checked in the invalidate path so this is valid.
 				Assert.assertTrue(null != targetEntity);
 				
-				if (!targetEntity.location().equals(mutable.movementPlan.targetPreviousLocation()))
+				if (!targetEntity.location().equals(mutable.movementPlan.targetPreviousLocation))
 				{
 					// This has moved so update the plan in response.
 					EntityLocation targetLocation = targetEntity.location();
@@ -341,8 +341,8 @@ public class CreatureLogic
 			
 			// Handle the uncommon case where we are in direct mode but are no longer on the same z-level.
 			if ((null != mutable.movementPlan)
-				&& (null != mutable.movementPlan.directLocation())
-				&& (currentLocation.getBlockLocation().z() != mutable.movementPlan.directLocation().getBlockLocation().z())
+				&& (null != mutable.movementPlan.directLocation)
+				&& (currentLocation.getBlockLocation().z() != mutable.movementPlan.directLocation.getBlockLocation().z())
 			)
 			{
 				if (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId())
@@ -400,9 +400,9 @@ public class CreatureLogic
 			}
 			
 			// Check if the plan should be updated due to us stepping into the next block.
-			if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
+			if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan))
 			{
-				List<PathLocation> existingPlan = mutable.movementPlan.fullPlan();
+				List<PathLocation> existingPlan = mutable.movementPlan.fullPlan;
 				PathLocation thisStep = existingPlan.get(0);
 				PathLocation pathBase = PathLocation.forEntityBase(currentLocation);
 				
@@ -435,7 +435,7 @@ public class CreatureLogic
 						else
 						{
 							int targetId = mutable.movementPlan.targetEntityId();
-							EntityLocation targetLocation = mutable.movementPlan.targetPreviousLocation();
+							EntityLocation targetLocation = mutable.movementPlan.targetPreviousLocation;
 							List<PathLocation> updatedPlan1 = Collections.unmodifiableList(updatedPlan);
 							EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, currentLocation, type, updatedPlan1);
 							
@@ -462,19 +462,19 @@ public class CreatureLogic
 						else
 						{
 							// We assume that they are in range as a near target.
-							mutable.movementPlan = new DirectWithTarget(mutable.movementPlan.targetEntityId(), mutable.movementPlan.targetPreviousLocation());
+							mutable.movementPlan = new DirectWithTarget(mutable.movementPlan.targetEntityId(), mutable.movementPlan.targetPreviousLocation);
 						}
 					}
 				}
 			}
 			
 			// Check if the plan should be updated due to proximity to the target.
-			if ((null != mutable.movementPlan) && (null != mutable.movementPlan.directLocation()))
+			if ((null != mutable.movementPlan) && (null != mutable.movementPlan.directLocation))
 			{
 				// If we are targeting an entity, then we clear this once within action range, otherwise we clear when we match it.
 				if (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.movementPlan.targetEntityId())
 				{
-					if (currentLocation.equals(mutable.movementPlan.directLocation()))
+					if (currentLocation.equals(mutable.movementPlan.directLocation))
 					{
 						// We are at our destination, so clear.
 						mutable.movementPlan = null;

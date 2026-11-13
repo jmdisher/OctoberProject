@@ -101,13 +101,13 @@ public class TestCreatureLogic
 				, 100L
 		);
 		Assert.assertEquals("SimpleMove(STANDING), by 0.00, 0.00, Sub: Jump", action.toString());
-		Assert.assertEquals(2, mutable.movementPlan.fullPlan().size());
-		Assert.assertEquals(PathLocation.test_raw(new AbsoluteLocation(16, 16, 1), 0, 0, 1), mutable.movementPlan.fullPlan().get(0));
-		Assert.assertEquals(PathLocation.test_raw(new AbsoluteLocation(16, 16, 2), 0, 0, 0), mutable.movementPlan.fullPlan().get(1));
+		Assert.assertEquals(2, mutable.movementPlan.fullPlan.size());
+		Assert.assertEquals(PathLocation.test_raw(new AbsoluteLocation(16, 16, 1), 0, 0, 1), mutable.movementPlan.fullPlan.get(0));
+		Assert.assertEquals(PathLocation.test_raw(new AbsoluteLocation(16, 16, 2), 0, 0, 0), mutable.movementPlan.fullPlan.get(1));
 		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, mutable.movementPlan.targetEntityId());
-		Assert.assertEquals(null, mutable.movementPlan.targetPreviousLocation());
-		Assert.assertEquals(null, mutable.movementPlan.directLocation());
-		Assert.assertEquals(EntityActionSimpleMove.Intensity.IDLE_CREATURE, mutable.movementPlan.intensity());
+		Assert.assertEquals(null, mutable.movementPlan.targetPreviousLocation);
+		Assert.assertEquals(null, mutable.movementPlan.directLocation);
+		Assert.assertEquals(EntityActionSimpleMove.Intensity.IDLE_CREATURE, mutable.movementPlan.intensity);
 	}
 
 	@Test
@@ -159,10 +159,10 @@ public class TestCreatureLogic
 				, 100L
 		);
 		Assert.assertNotNull(action);
-		Assert.assertNull(mutableOrc.movementPlan.fullPlan());
+		Assert.assertNull(mutableOrc.movementPlan.fullPlan);
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
-		Assert.assertEquals(player.location(), mutableOrc.movementPlan.targetPreviousLocation());
-		Assert.assertEquals(player.location(), mutableOrc.movementPlan.directLocation());
+		Assert.assertEquals(player.location(), mutableOrc.movementPlan.targetPreviousLocation);
+		Assert.assertEquals(player.location(), mutableOrc.movementPlan.directLocation);
 		
 		// Now, move the entity and see that the special action updates it.
 		EntityLocation newPlayerLocation = new EntityLocation(2.0f, 5.0f, 1.0f);
@@ -196,10 +196,10 @@ public class TestCreatureLogic
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableOrc);
 		Assert.assertFalse(didTakeAction);
 		// We should now see the updated movement plan.
-		Assert.assertNull(mutableOrc.movementPlan.fullPlan());
+		Assert.assertNull(mutableOrc.movementPlan.fullPlan);
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
-		Assert.assertEquals(player.location(), mutableOrc.movementPlan.targetPreviousLocation());
-		Assert.assertEquals(player.location(), mutableOrc.movementPlan.directLocation());
+		Assert.assertEquals(player.location(), mutableOrc.movementPlan.targetPreviousLocation);
+		Assert.assertEquals(player.location(), mutableOrc.movementPlan.directLocation);
 	}
 
 	@Test
@@ -451,10 +451,10 @@ public class TestCreatureLogic
 				, 100L
 		);
 		Assert.assertNotNull(action);
-		Assert.assertNull(mutableOrc.movementPlan.fullPlan());
+		Assert.assertNull(mutableOrc.movementPlan.fullPlan);
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
-		Assert.assertEquals(player.location(), mutableOrc.movementPlan.targetPreviousLocation());
-		Assert.assertEquals(player.location(), mutableOrc.movementPlan.directLocation());
+		Assert.assertEquals(player.location(), mutableOrc.movementPlan.targetPreviousLocation);
+		Assert.assertEquals(player.location(), mutableOrc.movementPlan.directLocation);
 	}
 
 	@Test
@@ -525,7 +525,7 @@ public class TestCreatureLogic
 		// We will try to walk toward them still.
 		Assert.assertNotNull(action);
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
-		Assert.assertEquals(player.location().getBlockLocation(), mutableOrc.movementPlan.targetPreviousLocation().getBlockLocation());
+		Assert.assertEquals(player.location().getBlockLocation(), mutableOrc.movementPlan.targetPreviousLocation.getBlockLocation());
 		Assert.assertEquals(context.currentTickTimeMillis + ORC.actionCooldownMillis(), mutableOrc.nextActionMillis);
 		
 		// Update the player to be close enough.
@@ -606,10 +606,10 @@ public class TestCreatureLogic
 		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableCow);
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableCow);
 		Assert.assertFalse(didTakeAction);
-		Assert.assertNull(mutableCow.movementPlan.fullPlan());
+		Assert.assertNull(mutableCow.movementPlan.fullPlan);
 		Assert.assertEquals(player.id(), mutableCow.movementPlan.targetEntityId());
-		Assert.assertEquals(player.location(), mutableCow.movementPlan.targetPreviousLocation());
-		Assert.assertEquals(player.location(), mutableCow.movementPlan.directLocation());
+		Assert.assertEquals(player.location(), mutableCow.movementPlan.targetPreviousLocation);
+		Assert.assertEquals(player.location(), mutableCow.movementPlan.directLocation);
 		
 		// Move close.
 		mutablePlayer.newLocation = new EntityLocation(0.8f, 0.0f, 1.0f);
@@ -622,9 +622,9 @@ public class TestCreatureLogic
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableCow);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals(player.id(), mutableCow.movementPlan.targetEntityId());
-		Assert.assertEquals(player.location(), mutableCow.movementPlan.targetPreviousLocation());
-		Assert.assertEquals(1, mutableCow.movementPlan.fullPlan().size());
-		Assert.assertEquals(PathLocation.forEntityBase(player.location()), mutableCow.movementPlan.fullPlan().get(0));
+		Assert.assertEquals(player.location(), mutableCow.movementPlan.targetPreviousLocation);
+		Assert.assertEquals(1, mutableCow.movementPlan.fullPlan.size());
+		Assert.assertEquals(PathLocation.forEntityBase(player.location()), mutableCow.movementPlan.fullPlan.get(0));
 		
 		// Move far.
 		mutablePlayer.newLocation = new EntityLocation(5.0f, 0.0f, 1.0f);
@@ -636,10 +636,10 @@ public class TestCreatureLogic
 		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableCow);
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableCow);
 		Assert.assertFalse(didTakeAction);
-		Assert.assertNull(mutableCow.movementPlan.fullPlan());
+		Assert.assertNull(mutableCow.movementPlan.fullPlan);
 		Assert.assertEquals(player.id(), mutableCow.movementPlan.targetEntityId());
-		Assert.assertEquals(player.location(), mutableCow.movementPlan.targetPreviousLocation());
-		Assert.assertEquals(player.location(), mutableCow.movementPlan.directLocation());
+		Assert.assertEquals(player.location(), mutableCow.movementPlan.targetPreviousLocation);
+		Assert.assertEquals(player.location(), mutableCow.movementPlan.directLocation);
 		
 		// Switch out wheat.
 		mutablePlayer.slotManager.setSelectedKey(Entity.NO_SELECTION);
@@ -692,16 +692,16 @@ public class TestCreatureLogic
 		
 		// Since they are out of range, they should have taken no action and, since they are in the same block, produced no full path to move.
 		Assert.assertFalse(didTakeAction);
-		Assert.assertNull(mutableOrc.movementPlan.fullPlan());
+		Assert.assertNull(mutableOrc.movementPlan.fullPlan);
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
-		Assert.assertNotNull(mutableOrc.movementPlan.targetPreviousLocation());
+		Assert.assertNotNull(mutableOrc.movementPlan.targetPreviousLocation);
 		
 		// Now, if we try to move, we should see them move toward the target, even though there is no planned path.
 		EntityActionSimpleMove<MutableCreature> change = CreatureLogic.planNextAction(context, mutableOrc, context.millisPerTick);
 		Assert.assertEquals("SimpleMove(WALKING), by 0.14, -0.14, Sub: null", change.toString());
-		Assert.assertNull(mutableOrc.movementPlan.fullPlan());
+		Assert.assertNull(mutableOrc.movementPlan.fullPlan);
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
-		Assert.assertNotNull(mutableOrc.movementPlan.targetPreviousLocation());
+		Assert.assertNotNull(mutableOrc.movementPlan.targetPreviousLocation);
 		
 		// This should apply cleanly.
 		boolean didApply = change.applyChange(context, mutableOrc);
@@ -1203,9 +1203,9 @@ public class TestCreatureLogic
 			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
 			, mutableOrc
 		);
-		Assert.assertEquals(6, mutableOrc.movementPlan.fullPlan().size());
+		Assert.assertEquals(6, mutableOrc.movementPlan.fullPlan.size());
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
-		Assert.assertEquals(playerLocation, mutableOrc.movementPlan.targetPreviousLocation());
+		Assert.assertEquals(playerLocation, mutableOrc.movementPlan.targetPreviousLocation);
 		
 		// If the player DID move - change path.
 		mutableOrc = MutableCreature.existing(orc);
@@ -1228,9 +1228,9 @@ public class TestCreatureLogic
 			, EntityCollection.fromMaps(Map.of(player.id(), movedPlayer), Map.of(orc.id(), orc))
 			, mutableOrc
 		);
-		Assert.assertEquals(8, mutableOrc.movementPlan.fullPlan().size());
+		Assert.assertEquals(8, mutableOrc.movementPlan.fullPlan.size());
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
-		Assert.assertEquals(movedPlayerLocation, mutableOrc.movementPlan.targetPreviousLocation());
+		Assert.assertEquals(movedPlayerLocation, mutableOrc.movementPlan.targetPreviousLocation);
 		
 		// If the player DID disappear - clear path.
 		mutableOrc = MutableCreature.existing(orc);
@@ -1309,8 +1309,8 @@ public class TestCreatureLogic
 		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableOrc);
 		boolean didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableOrc);
 		Assert.assertFalse(didAct);
-		Assert.assertEquals(8, mutableOrc.movementPlan.fullPlan().size());
-		Assert.assertNull(mutableOrc.movementPlan.directLocation());
+		Assert.assertEquals(8, mutableOrc.movementPlan.fullPlan.size());
+		Assert.assertNull(mutableOrc.movementPlan.directLocation);
 		
 		// Show that the target moved.
 		mutableOrc = MutableCreature.existing(orc);
@@ -1334,8 +1334,8 @@ public class TestCreatureLogic
 		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableOrc);
 		didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableOrc);
 		Assert.assertFalse(didAct);
-		Assert.assertNull(mutableOrc.movementPlan.fullPlan());
-		Assert.assertEquals(movedPlayerLocation, mutableOrc.movementPlan.directLocation());
+		Assert.assertNull(mutableOrc.movementPlan.fullPlan);
+		Assert.assertEquals(movedPlayerLocation, mutableOrc.movementPlan.directLocation);
 		
 		// Show that we entered the next step (no direct).
 		mutableOrc = MutableCreature.existing(orc);
@@ -1362,8 +1362,8 @@ public class TestCreatureLogic
 		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableOrc);
 		didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableOrc);
 		Assert.assertFalse(didAct);
-		Assert.assertEquals(9, mutableOrc.movementPlan.fullPlan().size());
-		Assert.assertNull(mutableOrc.movementPlan.directLocation());
+		Assert.assertEquals(9, mutableOrc.movementPlan.fullPlan.size());
+		Assert.assertNull(mutableOrc.movementPlan.directLocation);
 		
 		// Show that we entered the next step (direct).
 		mutableOrc = MutableCreature.existing(orc);
@@ -1388,8 +1388,8 @@ public class TestCreatureLogic
 		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableOrc);
 		didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableOrc);
 		Assert.assertFalse(didAct);
-		Assert.assertNull(mutableOrc.movementPlan.fullPlan());
-		Assert.assertEquals(playerLocation, mutableOrc.movementPlan.directLocation());
+		Assert.assertNull(mutableOrc.movementPlan.fullPlan);
+		Assert.assertEquals(playerLocation, mutableOrc.movementPlan.directLocation);
 		
 		// Create a new plan from scratch.
 		mutableOrc = MutableCreature.existing(orc);
@@ -1403,8 +1403,8 @@ public class TestCreatureLogic
 		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableOrc);
 		didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableOrc);
 		Assert.assertFalse(didAct);
-		Assert.assertNull(mutableOrc.movementPlan.fullPlan());
-		Assert.assertEquals(playerLocation, mutableOrc.movementPlan.directLocation());
+		Assert.assertNull(mutableOrc.movementPlan.fullPlan);
+		Assert.assertEquals(playerLocation, mutableOrc.movementPlan.directLocation);
 	}
 
 	@Test
@@ -1437,10 +1437,10 @@ public class TestCreatureLogic
 		CreatureLogic.createOrUpdatePathFinding(context, collection, mutableOrc);
 		boolean didAct = CreatureLogic.didTakeSpecialActions(context, collection, mutableOrc);
 		Assert.assertFalse(didAct);
-		Assert.assertNull(mutableOrc.movementPlan.fullPlan());
+		Assert.assertNull(mutableOrc.movementPlan.fullPlan);
 		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
-		Assert.assertEquals(playerLocation, mutableOrc.movementPlan.targetPreviousLocation());
-		Assert.assertEquals(new EntityLocation(3.0f, 1.0f, 1.4f), mutableOrc.movementPlan.directLocation());
+		Assert.assertEquals(playerLocation, mutableOrc.movementPlan.targetPreviousLocation);
+		Assert.assertEquals(new EntityLocation(3.0f, 1.0f, 1.4f), mutableOrc.movementPlan.directLocation);
 		
 		EntityActionSimpleMove<MutableCreature> action = CreatureLogic.planNextAction(context
 			, mutableOrc
@@ -1517,10 +1517,10 @@ public class TestCreatureLogic
 		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableVillager);
 		didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableVillager);
 		Assert.assertFalse(didAct);
-		Assert.assertNull(mutableVillager.movementPlan.fullPlan());
+		Assert.assertNull(mutableVillager.movementPlan.fullPlan);
 		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, mutableVillager.movementPlan.targetEntityId());
-		Assert.assertNull(mutableVillager.movementPlan.targetPreviousLocation());
-		Assert.assertEquals(new EntityLocation(7.0f, 6.5f, 1.0f), mutableVillager.movementPlan.directLocation());
+		Assert.assertNull(mutableVillager.movementPlan.targetPreviousLocation);
+		Assert.assertEquals(new EntityLocation(7.0f, 6.5f, 1.0f), mutableVillager.movementPlan.directLocation);
 		
 		EntityActionSimpleMove<MutableCreature> action = CreatureLogic.planNextAction(context
 			, mutableVillager
@@ -1533,10 +1533,10 @@ public class TestCreatureLogic
 		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableVillagerBaby);
 		didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableVillagerBaby);
 		Assert.assertFalse(didAct);
-		Assert.assertNull(mutableVillagerBaby.movementPlan.fullPlan());
+		Assert.assertNull(mutableVillagerBaby.movementPlan.fullPlan);
 		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, mutableVillagerBaby.movementPlan.targetEntityId());
-		Assert.assertNull(mutableVillagerBaby.movementPlan.targetPreviousLocation());
-		Assert.assertEquals(new EntityLocation(7.5f, 6.5f, 1.0f), mutableVillagerBaby.movementPlan.directLocation());
+		Assert.assertNull(mutableVillagerBaby.movementPlan.targetPreviousLocation);
+		Assert.assertEquals(new EntityLocation(7.5f, 6.5f, 1.0f), mutableVillagerBaby.movementPlan.directLocation);
 		
 		action = CreatureLogic.planNextAction(context
 			, mutableVillagerBaby
@@ -1601,7 +1601,7 @@ public class TestCreatureLogic
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context, collection, mutable);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals(cow1.id(), mutable.movementPlan.targetEntityId());
-		Assert.assertEquals(EntityActionSimpleMove.Intensity.WALKING, mutable.movementPlan.intensity());
+		Assert.assertEquals(EntityActionSimpleMove.Intensity.WALKING, mutable.movementPlan.intensity);
 	}
 
 	@Test
@@ -1629,16 +1629,16 @@ public class TestCreatureLogic
 		EntityCollection collection = EntityCollection.fromMaps(Map.of(), Map.of(cow0.id(), cow0));
 		CreatureLogic.createOrUpdatePathFinding(context, collection, mutable);
 		Assert.assertFalse(CreatureLogic.didTakeSpecialActions(context, collection, mutable));
-		Assert.assertEquals(new EntityLocation(3.0f, 2.5f, 0.0f), mutable.movementPlan.directLocation());
-		Assert.assertEquals(EntityActionSimpleMove.Intensity.RUNNING, mutable.movementPlan.intensity());
+		Assert.assertEquals(new EntityLocation(3.0f, 2.5f, 0.0f), mutable.movementPlan.directLocation);
+		Assert.assertEquals(EntityActionSimpleMove.Intensity.RUNNING, mutable.movementPlan.intensity);
 		
 		mutable = MutableCreature.existing(cow0);
 		mutable.setHealth(mutable.newHealth);
 		mutable.storeInjuryVector(new EntityLocation(0.3f, -0.2f, 1.0f));
 		CreatureLogic.createOrUpdatePathFinding(context, collection, mutable);
 		Assert.assertFalse(CreatureLogic.didTakeSpecialActions(context, collection, mutable));
-		Assert.assertEquals(new EntityLocation(5.5f, 2.5f, 0.0f), mutable.movementPlan.directLocation());
-		Assert.assertEquals(EntityActionSimpleMove.Intensity.RUNNING, mutable.movementPlan.intensity());
+		Assert.assertEquals(new EntityLocation(5.5f, 2.5f, 0.0f), mutable.movementPlan.directLocation);
+		Assert.assertEquals(EntityActionSimpleMove.Intensity.RUNNING, mutable.movementPlan.intensity);
 	}
 
 	@Test
@@ -1721,7 +1721,7 @@ public class TestCreatureLogic
 		;
 		
 		EntityLocation[] slabWalkLocations = _collectStepLocations(context, collection, mutable1, 10);
-		Assert.assertNull(mutable1.movementPlan.fullPlan());
+		Assert.assertNull(mutable1.movementPlan.fullPlan);
 		Assert.assertArrayEquals(new EntityLocation[] {
 			new EntityLocation(15.9f, 16.2f, 1.5f),
 			new EntityLocation(15.7f, 16.2f, 1.5f),
@@ -1736,7 +1736,7 @@ public class TestCreatureLogic
 		}, slabWalkLocations);
 		
 		EntityLocation[] stairWalkLocations = _collectStepLocations(context, collection, mutable2, 7);
-		Assert.assertNull(mutable2.movementPlan.fullPlan());
+		Assert.assertNull(mutable2.movementPlan.fullPlan);
 		Assert.assertArrayEquals(new EntityLocation[] {
 			new EntityLocation(16.7f, 16.2f, 1.5f),
 			new EntityLocation(16.9f, 16.2f, 1.5f),
@@ -1828,7 +1828,7 @@ public class TestCreatureLogic
 		;
 		
 		EntityLocation[] slabWalkLocations = _collectStepLocations(context, collection, mutable1, 18);
-		Assert.assertNull(mutable1.movementPlan.fullPlan());
+		Assert.assertNull(mutable1.movementPlan.fullPlan);
 		Assert.assertArrayEquals(new EntityLocation[] {
 			new EntityLocation(14.59f, 16.2f, 2.0f),
 			new EntityLocation(14.79f, 16.2f, 2.0f),
@@ -1851,7 +1851,7 @@ public class TestCreatureLogic
 		}, slabWalkLocations);
 		
 		EntityLocation[] stairWalkLocations = _collectStepLocations(context, collection, mutable2, 14);
-		Assert.assertNull(mutable2.movementPlan.fullPlan());
+		Assert.assertNull(mutable2.movementPlan.fullPlan);
 		Assert.assertArrayEquals(new EntityLocation[] {
 			new EntityLocation(17.8f, 16.2f, 2.0f),
 			new EntityLocation(17.6f, 16.2f, 2.0f),
