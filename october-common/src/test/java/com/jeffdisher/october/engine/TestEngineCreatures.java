@@ -21,6 +21,7 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.creatures.CreatureLogic;
+import com.jeffdisher.october.creatures.CreatureMovementHelpers;
 import com.jeffdisher.october.creatures.PlanNoTarget;
 import com.jeffdisher.october.creatures.PlanWithTarget;
 import com.jeffdisher.october.data.CuboidData;
@@ -379,7 +380,7 @@ public class TestEngineCreatures
 		Assert.assertEquals(startHealth, updated.health());
 		Assert.assertNotEquals(startLocation, updated.location());
 		Assert.assertNotNull(updated.ephemeral().movementPlan());
-		Assert.assertEquals(context.currentTickTimeMillis + CreatureLogic.MINIMUM_MILLIS_TO_ACTION, updated.ephemeral().nextMovementPlanMillis());
+		Assert.assertEquals(context.currentTickTimeMillis + CreatureMovementHelpers.MINIMUM_MILLIS_TO_ACTION, updated.ephemeral().nextMovementPlanMillis());
 		
 		// Now, hit them and see this clears their movement plan so we should see a plan with new timers.
 		context = _updateContextForTick(context);
@@ -394,7 +395,7 @@ public class TestEngineCreatures
 		
 		updated = result.updatedEntity();
 		Assert.assertEquals(startHealth - damage, updated.health());
-		Assert.assertEquals(context.currentTickTimeMillis + CreatureLogic.MINIMUM_MILLIS_TO_ACTION, updated.ephemeral().nextMovementPlanMillis());
+		Assert.assertEquals(context.currentTickTimeMillis + CreatureMovementHelpers.MINIMUM_MILLIS_TO_ACTION, updated.ephemeral().nextMovementPlanMillis());
 		Assert.assertEquals(context.currentTickTimeMillis + MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS, updated.ephemeral().nextTakeDamageMillis());
 	}
 
@@ -786,7 +787,7 @@ public class TestEngineCreatures
 					, airTarget.id(), MinimalEntity.fromEntity(airTarget)
 			);
 			TickProcessingContext context = ContextBuilder.build()
-				.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
+				.tick(CreatureMovementHelpers.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
 				.lookups(ContextBuilder.buildSingleFetcher(cuboid), new _MinimalEntityIndex(minimalEntitiesById), null)
 				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 				.fixedRandom(1)
@@ -833,11 +834,11 @@ public class TestEngineCreatures
 		for (int i = 0; i <= stepsRequired; ++i)
 		{
 			TickProcessingContext context = ContextBuilder.build()
-					.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
-					.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
-					// We return a fixed "0" for the random generator to make sure that we select a reasonable plan for all tests.
-					.fixedRandom(0)
-					.finish()
+				.tick(CreatureMovementHelpers.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
+				.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+				// We return a fixed "0" for the random generator to make sure that we select a reasonable plan for all tests.
+				.fixedRandom(0)
+				.finish()
 			;
 			EngineCreatures.SingleCreatureResult result = EngineCreatures.processOneCreature(context
 				, EntityCollection.fromMaps(Map.of(), Map.of(creature.id(), creature))
@@ -876,7 +877,7 @@ public class TestEngineCreatures
 		MutableCreature mutable = MutableCreature.existing(creature);
 		mutable.newVelocity = startVelocity;
 		mutable.newHealth = (byte)100;
-		mutable.nextMovementPlanMillis = (tickNumber * ContextBuilder.DEFAULT_MILLIS_PER_TICK) + CreatureLogic.MINIMUM_MILLIS_TO_ACTION;
+		mutable.nextMovementPlanMillis = (tickNumber * ContextBuilder.DEFAULT_MILLIS_PER_TICK) + CreatureMovementHelpers.MINIMUM_MILLIS_TO_ACTION;
 		creature = mutable.freeze();
 		
 		_Events events = new _Events();
@@ -1180,7 +1181,7 @@ public class TestEngineCreatures
 		WorldConfig config = new WorldConfig();
 		config.difficulty = difficulty;
 		TickProcessingContext context = ContextBuilder.build()
-				.tick((CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick) + 1L)
+				.tick((CreatureMovementHelpers.MINIMUM_MILLIS_TO_ACTION / millisPerTick) + 1L)
 				.lookups(ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> {
 					return (-1 == address.z())
 						? stoneCuboid
@@ -1200,11 +1201,11 @@ public class TestEngineCreatures
 	{
 		long millisPerTick = 100L;
 		TickProcessingContext context = ContextBuilder.build()
-				.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
-				.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
-				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
-				.fixedRandom(1)
-				.finish()
+			.tick(CreatureMovementHelpers.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
+			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
+			// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
+			.fixedRandom(1)
+			.finish()
 		;
 		return context;
 	}
@@ -1234,7 +1235,7 @@ public class TestEngineCreatures
 	{
 		Map<Integer, Entity> players = (null != player) ? Map.of(player.id(), player) : Map.of();
 		LazyEntityIndex entityIndex = new LazyEntityIndex(players, creatures);
-		TickProcessingContext context = ContextBuilder.nextTick(existing, (CreatureLogic.MINIMUM_MILLIS_TO_ACTION / existing.millisPerTick))
+		TickProcessingContext context = ContextBuilder.nextTick(existing, (CreatureMovementHelpers.MINIMUM_MILLIS_TO_ACTION / existing.millisPerTick))
 			.lookups(existing.previousBlockLookUp, entityIndex, null)
 			.sinks(null, null)
 			.spawner(null)
@@ -1245,7 +1246,7 @@ public class TestEngineCreatures
 
 	private static TickProcessingContext _updateContextForTick(TickProcessingContext existing)
 	{
-		TickProcessingContext context = ContextBuilder.nextTick(existing, (CreatureLogic.MINIMUM_MILLIS_TO_ACTION / existing.millisPerTick))
+		TickProcessingContext context = ContextBuilder.nextTick(existing, (CreatureMovementHelpers.MINIMUM_MILLIS_TO_ACTION / existing.millisPerTick))
 				.finish()
 		;
 		return context;

@@ -1,4 +1,4 @@
-package com.jeffdisher.october.logic;
+package com.jeffdisher.october.creatures;
 
 import java.util.List;
 
@@ -11,11 +11,16 @@ import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.OrientationHelpers;
+import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.pathing.PathLocation;
+import com.jeffdisher.october.pathing.WalkingNavigator;
 import com.jeffdisher.october.subactions.EntitySubActionJump;
 import com.jeffdisher.october.subactions.EntitySubActionSwim;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -32,6 +37,7 @@ public class TestCreatureMovementHelpers
 {
 	private static Environment ENV;
 	private static EntityType COW;
+	private static EntityType ORC;
 	private static Block STONE;
 	private static Block WATER_SOURCE;
 	@BeforeClass
@@ -39,6 +45,7 @@ public class TestCreatureMovementHelpers
 	{
 		ENV = Environment.createSharedInstance();
 		COW = ENV.creatures.getTypeById("op.cow");
+		ORC = ENV.creatures.getTypeById("op.orc");
 		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
 	}
@@ -716,6 +723,129 @@ public class TestCreatureMovementHelpers
 		Assert.assertEquals("SimpleMove(WALKING), by 0.40, 0.00, Sub: Step-up", stairMove.toString());
 	}
 
+	@Test
+	public void avoidDrowning()
+	{
+		// Verify that idle movement will avoid stopping in the water (these should all jump).
+		EntityLocation entityLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
+		CreatureEntity entity = CreatureEntity.create(-1, ORC, entityLocation, 0L);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		CuboidGenerator.fillPlane(input, (byte)0, STONE);
+		CuboidGenerator.fillPlane(input, (byte)1, WATER_SOURCE);
+		
+		
+		// We should see 13 possible locations, all at z-level 2 as their final destination.
+		for (int i = 0; i < 13; ++i)
+		{
+			TickProcessingContext context = _createContext(input, i);
+			WalkingNavigator navigator = new WalkingNavigator(context.previousBlockLookUp
+				, entity.type().volume()
+				, CreatureMovementHelpers.RANDOM_MOVEMENT_DISTANCE
+				, true
+				, true
+				, true
+				, true
+			);
+			List<PathLocation> path = CreatureMovementHelpers.findPathToRandomSpot(context, navigator, entity.location());
+			PathLocation target = path.get(path.size() - 1);
+			Assert.assertEquals(2.0f, target.getBaseLocation().z(), 0.01f);
+		}
+		// Verify that there are only 13.
+		try
+		{
+			TickProcessingContext context = _createContext(input, 13);
+			WalkingNavigator navigator = new WalkingNavigator(context.previousBlockLookUp
+				, entity.type().volume()
+				, CreatureMovementHelpers.RANDOM_MOVEMENT_DISTANCE
+				, true
+				, true
+				, true
+				, true
+			);
+			CreatureMovementHelpers.findPathToRandomSpot(context, navigator, entity.location());
+		}
+		catch (AssertionError e)
+		{
+			// Expected from test.
+		}
+	}
+
+	@Test
+	public void idleNoPath()
+	{
+		// Verify that we will choose to do nothing if there are no idle movement targets.
+		EntityLocation entityLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
+		CreatureEntity entity = CreatureEntity.create(-1, ORC, entityLocation, 0L);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		short stoneNumber = ENV.items.getItemById("op.stone").number();
+		CuboidGenerator.fillPlane(input, (byte)0, STONE);
+		CuboidGenerator.fillPlane(input, (byte)1, STONE);
+		CuboidGenerator.fillPlane(input, (byte)2, STONE);
+		input.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 1), stoneNumber);
+		input.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 2), stoneNumber);
+		
+		// We should see 0 possible locations.
+		TickProcessingContext context = _createContext(input, 0);
+		WalkingNavigator navigator = new WalkingNavigator(context.previousBlockLookUp
+			, entity.type().volume()
+			, CreatureMovementHelpers.RANDOM_MOVEMENT_DISTANCE
+			, true
+			, true
+			, true
+			, true
+		);
+		List<PathLocation> path = CreatureMovementHelpers.findPathToRandomSpot(context, navigator, entity.location());
+		Assert.assertNull(path);
+	}
+
+	@Test
+	public void idleWithoutJumping()
+	{
+		// Verify that all possible idle paths end on the ground.
+		EntityLocation entityLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
+		CreatureEntity entity = CreatureEntity.create(-1, ORC, entityLocation, 0L);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		CuboidGenerator.fillPlane(input, (byte)0, STONE);
+		
+		// We should see 24 possible locations, all at z-level 1 as their final destination, minus where we started.
+		for (int i = 0; i < 24; ++i)
+		{
+			TickProcessingContext context = _createContext(input, i);
+			WalkingNavigator navigator = new WalkingNavigator(context.previousBlockLookUp
+				, entity.type().volume()
+				, CreatureMovementHelpers.RANDOM_MOVEMENT_DISTANCE
+				, true
+				, true
+				, true
+				, true
+			);
+			List<PathLocation> path = CreatureMovementHelpers.findPathToRandomSpot(context, navigator, entity.location());
+			PathLocation target = path.get(path.size() - 1);
+			Assert.assertEquals(1.0f, target.getBaseLocation().z(), 0.01f);
+		}
+		// Verify that there are only 24.
+		try
+		{
+			TickProcessingContext context = _createContext(input, 24);
+			WalkingNavigator navigator = new WalkingNavigator(context.previousBlockLookUp
+				, entity.type().volume()
+				, CreatureMovementHelpers.RANDOM_MOVEMENT_DISTANCE
+				, true
+				, true
+				, true
+				, true
+			);
+			CreatureMovementHelpers.findPathToRandomSpot(context, navigator, entity.location());
+		}
+		catch (AssertionError e)
+		{
+			// Expected from test.
+		}
+	}
+
 
 	private static CreatureEntity _createCow(EntityLocation location)
 	{
@@ -752,6 +882,17 @@ public class TestCreatureMovementHelpers
 					: stoneCuboid
 				;
 			}), null, null)
+			.finish()
+		;
+		return context;
+	}
+
+	private static TickProcessingContext _createContext(IReadOnlyCuboidData cuboid, int random)
+	{
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
+		TickProcessingContext context = ContextBuilder.build()
+			.lookups(previousBlockLookUp, null, null)
+			.fixedRandom(random)
 			.finish()
 		;
 		return context;

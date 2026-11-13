@@ -18,13 +18,11 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.pathing.PathLocation;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
-import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -75,67 +73,6 @@ public class TestCreatureLogic
 	}
 
 	@Test
-	public void idleWithoutJumping()
-	{
-		// Verify that all possible idle paths end on the ground.
-		EntityLocation entityLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
-		CreatureEntity entity = CreatureEntity.create(-1, ORC, entityLocation, 0L);
-		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
-		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
-		_setLayer(input, (byte)0, "op.stone");
-		
-		// We should see 24 possible locations, all at z-level 1 as their final destination, minus where we started.
-		for (int i = 0; i < 24; ++i)
-		{
-			TickProcessingContext context = _createContext(input, i);
-			List<PathLocation> path = CreatureLogic.test_findPathToRandomSpot(context, entity.location(), entity.type());
-			PathLocation target = path.get(path.size() - 1);
-			Assert.assertEquals(1.0f, target.getBaseLocation().z(), 0.01f);
-		}
-		// Verify that there are only 24.
-		try
-		{
-			TickProcessingContext context = _createContext(input, 24);
-			CreatureLogic.test_findPathToRandomSpot(context, entity.location(), entity.type());
-		}
-		catch (AssertionError e)
-		{
-			// Expected from test.
-		}
-	}
-
-	@Test
-	public void avoidDrowning()
-	{
-		// Verify that idle movement will avoid stopping in the water (these should all jump).
-		EntityLocation entityLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
-		CreatureEntity entity = CreatureEntity.create(-1, ORC, entityLocation, 0L);
-		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
-		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
-		_setLayer(input, (byte)0, "op.stone");
-		_setLayer(input, (byte)1, "op.water_source");
-		
-		// We should see 13 possible locations, all at z-level 2 as their final destination.
-		for (int i = 0; i < 13; ++i)
-		{
-			TickProcessingContext context = _createContext(input, i);
-			List<PathLocation> path = CreatureLogic.test_findPathToRandomSpot(context, entity.location(), entity.type());
-			PathLocation target = path.get(path.size() - 1);
-			Assert.assertEquals(2.0f, target.getBaseLocation().z(), 0.01f);
-		}
-		// Verify that there are only 13.
-		try
-		{
-			TickProcessingContext context = _createContext(input, 13);
-			CreatureLogic.test_findPathToRandomSpot(context, entity.location(), entity.type());
-		}
-		catch (AssertionError e)
-		{
-			// Expected from test.
-		}
-	}
-
-	@Test
 	public void leaveWaterWhenDrowning()
 	{
 		// Verify that idle movement will avoid stopping in the water (these should all jump).
@@ -148,7 +85,7 @@ public class TestCreatureLogic
 		
 		// Even though this is only the idle timeout, we will see a plan made and that it ends above water.
 		TickProcessingContext context = ContextBuilder.build()
-				.tick((CreatureLogic.MINIMUM_MILLIS_TO_ACTION / 100L) + 1L)
+				.tick((CreatureMovementHelpers.MINIMUM_MILLIS_TO_ACTION / 100L) + 1L)
 				.lookups(ContextBuilder.buildSingleFetcher(input), null, null)
 				.fixedRandom(0)
 				.finish()
@@ -171,27 +108,6 @@ public class TestCreatureLogic
 		Assert.assertEquals(null, mutable.movementPlan.targetPreviousLocation());
 		Assert.assertEquals(null, mutable.movementPlan.directLocation());
 		Assert.assertEquals(EntityActionSimpleMove.Intensity.IDLE_CREATURE, mutable.movementPlan.intensity());
-	}
-
-	@Test
-	public void idleNoPath()
-	{
-		// Verify that we will choose to do nothing if there are no idle movement targets.
-		EntityLocation entityLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
-		CreatureEntity entity = CreatureEntity.create(-1, ORC, entityLocation, 0L);
-		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
-		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
-		short stoneNumber = ENV.items.getItemById("op.stone").number();
-		_setLayer(input, (byte)0, "op.stone");
-		_setLayer(input, (byte)1, "op.stone");
-		input.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 1), stoneNumber);
-		_setLayer(input, (byte)2, "op.stone");
-		input.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 2), stoneNumber);
-		
-		// We should see 0 possible locations.
-		TickProcessingContext context = _createContext(input, 0);
-		List<PathLocation> path = CreatureLogic.test_findPathToRandomSpot(context, entity.location(), entity.type());
-		Assert.assertNull(path);
 	}
 
 	@Test
@@ -226,7 +142,7 @@ public class TestCreatureLogic
 		// We should see them acquire this target.
 		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(input);
 		TickProcessingContext context = ContextBuilder.build()
-			.tick((CreatureLogic.MINIMUM_MILLIS_TO_ACTION / 100L) + 1L)
+			.tick((CreatureMovementHelpers.MINIMUM_MILLIS_TO_ACTION / 100L) + 1L)
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
 			.fixedRandom(2)
 			.finish()
@@ -270,7 +186,7 @@ public class TestCreatureLogic
 		);
 		// Special action is where we account for this targeting update but it doesn't count as a special action.
 		context = ContextBuilder.build()
-			.tick((CreatureLogic.MINIMUM_MILLIS_TO_ACTION / 100L) + 1L)
+			.tick((CreatureMovementHelpers.MINIMUM_MILLIS_TO_ACTION / 100L) + 1L)
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
 			.fixedRandom(2)
 			.finish()
@@ -520,7 +436,7 @@ public class TestCreatureLogic
 		long millisPerTick = 100L;
 		TickProcessingContext context = ContextBuilder.build()
 			.millisPerTick(millisPerTick)
-			.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
+			.tick(CreatureMovementHelpers.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
 			.fixedRandom(2)
 			.finish()
@@ -586,7 +502,7 @@ public class TestCreatureLogic
 		long millisPerTick = 100L;
 		TickProcessingContext context = ContextBuilder.build()
 			.millisPerTick(millisPerTick)
-			.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
+			.tick(CreatureMovementHelpers.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
 			.sinks(null, changeSink)
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
 			.fixedRandom(2)
@@ -1219,7 +1135,7 @@ public class TestCreatureLogic
 		long millisPerTick = 100L;
 		TickProcessingContext context = ContextBuilder.build()
 			.millisPerTick(millisPerTick)
-			.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
+			.tick(CreatureMovementHelpers.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
 			.lookups(previousBlockLookUp, previousEntityLookUp, null)
 			.fixedRandom(2)
 			.finish()
@@ -1283,7 +1199,7 @@ public class TestCreatureLogic
 			.fixedRandom(2)
 			.finish()
 		;
-		CreatureLogic.test_updateExistingMovementPlanState(context
+		CreatureLogic.createOrUpdatePathFinding(context
 			, EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc))
 			, mutableOrc
 		);
@@ -1308,7 +1224,7 @@ public class TestCreatureLogic
 			.fixedRandom(2)
 			.finish()
 		;
-		CreatureLogic.test_updateExistingMovementPlanState(context
+		CreatureLogic.createOrUpdatePathFinding(context
 			, EntityCollection.fromMaps(Map.of(player.id(), movedPlayer), Map.of(orc.id(), orc))
 			, mutableOrc
 		);
@@ -1333,7 +1249,7 @@ public class TestCreatureLogic
 			.fixedRandom(2)
 			.finish()
 		;
-		CreatureLogic.test_updateExistingMovementPlanState(context
+		CreatureLogic.createOrUpdatePathFinding(context
 			, EntityCollection.fromMaps(Map.of(), Map.of(orc.id(), orc))
 			, mutableOrc
 		);
@@ -1537,7 +1453,7 @@ public class TestCreatureLogic
 		mutableOrc.movementPlan = new DirectNoTarget(idleLocation
 			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
 		);
-		mutableOrc.nextMovementPlanMillis = CreatureLogic.MINIMUM_MILLIS_TO_ACTION;
+		mutableOrc.nextMovementPlanMillis = CreatureMovementHelpers.MINIMUM_MILLIS_TO_ACTION;
 		orc = mutableOrc.freeze();
 		context = ContextBuilder.build()
 			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
@@ -1954,17 +1870,6 @@ public class TestCreatureLogic
 		}, stairWalkLocations);
 	}
 
-
-	private static TickProcessingContext _createContext(IReadOnlyCuboidData cuboid, int random)
-	{
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
-		TickProcessingContext context = ContextBuilder.build()
-				.lookups(previousBlockLookUp, null, null)
-				.fixedRandom(random)
-				.finish()
-		;
-		return context;
-	}
 
 	private void _setLayer(CuboidData input, byte z, String name)
 	{

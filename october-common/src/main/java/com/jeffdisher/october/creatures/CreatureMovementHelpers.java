@@ -1,10 +1,19 @@
-package com.jeffdisher.october.logic;
+package com.jeffdisher.october.creatures;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
+import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.logic.EntityMovementHelpers;
+import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.logic.EntityMovementHelpers.IInteractiveHelper;
+import com.jeffdisher.october.logic.OrientationHelpers;
+import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.pathing.PathFinder;
 import com.jeffdisher.october.pathing.PathLocation;
+import com.jeffdisher.october.pathing.WalkingNavigator;
 import com.jeffdisher.october.subactions.EntitySubActionJump;
 import com.jeffdisher.october.subactions.EntitySubActionStepUp;
 import com.jeffdisher.october.subactions.EntitySubActionSwim;
@@ -15,6 +24,7 @@ import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IEntitySubAction;
 import com.jeffdisher.october.types.MutableCreature;
+import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -31,6 +41,19 @@ public class CreatureMovementHelpers
 	 * We use this to determine how much we can increase the movement distance by before rounding down.
 	 */
 	public static final float SQUARE_ROOT_MOVE_FUDGE_FACTOR = (float) Math.sqrt(EntityActionSimpleMove.FUDGE_FACTOR);
+	/**
+	 * How far a creature will look for a target location when performing a random idle movement.
+	 */
+	public static final float RANDOM_MOVEMENT_DISTANCE = 3.5f;
+	/**
+	 * The minimum number of millis we can wait from our last action until we decide to make a deliberate plan.
+	 */
+	public static final long MINIMUM_MILLIS_TO_ACTION = 1_000L;
+	/**
+	 * The chance of making an idle action instead, of we fail to make a deliberate action when acting.
+	 */
+	public static final int IDLE_ACTION_DENOMINATOR = 30;
+
 
 	/**
 	 * Creates a list of movements to position the creature within its current block such that it can move in the
@@ -500,6 +523,84 @@ public class CreatureMovementHelpers
 			}
 		}
 		return change;
+	}
+
+	public static List<PathLocation> findPathToRandomSpot(TickProcessingContext context
+		, WalkingNavigator navigator
+		, EntityLocation creatureLocation
+	)
+	{
+		Map<PathLocation, PathLocation> possiblePaths = PathFinder.findPlacesWithinLimit(navigator
+			, creatureLocation
+		);
+		// We will only choose paths which don't end in air above air (jumping into the air for no reason) or in water (since none of our creatures can breathe under water).
+		PathLocation currentPath = PathLocation.forEntityBase(creatureLocation);
+		List<PathLocation> goodTargets1 = new ArrayList<>();
+		for (Map.Entry<PathLocation, PathLocation> elt : possiblePaths.entrySet())
+		{
+			PathLocation end = elt.getKey();
+			float endViscosity = navigator.getViscosityAtBase(end.getBaseLocation());
+			boolean shouldInclude = true;
+			if (endViscosity >= BlockAspect.VISOSITY_FLOAT_SWIMMABLE)
+			{
+				// This path ends in water so don't include it.
+				shouldInclude = false;
+			}
+			else if (currentPath.equals(end))
+			{
+				// We don't want to end where we started.
+				shouldInclude = false;
+			}
+			else
+			{
+				PathLocation under = end.getRelative(0, 0, -1);
+				float underViscosity = navigator.getViscosityAtBase(under.getBaseLocation());
+				if (underViscosity < BlockAspect.VISOSITY_FLOAT_SWIMMABLE)
+				{
+					// This block is over top of a walkable block (meaning it was a jump) so ignore it.
+					shouldInclude = false;
+				}
+			}
+			if (shouldInclude)
+			{
+				goodTargets1.add(end);
+			}
+		}
+		
+		// Strip out any of the ending positions which we don't want.
+		List<PathLocation> goodTargets = goodTargets1;
+		
+		// Just pick one of these destinations at random, or default to standing still.
+		int size = goodTargets.size();
+		List<PathLocation> plannedPath;
+		if (size > 0)
+		{
+			int selection = context.randomInt.applyAsInt(size);
+			// Skip over this many options (we can't really index into this and choosing the "first" would give a hash-order preference).
+			PathLocation target = goodTargets.get(selection);
+			
+			// We can now build the plan - note that we build this in reverse since the map is back-pointers.
+			plannedPath = new ArrayList<>();
+			while (null != target)
+			{
+				plannedPath.add(0, target);
+				target = possiblePaths.get(target);
+			}
+			// We should never see a path ending where we started.
+			Assert.assertTrue(plannedPath.size() > 0);
+			// We want to strip away the first step, since it is the current location.
+			plannedPath.remove(0);
+			// If the path ends up being empty, don't choose it.
+			if (plannedPath.isEmpty())
+			{
+				plannedPath = null;
+			}
+		}
+		else
+		{
+			plannedPath = null;
+		}
+		return plannedPath;
 	}
 
 

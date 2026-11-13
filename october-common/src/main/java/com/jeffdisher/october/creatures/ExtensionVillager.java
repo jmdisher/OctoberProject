@@ -843,7 +843,7 @@ public class ExtensionVillager implements EntityType.IExtension
 					// We can now clear the target and crafting purchase plan.
 					creature.movementPlan = null;
 					// TODO:  Remove this reset of the movement plan once the call into this is split into a different path.
-					creature.nextMovementPlanMillis = context.currentTickTimeMillis + CreatureLogic.MINIMUM_MILLIS_TO_ACTION;
+					creature.nextMovementPlanMillis = context.currentTickTimeMillis + CreatureMovementHelpers.MINIMUM_MILLIS_TO_ACTION;
 					creature.newExtendedData = new Data(data.profession
 						, data.inventory
 						, null

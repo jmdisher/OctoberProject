@@ -3,13 +3,12 @@ package com.jeffdisher.october.creatures;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
+import com.jeffdisher.october.actions.EntityActionSimpleMove.Intensity;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
-import com.jeffdisher.october.logic.CreatureMovementHelpers;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
@@ -36,17 +35,6 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CreatureLogic
 {
-	public static final float RANDOM_MOVEMENT_DISTANCE = 3.5f;
-	/**
-	 * The minimum number of millis we can wait from our last action until we decide to make a deliberate plan.
-	 */
-	public static final long MINIMUM_MILLIS_TO_ACTION = 1_000L;
-	/**
-	 * The chance of making an idle action instead, of we fail to make a deliberate action when acting.
-	 */
-	public static final int IDLE_ACTION_DENOMINATOR = 30;
-
-
 	/**
 	 * Called within a mutation to apply an item to a creature.  This may change their state or not.
 	 * 
@@ -76,25 +64,29 @@ public class CreatureLogic
 			, long timeLimitMillis
 	)
 	{
+		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
+		EntityType type = mutable.getType();
+		EntityLocation currentLocation = mutable.getLocation();
+		
 		EntityActionSimpleMove<MutableCreature> action;
 		if ((null != mutable.movementPlan) && (null != mutable.movementPlan.directLocation()))
 		{
 			// We prioritize walking "directly" before following the conventional plan.
-			EntityLocation targetLocation = mutable.movementPlan.directLocation();
+			CreatureEntity.MovementPlan oldPlan = mutable.movementPlan;
+			EntityLocation targetLocation = oldPlan.directLocation();
 			
-			ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
-			float viscosity = reader.getMaxStillViscosityInVolume(mutable.newLocation, mutable.getType().volume());
+			float viscosity = reader.getMaxStillViscosityInVolume(currentLocation, type.volume());
 			
-			byte yaw = OrientationHelpers.getYawBetweenPoints(mutable.newLocation, targetLocation);
+			byte yaw = OrientationHelpers.getYawBetweenPoints(currentLocation, targetLocation);
 			action = CreatureMovementHelpers.moveAlongDiagonalPath(reader
-				, mutable.newLocation
+				, currentLocation
 				, yaw
 				, (byte)0
-				, mutable.newType
+				, type
 				, targetLocation
 				, timeLimitMillis
 				, viscosity
-				, mutable.movementPlan.intensity()
+				, oldPlan.intensity()
 			);
 			
 			if (null == action)
@@ -107,7 +99,82 @@ public class CreatureLogic
 		else if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
 		{
 			// We can derive the action directly from this plan.
-			action = _produceNextAction(context, mutable, mutable.movementPlan, timeLimitMillis);
+			CreatureEntity.MovementPlan oldPlan = mutable.movementPlan;
+			List<PathLocation> existingPlan = oldPlan.fullPlan();
+			Assert.assertTrue(!existingPlan.isEmpty());
+			
+			EntityActionSimpleMove.Intensity intensity = oldPlan.intensity;
+			EntityLocation oldVelocity = mutable.getVelocityVector();
+			
+			float viscosity = reader.getMaxStillViscosityInVolume(currentLocation, type.volume());
+			
+			// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
+			PathLocation currentInPath = PathLocation.forEntityBase(currentLocation);
+			PathLocation first = existingPlan.get(0);
+			PathLocation second = (existingPlan.size() >= 2) ? existingPlan.get(1) : null;
+			FacingDirection direction;
+			if ((existingPlan.size() > 2)
+				&& (FacingDirection.UP == PathLocation.adjacentDirection(currentInPath, first))
+				&& (FacingDirection.UP == PathLocation.adjacentDirection(first, existingPlan.get(1)))
+			)
+			{
+				// This means we are jumping so choose the next place where we want to go for direction hint.
+				PathLocation third = existingPlan.get(2);
+				direction = PathLocation.adjacentDirection(second, third);
+			}
+			else
+			{
+				// Otherwise, we just want to lean into the direction we are currently heading.
+				direction = PathLocation.adjacentDirection(currentInPath, first);
+			}
+			EntityActionSimpleMove<MutableCreature> actionProduced = CreatureMovementHelpers.prepareForMove(currentLocation
+				, oldVelocity
+				, type
+				, direction
+				, timeLimitMillis
+				, viscosity
+				, intensity
+			);
+			if (null == actionProduced)
+			{
+				// If we are already in a reasonable location, proceed to move.
+				// We know that this should only be called AFTER updating our planned path.
+				Assert.assertTrue(!PathLocation.forEntityBase(currentLocation).equals(first));
+				
+				boolean isSwimmable = (viscosity >= BlockAspect.VISOSITY_FLOAT_SWIMMABLE) && (viscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
+				actionProduced = CreatureMovementHelpers.moveToNextLocation(reader
+					, currentLocation
+					, oldVelocity
+					, mutable.newYaw
+					, mutable.newPitch
+					, type
+					, first
+					, second
+					, timeLimitMillis
+					, viscosity
+					, intensity
+					, isSwimmable
+				);
+			}
+			// TODO:  This approach is a hack which requires that we rethink this action production design.
+			if ((null != actionProduced) && (actionProduced.getSubAction() instanceof EntitySubActionStepUp))
+			{
+				List<PathLocation> fullPlan = new ArrayList<>(existingPlan);
+				fullPlan.remove(0);
+				Assert.assertTrue(null == oldPlan.directLocation);
+				if (CreatureEntity.NO_TARGET_ENTITY_ID != oldPlan.targetEntityId)
+				{
+					mutable.movementPlan = new PlanWithTarget(fullPlan
+						, oldPlan.targetEntityId
+						, oldPlan.targetPreviousLocation
+					);
+				}
+				else
+				{
+					mutable.movementPlan = new PlanNoTarget(fullPlan, intensity);
+				}
+			}
+			action = actionProduced;
 		}
 		else
 		{
@@ -145,17 +212,460 @@ public class CreatureLogic
 		, MutableCreature mutable
 	)
 	{
+		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
+		EntityType type = mutable.getType();
+		EntityLocation currentLocation = mutable.getLocation();
+		
 		// If we have a plan, we want to update it whenever we didn't take any special action.
 		if (null != mutable.movementPlan)
 		{
-			_updateExistingMovementPlanState(context, entityCollection, mutable);
+			// First, handle the invalidate cases.
+			
+			// Invalidate:  Verify that the target is valid.
+			if ((null != mutable.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId()))
+			{
+				boolean isTargetValid = type.extension().isTargetValid(mutable, entityCollection);
+				if (!isTargetValid)
+				{
+					// The target is invalid so clear our state.
+					mutable.movementPlan = null;
+				}
+			}
+			
+			// Invalidate:  Verify that we aren't stuck in a block.
+			if ((null != mutable.movementPlan)
+				&& ((null != mutable.movementPlan.directLocation()) || (null != mutable.movementPlan.fullPlan()))
+			)
+			{
+				float viscosity = reader.getMaxStillViscosityInVolume(currentLocation, type.volume());
+				
+				if (BlockAspect.VISOSITY_FLOAT_SOLID == viscosity)
+				{
+					// This typically happens if a block drops on us or if a block was placed on us due to a race condition.
+					// Clear the plan since we can't move.
+					mutable.movementPlan = null;
+				}
+			}
+			
+			// Invalidate:  Verify that we are in range of the next step and it isn't solid.
+			if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
+			{
+				List<PathLocation> existingPlan = mutable.movementPlan.fullPlan();
+				PathLocation thisStep = existingPlan.get(0);
+				PathLocation pathBase = PathLocation.forEntityBase(currentLocation);
+				
+				// We might not yet have noticed that we have moved into the next step so skip this check in that case.
+				if (!pathBase.equals(thisStep))
+				{
+					int distanceToNext = PathLocation.pathStepDistance(pathBase, thisStep);
+					boolean isAdjacent = (1 == distanceToNext);
+					if (isAdjacent)
+					{
+						// Just make sure we can move into this next step.
+						float nextViscosity = reader.getMaxStillViscosityInVolume(thisStep.getBaseLocation(), type.volume());
+						if (BlockAspect.VISOSITY_FLOAT_SOLID == nextViscosity)
+						{
+							// Something is blocked so clear the plan.
+							mutable.movementPlan = null;
+						}
+						else
+						{
+							// Common case:  The path is still valid so just fall through and continue.
+						}
+					}
+					else
+					{
+						// We must have fallen or been pushed so clear the plan.
+						mutable.movementPlan = null;
+					}
+				}
+			}
+			
+			// --- The path is either clear and valid so check if it should be advanced ---
+			
+			// Check if the plan should be update in response to a target having moved.
+			if ((null != mutable.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId()))
+			{
+				MinimalEntity targetEntity = context.previousEntityLookUp.getById(mutable.movementPlan.targetEntityId());
+				
+				// The target validity was checked in the invalidate path so this is valid.
+				Assert.assertTrue(null != targetEntity);
+				
+				if (!targetEntity.location().equals(mutable.movementPlan.targetPreviousLocation()))
+				{
+					// This has moved so update the plan in response.
+					EntityLocation targetLocation = targetEntity.location();
+					// This has moved so update the plan in response.
+					WalkingNavigator navigator = new WalkingNavigator(context.previousBlockLookUp
+						, type.volume()
+						, type.getPathDistance()
+						, true
+						, true
+						, true
+						, true
+					);
+					List<PathLocation> path = PathFinder.findPathWithLimit(navigator, currentLocation, targetLocation);
+					if (null != path)
+					{
+						int targetEntityId = mutable.movementPlan.targetEntityId();
+						// We want to strip away the first step, since it is the current location.
+						path.remove(0);
+						
+						// We need to store a movement plan whether this path is reduced to nothing, or not.
+						CreatureEntity.MovementPlan plan;
+						if (path.size() > 0)
+						{
+							EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, currentLocation, type, path);
+							
+							if (null != directLocation)
+							{
+								plan = new DirectWithDistantTarget(directLocation, targetEntityId, targetLocation);
+							}
+							else
+							{
+								plan = new PlanWithTarget(Collections.unmodifiableList(path), targetEntityId, targetLocation);
+							}
+						}
+						else
+						{
+							plan = new DirectWithTarget(targetEntityId, targetLocation);
+						}
+						mutable.movementPlan = plan;
+					}
+					else
+					{
+						mutable.movementPlan = null;
+					}
+				}
+			}
+			
+			// Handle the uncommon case where we are in direct mode but are no longer on the same z-level.
+			if ((null != mutable.movementPlan)
+				&& (null != mutable.movementPlan.directLocation())
+				&& (currentLocation.getBlockLocation().z() != mutable.movementPlan.directLocation().getBlockLocation().z())
+			)
+			{
+				if (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId())
+				{
+					// We will rebuild the plan from our new location.
+					MinimalEntity targetEntity = context.previousEntityLookUp.getById(mutable.movementPlan.targetEntityId());
+					EntityLocation targetLocation = targetEntity.location();
+					// This has moved so update the plan in response.
+					WalkingNavigator navigator = new WalkingNavigator(context.previousBlockLookUp
+						, type.volume()
+						, type.getPathDistance()
+						, true
+						, true
+						, true
+						, true
+					);
+					List<PathLocation> path = PathFinder.findPathWithLimit(navigator, currentLocation, targetLocation);
+					if (null != path)
+					{
+						int targetEntityId = mutable.movementPlan.targetEntityId();
+						// We want to strip away the first step, since it is the current location.
+						path.remove(0);
+						
+						// We need to store a movement plan whether this path is reduced to nothing, or not.
+						CreatureEntity.MovementPlan plan;
+						if (path.size() > 0)
+						{
+							EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, currentLocation, type, path);
+							
+							if (null != directLocation)
+							{
+								plan = new DirectWithDistantTarget(directLocation, targetEntityId, targetLocation);
+							}
+							else
+							{
+								plan = new PlanWithTarget(Collections.unmodifiableList(path), targetEntityId, targetLocation);
+							}
+						}
+						else
+						{
+							plan = new DirectWithTarget(targetEntityId, targetLocation);
+						}
+						mutable.movementPlan = plan;
+					}
+					else
+					{
+						mutable.movementPlan = null;
+					}
+				}
+				else
+				{
+					// We were just idly moving and must have fallen or been pushed into a different z-level so just clear it.
+					mutable.movementPlan = null;
+				}
+			}
+			
+			// Check if the plan should be updated due to us stepping into the next block.
+			if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
+			{
+				List<PathLocation> existingPlan = mutable.movementPlan.fullPlan();
+				PathLocation thisStep = existingPlan.get(0);
+				PathLocation pathBase = PathLocation.forEntityBase(currentLocation);
+				
+				if (pathBase.equals(thisStep))
+				{
+					// We are in the next part of the plan so remove this step.
+					if (existingPlan.size() > 1)
+					{
+						// Remove this one element and stay in the same plan.
+						List<PathLocation> updatedPlan = new ArrayList<>(existingPlan);
+						updatedPlan.remove(0);
+						
+						if (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.movementPlan.targetEntityId())
+						{
+							List<PathLocation> steps = Collections.unmodifiableList(updatedPlan);
+							Intensity intensity = EntityActionSimpleMove.Intensity.IDLE_CREATURE;
+							EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, currentLocation, type, steps);
+							
+							CreatureEntity.MovementPlan movementPlan;
+							if (null != directLocation)
+							{
+								movementPlan = new DirectNoTarget(directLocation, intensity);
+							}
+							else
+							{
+								movementPlan = new PlanNoTarget(steps, intensity);
+							}
+							mutable.movementPlan = movementPlan;
+						}
+						else
+						{
+							int targetId = mutable.movementPlan.targetEntityId();
+							EntityLocation targetLocation = mutable.movementPlan.targetPreviousLocation();
+							List<PathLocation> updatedPlan1 = Collections.unmodifiableList(updatedPlan);
+							EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, currentLocation, type, updatedPlan1);
+							
+							CreatureEntity.MovementPlan movementPlan;
+							if (null != directLocation)
+							{
+								movementPlan = new DirectWithDistantTarget(directLocation, targetId, targetLocation);
+							}
+							else
+							{
+								movementPlan = new PlanWithTarget(Collections.unmodifiableList(updatedPlan1), targetId, targetLocation);
+							}
+							mutable.movementPlan = movementPlan;
+						}
+					}
+					else
+					{
+						// The movement plan is complete so determine if we enter a near target state or no plan.
+						if (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.movementPlan.targetEntityId())
+						{
+							// This means clear the plan since we must have been idling.
+							mutable.movementPlan = null;
+						}
+						else
+						{
+							// We assume that they are in range as a near target.
+							mutable.movementPlan = new DirectWithTarget(mutable.movementPlan.targetEntityId(), mutable.movementPlan.targetPreviousLocation());
+						}
+					}
+				}
+			}
+			
+			// Check if the plan should be updated due to proximity to the target.
+			if ((null != mutable.movementPlan) && (null != mutable.movementPlan.directLocation()))
+			{
+				// If we are targeting an entity, then we clear this once within action range, otherwise we clear when we match it.
+				if (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.movementPlan.targetEntityId())
+				{
+					if (currentLocation.equals(mutable.movementPlan.directLocation()))
+					{
+						// We are at our destination, so clear.
+						mutable.movementPlan = null;
+					}
+					else
+					{
+						// We are still walking there, so leave this unchanged.
+					}
+				}
+				else
+				{
+					// We have a target so see if they are within action range.
+					MinimalEntity targetEntity = context.previousEntityLookUp.getById(mutable.movementPlan.targetEntityId());
+					
+					// Note that we already checked that this target is valid in an earlier check.
+					Assert.assertTrue(null != targetEntity);
+					
+					EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(currentLocation, type.volume());
+					FixedRegion region = FixedRegion.fromMinimal(targetEntity);
+					float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
+					float actionDistance = type.actionDistance();
+					
+					if (distance < actionDistance)
+					{
+						// We can drop the direct location and just keep them in-range.
+						mutable.movementPlan = new NearToTarget(mutable.movementPlan.targetEntityId(), targetEntity.location());
+					}
+					else
+					{
+						// We are still approaching them so change nothing.
+					}
+				}
+			}
 		}
 		
 		// If we have no plan, try to create a new one.
 		if (null == mutable.movementPlan)
 		{
 			// We have no plan so make a new one.
-			mutable.movementPlan = _makeMovementPlan(context, entityCollection, mutable);
+			// We will first see if they can make a deliberate plan.
+			boolean canMakeAction = mutable.shouldTakeActionInTick || (context.currentTickTimeMillis >= mutable.nextMovementPlanMillis);
+			CreatureEntity.MovementPlan movementPlan = null;
+			if (canMakeAction)
+			{
+				// We first check to see if we should be running away, then make a deliberate plan, then make an idle plan.
+				if (null != mutable.lastInjuryVector)
+				{
+					float injuryX = mutable.lastInjuryVector.x();
+					float injuryY = mutable.lastInjuryVector.y();
+					boolean allowWest = (injuryX <= 0.0f);
+					boolean allowEast = (injuryX >= 0.0f);
+					boolean allowSouth = (injuryY <= 0.0f);
+					boolean allowNorth = (injuryY >= 0.0f);
+					
+					WalkingNavigator navigator = new WalkingNavigator(context.previousBlockLookUp
+						, type.volume()
+						, CreatureMovementHelpers.RANDOM_MOVEMENT_DISTANCE
+						, allowWest
+						, allowEast
+						, allowSouth
+						, allowNorth
+					);
+					Intensity intensity = EntityActionSimpleMove.Intensity.RUNNING;
+					List<PathLocation> steps = CreatureMovementHelpers.findPathToRandomSpot(context
+						, navigator
+						, currentLocation
+					);
+					
+					if (null != steps)
+					{
+						// We can't plan an empty path.
+						Assert.assertTrue(!steps.isEmpty());
+						EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, currentLocation, type, steps);
+						
+						if (null != directLocation)
+						{
+							movementPlan = new DirectNoTarget(directLocation, intensity);
+						}
+						else
+						{
+							movementPlan = new PlanNoTarget(steps, intensity);
+						}
+					}
+					else
+					{
+						// There is nothing here so return null.
+						movementPlan = null;
+					}
+					mutable.lastInjuryVector = null;
+				}
+				if (null == movementPlan)
+				{
+					WalkingNavigator navigator = new WalkingNavigator(context.previousBlockLookUp
+						, type.volume()
+						, type.getPathDistance()
+						, true
+						, true
+						, true
+						, true
+					);
+					
+					EntityType.TargetEntity newTarget = type.extension().findDeliberateTarget(mutable, entityCollection);
+					
+					// Determine the path if we found a target.
+					if (null != newTarget)
+					{
+						// We want to verify that we have a path before we update our state.
+						// We have a target so try to build a path (we will use double the distance for pathing overhead).
+						EntityLocation targetLocation = newTarget.location();
+						// If this fails, it will return null which is already our failure case.
+						List<PathLocation> path = PathFinder.findPathWithLimit(navigator, currentLocation, targetLocation);
+						if (null != path)
+						{
+							int targetEntityId = newTarget.id();
+							// We want to strip away the first step, since it is the current location.
+							path.remove(0);
+							
+							// We need to store a movement plan whether this path is reduced to nothing, or not.
+							if (path.size() > 0)
+							{
+								EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, currentLocation, type, path);
+								
+								if (null != directLocation)
+								{
+									movementPlan = new DirectWithDistantTarget(directLocation, targetEntityId, targetLocation);
+								}
+								else
+								{
+									movementPlan = new PlanWithTarget(Collections.unmodifiableList(path), targetEntityId, targetLocation);
+								}
+							}
+							else
+							{
+								movementPlan = new DirectWithTarget(targetEntityId, targetLocation);
+							}
+							
+							// Even if the path was empty, this counts as a decision and reset despawn timeout.
+							mutable.despawnMillis = context.currentTickTimeMillis + CreatureEntity.MILLIS_UNTIL_NO_ACTION_DESPAWN;
+						}
+					}
+				}
+				if (null == movementPlan)
+				{
+					// If we don't have anything deliberate to do, we will just do some random "idle" movement but this is
+					// somewhat expensive so only do it if we have been waiting a while or if we are in danger (since the random
+					// movements are "safe").
+					boolean isInDanger = (mutable.newBreath < MiscConstants.MAX_BREATH);
+					// We use "1" here just because it makes some testing simpler but any number < IDLE_ACTION_DENOMINATOR would work.
+					boolean canMakeIdleAction = (1 == context.randomInt.applyAsInt(CreatureMovementHelpers.IDLE_ACTION_DENOMINATOR));
+					if (isInDanger || canMakeIdleAction)
+					{
+						WalkingNavigator navigator = new WalkingNavigator(context.previousBlockLookUp
+							, type.volume()
+							, CreatureMovementHelpers.RANDOM_MOVEMENT_DISTANCE
+							, true
+							, true
+							, true
+							, true
+						);
+						Intensity intensity = EntityActionSimpleMove.Intensity.IDLE_CREATURE;
+						List<PathLocation> steps = CreatureMovementHelpers.findPathToRandomSpot(context
+							, navigator
+							, currentLocation
+						);
+						
+						if (null != steps)
+						{
+							// We can't plan an empty path.
+							Assert.assertTrue(!steps.isEmpty());
+							EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, currentLocation, type, steps);
+							
+							if (null != directLocation)
+							{
+								movementPlan = new DirectNoTarget(directLocation, intensity);
+							}
+							else
+							{
+								movementPlan = new PlanNoTarget(steps, intensity);
+							}
+						}
+						else
+						{
+							// There is nothing here so return null.
+							movementPlan = null;
+						}
+					}
+				}
+				mutable.nextMovementPlanMillis = context.currentTickTimeMillis + CreatureMovementHelpers.MINIMUM_MILLIS_TO_ACTION;
+				mutable.shouldTakeActionInTick = false;
+			}
+			mutable.movementPlan = movementPlan;
 		}
 	}
 
@@ -199,730 +709,5 @@ public class CreatureLogic
 		}
 		
 		return isDone;
-	}
-
-	/**
-	 * Just a testing entry-point for the random target path selection (idle movement).
-	 * 
-	 * @param context The testing context.
-	 * @param location The creature's location.
-	 * @param type The creature's type.
-	 * @return A path to a randomly selected target.
-	 */
-	public static List<PathLocation> test_findPathToRandomSpot(TickProcessingContext context, EntityLocation location, EntityType type)
-	{
-		WalkingNavigator navigator = new WalkingNavigator(context.previousBlockLookUp
-			, type.volume()
-			, RANDOM_MOVEMENT_DISTANCE
-			, true
-			, true
-			, true
-			, true
-		);
-		return _findPathToRandomSpot(context
-			, navigator
-			, location
-		);
-	}
-
-	/**
-	 * Just a testing entry-point for showing how existing movement plans are updated.
-	 * 
-	 * @param context The testing context.
-	 * @param entityCollection The read-only collection of entities in the world.
-	 * @param mutable The mutable creature object currently being evaluated.
-	 */
-	public static void test_updateExistingMovementPlanState(TickProcessingContext context
-		, EntityCollection entityCollection
-		, MutableCreature mutable
-	)
-	{
-		_updateExistingMovementPlanState(context, entityCollection, mutable);
-	}
-
-
-	private static CreatureEntity.MovementPlan _makeMovementPlan(TickProcessingContext context
-		, EntityCollection entityCollection
-		, MutableCreature mutable
-	)
-	{
-		// We will first see if they can make a deliberate plan.
-		boolean canMakeAction = mutable.shouldTakeActionInTick || (context.currentTickTimeMillis >= mutable.nextMovementPlanMillis);
-		CreatureEntity.MovementPlan movementPlan = null;
-		if (canMakeAction)
-		{
-			// We first check to see if we should be running away, then make a deliberate plan, then make an idle plan.
-			if (null != mutable.lastInjuryVector)
-			{
-				float injuryX = mutable.lastInjuryVector.x();
-				float injuryY = mutable.lastInjuryVector.y();
-				boolean allowWest = (injuryX <= 0.0f);
-				boolean allowEast = (injuryX >= 0.0f);
-				boolean allowSouth = (injuryY <= 0.0f);
-				boolean allowNorth = (injuryY >= 0.0f);
-				
-				WalkingNavigator navigator = new WalkingNavigator(context.previousBlockLookUp
-					, mutable.newType.volume()
-					, RANDOM_MOVEMENT_DISTANCE
-					, allowWest
-					, allowEast
-					, allowSouth
-					, allowNorth
-				);
-				movementPlan = _findRandomPathAsPlan(context
-					, navigator
-					, mutable
-					, EntityActionSimpleMove.Intensity.RUNNING
-				);
-				mutable.lastInjuryVector = null;
-			}
-			if (null == movementPlan)
-			{
-				WalkingNavigator navigator = new WalkingNavigator(context.previousBlockLookUp
-					, mutable.newType.volume()
-					, mutable.newType.getPathDistance()
-					, true
-					, true
-					, true
-					, true
-				);
-				movementPlan = _buildDeliberatePath(context
-					, navigator
-					, entityCollection
-					, mutable
-				);
-			}
-			if (null == movementPlan)
-			{
-				// If we don't have anything deliberate to do, we will just do some random "idle" movement but this is
-				// somewhat expensive so only do it if we have been waiting a while or if we are in danger (since the random
-				// movements are "safe").
-				boolean isInDanger = (mutable.newBreath < MiscConstants.MAX_BREATH);
-				// We use "1" here just because it makes some testing simpler but any number < IDLE_ACTION_DENOMINATOR would work.
-				boolean canMakeIdleAction = (1 == context.randomInt.applyAsInt(IDLE_ACTION_DENOMINATOR));
-				if (isInDanger || canMakeIdleAction)
-				{
-					WalkingNavigator navigator = new WalkingNavigator(context.previousBlockLookUp
-						, mutable.newType.volume()
-						, RANDOM_MOVEMENT_DISTANCE
-						, true
-						, true
-						, true
-						, true
-					);
-					movementPlan = _findRandomPathAsPlan(context
-						, navigator
-						, mutable
-						, EntityActionSimpleMove.Intensity.IDLE_CREATURE
-					);
-				}
-			}
-			mutable.nextMovementPlanMillis = context.currentTickTimeMillis + MINIMUM_MILLIS_TO_ACTION;
-			mutable.shouldTakeActionInTick = false;
-		}
-		return movementPlan;
-	}
-
-	private static CreatureEntity.MovementPlan _findRandomPathAsPlan(TickProcessingContext context
-		, WalkingNavigator navigator
-		, MutableCreature mutable
-		, EntityActionSimpleMove.Intensity intensity
-	)
-	{
-		CreatureEntity.MovementPlan movementPlan;
-		List<PathLocation> steps = _findPathToRandomSpot(context
-			, navigator
-			, mutable.getLocation()
-		);
-		// We can't plan an empty path.
-		Assert.assertTrue((null == steps) || !steps.isEmpty());
-		
-		if (null != steps)
-		{
-			movementPlan = _decidePlanWithoutTarget(context, mutable, steps, intensity);
-		}
-		else
-		{
-			// There is nothing here so return null.
-			movementPlan = null;
-		}
-		return movementPlan;
-	}
-
-	private static EntityActionSimpleMove<MutableCreature> _produceNextAction(TickProcessingContext context
-		, MutableCreature mutable
-		, CreatureEntity.MovementPlan oldPlan
-		, long timeLimitMillis
-	)
-	{
-		List<PathLocation> existingPlan = oldPlan.fullPlan();
-		Assert.assertTrue(!existingPlan.isEmpty());
-		
-		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
-		float viscosity = reader.getMaxStillViscosityInVolume(mutable.newLocation, mutable.getType().volume());
-		
-		// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
-		EntityLocation currentLocation = mutable.getLocation();
-		PathLocation currentInPath = PathLocation.forEntityBase(currentLocation);
-		PathLocation first = existingPlan.get(0);
-		FacingDirection direction;
-		if ((existingPlan.size() > 2)
-			&& (FacingDirection.UP == PathLocation.adjacentDirection(currentInPath, first))
-			&& (FacingDirection.UP == PathLocation.adjacentDirection(first, existingPlan.get(1)))
-		)
-		{
-			// This means we are jumping so choose the next place where we want to go for direction hint.
-			PathLocation second = existingPlan.get(1);
-			PathLocation third = existingPlan.get(2);
-			direction = PathLocation.adjacentDirection(second, third);
-		}
-		else
-		{
-			// Otherwise, we just want to lean into the direction we are currently heading.
-			direction = PathLocation.adjacentDirection(currentInPath, first);
-		}
-		EntityActionSimpleMove<MutableCreature> actionProduced = CreatureMovementHelpers.prepareForMove(currentLocation
-			, mutable.getVelocityVector()
-			, mutable.getType()
-			, direction
-			, timeLimitMillis
-			, viscosity
-			, oldPlan.intensity()
-		);
-		if (null == actionProduced)
-		{
-			// If we are already in a reasonable location, proceed to move.
-			actionProduced = _planNextStep(reader
-				, currentLocation
-				, mutable.getVelocityVector()
-				, mutable.newYaw
-				, mutable.newPitch
-				, mutable.getType()
-				, existingPlan
-				, timeLimitMillis
-				, viscosity
-				, oldPlan.intensity()
-			);
-		}
-		// TODO:  This approach is a hack which requires that we rethink this action production design.
-		if ((null != actionProduced) && (actionProduced.getSubAction() instanceof EntitySubActionStepUp))
-		{
-			CreatureEntity.MovementPlan movementPlan = mutable.movementPlan;
-			List<PathLocation> fullPlan = new ArrayList<>(movementPlan.fullPlan());
-			fullPlan.remove(0);
-			Assert.assertTrue(null == movementPlan.directLocation);
-			if (CreatureEntity.NO_TARGET_ENTITY_ID != movementPlan.targetEntityId)
-			{
-				mutable.movementPlan = new PlanWithTarget(fullPlan
-					, movementPlan.targetEntityId
-					, movementPlan.targetPreviousLocation
-				);
-			}
-			else
-			{
-				mutable.movementPlan = new PlanNoTarget(fullPlan, movementPlan.intensity);
-			}
-		}
-		
-		return actionProduced;
-	}
-
-	// NOTE:  This will return an empty path if it made a decision but the decision has no steps.
-	private static CreatureEntity.MovementPlan _buildDeliberatePath(TickProcessingContext context
-		, WalkingNavigator navigator
-		, EntityCollection entityCollection
-		, MutableCreature mutable
-	)
-	{
-		EntityType type = mutable.getType();
-		
-		EntityType.TargetEntity newTarget = type.extension().findDeliberateTarget(mutable, entityCollection);
-		
-		// Determine the path if we found a target.
-		CreatureEntity.MovementPlan plan = null;
-		if (null != newTarget)
-		{
-			// We want to verify that we have a path before we update our state.
-			// We have a target so try to build a path (we will use double the distance for pathing overhead).
-			EntityLocation targetLocation = newTarget.location();
-			// If this fails, it will return null which is already our failure case.
-			EntityLocation creatureLocation = mutable.getLocation();
-			List<PathLocation> path = PathFinder.findPathWithLimit(navigator, creatureLocation, targetLocation);
-			if (null != path)
-			{
-				plan = _pruneAndStoreFreshTargetPlan(context, mutable.newLocation, mutable.newType, path, newTarget.id(), targetLocation);
-				
-				// Even if the path was empty, this counts as a decision and reset despawn timeout.
-				mutable.despawnMillis = context.currentTickTimeMillis + CreatureEntity.MILLIS_UNTIL_NO_ACTION_DESPAWN;
-			}
-		}
-		return plan;
-	}
-
-	private static List<PathLocation> _findPathToRandomSpot(TickProcessingContext context
-		, WalkingNavigator navigator
-		, EntityLocation creatureLocation
-	)
-	{
-		Map<PathLocation, PathLocation> possiblePaths = PathFinder.findPlacesWithinLimit(navigator
-			, creatureLocation
-		);
-		
-		// Strip out any of the ending positions which we don't want.
-		List<PathLocation> goodTargets = _extractAcceptablePathTargets(navigator, possiblePaths, creatureLocation);
-		
-		// Just pick one of these destinations at random, or default to standing still.
-		int size = goodTargets.size();
-		List<PathLocation> plannedPath;
-		if (size > 0)
-		{
-			int selection = context.randomInt.applyAsInt(size);
-			// Skip over this many options (we can't really index into this and choosing the "first" would give a hash-order preference).
-			PathLocation target = goodTargets.get(selection);
-			
-			// We can now build the plan - note that we build this in reverse since the map is back-pointers.
-			plannedPath = new ArrayList<>();
-			while (null != target)
-			{
-				plannedPath.add(0, target);
-				target = possiblePaths.get(target);
-			}
-			// We should never see a path ending where we started.
-			Assert.assertTrue(plannedPath.size() > 0);
-			// We want to strip away the first step, since it is the current location.
-			plannedPath.remove(0);
-			// If the path ends up being empty, don't choose it.
-			if (plannedPath.isEmpty())
-			{
-				plannedPath = null;
-			}
-		}
-		else
-		{
-			plannedPath = null;
-		}
-		return plannedPath;
-	}
-
-	private static EntityActionSimpleMove<MutableCreature> _planNextStep(ViscosityReader reader
-		, EntityLocation entityLocation
-		, EntityLocation entityVelocity
-		, byte yaw
-		, byte pitch
-		, EntityType type
-		, List<PathLocation> existingPlan
-		, long timeLimitMillis
-		, float viscosity
-		, EntityActionSimpleMove.Intensity intensity
-	)
-	{
-		PathLocation thisStep = existingPlan.get(0);
-		PathLocation nextStep = (existingPlan.size() >= 2) ? existingPlan.get(1) : null;
-		
-		// We know that this should only be called AFTER updating our planned path.
-		Assert.assertTrue(!PathLocation.forEntityBase(entityLocation).equals(thisStep));
-		
-		boolean isSwimmable = (viscosity >= BlockAspect.VISOSITY_FLOAT_SWIMMABLE) && (viscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
-		return CreatureMovementHelpers.moveToNextLocation(reader, entityLocation, entityVelocity, yaw, pitch, type, thisStep, nextStep, timeLimitMillis, viscosity, intensity, isSwimmable);
-	}
-
-	private static List<PathLocation> _extractAcceptablePathTargets(WalkingNavigator navigator
-		, Map<PathLocation, PathLocation> possiblePaths
-		, EntityLocation currentLocation
-	)
-	{
-		// We will only choose paths which don't end in air above air (jumping into the air for no reason) or in water (since none of our creatures can breathe under water).
-		PathLocation currentPath = PathLocation.forEntityBase(currentLocation);
-		List<PathLocation> goodTargets = new ArrayList<>();
-		for (Map.Entry<PathLocation, PathLocation> elt : possiblePaths.entrySet())
-		{
-			PathLocation end = elt.getKey();
-			float endViscosity = navigator.getViscosityAtBase(end.getBaseLocation());
-			boolean shouldInclude = true;
-			if (endViscosity >= BlockAspect.VISOSITY_FLOAT_SWIMMABLE)
-			{
-				// This path ends in water so don't include it.
-				shouldInclude = false;
-			}
-			else if (currentPath.equals(end))
-			{
-				// We don't want to end where we started.
-				shouldInclude = false;
-			}
-			else
-			{
-				PathLocation under = end.getRelative(0, 0, -1);
-				float underViscosity = navigator.getViscosityAtBase(under.getBaseLocation());
-				if (underViscosity < BlockAspect.VISOSITY_FLOAT_SWIMMABLE)
-				{
-					// This block is over top of a walkable block (meaning it was a jump) so ignore it.
-					shouldInclude = false;
-				}
-			}
-			if (shouldInclude)
-			{
-				goodTargets.add(end);
-			}
-		}
-		return goodTargets;
-	}
-
-	private static CreatureEntity.MovementPlan _pruneAndStoreFreshTargetPlan(TickProcessingContext context
-		, EntityLocation location
-		, EntityType type
-		, List<PathLocation> path
-		, int targetEntityId
-		, EntityLocation targetPreviousLocation
-	)
-	{
-		// We want to strip away the first step, since it is the current location.
-		path.remove(0);
-		
-		// We need to store a movement plan whether this path is reduced to nothing, or not.
-		CreatureEntity.MovementPlan plan;
-		if (path.size() > 0)
-		{
-			plan = _decidePlanWithDistantTarget(context, location, type, targetEntityId, targetPreviousLocation, path);
-		}
-		else
-		{
-			plan = _planWithNearTarget(targetEntityId
-				, targetPreviousLocation
-			);
-		}
-		return plan;
-	}
-
-	private static CreatureEntity.MovementPlan _planWithoutTarget(List<PathLocation> path
-		, EntityActionSimpleMove.Intensity intensity
-	)
-	{
-		return new PlanNoTarget(path, intensity);
-	}
-
-	private static CreatureEntity.MovementPlan _planWithDistantTarget(List<PathLocation> path
-		, int targetEntityId
-		, EntityLocation targetPreviousLocation
-	)
-	{
-		return new PlanWithTarget(path, targetEntityId, targetPreviousLocation);
-	}
-
-	private static CreatureEntity.MovementPlan _planWithNearTarget(int targetEntityId
-		, EntityLocation targetPreviousLocation
-	)
-	{
-		return new DirectWithTarget(targetEntityId, targetPreviousLocation);
-	}
-
-	private static CreatureEntity.MovementPlan _planWithInRangeTarget(int targetEntityId
-		, EntityLocation targetPreviousLocation
-	)
-	{
-		return new NearToTarget(targetEntityId, targetPreviousLocation);
-	}
-
-	private static CreatureEntity.MovementPlan _planDirectWithoutTarget(EntityLocation directLocation
-		, EntityActionSimpleMove.Intensity intensity
-	)
-	{
-		return new DirectNoTarget(directLocation, intensity);
-	}
-
-	private static CreatureEntity.MovementPlan _planDirectWithDistantTarget(int targetEntityId
-		, EntityLocation targetPreviousLocation
-		, EntityLocation directLocation
-	)
-	{
-		return new DirectWithDistantTarget(directLocation, targetEntityId, targetPreviousLocation);
-	}
-
-	private static void _updateExistingMovementPlanState(TickProcessingContext context
-		, EntityCollection entityCollection
-		, MutableCreature mutable
-	)
-	{
-		// This can only be called if there IS a movement plan.
-		Assert.assertTrue(null != mutable.movementPlan);
-		
-		// First, handle the invalidate cases.
-		
-		// Invalidate:  Verify that the target is valid.
-		if ((null != mutable.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId()))
-		{
-			boolean isTargetValid = mutable.getType().extension().isTargetValid(mutable, entityCollection);
-			if (!isTargetValid)
-			{
-				// The target is invalid so clear our state.
-				mutable.movementPlan = null;
-			}
-		}
-		
-		// Invalidate:  Verify that we aren't stuck in a block.
-		if ((null != mutable.movementPlan)
-			&& ((null != mutable.movementPlan.directLocation()) || (null != mutable.movementPlan.fullPlan()))
-		)
-		{
-			ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
-			float viscosity = reader.getMaxStillViscosityInVolume(mutable.newLocation, mutable.getType().volume());
-			
-			if (BlockAspect.VISOSITY_FLOAT_SOLID == viscosity)
-			{
-				// This typically happens if a block drops on us or if a block was placed on us due to a race condition.
-				// Clear the plan since we can't move.
-				mutable.movementPlan = null;
-			}
-		}
-		
-		// Invalidate:  Verify that we are in range of the next step and it isn't solid.
-		if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
-		{
-			EntityLocation entityLocation = mutable.newLocation;
-			
-			List<PathLocation> existingPlan = mutable.movementPlan.fullPlan();
-			PathLocation thisStep = existingPlan.get(0);
-			PathLocation currentLocation = PathLocation.forEntityBase(entityLocation);
-			
-			// We might not yet have noticed that we have moved into the next step so skip this check in that case.
-			if (!currentLocation.equals(thisStep))
-			{
-				int distanceToNext = PathLocation.pathStepDistance(currentLocation, thisStep);
-				boolean isAdjacent = (1 == distanceToNext);
-				if (isAdjacent)
-				{
-					// Just make sure we can move into this next step.
-					ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
-					float nextViscosity = reader.getMaxStillViscosityInVolume(thisStep.getBaseLocation(), mutable.getType().volume());
-					if (BlockAspect.VISOSITY_FLOAT_SOLID == nextViscosity)
-					{
-						// Something is blocked so clear the plan.
-						mutable.movementPlan = null;
-					}
-					else
-					{
-						// Common case:  The path is still valid so just fall through and continue.
-					}
-				}
-				else
-				{
-					// We must have fallen or been pushed so clear the plan.
-					mutable.movementPlan = null;
-				}
-			}
-		}
-		
-		// --- The path is either clear and valid so check if it should be advanced ---
-		
-		// Check if the plan should be update in response to a target having moved.
-		if ((null != mutable.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId()))
-		{
-			MinimalEntity targetEntity = context.previousEntityLookUp.getById(mutable.movementPlan.targetEntityId());
-			
-			// The target validity was checked in the invalidate path so this is valid.
-			Assert.assertTrue(null != targetEntity);
-			
-			if (!targetEntity.location().equals(mutable.movementPlan.targetPreviousLocation()))
-			{
-				// This has moved so update the plan in response.
-				mutable.movementPlan = _makeNewPlanToTarget(context
-					, mutable.getLocation()
-					, mutable.getType()
-					, mutable.movementPlan.targetEntityId()
-					, targetEntity.location()
-				);
-			}
-		}
-		
-		// Handle the uncommon case where we are in direct mode but are no longer on the same z-level.
-		if ((null != mutable.movementPlan)
-			&& (null != mutable.movementPlan.directLocation())
-			&& (mutable.newLocation.getBlockLocation().z() != mutable.movementPlan.directLocation().getBlockLocation().z())
-		)
-		{
-			if (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId())
-			{
-				// We will rebuild the plan from our new location.
-				MinimalEntity targetEntity = context.previousEntityLookUp.getById(mutable.movementPlan.targetEntityId());
-				mutable.movementPlan = _makeNewPlanToTarget(context
-					, mutable.getLocation()
-					, mutable.getType()
-					, mutable.movementPlan.targetEntityId()
-					, targetEntity.location()
-				);
-			}
-			else
-			{
-				// We were just idly moving and must have fallen or been pushed into a different z-level so just clear it.
-				mutable.movementPlan = null;
-			}
-		}
-		
-		// Check if the plan should be updated due to us stepping into the next block.
-		if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan()))
-		{
-			List<PathLocation> existingPlan = mutable.movementPlan.fullPlan();
-			PathLocation thisStep = existingPlan.get(0);
-			PathLocation currentLocation = PathLocation.forEntityBase(mutable.getLocation());
-			
-			if (currentLocation.equals(thisStep))
-			{
-				// We are in the next part of the plan so remove this step.
-				if (existingPlan.size() > 1)
-				{
-					// Remove this one element and stay in the same plan.
-					List<PathLocation> updatedPlan = new ArrayList<>(existingPlan);
-					updatedPlan.remove(0);
-					
-					if (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.movementPlan.targetEntityId())
-					{
-						mutable.movementPlan = _decidePlanWithoutTarget(context
-							, mutable
-							, Collections.unmodifiableList(updatedPlan)
-							, EntityActionSimpleMove.Intensity.IDLE_CREATURE
-						);
-					}
-					else
-					{
-						mutable.movementPlan = _decidePlanWithDistantTarget(context
-							, mutable.newLocation
-							, mutable.newType
-							, mutable.movementPlan.targetEntityId()
-							, mutable.movementPlan.targetPreviousLocation()
-							, Collections.unmodifiableList(updatedPlan)
-						);
-					}
-				}
-				else
-				{
-					// The movement plan is complete so determine if we enter a near target state or no plan.
-					if (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.movementPlan.targetEntityId())
-					{
-						// This means clear the plan since we must have been idling.
-						mutable.movementPlan = null;
-					}
-					else
-					{
-						// We assume that they are in range as a near target.
-						mutable.movementPlan = _planWithNearTarget(mutable.movementPlan.targetEntityId(), mutable.movementPlan.targetPreviousLocation());
-					}
-				}
-			}
-		}
-		
-		// Check if the plan should be updated due to proximity to the target.
-		if ((null != mutable.movementPlan) && (null != mutable.movementPlan.directLocation()))
-		{
-			// If we are targeting an entity, then we clear this once within action range, otherwise we clear when we match it.
-			if (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.movementPlan.targetEntityId())
-			{
-				if (mutable.getLocation().equals(mutable.movementPlan.directLocation()))
-				{
-					// We are at our destination, so clear.
-					mutable.movementPlan = null;
-				}
-				else
-				{
-					// We are still walking there, so leave this unchanged.
-				}
-			}
-			else
-			{
-				// We have a target so see if they are within action range.
-				MinimalEntity targetEntity = context.previousEntityLookUp.getById(mutable.movementPlan.targetEntityId());
-				
-				// Note that we already checked that this target is valid in an earlier check.
-				Assert.assertTrue(null != targetEntity);
-				
-				EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(mutable.getLocation(), mutable.getType().volume());
-				FixedRegion region = FixedRegion.fromMinimal(targetEntity);
-				float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
-				float actionDistance = mutable.getType().actionDistance();
-				
-				if (distance < actionDistance)
-				{
-					// We can drop the direct location and just keep them in-range.
-					mutable.movementPlan = _planWithInRangeTarget(mutable.movementPlan.targetEntityId(), targetEntity.location());
-				}
-				else
-				{
-					// We are still approaching them so change nothing.
-				}
-			}
-		}
-	}
-
-	private static CreatureEntity.MovementPlan _makeNewPlanToTarget(TickProcessingContext context
-		, EntityLocation currentLocation
-		, EntityType creatureType
-		, int targetId
-		, EntityLocation targetLocation
-	)
-	{
-		// This has moved so update the plan in response.
-		WalkingNavigator navigator = new WalkingNavigator(context.previousBlockLookUp
-			, creatureType.volume()
-			, creatureType.getPathDistance()
-			, true
-			, true
-			, true
-			, true
-		);
-		List<PathLocation> path = PathFinder.findPathWithLimit(navigator, currentLocation, targetLocation);
-		
-		// The path will come back null if they are unreachable.
-		return (null != path)
-			? _pruneAndStoreFreshTargetPlan(context
-				, currentLocation
-				, creatureType
-				, path
-				, targetId
-				, targetLocation
-			)
-			: null
-		;
-	}
-
-	private static CreatureEntity.MovementPlan _decidePlanWithoutTarget(TickProcessingContext context
-		, MutableCreature mutable
-		, List<PathLocation> steps
-		, EntityActionSimpleMove.Intensity intensity
-	)
-	{
-		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
-		EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, mutable.newLocation, mutable.newType, steps);
-		
-		CreatureEntity.MovementPlan movementPlan;
-		if (null != directLocation)
-		{
-			movementPlan = _planDirectWithoutTarget(directLocation, intensity);
-		}
-		else
-		{
-			movementPlan = _planWithoutTarget(steps, intensity);
-		}
-		return movementPlan;
-	}
-
-	private static CreatureEntity.MovementPlan _decidePlanWithDistantTarget(TickProcessingContext context
-		, EntityLocation location
-		, EntityType type
-		, int targetId
-		, EntityLocation targetLocation
-		, List<PathLocation> updatedPlan
-	)
-	{
-		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
-		EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, location, type, updatedPlan);
-		
-		CreatureEntity.MovementPlan movementPlan;
-		if (null != directLocation)
-		{
-			movementPlan = _planDirectWithDistantTarget(targetId, targetLocation, directLocation);
-		}
-		else
-		{
-			movementPlan = _planWithDistantTarget(Collections.unmodifiableList(updatedPlan), targetId, targetLocation);
-		}
-		return movementPlan;
 	}
 }
