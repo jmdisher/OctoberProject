@@ -1,6 +1,5 @@
 package com.jeffdisher.october.creatures;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -96,150 +95,41 @@ public class CreatureLogic
 		EntityType type = mutable.getType();
 		EntityLocation currentLocation = mutable.getLocation();
 		
+		// First, we will check if we should invalidate the plan based on common information and checks.
+		
+		// If we are stuck in a solid block, drop the plan.
+		if (null != mutable.movementPlan)
+		{
+			float viscosity = reader.getMaxStillViscosityInVolume(currentLocation, type.volume());
+			
+			if (BlockAspect.VISOSITY_FLOAT_SOLID == viscosity)
+			{
+				// This typically happens if a block drops on us or if a block was placed on us due to a race condition.
+				// Clear the plan since we can't move.
+				mutable.movementPlan = null;
+			}
+		}
+		
+		// If the target is no longer valid, drop the plan.
+		if ((null != mutable.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId()))
+		{
+			boolean isTargetValid = type.extension().isTargetValid(mutable, entityCollection);
+			if (!isTargetValid)
+			{
+				// The target is invalid so clear our state.
+				mutable.movementPlan = null;
+			}
+		}
+		
 		// If we have a plan, we want to update it whenever we didn't take any special action.
 		if (null != mutable.movementPlan)
 		{
-			// First, handle the invalidate cases.
-			
-			// Invalidate:  Verify that the target is valid.
-			if ((null != mutable.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId()))
+			// This can change instances while we progress so we loop while we transition through the various states.
+			CreatureEntity.MovementPlan start = null;
+			while ((null != mutable.movementPlan) && (start != mutable.movementPlan))
 			{
-				boolean isTargetValid = type.extension().isTargetValid(mutable, entityCollection);
-				if (!isTargetValid)
-				{
-					// The target is invalid so clear our state.
-					mutable.movementPlan = null;
-				}
-			}
-			
-			// Invalidate:  Verify that we aren't stuck in a block.
-			if ((null != mutable.movementPlan)
-				&& ((null != mutable.movementPlan.directLocation) || (null != mutable.movementPlan.fullPlan))
-			)
-			{
-				float viscosity = reader.getMaxStillViscosityInVolume(currentLocation, type.volume());
-				
-				if (BlockAspect.VISOSITY_FLOAT_SOLID == viscosity)
-				{
-					// This typically happens if a block drops on us or if a block was placed on us due to a race condition.
-					// Clear the plan since we can't move.
-					mutable.movementPlan = null;
-				}
-			}
-			
-			// Invalidate:  Verify that we are in range of the next step and it isn't solid.
-			if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan))
-			{
-				List<PathLocation> existingPlan = mutable.movementPlan.fullPlan;
-				CreatureMovementHelpers.validateNextStepValid(context, mutable, existingPlan);
-			}
-			
-			// Handle the uncommon case where we are in direct mode but are no longer on the same z-level.
-			if ((null != mutable.movementPlan)
-				&& (null != mutable.movementPlan.directLocation)
-				&& (currentLocation.getBlockLocation().z() != mutable.movementPlan.directLocation.getBlockLocation().z())
-			)
-			{
-				mutable.movementPlan = null;
-			}
-			
-			// --- The path is either clear and valid so check if it should be advanced ---
-			
-			// Check if the plan should be update in response to a target having moved.
-			if ((null != mutable.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId()))
-			{
-				CreatureMovementHelpers.updateTargetEntityPlan(context, mutable, mutable.movementPlan.targetEntityId(), mutable.movementPlan.targetPreviousLocation);
-			}
-			
-			// Check if the plan should be updated due to us stepping into the next block.
-			if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan))
-			{
-				List<PathLocation> existingPlan = mutable.movementPlan.fullPlan;
-				PathLocation thisStep = existingPlan.get(0);
-				PathLocation pathBase = PathLocation.forEntityBase(currentLocation);
-				
-				if (pathBase.equals(thisStep))
-				{
-					// We are in the next part of the plan so remove this step.
-					if (existingPlan.size() > 1)
-					{
-						// Remove this one element and stay in the same plan.
-						List<PathLocation> updatedPlan = new ArrayList<>(existingPlan);
-						updatedPlan.remove(0);
-						
-						if (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.movementPlan.targetEntityId())
-						{
-							List<PathLocation> steps = Collections.unmodifiableList(updatedPlan);
-							Intensity intensity = EntityActionSimpleMove.Intensity.IDLE_CREATURE;
-							EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, currentLocation, type, steps);
-							
-							CreatureEntity.MovementPlan movementPlan;
-							if (null != directLocation)
-							{
-								movementPlan = new DirectNoTarget(directLocation, intensity);
-							}
-							else
-							{
-								movementPlan = new PlanNoTarget(steps, intensity);
-							}
-							mutable.movementPlan = movementPlan;
-						}
-						else
-						{
-							int targetId = mutable.movementPlan.targetEntityId();
-							EntityLocation targetLocation = mutable.movementPlan.targetPreviousLocation;
-							List<PathLocation> updatedPlan1 = Collections.unmodifiableList(updatedPlan);
-							EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, currentLocation, type, updatedPlan1);
-							
-							CreatureEntity.MovementPlan movementPlan;
-							if (null != directLocation)
-							{
-								movementPlan = new DirectWithDistantTarget(directLocation, targetId, targetLocation);
-							}
-							else
-							{
-								movementPlan = new PlanWithTarget(Collections.unmodifiableList(updatedPlan1), targetId, targetLocation);
-							}
-							mutable.movementPlan = movementPlan;
-						}
-					}
-					else
-					{
-						// The movement plan is complete so determine if we enter a near target state or no plan.
-						if (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.movementPlan.targetEntityId())
-						{
-							// This means clear the plan since we must have been idling.
-							mutable.movementPlan = null;
-						}
-						else
-						{
-							// We assume that they are in range as a near target.
-							mutable.movementPlan = new DirectWithTarget(mutable.movementPlan.targetEntityId(), mutable.movementPlan.targetPreviousLocation);
-						}
-					}
-				}
-			}
-			
-			// Check if the plan should be updated due to proximity to the target.
-			if ((null != mutable.movementPlan) && (null != mutable.movementPlan.directLocation))
-			{
-				// If we are targeting an entity, then we clear this once within action range, otherwise we clear when we match it.
-				if (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.movementPlan.targetEntityId())
-				{
-					if (currentLocation.equals(mutable.movementPlan.directLocation))
-					{
-						// We are at our destination, so clear.
-						mutable.movementPlan = null;
-					}
-					else
-					{
-						// We are still walking there, so leave this unchanged.
-					}
-				}
-				else
-				{
-					CreatureMovementHelpers.updateDirectTargetPlan(context, mutable, mutable.movementPlan.targetEntityId());
-				}
+				start = mutable.movementPlan;
+				mutable.movementPlan.updateMovementPlan(context, entityCollection, mutable);
 			}
 		}
 		

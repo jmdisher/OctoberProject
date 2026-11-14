@@ -1,11 +1,13 @@
 package com.jeffdisher.october.creatures;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.pathing.PathLocation;
 import com.jeffdisher.october.subactions.EntitySubActionStepUp;
@@ -114,5 +116,60 @@ public class PlanWithTarget extends CreatureEntity.MovementPlan
 			);
 		}
 		return actionProduced;
+	}
+
+	@Override
+	public void updateMovementPlan(TickProcessingContext context
+		, EntityCollection entityCollection
+		, MutableCreature mutable
+	)
+	{
+		CreatureMovementHelpers.validateNextStepValid(context, mutable, this.fullPlan);
+		
+		if (mutable.movementPlan instanceof PlanWithTarget)
+		{
+			// Check if the plan should be update in response to a target having moved.
+			CreatureMovementHelpers.updateTargetEntityPlan(context, mutable, this.targetEntityId, this.targetPreviousLocation);
+		}
+		
+		if (mutable.movementPlan instanceof PlanWithTarget)
+		{
+			EntityLocation currentLocation = mutable.getLocation();
+			
+			PathLocation thisStep = this.fullPlan.get(0);
+			PathLocation pathBase = PathLocation.forEntityBase(currentLocation);
+			
+			if (pathBase.equals(thisStep))
+			{
+				// We are in the next part of the plan so remove this step.
+				if (this.fullPlan.size() > 1)
+				{
+					EntityType type = mutable.getType();
+					
+					// Remove this one element and stay in the same plan.
+					List<PathLocation> updatedPlan = new ArrayList<>(this.fullPlan);
+					updatedPlan.remove(0);
+					
+					ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
+					EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, currentLocation, type, updatedPlan);
+					
+					CreatureEntity.MovementPlan movementPlan;
+					if (null != directLocation)
+					{
+						movementPlan = new DirectWithDistantTarget(directLocation, this.targetEntityId, this.targetPreviousLocation);
+					}
+					else
+					{
+						movementPlan = new PlanWithTarget(Collections.unmodifiableList(updatedPlan), this.targetEntityId, this.targetPreviousLocation);
+					}
+					mutable.movementPlan = movementPlan;
+				}
+				else
+				{
+					// We assume that they are in range as a near target.
+					mutable.movementPlan = new DirectWithTarget(this.targetEntityId, this.targetPreviousLocation);
+				}
+			}
+		}
 	}
 }

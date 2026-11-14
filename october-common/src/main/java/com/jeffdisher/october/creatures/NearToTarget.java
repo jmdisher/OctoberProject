@@ -1,6 +1,7 @@
 package com.jeffdisher.october.creatures;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
+import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.MutableCreature;
@@ -37,5 +38,15 @@ public class NearToTarget extends CreatureEntity.MovementPlan
 	{
 		// In this implementation, we are already close enough so we don't move.
 		return null;
+	}
+
+	@Override
+	public void updateMovementPlan(TickProcessingContext context
+		, EntityCollection entityCollection
+		, MutableCreature mutable
+	)
+	{
+		// Check if the plan should be update in response to a target having moved.
+		CreatureMovementHelpers.updateTargetEntityPlan(context, mutable, this.targetEntityId, this.targetPreviousLocation);
 	}
 }

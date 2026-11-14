@@ -2,6 +2,7 @@ package com.jeffdisher.october.creatures;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -67,5 +68,32 @@ public class DirectWithTarget extends CreatureEntity.MovementPlan
 			mutable.movementPlan = null;
 		}
 		return action;
+	}
+
+	@Override
+	public void updateMovementPlan(TickProcessingContext context
+		, EntityCollection entityCollection
+		, MutableCreature mutable
+	)
+	{
+		// Check if the plan should be update in response to a target having moved.
+		CreatureMovementHelpers.updateTargetEntityPlan(context, mutable, this.targetEntityId, this.targetPreviousLocation);
+		
+		if (mutable.movementPlan instanceof DirectWithTarget)
+		{
+			// Handle the case where we are no longer on the same Z-level as our direct target.
+			// NOTE:  In this implementation, we always assume that we are walking directly toward the target.
+			EntityLocation directLocation = this.targetPreviousLocation;
+			if (mutable.newLocation.getBlockLocation().z() != directLocation.getBlockLocation().z())
+			{
+				mutable.movementPlan = null;
+			}
+		}
+		
+		if (mutable.movementPlan instanceof DirectWithTarget)
+		{
+			// Check if the plan should be updated due to proximity to the target.
+			CreatureMovementHelpers.updateDirectTargetPlan(context, mutable, this.targetEntityId);
+		}
 	}
 }

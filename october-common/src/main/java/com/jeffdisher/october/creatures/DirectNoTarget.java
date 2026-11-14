@@ -2,6 +2,7 @@ package com.jeffdisher.october.creatures;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -62,5 +63,34 @@ public class DirectNoTarget extends CreatureEntity.MovementPlan
 			mutable.movementPlan = null;
 		}
 		return action;
+	}
+
+	@Override
+	public void updateMovementPlan(TickProcessingContext context
+		, EntityCollection entityCollection
+		, MutableCreature mutable
+	)
+	{
+		EntityLocation currentLocation = mutable.getLocation();
+		
+		// Handle the case where we are no longer on the same Z-level as our direct target.
+		if (currentLocation.getBlockLocation().z() != this.directLocation.getBlockLocation().z())
+		{
+			mutable.movementPlan = null;
+		}
+		
+		if (mutable.movementPlan instanceof DirectNoTarget)
+		{
+			// Check if the plan should be updated due to proximity to the target.
+			if (currentLocation.equals(this.directLocation))
+			{
+				// We are at our destination, so clear.
+				mutable.movementPlan = null;
+			}
+			else
+			{
+				// We are still walking there, so leave this unchanged.
+			}
+		}
 	}
 }

@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.MiscConstants;
+import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.pathing.PathLocation;
 import com.jeffdisher.october.utils.Assert;
 
@@ -111,6 +112,19 @@ public record CreatureEntity(int id
 		public abstract EntityActionSimpleMove<MutableCreature> planNextAction(TickProcessingContext context
 			, MutableCreature mutable
 			, long timeLimitMillis
+		);
+		/**
+		 * Called at the beginning of each tick, after some common validity checks, to allow the implementation to
+		 * perform further validations and potentially even replace itself with an updated instance.
+		 * Internally, this may clear or update the mutable.movementPlan.
+		 * 
+		 * @param context The context of the current tick.
+		 * @param entityCollection The read-only collection of entities in the world.
+		 * @param mutable The mutable creature object currently being evaluated.
+		 */
+		public abstract void updateMovementPlan(TickProcessingContext context
+			, EntityCollection entityCollection
+			, MutableCreature mutable
 		);
 		
 		protected MovementPlan(List<PathLocation> fullPlan

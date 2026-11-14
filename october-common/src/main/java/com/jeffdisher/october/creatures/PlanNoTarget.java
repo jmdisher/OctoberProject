@@ -1,11 +1,14 @@
 package com.jeffdisher.october.creatures;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
+import com.jeffdisher.october.actions.EntityActionSimpleMove.Intensity;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.pathing.PathLocation;
 import com.jeffdisher.october.subactions.EntitySubActionStepUp;
@@ -107,5 +110,56 @@ public class PlanNoTarget extends CreatureEntity.MovementPlan
 			mutable.movementPlan = new PlanNoTarget(fullPlan, this.intensity);
 		}
 		return actionProduced;
+	}
+
+	@Override
+	public void updateMovementPlan(TickProcessingContext context
+		, EntityCollection entityCollection
+		, MutableCreature mutable
+	)
+	{
+		CreatureMovementHelpers.validateNextStepValid(context, mutable, this.fullPlan);
+		
+		if (mutable.movementPlan instanceof PlanNoTarget)
+		{
+			EntityLocation currentLocation = mutable.getLocation();
+			
+			PathLocation thisStep = this.fullPlan.get(0);
+			PathLocation pathBase = PathLocation.forEntityBase(currentLocation);
+			
+			if (pathBase.equals(thisStep))
+			{
+				// We are in the next part of the plan so remove this step.
+				if (this.fullPlan.size() > 1)
+				{
+					EntityType type = mutable.getType();
+					
+					// Remove this one element and stay in the same plan.
+					List<PathLocation> updatedPlan = new ArrayList<>(this.fullPlan);
+					updatedPlan.remove(0);
+					
+					List<PathLocation> steps = Collections.unmodifiableList(updatedPlan);
+					Intensity intensity = EntityActionSimpleMove.Intensity.IDLE_CREATURE;
+					ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
+					EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, currentLocation, type, steps);
+					
+					CreatureEntity.MovementPlan movementPlan;
+					if (null != directLocation)
+					{
+						movementPlan = new DirectNoTarget(directLocation, intensity);
+					}
+					else
+					{
+						movementPlan = new PlanNoTarget(steps, intensity);
+					}
+					mutable.movementPlan = movementPlan;
+				}
+				else
+				{
+					// This means clear the plan since we must have been idling.
+					mutable.movementPlan = null;
+				}
+			}
+		}
 	}
 }
