@@ -125,7 +125,7 @@ public class CreatureLogic
 		if (null != mutable.movementPlan)
 		{
 			// This can change instances while we progress so we loop while we transition through the various states.
-			CreatureEntity.MovementPlan start = null;
+			CreatureEntity.IMovementPlan start = null;
 			while ((null != mutable.movementPlan) && (start != mutable.movementPlan))
 			{
 				start = mutable.movementPlan;
@@ -155,7 +155,7 @@ public class CreatureLogic
 					EntityType.TargetEntity newTarget = type.extension().findDeliberateTarget(mutable, entityCollection);
 					if (null != newTarget)
 					{
-						CreatureEntity.MovementPlan movementPlan = _createDeliberatePlanToTarget(context, reader, type, currentLocation, newTarget);
+						CreatureEntity.IMovementPlan movementPlan = _createDeliberatePlanToTarget(context, reader, type, currentLocation, newTarget);
 						
 						if (null != movementPlan)
 						{
@@ -223,7 +223,7 @@ public class CreatureLogic
 	}
 
 
-	private static CreatureEntity.MovementPlan _createFleeingPlan(TickProcessingContext context
+	private static CreatureEntity.IMovementPlan _createFleeingPlan(TickProcessingContext context
 		, ViscosityReader reader
 		, EntityType type
 		, EntityLocation currentLocation
@@ -250,7 +250,7 @@ public class CreatureLogic
 			, currentLocation
 		);
 		
-		CreatureEntity.MovementPlan movementPlan = null;
+		CreatureEntity.IMovementPlan movementPlan = null;
 		if (null != steps)
 		{
 			// We can't plan an empty path.
@@ -269,7 +269,7 @@ public class CreatureLogic
 		return movementPlan;
 	}
 
-	private static CreatureEntity.MovementPlan _createDeliberatePlanToTarget(TickProcessingContext context
+	private static CreatureEntity.IMovementPlan _createDeliberatePlanToTarget(TickProcessingContext context
 		, ViscosityReader reader
 		, EntityType type
 		, EntityLocation currentLocation
@@ -290,7 +290,7 @@ public class CreatureLogic
 		EntityLocation targetLocation = newTarget.location();
 		List<PathLocation> path = PathFinder.findPathWithLimit(navigator, currentLocation, targetLocation);
 		
-		CreatureEntity.MovementPlan movementPlan = null;
+		CreatureEntity.IMovementPlan movementPlan = null;
 		if (null != path)
 		{
 			int targetEntityId = newTarget.id();
@@ -319,14 +319,14 @@ public class CreatureLogic
 		return movementPlan;
 	}
 
-	private static CreatureEntity.MovementPlan _createIdlePlan(TickProcessingContext context
+	private static CreatureEntity.IMovementPlan _createIdlePlan(TickProcessingContext context
 		, ViscosityReader reader
 		, EntityType type
 		, EntityLocation currentLocation
 		, byte breath
 	)
 	{
-		CreatureEntity.MovementPlan movementPlan = null;
+		CreatureEntity.IMovementPlan movementPlan = null;
 		
 		// If we don't have anything deliberate to do, we will just do some random "idle" movement but this is
 		// somewhat expensive so only do it if we have been waiting a while or if we are in danger (since the random

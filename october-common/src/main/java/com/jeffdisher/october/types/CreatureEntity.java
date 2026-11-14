@@ -1,11 +1,8 @@
 package com.jeffdisher.october.types;
 
-import java.util.List;
-
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.logic.EntityCollection;
-import com.jeffdisher.october.pathing.PathLocation;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -62,7 +59,7 @@ public record CreatureEntity(int id
 	 * All data stored in this class is considered ephemeral and local:  It is not persisted, nor sent over the network.
 	 */
 	public static record Ephemeral(
-		MovementPlan movementPlan
+		IMovementPlan movementPlan
 		// The next millisecond time when the creature should choose a target (location or entity).
 		, long nextMovementPlanMillis
 		// The millisecond time when the creature should despawn (if it is a despawning type).
@@ -77,28 +74,15 @@ public record CreatureEntity(int id
 	 * NOTE:  This will eventually be replaced by an interface.  Using this abstract class in such a way is only for
 	 * incremental design changes.
 	 */
-	public static abstract class MovementPlan
+	public static interface IMovementPlan
 	{
-		// The full plan, starting with the next step the creature must enter.  Can be null but never empty.
-		public final List<PathLocation> fullPlan;
-		// The ID of the entity this creature is currently targeting (or NO_TARGET_ENTITY_ID if none).
-		public final int targetEntityId;
-		// The last location of the target which was used to determine the movementPlan (can be null if we have no
-		// target or aren't tracking the current one).
-		public final EntityLocation targetPreviousLocation;
-		// In the cases where we need a very short walk, or where we are going to take a short-cut through fullPlan, we
-		// use this location.
-		public final EntityLocation directLocation;
-		// The intensity of movement to apply if there is any.
-		public final EntityActionSimpleMove.Intensity intensity;
-		
 		/**
 		 * The ID of the target entity is exposed for various cases where external logic, related to special actions and
 		 * not movement or movement planning, so it is exposed directly using this helper.
 		 * 
 		 * @return The target entity ID (NO_TARGET_ENTITY_ID if there isn't one).
 		 */
-		public final int targetEntityId() { return this.targetEntityId; }
+		public int targetEntityId();
 		/**
 		 * Called to plan a single action for a given tick, in pursuit of the receiver's plan.
 		 * Returns null if the plan requires no movement (too close to target, etc).
@@ -109,7 +93,7 @@ public record CreatureEntity(int id
 		 * @param timeLimitMillis The number of milliseconds left in the tick.
 		 * @return The next action to take (null if there is nothing to do).
 		 */
-		public abstract EntityActionSimpleMove<MutableCreature> planNextAction(TickProcessingContext context
+		public EntityActionSimpleMove<MutableCreature> planNextAction(TickProcessingContext context
 			, MutableCreature mutable
 			, long timeLimitMillis
 		);
@@ -122,24 +106,10 @@ public record CreatureEntity(int id
 		 * @param entityCollection The read-only collection of entities in the world.
 		 * @param mutable The mutable creature object currently being evaluated.
 		 */
-		public abstract void updateMovementPlan(TickProcessingContext context
+		public void updateMovementPlan(TickProcessingContext context
 			, EntityCollection entityCollection
 			, MutableCreature mutable
 		);
-		
-		protected MovementPlan(List<PathLocation> fullPlan
-			, int targetEntityId
-			, EntityLocation targetPreviousLocation
-			, EntityLocation directLocation
-			, EntityActionSimpleMove.Intensity intensity
-		)
-		{
-			this.fullPlan = fullPlan;
-			this.targetEntityId = targetEntityId;
-			this.targetPreviousLocation = targetPreviousLocation;
-			this.directLocation = directLocation;
-			this.intensity = intensity;
-		}
 	}
 
 	/**

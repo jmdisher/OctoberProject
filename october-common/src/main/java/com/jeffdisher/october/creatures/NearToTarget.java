@@ -14,20 +14,29 @@ import com.jeffdisher.october.utils.Assert;
  * This case will likely be replaced with DirectWithTarget once the logic to make a move is updated to avoid movement
  * when within range.
  */
-public class NearToTarget extends CreatureEntity.MovementPlan
+public class NearToTarget implements CreatureEntity.IMovementPlan
 {
+	// The ID of the entity this creature is currently targeting (or NO_TARGET_ENTITY_ID if none).
+	private final int _targetEntityId;
+	// The last location of the target which was used to determine the movementPlan (can be null if we have no
+	// target or aren't tracking the current one).
+	private final EntityLocation _targetPreviousLocation;
+
 	public NearToTarget(int targetEntityId
 		, EntityLocation targetPreviousLocation
 	)
 	{
-		super(null
-			, targetEntityId
-			, targetPreviousLocation
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
-		);
 		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId);
 		Assert.assertTrue(null != targetPreviousLocation);
+		
+		_targetEntityId = targetEntityId;
+		_targetPreviousLocation = targetPreviousLocation;
+	}
+
+	@Override
+	public int targetEntityId()
+	{
+		return _targetEntityId;
 	}
 
 	@Override
@@ -47,6 +56,11 @@ public class NearToTarget extends CreatureEntity.MovementPlan
 	)
 	{
 		// Check if the plan should be update in response to a target having moved.
-		CreatureMovementHelpers.updateTargetEntityPlan(context, mutable, this.targetEntityId, this.targetPreviousLocation);
+		CreatureMovementHelpers.updateTargetEntityPlan(context, mutable, _targetEntityId, _targetPreviousLocation);
+	}
+
+	public EntityLocation test_getTargetPreviousLocation()
+	{
+		return _targetPreviousLocation;
 	}
 }

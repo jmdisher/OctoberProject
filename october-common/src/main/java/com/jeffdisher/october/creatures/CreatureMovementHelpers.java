@@ -679,7 +679,7 @@ public class CreatureMovementHelpers
 				path.remove(0);
 				
 				// We need to store a movement plan whether this path is reduced to nothing, or not.
-				CreatureEntity.MovementPlan plan;
+				CreatureEntity.IMovementPlan plan;
 				if (path.size() > 0)
 				{
 					ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);

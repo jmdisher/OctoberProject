@@ -16,20 +16,27 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * When the plan is just a location which can be directly approached on this Z-level.
  */
-public class DirectNoTarget extends CreatureEntity.MovementPlan
+public class DirectNoTarget implements CreatureEntity.IMovementPlan
 {
+	private final EntityLocation _directLocation;
+	// The intensity of movement to apply if there is any.
+	private final EntityActionSimpleMove.Intensity _intensity;
+
 	public DirectNoTarget(EntityLocation directLocation
 		, EntityActionSimpleMove.Intensity intensity
 	)
 	{
-		super(null
-			, CreatureEntity.NO_TARGET_ENTITY_ID
-			, null
-			, directLocation
-			, intensity
-		);
 		Assert.assertTrue(null != directLocation);
 		Assert.assertTrue(null != intensity);
+		
+		_directLocation = directLocation;
+		_intensity = intensity;
+	}
+
+	@Override
+	public int targetEntityId()
+	{
+		return CreatureEntity.NO_TARGET_ENTITY_ID;
 	}
 
 	@Override
@@ -44,16 +51,16 @@ public class DirectNoTarget extends CreatureEntity.MovementPlan
 		
 		float viscosity = reader.getMaxStillViscosityInVolume(currentLocation, type.volume());
 		
-		byte yaw = OrientationHelpers.getYawBetweenPoints(currentLocation, this.directLocation);
+		byte yaw = OrientationHelpers.getYawBetweenPoints(currentLocation, _directLocation);
 		EntityActionSimpleMove<MutableCreature> action = CreatureMovementHelpers.moveAlongDiagonalPath(reader
 			, currentLocation
 			, yaw
 			, (byte)0
 			, type
-			, this.directLocation
+			, _directLocation
 			, timeLimitMillis
 			, viscosity
-			, this.intensity
+			, _intensity
 		);
 		
 		if (null == action)
@@ -74,7 +81,7 @@ public class DirectNoTarget extends CreatureEntity.MovementPlan
 		EntityLocation currentLocation = mutable.getLocation();
 		
 		// Handle the case where we are no longer on the same Z-level as our direct target.
-		if (currentLocation.getBlockLocation().z() != this.directLocation.getBlockLocation().z())
+		if (currentLocation.getBlockLocation().z() != _directLocation.getBlockLocation().z())
 		{
 			mutable.movementPlan = null;
 		}
@@ -82,7 +89,7 @@ public class DirectNoTarget extends CreatureEntity.MovementPlan
 		if (mutable.movementPlan instanceof DirectNoTarget)
 		{
 			// Check if the plan should be updated due to proximity to the target.
-			if (currentLocation.equals(this.directLocation))
+			if (currentLocation.equals(_directLocation))
 			{
 				// We are at our destination, so clear.
 				mutable.movementPlan = null;
@@ -92,5 +99,15 @@ public class DirectNoTarget extends CreatureEntity.MovementPlan
 				// We are still walking there, so leave this unchanged.
 			}
 		}
+	}
+
+	public EntityLocation test_getDirectLocation()
+	{
+		return _directLocation;
+	}
+
+	public EntityActionSimpleMove.Intensity test_getIntensity()
+	{
+		return _intensity;
 	}
 }

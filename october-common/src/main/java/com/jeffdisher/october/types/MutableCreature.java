@@ -38,7 +38,7 @@ public class MutableCreature implements IMutableMinimalEntity
 	public Object newExtendedData;
 
 	// Data related to the Ephemeral sub-structure.
-	public CreatureEntity.MovementPlan movementPlan;
+	public CreatureEntity.IMovementPlan movementPlan;
 	public long nextMovementPlanMillis;
 	public long despawnMillis;
 	public long nextActionMillis;

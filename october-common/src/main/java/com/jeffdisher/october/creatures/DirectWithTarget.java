@@ -17,20 +17,28 @@ import com.jeffdisher.october.utils.Assert;
  * When the plan is to directly approach a target entity on this Z-level.
  * In this case, we are assuming that target's location can be our destination.
  */
-public class DirectWithTarget extends CreatureEntity.MovementPlan
+public class DirectWithTarget implements CreatureEntity.IMovementPlan
 {
+	// The ID of the entity this creature is currently targeting.
+	private final int _targetEntityId;
+	// The last location of the target which was used to determine the movementPlan
+	private final EntityLocation _targetPreviousLocation;
+
 	public DirectWithTarget(int targetEntityId
 		, EntityLocation targetPreviousLocation
 	)
 	{
-		super(null
-			, targetEntityId
-			, targetPreviousLocation
-			, targetPreviousLocation
-			, EntityActionSimpleMove.Intensity.WALKING
-		);
 		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId);
 		Assert.assertTrue(null != targetPreviousLocation);
+		
+		_targetEntityId = targetEntityId;
+		_targetPreviousLocation = targetPreviousLocation;
+	}
+
+	@Override
+	public int targetEntityId()
+	{
+		return _targetEntityId;
 	}
 
 	@Override
@@ -40,7 +48,7 @@ public class DirectWithTarget extends CreatureEntity.MovementPlan
 	)
 	{
 		// NOTE:  In this implementation, we always assume that we are walking directly toward the target.
-		EntityLocation directLocation = this.targetPreviousLocation;
+		EntityLocation directLocation = _targetPreviousLocation;
 		EntityActionSimpleMove.Intensity intensity = EntityActionSimpleMove.Intensity .WALKING;
 		
 		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
@@ -77,13 +85,13 @@ public class DirectWithTarget extends CreatureEntity.MovementPlan
 	)
 	{
 		// Check if the plan should be update in response to a target having moved.
-		CreatureMovementHelpers.updateTargetEntityPlan(context, mutable, this.targetEntityId, this.targetPreviousLocation);
+		CreatureMovementHelpers.updateTargetEntityPlan(context, mutable, _targetEntityId, _targetPreviousLocation);
 		
 		if (mutable.movementPlan instanceof DirectWithTarget)
 		{
 			// Handle the case where we are no longer on the same Z-level as our direct target.
 			// NOTE:  In this implementation, we always assume that we are walking directly toward the target.
-			EntityLocation directLocation = this.targetPreviousLocation;
+			EntityLocation directLocation = _targetPreviousLocation;
 			if (mutable.newLocation.getBlockLocation().z() != directLocation.getBlockLocation().z())
 			{
 				mutable.movementPlan = null;
@@ -93,7 +101,12 @@ public class DirectWithTarget extends CreatureEntity.MovementPlan
 		if (mutable.movementPlan instanceof DirectWithTarget)
 		{
 			// Check if the plan should be updated due to proximity to the target.
-			CreatureMovementHelpers.updateDirectTargetPlan(context, mutable, this.targetEntityId);
+			CreatureMovementHelpers.updateDirectTargetPlan(context, mutable, _targetEntityId);
 		}
+	}
+
+	public EntityLocation test_getTargetPreviousLocation()
+	{
+		return _targetPreviousLocation;
 	}
 }

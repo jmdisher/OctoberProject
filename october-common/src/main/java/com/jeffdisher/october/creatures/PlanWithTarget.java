@@ -23,22 +23,34 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * When the plan is to move to a specific location, via a complex path, in pursuit of an entity.
  */
-public class PlanWithTarget extends CreatureEntity.MovementPlan
+public class PlanWithTarget implements CreatureEntity.IMovementPlan
 {
+	// The full plan, starting with the next step the creature must enter.  Can be null but never empty.
+	private final List<PathLocation> _fullPlan;
+	// The ID of the entity this creature is currently targeting (or NO_TARGET_ENTITY_ID if none).
+	private final int _targetEntityId;
+	// The last location of the target which was used to determine the movementPlan (can be null if we have no
+	// target or aren't tracking the current one).
+	private final EntityLocation _targetPreviousLocation;
+
 	public PlanWithTarget(List<PathLocation> path
 		, int targetEntityId
 		, EntityLocation targetPreviousLocation
 	)
 	{
-		super(path
-			, targetEntityId
-			, targetPreviousLocation
-			, null
-			, EntityActionSimpleMove.Intensity.WALKING
-		);
 		Assert.assertTrue(!path.isEmpty());
 		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId);
 		Assert.assertTrue(null != targetPreviousLocation);
+		
+		_fullPlan = path;
+		_targetEntityId = targetEntityId;
+		_targetPreviousLocation = targetPreviousLocation;
+	}
+
+	@Override
+	public int targetEntityId()
+	{
+		return _targetEntityId;
 	}
 
 	@Override
@@ -59,16 +71,16 @@ public class PlanWithTarget extends CreatureEntity.MovementPlan
 		
 		// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
 		PathLocation currentInPath = PathLocation.forEntityBase(currentLocation);
-		PathLocation first = this.fullPlan.get(0);
-		PathLocation second = (this.fullPlan.size() >= 2) ? this.fullPlan.get(1) : null;
+		PathLocation first = _fullPlan.get(0);
+		PathLocation second = (_fullPlan.size() >= 2) ? _fullPlan.get(1) : null;
 		FacingDirection direction;
-		if ((this.fullPlan.size() > 2)
+		if ((_fullPlan.size() > 2)
 			&& (FacingDirection.UP == PathLocation.adjacentDirection(currentInPath, first))
-			&& (FacingDirection.UP == PathLocation.adjacentDirection(first, this.fullPlan.get(1)))
+			&& (FacingDirection.UP == PathLocation.adjacentDirection(first, _fullPlan.get(1)))
 		)
 		{
 			// This means we are jumping so choose the next place where we want to go for direction hint.
-			PathLocation third = this.fullPlan.get(2);
+			PathLocation third = _fullPlan.get(2);
 			direction = PathLocation.adjacentDirection(second, third);
 		}
 		else
@@ -108,11 +120,11 @@ public class PlanWithTarget extends CreatureEntity.MovementPlan
 		// TODO:  This approach is a hack which requires that we rethink this action production design.
 		if ((null != actionProduced) && (actionProduced.getSubAction() instanceof EntitySubActionStepUp))
 		{
-			List<PathLocation> fullPlan = new ArrayList<>(this.fullPlan);
+			List<PathLocation> fullPlan = new ArrayList<>(_fullPlan);
 			fullPlan.remove(0);
 			mutable.movementPlan = new PlanWithTarget(fullPlan
-				, this.targetEntityId
-				, this.targetPreviousLocation
+				, _targetEntityId
+				, _targetPreviousLocation
 			);
 		}
 		return actionProduced;
@@ -124,52 +136,62 @@ public class PlanWithTarget extends CreatureEntity.MovementPlan
 		, MutableCreature mutable
 	)
 	{
-		CreatureMovementHelpers.validateNextStepValid(context, mutable, this.fullPlan);
+		CreatureMovementHelpers.validateNextStepValid(context, mutable, _fullPlan);
 		
 		if (mutable.movementPlan instanceof PlanWithTarget)
 		{
 			// Check if the plan should be update in response to a target having moved.
-			CreatureMovementHelpers.updateTargetEntityPlan(context, mutable, this.targetEntityId, this.targetPreviousLocation);
+			CreatureMovementHelpers.updateTargetEntityPlan(context, mutable, _targetEntityId, _targetPreviousLocation);
 		}
 		
 		if (mutable.movementPlan instanceof PlanWithTarget)
 		{
 			EntityLocation currentLocation = mutable.getLocation();
 			
-			PathLocation thisStep = this.fullPlan.get(0);
+			PathLocation thisStep = _fullPlan.get(0);
 			PathLocation pathBase = PathLocation.forEntityBase(currentLocation);
 			
 			if (pathBase.equals(thisStep))
 			{
 				// We are in the next part of the plan so remove this step.
-				if (this.fullPlan.size() > 1)
+				if (_fullPlan.size() > 1)
 				{
 					EntityType type = mutable.getType();
 					
 					// Remove this one element and stay in the same plan.
-					List<PathLocation> updatedPlan = new ArrayList<>(this.fullPlan);
+					List<PathLocation> updatedPlan = new ArrayList<>(_fullPlan);
 					updatedPlan.remove(0);
 					
 					ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
 					EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, currentLocation, type, updatedPlan);
 					
-					CreatureEntity.MovementPlan movementPlan;
+					CreatureEntity.IMovementPlan movementPlan;
 					if (null != directLocation)
 					{
-						movementPlan = new DirectWithDistantTarget(directLocation, this.targetEntityId, this.targetPreviousLocation);
+						movementPlan = new DirectWithDistantTarget(directLocation, _targetEntityId, _targetPreviousLocation);
 					}
 					else
 					{
-						movementPlan = new PlanWithTarget(Collections.unmodifiableList(updatedPlan), this.targetEntityId, this.targetPreviousLocation);
+						movementPlan = new PlanWithTarget(Collections.unmodifiableList(updatedPlan), _targetEntityId, _targetPreviousLocation);
 					}
 					mutable.movementPlan = movementPlan;
 				}
 				else
 				{
 					// We assume that they are in range as a near target.
-					mutable.movementPlan = new DirectWithTarget(this.targetEntityId, this.targetPreviousLocation);
+					mutable.movementPlan = new DirectWithTarget(_targetEntityId, _targetPreviousLocation);
 				}
 			}
 		}
+	}
+
+	public List<PathLocation> test_getFullPlan()
+	{
+		return _fullPlan;
+	}
+
+	public EntityLocation test_getTargetPreviousLocation()
+	{
+		return _targetPreviousLocation;
 	}
 }
