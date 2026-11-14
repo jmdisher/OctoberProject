@@ -281,6 +281,15 @@ public class CreatureLogic
 				}
 			}
 			
+			// Handle the uncommon case where we are in direct mode but are no longer on the same z-level.
+			if ((null != mutable.movementPlan)
+				&& (null != mutable.movementPlan.directLocation)
+				&& (currentLocation.getBlockLocation().z() != mutable.movementPlan.directLocation.getBlockLocation().z())
+			)
+			{
+				mutable.movementPlan = null;
+			}
+			
 			// --- The path is either clear and valid so check if it should be advanced ---
 			
 			// Check if the plan should be update in response to a target having moved.
@@ -336,66 +345,6 @@ public class CreatureLogic
 					{
 						mutable.movementPlan = null;
 					}
-				}
-			}
-			
-			// Handle the uncommon case where we are in direct mode but are no longer on the same z-level.
-			if ((null != mutable.movementPlan)
-				&& (null != mutable.movementPlan.directLocation)
-				&& (currentLocation.getBlockLocation().z() != mutable.movementPlan.directLocation.getBlockLocation().z())
-			)
-			{
-				if (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId())
-				{
-					// We will rebuild the plan from our new location.
-					MinimalEntity targetEntity = context.previousEntityLookUp.getById(mutable.movementPlan.targetEntityId());
-					EntityLocation targetLocation = targetEntity.location();
-					// This has moved so update the plan in response.
-					WalkingNavigator navigator = new WalkingNavigator(context.previousBlockLookUp
-						, type.volume()
-						, type.getPathDistance()
-						, true
-						, true
-						, true
-						, true
-					);
-					List<PathLocation> path = PathFinder.findPathWithLimit(navigator, currentLocation, targetLocation);
-					if (null != path)
-					{
-						int targetEntityId = mutable.movementPlan.targetEntityId();
-						// We want to strip away the first step, since it is the current location.
-						path.remove(0);
-						
-						// We need to store a movement plan whether this path is reduced to nothing, or not.
-						CreatureEntity.MovementPlan plan;
-						if (path.size() > 0)
-						{
-							EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, currentLocation, type, path);
-							
-							if (null != directLocation)
-							{
-								plan = new DirectWithDistantTarget(directLocation, targetEntityId, targetLocation);
-							}
-							else
-							{
-								plan = new PlanWithTarget(Collections.unmodifiableList(path), targetEntityId, targetLocation);
-							}
-						}
-						else
-						{
-							plan = new DirectWithTarget(targetEntityId, targetLocation);
-						}
-						mutable.movementPlan = plan;
-					}
-					else
-					{
-						mutable.movementPlan = null;
-					}
-				}
-				else
-				{
-					// We were just idly moving and must have fallen or been pushed into a different z-level so just clear it.
-					mutable.movementPlan = null;
 				}
 			}
 			

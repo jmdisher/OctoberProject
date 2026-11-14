@@ -1410,9 +1410,8 @@ public class TestCreatureLogic
 	@Test
 	public void handleDirectChangesZLevel()
 	{
-		// Handle the case where we are in direct mode but have fallen from the same z-level since last planning.
+		// Demonstrate that we will drop our current movement plan if we drop the expected z-level during direct pathing.
 		EntityLocation playerLocation = new EntityLocation(3.0f, 1.0f, 2.2f);
-		EntityLocation idleLocation = new EntityLocation(3.0f, 1.0f, 2.0f);
 		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 1.4f);
 		
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
@@ -1437,39 +1436,7 @@ public class TestCreatureLogic
 		CreatureLogic.createOrUpdatePathFinding(context, collection, mutableOrc);
 		boolean didAct = CreatureLogic.didTakeSpecialActions(context, collection, mutableOrc);
 		Assert.assertFalse(didAct);
-		Assert.assertNull(mutableOrc.movementPlan.fullPlan);
-		Assert.assertEquals(player.id(), mutableOrc.movementPlan.targetEntityId());
-		Assert.assertEquals(playerLocation, mutableOrc.movementPlan.targetPreviousLocation);
-		Assert.assertEquals(new EntityLocation(3.0f, 1.0f, 1.4f), mutableOrc.movementPlan.directLocation);
-		
-		EntityActionSimpleMove<MutableCreature> action = CreatureLogic.planNextAction(context
-			, mutableOrc
-			, 50L
-		);
-		Assert.assertNotNull(action);
-		
-		// Try the case where we are idly moving (no target).
-		mutableOrc = MutableCreature.existing(CreatureEntity.create(-1, ORC, orcLocation, 0L));
-		mutableOrc.movementPlan = new DirectNoTarget(idleLocation
-			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
-		);
-		mutableOrc.nextMovementPlanMillis = CreatureMovementHelpers.MINIMUM_MILLIS_TO_ACTION;
-		orc = mutableOrc.freeze();
-		context = ContextBuilder.build()
-			.lookups(previousBlockLookUp, new _PairEntityIndex(player, orc), null)
-			.finish()
-		;
-		collection = EntityCollection.fromMaps(Map.of(player.id(), player), Map.of(orc.id(), orc));
-		CreatureLogic.createOrUpdatePathFinding(context, collection, mutableOrc);
-		didAct = CreatureLogic.didTakeSpecialActions(context, collection, mutableOrc);
-		Assert.assertFalse(didAct);
 		Assert.assertNull(mutableOrc.movementPlan);
-		
-		action = CreatureLogic.planNextAction(context
-			, mutableOrc
-			, 50L
-		);
-		Assert.assertNull(action);
 	}
 
 	@Test
