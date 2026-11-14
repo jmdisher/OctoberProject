@@ -3,6 +3,8 @@ package com.jeffdisher.october.creatures;
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.MutableCreature;
+import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -25,5 +27,15 @@ public class NearToTarget extends CreatureEntity.MovementPlan
 		);
 		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId);
 		Assert.assertTrue(null != targetPreviousLocation);
+	}
+
+	@Override
+	public EntityActionSimpleMove<MutableCreature> planNextAction(TickProcessingContext context
+		, MutableCreature mutable
+		, long timeLimitMillis
+	)
+	{
+		// In this implementation, we are already close enough so we don't move.
+		return null;
 	}
 }

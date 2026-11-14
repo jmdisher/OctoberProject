@@ -98,6 +98,20 @@ public record CreatureEntity(int id
 		 * @return The target entity ID (NO_TARGET_ENTITY_ID if there isn't one).
 		 */
 		public final int targetEntityId() { return this.targetEntityId; }
+		/**
+		 * Called to plan a single action for a given tick, in pursuit of the receiver's plan.
+		 * Returns null if the plan requires no movement (too close to target, etc).
+		 * Internally, this may clear the mutable.movementPlan if it realizes the plan is invalid.
+		 * 
+		 * @param context The context of the current tick.
+		 * @param mutable The mutable creature object currently being evaluated.
+		 * @param timeLimitMillis The number of milliseconds left in the tick.
+		 * @return The next action to take (null if there is nothing to do).
+		 */
+		public abstract EntityActionSimpleMove<MutableCreature> planNextAction(TickProcessingContext context
+			, MutableCreature mutable
+			, long timeLimitMillis
+		);
 		
 		protected MovementPlan(List<PathLocation> fullPlan
 			, int targetEntityId

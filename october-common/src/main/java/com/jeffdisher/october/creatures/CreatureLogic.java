@@ -10,16 +10,13 @@ import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.logic.EntityCollection;
-import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.pathing.PathFinder;
 import com.jeffdisher.october.pathing.PathLocation;
 import com.jeffdisher.october.pathing.WalkingNavigator;
-import com.jeffdisher.october.subactions.EntitySubActionStepUp;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
-import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -61,124 +58,10 @@ public class CreatureLogic
 			, long timeLimitMillis
 	)
 	{
-		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
-		EntityType type = mutable.getType();
-		EntityLocation currentLocation = mutable.getLocation();
-		
-		EntityActionSimpleMove<MutableCreature> action;
-		if ((null != mutable.movementPlan) && (null != mutable.movementPlan.directLocation))
-		{
-			// We prioritize walking "directly" before following the conventional plan.
-			CreatureEntity.MovementPlan oldPlan = mutable.movementPlan;
-			EntityLocation targetLocation = oldPlan.directLocation;
-			
-			float viscosity = reader.getMaxStillViscosityInVolume(currentLocation, type.volume());
-			
-			byte yaw = OrientationHelpers.getYawBetweenPoints(currentLocation, targetLocation);
-			action = CreatureMovementHelpers.moveAlongDiagonalPath(reader
-				, currentLocation
-				, yaw
-				, (byte)0
-				, type
-				, targetLocation
-				, timeLimitMillis
-				, viscosity
-				, oldPlan.intensity
-			);
-			
-			if (null == action)
-			{
-				// This only returns null if we are stuck so clear the plan.
-				// Ideally, we would clear this in the "special action" phase but this is only detected here.
-				mutable.movementPlan = null;
-			}
-		}
-		else if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan))
-		{
-			// We can derive the action directly from this plan.
-			CreatureEntity.MovementPlan oldPlan = mutable.movementPlan;
-			List<PathLocation> existingPlan = oldPlan.fullPlan;
-			Assert.assertTrue(!existingPlan.isEmpty());
-			
-			EntityActionSimpleMove.Intensity intensity = oldPlan.intensity;
-			EntityLocation oldVelocity = mutable.getVelocityVector();
-			
-			float viscosity = reader.getMaxStillViscosityInVolume(currentLocation, type.volume());
-			
-			// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
-			PathLocation currentInPath = PathLocation.forEntityBase(currentLocation);
-			PathLocation first = existingPlan.get(0);
-			PathLocation second = (existingPlan.size() >= 2) ? existingPlan.get(1) : null;
-			FacingDirection direction;
-			if ((existingPlan.size() > 2)
-				&& (FacingDirection.UP == PathLocation.adjacentDirection(currentInPath, first))
-				&& (FacingDirection.UP == PathLocation.adjacentDirection(first, existingPlan.get(1)))
-			)
-			{
-				// This means we are jumping so choose the next place where we want to go for direction hint.
-				PathLocation third = existingPlan.get(2);
-				direction = PathLocation.adjacentDirection(second, third);
-			}
-			else
-			{
-				// Otherwise, we just want to lean into the direction we are currently heading.
-				direction = PathLocation.adjacentDirection(currentInPath, first);
-			}
-			EntityActionSimpleMove<MutableCreature> actionProduced = CreatureMovementHelpers.prepareForMove(currentLocation
-				, oldVelocity
-				, type
-				, direction
-				, timeLimitMillis
-				, viscosity
-				, intensity
-			);
-			if (null == actionProduced)
-			{
-				// If we are already in a reasonable location, proceed to move.
-				// We know that this should only be called AFTER updating our planned path.
-				Assert.assertTrue(!PathLocation.forEntityBase(currentLocation).equals(first));
-				
-				boolean isSwimmable = (viscosity >= BlockAspect.VISOSITY_FLOAT_SWIMMABLE) && (viscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
-				actionProduced = CreatureMovementHelpers.moveToNextLocation(reader
-					, currentLocation
-					, oldVelocity
-					, mutable.newYaw
-					, mutable.newPitch
-					, type
-					, first
-					, second
-					, timeLimitMillis
-					, viscosity
-					, intensity
-					, isSwimmable
-				);
-			}
-			// TODO:  This approach is a hack which requires that we rethink this action production design.
-			if ((null != actionProduced) && (actionProduced.getSubAction() instanceof EntitySubActionStepUp))
-			{
-				List<PathLocation> fullPlan = new ArrayList<>(existingPlan);
-				fullPlan.remove(0);
-				Assert.assertTrue(null == oldPlan.directLocation);
-				if (CreatureEntity.NO_TARGET_ENTITY_ID != oldPlan.targetEntityId)
-				{
-					mutable.movementPlan = new PlanWithTarget(fullPlan
-						, oldPlan.targetEntityId
-						, oldPlan.targetPreviousLocation
-					);
-				}
-				else
-				{
-					mutable.movementPlan = new PlanNoTarget(fullPlan, intensity);
-				}
-			}
-			action = actionProduced;
-		}
-		else
-		{
-			// We have no plan so do nothing.
-			action = null;
-		}
-		return action;
+		return (null != mutable.movementPlan)
+			? mutable.movementPlan.planNextAction(context, mutable, timeLimitMillis)
+			: null
+		;
 	}
 
 	/**
