@@ -1,11 +1,13 @@
 package com.jeffdisher.october.creatures;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.logic.EntityMovementHelpers.IInteractiveHelper;
@@ -18,11 +20,14 @@ import com.jeffdisher.october.subactions.EntitySubActionJump;
 import com.jeffdisher.october.subactions.EntitySubActionStepUp;
 import com.jeffdisher.october.subactions.EntitySubActionSwim;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.FacingDirection;
+import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.IEntitySubAction;
+import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -601,6 +606,135 @@ public class CreatureMovementHelpers
 			plannedPath = null;
 		}
 		return plannedPath;
+	}
+
+	public static void validateNextStepValid(TickProcessingContext context
+		, MutableCreature mutable
+		, List<PathLocation> fullPlan
+	)
+	{
+		// Invalidate:  Verify that we are in range of the next step and it isn't solid.
+		PathLocation thisStep = fullPlan.get(0);
+		PathLocation pathBase = PathLocation.forEntityBase(mutable.newLocation);
+		
+		// We might not yet have noticed that we have moved into the next step so skip this check in that case.
+		if (!pathBase.equals(thisStep))
+		{
+			int distanceToNext = PathLocation.pathStepDistance(pathBase, thisStep);
+			boolean isAdjacent = (1 == distanceToNext);
+			if (isAdjacent)
+			{
+				// Just make sure we can move into this next step.
+				ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
+				float nextViscosity = reader.getMaxStillViscosityInVolume(thisStep.getBaseLocation(), mutable.newType.volume());
+				if (BlockAspect.VISOSITY_FLOAT_SOLID == nextViscosity)
+				{
+					// Something is blocked so clear the plan.
+					mutable.movementPlan = null;
+				}
+				else
+				{
+					// Common case:  The path is still valid so just fall through and continue.
+				}
+			}
+			else
+			{
+				// We must have fallen or been pushed so clear the plan.
+				mutable.movementPlan = null;
+			}
+		}
+	}
+
+	public static void updateTargetEntityPlan(TickProcessingContext context
+		, MutableCreature mutable
+		, int targetEntityId
+		, EntityLocation targetPreviousLocation
+	)
+	{
+		MinimalEntity targetEntity = context.previousEntityLookUp.getById(targetEntityId);
+		
+		// The target validity was checked in the invalidate path so this is valid.
+		Assert.assertTrue(null != targetEntity);
+		
+		if (!targetEntity.location().equals(targetPreviousLocation))
+		{
+			EntityType type = mutable.getType();
+			EntityLocation currentLocation = mutable.getLocation();
+			
+			// This has moved so update the plan in response.
+			EntityLocation targetLocation = targetEntity.location();
+			// This has moved so update the plan in response.
+			WalkingNavigator navigator = new WalkingNavigator(context.previousBlockLookUp
+				, type.volume()
+				, type.getPathDistance()
+				, true
+				, true
+				, true
+				, true
+			);
+			List<PathLocation> path = PathFinder.findPathWithLimit(navigator, currentLocation, targetLocation);
+			if (null != path)
+			{
+				// We want to strip away the first step, since it is the current location.
+				path.remove(0);
+				
+				// We need to store a movement plan whether this path is reduced to nothing, or not.
+				CreatureEntity.MovementPlan plan;
+				if (path.size() > 0)
+				{
+					ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
+					EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, currentLocation, type, path);
+					
+					if (null != directLocation)
+					{
+						plan = new DirectWithDistantTarget(directLocation, targetEntityId, targetLocation);
+					}
+					else
+					{
+						plan = new PlanWithTarget(Collections.unmodifiableList(path), targetEntityId, targetLocation);
+					}
+				}
+				else
+				{
+					plan = new DirectWithTarget(targetEntityId, targetLocation);
+				}
+				mutable.movementPlan = plan;
+			}
+			else
+			{
+				mutable.movementPlan = null;
+			}
+		}
+	}
+
+	public static void updateDirectTargetPlan(TickProcessingContext context
+		, MutableCreature mutable
+		, int targetEntityId
+	)
+	{
+		EntityType type = mutable.getType();
+		EntityLocation currentLocation = mutable.getLocation();
+		
+		// We have a target so see if they are within action range.
+		MinimalEntity targetEntity = context.previousEntityLookUp.getById(targetEntityId);
+		
+		// Note that we already checked that this target is valid in an earlier check.
+		Assert.assertTrue(null != targetEntity);
+		
+		EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(currentLocation, type.volume());
+		FixedRegion region = FixedRegion.fromMinimal(targetEntity);
+		float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
+		float actionDistance = type.actionDistance();
+		
+		if (distance < actionDistance)
+		{
+			// We can drop the direct location and just keep them in-range.
+			mutable.movementPlan = new NearToTarget(targetEntityId, targetEntity.location());
+		}
+		else
+		{
+			// We are still approaching them so change nothing.
+		}
 	}
 
 

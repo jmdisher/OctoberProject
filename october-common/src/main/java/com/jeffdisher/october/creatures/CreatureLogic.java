@@ -11,7 +11,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.OrientationHelpers;
-import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.pathing.PathFinder;
 import com.jeffdisher.october.pathing.PathLocation;
@@ -21,9 +20,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.FacingDirection;
-import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -251,34 +248,7 @@ public class CreatureLogic
 			if ((null != mutable.movementPlan) && (null != mutable.movementPlan.fullPlan))
 			{
 				List<PathLocation> existingPlan = mutable.movementPlan.fullPlan;
-				PathLocation thisStep = existingPlan.get(0);
-				PathLocation pathBase = PathLocation.forEntityBase(currentLocation);
-				
-				// We might not yet have noticed that we have moved into the next step so skip this check in that case.
-				if (!pathBase.equals(thisStep))
-				{
-					int distanceToNext = PathLocation.pathStepDistance(pathBase, thisStep);
-					boolean isAdjacent = (1 == distanceToNext);
-					if (isAdjacent)
-					{
-						// Just make sure we can move into this next step.
-						float nextViscosity = reader.getMaxStillViscosityInVolume(thisStep.getBaseLocation(), type.volume());
-						if (BlockAspect.VISOSITY_FLOAT_SOLID == nextViscosity)
-						{
-							// Something is blocked so clear the plan.
-							mutable.movementPlan = null;
-						}
-						else
-						{
-							// Common case:  The path is still valid so just fall through and continue.
-						}
-					}
-					else
-					{
-						// We must have fallen or been pushed so clear the plan.
-						mutable.movementPlan = null;
-					}
-				}
+				CreatureMovementHelpers.validateNextStepValid(context, mutable, existingPlan);
 			}
 			
 			// Handle the uncommon case where we are in direct mode but are no longer on the same z-level.
@@ -295,57 +265,7 @@ public class CreatureLogic
 			// Check if the plan should be update in response to a target having moved.
 			if ((null != mutable.movementPlan) && (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.movementPlan.targetEntityId()))
 			{
-				MinimalEntity targetEntity = context.previousEntityLookUp.getById(mutable.movementPlan.targetEntityId());
-				
-				// The target validity was checked in the invalidate path so this is valid.
-				Assert.assertTrue(null != targetEntity);
-				
-				if (!targetEntity.location().equals(mutable.movementPlan.targetPreviousLocation))
-				{
-					// This has moved so update the plan in response.
-					EntityLocation targetLocation = targetEntity.location();
-					// This has moved so update the plan in response.
-					WalkingNavigator navigator = new WalkingNavigator(context.previousBlockLookUp
-						, type.volume()
-						, type.getPathDistance()
-						, true
-						, true
-						, true
-						, true
-					);
-					List<PathLocation> path = PathFinder.findPathWithLimit(navigator, currentLocation, targetLocation);
-					if (null != path)
-					{
-						int targetEntityId = mutable.movementPlan.targetEntityId();
-						// We want to strip away the first step, since it is the current location.
-						path.remove(0);
-						
-						// We need to store a movement plan whether this path is reduced to nothing, or not.
-						CreatureEntity.MovementPlan plan;
-						if (path.size() > 0)
-						{
-							EntityLocation directLocation = CreatureMovementHelpers.findDirectTarget(reader, currentLocation, type, path);
-							
-							if (null != directLocation)
-							{
-								plan = new DirectWithDistantTarget(directLocation, targetEntityId, targetLocation);
-							}
-							else
-							{
-								plan = new PlanWithTarget(Collections.unmodifiableList(path), targetEntityId, targetLocation);
-							}
-						}
-						else
-						{
-							plan = new DirectWithTarget(targetEntityId, targetLocation);
-						}
-						mutable.movementPlan = plan;
-					}
-					else
-					{
-						mutable.movementPlan = null;
-					}
-				}
+				CreatureMovementHelpers.updateTargetEntityPlan(context, mutable, mutable.movementPlan.targetEntityId(), mutable.movementPlan.targetPreviousLocation);
 			}
 			
 			// Check if the plan should be updated due to us stepping into the next block.
@@ -435,26 +355,7 @@ public class CreatureLogic
 				}
 				else
 				{
-					// We have a target so see if they are within action range.
-					MinimalEntity targetEntity = context.previousEntityLookUp.getById(mutable.movementPlan.targetEntityId());
-					
-					// Note that we already checked that this target is valid in an earlier check.
-					Assert.assertTrue(null != targetEntity);
-					
-					EntityLocation sourceEyeLocation = SpatialHelpers.getEyeLocation(currentLocation, type.volume());
-					FixedRegion region = FixedRegion.fromMinimal(targetEntity);
-					float distance = SpatialHelpers.distanceFromLocationToRegion(sourceEyeLocation, region);
-					float actionDistance = type.actionDistance();
-					
-					if (distance < actionDistance)
-					{
-						// We can drop the direct location and just keep them in-range.
-						mutable.movementPlan = new NearToTarget(mutable.movementPlan.targetEntityId(), targetEntity.location());
-					}
-					else
-					{
-						// We are still approaching them so change nothing.
-					}
+					CreatureMovementHelpers.updateDirectTargetPlan(context, mutable, mutable.movementPlan.targetEntityId());
 				}
 			}
 		}
