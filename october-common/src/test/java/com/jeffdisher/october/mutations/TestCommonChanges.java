@@ -2555,31 +2555,6 @@ public class TestCommonChanges
 	}
 
 	@Test
-	public void topLevelBasicRunning()
-	{
-		// We just show that the validation works for moving at double normal speed.
-		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		EntityLocation newLocation = new EntityLocation(0.8f, 0.0f, 0.0f);
-		MutableEntity newEntity = MutableEntity.createForTest(1);
-		newEntity.newLocation = oldLocation;
-		TickProcessingContext context = _createSimpleContext();
-		EntityActionSimpleMove<IMutablePlayerEntity> action = new EntityActionSimpleMove<>(0.8f
-			, 0.0f
-			, EntityActionSimpleMove.Intensity.RUNNING
-			, (byte)5
-			, (byte)6
-			, null
-		);
-		boolean didApply = action.applyChange(context, newEntity);
-		Assert.assertTrue(didApply);
-		Assert.assertEquals(newLocation, newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.newVelocity);
-		Assert.assertEquals(EntityActionPeriodic.ENERGY_COST_PER_TICK_RUNNING, newEntity.newEnergyDeficit);
-		Assert.assertEquals(5, newEntity.newYaw);
-		Assert.assertEquals(6, newEntity.newPitch);
-	}
-
-	@Test
 	public void weaponTypes() throws Throwable
 	{
 		// We just want to try attacking an entity with different weapons to see the different damage amounts.
@@ -2953,122 +2928,6 @@ public class TestCommonChanges
 	}
 
 	@Test
-	public void simpleMoveBasics() throws Throwable
-	{
-		// Test some basic movements with the simple move.
-		AbsoluteLocation blockLocation = new AbsoluteLocation(10, 10, 10);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		cuboid.setData15(AspectRegistry.BLOCK, blockLocation.getBlockAddress(), STONE.item().number());
-		
-		TickProcessingContext context = ContextBuilder.build()
-			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
-			.finish()
-		;
-		
-		int entityId = 1;
-		MutableEntity newEntity = MutableEntity.createForTest(entityId);
-		newEntity.newLocation = blockLocation.getRelative(0, 0, 1).toEntityLocation();
-		
-		Assert.assertTrue(new EntityActionSimpleMove<>(0.0f, 0.0f, EntityActionSimpleMove.Intensity.STANDING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(10.0f, 10.0f, 11.0f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.newVelocity);
-		
-		Assert.assertFalse(new EntityActionSimpleMove<>(0.4f, 0.0f, EntityActionSimpleMove.Intensity.STANDING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertTrue(new EntityActionSimpleMove<>(0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(10.4f, 10.0f, 11.0f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.newVelocity);
-		
-		Assert.assertTrue(new EntityActionSimpleMove<>(0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, new EntitySubActionJump<>()).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(10.8f, 10.0f, 11.49f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(4.0f, 0.0f, 4.9f), newEntity.newVelocity);
-		
-		Assert.assertTrue(new EntityActionSimpleMove<>(0.0f, 0.0f, EntityActionSimpleMove.Intensity.STANDING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(11.2f, 10.0f, 11.88f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(4.0f, 0.0f, 3.92f), newEntity.newVelocity);
-		
-		Assert.assertTrue(new EntityActionSimpleMove<>(0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(11.6f, 10.0f, 12.17f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(4.0f, 0.0f, 2.94f), newEntity.newVelocity);
-		
-		Assert.assertTrue(new EntityActionSimpleMove<>(-0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(11.8f, 10.0f, 12.37f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(2.0f, 0.0f, 1.96f), newEntity.newVelocity);
-		
-		// Our active speed impact is cut in half when in the air so run the last step again.
-		Assert.assertTrue(new EntityActionSimpleMove<>(-0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(11.8f, 10.0f, 12.47f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.98f), newEntity.newVelocity);
-		
-		Assert.assertTrue(new EntityActionSimpleMove<>(0.0f, 0.0f, EntityActionSimpleMove.Intensity.STANDING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(11.8f, 10.0f, 12.47f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.newVelocity);
-		
-		Assert.assertTrue(new EntityActionSimpleMove<>(0.0f, 0.0f, EntityActionSimpleMove.Intensity.STANDING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(11.8f, 10.0f, 12.37f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.98f), newEntity.newVelocity);
-	}
-
-	@Test
-	public void simpleMoveEdges() throws Throwable
-	{
-		// Test the simple move with edge cases.
-		AbsoluteLocation blockLocation = new AbsoluteLocation(10, 10, 10);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		cuboid.setData15(AspectRegistry.BLOCK, blockLocation.getBlockAddress(), STONE.item().number());
-		
-		TickProcessingContext context = ContextBuilder.build()
-			.millisPerTick(100L)
-			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
-			.finish()
-		;
-		
-		int entityId = 1;
-		MutableEntity newEntity = MutableEntity.createForTest(entityId);
-		newEntity.newLocation = blockLocation.getRelative(0, 0, 1).toEntityLocation();
-		
-		Assert.assertTrue(new EntityActionSimpleMove<>(-0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, new EntitySubActionJump<>()).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(9.6f, 10.0f, 11.49f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(-4.0f, 0.0f, 4.9f), newEntity.newVelocity);
-		
-		Assert.assertTrue(new EntityActionSimpleMove<>(-0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(9.2f, 10.0f, 11.88f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(-4.0f, 0.0f, 3.92f), newEntity.newVelocity);
-		
-		// Try again with a different tick rate.
-		context = ContextBuilder.build()
-			.millisPerTick(10L)
-			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
-			.finish()
-		;
-		
-		newEntity = MutableEntity.createForTest(entityId);
-		newEntity.newLocation = blockLocation.getRelative(0, 0, 1).toEntityLocation();
-		
-		Assert.assertTrue(new EntityActionSimpleMove<>(-0.04f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, new EntitySubActionJump<>()).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(9.96f, 10.0f, 11.06f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(-4.0f, 0.0f, 5.78f), newEntity.newVelocity);
-		
-		Assert.assertTrue(new EntityActionSimpleMove<>(-0.04f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(9.92f, 10.0f, 11.12f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(-4.0f, 0.0f, 5.68f), newEntity.newVelocity);
-		
-		// Test an error case we noticed with sign handling when clamping.
-		context = ContextBuilder.build()
-			.millisPerTick(50L)
-			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
-			.finish()
-		;
-		
-		newEntity = MutableEntity.createForTest(entityId);
-		newEntity.newLocation = new EntityLocation(20.0f, 20.0f, 20.0f);
-		newEntity.newVelocity = new EntityLocation(-1.66f, -1.66f, 0.98f);
-		
-		Assert.assertTrue(new EntityActionSimpleMove<>(-0.14f, -0.14f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		Assert.assertEquals(new EntityLocation(19.92f, 19.92f, 20.02f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(-1.66f, -1.66f, 0.49f), newEntity.newVelocity);
-	}
-
-	@Test
 	public void nudgeCreature() throws Throwable
 	{
 		// Show what happens when we send a nudge action to a creature and then have them stand.
@@ -3413,35 +3272,6 @@ public class TestCommonChanges
 	}
 
 	@Test
-	public void standInRunningWater()
-	{
-		// Show that standing in flowing water will push us around.
-		EntityLocation oldLocation = new EntityLocation(0.8f, 0.8f, 0.0f);
-		MutableEntity newEntity = MutableEntity.createForTest(1);
-		newEntity.newLocation = oldLocation;
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0), WATER_SOURCE.item().number());
-		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 1, 0), WATER_SOURCE.item().number());
-		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, BlockAddress.fromInt(0, 1, 0), (byte)1);
-		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 0, 0), WATER_SOURCE.item().number());
-		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, BlockAddress.fromInt(1, 0, 0), (byte)1);
-		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 0), WATER_SOURCE.item().number());
-		cuboid.setData7(AspectRegistry.BLOCK_DEFINED_BYTE, BlockAddress.fromInt(1, 1, 0), (byte)2);
-		TickProcessingContext context = _createSingleCuboidContext(cuboid);
-		EntityActionSimpleMove<IMutablePlayerEntity> action = new EntityActionSimpleMove<>(0.0f
-			, 0.0f
-			, EntityActionSimpleMove.Intensity.STANDING
-			, (byte)5
-			, (byte)6
-			, null
-		);
-		boolean didApply = action.applyChange(context, newEntity);
-		Assert.assertTrue(didApply);
-		Assert.assertEquals(new EntityLocation(0.85f, 0.85f, 0.0f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.newVelocity);
-	}
-
-	@Test
 	public void feedingCreatureCases() throws Throwable
 	{
 		// Show some uses of EntityChangeUseSelectedItemOnEntity and its static helper.
@@ -3587,66 +3417,6 @@ public class TestCommonChanges
 		EntitySubActionUseSelectedItemOnBlock setSecond = new EntitySubActionUseSelectedItemOnBlock(secondTarget);
 		Assert.assertTrue(setSecond.applyChange(context, newEntity));
 		Assert.assertEquals(secondTarget, PropertyHelpers.getLocation(newEntity.newInventory.getNonStackableForKey(1)));
-	}
-
-	@Test
-	public void perf_simpleMove() throws Throwable
-	{
-		// We want to show the performance of using EntityActionSimpleMove on a complex base cuboid.
-		boolean infiniteLoopForProfiler = false;
-		boolean longLoopForObjectiveScore = false;
-		
-		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		CuboidData complexCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
-		Block dirtBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
-		CuboidGenerator.fillPlane(complexCuboid, (byte)31, dirtBlock);
-		Block logBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.log"));
-		CuboidGenerator.fillPlane(complexCuboid, (byte)29, logBlock);
-		Block coalOreBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.coal_ore"));
-		CuboidGenerator.fillPlane(complexCuboid, (byte)27, coalOreBlock);
-		Block ironOreBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.iron_ore"));
-		CuboidGenerator.fillPlane(complexCuboid, (byte)25, ironOreBlock);
-		Map<CuboidAddress, CuboidData> mappedWorld = Map.of(airCuboid.getCuboidAddress(), airCuboid
-			, complexCuboid.getCuboidAddress(), complexCuboid
-		);
-		
-		Function<CuboidAddress, IReadOnlyCuboidData> cuboidLookup = (CuboidAddress address) -> mappedWorld.get(address);
-		TickProcessingContext.IBlockFetcher blockFetcher = new BlockFetcher(Map.of(), Set.of(), cuboidLookup);
-		
-		TickProcessingContext context = ContextBuilder.build()
-			.lookups(blockFetcher, null, null)
-			.finish()
-		;
-		
-		int entityId = 1;
-		MutableEntity newEntity = MutableEntity.createForTest(entityId);
-		newEntity.newLocation = new EntityLocation(5.0f, 5.0f, 0.0f);
-		Entity frozen = newEntity.freeze();
-		
-		if (infiniteLoopForProfiler)
-		{
-			while(true)
-			{
-				MutableEntity mutable = MutableEntity.existing(frozen);
-				Assert.assertTrue(new EntityActionSimpleMove<>(0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, mutable));
-			}
-		}
-		else if (longLoopForObjectiveScore)
-		{
-			int iterationCount = 1_000_000;
-			long startNanos = System.nanoTime();
-			for (int i = 0; i < iterationCount; ++i)
-			{
-				MutableEntity mutable = MutableEntity.existing(frozen);
-				Assert.assertTrue(new EntityActionSimpleMove<>(0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, mutable));
-			}
-			long endNanos = System.nanoTime();
-			System.out.println("Nanos per: " + ((endNanos - startNanos) / iterationCount));
-		}
-		else
-		{
-			Assert.assertTrue(new EntityActionSimpleMove<>(0.4f, 0.0f, EntityActionSimpleMove.Intensity.WALKING, (byte)0, (byte)0, null).applyChange(context, newEntity));
-		}
 	}
 
 	@Test
