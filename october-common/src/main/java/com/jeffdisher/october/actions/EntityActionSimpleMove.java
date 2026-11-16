@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.DeserializationContext;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
+import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -76,6 +77,85 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 		byte pitch = buffer.get();
 		IEntitySubAction<T> subAction = CodecHelpers.readNullableNestedChange(context);
 		return new EntityActionSimpleMove<>(activeX, activeY, intensity, yaw, pitch, subAction);
+	}
+
+	/**
+	 * A helper to create an action to move directly toward targetBase, assuming it is on the same Z-level as
+	 * startLocation.  Note that it may take several steps to reach targetBase and the returned action will only be the
+	 * first valid step.  Internally, this uses the same logic as the applyChange() would use, hence meaning that the
+	 * returned value should be apply without issue (although it may collide with barriers).
+	 * Asserts that the startLocation is NOT the targetBase and that both locations share a Z-level.
+	 * 
+	 * @param <T> The Entity type.
+	 * @param startLocation The base location where the entity is currently standing.
+	 * @param startingVelocity The current velocity of the entity (usually still).
+	 * @param environmentalVelocity The velocity being passively applied by the environment (flowing water, for example).
+	 * @param startingViscosity The viscosity where the entity is currently standing.
+	 * @param targetBase The base location the entity wants to reach.
+	 * @param walkingBlocksPerSecond The speed of the entity, at walking intensity, in blocks per second.
+	 * @param intensity The movement intensity which should be applied.
+	 * @param millisPerTick The number of milliseconds limiting what can be done in a single tick.
+	 * @return The new action.
+	 */
+	public static <T extends IMutableMinimalEntity> EntityActionSimpleMove<T> moveTowardTarget(EntityLocation startLocation
+		, EntityLocation startingVelocity
+		, EntityLocation environmentalVelocity
+		, float startingViscosity
+		, EntityLocation targetBase
+		, float walkingBlocksPerSecond
+		, Intensity intensity
+		, long millisPerTick
+	)
+	{
+		// The caller should be determining that there is a move to make before it calls us.
+		// If we aren't moving, we won't create anything (even though the passive environment may still move us from our target).
+		Assert.assertTrue(!startLocation.equals(targetBase));
+		
+		// We can only use this helper for purely horizontal movement.
+		Assert.assertTrue(startLocation.z() == targetBase.z());
+		
+		// Account for the effect of our initial velocity and environmental velocity on how to interpret our start.
+		EntityLocation preVelocity = EntityMovementHelpers.saturateVectorAddition(startingVelocity, environmentalVelocity);
+		float seconds = ((float)millisPerTick / 1000.0f);
+		EntityLocation fullyPassiveVelocity = EntityMovementHelpers.adjustVelocityForMovement(preVelocity, 0.0f, 0.0f, walkingBlocksPerSecond, seconds, startingViscosity);
+		
+		// We will determine how much active movement we need from this.
+		EntityLocation effectiveStart = startLocation.getRelative(seconds * fullyPassiveVelocity.x()
+			, seconds * fullyPassiveVelocity.y()
+			, 0.0f
+		);
+		
+		EntityLocation totalPath = new EntityLocation(targetBase.x() - effectiveStart.x()
+			, targetBase.y() - effectiveStart.y()
+			, 0.0f
+		);
+		float intensityVelocityPerSecond = intensity.speedMultipler * walkingBlocksPerSecond;
+		float maxMoveInTick = seconds * intensityVelocityPerSecond;
+		float magnitude = totalPath.getMagnitude();
+		
+		float activeX;
+		float activeY;
+		if (magnitude > maxMoveInTick)
+		{
+			float multiple = maxMoveInTick / magnitude;
+			activeX = multiple * totalPath.x();
+			activeY = multiple * totalPath.y();
+		}
+		else
+		{
+			activeX = totalPath.x();
+			activeY = totalPath.y();
+		}
+		
+		byte yaw = OrientationHelpers.getYawBetweenPoints(startLocation, targetBase);
+		byte pitch = 0;
+		return new EntityActionSimpleMove<>(activeX
+			, activeY
+			, intensity
+			, yaw
+			, pitch
+			, null
+		);
 	}
 
 

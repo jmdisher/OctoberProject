@@ -18,11 +18,14 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.ContextBuilder;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.BlockFetcher;
@@ -39,6 +42,7 @@ public class TestEntityActionSimpleMove
 	private static Item STONE_ITEM;
 	private static Block STONE;
 	private static Block WATER_SOURCE;
+	private static EntityType COW;
 	@BeforeClass
 	public static void setup() throws Throwable
 	{
@@ -46,6 +50,7 @@ public class TestEntityActionSimpleMove
 		STONE_ITEM = ENV.items.getItemById("op.stone");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		COW = ENV.creatures.getTypeById("op.cow");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -285,6 +290,124 @@ public class TestEntityActionSimpleMove
 		Assert.assertEquals(EntityActionPeriodic.ENERGY_COST_PER_TICK_RUNNING, newEntity.newEnergyDeficit);
 		Assert.assertEquals(5, newEntity.newYaw);
 		Assert.assertEquals(6, newEntity.newPitch);
+	}
+
+	@Test
+	public void moveTowardTarget()
+	{
+		// A few tests to demonstrate this helper and what it can do.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		TickProcessingContext context = _createSingleCuboidContext(cuboid);
+		
+		EntityLocation start = new EntityLocation(5.0f, 6.0f, 1.0f);
+		EntityLocation startingVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		EntityLocation environmentalVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		float startingViscosity = 0.0f;
+		EntityLocation targetBase = new EntityLocation(2.0f, 2.0f, 1.0f);
+		float walkingBlocksPerSecond = COW.blocksPerSecond();
+		EntityActionSimpleMove.Intensity intensity = EntityActionSimpleMove.Intensity.WALKING;
+		long millisPerTick = 100L;
+		EntityActionSimpleMove<MutableCreature> move = EntityActionSimpleMove.moveTowardTarget(start
+			, startingVelocity
+			, environmentalVelocity
+			, startingViscosity
+			, targetBase
+			, walkingBlocksPerSecond
+			, intensity
+			, millisPerTick
+		);
+		Assert.assertEquals("SimpleMove(WALKING), by -0.06, -0.08, Sub: null", move.toString());
+		MutableCreature creature = MutableCreature.existing(CreatureEntity.create(-1, COW, start, 0L));
+		creature.newVelocity = startingVelocity;
+		boolean didApply = move.applyChange(context, creature);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(new EntityLocation(4.94f, 5.92f, 1.0f), creature.newLocation);
+		Assert.assertEquals(102, creature.newYaw);
+		
+		// Show the impact of the environment.
+		environmentalVelocity = new EntityLocation(0.0f, 2.0f, 0.0f);
+		targetBase = new EntityLocation(4.5f, 5.0f, 1.0f);
+		move = EntityActionSimpleMove.moveTowardTarget(start
+			, startingVelocity
+			, environmentalVelocity
+			, startingViscosity
+			, targetBase
+			, walkingBlocksPerSecond
+			, intensity
+			, millisPerTick
+		);
+		Assert.assertEquals("SimpleMove(WALKING), by -0.04, -0.09, Sub: null", move.toString());
+		creature = MutableCreature.existing(CreatureEntity.create(-1, COW, start, 0L));
+		creature.newVelocity = startingVelocity;
+		didApply = move.applyChange(context, creature);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(new EntityLocation(4.96f, 5.91f, 1.0f), creature.newLocation);
+		Assert.assertEquals(109, creature.newYaw);
+		
+		// Show how we handle short distances.
+		environmentalVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		targetBase = new EntityLocation(4.98f, 6.05f, 1.0f);
+		move = EntityActionSimpleMove.moveTowardTarget(start
+			, startingVelocity
+			, environmentalVelocity
+			, startingViscosity
+			, targetBase
+			, walkingBlocksPerSecond
+			, intensity
+			, millisPerTick
+		);
+		Assert.assertEquals("SimpleMove(WALKING), by -0.02, 0.05, Sub: null", move.toString());
+		creature = MutableCreature.existing(CreatureEntity.create(-1, COW, start, 0L));
+		creature.newVelocity = startingVelocity;
+		didApply = move.applyChange(context, creature);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(targetBase, creature.newLocation);
+		Assert.assertEquals(16, creature.newYaw);
+		
+		// Show the impact on high environmental velocities on short distances.
+		environmentalVelocity = new EntityLocation(-1.0f, 5.0f, 0.0f);
+		targetBase = new EntityLocation(4.98f, 6.05f, 1.0f);
+		move = EntityActionSimpleMove.moveTowardTarget(start
+			, startingVelocity
+			, environmentalVelocity
+			, startingViscosity
+			, targetBase
+			, walkingBlocksPerSecond
+			, intensity
+			, millisPerTick
+		);
+		Assert.assertEquals("SimpleMove(WALKING), by 0.02, -0.10, Sub: null", move.toString());
+		// NOTE:  Constructing this specific environmental velocity in the cuboid is difficult so just verify that the action is valid, even without this.
+		creature = MutableCreature.existing(CreatureEntity.create(-1, COW, start, 0L));
+		creature.newVelocity = startingVelocity;
+		didApply = move.applyChange(context, creature);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(new EntityLocation(5.02f, 5.9f, 1.0f), creature.newLocation);
+		Assert.assertEquals(16, creature.newYaw);
+		
+		// Show the impact of viscosity (requires change of cuboid).
+		environmentalVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		startingViscosity = ENV.blocks.getViscosityFraction(WATER_SOURCE, false, false);
+		targetBase = new EntityLocation(2.0f, 2.0f, 1.0f);
+		move = EntityActionSimpleMove.moveTowardTarget(start
+			, startingVelocity
+			, environmentalVelocity
+			, startingViscosity
+			, targetBase
+			, walkingBlocksPerSecond
+			, intensity
+			, millisPerTick
+		);
+		Assert.assertEquals("SimpleMove(WALKING), by -0.06, -0.08, Sub: null", move.toString());
+		creature = MutableCreature.existing(CreatureEntity.create(-1, COW, start, 0L));
+		creature.newVelocity = startingVelocity;
+		cuboid.setData15(AspectRegistry.BLOCK, start.getBlockLocation().getBlockAddress(), WATER_SOURCE.item().number());
+		context = _createSingleCuboidContext(cuboid);
+		didApply = move.applyChange(context, creature);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(new EntityLocation(4.97f, 5.96f, 1.0f), creature.newLocation);
+		Assert.assertEquals(102, creature.newYaw);
 	}
 
 

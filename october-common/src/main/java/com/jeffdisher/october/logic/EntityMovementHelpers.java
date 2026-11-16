@@ -326,6 +326,23 @@ public class EntityMovementHelpers
 		return new EntityLocation(x, y, z);
 	}
 
+	/**
+	 * A helper to combine various factors related to movement to determine the effective velocity of an entity.
+	 * 
+	 * @param inputVelocity The initial velocity passively acting on the entity (previous tick's residual velocity plus
+	 * environmental velocity).
+	 * @param activeXMovement The number of blocks to actively move in the X direction within this tick.
+	 * @param activeYMovement The number of blocks to actively move in the Y direction within this tick.
+	 * @param maxVelocityPerSecond The maximum active velocity of the entity in blocks per second.
+	 * @param seconds The number of seconds allotted to apply the active movement.
+	 * @param startViscosity The viscosity where the entity started moving.
+	 * @return The effective total velocity acting on the entity.
+	 */
+	public static EntityLocation adjustVelocityForMovement(EntityLocation inputVelocity, float activeXMovement, float activeYMovement, float maxVelocityPerSecond, float seconds, float startViscosity)
+	{
+		return _adjustVelocityForMovement(inputVelocity, activeXMovement, activeYMovement, maxVelocityPerSecond, seconds, startViscosity);
+	}
+
 
 	private static boolean _canOccupyLocation(EntityLocation movingStart, EntityVolume volume, IInteractiveHelper helper, boolean fromAbove)
 	{

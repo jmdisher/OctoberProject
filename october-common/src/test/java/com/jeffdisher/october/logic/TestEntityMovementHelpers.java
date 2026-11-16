@@ -542,4 +542,40 @@ public class TestEntityMovementHelpers
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), result.velocity());
 		Assert.assertTrue(result.isOnGround());
 	}
+
+	@Test
+	public void adjustVelocityForMovement()
+	{
+		// We just test a few basic cases of this helper.
+		EntityLocation inputVelocity = new EntityLocation(1.0f, 0.0f, 0.0f);
+		float activeXMovement = 0.0f;
+		float activeYMovement = 0.0f;
+		float maxVelocityPerSecond = 4.0f;
+		float seconds = 0.1f;
+		float startViscosity = 0.0f;
+		Assert.assertEquals(new EntityLocation(1.0f, 0.0f, -0.98f), EntityMovementHelpers.adjustVelocityForMovement(inputVelocity, activeXMovement, activeYMovement, maxVelocityPerSecond, seconds, startViscosity));
+		
+		activeXMovement = 1.0f;
+		Assert.assertEquals(new EntityLocation(4.0f, 0.0f, -0.98f), EntityMovementHelpers.adjustVelocityForMovement(inputVelocity, activeXMovement, activeYMovement, maxVelocityPerSecond, seconds, startViscosity));
+		
+		activeXMovement = 0.1f;
+		Assert.assertEquals(new EntityLocation(2.0f, 0.0f, -0.98f), EntityMovementHelpers.adjustVelocityForMovement(inputVelocity, activeXMovement, activeYMovement, maxVelocityPerSecond, seconds, startViscosity));
+		
+		activeXMovement = 2.0f;
+		Assert.assertEquals(new EntityLocation(4.0f, 0.0f, -0.98f), EntityMovementHelpers.adjustVelocityForMovement(inputVelocity, activeXMovement, activeYMovement, maxVelocityPerSecond, seconds, startViscosity));
+		
+		activeXMovement = 1.0f;
+		startViscosity = 0.5f;
+		Assert.assertEquals(new EntityLocation(2.0f, 0.0f, -0.49f), EntityMovementHelpers.adjustVelocityForMovement(inputVelocity, activeXMovement, activeYMovement, maxVelocityPerSecond, seconds, startViscosity));
+		
+		inputVelocity = new EntityLocation(10.0f, 0.0f, 0.0f);
+		activeXMovement = 1.0f;
+		startViscosity = 0.0f;
+		Assert.assertEquals(new EntityLocation(10.0f, 0.0f, -0.98f), EntityMovementHelpers.adjustVelocityForMovement(inputVelocity, activeXMovement, activeYMovement, maxVelocityPerSecond, seconds, startViscosity));
+		
+		inputVelocity = new EntityLocation(10.0f, 0.0f, 0.0f);
+		activeXMovement = 0.0f;
+		activeYMovement = -0.1f;
+		Assert.assertEquals(new EntityLocation(9.95f, -1.0f, -0.98f), EntityMovementHelpers.adjustVelocityForMovement(inputVelocity, activeXMovement, activeYMovement, maxVelocityPerSecond, seconds, startViscosity));
+	}
 }
