@@ -64,4 +64,24 @@ public class TestPathLocation
 		Assert.assertEquals(new EntityLocation(-0.5f, 0.0f, 0.5f), po.getRelative(-10, -11, -12).getBaseLocation());
 		Assert.assertEquals(new EntityLocation(11.0f, 12.5f, 14.0f), po.getRelative(13, 14, 15).getBaseLocation());
 	}
+
+	@Test
+	public void adjacentSteps()
+	{
+		AbsoluteLocation negativeBase = new AbsoluteLocation(-1, -2, -3);
+		AbsoluteLocation positiveBase = new AbsoluteLocation(4, 5, 6);
+		PathLocation nz = PathLocation.test_raw(negativeBase, 0, 0, 0);
+		PathLocation no = PathLocation.test_raw(negativeBase, 1, 1, 1);
+		PathLocation pz = PathLocation.test_raw(positiveBase, 0, 0, 0);
+		
+		Assert.assertEquals(1, PathLocation.adjacentStepsX(nz, no));
+		Assert.assertEquals(-1, PathLocation.adjacentStepsX(no, nz));
+		Assert.assertEquals(10, PathLocation.adjacentStepsX(nz, pz));
+		Assert.assertEquals(-10, PathLocation.adjacentStepsX(pz, nz));
+		
+		Assert.assertEquals(1, PathLocation.adjacentStepsY(nz, no));
+		Assert.assertEquals(-1, PathLocation.adjacentStepsY(no, nz));
+		Assert.assertEquals(14, PathLocation.adjacentStepsY(nz, pz));
+		Assert.assertEquals(-14, PathLocation.adjacentStepsY(pz, nz));
+	}
 }

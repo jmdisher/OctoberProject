@@ -127,6 +127,34 @@ public class PathLocation
 		return direction;
 	}
 
+	/**
+	 * A helper to determine the number of steps, purely along the X-axis, to get from "from" to "to".
+	 * 
+	 * @param from The starting block.
+	 * @param to The ending block.
+	 * @return The number of X-axis steps.
+	 */
+	public static int adjacentStepsX(PathLocation from, PathLocation to)
+	{
+		int fromXRaw = _getRawLocation(from._location.x(), from._xOffset);
+		int toXRaw = _getRawLocation(to._location.x(), to._xOffset);
+		return toXRaw - fromXRaw;
+	}
+
+	/**
+	 * A helper to determine the number of steps, purely along the Y-axis, to get from "from" to "to".
+	 * 
+	 * @param from The starting block.
+	 * @param to The ending block.
+	 * @return The number of Y-axis steps.
+	 */
+	public static int adjacentStepsY(PathLocation from, PathLocation to)
+	{
+		int fromYRaw = _getRawLocation(from._location.y(), from._yOffset);
+		int toYRaw = _getRawLocation(to._location.y(), to._yOffset);
+		return toYRaw - fromYRaw;
+	}
+
 
 	private final AbsoluteLocation _location;
 	private final int _xOffset;

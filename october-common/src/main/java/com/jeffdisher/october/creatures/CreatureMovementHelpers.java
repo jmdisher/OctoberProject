@@ -245,16 +245,18 @@ public class CreatureMovementHelpers
 				{
 					// This is something else so it is a step.
 					// Note that this "realTargetLocation" calculation isn't quite right but needs to be generalized with other calls here, anyway.
-					stepUpTarget = _findStepLocation(creatureLocation, creatureType, nextTargetBlock, nextDirection);
+					EntityVolume volume = creatureType.volume();
+					float width = volume.width();
+					stepUpTarget = _findStepLocation(creatureLocation, width, nextTargetBlock, nextDirection);
 					float deltaX = stepUpTarget.x() - creatureLocation.x();
 					float deltaY = stepUpTarget.y() - creatureLocation.y();
 					float xToMove = _findRawMoveInTime(creatureType.blocksPerSecond() * intensity.speedMultipler, viscosityFraction, deltaX, creatureVelocity.x(), timeLimitMillis);
 					float yToMove = _findRawMoveInTime(creatureType.blocksPerSecond() * intensity.speedMultipler, viscosityFraction, deltaY, creatureVelocity.y(), timeLimitMillis);
 					EntityLocation realTargetLocation = creatureLocation.getRelative(xToMove, yToMove, EntitySubActionStepUp.MAX_STEP_HEIGHT);
 					
-					if (supplier.isSolidBlockInVolume(realTargetLocation.getRelative(0.0f, 0.0f, -0.1f), new EntityVolume(0.01f, creatureType.volume().width()), true))
+					if (supplier.isSolidBlockInVolume(realTargetLocation.getRelative(0.0f, 0.0f, -0.1f), new EntityVolume(0.01f, width), true))
 					{
-						stepUpSubAction = EntitySubActionStepUp.buildStepUpWithReader(supplier, creatureLocation, creatureType.volume(), deltaX, deltaY);
+						stepUpSubAction = EntitySubActionStepUp.buildStepUpWithReader(supplier, creatureLocation, volume, deltaX, deltaY);
 					}
 					else
 					{
@@ -340,7 +342,8 @@ public class CreatureMovementHelpers
 		else
 		{
 			// This is a normal horizontal move.
-			EntityLocation stepLocation = _findStepLocation(creatureLocation, creatureType, targetBlock, direction);
+			float width = creatureType.volume().width();
+			EntityLocation stepLocation = _findStepLocation(creatureLocation, width, targetBlock, direction);
 			float distanceX = Math.abs(stepLocation.x() - creatureLocation.x());
 			float distanceY = Math.abs(stepLocation.y() - creatureLocation.y());
 			change = _buildStep(creatureLocation, creatureVelocity, creatureType, timeLimitMillis, viscosityFraction, intensity, stepLocation, distanceX, distanceY, null);
@@ -737,6 +740,26 @@ public class CreatureMovementHelpers
 		}
 	}
 
+	/**
+	 * Finds an appropriate target location for a creature starting at creatureLocation, of width size, wanting to end
+	 * up in targetBlock location, prepared to continue in direction from there.
+	 * 
+	 * @param creatureLocation The starting location of the creature.
+	 * @param width The width of the creature.
+	 * @param targetBlock The block the creature needs to end up in.
+	 * @param direction The direction the creature should be oriented to leave targetBlock, later (MUST be a flat
+	 * direction:  WEST, EAST, SOUTH, or NORTH).
+	 * @return A reasonable location for the creature to reach, in targetBlock.
+	 */
+	public static EntityLocation findStepLocation(EntityLocation creatureLocation
+		, float width
+		, PathLocation targetBlock
+		, FacingDirection direction
+	)
+	{
+		return _findStepLocation(creatureLocation, width, targetBlock, direction);
+	}
+
 
 	private static EntityActionSimpleMove<MutableCreature> _moveByX(EntityLocation location, long timeLimitMillis, float creatureSpeed, EntityActionSimpleMove.Intensity intensity, float viscosityFraction, float targetX, float passiveVelocityX, EntitySubActionStepUp<MutableCreature> subAction)
 	{
@@ -851,30 +874,73 @@ public class CreatureMovementHelpers
 	}
 
 	private static EntityLocation _findStepLocation(EntityLocation creatureLocation
-		, EntityType creatureType
+		, float width
 		, PathLocation targetBlock
 		, FacingDirection direction
 	)
 	{
-		float stepX = creatureLocation.x();
-		float stepY = creatureLocation.y();
-		float width = creatureType.volume().width();
+		// Note that we will align our X/Y location with the direction we want to exit the block on the matching axis
+		// but the step base or existing location, depending on if this is turnnig a corner, or not.
 		EntityLocation targetBase = targetBlock.getBaseLocation();
+		PathLocation creatureStep = PathLocation.forEntityBase(creatureLocation);
+		int xDelta = PathLocation.adjacentStepsX(creatureStep, targetBlock);
+		int yDelta = PathLocation.adjacentStepsY(creatureStep, targetBlock);
+		
+		float stepX;
+		float stepY;
 		if (FacingDirection.EAST == direction)
 		{
-			stepX = targetBase.x() + FLOAT_THRESHOLD;
+			float toSubtract = width - PathLocation.PATH_UNIT * (float)Math.floor(width / PathLocation.PATH_UNIT);
+			stepX = targetBase.x() + PathLocation.PATH_UNIT - FLOAT_THRESHOLD - toSubtract;
+			if (0 != yDelta)
+			{
+				stepY = targetBase.y();
+			}
+			else
+			{
+				stepY = creatureLocation.y();
+			}
 		}
 		else if (FacingDirection.WEST == direction)
 		{
-			stepX = targetBase.x() + PathLocation.PATH_UNIT - FLOAT_THRESHOLD - width;
+			stepX = targetBase.x() + FLOAT_THRESHOLD;
+			if (0 != yDelta)
+			{
+				stepY = targetBase.y();
+			}
+			else
+			{
+				stepY = creatureLocation.y();
+			}
 		}
 		else if (FacingDirection.NORTH == direction)
 		{
-			stepY = targetBase.y() + FLOAT_THRESHOLD;
+			if (0 != xDelta)
+			{
+				stepX = targetBase.x();
+			}
+			else
+			{
+				stepX = creatureLocation.x();
+			}
+			float toSubtract = width - PathLocation.PATH_UNIT * (float)Math.floor(width / PathLocation.PATH_UNIT);
+			stepY = targetBase.y() + PathLocation.PATH_UNIT - FLOAT_THRESHOLD - toSubtract;
 		}
 		else if (FacingDirection.SOUTH == direction)
 		{
-			stepY = targetBase.y() + PathLocation.PATH_UNIT - FLOAT_THRESHOLD - width;
+			if (0 != xDelta)
+			{
+				stepX = targetBase.x();
+			}
+			else
+			{
+				stepX = creatureLocation.x();
+			}
+			stepY = targetBase.y() + FLOAT_THRESHOLD;
+		}
+		else
+		{
+			throw Assert.unreachable();
 		}
 		float stepZ = targetBase.z();
 		EntityLocation stepLocation = new EntityLocation(stepX, stepY, stepZ);

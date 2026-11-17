@@ -1032,9 +1032,9 @@ public class TestCreatureLogic
 		
 		// Make sure that the movement is correct.
 		EntityActionSimpleMove<MutableCreature> change = CreatureLogic.planNextAction(context, mutable, context.millisPerTick);
-		Assert.assertEquals("SimpleMove(IDLE_CREATURE), by 0.00, 0.04, Sub: null", change.toString());
+		Assert.assertEquals("SimpleMove(IDLE_CREATURE), by 0.00, 0.05, Sub: null", change.toString());
 		Assert.assertTrue(change.applyChange(context, mutable));
-		Assert.assertEquals(new EntityLocation(4.7f, 5.01f, 1.0f), mutable.newLocation);
+		Assert.assertEquals(new EntityLocation(4.7f, 5.02f, 1.0f), mutable.newLocation);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutable.newVelocity);
 	}
 
@@ -1707,9 +1707,9 @@ public class TestCreatureLogic
 		Assert.assertArrayEquals(new EntityLocation[] {
 			new EntityLocation(16.7f, 16.2f, 1.5f),
 			new EntityLocation(16.9f, 16.2f, 1.5f),
-			new EntityLocation(17.01f, 16.2f, 1.5f),
-			new EntityLocation(17.21f, 16.2f, 2.0f),
-			new EntityLocation(17.41f, 16.2f, 2.0f),
+			new EntityLocation(17.09f, 16.2f, 1.5f),
+			new EntityLocation(17.29f, 16.2f, 2.0f),
+			new EntityLocation(17.49f, 16.2f, 2.0f),
 			new EntityLocation(17.59f, 16.2f, 2.0f),
 			new EntityLocation(17.59f, 16.2f, 2.0f),
 		}, stairWalkLocations);
@@ -1800,19 +1800,19 @@ public class TestCreatureLogic
 			new EntityLocation(14.59f, 16.2f, 2.0f),
 			new EntityLocation(14.79f, 16.2f, 2.0f),
 			new EntityLocation(14.99f, 16.2f, 2.0f),
-			new EntityLocation(15.01f, 16.2f, 2.0f),
-			new EntityLocation(15.01f, 16.2f, 1.9f),
-			new EntityLocation(15.11f, 16.2f, 1.7f),
-			new EntityLocation(15.21f, 16.2f, 1.5f),
-			new EntityLocation(15.41f, 16.2f, 1.5f),
+			new EntityLocation(15.09f, 16.2f, 2.0f),
+			new EntityLocation(15.09f, 16.2f, 1.9f),
+			new EntityLocation(15.19f, 16.2f, 1.7f),
+			new EntityLocation(15.29f, 16.2f, 1.5f),
+			new EntityLocation(15.49f, 16.2f, 1.5f),
 			new EntityLocation(15.59f, 16.2f, 1.5f),
 			new EntityLocation(15.79f, 16.2f, 1.5f),
 			new EntityLocation(15.99f, 16.2f, 1.5f),
-			new EntityLocation(16.01f, 16.2f, 1.5f),
-			new EntityLocation(16.01f, 16.2f, 1.4f),
-			new EntityLocation(16.11f, 16.2f, 1.2f),
-			new EntityLocation(16.21f, 16.2f, 1.0f),
-			new EntityLocation(16.41f, 16.2f, 1.0f),
+			new EntityLocation(16.09f, 16.2f, 1.5f),
+			new EntityLocation(16.09f, 16.2f, 1.4f),
+			new EntityLocation(16.19f, 16.2f, 1.2f),
+			new EntityLocation(16.29f, 16.2f, 1.0f),
+			new EntityLocation(16.49f, 16.2f, 1.0f),
 			new EntityLocation(16.59f, 16.2f, 1.0f),
 			new EntityLocation(16.59f, 16.2f, 1.0f),
 		}, slabWalkLocations);
