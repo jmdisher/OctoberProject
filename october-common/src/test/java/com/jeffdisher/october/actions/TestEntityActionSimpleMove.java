@@ -13,6 +13,7 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.subactions.EntitySubActionJump;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -408,6 +409,54 @@ public class TestEntityActionSimpleMove
 		Assert.assertTrue(didApply);
 		Assert.assertEquals(new EntityLocation(4.97f, 5.96f, 1.0f), creature.newLocation);
 		Assert.assertEquals(102, creature.newYaw);
+	}
+
+	@Test
+	public void dryRunBasics()
+	{
+		// Show that the behaviour of our "dry run" helper is consistent with actual application.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		TickProcessingContext context = _createSingleCuboidContext(cuboid);
+		
+		EntityLocation groundLocation = new EntityLocation(1.0f, 1.0f, 1.0f);
+		EntityLocation airLocation = new EntityLocation(10.0f, 10.0f, 20.0f);
+		
+		EntityActionSimpleMove<IMutablePlayerEntity> moveTooFar = new EntityActionSimpleMove<>(2.0f
+			, 2.0f
+			, EntityActionSimpleMove.Intensity.WALKING
+			, (byte)5
+			, (byte)6
+			, null
+		);
+		
+		EntityActionSimpleMove<IMutablePlayerEntity> fallAndMove = new EntityActionSimpleMove<>(0.0f
+			, 0.2f
+			, EntityActionSimpleMove.Intensity.WALKING
+			, (byte)5
+			, (byte)6
+			, null
+		);
+		
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = groundLocation;
+		EntityMovementHelpers.HighLevelMovementResult result = moveTooFar.applyChangeForResult(context, newEntity);
+		Assert.assertNull(result);
+		boolean didApply = moveTooFar.applyChange(context, newEntity);
+		Assert.assertFalse(didApply);
+		
+		newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = airLocation;
+		result = fallAndMove.applyChangeForResult(context, newEntity);
+		Assert.assertFalse(result.didCollide());
+		didApply = fallAndMove.applyChange(context, newEntity);
+		Assert.assertTrue(didApply);
+		
+		Assert.assertEquals(new EntityLocation(10.0f, 10.1f, 19.9f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 1.0f, -0.98f), newEntity.newVelocity);
+		Assert.assertEquals(EntityActionPeriodic.ENERGY_COST_PER_TICK_WALKING, newEntity.newEnergyDeficit);
+		Assert.assertEquals(5, newEntity.newYaw);
+		Assert.assertEquals(6, newEntity.newPitch);
 	}
 
 

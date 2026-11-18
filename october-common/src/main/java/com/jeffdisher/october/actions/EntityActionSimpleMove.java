@@ -188,6 +188,117 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 	@Override
 	public boolean applyChange(TickProcessingContext context, T newEntity)
 	{
+		EntityMovementHelpers.HighLevelMovementResult result = _applyChangeForResult(context, newEntity);
+		
+		if (null != result)
+		{
+			EntityLocation startLocation = newEntity.getLocation();
+			EntityLocation startVelocity = newEntity.getVelocityVector();
+			
+			// Save back final state.
+			EntityLocation resultLocation = result.location();
+			EntityLocation resultVelocity = result.velocity();
+			if (!startLocation.equals(resultLocation))
+			{
+				newEntity.setLocation(resultLocation);
+			}
+			if (!startVelocity.equals(resultVelocity))
+			{
+				newEntity.setVelocityVector(resultVelocity);
+			}
+			newEntity.setOrientation(_yaw, _pitch);
+			
+			newEntity.applyEnergyCost(_intensity.energyCostPerTick);
+		}
+		return (null != result);
+	}
+
+	@Override
+	public EntityActionType getType()
+	{
+		return TYPE;
+	}
+
+	@Override
+	public void serializeToBuffer(ByteBuffer buffer)
+	{
+		buffer.putFloat(_activeX);
+		buffer.putFloat(_activeY);
+		Intensity.write(buffer, _intensity);
+		buffer.put(_yaw);
+		buffer.put(_pitch);
+		CodecHelpers.writeNullableNestedChange(buffer, _subAction);
+	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Whether or not this can be serialized depends on the sub-action.
+		return (null == _subAction) || _subAction.canSaveToDisk();
+	}
+
+	@Override
+	public String toString()
+	{
+		return String.format("SimpleMove(%s), by %.2f, %.2f, Sub: %s", _intensity, _activeX, _activeY, _subAction);
+	}
+
+	@Override
+	public IEntitySubAction<T> getSubAction()
+	{
+		return _subAction;
+	}
+
+	/**
+	 * Applies the receiver to the given newEntity as though it were normally running in the given context.  This method
+	 * is useful for "dry run" evaluations of the receiver to see what it would do the newEntity.  This is why it
+	 * returns a movement result object.
+	 * Note that the newEntity _may_ be modified by this call (if the sub-action modifies it).
+	 * 
+	 * @param context A processing context.
+	 * @param newEntity A target entity to act upon.
+	 * @return The result of the movement attempt, null if the receiver would directly fail to apply.
+	 */
+	public EntityMovementHelpers.HighLevelMovementResult applyChangeForResult(TickProcessingContext context, T newEntity)
+	{
+		return _applyChangeForResult(context, newEntity);
+	}
+
+
+	public static enum Intensity
+	{
+		STANDING(0.0f, 0),
+		WALKING(1.0f, EntityActionPeriodic.ENERGY_COST_PER_TICK_WALKING),
+		RUNNING(2.0f, EntityActionPeriodic.ENERGY_COST_PER_TICK_RUNNING),
+		/**
+		 * Note that this constant is expected to only be used internally for creatures idling.
+		 * Technically, nothing prevents players from using it, either, but it has the same energy cost as walking with
+		 * a lower top speed so using this wouldn't help them.
+		 */
+		IDLE_CREATURE(0.5f, EntityActionPeriodic.ENERGY_COST_PER_TICK_WALKING),
+		;
+		public final float speedMultipler;
+		public final int energyCostPerTick;
+		private Intensity(float speedMultipler, int energyCostPerTick)
+		{
+			this.speedMultipler = speedMultipler;
+			this.energyCostPerTick = energyCostPerTick;
+		}
+		public static Intensity read(ByteBuffer buffer)
+		{
+			byte ordinal = buffer.get();
+			return Intensity.values()[ordinal];
+		}
+		public static void write(ByteBuffer buffer, Intensity intensity)
+		{
+			byte ordinal = (byte)intensity.ordinal();
+			buffer.put(ordinal);
+		}
+	}
+
+
+	private EntityMovementHelpers.HighLevelMovementResult _applyChangeForResult(TickProcessingContext context, T newEntity)
+	{
 		// We need to verify that _active* is valid within the tick rate and speed allowed by _intensity.
 		
 		// At this point, we will run the _subAction.  If this fails, we will fail the move.
@@ -228,6 +339,7 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 			}
 		}
 		
+		EntityMovementHelpers.HighLevelMovementResult result = null;
 		if (!forceFailure)
 		{
 			// Explanation of velocity and movement here:
@@ -258,7 +370,7 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 				intensityVelocityPerSecond /= 2.0f;
 			}
 			
-			EntityMovementHelpers.HighLevelMovementResult result = EntityMovementHelpers.commonMovementIdiom(reader
+			result = EntityMovementHelpers.commonMovementIdiom(reader
 				, startLocation
 				, preVelocity
 				, volume
@@ -267,90 +379,7 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 				, intensityVelocityPerSecond
 				, seconds
 			);
-			
-			// Save back final state.
-			EntityLocation resultLocation = result.location();
-			EntityLocation resultVelocity = result.velocity();
-			if (!startLocation.equals(resultLocation))
-			{
-				newEntity.setLocation(resultLocation);
-			}
-			if (!startVelocity.equals(resultVelocity))
-			{
-				newEntity.setVelocityVector(resultVelocity);
-			}
-			newEntity.setOrientation(_yaw, _pitch);
-			
-			newEntity.applyEnergyCost(_intensity.energyCostPerTick);
 		}
-		return !forceFailure;
-	}
-
-	@Override
-	public EntityActionType getType()
-	{
-		return TYPE;
-	}
-
-	@Override
-	public void serializeToBuffer(ByteBuffer buffer)
-	{
-		buffer.putFloat(_activeX);
-		buffer.putFloat(_activeY);
-		Intensity.write(buffer, _intensity);
-		buffer.put(_yaw);
-		buffer.put(_pitch);
-		CodecHelpers.writeNullableNestedChange(buffer, _subAction);
-	}
-
-	@Override
-	public boolean canSaveToDisk()
-	{
-		// Whether or not this can be serialized depends on the sub-action.
-		return (null == _subAction) || _subAction.canSaveToDisk();
-	}
-
-	@Override
-	public String toString()
-	{
-		return String.format("SimpleMove(%s), by %.2f, %.2f, Sub: %s", _intensity, _activeX, _activeY, _subAction);
-	}
-
-	@Override
-	public IEntitySubAction<T> getSubAction()
-	{
-		return _subAction;
-	}
-
-
-	public static enum Intensity
-	{
-		STANDING(0.0f, 0),
-		WALKING(1.0f, EntityActionPeriodic.ENERGY_COST_PER_TICK_WALKING),
-		RUNNING(2.0f, EntityActionPeriodic.ENERGY_COST_PER_TICK_RUNNING),
-		/**
-		 * Note that this constant is expected to only be used internally for creatures idling.
-		 * Technically, nothing prevents players from using it, either, but it has the same energy cost as walking with
-		 * a lower top speed so using this wouldn't help them.
-		 */
-		IDLE_CREATURE(0.5f, EntityActionPeriodic.ENERGY_COST_PER_TICK_WALKING),
-		;
-		public final float speedMultipler;
-		public final int energyCostPerTick;
-		private Intensity(float speedMultipler, int energyCostPerTick)
-		{
-			this.speedMultipler = speedMultipler;
-			this.energyCostPerTick = energyCostPerTick;
-		}
-		public static Intensity read(ByteBuffer buffer)
-		{
-			byte ordinal = buffer.get();
-			return Intensity.values()[ordinal];
-		}
-		public static void write(ByteBuffer buffer, Intensity intensity)
-		{
-			byte ordinal = (byte)intensity.ordinal();
-			buffer.put(ordinal);
-		}
+		return result;
 	}
 }
