@@ -10,7 +10,6 @@ import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
-import com.jeffdisher.october.logic.EntityMovementHelpers.IInteractiveHelper;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.pathing.PathFinder;
@@ -432,29 +431,22 @@ public class CreatureMovementHelpers
 	}
 
 	/**
-	 * Creates the changes required for the given creature to move to targetBase.  This will move in a straight line,
-	 * returning null only if there is nothing left to do (is already there) or the path isn't valid (would hit
-	 * something or fall).
+	 * Creates an action to move a creature from creatureBaseLocation to targetBase as a direct, typically diagonal,
+	 * move.
 	 * 
-	 * @param supplier Looks up the viscosity of various blocks.
+	 * @param previousBlockLookUp Looks up previous tick's block types.
 	 * @param creatureBaseLocation The creature's location.
-	 * @param yaw The creature's existing yaw.
-	 * @param pitch The creature's existing pitch.
 	 * @param creatureType The type of creature.
 	 * @param targetBase The target location.
-	 * @param timeLimitMillis The number of milliseconds left in the tick.
-	 * @param viscosityFraction The viscosity of the current location ([0.0 .. 1.0]) where 1.0 is solid.
+	 * @param millisPerTick The number of milliseconds per tick.
 	 * @param intensity The movement intensity.
 	 * @return The next move toward targetBase (null if the creature is already there, would hit an obstacle or fall).
 	 */
-	public static EntityActionSimpleMove<MutableCreature> moveAlongDiagonalPath(ViscosityReader supplier
+	public static EntityActionSimpleMove<MutableCreature> moveAlongDiagonalPath(TickProcessingContext.IBlockFetcher previousBlockLookUp
 		, EntityLocation creatureBaseLocation
-		, byte yaw
-		, byte pitch
 		, EntityType creatureType
 		, EntityLocation targetBase
-		, long timeLimitMillis
-		, float viscosityFraction
+		, long millisPerTick
 		, EntityActionSimpleMove.Intensity intensity
 	)
 	{
@@ -469,6 +461,9 @@ public class CreatureMovementHelpers
 			// We assume that our current location and target location are on the same Z-level so verify that.
 			Assert.assertTrue(creatureBaseLocation.getBlockLocation().z() == targetBase.getBlockLocation().z());
 			
+			ViscosityReader supplier = new ViscosityReader(Environment.getShared(), previousBlockLookUp);
+			float viscosityFraction = supplier.getMaxStillViscosityInVolume(creatureBaseLocation, creatureType.volume());
+			
 			// Since viscosity will directly impede our motion, we use it to determine our adjusted remaining distance.
 			float viscosityScaling = (viscosityFraction > 0.0f)
 				? (1.0f / viscosityFraction)
@@ -477,7 +472,7 @@ public class CreatureMovementHelpers
 			float effectiveXRemaining = viscosityScaling * (targetBase.x() - creatureBaseLocation.x());
 			float effectiveYRemaining = viscosityScaling * (targetBase.y() - creatureBaseLocation.y());
 			float speed = creatureType.blocksPerSecond();
-			float secondsToMove = ((float)timeLimitMillis) / 1000.0f;
+			float secondsToMove = ((float)millisPerTick) / 1000.0f;
 			float blockDistanceInMove = secondsToMove * speed * intensity.speedMultipler;
 			
 			// If the remaining distance fits, do it all, otherwise, just part of it.
@@ -520,6 +515,8 @@ public class CreatureMovementHelpers
 				else
 				{
 					// This is a valid step.
+					byte yaw = OrientationHelpers.getYawBetweenPoints(creatureBaseLocation, targetBase);
+					byte pitch = 0;
 					change = new EntityActionSimpleMove<>(xToMove
 						, yToMove
 						, intensity
@@ -948,7 +945,7 @@ public class CreatureMovementHelpers
 	}
 
 
-	private static class _NoCollideHelper implements IInteractiveHelper
+	private static class _NoCollideHelper implements EntityMovementHelpers.IInteractiveHelper
 	{
 		private final ViscosityReader _reader;
 		public EntityLocation result;

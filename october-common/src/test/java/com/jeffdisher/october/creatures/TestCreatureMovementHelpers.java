@@ -12,7 +12,6 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.pathing.PathLocation;
 import com.jeffdisher.october.pathing.WalkingNavigator;
@@ -414,15 +413,11 @@ public class TestCreatureMovementHelpers
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
 		
-		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
-		EntityActionSimpleMove<MutableCreature> shortMove = CreatureMovementHelpers.moveAlongDiagonalPath(reader
+		EntityActionSimpleMove<MutableCreature> shortMove = CreatureMovementHelpers.moveAlongDiagonalPath(ContextBuilder.buildSingleFetcher(cuboid)
 			, location
-			, (byte)5
-			, (byte)6
 			, COW
 			, end
 			, millisPerTick
-			, 0.0f
 			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		Assert.assertEquals("SimpleMove(WALKING), by -0.02, 0.01, Sub: null", shortMove.toString());
@@ -438,15 +433,11 @@ public class TestCreatureMovementHelpers
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
 		
-		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
-		EntityActionSimpleMove<MutableCreature> noMove = CreatureMovementHelpers.moveAlongDiagonalPath(reader
+		EntityActionSimpleMove<MutableCreature> noMove = CreatureMovementHelpers.moveAlongDiagonalPath(ContextBuilder.buildSingleFetcher(cuboid)
 			, location
-			, (byte)5
-			, (byte)6
 			, COW
 			, location
 			, millisPerTick
-			, 0.0f
 			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		Assert.assertNull(noMove);
@@ -463,15 +454,11 @@ public class TestCreatureMovementHelpers
 		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
 		cuboid.setData15(AspectRegistry.BLOCK, end.getBlockLocation().getBlockAddress(), STONE.item().number());
 		
-		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
-		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(reader
+		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(ContextBuilder.buildSingleFetcher(cuboid)
 			, location
-			, (byte)5
-			, (byte)6
 			, COW
 			, end
 			, millisPerTick
-			, 0.0f
 			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		Assert.assertNull(change);
@@ -487,15 +474,11 @@ public class TestCreatureMovementHelpers
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, location.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), STONE.item().number());
 		
-		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
-		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(reader
+		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(ContextBuilder.buildSingleFetcher(cuboid)
 			, location
-			, (byte)5
-			, (byte)6
 			, COW
 			, end
 			, millisPerTick
-			, 0.0f
 			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		Assert.assertNull(change);
@@ -511,15 +494,11 @@ public class TestCreatureMovementHelpers
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
 		
-		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
-		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(reader
+		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(ContextBuilder.buildSingleFetcher(cuboid)
 			, location
-			, (byte)5
-			, (byte)6
 			, COW
 			, end
 			, millisPerTick
-			, 0.0f
 			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		Assert.assertEquals("SimpleMove(WALKING), by -0.02, 0.01, Sub: null", change.toString());
@@ -547,15 +526,11 @@ public class TestCreatureMovementHelpers
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
 		
-		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
-		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(reader
+		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(ContextBuilder.buildSingleFetcher(cuboid)
 			, location
-			, (byte)5
-			, (byte)6
 			, COW
 			, end
 			, millisPerTick
-			, 0.0f
 			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		Assert.assertEquals("SimpleMove(WALKING), by -0.04, 0.02, Sub: null", change.toString());
@@ -581,17 +556,11 @@ public class TestCreatureMovementHelpers
 		
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
-		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
-		
-		byte yaw = OrientationHelpers.getYawBetweenPoints(location, target);
-		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(reader
+		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(ContextBuilder.buildSingleFetcher(cuboid)
 			, location
-			, yaw
-			, (byte)6
 			, COW
 			, target
 			, 100L
-			, 0.5f
 			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		// Ideally, this would be 0.04 x 0.09 since that is still within speed limit but our rounding limiter causes this to be lower.
@@ -604,7 +573,10 @@ public class TestCreatureMovementHelpers
 		// Compare moveToNextLocation and moveAlongDiagonalPath.
 		EntityLocation location = new EntityLocation(1.2f, 1.2f, 0.0f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
-		ViscosityReader reader = _getSplitBlockReader(ENV.special.AIR, STONE);
+		TickProcessingContext.IBlockFetcher airFetcher = _buildSplitFetcher(ENV.special.AIR, STONE);
+		TickProcessingContext.IBlockFetcher waterFetcher = _buildSplitFetcher(WATER_SOURCE, STONE);
+		ViscosityReader airReader = new ViscosityReader(ENV, airFetcher);
+		ViscosityReader waterReader = new ViscosityReader(ENV, waterFetcher);
 		byte yaw = 0;
 		byte pitch = 0;
 		float airViscosity = 0.0f;
@@ -615,24 +587,24 @@ public class TestCreatureMovementHelpers
 		PathLocation pathWest = PathLocation.forEntityBase(west);
 		
 		// Check movement through air.
-		EntityActionSimpleMove<MutableCreature> next = CreatureMovementHelpers.moveToNextLocation(reader, location, velocity, yaw, pitch, COW, pathEast, null, 100L, airViscosity, EntityActionSimpleMove.Intensity.WALKING, false);
-		EntityActionSimpleMove<MutableCreature> diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(reader, location, yaw, pitch, COW, east, 100L, airViscosity, EntityActionSimpleMove.Intensity.WALKING);
+		EntityActionSimpleMove<MutableCreature> next = CreatureMovementHelpers.moveToNextLocation(airReader, location, velocity, yaw, pitch, COW, pathEast, null, 100L, airViscosity, EntityActionSimpleMove.Intensity.WALKING, false);
+		EntityActionSimpleMove<MutableCreature> diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(airFetcher, location, COW, east, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		Assert.assertEquals("SimpleMove(WALKING), by 0.10, 0.00, Sub: null", next.toString());
 		Assert.assertEquals(next.toString(), diagonal.toString());
 		
-		next = CreatureMovementHelpers.moveToNextLocation(reader, location, velocity, yaw, pitch, COW, pathWest, null, 100L, airViscosity, EntityActionSimpleMove.Intensity.WALKING, false);
-		diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(reader, location, yaw, pitch, COW, west, 100L, airViscosity, EntityActionSimpleMove.Intensity.WALKING);
+		next = CreatureMovementHelpers.moveToNextLocation(airReader, location, velocity, yaw, pitch, COW, pathWest, null, 100L, airViscosity, EntityActionSimpleMove.Intensity.WALKING, false);
+		diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(airFetcher, location, COW, west, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		Assert.assertEquals("SimpleMove(WALKING), by -0.10, 0.00, Sub: null", next.toString());
 		Assert.assertEquals(next.toString(), diagonal.toString());
 		
 		// Check movement through water.
-		next = CreatureMovementHelpers.moveToNextLocation(reader, location, velocity, yaw, pitch, COW, pathEast, null, 100L, waterViscosity, EntityActionSimpleMove.Intensity.WALKING, false);
-		diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(reader, location, yaw, pitch, COW, east, 100L, waterViscosity, EntityActionSimpleMove.Intensity.WALKING);
+		next = CreatureMovementHelpers.moveToNextLocation(waterReader, location, velocity, yaw, pitch, COW, pathEast, null, 100L, waterViscosity, EntityActionSimpleMove.Intensity.WALKING, false);
+		diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(waterFetcher, location, COW, east, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		Assert.assertEquals("SimpleMove(WALKING), by 0.10, 0.00, Sub: null", next.toString());
 		Assert.assertEquals(next.toString(), diagonal.toString());
 		
-		next = CreatureMovementHelpers.moveToNextLocation(reader, location, velocity, yaw, pitch, COW, pathWest, null, 100L, waterViscosity, EntityActionSimpleMove.Intensity.WALKING, false);
-		diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(reader, location, yaw, pitch, COW, west, 100L, waterViscosity, EntityActionSimpleMove.Intensity.WALKING);
+		next = CreatureMovementHelpers.moveToNextLocation(waterReader, location, velocity, yaw, pitch, COW, pathWest, null, 100L, waterViscosity, EntityActionSimpleMove.Intensity.WALKING, false);
+		diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(waterFetcher, location, COW, west, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		Assert.assertEquals("SimpleMove(WALKING), by -0.10, 0.00, Sub: null", next.toString());
 		Assert.assertEquals(next.toString(), diagonal.toString());
 		
@@ -640,8 +612,8 @@ public class TestCreatureMovementHelpers
 		EntityLocation closeLocation = new EntityLocation(1.95f, 1.2f, 0.0f);
 		EntityLocation closeEast = closeLocation.getRelative(0.05f, 0.0f, 0.0f);
 		PathLocation pathCloseEast = PathLocation.forEntityBase(closeEast);
-		next = CreatureMovementHelpers.moveToNextLocation(reader, closeLocation, velocity, yaw, pitch, COW, pathCloseEast, null, 100L, waterViscosity, EntityActionSimpleMove.Intensity.WALKING, false);
-		diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(reader, closeLocation, yaw, pitch, COW, closeEast, 100L, waterViscosity, EntityActionSimpleMove.Intensity.WALKING);
+		next = CreatureMovementHelpers.moveToNextLocation(waterReader, closeLocation, velocity, yaw, pitch, COW, pathCloseEast, null, 100L, waterViscosity, EntityActionSimpleMove.Intensity.WALKING, false);
+		diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(waterFetcher, closeLocation, COW, closeEast, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		Assert.assertEquals("SimpleMove(WALKING), by 0.10, 0.00, Sub: null", next.toString());
 		Assert.assertEquals(next.toString(), diagonal.toString());
 	}
@@ -657,15 +629,11 @@ public class TestCreatureMovementHelpers
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
 		
-		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
-		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(reader
+		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(ContextBuilder.buildSingleFetcher(cuboid)
 			, location
-			, (byte)5
-			, (byte)6
 			, COW
 			, end
 			, millisPerTick
-			, 0.0f
 			, EntityActionSimpleMove.Intensity.WALKING
 		);
 		// Without applying this limit, the rounding gives us 0.05 x 0.02, which is beyond the fudge factor over 0.05.
@@ -943,14 +911,20 @@ public class TestCreatureMovementHelpers
 
 	private static ViscosityReader _getSplitBlockReader(Block positive, Block negative)
 	{
+		TickProcessingContext.IBlockFetcher fecther = _buildSplitFetcher(positive, negative);
+		return new ViscosityReader(ENV, fecther);
+	}
+
+	private static TickProcessingContext.IBlockFetcher _buildSplitFetcher(Block positive, Block negative)
+	{
 		CuboidData high = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), positive);
 		CuboidData low = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), negative);
-		return new ViscosityReader(ENV, ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> {
+		return ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> {
 			return (address.z() >= 0)
 				? high
 				: low
 			;
-		}));
+		});
 	}
 
 	private static TickProcessingContext _buildLayeredContext(long millisPerTick)

@@ -1,10 +1,7 @@
 package com.jeffdisher.october.creatures;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
-import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.EntityCollection;
-import com.jeffdisher.october.logic.OrientationHelpers;
-import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -56,21 +53,14 @@ public class DirectWithDistantTarget implements CreatureEntity.IMovementPlan
 	{
 		EntityActionSimpleMove.Intensity intensity = EntityActionSimpleMove.Intensity .WALKING;
 		
-		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
 		EntityType type = mutable.getType();
 		EntityLocation currentLocation = mutable.getLocation();
 		
-		float viscosity = reader.getMaxStillViscosityInVolume(currentLocation, type.volume());
-		
-		byte yaw = OrientationHelpers.getYawBetweenPoints(currentLocation, _directLocation);
-		EntityActionSimpleMove<MutableCreature> action = CreatureMovementHelpers.moveAlongDiagonalPath(reader
+		EntityActionSimpleMove<MutableCreature> action = CreatureMovementHelpers.moveAlongDiagonalPath(context.previousBlockLookUp
 			, currentLocation
-			, yaw
-			, (byte)0
 			, type
 			, _directLocation
 			, timeLimitMillis
-			, viscosity
 			, intensity
 		);
 		
