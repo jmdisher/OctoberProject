@@ -459,6 +459,41 @@ public class TestEntityActionSimpleMove
 		Assert.assertEquals(6, newEntity.newPitch);
 	}
 
+	@Test
+	public void moveWhileFalling()
+	{
+		// We want to show that we can still use the "moveTowardTarget" helper while sinking into the target block (within so long as it isn't out of the PathLocation's Z-level).
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		TickProcessingContext context = _createSingleCuboidContext(cuboid);
+		
+		EntityLocation start = new EntityLocation(5.0f, 6.0f, 1.4f);
+		EntityLocation startingVelocity = new EntityLocation(0.0f, 0.0f, -0.98f);
+		EntityLocation environmentalVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		float startingViscosity = 0.0f;
+		EntityLocation targetBase = new EntityLocation(2.0f, 2.0f, 1.0f);
+		float walkingBlocksPerSecond = COW.blocksPerSecond();
+		EntityActionSimpleMove.Intensity intensity = EntityActionSimpleMove.Intensity.WALKING;
+		long millisPerTick = 100L;
+		EntityActionSimpleMove<MutableCreature> move = EntityActionSimpleMove.moveTowardTarget(start
+			, startingVelocity
+			, environmentalVelocity
+			, startingViscosity
+			, targetBase
+			, walkingBlocksPerSecond
+			, intensity
+			, millisPerTick
+		);
+		Assert.assertEquals("SimpleMove(WALKING), by -0.06, -0.08, Sub: null", move.toString());
+		MutableCreature creature = MutableCreature.existing(CreatureEntity.create(-1, COW, start, 0L));
+		creature.newVelocity = startingVelocity;
+		boolean didApply = move.applyChange(context, creature);
+		Assert.assertTrue(didApply);
+		// (note that active movement is 1/2 when not on the ground)
+		Assert.assertEquals(new EntityLocation(4.97f, 5.96f, 1.2f), creature.newLocation);
+		Assert.assertEquals(102, creature.newYaw);
+	}
+
 
 	private static TickProcessingContext _createSingleCuboidContext(CuboidData cuboid)
 	{

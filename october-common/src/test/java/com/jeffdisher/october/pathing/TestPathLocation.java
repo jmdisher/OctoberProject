@@ -83,5 +83,10 @@ public class TestPathLocation
 		Assert.assertEquals(-1, PathLocation.adjacentStepsY(no, nz));
 		Assert.assertEquals(14, PathLocation.adjacentStepsY(nz, pz));
 		Assert.assertEquals(-14, PathLocation.adjacentStepsY(pz, nz));
+		
+		Assert.assertEquals(1, PathLocation.adjacentStepsZ(nz, no));
+		Assert.assertEquals(-1, PathLocation.adjacentStepsZ(no, nz));
+		Assert.assertEquals(18, PathLocation.adjacentStepsZ(nz, pz));
+		Assert.assertEquals(-18, PathLocation.adjacentStepsZ(pz, nz));
 	}
 }

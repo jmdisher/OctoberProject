@@ -155,6 +155,20 @@ public class PathLocation
 		return toYRaw - fromYRaw;
 	}
 
+	/**
+	 * A helper to determine the number of steps, purely along the Z-axis, to get from "from" to "to".
+	 * 
+	 * @param from The starting block.
+	 * @param to The ending block.
+	 * @return The number of Z-axis steps.
+	 */
+	public static int adjacentStepsZ(PathLocation from, PathLocation to)
+	{
+		int fromZRaw = _getRawLocation(from._location.z(), from._zOffset);
+		int toZRaw = _getRawLocation(to._location.z(), to._zOffset);
+		return toZRaw - fromZRaw;
+	}
+
 
 	private final AbsoluteLocation _location;
 	private final int _xOffset;
