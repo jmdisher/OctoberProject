@@ -544,7 +544,7 @@ public class TestCreatureMovementHelpers
 		MutableCreature mutable = MutableCreature.existing(_createCow(location));
 		boolean didApply = change.applyChange(context, mutable);
 		Assert.assertTrue(didApply);
-		Assert.assertEquals(new EntityLocation(0.96f, 1.22f, 1.0f), mutable.newLocation);
+		Assert.assertEquals(new EntityLocation(0.96f, 1.23f, 1.0f), mutable.newLocation);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutable.newVelocity);
 	}
 
@@ -563,8 +563,7 @@ public class TestCreatureMovementHelpers
 			, 100L
 			, EntityActionSimpleMove.Intensity.WALKING
 		);
-		// Ideally, this would be 0.04 x 0.09 since that is still within speed limit but our rounding limiter causes this to be lower.
-		Assert.assertEquals("SimpleMove(WALKING), by 0.03, 0.09, Sub: null", change.toString());
+		Assert.assertEquals("SimpleMove(WALKING), by 0.04, 0.09, Sub: null", change.toString());
 	}
 
 	@Test
@@ -616,40 +615,6 @@ public class TestCreatureMovementHelpers
 		diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(waterFetcher, closeLocation, COW, closeEast, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		Assert.assertEquals("SimpleMove(WALKING), by 0.10, 0.00, Sub: null", next.toString());
 		Assert.assertEquals(next.toString(), diagonal.toString());
-	}
-
-	@Test
-	public void directWalkRoundingLimit()
-	{
-		// Show how we avoid overflowing our speed limit.
-		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
-		EntityLocation end = new EntityLocation(5.0f, 2.8f, 1.0f);
-		long millisPerTick = 50L;
-		
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
-		
-		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveAlongDiagonalPath(ContextBuilder.buildSingleFetcher(cuboid)
-			, location
-			, COW
-			, end
-			, millisPerTick
-			, EntityActionSimpleMove.Intensity.WALKING
-		);
-		// Without applying this limit, the rounding gives us 0.05 x 0.02, which is beyond the fudge factor over 0.05.
-		Assert.assertEquals("SimpleMove(WALKING), by 0.04, 0.02, Sub: null", change.toString());
-		
-		// Make sure that this actually applies correctly.
-		TickProcessingContext context = ContextBuilder.build()
-			.millisPerTick(millisPerTick)
-			.lookups(ContextBuilder.buildSingleFetcher(cuboid), null, null)
-			.finish()
-		;
-		MutableCreature mutable = MutableCreature.existing(_createCow(location));
-		boolean didApply = change.applyChange(context, mutable);
-		Assert.assertTrue(didApply);
-		Assert.assertEquals(new EntityLocation(1.04f, 1.02f, 1.0f), mutable.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), mutable.newVelocity);
 	}
 
 	@Test

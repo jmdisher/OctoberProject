@@ -42,10 +42,6 @@ public class CreatureMovementHelpers
 	 */
 	public static final float FLOAT_THRESHOLD = 0.01f;
 	/**
-	 * We use this to determine how much we can increase the movement distance by before rounding down.
-	 */
-	public static final float SQUARE_ROOT_MOVE_FUDGE_FACTOR = (float) Math.sqrt(EntityActionSimpleMove.FUDGE_FACTOR);
-	/**
 	 * How far a creature will look for a target location when performing a random idle movement.
 	 */
 	public static final float RANDOM_MOVEMENT_DISTANCE = 3.5f;
@@ -461,70 +457,66 @@ public class CreatureMovementHelpers
 			// We assume that our current location and target location are on the same Z-level so verify that.
 			Assert.assertTrue(creatureBaseLocation.getBlockLocation().z() == targetBase.getBlockLocation().z());
 			
-			ViscosityReader supplier = new ViscosityReader(Environment.getShared(), previousBlockLookUp);
-			float viscosityFraction = supplier.getMaxStillViscosityInVolume(creatureBaseLocation, creatureType.volume());
-			
-			// Since viscosity will directly impede our motion, we use it to determine our adjusted remaining distance.
-			float viscosityScaling = (viscosityFraction > 0.0f)
-				? (1.0f / viscosityFraction)
-				: 1.0f
-			;
-			float effectiveXRemaining = viscosityScaling * (targetBase.x() - creatureBaseLocation.x());
-			float effectiveYRemaining = viscosityScaling * (targetBase.y() - creatureBaseLocation.y());
-			float speed = creatureType.blocksPerSecond();
-			float secondsToMove = ((float)millisPerTick) / 1000.0f;
-			float blockDistanceInMove = secondsToMove * speed * intensity.speedMultipler;
-			
-			// If the remaining distance fits, do it all, otherwise, just part of it.
-			float xToMove;
-			float yToMove;
-			float effectiveMagnitudeRemaining = (float)Math.sqrt(effectiveXRemaining * effectiveXRemaining + effectiveYRemaining * effectiveYRemaining);
-			if (blockDistanceInMove >= effectiveMagnitudeRemaining)
-			{
-				xToMove = effectiveXRemaining;
-				yToMove = effectiveYRemaining;
-			}
-			else
-			{
-				float scaleOnEffective = (SQUARE_ROOT_MOVE_FUDGE_FACTOR * blockDistanceInMove / effectiveMagnitudeRemaining);
-				// We can't use EntityLocation.roundToHundredths since we don't want to round over our speed.
-				xToMove = _absFloorHundredths(scaleOnEffective * effectiveXRemaining);
-				yToMove = _absFloorHundredths(scaleOnEffective * effectiveYRemaining);
-			}
-			
-			// We can now create the move but we first want to verify it won't fail since that means we should return null.
-			EntityLocation totalDistanceToMove = new EntityLocation(xToMove, yToMove, 0.0f);
+			Environment env = Environment.getShared();
+			ViscosityReader supplier = new ViscosityReader(env, previousBlockLookUp);
 			EntityVolume volume = creatureType.volume();
-			_NoCollideHelper helper = new _NoCollideHelper(supplier);
-			EntityMovementHelpers.interactiveEntityMove(creatureBaseLocation, volume, totalDistanceToMove, helper);
+			float viscosityFraction = supplier.getMaxStillViscosityInVolume(creatureBaseLocation, volume);
 			
-			if (null == helper.result)
+			// TODO:  Plumb in the starting velocity once it can be something interesting in this case (always 0, for now).
+			EntityLocation startingVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+			EntityLocation environmentalVelocity = EntityMovementHelpers.getEnvironmentalVector(env, previousBlockLookUp, creatureBaseLocation, volume);
+			float walkingBlocksPerSecond = creatureType.blocksPerSecond();
+			change = EntityActionSimpleMove.moveTowardTarget(creatureBaseLocation
+				, startingVelocity
+				, environmentalVelocity
+				, viscosityFraction
+				, targetBase
+				, walkingBlocksPerSecond
+				, intensity
+				, millisPerTick
+			);
+			
+			// Test if this action would actually apply, given what we know about the world.
+			TickProcessingContext fakeContext = new TickProcessingContext(0L
+				, previousBlockLookUp
+				, null
+				, null
+				, null
+				, null
+				, null
+				, null
+				, null
+				, null
+				, null
+				, null
+				, null
+				, null
+				, millisPerTick
+				, 0L
+			);
+			MutableCreature fakeEntity = MutableCreature.existing(CreatureEntity.create(-1, creatureType, creatureBaseLocation, 0L));
+			EntityMovementHelpers.HighLevelMovementResult result = change.applyChangeForResult(fakeContext, fakeEntity);
+			if (null != result)
+			{
+				if (result.horizontalCollision())
+				{
+					result = null;
+				}
+			}
+			if (null != result)
+			{
+				// We only allow this if we end standing on the ground.
+				boolean mustEndOnGround = SpatialHelpers.isStandingOnGround(supplier, creatureBaseLocation, volume);
+				if (mustEndOnGround && !SpatialHelpers.isStandingOnGround(supplier, result.location(), volume))
+				{
+					result = null;
+				}
+			}
+			
+			if (null == result)
 			{
 				// We hit something so we want to fail out.
 				change = null;
-			}
-			else
-			{
-				// We didn't hit anything but make sure that we can stand there (unless we were already not on the ground).
-				EntityLocation expectedLocation = creatureBaseLocation.getRelativeForLocation(totalDistanceToMove);
-				if (SpatialHelpers.isStandingOnGround(supplier, creatureBaseLocation, volume) && !SpatialHelpers.isStandingOnGround(supplier, expectedLocation, volume))
-				{
-					// We would fall, so no.
-					change = null;
-				}
-				else
-				{
-					// This is a valid step.
-					byte yaw = OrientationHelpers.getYawBetweenPoints(creatureBaseLocation, targetBase);
-					byte pitch = 0;
-					change = new EntityActionSimpleMove<>(xToMove
-						, yToMove
-						, intensity
-						, yaw
-						, pitch
-						, null
-					);
-				}
 			}
 		}
 		return change;
@@ -824,14 +816,6 @@ public class CreatureMovementHelpers
 		float distanceToMove = rawDistanceInTime * fractionToMove;
 		float activeDistance = Math.signum(movementSum) * distanceToMove;
 		return activeDistance;
-	}
-
-	private static float _absFloorHundredths(float input)
-	{
-		// We will cast to int to get a truncating conversion, instead of a round.
-		int i = (int)(100.0f * input);
-		float f = (float)i / 100.0f;
-		return f;
 	}
 
 	private static EntityActionSimpleMove<MutableCreature> _buildStep(EntityLocation creatureLocation
