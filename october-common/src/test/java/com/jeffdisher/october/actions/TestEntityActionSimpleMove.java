@@ -449,6 +449,7 @@ public class TestEntityActionSimpleMove
 		newEntity.newLocation = airLocation;
 		result = fallAndMove.applyChangeForResult(context, newEntity);
 		Assert.assertFalse(result.didCollide());
+		Assert.assertFalse(result.horizontalCollision());
 		didApply = fallAndMove.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
 		
@@ -543,6 +544,42 @@ public class TestEntityActionSimpleMove
 		didApply = moveWater.applyChange(context, creature);
 		Assert.assertTrue(didApply);
 		Assert.assertEquals(startWater.getRelative(0.0f, 0.05f, 0.0f), creature.newLocation);
+	}
+
+	@Test
+	public void dryRunCollision()
+	{
+		// Show what happens in a dry run which triggers a horizontal collision.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 1), STONE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 1, 1), STONE.item().number());
+		TickProcessingContext context = _createSingleCuboidContext(cuboid);
+		
+		EntityLocation groundLocation = new EntityLocation(1.0f, 1.0f, 1.0f);
+		
+		EntityActionSimpleMove<IMutablePlayerEntity> move = new EntityActionSimpleMove<>(-0.1f
+			, -0.1f
+			, EntityActionSimpleMove.Intensity.WALKING
+			, (byte)5
+			, (byte)6
+			, null
+		);
+		
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = groundLocation;
+		EntityMovementHelpers.HighLevelMovementResult result = move.applyChangeForResult(context, newEntity);
+		Assert.assertTrue(result.didCollide());
+		Assert.assertTrue(result.horizontalCollision());
+		boolean didApply = move.applyChange(context, newEntity);
+		Assert.assertTrue(didApply);
+		
+		// Even though we collided, applying this should see the creature slide along the wall.
+		Assert.assertEquals(new EntityLocation(1.0f, 0.9f, 1.0f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.newVelocity);
+		Assert.assertEquals(EntityActionPeriodic.ENERGY_COST_PER_TICK_WALKING, newEntity.newEnergyDeficit);
+		Assert.assertEquals(5, newEntity.newYaw);
+		Assert.assertEquals(6, newEntity.newPitch);
 	}
 
 

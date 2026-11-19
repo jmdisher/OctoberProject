@@ -649,6 +649,7 @@ public class EntityMovementHelpers
 		, EntityLocation velocity
 		, boolean isOnGround
 		, boolean didCollide
+		, boolean horizontalCollision
 	) {}
 
 
@@ -688,7 +689,8 @@ public class EntityMovementHelpers
 			}
 			EntityLocation velocity = new EntityLocation(finX, finY, finZ);
 			boolean didCollide = cancelX || cancelY || cancelZ;
-			this.result = new HighLevelMovementResult(finalLocation, velocity, isOnGround, didCollide);
+			boolean horizontalCollision = cancelX || cancelY;
+			this.result = new HighLevelMovementResult(finalLocation, velocity, isOnGround, didCollide, horizontalCollision);
 		}
 		@Override
 		public boolean isSolid(EntityLocation base, EntityVolume volume, boolean fromAbove)
