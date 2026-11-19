@@ -130,6 +130,12 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 			, targetBase.y() - effectiveStart.y()
 			, 0.0f
 		);
+		if (startingViscosity > 0.0f)
+		{
+			// In this case, we will need to walk with more force to combat the viscosity so act like this is just how much further we need to step.
+			float counterViscosity = 1.0f / startingViscosity;
+			totalPath = totalPath.makeScaledInstance(counterViscosity);
+		}
 		float intensityVelocityPerSecond = intensity.speedMultipler * walkingBlocksPerSecond;
 		float maxMoveInTick = seconds * intensityVelocityPerSecond;
 		float magnitude = totalPath.getMagnitude();

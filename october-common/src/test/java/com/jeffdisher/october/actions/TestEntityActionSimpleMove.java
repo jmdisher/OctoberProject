@@ -494,6 +494,57 @@ public class TestEntityActionSimpleMove
 		Assert.assertEquals(102, creature.newYaw);
 	}
 
+	@Test
+	public void moveInWater()
+	{
+		// We want to show that "moveTowardTarget" will move more aggressively if walking through water (higher viscosity).
+		EntityLocation startAir = new EntityLocation(5.0f, 6.0f, 1.0f);
+		EntityLocation startWater = new EntityLocation(16.0f, 17.0f, 1.0f);
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		cuboid.setData15(AspectRegistry.BLOCK, startWater.getBlockLocation().getBlockAddress(), WATER_SOURCE.item().number());
+		TickProcessingContext context = _createSingleCuboidContext(cuboid);
+		
+		EntityLocation startingVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		EntityLocation environmentalVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		float walkingBlocksPerSecond = COW.blocksPerSecond();
+		EntityActionSimpleMove.Intensity intensity = EntityActionSimpleMove.Intensity.WALKING;
+		long millisPerTick = 100L;
+		
+		EntityActionSimpleMove<MutableCreature> moveAir = EntityActionSimpleMove.moveTowardTarget(startAir
+			, startingVelocity
+			, environmentalVelocity
+			, 0.0f
+			, startAir.getRelative(0.0f, 0.08f, 0.0f)
+			, walkingBlocksPerSecond
+			, intensity
+			, millisPerTick
+		);
+		Assert.assertEquals("SimpleMove(WALKING), by 0.00, 0.08, Sub: null", moveAir.toString());
+		MutableCreature creature = MutableCreature.existing(CreatureEntity.create(-1, COW, startAir, 0L));
+		creature.newVelocity = startingVelocity;
+		boolean didApply = moveAir.applyChange(context, creature);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(startAir.getRelative(0.0f, 0.08f, 0.0f), creature.newLocation);
+		
+		EntityActionSimpleMove<MutableCreature> moveWater = EntityActionSimpleMove.moveTowardTarget(startWater
+			, startingVelocity
+			, environmentalVelocity
+			, 0.5f
+			, startWater.getRelative(0.0f, 0.08f, 0.0f)
+			, walkingBlocksPerSecond
+			, intensity
+			, millisPerTick
+		);
+		Assert.assertEquals("SimpleMove(WALKING), by 0.00, 0.10, Sub: null", moveWater.toString());
+		creature = MutableCreature.existing(CreatureEntity.create(-1, COW, startWater, 0L));
+		creature.newVelocity = startingVelocity;
+		didApply = moveWater.applyChange(context, creature);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(startWater.getRelative(0.0f, 0.05f, 0.0f), creature.newLocation);
+	}
+
 
 	private static TickProcessingContext _createSingleCuboidContext(CuboidData cuboid)
 	{
