@@ -59,15 +59,11 @@ public class PlanWithTarget implements CreatureEntity.IMovementPlan
 		, long timeLimitMillis
 	)
 	{
-		EntityActionSimpleMove.Intensity intensity = EntityActionSimpleMove.Intensity .WALKING;
-		
-		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
 		EntityType type = mutable.getType();
 		EntityLocation currentLocation = mutable.getLocation();
-		
 		EntityLocation oldVelocity = mutable.getVelocityVector();
 		
-		float viscosity = reader.getMaxStillViscosityInVolume(currentLocation, type.volume());
+		EntityActionSimpleMove.Intensity intensity = EntityActionSimpleMove.Intensity .WALKING;
 		
 		// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
 		PathLocation currentInPath = PathLocation.forEntityBase(currentLocation);
@@ -88,12 +84,12 @@ public class PlanWithTarget implements CreatureEntity.IMovementPlan
 			// Otherwise, we just want to lean into the direction we are currently heading.
 			direction = PathLocation.adjacentDirection(currentInPath, first);
 		}
-		EntityActionSimpleMove<MutableCreature> actionProduced = CreatureMovementHelpers.prepareForMove(currentLocation
+		EntityActionSimpleMove<MutableCreature> actionProduced = CreatureMovementHelpers.prepareForMove(context.previousBlockLookUp
+			, currentLocation
 			, oldVelocity
 			, type
 			, direction
 			, timeLimitMillis
-			, viscosity
 			, intensity
 		);
 		if (null == actionProduced)
@@ -101,6 +97,9 @@ public class PlanWithTarget implements CreatureEntity.IMovementPlan
 			// If we are already in a reasonable location, proceed to move.
 			// We know that this should only be called AFTER updating our planned path.
 			Assert.assertTrue(!PathLocation.forEntityBase(currentLocation).equals(first));
+			
+			ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
+			float viscosity = reader.getMaxStillViscosityInVolume(currentLocation, type.volume());
 			
 			boolean isSwimmable = (viscosity >= BlockAspect.VISOSITY_FLOAT_SWIMMABLE) && (viscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
 			actionProduced = CreatureMovementHelpers.moveToNextLocation(reader

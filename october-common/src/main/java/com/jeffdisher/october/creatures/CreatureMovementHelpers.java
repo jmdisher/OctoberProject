@@ -56,30 +56,31 @@ public class CreatureMovementHelpers
 
 
 	/**
-	 * Creates a list of movements to position the creature within its current block such that it can move in the
-	 * direction of directionHint.  Returns an empty list if the creature is already in directionHint or is aligned on
-	 * that edge of its current block.
+	 * Creates an action to position the creature within its current block such that it can move toward direction in a
+	 * later move.
+	 * Returns null if such a move would collide or if the creature is already in that location.
 	 * 
-	 * @param creatureLocation The creature's location.
+	 * @param previousBlockLookUp Looks up previous tick's block types.
+	 * @param creatureBaseLocation The creature's location.
 	 * @param creatureVelocity The creature's velocity.
 	 * @param creatureType The type of creature.
 	 * @param direction The direction we will eventually take (DOWN if it doesn't matter).
-	 * @param timeLimitMillis The number of milliseconds left in the tick.
-	 * @param viscosityFraction The viscosity of the current block ([0.0 .. 1.0]) where 1.0 is solid.
+	 * @param millisPerTick The number of milliseconds per tick.
 	 * @param intensity The movement intensity.
-	 * @return The next move to make to centre in the block toward directionHint (null if there is no useful action).
+	 * @return The next move toward direction side of the block (null if the creature is already there, would hit an
+	 * obstacle or fall).
 	 */
-	public static EntityActionSimpleMove<MutableCreature> prepareForMove(EntityLocation creatureLocation
+	public static EntityActionSimpleMove<MutableCreature> prepareForMove(TickProcessingContext.IBlockFetcher previousBlockLookUp
+		, EntityLocation creatureBaseLocation
 		, EntityLocation creatureVelocity
 		, EntityType creatureType
 		, FacingDirection direction
-		, long timeLimitMillis
-		, float viscosityFraction
+		, long millisPerTick
 		, EntityActionSimpleMove.Intensity intensity
 	)
 	{
 		// Find our current location.
-		AbsoluteLocation baseLocation = creatureLocation.getBlockLocation();
+		AbsoluteLocation baseLocation = creatureBaseLocation.getBlockLocation();
 		float width = creatureType.volume().width();
 		
 		// First, make sure that any edge of the entity isn't outside of its current block or directionHint.
@@ -90,8 +91,8 @@ public class CreatureMovementHelpers
 		float southBound = (float)baseLocation.y() + FLOAT_THRESHOLD;
 		float northBound = (float)baseLocation.y() + widthEdge - FLOAT_THRESHOLD;
 		
-		float targetX = creatureLocation.x();
-		float targetY = creatureLocation.y();
+		float targetX = creatureBaseLocation.x();
+		float targetY = creatureBaseLocation.y();
 		
 		switch (direction)
 		{
@@ -173,12 +174,17 @@ public class CreatureMovementHelpers
 			targetY = northBound;
 		}
 		
+		Environment env = Environment.getShared();
+		ViscosityReader supplier = new ViscosityReader(env, previousBlockLookUp);
+		EntityVolume volume = creatureType.volume();
+		float viscosityFraction = supplier.getMaxStillViscosityInVolume(creatureBaseLocation, volume);
+		
 		// Now, move.
 		float speed = creatureType.blocksPerSecond();
-		EntityActionSimpleMove<MutableCreature> move = _moveByX(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, targetX, creatureVelocity.x(), null);
+		EntityActionSimpleMove<MutableCreature> move = _moveByX(creatureBaseLocation, millisPerTick, speed, intensity, viscosityFraction, targetX, creatureVelocity.x(), null);
 		if (null == move)
 		{
-			move = _moveByY(creatureLocation, timeLimitMillis, speed, intensity, viscosityFraction, targetY, creatureVelocity.y(), null);
+			move = _moveByY(creatureBaseLocation, millisPerTick, speed, intensity, viscosityFraction, targetY, creatureVelocity.y(), null);
 		}
 		return move;
 	}
