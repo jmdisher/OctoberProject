@@ -17,9 +17,13 @@ public class PathLocation
 	 */
 	public static final int PATH_PER_BLOCK = 2;
 	/**
+	 * The number of path steps along the side of a block.
+	 */
+	public static final float PATH_PER_BLOCK_FLOAT = (float)PATH_PER_BLOCK;
+/**
 	 * The edge size of a single instance (1.0f would mean 1-to-1 with other units).
 	 */
-	public static final float PATH_UNIT = 1.0f / (float)PATH_PER_BLOCK;
+	public static final float PATH_UNIT = 1.0f / PATH_PER_BLOCK_FLOAT;
 
 	/**
 	 * Creates an instance with the direct parameters it will internally use.  This is only intended for use in tests

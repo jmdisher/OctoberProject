@@ -1637,7 +1637,7 @@ public class TestCreatureLogic
 			, entity2.id(), entity2
 		), Map.of());
 		
-		MutableCreature mutable1 = MutableCreature.existing(CreatureEntity.create(-1, ORC, centreLocation.toEntityLocation().getRelative(0.1f, 0.2f, 0.0f), 0L));
+		MutableCreature mutable1 = MutableCreature.existing(CreatureEntity.create(-1, ORC, centreLocation.toEntityLocation().getRelative(0.01f, 0.01f, 0.0f), 0L));
 		PathLocation start1 = PathLocation.forEntityBase(mutable1.newLocation);
 		List<PathLocation> path1 = List.of(start1
 			, start1.getRelative(0, 0, 1)
@@ -1651,7 +1651,7 @@ public class TestCreatureLogic
 			, entity1.id()
 			, entity1.location()
 		);
-		MutableCreature mutable2 = MutableCreature.existing(CreatureEntity.create(-2, ORC, centreLocation.toEntityLocation().getRelative(0.5f, 0.2f, 0.0f), 0L));
+		MutableCreature mutable2 = MutableCreature.existing(CreatureEntity.create(-2, ORC, centreLocation.toEntityLocation().getRelative(0.5f, 0.01f, 0.0f), 0L));
 		PathLocation start2 = PathLocation.forEntityBase(mutable2.newLocation);
 		List<PathLocation> path2 = List.of(start2
 			, start2.getRelative(0, 0, 1)
@@ -1687,31 +1687,32 @@ public class TestCreatureLogic
 			.finish()
 		;
 		
-		EntityLocation[] slabWalkLocations = _collectStepLocations(context, collection, mutable1, 10);
+		EntityLocation[] slabWalkLocations = _collectStepLocations(context, collection, mutable1, 11);
 		Assert.assertTrue(mutable1.movementPlan instanceof NearToTarget);
 		Assert.assertArrayEquals(new EntityLocation[] {
-			new EntityLocation(15.9f, 16.2f, 1.5f),
-			new EntityLocation(15.7f, 16.2f, 1.5f),
-			new EntityLocation(15.5f, 16.2f, 1.5f),
-			new EntityLocation(15.3f, 16.2f, 1.5f),
-			new EntityLocation(15.1f, 16.2f, 1.5f),
-			new EntityLocation(14.9f, 16.2f, 2.0f),
-			new EntityLocation(14.7f, 16.2f, 2.0f),
-			new EntityLocation(14.5f, 16.2f, 2.0f),
-			new EntityLocation(14.3f, 16.2f, 2.0f),
-			new EntityLocation(14.3f, 16.2f, 2.0f),
+			new EntityLocation(15.81f, 16.01f, 1.5f),
+			new EntityLocation(15.61f, 16.01f, 1.5f),
+			new EntityLocation(15.51f, 16.01f, 1.5f),
+			new EntityLocation(15.31f, 16.01f, 1.5f),
+			new EntityLocation(15.11f, 16.01f, 1.5f),
+			new EntityLocation(15.09f, 16.01f, 1.5f),
+			new EntityLocation(14.89f, 16.01f, 2.0f),
+			new EntityLocation(14.69f, 16.01f, 2.0f),
+			new EntityLocation(14.51f, 16.01f, 2.0f),
+			new EntityLocation(14.31f, 16.01f, 2.0f),
+			new EntityLocation(14.31f, 16.01f, 2.0f),
 		}, slabWalkLocations);
 		
 		EntityLocation[] stairWalkLocations = _collectStepLocations(context, collection, mutable2, 7);
 		Assert.assertTrue(mutable2.movementPlan instanceof NearToTarget);
 		Assert.assertArrayEquals(new EntityLocation[] {
-			new EntityLocation(16.7f, 16.2f, 1.5f),
-			new EntityLocation(16.9f, 16.2f, 1.5f),
-			new EntityLocation(17.09f, 16.2f, 1.5f),
-			new EntityLocation(17.29f, 16.2f, 2.0f),
-			new EntityLocation(17.49f, 16.2f, 2.0f),
-			new EntityLocation(17.59f, 16.2f, 2.0f),
-			new EntityLocation(17.59f, 16.2f, 2.0f),
+			new EntityLocation(16.7f, 16.01f, 1.5f),
+			new EntityLocation(16.9f, 16.01f, 1.5f),
+			new EntityLocation(17.09f, 16.01f, 1.5f),
+			new EntityLocation(17.29f, 16.01f, 2.0f),
+			new EntityLocation(17.49f, 16.01f, 2.0f),
+			new EntityLocation(17.59f, 16.01f, 2.0f),
+			new EntityLocation(17.59f, 16.01f, 2.0f),
 		}, stairWalkLocations);
 	}
 
@@ -1743,7 +1744,7 @@ public class TestCreatureLogic
 		EntityCollection collection = EntityCollection.fromMaps(Map.of(targetEntity.id(), targetEntity
 		), Map.of());
 		
-		MutableCreature mutable1 = MutableCreature.existing(CreatureEntity.create(-1, ORC, slabStoneLocation.getRelative(0, 0, 1).toEntityLocation().getRelative(0.5f, 0.2f, 0.0f), 0L));
+		MutableCreature mutable1 = MutableCreature.existing(CreatureEntity.create(-1, ORC, slabStoneLocation.getRelative(0, 0, 1).toEntityLocation().getRelative(0.5f, 0.01f, 0.0f), 0L));
 		PathLocation start1 = PathLocation.forEntityBase(mutable1.newLocation);
 		List<PathLocation> path1 = List.of(start1
 			, start1.getRelative(1, 0, 0)
@@ -1758,7 +1759,7 @@ public class TestCreatureLogic
 			, targetEntity.id()
 			, targetEntity.location()
 		);
-		MutableCreature mutable2 = MutableCreature.existing(CreatureEntity.create(-2, ORC, stairStoneLocation.getRelative(0, 0, 1).toEntityLocation().getRelative(0.0f, 0.2f, 0.0f), 0L));
+		MutableCreature mutable2 = MutableCreature.existing(CreatureEntity.create(-2, ORC, stairStoneLocation.getRelative(0, 0, 1).toEntityLocation().getRelative(0.0f, 0.01f, 0.0f), 0L));
 		PathLocation start2 = PathLocation.forEntityBase(mutable2.newLocation);
 		List<PathLocation> path2 = List.of(start2
 			, start2.getRelative(-1, 0, 0)
@@ -1797,43 +1798,46 @@ public class TestCreatureLogic
 		EntityLocation[] slabWalkLocations = _collectStepLocations(context, collection, mutable1, 18);
 		Assert.assertTrue(mutable1.movementPlan instanceof NearToTarget);
 		Assert.assertArrayEquals(new EntityLocation[] {
-			new EntityLocation(14.59f, 16.2f, 2.0f),
-			new EntityLocation(14.79f, 16.2f, 2.0f),
-			new EntityLocation(14.99f, 16.2f, 2.0f),
-			new EntityLocation(15.09f, 16.2f, 2.0f),
-			new EntityLocation(15.09f, 16.2f, 1.9f),
-			new EntityLocation(15.19f, 16.2f, 1.7f),
-			new EntityLocation(15.29f, 16.2f, 1.5f),
-			new EntityLocation(15.49f, 16.2f, 1.5f),
-			new EntityLocation(15.59f, 16.2f, 1.5f),
-			new EntityLocation(15.79f, 16.2f, 1.5f),
-			new EntityLocation(15.99f, 16.2f, 1.5f),
-			new EntityLocation(16.09f, 16.2f, 1.5f),
-			new EntityLocation(16.09f, 16.2f, 1.4f),
-			new EntityLocation(16.19f, 16.2f, 1.2f),
-			new EntityLocation(16.29f, 16.2f, 1.0f),
-			new EntityLocation(16.49f, 16.2f, 1.0f),
-			new EntityLocation(16.59f, 16.2f, 1.0f),
-			new EntityLocation(16.59f, 16.2f, 1.0f),
+			new EntityLocation(14.59f, 16.01f, 2.0f),
+			new EntityLocation(14.79f, 16.01f, 2.0f),
+			new EntityLocation(14.99f, 16.01f, 2.0f),
+			new EntityLocation(15.09f, 16.01f, 2.0f),
+			new EntityLocation(15.09f, 16.01f, 1.9f),
+			new EntityLocation(15.19f, 16.01f, 1.7f),
+			new EntityLocation(15.29f, 16.01f, 1.5f),
+			new EntityLocation(15.49f, 16.01f, 1.5f),
+			new EntityLocation(15.59f, 16.01f, 1.5f),
+			new EntityLocation(15.79f, 16.01f, 1.5f),
+			new EntityLocation(15.99f, 16.01f, 1.5f),
+			new EntityLocation(16.09f, 16.01f, 1.5f),
+			new EntityLocation(16.09f, 16.01f, 1.4f),
+			new EntityLocation(16.19f, 16.01f, 1.2f),
+			new EntityLocation(16.29f, 16.01f, 1.0f),
+			new EntityLocation(16.49f, 16.01f, 1.0f),
+			new EntityLocation(16.59f, 16.01f, 1.0f),
+			new EntityLocation(16.59f, 16.01f, 1.0f),
 		}, slabWalkLocations);
 		
-		EntityLocation[] stairWalkLocations = _collectStepLocations(context, collection, mutable2, 14);
+		EntityLocation[] stairWalkLocations = _collectStepLocations(context, collection, mutable2, 17);
 		Assert.assertTrue(mutable2.movementPlan instanceof NearToTarget);
 		Assert.assertArrayEquals(new EntityLocation[] {
-			new EntityLocation(17.8f, 16.2f, 2.0f),
-			new EntityLocation(17.6f, 16.2f, 2.0f),
-			new EntityLocation(17.4f, 16.2f, 2.0f),
-			new EntityLocation(17.2f, 16.2f, 2.0f),
-			new EntityLocation(17.0f, 16.2f, 2.0f),
-			new EntityLocation(17.0f, 16.2f, 1.9f),
-			new EntityLocation(16.9f, 16.2f, 1.7f),
-			new EntityLocation(16.8f, 16.2f, 1.5f),
-			new EntityLocation(16.6f, 16.2f, 1.5f),
-			new EntityLocation(16.59f, 16.2f, 1.5f),
-			new EntityLocation(16.59f, 16.2f, 1.4f),
-			new EntityLocation(16.49f, 16.2f, 1.2f),
-			new EntityLocation(16.39f, 16.2f, 1.0f),
-			new EntityLocation(16.39f, 16.2f, 1.0f),
+			new EntityLocation(17.8f, 16.01f, 2.0f),
+			new EntityLocation(17.6f, 16.01f, 2.0f),
+			new EntityLocation(17.51f, 16.01f, 2.0f),
+			new EntityLocation(17.31f, 16.01f, 2.0f),
+			new EntityLocation(17.11f, 16.01f, 2.0f),
+			new EntityLocation(17.09f, 16.01f, 2.0f),
+			new EntityLocation(17.09f, 16.01f, 1.9f),
+			new EntityLocation(17.05f, 16.01f, 1.7f),
+			new EntityLocation(17.01f, 16.01f, 1.5f),
+			new EntityLocation(16.81f, 16.01f, 1.5f),
+			new EntityLocation(16.61f, 16.01f, 1.5f),
+			new EntityLocation(16.59f, 16.01f, 1.5f),
+			new EntityLocation(16.59f, 16.01f, 1.4f),
+			new EntityLocation(16.55f, 16.01f, 1.2f),
+			new EntityLocation(16.51f, 16.01f, 1.0f),
+			new EntityLocation(16.31f, 16.01f, 1.0f),
+			new EntityLocation(16.31f, 16.01f, 1.0f),
 		}, stairWalkLocations);
 	}
 

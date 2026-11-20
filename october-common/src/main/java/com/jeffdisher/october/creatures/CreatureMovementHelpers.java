@@ -18,7 +18,6 @@ import com.jeffdisher.october.pathing.WalkingNavigator;
 import com.jeffdisher.october.subactions.EntitySubActionJump;
 import com.jeffdisher.october.subactions.EntitySubActionStepUp;
 import com.jeffdisher.october.subactions.EntitySubActionSwim;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -80,16 +79,17 @@ public class CreatureMovementHelpers
 	)
 	{
 		// Find our current location.
-		AbsoluteLocation baseLocation = creatureBaseLocation.getBlockLocation();
+		PathLocation pathBase = PathLocation.forEntityBase(creatureBaseLocation);
+		EntityLocation baseLocation = pathBase.getBaseLocation();
 		float width = creatureType.volume().width();
 		
 		// First, make sure that any edge of the entity isn't outside of its current block or directionHint.
 		// NOTE:  These bounds are for the specific base location, not width (as it accounts for width).
-		float widthEdge = (float)Math.ceil(width) - width;
-		float westBound = (float)baseLocation.x() + FLOAT_THRESHOLD;
-		float eastBound = (float)baseLocation.x() + widthEdge - FLOAT_THRESHOLD;
-		float southBound = (float)baseLocation.y() + FLOAT_THRESHOLD;
-		float northBound = (float)baseLocation.y() + widthEdge - FLOAT_THRESHOLD;
+		float widthEdge = ((float)Math.ceil(width * PathLocation.PATH_PER_BLOCK_FLOAT) / PathLocation.PATH_PER_BLOCK_FLOAT) - width;
+		float westBound = baseLocation.x() + FLOAT_THRESHOLD;
+		float eastBound = baseLocation.x() + widthEdge - FLOAT_THRESHOLD;
+		float southBound = baseLocation.y() + FLOAT_THRESHOLD;
+		float northBound = baseLocation.y() + widthEdge - FLOAT_THRESHOLD;
 		
 		float targetX = creatureBaseLocation.x();
 		float targetY = creatureBaseLocation.y();
@@ -99,7 +99,7 @@ public class CreatureMovementHelpers
 		case NORTH:
 		{
 			float possibleY = northBound;
-			northBound += 1.0f;
+			northBound += PathLocation.PATH_PER_BLOCK_FLOAT;
 			// If we are already north of our new possible target, just stay where we are.
 			if (targetY > possibleY)
 			{
@@ -114,7 +114,7 @@ public class CreatureMovementHelpers
 		case EAST:
 		{
 			float possibleX = eastBound;
-			eastBound += 1.0f;
+			eastBound += PathLocation.PATH_PER_BLOCK_FLOAT;
 			// If we are already east of our new possible target, just stay where we are.
 			if (targetX > possibleX)
 			{
@@ -129,7 +129,7 @@ public class CreatureMovementHelpers
 		case SOUTH:
 		{
 			float possibleY = southBound;
-			southBound -= 1.0f;
+			southBound -= PathLocation.PATH_PER_BLOCK_FLOAT;
 			// If we are already south of our new possible target, just stay where we are.
 			if (targetY < possibleY)
 			{
@@ -144,7 +144,7 @@ public class CreatureMovementHelpers
 		case WEST:
 		{
 			float possibleX = westBound;
-			westBound -= 1.0f;
+			westBound -= PathLocation.PATH_PER_BLOCK_FLOAT;
 			// If we are already west of our new possible target, just stay where we are.
 			if (targetX < possibleX)
 			{
