@@ -209,37 +209,33 @@ public class TestCreatureMovementHelpers
 		// NORTH
 		FacingDirection directionHint = FacingDirection.NORTH;
 		IEntityAction<MutableCreature> change = CreatureMovementHelpers.prepareForMove(previousBlockLookUp, creature.location(), creature.velocity(), creature.type(), directionHint, 100L, EntityActionSimpleMove.Intensity.WALKING);
-		// 3 WEST
-		Assert.assertNotNull(change);
+		// No change since we are already North of the target.
+		Assert.assertNull(change);
 		
 		// EAST
 		directionHint = FacingDirection.EAST;
 		change = CreatureMovementHelpers.prepareForMove(previousBlockLookUp, creature.location(), creature.velocity(), creature.type(), directionHint, 100L, EntityActionSimpleMove.Intensity.WALKING);
-		// 3 SOUTH
-		Assert.assertNotNull(change);
+		// No change since we are already East of the target.
+		Assert.assertNull(change);
 		
 		// SOUTH
 		directionHint = FacingDirection.SOUTH;
 		change = CreatureMovementHelpers.prepareForMove(previousBlockLookUp, creature.location(), creature.velocity(), creature.type(), directionHint, 100L, EntityActionSimpleMove.Intensity.WALKING);
-		// 3 WEST, 4 SOUTH
 		Assert.assertNotNull(change);
 		
 		// WEST
 		directionHint = FacingDirection.WEST;
 		change = CreatureMovementHelpers.prepareForMove(previousBlockLookUp, creature.location(), creature.velocity(), creature.type(), directionHint, 100L, EntityActionSimpleMove.Intensity.WALKING);
-		// 4 WEST, 3 SOUTH
 		Assert.assertNotNull(change);
 		
 		// UP
 		directionHint = FacingDirection.UP;
 		change = CreatureMovementHelpers.prepareForMove(previousBlockLookUp, creature.location(), creature.velocity(), creature.type(), directionHint, 100L, EntityActionSimpleMove.Intensity.WALKING);
-		// 3 WEST, 3 SOUTH
 		Assert.assertNotNull(change);
 		
 		// DOWN
 		directionHint = FacingDirection.DOWN;
 		change = CreatureMovementHelpers.prepareForMove(previousBlockLookUp, creature.location(), creature.velocity(), creature.type(), directionHint, 100L, EntityActionSimpleMove.Intensity.WALKING);
-		// 3 WEST, 3 SOUTH
 		Assert.assertNotNull(change);
 	}
 

@@ -78,101 +78,45 @@ public class CreatureMovementHelpers
 		, EntityActionSimpleMove.Intensity intensity
 	)
 	{
-		// Find our current location.
 		PathLocation pathBase = PathLocation.forEntityBase(creatureBaseLocation);
-		EntityLocation baseLocation = pathBase.getBaseLocation();
 		float width = creatureType.volume().width();
+		EntityLocation targetBase;
 		
-		// First, make sure that any edge of the entity isn't outside of its current block or directionHint.
-		// NOTE:  These bounds are for the specific base location, not width (as it accounts for width).
-		float widthEdge = ((float)Math.ceil(width * PathLocation.PATH_PER_BLOCK_FLOAT) / PathLocation.PATH_PER_BLOCK_FLOAT) - width;
-		float westBound = baseLocation.x() + FLOAT_THRESHOLD;
-		float eastBound = baseLocation.x() + widthEdge - FLOAT_THRESHOLD;
-		float southBound = baseLocation.y() + FLOAT_THRESHOLD;
-		float northBound = baseLocation.y() + widthEdge - FLOAT_THRESHOLD;
-		
-		float targetX = creatureBaseLocation.x();
-		float targetY = creatureBaseLocation.y();
-		
-		switch (direction)
+		if ((FacingDirection.UP == direction) || (FacingDirection.DOWN == direction))
 		{
-		case NORTH:
-		{
-			float possibleY = northBound;
-			northBound += PathLocation.PATH_PER_BLOCK_FLOAT;
-			// If we are already north of our new possible target, just stay where we are.
-			if (targetY > possibleY)
+			// In these cases, we just want to make sure that the creature first within the block.
+			// This is somewhat tricky since some creatures can be multiple PathLocations in width and we just want to
+			// make sure that we fit into the base block and spill into as few other PathLocation blocks.
+			float toSubtract = width - PathLocation.PATH_UNIT * (float)Math.floor(width / PathLocation.PATH_UNIT);
+			
+			EntityLocation blockBase = pathBase.getBaseLocation();
+			float maxX = blockBase.x() + PathLocation.PATH_UNIT - FLOAT_THRESHOLD - toSubtract;
+			float maxY = blockBase.y() + PathLocation.PATH_UNIT - FLOAT_THRESHOLD - toSubtract;
+			
+			float x = creatureBaseLocation.x();
+			if (x > maxX)
 			{
-				// We are already closer than we need to be.
+				x = maxX;
 			}
-			else
+			float y = creatureBaseLocation.y();
+			if (y > maxY)
 			{
-				targetY = possibleY;
+				y = maxY;
 			}
+			float z = creatureBaseLocation.z();
+			targetBase = new EntityLocation(x, y, z);
 		}
-		break;
-		case EAST:
+		else
 		{
-			float possibleX = eastBound;
-			eastBound += PathLocation.PATH_PER_BLOCK_FLOAT;
-			// If we are already east of our new possible target, just stay where we are.
-			if (targetX > possibleX)
-			{
-				// We are already closer than we need to be.
-			}
-			else
-			{
-				targetX = possibleX;
-			}
-		}
-		break;
-		case SOUTH:
-		{
-			float possibleY = southBound;
-			southBound -= PathLocation.PATH_PER_BLOCK_FLOAT;
-			// If we are already south of our new possible target, just stay where we are.
-			if (targetY < possibleY)
-			{
-				// We are already closer than we need to be.
-			}
-			else
-			{
-				targetY = possibleY;
-			}
-		}
-		break;
-		case WEST:
-		{
-			float possibleX = westBound;
-			westBound -= PathLocation.PATH_PER_BLOCK_FLOAT;
-			// If we are already west of our new possible target, just stay where we are.
-			if (targetX < possibleX)
-			{
-				// We are already closer than we need to be.
-			}
-			else
-			{
-				targetX = possibleX;
-			}
-		}
-		break;
-		case DOWN:
-		case UP:
-			// The target is probably above or below us so we don't need horizontal movement.
-			break;
-		default:
-			throw Assert.unreachable();
+			targetBase = _findStepLocation(creatureBaseLocation
+				, width
+				, pathBase
+				, direction
+			);
 		}
 		
-		// Now, make sure that whatever target axes were unchanged still fit within our bounds.
-		if (targetX > eastBound)
-		{
-			targetX = eastBound;
-		}
-		if (targetY > northBound)
-		{
-			targetY = northBound;
-		}
+		float targetX = targetBase.x();
+		float targetY = targetBase.y();
 		
 		Environment env = Environment.getShared();
 		ViscosityReader supplier = new ViscosityReader(env, previousBlockLookUp);
