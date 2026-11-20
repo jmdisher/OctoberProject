@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.List;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.ViscosityReader;
@@ -98,22 +97,14 @@ public class PlanWithTarget implements CreatureEntity.IMovementPlan
 			// We know that this should only be called AFTER updating our planned path.
 			Assert.assertTrue(!PathLocation.forEntityBase(currentLocation).equals(first));
 			
-			ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
-			float viscosity = reader.getMaxStillViscosityInVolume(currentLocation, type.volume());
-			
-			boolean isSwimmable = (viscosity >= BlockAspect.VISOSITY_FLOAT_SWIMMABLE) && (viscosity < BlockAspect.VISOSITY_FLOAT_SOLID);
-			actionProduced = CreatureMovementHelpers.moveToNextLocation(reader
+			actionProduced = CreatureMovementHelpers.moveToNextLocation(context.previousBlockLookUp
 				, currentLocation
 				, oldVelocity
-				, mutable.newYaw
-				, mutable.newPitch
 				, type
 				, first
 				, second
 				, timeLimitMillis
-				, viscosity
 				, intensity
-				, isSwimmable
 			);
 		}
 		// TODO:  This approach is a hack which requires that we rethink this action production design.

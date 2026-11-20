@@ -101,22 +101,28 @@ public class TestCreatureMovementHelpers
 	@Test
 	public void walkOne()
 	{
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
+		
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = _createCow(location);
 		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(1, 2, 1), 0, 0, 0);
-		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
-		IEntityAction<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, null, 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING, false);
+		IEntityAction<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(previousBlockLookUp, creature.location(), creature.velocity(), creature.type(), target, null, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		Assert.assertNotNull(change);
 	}
 
 	@Test
 	public void walkMinusOneDeliberate()
 	{
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
+		
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = _createCow(location);
 		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(0, 1, 1), 0, 0, 0);
-		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
-		IEntityAction<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, null, 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING, false);
+		IEntityAction<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(previousBlockLookUp, creature.location(), creature.velocity(), creature.type(), target, null, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		// Deliberate movement is 0.2/move.
 		Assert.assertNotNull(change);
 	}
@@ -124,11 +130,14 @@ public class TestCreatureMovementHelpers
 	@Test
 	public void walkMinusOneIdle()
 	{
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
+		
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = _createCow(location);
 		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(0, 1, 1), 0, 0, 0);
-		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
-		IEntityAction<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, null, 100L, 0.0f, EntityActionSimpleMove.Intensity.IDLE_CREATURE, false);
+		IEntityAction<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(previousBlockLookUp, creature.location(), creature.velocity(), creature.type(), target, null, 100L, EntityActionSimpleMove.Intensity.IDLE_CREATURE);
 		// Idle movement is 0.1/move and we are moving 0.8 (width) plus a fudge factor (which is rounded down, here).
 		Assert.assertNotNull(change);
 	}
@@ -136,12 +145,15 @@ public class TestCreatureMovementHelpers
 	@Test
 	public void jump()
 	{
-		EntityLocation location = new EntityLocation(1.0f, 1.0f, 0.0f);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
+		
+		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = _createCow(location);
 		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(1, 1, 1), 0, 0, 1);
 		PathLocation target2 = PathLocation.test_raw(new AbsoluteLocation(1, 1, 2), 0, 0, 0);
-		ViscosityReader reader = _getSplitBlockReader(ENV.special.AIR, STONE);
-		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, target2, 100L, 0.0f, EntityActionSimpleMove.Intensity.IDLE_CREATURE, false);
+		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(previousBlockLookUp, creature.location(), creature.velocity(), creature.type(), target, target2, 100L, EntityActionSimpleMove.Intensity.IDLE_CREATURE);
 		Assert.assertNotNull(change);
 		Assert.assertTrue(change.getSubAction() instanceof EntitySubActionJump);
 	}
@@ -150,46 +162,57 @@ public class TestCreatureMovementHelpers
 	public void failJump()
 	{
 		// In this case, we will still be rising so we want to jump but can't since we aren't on the ground.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
+		
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.5f);
 		CreatureEntity creature = _createCow(location);
 		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(1, 1, 2), 0, 0, 0);
-		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
-		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, null, 100L, 0.0f, EntityActionSimpleMove.Intensity.IDLE_CREATURE, false);
+		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(previousBlockLookUp, creature.location(), creature.velocity(), creature.type(), target, null, 100L, EntityActionSimpleMove.Intensity.IDLE_CREATURE);
 		Assert.assertNull(change);
 	}
 
 	@Test
 	public void walkAirborn()
 	{
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
+		
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 2.2f);
 		CreatureEntity creature = _createCow(location);
 		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(1, 1, 2), 0, 1, 0);
-		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
-		IEntityAction<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, null, 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING, false);
+		IEntityAction<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(previousBlockLookUp, creature.location(), creature.velocity(), creature.type(), target, null, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		Assert.assertNotNull(change);
 	}
 
 	@Test
 	public void fall()
 	{
-		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
+		
+		EntityLocation location = new EntityLocation(1.0f, 1.0f, 2.0f);
 		CreatureEntity creature = _createCow(location);
-		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(1, 1, 0), 0, 0, 1);
-		ViscosityReader reader = _getFixedBlockReader(ENV.special.AIR);
-		IEntityAction<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, null, 100L, 0.0f, EntityActionSimpleMove.Intensity.IDLE_CREATURE, false);
+		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(1, 1, 1), 0, 0, 1);
+		IEntityAction<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(previousBlockLookUp, creature.location(), creature.velocity(), creature.type(), target, null, 100L, EntityActionSimpleMove.Intensity.IDLE_CREATURE);
 		Assert.assertNull(change);
 	}
 
 	@Test
 	public void swim()
 	{
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), WATER_SOURCE);
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
+		
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.1f);
 		CreatureEntity creature = _createCow(location);
 		PathLocation startLocation = PathLocation.forEntityBase(location);
 		PathLocation target = startLocation.getRelative(0, 0, 1);
 		PathLocation target2 = startLocation.getRelative(0, 0, 2);
-		ViscosityReader reader = _getFixedBlockReader(WATER_SOURCE);
-		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, target2, 100L, 0.5f, EntityActionSimpleMove.Intensity.IDLE_CREATURE, true);
+		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(previousBlockLookUp, creature.location(), creature.velocity(), creature.type(), target, target2, 100L, EntityActionSimpleMove.Intensity.IDLE_CREATURE);
 		Assert.assertNotNull(change);
 		Assert.assertTrue(change.getSubAction() instanceof EntitySubActionSwim);
 	}
@@ -308,40 +331,31 @@ public class TestCreatureMovementHelpers
 	public void coastToLocation()
 	{
 		// Shows that our motion makes sense when we want to move in the direction of existing velocity.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
-		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
+		long timeLimitMillis = 50L;
+		TickProcessingContext context = _buildLayeredContext(timeLimitMillis);
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = context.previousBlockLookUp;
 		
-		ViscosityReader reader = new ViscosityReader(ENV, previousBlockLookUp);
 		EntityLocation creatureLocation = new EntityLocation(0.99f, 0.0f, 0.0f);
 		MutableCreature mutable = MutableCreature.existing(_createCow(creatureLocation));
 		mutable.newVelocity = new EntityLocation(10.0f, 0.0f, 0.0f);
 		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(1, 0, 0), 0, 0, 0);
 		FacingDirection directionHint = PathLocation.adjacentDirection(PathLocation.forEntityBase(creatureLocation), target);
 		Assert.assertEquals(FacingDirection.EAST, directionHint);
-		long timeLimitMillis = 50L;
-		float viscosityFraction = 0.0f;
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.prepareForMove(previousBlockLookUp, mutable.newLocation, mutable.newVelocity, mutable.newType, directionHint, timeLimitMillis, EntityActionSimpleMove.Intensity.IDLE_CREATURE);
 		Assert.assertNull(change);
 		
-		boolean isBlockSwimmable = false;
-		change = CreatureMovementHelpers.moveToNextLocation(reader
+		change = CreatureMovementHelpers.moveToNextLocation(previousBlockLookUp
 			, mutable.newLocation
 			, mutable.newVelocity
-			, (byte)0
-			, (byte)0
 			, mutable.newType
 			, target
 			, null
 			, timeLimitMillis
-			, viscosityFraction
 			, EntityActionSimpleMove.Intensity.IDLE_CREATURE
-			, isBlockSwimmable
 		);
 		Assert.assertEquals("SimpleMove(IDLE_CREATURE), by -0.03, 0.00, Sub: null", change.toString());
 		
 		// Make sure that this actually applies correctly.
-		TickProcessingContext context = _buildLayeredContext(timeLimitMillis);
 		boolean didApply = change.applyChange(context, mutable);
 		Assert.assertTrue(didApply);
 		Assert.assertEquals(new EntityLocation(1.49f, 0.0f, 0.0f), mutable.newLocation);
@@ -353,14 +367,16 @@ public class TestCreatureMovementHelpers
 	{
 		// We want to show a fix to the bug where we would attempt to jump while rising in water, just because we were block-aligned.
 		EntityLocation location = new EntityLocation(-60.41f, -215.41f, -1.0f);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(location.getBlockLocation().getCuboidAddress(), WATER_SOURCE);
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(cuboid);
+		
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 1.08f);
 		MutableCreature mutable = MutableCreature.existing(_createCow(location));
 		mutable.newVelocity = velocity;
 		CreatureEntity creature = mutable.freeze();
 		PathLocation target = PathLocation.test_raw(new AbsoluteLocation(-61, -216, -1), 1, 1, 1);
-		ViscosityReader reader = _getFixedBlockReader(WATER_SOURCE);
 		long millisPerTick = 50L;
-		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(reader, creature.location(), creature.velocity(), (byte)0, (byte)0, creature.type(), target, null, millisPerTick, 0.0f, EntityActionSimpleMove.Intensity.IDLE_CREATURE, false);
+		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.moveToNextLocation(previousBlockLookUp, creature.location(), creature.velocity(), creature.type(), target, null, millisPerTick, EntityActionSimpleMove.Intensity.IDLE_CREATURE);
 		Assert.assertNull(change);
 	}
 
@@ -597,35 +613,29 @@ public class TestCreatureMovementHelpers
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 		TickProcessingContext.IBlockFetcher airFetcher = _buildSplitFetcher(ENV.special.AIR, STONE);
 		TickProcessingContext.IBlockFetcher waterFetcher = _buildSplitFetcher(WATER_SOURCE, STONE);
-		ViscosityReader airReader = new ViscosityReader(ENV, airFetcher);
-		ViscosityReader waterReader = new ViscosityReader(ENV, waterFetcher);
-		byte yaw = 0;
-		byte pitch = 0;
-		float airViscosity = 0.0f;
-		float waterViscosity = 0.5f;
 		EntityLocation east = location.getRelative(2.5f, 0.0f, 0.0f);
 		EntityLocation west = location.getRelative(-2.5f, 0.0f, 0.0f);
 		PathLocation pathEast = PathLocation.forEntityBase(east);
 		PathLocation pathWest = PathLocation.forEntityBase(west);
 		
 		// Check movement through air.
-		EntityActionSimpleMove<MutableCreature> next = CreatureMovementHelpers.moveToNextLocation(airReader, location, velocity, yaw, pitch, COW, pathEast, null, 100L, airViscosity, EntityActionSimpleMove.Intensity.WALKING, false);
+		EntityActionSimpleMove<MutableCreature> next = CreatureMovementHelpers.moveToNextLocation(airFetcher, location, velocity, COW, pathEast, null, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		EntityActionSimpleMove<MutableCreature> diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(airFetcher, location, COW, east, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		Assert.assertEquals("SimpleMove(WALKING), by 0.10, 0.00, Sub: null", next.toString());
 		Assert.assertEquals(next.toString(), diagonal.toString());
 		
-		next = CreatureMovementHelpers.moveToNextLocation(airReader, location, velocity, yaw, pitch, COW, pathWest, null, 100L, airViscosity, EntityActionSimpleMove.Intensity.WALKING, false);
+		next = CreatureMovementHelpers.moveToNextLocation(airFetcher, location, velocity, COW, pathWest, null, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(airFetcher, location, COW, west, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		Assert.assertEquals("SimpleMove(WALKING), by -0.10, 0.00, Sub: null", next.toString());
 		Assert.assertEquals(next.toString(), diagonal.toString());
 		
 		// Check movement through water.
-		next = CreatureMovementHelpers.moveToNextLocation(waterReader, location, velocity, yaw, pitch, COW, pathEast, null, 100L, waterViscosity, EntityActionSimpleMove.Intensity.WALKING, false);
+		next = CreatureMovementHelpers.moveToNextLocation(waterFetcher, location, velocity, COW, pathEast, null, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(waterFetcher, location, COW, east, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		Assert.assertEquals("SimpleMove(WALKING), by 0.10, 0.00, Sub: null", next.toString());
 		Assert.assertEquals(next.toString(), diagonal.toString());
 		
-		next = CreatureMovementHelpers.moveToNextLocation(waterReader, location, velocity, yaw, pitch, COW, pathWest, null, 100L, waterViscosity, EntityActionSimpleMove.Intensity.WALKING, false);
+		next = CreatureMovementHelpers.moveToNextLocation(waterFetcher, location, velocity, COW, pathWest, null, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(waterFetcher, location, COW, west, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		Assert.assertEquals("SimpleMove(WALKING), by -0.10, 0.00, Sub: null", next.toString());
 		Assert.assertEquals(next.toString(), diagonal.toString());
@@ -634,7 +644,7 @@ public class TestCreatureMovementHelpers
 		EntityLocation closeLocation = new EntityLocation(1.95f, 1.2f, 0.0f);
 		EntityLocation closeEast = closeLocation.getRelative(0.05f, 0.0f, 0.0f);
 		PathLocation pathCloseEast = PathLocation.forEntityBase(closeEast);
-		next = CreatureMovementHelpers.moveToNextLocation(waterReader, closeLocation, velocity, yaw, pitch, COW, pathCloseEast, null, 100L, waterViscosity, EntityActionSimpleMove.Intensity.WALKING, false);
+		next = CreatureMovementHelpers.moveToNextLocation(waterFetcher, closeLocation, velocity, COW, pathCloseEast, null, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		diagonal = CreatureMovementHelpers.moveAlongDiagonalPath(waterFetcher, closeLocation, COW, closeEast, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		Assert.assertEquals("SimpleMove(WALKING), by 0.10, 0.00, Sub: null", next.toString());
 		Assert.assertEquals(next.toString(), diagonal.toString());
@@ -656,18 +666,16 @@ public class TestCreatureMovementHelpers
 		cuboid.setData7(AspectRegistry.ORIENTATION, slabBlock.getBlockAddress(), FacingDirection.directionToByte(FacingDirection.DOWN));
 		cuboid.setData15(AspectRegistry.BLOCK, stairBlock.getBlockAddress(), stair.item().number());
 		cuboid.setData7(AspectRegistry.ORIENTATION, stairBlock.getBlockAddress(), FacingDirection.directionToByte(FacingDirection.EAST));
+		TickProcessingContext.IBlockFetcher fetcher = ContextBuilder.buildSingleFetcher(cuboid);
 		
-		ViscosityReader reader = new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
 		EntityType player = ENV.creatures.PLAYER;
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
-		byte yaw = 0;
-		byte pitch = 0;
 		
 		EntityLocation slabStart = centre.toEntityLocation();
 		PathLocation slabStartLocation = PathLocation.forEntityBase(slabStart);
 		PathLocation slabUpLocation = slabStartLocation.getRelative(0, 0, 1);
 		PathLocation slabOverLocation = slabStartLocation.getRelative(-1, 0, 1);
-		EntityActionSimpleMove<MutableCreature> slabMove = CreatureMovementHelpers.moveToNextLocation(reader, slabStart, velocity, yaw, pitch, player, slabUpLocation, slabOverLocation, 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING, false);
+		EntityActionSimpleMove<MutableCreature> slabMove = CreatureMovementHelpers.moveToNextLocation(fetcher, slabStart, velocity, player, slabUpLocation, slabOverLocation, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		Assert.assertEquals("SimpleMove(WALKING), by -0.40, 0.00, Sub: Step-up", slabMove.toString());
 		
 		float offset = player.volume().width() + 0.01f;
@@ -675,7 +683,7 @@ public class TestCreatureMovementHelpers
 		PathLocation stairStartLocation = PathLocation.forEntityBase(stairStart);
 		PathLocation stairUpLocation = stairStartLocation.getRelative(0, 0, 1);
 		PathLocation stairOverLocation = stairStartLocation.getRelative(1, 0, 1);
-		EntityActionSimpleMove<MutableCreature> stairMove = CreatureMovementHelpers.moveToNextLocation(reader, stairStart, velocity, yaw, pitch, player, stairUpLocation, stairOverLocation, 100L, 0.0f, EntityActionSimpleMove.Intensity.WALKING, false);
+		EntityActionSimpleMove<MutableCreature> stairMove = CreatureMovementHelpers.moveToNextLocation(fetcher, stairStart, velocity, player, stairUpLocation, stairOverLocation, 100L, EntityActionSimpleMove.Intensity.WALKING);
 		Assert.assertEquals("SimpleMove(WALKING), by 0.40, 0.00, Sub: Step-up", stairMove.toString());
 	}
 
@@ -1011,12 +1019,6 @@ public class TestCreatureMovementHelpers
 	private static CreatureEntity _createCow(EntityLocation location)
 	{
 		return CreatureEntity.create(-1, COW, location, 0L);
-	}
-
-	private static ViscosityReader _getFixedBlockReader(Block block)
-	{
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), block);
-		return new ViscosityReader(ENV, ContextBuilder.buildSingleFetcher(cuboid));
 	}
 
 	private static ViscosityReader _getSplitBlockReader(Block positive, Block negative)

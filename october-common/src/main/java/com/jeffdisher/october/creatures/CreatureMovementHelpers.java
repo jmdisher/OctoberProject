@@ -131,35 +131,32 @@ public class CreatureMovementHelpers
 	/**
 	 * Creates the changes required for the given creature to move to targetBlock.
 	 * 
-	 * @param supplier Looks up the viscosity of various blocks.
+	 * @param previousBlockLookUp Looks up previous tick's block types.
 	 * @param creatureLocation The creature's location.
 	 * @param creatureVelocity The creature's velocity.
-	 * @param yaw The creature's existing yaw.
-	 * @param pitch The creature's existing pitch.
 	 * @param creatureType The type of creature.
 	 * @param targetBlock The target location.
 	 * @param nextTargetBlock The target next after the targetBlock, which could be null.
-	 * @param timeLimitMillis The number of milliseconds left in the tick.
-	 * @param viscosityFraction The viscosity of the current block ([0.0 .. 1.0]) where 1.0 is solid.
+	 * @param millisPerTick The number of milliseconds per tick.
 	 * @param intensity The movement intensity.
-	 * @param isBlockSwimmable True if the creature is in a block where they can swim.
 	 * @return The next move toward targetBlock (null if there is no useful action at this time - usually just pass
 	 * time).
 	 */
-	public static EntityActionSimpleMove<MutableCreature> moveToNextLocation(ViscosityReader supplier
+	public static EntityActionSimpleMove<MutableCreature> moveToNextLocation(TickProcessingContext.IBlockFetcher previousBlockLookUp
 		, EntityLocation creatureLocation
 		, EntityLocation creatureVelocity
-		, byte yaw
-		, byte pitch
 		, EntityType creatureType
 		, PathLocation targetBlock
 		, PathLocation nextTargetBlock
-		, long timeLimitMillis
-		, float viscosityFraction
+		, long millisPerTick
 		, EntityActionSimpleMove.Intensity intensity
-		, boolean isBlockSwimmable
 	)
 	{
+		EntityVolume volume = creatureType.volume();
+		ViscosityReader supplier = new ViscosityReader(Environment.getShared(), previousBlockLookUp);
+		float viscosityFraction = supplier.getMaxStillViscosityInVolume(creatureLocation, volume);
+		boolean isBlockSwimmable = (viscosityFraction >= BlockAspect.VISOSITY_FLOAT_SWIMMABLE) && (viscosityFraction < BlockAspect.VISOSITY_FLOAT_SOLID);
+		
 		PathLocation starting = PathLocation.forEntityBase(creatureLocation);
 		FacingDirection direction = PathLocation.adjacentDirection(starting, targetBlock);
 		
@@ -185,13 +182,12 @@ public class CreatureMovementHelpers
 				{
 					// This is something else so it is a step.
 					// Note that this "realTargetLocation" calculation isn't quite right but needs to be generalized with other calls here, anyway.
-					EntityVolume volume = creatureType.volume();
 					float width = volume.width();
 					stepUpTarget = _findStepLocation(creatureLocation, width, nextTargetBlock, nextDirection);
 					float deltaX = stepUpTarget.x() - creatureLocation.x();
 					float deltaY = stepUpTarget.y() - creatureLocation.y();
-					float xToMove = _findRawMoveInTime(creatureType.blocksPerSecond() * intensity.speedMultipler, viscosityFraction, deltaX, creatureVelocity.x(), timeLimitMillis);
-					float yToMove = _findRawMoveInTime(creatureType.blocksPerSecond() * intensity.speedMultipler, viscosityFraction, deltaY, creatureVelocity.y(), timeLimitMillis);
+					float xToMove = _findRawMoveInTime(creatureType.blocksPerSecond() * intensity.speedMultipler, viscosityFraction, deltaX, creatureVelocity.x(), millisPerTick);
+					float yToMove = _findRawMoveInTime(creatureType.blocksPerSecond() * intensity.speedMultipler, viscosityFraction, deltaY, creatureVelocity.y(), millisPerTick);
 					EntityLocation realTargetLocation = creatureLocation.getRelative(xToMove, yToMove, EntitySubActionStepUp.MAX_STEP_HEIGHT);
 					
 					if (supplier.isSolidBlockInVolume(realTargetLocation.getRelative(0.0f, 0.0f, -0.1f), new EntityVolume(0.01f, width), true))
@@ -213,7 +209,7 @@ public class CreatureMovementHelpers
 			}
 			
 			// If we want to jump, make sure that we can.
-			if (isJump && !EntitySubActionJump.canJumpWithReader(supplier, creatureLocation, creatureType.volume(), creatureVelocity))
+			if (isJump && !EntitySubActionJump.canJumpWithReader(supplier, creatureLocation, volume, creatureVelocity))
 			{
 				isJump = false;
 			}
@@ -228,6 +224,9 @@ public class CreatureMovementHelpers
 		EntityActionSimpleMove<MutableCreature> change;
 		if (isJump)
 		{
+			EntityLocation targetBase = targetBlock.getBaseLocation();
+			byte yaw = OrientationHelpers.getYawBetweenPoints(creatureLocation, targetBase);
+			byte pitch = 0;
 			IEntitySubAction<MutableCreature> subAction = new EntitySubActionJump<>();
 			change = new EntityActionSimpleMove<>(0.0f
 				, 0.0f
@@ -239,6 +238,9 @@ public class CreatureMovementHelpers
 		}
 		else if (isSwim)
 		{
+			EntityLocation targetBase = targetBlock.getBaseLocation();
+			byte yaw = OrientationHelpers.getYawBetweenPoints(creatureLocation, targetBase);
+			byte pitch = 0;
 			IEntitySubAction<MutableCreature> subAction = new EntitySubActionSwim<>();
 			change = new EntityActionSimpleMove<>(0.0f
 				, 0.0f
@@ -255,18 +257,18 @@ public class CreatureMovementHelpers
 			float deltaY = stepUpTarget.y() - creatureLocation.y();
 			float distanceX = Math.abs(deltaX);
 			float distanceY = Math.abs(deltaY);
-			change = _buildStep(creatureLocation, creatureVelocity, creatureType, timeLimitMillis, viscosityFraction, intensity, stepUpTarget, distanceX, distanceY, stepUpSubAction);
+			change = _buildStep(creatureLocation, creatureVelocity, creatureType, millisPerTick, viscosityFraction, intensity, stepUpTarget, distanceX, distanceY, stepUpSubAction);
 		}
 		else if (FacingDirection.DOWN == direction)
 		{
 			// The only thing we need to check here is that we aren't "hanging on the lip" of a neighbouring block.
-			if (supplier.isSolidBlockInVolume(creatureLocation.getRelative(0.0f, 0.0f, -0.1f), new EntityVolume(0.01f, creatureType.volume().width()), true))
+			if (supplier.isSolidBlockInVolume(creatureLocation.getRelative(0.0f, 0.0f, -0.1f), new EntityVolume(0.01f, volume.width()), true))
 			{
 				// We will try to move toward the west-south corner.
 				EntityLocation stepLocation = creatureLocation.getBlockLocation().toEntityLocation();
 				float distanceX = Math.abs(stepLocation.x() - creatureLocation.x());
 				float distanceY = Math.abs(stepLocation.y() - creatureLocation.y());
-				change = _buildStep(creatureLocation, creatureVelocity, creatureType, timeLimitMillis, viscosityFraction, intensity, stepLocation, distanceX, distanceY, null);
+				change = _buildStep(creatureLocation, creatureVelocity, creatureType, millisPerTick, viscosityFraction, intensity, stepLocation, distanceX, distanceY, null);
 			}
 			else
 			{
@@ -282,11 +284,11 @@ public class CreatureMovementHelpers
 		else
 		{
 			// This is a normal horizontal move.
-			float width = creatureType.volume().width();
+			float width = volume.width();
 			EntityLocation stepLocation = _findStepLocation(creatureLocation, width, targetBlock, direction);
 			float distanceX = Math.abs(stepLocation.x() - creatureLocation.x());
 			float distanceY = Math.abs(stepLocation.y() - creatureLocation.y());
-			change = _buildStep(creatureLocation, creatureVelocity, creatureType, timeLimitMillis, viscosityFraction, intensity, stepLocation, distanceX, distanceY, null);
+			change = _buildStep(creatureLocation, creatureVelocity, creatureType, millisPerTick, viscosityFraction, intensity, stepLocation, distanceX, distanceY, null);
 		}
 		
 		return change;
