@@ -738,13 +738,16 @@ public class CreatureMovementHelpers
 	/**
 	 * Finds an appropriate target location for a creature starting at creatureLocation, of width size, wanting to end
 	 * up in targetBlock location, prepared to continue in direction from there.
+	 * NOTE:  If the creature is already in direction from targetBlock, it will not move, meaning it will not end up in
+	 * targetBlock (as this move will be deemed redundant).
 	 * 
 	 * @param creatureLocation The starting location of the creature.
 	 * @param width The width of the creature.
 	 * @param targetBlock The block the creature needs to end up in.
 	 * @param direction The direction the creature should be oriented to leave targetBlock, later (MUST be a flat
 	 * direction:  WEST, EAST, SOUTH, or NORTH).
-	 * @return A reasonable location for the creature to reach, in targetBlock.
+	 * @return A reasonable location for the creature to reach, in targetBlock unless already located in the requested
+	 * direction from targetBlock.
 	 */
 	public static EntityLocation findStepLocation(EntityLocation creatureLocation
 		, float width
@@ -878,7 +881,7 @@ public class CreatureMovementHelpers
 		if (FacingDirection.EAST == direction)
 		{
 			float toSubtract = width - PathLocation.PATH_UNIT * (float)Math.floor(width / PathLocation.PATH_UNIT);
-			stepX = targetBase.x() + PathLocation.PATH_UNIT - FLOAT_THRESHOLD - toSubtract;
+			stepX = Math.max(creatureLocation.x(), targetBase.x() + PathLocation.PATH_UNIT - FLOAT_THRESHOLD - toSubtract);
 			if (0 != yDelta)
 			{
 				stepY = targetBase.y();
@@ -890,7 +893,7 @@ public class CreatureMovementHelpers
 		}
 		else if (FacingDirection.WEST == direction)
 		{
-			stepX = targetBase.x() + FLOAT_THRESHOLD;
+			stepX = Math.min(creatureLocation.x(), targetBase.x() + FLOAT_THRESHOLD);
 			if (0 != yDelta)
 			{
 				stepY = targetBase.y();
@@ -911,7 +914,7 @@ public class CreatureMovementHelpers
 				stepX = creatureLocation.x();
 			}
 			float toSubtract = width - PathLocation.PATH_UNIT * (float)Math.floor(width / PathLocation.PATH_UNIT);
-			stepY = targetBase.y() + PathLocation.PATH_UNIT - FLOAT_THRESHOLD - toSubtract;
+			stepY = Math.max(creatureLocation.y(), targetBase.y() + PathLocation.PATH_UNIT - FLOAT_THRESHOLD - toSubtract);
 		}
 		else if (FacingDirection.SOUTH == direction)
 		{
@@ -923,7 +926,7 @@ public class CreatureMovementHelpers
 			{
 				stepX = creatureLocation.x();
 			}
-			stepY = targetBase.y() + FLOAT_THRESHOLD;
+			stepY = Math.min(creatureLocation.y(), targetBase.y() + FLOAT_THRESHOLD);
 		}
 		else
 		{

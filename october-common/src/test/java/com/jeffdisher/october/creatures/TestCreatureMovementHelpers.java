@@ -830,8 +830,7 @@ public class TestCreatureMovementHelpers
 			, targetBlock
 			, direction
 		);
-		Assert.assertEquals(new EntityLocation(1.89f, 4.55f, 1.0f), result);
-		Assert.assertEquals(targetBlock, PathLocation.forEntityBase(result));
+		Assert.assertEquals(new EntityLocation(2.3f, 4.55f, 1.0f), result);
 		
 		direction = FacingDirection.SOUTH;
 		result = CreatureMovementHelpers.findStepLocation(creatureLocation
@@ -867,8 +866,7 @@ public class TestCreatureMovementHelpers
 			, targetBlock
 			, direction
 		);
-		Assert.assertEquals(new EntityLocation(1.69f, 4.55f, 1.0f), result);
-		Assert.assertEquals(targetBlock, PathLocation.forEntityBase(result));
+		Assert.assertEquals(new EntityLocation(2.3f, 4.55f, 1.0f), result);
 		
 		direction = FacingDirection.SOUTH;
 		result = CreatureMovementHelpers.findStepLocation(creatureLocation
@@ -887,6 +885,48 @@ public class TestCreatureMovementHelpers
 		);
 		Assert.assertEquals(new EntityLocation(1.5f, 4.69f, 1.0f), result);
 		Assert.assertEquals(targetBlock, PathLocation.forEntityBase(result));
+	}
+
+	@Test
+	public void noRedundantStepLocations()
+	{
+		// Show that findStepLocation doesn't change the location of the creature if is already in the correct direction from the target block.
+		EntityLocation centreLocation = new EntityLocation(2.3f, 4.55f, 1.0f);
+		EntityLocation westLocation = centreLocation.getRelative(-2.0f, 0.0f, 0.0f);
+		EntityLocation eastLocation = centreLocation.getRelative(2.0f, 0.0f, 0.0f);
+		EntityLocation southLocation = centreLocation.getRelative(0.0f, -2.0f, 0.0f);
+		EntityLocation northLocation = centreLocation.getRelative(0.0f, 2.0f, 0.0f);
+		
+		float width = 0.6f;
+		PathLocation centreBlock = PathLocation.forEntityBase(centreLocation);
+		
+		EntityLocation result = CreatureMovementHelpers.findStepLocation(westLocation
+			, width
+			, centreBlock
+			, FacingDirection.WEST
+		);
+		Assert.assertEquals(westLocation, result);
+		
+		result = CreatureMovementHelpers.findStepLocation(eastLocation
+			, width
+			, centreBlock
+			, FacingDirection.EAST
+		);
+		Assert.assertEquals(eastLocation, result);
+		
+		result = CreatureMovementHelpers.findStepLocation(southLocation
+			, width
+			, centreBlock
+			, FacingDirection.SOUTH
+		);
+		Assert.assertEquals(southLocation, result);
+		
+		result = CreatureMovementHelpers.findStepLocation(northLocation
+			, width
+			, centreBlock
+			, FacingDirection.NORTH
+		);
+		Assert.assertEquals(northLocation, result);
 	}
 
 
