@@ -124,6 +124,7 @@ public class CreatureMovementHelpers
 			, targetBase
 			, millisPerTick
 			, intensity
+			, null
 			, groundConsistent
 		);
 	}
@@ -404,6 +405,7 @@ public class CreatureMovementHelpers
 			, targetBase
 			, millisPerTick
 			, intensity
+			, null
 			, groundConsistent
 		);
 	}
@@ -824,6 +826,7 @@ public class CreatureMovementHelpers
 		, EntityLocation targetBase
 		, long millisPerTick
 		, EntityActionSimpleMove.Intensity intensity
+		, IEntitySubAction<MutableCreature> subAction
 		, boolean groundConsistent
 	)
 	{
@@ -853,6 +856,7 @@ public class CreatureMovementHelpers
 				, walkingBlocksPerSecond
 				, intensity
 				, millisPerTick
+				, subAction
 			);
 			
 			// Test if this action would actually apply, given what we know about the world.

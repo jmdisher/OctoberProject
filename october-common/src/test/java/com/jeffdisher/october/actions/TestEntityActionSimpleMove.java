@@ -15,6 +15,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.subactions.EntitySubActionJump;
+import com.jeffdisher.october.subactions.EntitySubActionStepUp;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -24,6 +25,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableCreature;
@@ -317,6 +319,7 @@ public class TestEntityActionSimpleMove
 			, walkingBlocksPerSecond
 			, intensity
 			, millisPerTick
+			, null
 		);
 		Assert.assertEquals("SimpleMove(WALKING), by -0.06, -0.08, Sub: null", move.toString());
 		MutableCreature creature = MutableCreature.existing(CreatureEntity.create(-1, COW, start, 0L));
@@ -337,6 +340,7 @@ public class TestEntityActionSimpleMove
 			, walkingBlocksPerSecond
 			, intensity
 			, millisPerTick
+			, null
 		);
 		Assert.assertEquals("SimpleMove(WALKING), by -0.04, -0.09, Sub: null", move.toString());
 		creature = MutableCreature.existing(CreatureEntity.create(-1, COW, start, 0L));
@@ -357,6 +361,7 @@ public class TestEntityActionSimpleMove
 			, walkingBlocksPerSecond
 			, intensity
 			, millisPerTick
+			, null
 		);
 		Assert.assertEquals("SimpleMove(WALKING), by -0.02, 0.05, Sub: null", move.toString());
 		creature = MutableCreature.existing(CreatureEntity.create(-1, COW, start, 0L));
@@ -377,6 +382,7 @@ public class TestEntityActionSimpleMove
 			, walkingBlocksPerSecond
 			, intensity
 			, millisPerTick
+			, null
 		);
 		Assert.assertEquals("SimpleMove(WALKING), by 0.02, -0.10, Sub: null", move.toString());
 		// NOTE:  Constructing this specific environmental velocity in the cuboid is difficult so just verify that the action is valid, even without this.
@@ -399,6 +405,7 @@ public class TestEntityActionSimpleMove
 			, walkingBlocksPerSecond
 			, intensity
 			, millisPerTick
+			, null
 		);
 		Assert.assertEquals("SimpleMove(WALKING), by -0.06, -0.08, Sub: null", move.toString());
 		creature = MutableCreature.existing(CreatureEntity.create(-1, COW, start, 0L));
@@ -484,6 +491,7 @@ public class TestEntityActionSimpleMove
 			, walkingBlocksPerSecond
 			, intensity
 			, millisPerTick
+			, null
 		);
 		Assert.assertEquals("SimpleMove(WALKING), by -0.06, -0.08, Sub: null", move.toString());
 		MutableCreature creature = MutableCreature.existing(CreatureEntity.create(-1, COW, start, 0L));
@@ -521,6 +529,7 @@ public class TestEntityActionSimpleMove
 			, walkingBlocksPerSecond
 			, intensity
 			, millisPerTick
+			, null
 		);
 		Assert.assertEquals("SimpleMove(WALKING), by 0.00, 0.08, Sub: null", moveAir.toString());
 		MutableCreature creature = MutableCreature.existing(CreatureEntity.create(-1, COW, startAir, 0L));
@@ -537,6 +546,7 @@ public class TestEntityActionSimpleMove
 			, walkingBlocksPerSecond
 			, intensity
 			, millisPerTick
+			, null
 		);
 		Assert.assertEquals("SimpleMove(WALKING), by 0.00, 0.10, Sub: null", moveWater.toString());
 		creature = MutableCreature.existing(CreatureEntity.create(-1, COW, startWater, 0L));
@@ -580,6 +590,62 @@ public class TestEntityActionSimpleMove
 		Assert.assertEquals(EntityActionPeriodic.ENERGY_COST_PER_TICK_WALKING, newEntity.newEnergyDeficit);
 		Assert.assertEquals(5, newEntity.newYaw);
 		Assert.assertEquals(6, newEntity.newPitch);
+	}
+
+	@Test
+	public void stepUpBehaviour()
+	{
+		// Show what happens when a step-up sub-action is required and used.
+		EntityLocation oldLocation = new EntityLocation(5.0f, 6.0f, 1.0f);
+		EntityLocation newLocation = oldLocation.getRelative(0.0f, -0.5f, 0.0f);
+		
+		Block slab = ENV.blocks.fromItem(ENV.items.getItemById("op.stone_brick_slab"));
+		AbsoluteLocation entityLocation = oldLocation.getBlockLocation();
+		AbsoluteLocation slabLocation = newLocation.getBlockLocation();
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, entityLocation.getRelative(0, 0, -1).getBlockAddress(), STONE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, slabLocation.getRelative(0, 0, -1).getBlockAddress(), STONE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, slabLocation.getBlockAddress(), slab.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, slabLocation.getBlockAddress(), FacingDirection.directionToByte(FacingDirection.DOWN));
+		TickProcessingContext context = _createSingleCuboidContext(cuboid);
+		long millisPerTick = 100L;
+		
+		// Show that stepping south will fail unless we include a step-up sub-action.
+		
+		EntityActionSimpleMove<IMutablePlayerEntity> walkOnly = EntityActionSimpleMove.moveTowardTarget(oldLocation
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, 0.0f
+			, newLocation
+			, ENV.creatures.PLAYER.blocksPerSecond()
+			, EntityActionSimpleMove.Intensity.WALKING
+			, millisPerTick
+			, null
+		);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = oldLocation;
+		EntityMovementHelpers.HighLevelMovementResult result = walkOnly.applyChangeForResult(context, newEntity);
+		Assert.assertTrue(result.horizontalCollision());
+		Assert.assertTrue(result.isOnGround());
+		Assert.assertEquals(oldLocation, result.location());
+		
+		EntityActionSimpleMove<IMutablePlayerEntity> walkAndStep = EntityActionSimpleMove.moveTowardTarget(oldLocation
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, new EntityLocation(0.0f, 0.0f, 0.0f)
+			, 0.0f
+			, newLocation
+			, ENV.creatures.PLAYER.blocksPerSecond()
+			, EntityActionSimpleMove.Intensity.WALKING
+			, millisPerTick
+			, new EntitySubActionStepUp<>(EntitySubActionStepUp.MAX_STEP_HEIGHT)
+		);
+		newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = oldLocation;
+		result = walkAndStep.applyChangeForResult(context, newEntity);
+		Assert.assertFalse(result.horizontalCollision());
+		// (note that step-up doesn't end up with us on the ground due to how it cancels gravity to "slide onto" the block).
+		Assert.assertFalse(result.isOnGround());
+		Assert.assertEquals(oldLocation.getRelative(0.0f, -0.4f, EntitySubActionStepUp.MAX_STEP_HEIGHT), result.location());
 	}
 
 

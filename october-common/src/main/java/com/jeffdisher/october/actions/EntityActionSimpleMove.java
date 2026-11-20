@@ -96,6 +96,7 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 	 * @param walkingBlocksPerSecond The speed of the entity, at walking intensity, in blocks per second.
 	 * @param intensity The movement intensity which should be applied.
 	 * @param millisPerTick The number of milliseconds limiting what can be done in a single tick.
+	 * @param subAction An optional sub-action to package inside the action.
 	 * @return The new action.
 	 */
 	public static <T extends IMutableMinimalEntity> EntityActionSimpleMove<T> moveTowardTarget(EntityLocation startLocation
@@ -106,6 +107,7 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 		, float walkingBlocksPerSecond
 		, Intensity intensity
 		, long millisPerTick
+		, IEntitySubAction<T> subAction
 	)
 	{
 		// The caller should be determining that there is a move to make before it calls us.
@@ -161,7 +163,7 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 			, intensity
 			, yaw
 			, pitch
-			, null
+			, subAction
 		);
 	}
 
