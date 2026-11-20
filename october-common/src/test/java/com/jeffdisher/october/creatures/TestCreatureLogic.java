@@ -1795,7 +1795,7 @@ public class TestCreatureLogic
 			.finish()
 		;
 		
-		EntityLocation[] slabWalkLocations = _collectStepLocations(context, collection, mutable1, 18);
+		EntityLocation[] slabWalkLocations = _collectStepLocations(context, collection, mutable1, 20);
 		Assert.assertTrue(mutable1.movementPlan instanceof NearToTarget);
 		Assert.assertArrayEquals(new EntityLocation[] {
 			new EntityLocation(14.59f, 16.01f, 2.0f),
@@ -1803,7 +1803,8 @@ public class TestCreatureLogic
 			new EntityLocation(14.99f, 16.01f, 2.0f),
 			new EntityLocation(15.09f, 16.01f, 2.0f),
 			new EntityLocation(15.09f, 16.01f, 1.9f),
-			new EntityLocation(15.19f, 16.01f, 1.7f),
+			new EntityLocation(15.09f, 16.01f, 1.7f),
+			new EntityLocation(15.09f, 16.01f, 1.5f),
 			new EntityLocation(15.29f, 16.01f, 1.5f),
 			new EntityLocation(15.49f, 16.01f, 1.5f),
 			new EntityLocation(15.59f, 16.01f, 1.5f),
@@ -1811,7 +1812,8 @@ public class TestCreatureLogic
 			new EntityLocation(15.99f, 16.01f, 1.5f),
 			new EntityLocation(16.09f, 16.01f, 1.5f),
 			new EntityLocation(16.09f, 16.01f, 1.4f),
-			new EntityLocation(16.19f, 16.01f, 1.2f),
+			new EntityLocation(16.09f, 16.01f, 1.2f),
+			new EntityLocation(16.09f, 16.01f, 1.0f),
 			new EntityLocation(16.29f, 16.01f, 1.0f),
 			new EntityLocation(16.49f, 16.01f, 1.0f),
 			new EntityLocation(16.59f, 16.01f, 1.0f),

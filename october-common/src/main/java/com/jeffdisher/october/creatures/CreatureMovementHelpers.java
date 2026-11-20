@@ -115,22 +115,17 @@ public class CreatureMovementHelpers
 			);
 		}
 		
-		float targetX = targetBase.x();
-		float targetY = targetBase.y();
-		
-		Environment env = Environment.getShared();
-		ViscosityReader supplier = new ViscosityReader(env, previousBlockLookUp);
-		EntityVolume volume = creatureType.volume();
-		float viscosityFraction = supplier.getMaxStillViscosityInVolume(creatureBaseLocation, volume);
-		
-		// Now, move.
-		float speed = creatureType.blocksPerSecond();
-		EntityActionSimpleMove<MutableCreature> move = _moveByX(creatureBaseLocation, millisPerTick, speed, intensity, viscosityFraction, targetX, creatureVelocity.x(), null);
-		if (null == move)
-		{
-			move = _moveByY(creatureBaseLocation, millisPerTick, speed, intensity, viscosityFraction, targetY, creatureVelocity.y(), null);
-		}
-		return move;
+		// We want to allow the creature to "slip off" the ledge if they are trying to fall down.
+		boolean groundConsistent = (FacingDirection.DOWN != direction);
+		return _moveAlongDiagonalPath(previousBlockLookUp
+			, creatureBaseLocation
+			, creatureVelocity
+			, creatureType
+			, targetBase
+			, millisPerTick
+			, intensity
+			, groundConsistent
+		);
 	}
 
 	/**
@@ -396,80 +391,19 @@ public class CreatureMovementHelpers
 		, EntityActionSimpleMove.Intensity intensity
 	)
 	{
-		EntityActionSimpleMove<MutableCreature> change;
-		if (creatureBaseLocation.equals(targetBase))
-		{
-			// If we already reached the destination, just return null.
-			change = null;
-		}
-		else
-		{
-			// We assume that our current location and target location are on the same Z-level so verify that.
-			Assert.assertTrue(creatureBaseLocation.getBlockLocation().z() == targetBase.getBlockLocation().z());
-			
-			Environment env = Environment.getShared();
-			ViscosityReader supplier = new ViscosityReader(env, previousBlockLookUp);
-			EntityVolume volume = creatureType.volume();
-			float viscosityFraction = supplier.getMaxStillViscosityInVolume(creatureBaseLocation, volume);
-			
-			// TODO:  Plumb in the starting velocity once it can be something interesting in this case (always 0, for now).
-			EntityLocation startingVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
-			EntityLocation environmentalVelocity = EntityMovementHelpers.getEnvironmentalVector(env, previousBlockLookUp, creatureBaseLocation, volume);
-			float walkingBlocksPerSecond = creatureType.blocksPerSecond();
-			change = EntityActionSimpleMove.moveTowardTarget(creatureBaseLocation
-				, startingVelocity
-				, environmentalVelocity
-				, viscosityFraction
-				, targetBase
-				, walkingBlocksPerSecond
-				, intensity
-				, millisPerTick
-			);
-			
-			// Test if this action would actually apply, given what we know about the world.
-			TickProcessingContext fakeContext = new TickProcessingContext(0L
-				, previousBlockLookUp
-				, null
-				, null
-				, null
-				, null
-				, null
-				, null
-				, null
-				, null
-				, null
-				, null
-				, null
-				, null
-				, millisPerTick
-				, 0L
-			);
-			MutableCreature fakeEntity = MutableCreature.existing(CreatureEntity.create(-1, creatureType, creatureBaseLocation, 0L));
-			EntityMovementHelpers.HighLevelMovementResult result = change.applyChangeForResult(fakeContext, fakeEntity);
-			if (null != result)
-			{
-				if (result.horizontalCollision())
-				{
-					result = null;
-				}
-			}
-			if (null != result)
-			{
-				// We only allow this if we end standing on the ground.
-				boolean mustEndOnGround = SpatialHelpers.isStandingOnGround(supplier, creatureBaseLocation, volume);
-				if (mustEndOnGround && !SpatialHelpers.isStandingOnGround(supplier, result.location(), volume))
-				{
-					result = null;
-				}
-			}
-			
-			if (null == result)
-			{
-				// We hit something so we want to fail out.
-				change = null;
-			}
-		}
-		return change;
+		// TODO:  Plumb in the starting velocity once it can be something interesting in this case (always 0, for now).
+		EntityLocation creatureVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		// In this case, we always want to stay on the ground if we are already there.
+		boolean groundConsistent = true;
+		return _moveAlongDiagonalPath(previousBlockLookUp
+			, creatureBaseLocation
+			, creatureVelocity
+			, creatureType
+			, targetBase
+			, millisPerTick
+			, intensity
+			, groundConsistent
+		);
 	}
 
 	public static List<PathLocation> findPathToRandomSpot(TickProcessingContext context
@@ -879,6 +813,91 @@ public class CreatureMovementHelpers
 		float stepZ = targetBase.z();
 		EntityLocation stepLocation = new EntityLocation(stepX, stepY, stepZ);
 		return stepLocation;
+	}
+
+	private static EntityActionSimpleMove<MutableCreature> _moveAlongDiagonalPath(TickProcessingContext.IBlockFetcher previousBlockLookUp
+		, EntityLocation creatureBaseLocation
+		, EntityLocation creatureVelocity
+		, EntityType creatureType
+		, EntityLocation targetBase
+		, long millisPerTick
+		, EntityActionSimpleMove.Intensity intensity
+		, boolean groundConsistent
+	)
+	{
+		EntityActionSimpleMove<MutableCreature> change;
+		if (creatureBaseLocation.equals(targetBase))
+		{
+			// If we already reached the destination, just return null.
+			change = null;
+		}
+		else
+		{
+			// We assume that our current location and target location are on the same Z-level so verify that.
+			Assert.assertTrue(0 == PathLocation.adjacentStepsZ(PathLocation.forEntityBase(creatureBaseLocation), PathLocation.forEntityBase(targetBase)));
+			
+			Environment env = Environment.getShared();
+			ViscosityReader supplier = new ViscosityReader(env, previousBlockLookUp);
+			EntityVolume volume = creatureType.volume();
+			float viscosityFraction = supplier.getMaxStillViscosityInVolume(creatureBaseLocation, volume);
+			
+			EntityLocation environmentalVelocity = EntityMovementHelpers.getEnvironmentalVector(env, previousBlockLookUp, creatureBaseLocation, volume);
+			float walkingBlocksPerSecond = creatureType.blocksPerSecond();
+			change = EntityActionSimpleMove.moveTowardTarget(creatureBaseLocation
+				, creatureVelocity
+				, environmentalVelocity
+				, viscosityFraction
+				, targetBase
+				, walkingBlocksPerSecond
+				, intensity
+				, millisPerTick
+			);
+			
+			// Test if this action would actually apply, given what we know about the world.
+			TickProcessingContext fakeContext = new TickProcessingContext(0L
+				, previousBlockLookUp
+				, null
+				, null
+				, null
+				, null
+				, null
+				, null
+				, null
+				, null
+				, null
+				, null
+				, null
+				, null
+				, millisPerTick
+				, 0L
+			);
+			MutableCreature fakeEntity = MutableCreature.existing(CreatureEntity.create(-1, creatureType, creatureBaseLocation, 0L));
+			fakeEntity.newVelocity = creatureVelocity;
+			EntityMovementHelpers.HighLevelMovementResult result = change.applyChangeForResult(fakeContext, fakeEntity);
+			if (null != result)
+			{
+				if (result.horizontalCollision())
+				{
+					result = null;
+				}
+			}
+			if (groundConsistent && (null != result))
+			{
+				// We only allow this if we end standing on the ground.
+				boolean mustEndOnGround = SpatialHelpers.isStandingOnGround(supplier, creatureBaseLocation, volume);
+				if (mustEndOnGround && !SpatialHelpers.isStandingOnGround(supplier, result.location(), volume))
+				{
+					result = null;
+				}
+			}
+			
+			if (null == result)
+			{
+				// We hit something so we want to fail out.
+				change = null;
+			}
+		}
+		return change;
 	}
 
 

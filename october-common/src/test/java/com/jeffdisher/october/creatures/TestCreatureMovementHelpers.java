@@ -273,7 +273,7 @@ public class TestCreatureMovementHelpers
 		mutable.newVelocity = new EntityLocation(0.54f, 0.2f, 0.0f);
 		FacingDirection directionHint = FacingDirection.WEST;
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.prepareForMove(previousBlockLookUp, mutable.newLocation, mutable.newVelocity, mutable.newType, directionHint, timeLimitMillis, EntityActionSimpleMove.Intensity.IDLE_CREATURE);
-		Assert.assertEquals("SimpleMove(IDLE_CREATURE), by -0.03, 0.00, Sub: null", change.toString());
+		Assert.assertEquals("SimpleMove(IDLE_CREATURE), by -0.02, -0.00, Sub: null", change.toString());
 		
 		// Make sure that this actually applies correctly.
 		boolean didApply = change.applyChange(context, mutable);
@@ -295,7 +295,7 @@ public class TestCreatureMovementHelpers
 		mutable.newVelocity = new EntityLocation(5.0f, 0.0f, 0.0f);
 		FacingDirection directionHint = FacingDirection.EAST;
 		EntityActionSimpleMove<MutableCreature> change = CreatureMovementHelpers.prepareForMove(previousBlockLookUp, mutable.newLocation, mutable.newVelocity, mutable.newType, directionHint, timeLimitMillis, EntityActionSimpleMove.Intensity.IDLE_CREATURE);
-		Assert.assertEquals("SimpleMove(IDLE_CREATURE), by 0.03, 0.00, Sub: null", change.toString());
+		Assert.assertEquals("SimpleMove(IDLE_CREATURE), by 0.02, 0.00, Sub: null", change.toString());
 		
 		// Make sure that this actually applies correctly.
 		boolean didApply = change.applyChange(context, mutable);
@@ -923,6 +923,88 @@ public class TestCreatureMovementHelpers
 			, FacingDirection.NORTH
 		);
 		Assert.assertEquals(northLocation, result);
+	}
+
+	@Test
+	public void findStepInCurrentBlock()
+	{
+		// Just some basic tests around findStepLocation when we are already standing in the target block.
+		EntityLocation creatureLocation = new EntityLocation(2.3f, 4.55f, 1.0f);
+		float width = 0.6f;
+		PathLocation targetBlock = PathLocation.forEntityBase(creatureLocation);
+		
+		FacingDirection direction = FacingDirection.WEST;
+		EntityLocation result = CreatureMovementHelpers.findStepLocation(creatureLocation
+			, width
+			, targetBlock
+			, direction
+		);
+		Assert.assertEquals(new EntityLocation(2.01f, 4.55f, 1.0f), result);
+		Assert.assertEquals(targetBlock, PathLocation.forEntityBase(result));
+		
+		direction = FacingDirection.EAST;
+		result = CreatureMovementHelpers.findStepLocation(creatureLocation
+			, width
+			, targetBlock
+			, direction
+		);
+		Assert.assertEquals(new EntityLocation(2.39f, 4.55f, 1.0f), result);
+		Assert.assertEquals(targetBlock, PathLocation.forEntityBase(result));
+		
+		direction = FacingDirection.SOUTH;
+		result = CreatureMovementHelpers.findStepLocation(creatureLocation
+			, width
+			, targetBlock
+			, direction
+		);
+		Assert.assertEquals(new EntityLocation(2.3f, 4.51f, 1.0f), result);
+		Assert.assertEquals(targetBlock, PathLocation.forEntityBase(result));
+		
+		direction = FacingDirection.NORTH;
+		result = CreatureMovementHelpers.findStepLocation(creatureLocation
+			, width
+			, targetBlock
+			, direction
+		);
+		Assert.assertEquals(new EntityLocation(2.3f, 4.89f, 1.0f), result);
+		Assert.assertEquals(targetBlock, PathLocation.forEntityBase(result));
+		
+		width = 1.8f;
+		direction = FacingDirection.WEST;
+		result = CreatureMovementHelpers.findStepLocation(creatureLocation
+			, width
+			, targetBlock
+			, direction
+		);
+		Assert.assertEquals(new EntityLocation(2.01f, 4.55f, 1.0f), result);
+		Assert.assertEquals(targetBlock, PathLocation.forEntityBase(result));
+		
+		direction = FacingDirection.EAST;
+		result = CreatureMovementHelpers.findStepLocation(creatureLocation
+			, width
+			, targetBlock
+			, direction
+		);
+		Assert.assertEquals(new EntityLocation(2.3f, 4.55f, 1.0f), result);
+		Assert.assertEquals(targetBlock, PathLocation.forEntityBase(result));
+		
+		direction = FacingDirection.SOUTH;
+		result = CreatureMovementHelpers.findStepLocation(creatureLocation
+			, width
+			, targetBlock
+			, direction
+		);
+		Assert.assertEquals(new EntityLocation(2.3f, 4.51f, 1.0f), result);
+		Assert.assertEquals(targetBlock, PathLocation.forEntityBase(result));
+		
+		direction = FacingDirection.NORTH;
+		result = CreatureMovementHelpers.findStepLocation(creatureLocation
+			, width
+			, targetBlock
+			, direction
+		);
+		Assert.assertEquals(new EntityLocation(2.3f, 4.69f, 1.0f), result);
+		Assert.assertEquals(targetBlock, PathLocation.forEntityBase(result));
 	}
 
 
