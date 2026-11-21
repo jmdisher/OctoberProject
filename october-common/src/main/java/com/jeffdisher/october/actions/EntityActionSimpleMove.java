@@ -12,7 +12,6 @@ import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.pathing.PathLocation;
 import com.jeffdisher.october.subactions.EntitySubActionType;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
@@ -85,7 +84,7 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 	 * startLocation.  Note that it may take several steps to reach targetBase and the returned action will only be the
 	 * first valid step.  Internally, this uses the same logic as the applyChange() would use, hence meaning that the
 	 * returned value should be apply without issue (although it may collide with barriers).
-	 * Asserts that the startLocation is NOT the targetBase and that both locations share a PathLocation Z-level.
+	 * Asserts that the startLocation is NOT the targetBase.
 	 * 
 	 * @param <T> The Entity type.
 	 * @param startLocation The base location where the entity is currently standing.
@@ -113,9 +112,6 @@ public class EntityActionSimpleMove<T extends IMutableMinimalEntity> implements 
 		// The caller should be determining that there is a move to make before it calls us.
 		// If we aren't moving, we won't create anything (even though the passive environment may still move us from our target).
 		Assert.assertTrue(!startLocation.equals(targetBase));
-		
-		// We can only use this helper for horizontal movement within the same PathLocation Z-level.
-		Assert.assertTrue(0 == PathLocation.adjacentStepsZ(PathLocation.forEntityBase(startLocation), PathLocation.forEntityBase(targetBase)));
 		
 		// Account for the effect of our initial velocity and environmental velocity on how to interpret our start.
 		EntityLocation preVelocity = EntityMovementHelpers.saturateVectorAddition(startingVelocity, environmentalVelocity);
