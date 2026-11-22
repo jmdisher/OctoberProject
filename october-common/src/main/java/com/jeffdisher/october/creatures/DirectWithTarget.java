@@ -2,6 +2,7 @@ package com.jeffdisher.october.creatures;
 
 import com.jeffdisher.october.actions.EntityActionSimpleMove;
 import com.jeffdisher.october.logic.EntityCollection;
+import com.jeffdisher.october.pathing.PathLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -82,7 +83,7 @@ public class DirectWithTarget implements CreatureEntity.IMovementPlan
 			// Handle the case where we are no longer on the same Z-level as our direct target.
 			// NOTE:  In this implementation, we always assume that we are walking directly toward the target.
 			EntityLocation directLocation = _targetPreviousLocation;
-			if (mutable.newLocation.getBlockLocation().z() != directLocation.getBlockLocation().z())
+			if (0 != PathLocation.adjacentStepsZ(PathLocation.forEntityBase(mutable.newLocation), PathLocation.forEntityBase(directLocation)))
 			{
 				mutable.movementPlan = null;
 			}

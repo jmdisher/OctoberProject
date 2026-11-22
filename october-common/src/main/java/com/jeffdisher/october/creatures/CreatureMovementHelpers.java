@@ -347,10 +347,19 @@ public class CreatureMovementHelpers
 			float distanceY = entityEnd.y() - entityStart.y();
 			EntityLocation totalDistanceToMove = new EntityLocation(distanceX, distanceY, 0.0f);
 			
+			// NOTE:  We only ever want direct paths to be walking directly on a surface (the creature might currently be mid-air).
+			EntityLocation groundCreatureLocation = new EntityLocation(creatureLocation.x()
+				, creatureLocation.y()
+				, entityStart.z()
+			);
+			
 			// Run the move (helper.result is null if colliding).
 			_NoCollideHelper helper = new _NoCollideHelper(supplier);
-			EntityMovementHelpers.interactiveEntityMove(creatureLocation, volume, totalDistanceToMove, helper);
+			EntityMovementHelpers.interactiveEntityMove(groundCreatureLocation, volume, totalDistanceToMove, helper);
 			directTarget = helper.result;
+			
+			// Given that we started and ended on a flat Z-level, this target must also have that level.
+			Assert.assertTrue((null == directTarget) || (entityStart.z() == directTarget.z()));
 		}
 		else
 		{
