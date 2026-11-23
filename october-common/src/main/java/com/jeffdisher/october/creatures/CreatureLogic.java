@@ -152,7 +152,7 @@ public class CreatureLogic
 				// See if there is some deliberate plan to take.
 				if (null == mutable.movementPlan)
 				{
-					EntityType.TargetEntity newTarget = type.extension().findDeliberateTarget(mutable, entityCollection);
+					EntityType.TargetEntity newTarget = type.extension().findDeliberateTarget(mutable, context, entityCollection);
 					if (null != newTarget)
 					{
 						CreatureEntity.IMovementPlan movementPlan = _createDeliberatePlanToTarget(context, reader, type, currentLocation, newTarget);
@@ -293,7 +293,7 @@ public class CreatureLogic
 		CreatureEntity.IMovementPlan movementPlan = null;
 		if (null != path)
 		{
-			int targetEntityId = newTarget.id();
+			int optionalEntityId = newTarget.optionalId();
 			// We want to strip away the first step, since it is the current location.
 			path.remove(0);
 			
@@ -304,16 +304,37 @@ public class CreatureLogic
 				
 				if (null != directLocation)
 				{
-					movementPlan = new DirectWithDistantTarget(directLocation, targetEntityId, targetLocation);
+					if (CreatureEntity.NO_TARGET_ENTITY_ID == optionalEntityId)
+					{
+						movementPlan = new DirectNoTarget(directLocation, EntityActionSimpleMove.Intensity.WALKING);
+					}
+					else
+					{
+						movementPlan = new DirectWithDistantTarget(directLocation, optionalEntityId, targetLocation);
+					}
 				}
 				else
 				{
-					movementPlan = new PlanWithTarget(Collections.unmodifiableList(path), targetEntityId, targetLocation);
+					if (CreatureEntity.NO_TARGET_ENTITY_ID == optionalEntityId)
+					{
+						movementPlan = new PlanNoTarget(Collections.unmodifiableList(path), EntityActionSimpleMove.Intensity.WALKING);
+					}
+					else
+					{
+						movementPlan = new PlanWithTarget(Collections.unmodifiableList(path), optionalEntityId, targetLocation);
+					}
 				}
 			}
 			else
 			{
-				movementPlan = new DirectWithTarget(targetEntityId, targetLocation);
+				if (CreatureEntity.NO_TARGET_ENTITY_ID == optionalEntityId)
+				{
+					movementPlan = new DirectNoTarget(targetLocation, EntityActionSimpleMove.Intensity.WALKING);
+				}
+				else
+				{
+					movementPlan = new DirectWithTarget(optionalEntityId, targetLocation);
+				}
 			}
 		}
 		return movementPlan;

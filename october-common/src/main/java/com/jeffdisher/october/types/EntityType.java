@@ -62,13 +62,15 @@ public record EntityType(byte number
 		public void writeExtendedData(ByteBuffer buffer, Object extendedData, long gameTimeMillis);
 		
 		/**
-		 * Finds a target for deliberate path creation, returning null if one couldn't be found.
+		 * Finds a target for deliberate path creation, returning null if one couldn't be found.  Note that the target
+		 * may only be a location, with CreatureEntity.NO_TARGET_ENTITY_ID as the actual ID.
 		 * 
 		 * @param creature The MutableCreature instance.
+		 * @param context The current tick context.
 		 * @param entityCollection The current entities in the world.
 		 * @return The target entity.
 		 */
-		public TargetEntity findDeliberateTarget(MutableCreature creature, EntityCollection entityCollection);
+		public TargetEntity findDeliberateTarget(MutableCreature creature, TickProcessingContext context, EntityCollection entityCollection);
 		/**
 		 * Checks if the current target entity is valid (the implementation can assume one is selected).
 		 * 
@@ -135,6 +137,8 @@ public record EntityType(byte number
 
 	/**
 	 * A special tuple type used by IBehaviourTemplate.
+	 * Note that, while this is typically used to refer to a specific entity, it is permitted for it just to refer to a
+	 * location, setting optionalId to CreatureEntity.NO_TARGET_ENTITY_ID.
 	 */
-	public static record TargetEntity(int id, EntityLocation location) {}
+	public static record TargetEntity(int optionalId, EntityLocation location) {}
 }

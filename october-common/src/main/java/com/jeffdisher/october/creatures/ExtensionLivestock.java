@@ -74,7 +74,7 @@ public class ExtensionLivestock implements EntityType.IExtension
 	}
 
 	@Override
-	public EntityType.TargetEntity findDeliberateTarget(MutableCreature creature, EntityCollection entityCollection)
+	public EntityType.TargetEntity findDeliberateTarget(MutableCreature creature, TickProcessingContext context, EntityCollection entityCollection)
 	{
 		// This is livestock so choose our target based on whether we are looking for a partner or food.
 		EntityType.TargetEntity newTarget;

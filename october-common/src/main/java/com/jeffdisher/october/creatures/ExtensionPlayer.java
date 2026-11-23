@@ -42,7 +42,7 @@ public class ExtensionPlayer implements EntityType.IExtension
 	}
 
 	@Override
-	public EntityType.TargetEntity findDeliberateTarget(MutableCreature creature, EntityCollection entityCollection)
+	public EntityType.TargetEntity findDeliberateTarget(MutableCreature creature, TickProcessingContext context, EntityCollection entityCollection)
 	{
 		throw Assert.unreachable();
 	}

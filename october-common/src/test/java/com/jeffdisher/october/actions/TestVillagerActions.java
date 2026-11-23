@@ -421,10 +421,14 @@ public class TestVillagerActions
 		
 		// Show that the forester will enter this mode to purchase a tool when asked to find a target.
 		ExtensionVillager extension = (ExtensionVillager) mutable.newType.extension();
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(1L)
+			.finish()
+		;
 		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(), Map.of(-1, toolMutable.freeze(), -2, mutable.freeze()));
 		
-		EntityType.TargetEntity target = extension.findDeliberateTarget(mutable, entityCollection);
-		Assert.assertEquals(toolMutable.getId(), target.id());
+		EntityType.TargetEntity target = extension.findDeliberateTarget(mutable, context, entityCollection);
+		Assert.assertEquals(toolMutable.getId(), target.optionalId());
 		Assert.assertEquals(toolMutable.getLocation(), target.location());
 		Assert.assertEquals(STONE_HATCHET, ((ExtensionVillager.Data)mutable.newExtendedData).itemToPurchase());
 	}
@@ -483,13 +487,17 @@ public class TestVillagerActions
 		
 		// Show that they both target each other.
 		ExtensionVillager extension = (ExtensionVillager) mutable.newType.extension();
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(1L)
+			.finish()
+		;
 		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(), Map.of(-1, toolMutable.freeze(), -2, mutable.freeze()));
 		
-		EntityType.TargetEntity toolTarget = extension.findDeliberateTarget(toolMutable, entityCollection);
-		EntityType.TargetEntity foresterTarget = extension.findDeliberateTarget(mutable, entityCollection);
-		Assert.assertEquals(mutable.getId(), toolTarget.id());
+		EntityType.TargetEntity toolTarget = extension.findDeliberateTarget(toolMutable, context, entityCollection);
+		EntityType.TargetEntity foresterTarget = extension.findDeliberateTarget(mutable, context, entityCollection);
+		Assert.assertEquals(mutable.getId(), toolTarget.optionalId());
 		Assert.assertEquals(mutable.newLocation, toolTarget.location());
-		Assert.assertEquals(toolMutable.getId(), foresterTarget.id());
+		Assert.assertEquals(toolMutable.getId(), foresterTarget.optionalId());
 		Assert.assertEquals(toolMutable.newLocation, foresterTarget.location());
 		
 		// Normally, CreatureLogic creates the movement plan which we will rely on to determine our target so create that, now.
@@ -503,7 +511,7 @@ public class TestVillagerActions
 		);
 		CommonChangeSink sink = new CommonChangeSink(null, map.keySet(), null);
 		EntityLocation[] out_spawn = new EntityLocation[1];
-		TickProcessingContext context = ContextBuilder.build()
+		context = ContextBuilder.build()
 			.tick(1L)
 			.lookups(null, new TickProcessingContext.IEntitySearch() {
 				@Override

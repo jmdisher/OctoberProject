@@ -140,7 +140,7 @@ public class ExtensionVillager implements EntityType.IExtension
 	}
 
 	@Override
-	public EntityType.TargetEntity findDeliberateTarget(MutableCreature creature, EntityCollection entityCollection)
+	public EntityType.TargetEntity findDeliberateTarget(MutableCreature creature, TickProcessingContext context, EntityCollection entityCollection)
 	{
 		EntityType.TargetEntity newTarget;
 		if (_breeding.isMutableInLoveMode(creature))
