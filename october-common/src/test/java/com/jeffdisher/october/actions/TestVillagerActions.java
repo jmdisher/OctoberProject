@@ -379,14 +379,13 @@ public class TestVillagerActions
 		ExtensionVillager extension = (ExtensionVillager)mutable.getType().extension();
 		
 		mutable.nextActionMillis = 2L * ContextBuilder.DEFAULT_MILLIS_PER_TICK;
-		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER
-			, Map.of(STONE_HATCHET, 1
+		mutable.newExtendedData = ExtensionVillager.DataBuilder.existing(extension.buildDefaultExtendedData(0L))
+			.profession(FORESTER)
+			.inventory(Map.of(STONE_HATCHET, 1
 				, SAPLING, 5
-			)
-			, null
-			, new CommonBreedingLogic(null).buildDefault()
-			, 0
-		);
+			))
+			.finish()
+		;
 		
 		// This should fail when still on cooldown.
 		_SingleEventSink events = new _SingleEventSink();
@@ -415,10 +414,10 @@ public class TestVillagerActions
 	{
 		// Show that a villager will find a nearby villager who is selling something they need, if they don't have any of a recipe's crafted outputs.
 		MutableCreature toolMutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(7.0f, 7.0f, 5.0f), 1000L));
-		toolMutable.newExtendedData = ExtensionVillager.test_createData(TOOL_SMITH, Map.of(STONE_HATCHET, 1));
+		toolMutable.newExtendedData = _data(TOOL_SMITH, Map.of(STONE_HATCHET, 1));
 		
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-2, VILLAGER, new EntityLocation(5.0f, 5.0f, 5.0f), 1000L));
-		mutable.newExtendedData = ExtensionVillager.test_createData(FORESTER, Map.of(SAPLING, 5));
+		mutable.newExtendedData = _data(FORESTER, Map.of(SAPLING, 5));
 		
 		// Show that the forester will enter this mode to purchase a tool when asked to find a target.
 		ExtensionVillager extension = (ExtensionVillager) mutable.newType.extension();
@@ -435,16 +434,16 @@ public class TestVillagerActions
 	{
 		// Show that a villager targeting another will send the buy order for its goods when it is within range.
 		MutableCreature toolMutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(6.0f, 6.0f, 5.0f), 1000L));
-		toolMutable.newExtendedData = ExtensionVillager.test_createData(TOOL_SMITH, Map.of(STONE_HATCHET, 1));
+		toolMutable.newExtendedData = _data(TOOL_SMITH, Map.of(STONE_HATCHET, 1));
 		
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-2, VILLAGER, new EntityLocation(5.5f, 5.5f, 5.0f), 1000L));
 		mutable.movementPlan = new DirectWithTarget(toolMutable.getId(), toolMutable.newLocation);
-		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER
-			, Map.of(SAPLING, 5)
-			, STONE_HATCHET
-			, new CommonBreedingLogic(null).buildDefault()
-			, 0
-		);
+		mutable.newExtendedData = ExtensionVillager.DataBuilder.existing((ExtensionVillager.Data)VILLAGER.extension().buildDefaultExtendedData(0L))
+			.profession(FORESTER)
+			.inventory(Map.of(SAPLING, 5))
+			.purchase(STONE_HATCHET)
+			.finish()
+		;
 		
 		// We should see the action sent to the tool smith and the purchase plan disappear.
 		ExtensionVillager extension = (ExtensionVillager) mutable.newType.extension();
@@ -470,19 +469,17 @@ public class TestVillagerActions
 		// Show that the final steps in the breeding operations work correctly with villagers, when the breeding state is set for the test.
 		// Define 2 villagers in love mode.
 		MutableCreature toolMutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(6.0f, 6.0f, 5.0f), 1000L));
-		toolMutable.newExtendedData = new ExtensionVillager.Data(TOOL_SMITH
-			, Map.of()
-			, null
-			, new CommonBreedingLogic.Data(true, null, 0L)
-			, 0
-		);
+		toolMutable.newExtendedData = ExtensionVillager.DataBuilder.existing((ExtensionVillager.Data)VILLAGER.extension().buildDefaultExtendedData(0L))
+			.profession(TOOL_SMITH)
+			.breeding(new CommonBreedingLogic.Data(true, null, 0L))
+			.finish()
+		;
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-2, VILLAGER, new EntityLocation(5.5f, 5.5f, 5.0f), 1000L));
-		mutable.newExtendedData = new ExtensionVillager.Data(FORESTER
-			, Map.of()
-			, null
-			, new CommonBreedingLogic.Data(true, null, 0L)
-			, 0
-		);
+		mutable.newExtendedData = ExtensionVillager.DataBuilder.existing((ExtensionVillager.Data)VILLAGER.extension().buildDefaultExtendedData(0L))
+			.profession(FORESTER)
+			.breeding(new CommonBreedingLogic.Data(true, null, 0L))
+			.finish()
+		;
 		
 		// Show that they both target each other.
 		ExtensionVillager extension = (ExtensionVillager) mutable.newType.extension();
@@ -548,30 +545,29 @@ public class TestVillagerActions
 		// Show that an entity will eat food in its inventory to enter love mode if not crowded.
 		Item bread = ENV.items.getItemById("op.bread");
 		MutableCreature noFoodMutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(6.0f, 6.0f, 5.0f), 1000L));
-		noFoodMutable.newExtendedData = new ExtensionVillager.Data(TOOL_SMITH
-			, Map.of()
-			, null
-			, new CommonBreedingLogic.Data(false, null, 0L)
-			, 0
-		);
+		noFoodMutable.newExtendedData = ExtensionVillager.DataBuilder.existing((ExtensionVillager.Data)VILLAGER.extension().buildDefaultExtendedData(0L))
+			.profession(TOOL_SMITH)
+			.breeding(new CommonBreedingLogic.Data(false, null, 0L))
+			.finish()
+		;
 		MutableCreature someFoodMutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 6.0f, 5.0f), 1000L));
-		someFoodMutable.newExtendedData = new ExtensionVillager.Data(TOOL_SMITH
-			, Map.of(bread, 1
+		someFoodMutable.newExtendedData = ExtensionVillager.DataBuilder.existing((ExtensionVillager.Data)VILLAGER.extension().buildDefaultExtendedData(0L))
+			.profession(TOOL_SMITH)
+			.inventory(Map.of(bread, 1
 				, APPLE, 2
-			)
-			, null
-			, new CommonBreedingLogic.Data(false, null, 0L)
-			, 0
-		);
+			))
+			.breeding(new CommonBreedingLogic.Data(false, null, 0L))
+			.finish()
+		;
 		MutableCreature muchFoodMutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(6.0f, 5.0f, 5.0f), 1000L));
-		muchFoodMutable.newExtendedData = new ExtensionVillager.Data(TOOL_SMITH
-			, Map.of(bread, 9
+		muchFoodMutable.newExtendedData = ExtensionVillager.DataBuilder.existing((ExtensionVillager.Data)VILLAGER.extension().buildDefaultExtendedData(0L))
+			.profession(TOOL_SMITH)
+			.inventory(Map.of(bread, 9
 				, APPLE, 8
-			)
-			, null
-			, new CommonBreedingLogic.Data(false, null, 0L)
-			, 0
-		);
+			))
+			.breeding(new CommonBreedingLogic.Data(false, null, 0L))
+			.finish()
+		;
 		
 		ExtensionVillager extension = (ExtensionVillager) noFoodMutable.newType.extension();
 		TickProcessingContext context = ContextBuilder.build()
@@ -607,13 +603,14 @@ public class TestVillagerActions
 	{
 		// Show that an entity will not begin to eat anything in its inventory if there are too many villagers and babies around them.
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 6.0f, 5.0f), 1000L));
-		mutable.newExtendedData = new ExtensionVillager.Data(TOOL_SMITH
-			, Map.of(APPLE, 2
-			)
-			, null
-			, new CommonBreedingLogic.Data(false, null, 0L)
-			, 10
-		);
+		mutable.newExtendedData = ExtensionVillager.DataBuilder.existing((ExtensionVillager.Data)VILLAGER.extension().buildDefaultExtendedData(0L))
+			.profession(TOOL_SMITH)
+			.inventory(Map.of(APPLE, 2
+			))
+			.breeding(new CommonBreedingLogic.Data(false, null, 0L))
+			.foodValue(10)
+			.finish()
+		;
 		EntityType babyType = ENV.creatures.getTypeById("op.villager_baby");
 		CreatureEntity baby = CreatureEntity.create(-1, babyType, new EntityLocation(6.0f, 6.0f, 5.0f), 1000L);
 		
@@ -648,7 +645,7 @@ public class TestVillagerActions
 	{
 		// Show that a villager will decay one of its crafting outputs, if high enough in quantity, and if they have nothing else to do.
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 5.0f, 5.0f), 1000L));
-		mutable.newExtendedData = ExtensionVillager.test_createData(FORESTER, Map.of(LOG, 10, STICK, 4, SAPLING, 8));
+		mutable.newExtendedData = _data(FORESTER, Map.of(LOG, 10, STICK, 4, SAPLING, 8));
 		
 		// We should decay the log until it reaches our output level, but never touch the stick or sapling.
 		ExtensionVillager extension = (ExtensionVillager) mutable.newType.extension();
@@ -679,9 +676,9 @@ public class TestVillagerActions
 	{
 		// Show the combined trade offer mapping helper with different starting inventories.
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(5.0f, 5.0f, 5.0f), 1000L));
-		mutable.newExtendedData = ExtensionVillager.test_createData(FORESTER, FORESTER.targetInventory());
+		mutable.newExtendedData = _data(FORESTER, FORESTER.targetInventory());
 		CreatureEntity full = mutable.freeze();
-		mutable.newExtendedData = ExtensionVillager.test_createData(FORESTER, Map.of());
+		mutable.newExtendedData = _emptyData(FORESTER);
 		CreatureEntity empty = mutable.freeze();
 		
 		// Full, we should only see the villager wanting to sell.
@@ -733,12 +730,19 @@ public class TestVillagerActions
 
 	private static ExtensionVillager.Data _emptyData(TradingRegistry.Profession profession)
 	{
-		return ExtensionVillager.test_createData(profession, Map.of());
+		return ExtensionVillager.DataBuilder.existing((ExtensionVillager.Data)VILLAGER.extension().buildDefaultExtendedData(0L))
+			.profession(profession)
+			.finish()
+		;
 	}
 
 	private static ExtensionVillager.Data _data(TradingRegistry.Profession profession, Map<Item, Integer> inventory)
 	{
-		return ExtensionVillager.test_createData(profession, inventory);
+		return ExtensionVillager.DataBuilder.existing((ExtensionVillager.Data)VILLAGER.extension().buildDefaultExtendedData(0L))
+			.profession(profession)
+			.inventory(inventory)
+			.finish()
+		;
 	}
 
 

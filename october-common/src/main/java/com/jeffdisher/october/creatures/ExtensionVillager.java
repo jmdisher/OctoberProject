@@ -56,14 +56,15 @@ public class ExtensionVillager implements EntityType.IExtension
 	}
 	
 	@Override
-	public Object buildDefaultExtendedData(long gameTimeMillis)
+	public Data buildDefaultExtendedData(long gameTimeMillis)
 	{
 		// By default, the profession is null since we base it on our surroundings.
 		return new Data(null
 			, Map.of()
-			, null
 			, _breeding.buildDefault()
 			, 0
+			
+			, null
 		);
 	}
 
@@ -92,19 +93,20 @@ public class ExtensionVillager implements EntityType.IExtension
 			Assert.assertTrue(null == old);
 		}
 		
-		// We never store the item we want to purchase since it depends on the movement plan.
-		Item itemToPurchase = null;
-		
 		// We do store the breeding data, but that is a common external type.
 		CommonBreedingLogic.Data breeding = _breeding.readData(buffer, gameTimeMillis);
 		
 		int foodValueInStomach = buffer.getInt();
 		
+		// We never store the item we want to purchase since it depends on the movement plan.
+		Item itemToPurchase = null;
+		
 		return new Data(profession
 			, Collections.unmodifiableMap(map)
-			, itemToPurchase
 			, breeding
 			, foodValueInStomach
+			
+			, itemToPurchase
 		);
 	}
 
@@ -128,12 +130,13 @@ public class ExtensionVillager implements EntityType.IExtension
 			buffer.putInt(count);
 		}
 		
-		// We never store the item we want to purchase since it depends on the movement plan.
-		
 		// We do store the common breeding data, though.
 		_breeding.writeData(buffer, safe.breeding, gameTimeMillis);
 		
 		buffer.putInt(safe.foodValueInStomach);
+		
+		// All other data is ephemeral so we don't persist it.
+		// -Item itemToPurchase
 	}
 
 	@Override
@@ -229,12 +232,7 @@ public class ExtensionVillager implements EntityType.IExtension
 		if (null != dataIfChanged)
 		{
 			Data data = (Data) creature.newExtendedData;
-			creature.newExtendedData = new Data(data.profession
-				, data.inventory
-				, data.itemToPurchase
-				, dataIfChanged
-				, data.foodValueInStomach
-			);
+			creature.newExtendedData = DataBuilder.existing(data).breeding(dataIfChanged).finish();
 			didBecomePregnant = true;
 		}
 		return didBecomePregnant;
@@ -295,12 +293,7 @@ public class ExtensionVillager implements EntityType.IExtension
 			// Update our inventory.
 			Map<Item, Integer> newInventory = new HashMap<>(data.inventory());
 			newInventory.put(itemTypeToBuy, currentCount + 1);
-			villager.newExtendedData = new ExtensionVillager.Data(profession
-				, Collections.unmodifiableMap(newInventory)
-				, data.itemToPurchase
-				, data.breeding
-				, data.foodValueInStomach
-			);
+			villager.newExtendedData = DataBuilder.existing(data).inventory(newInventory).finish();
 			
 			// Send back the coins.
 			coinsToReturn = profession.buyOffers().get(itemTypeToBuy);
@@ -349,12 +342,7 @@ public class ExtensionVillager implements EntityType.IExtension
 			{
 				newInventory.remove(itemToRequest);
 			}
-			villager.newExtendedData = new ExtensionVillager.Data(profession
-				, Collections.unmodifiableMap(newInventory)
-				, data.itemToPurchase
-				, data.breeding
-				, data.foodValueInStomach
-			);
+			villager.newExtendedData = DataBuilder.existing(data).inventory(newInventory).finish();
 			
 			// Package up what we should send them.
 			if (env.durability.isStackable(itemToRequest))
@@ -401,30 +389,7 @@ public class ExtensionVillager implements EntityType.IExtension
 		newMap.put(itemType, newCount);
 		
 		// If this is a response to a buy request, we would have already cleared that when we sent it.
-		villager.newExtendedData = new ExtensionVillager.Data(profession
-			, Collections.unmodifiableMap(newMap)
-			, data.itemToPurchase
-			, data.breeding
-			, data.foodValueInStomach
-		);
-	}
-
-	/**
-	 * A utility method so that tests can instantiate a Data object for the common cases without needing to be updated
-	 * whenever new data is added to the structure.
-	 * 
-	 * @param profession The profession of store.
-	 * @param inventory The inventory to store.
-	 * @return The new Data object.
-	 */
-	public static Data test_createData(TradingRegistry.Profession profession, Map<Item, Integer> inventory)
-	{
-		return new Data(profession
-			, inventory
-			, null
-			, new CommonBreedingLogic(null).buildDefault()
-			, 0
-		);
+		villager.newExtendedData = DataBuilder.existing(data).inventory(newMap).finish();
 	}
 
 
@@ -619,12 +584,7 @@ public class ExtensionVillager implements EntityType.IExtension
 			
 			if (null != itemToBuy[0])
 			{
-				creature.newExtendedData = new Data(safe.profession
-					, safe.inventory
-					, itemToBuy[0]
-					, safe.breeding
-					, safe.foodValueInStomach
-				);
+				creature.newExtendedData = DataBuilder.existing(safe).purchase(itemToBuy[0]).finish();
 			}
 		}
 		
@@ -643,12 +603,7 @@ public class ExtensionVillager implements EntityType.IExtension
 			Assert.assertTrue(!didTakeAction);
 			
 			TradingRegistry.Profession choice = _selectDefaultProfession(entityCollection, creature.newType, creature.newLocation);
-			creature.newExtendedData = new Data(choice
-				, data.inventory
-				, data.itemToPurchase
-				, data.breeding
-				, data.foodValueInStomach
-			);
+			creature.newExtendedData = DataBuilder.existing(data).profession(choice).finish();
 			didTakeAction = true;
 		}
 		return didTakeAction;
@@ -672,12 +627,7 @@ public class ExtensionVillager implements EntityType.IExtension
 		if (null != ifChanged)
 		{
 			Data data = (Data) creature.newExtendedData;
-			creature.newExtendedData = new Data(data.profession
-				, data.inventory
-				, data.itemToPurchase
-				, ifChanged
-				, data.foodValueInStomach
-			);
+			creature.newExtendedData = DataBuilder.existing(data).breeding(ifChanged).finish();
 		}
 		boolean didTakeAction = (null != ifChanged);
 		
@@ -750,12 +700,12 @@ public class ExtensionVillager implements EntityType.IExtension
 							? updated
 							: data.breeding
 						;
-						creature.newExtendedData = new Data(data.profession
-							, Collections.unmodifiableMap(newInventory)
-							, data.itemToPurchase
-							, breeding
-							, foodValueInStomach
-						);
+						creature.newExtendedData = DataBuilder.existing(data)
+							.inventory(newInventory)
+							.breeding(breeding)
+							.foodValue(foodValueInStomach)
+							.finish()
+						;
 						didTakeAction = true;
 					}
 				}
@@ -787,12 +737,11 @@ public class ExtensionVillager implements EntityType.IExtension
 			));
 		}
 		
-		creature.newExtendedData = new Data(profession
-			, inventory
-			, data.itemToPurchase
-			, data.breeding
-			, data.foodValueInStomach
-		);
+		creature.newExtendedData = DataBuilder.existing(data)
+			.profession(profession)
+			.inventory(inventory)
+			.finish()
+		;
 		
 		boolean didTakeAction = (null != chosenCraft);
 		return didTakeAction;
@@ -844,23 +793,13 @@ public class ExtensionVillager implements EntityType.IExtension
 					creature.movementPlan = null;
 					// TODO:  Remove this reset of the movement plan once the call into this is split into a different path.
 					creature.nextMovementPlanMillis = context.currentTickTimeMillis + CreatureMovementHelpers.MINIMUM_MILLIS_TO_ACTION;
-					creature.newExtendedData = new Data(data.profession
-						, data.inventory
-						, null
-						, data.breeding
-						, data.foodValueInStomach
-					);
+					creature.newExtendedData = DataBuilder.existing(data).purchase(null).finish();
 					didTakeAction = true;
 				}
 			}
 			else
 			{
-				creature.newExtendedData = new Data(data.profession
-					, data.inventory
-					, null
-					, data.breeding
-					, data.foodValueInStomach
-				);
+				creature.newExtendedData = DataBuilder.existing(data).purchase(null).finish();
 			}
 		}
 		return didTakeAction;
@@ -904,12 +843,7 @@ public class ExtensionVillager implements EntityType.IExtension
 			Assert.assertTrue(count > 1);
 			
 			mutable.put(toDecay, count - 1);
-			creature.newExtendedData = new Data(profession
-				, Collections.unmodifiableMap(mutable)
-				, data.itemToPurchase
-				, data.breeding
-				, data.foodValueInStomach
-			);
+			creature.newExtendedData = DataBuilder.existing(data).inventory(mutable).finish();
 			didTakeAction = true;
 		}
 		return didTakeAction;
@@ -920,12 +854,80 @@ public class ExtensionVillager implements EntityType.IExtension
 	// The inventory is just a map since it doesn't care about non-stackable properties, just the total number of items.
 	public static record Data(TradingRegistry.Profession profession
 		, Map<Item, Integer> inventory
-		// The item we want to purchase from our target villager.
-		, Item itemToPurchase
 		// Villagers can breed so we also use embed related data here.
 		, CommonBreedingLogic.Data breeding
 		// When entering love mode, the villager needs to eat and this is that accumulated food value (reduced when love
 		// mode triggered).
 		, int foodValueInStomach
+		
+		// Data below here is local ephemeral (not persisted to disk, nor sent over the network).
+		// The item we want to purchase from our target villager.
+		, Item itemToPurchase
 	) {}
+
+	public static class DataBuilder
+	{
+		public static DataBuilder existing(Data existing)
+		{
+			return new DataBuilder(existing.profession
+				, existing.inventory
+				, existing.breeding
+				, existing.foodValueInStomach
+				, existing.itemToPurchase
+			);
+		}
+		private TradingRegistry.Profession _profession;
+		private Map<Item, Integer> _inventory;
+		private CommonBreedingLogic.Data _breeding;
+		private int _foodValueInStomach;
+		private Item _itemToPurchase;
+	
+		private DataBuilder(TradingRegistry.Profession profession
+			, Map<Item, Integer> inventory
+			, CommonBreedingLogic.Data breeding
+			, int foodValueInStomach
+			, Item itemToPurchase
+		)
+		{
+			_profession = profession;
+			_inventory = inventory;
+			_breeding = breeding;
+			_foodValueInStomach = foodValueInStomach;
+			_itemToPurchase = itemToPurchase;
+		}
+		public Data finish()
+		{
+			return new Data(_profession
+				, _inventory
+				, _breeding
+				, _foodValueInStomach
+				, _itemToPurchase
+			);
+		}
+		public DataBuilder profession(TradingRegistry.Profession profession)
+		{
+			_profession = profession;
+			return this;
+		}
+		public DataBuilder inventory(Map<Item, Integer> inventory)
+		{
+			_inventory = Collections.unmodifiableMap(inventory);
+			return this;
+		}
+		public DataBuilder breeding(CommonBreedingLogic.Data breeding)
+		{
+			_breeding = breeding;
+			return this;
+		}
+		public DataBuilder foodValue(int foodValueInStomach)
+		{
+			_foodValueInStomach = foodValueInStomach;
+			return this;
+		}
+		public DataBuilder purchase(Item itemToPurchase)
+		{
+			_itemToPurchase = itemToPurchase;
+			return this;
+		}
+	}
 }

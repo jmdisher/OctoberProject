@@ -3060,7 +3060,10 @@ public class TestTickRunner
 		
 		int villagerId = -1;
 		MutableCreature mutCreature = MutableCreature.existing(CreatureEntity.create(villagerId, villagerType, new EntityLocation(11.0f, 10.0f, 1.0f), 0L));
-		mutCreature.newExtendedData = ExtensionVillager.test_createData(profession, Map.of());
+		mutCreature.newExtendedData = ExtensionVillager.DataBuilder.existing((ExtensionVillager.Data)villagerType.extension().buildDefaultExtendedData(0L))
+			.profession(profession)
+			.finish()
+		;
 		CreatureEntity villager = mutCreature.freeze();
 		
 		Consumer<TickSnapshot> snapshotListener = (TickSnapshot completed) -> {};
@@ -3115,14 +3118,21 @@ public class TestTickRunner
 		
 		int foresterId = -1;
 		MutableCreature mutCreature = MutableCreature.existing(CreatureEntity.create(foresterId, villagerType, new EntityLocation(5.0f, 5.0f, 1.0f), 0L));
-		mutCreature.newExtendedData = ExtensionVillager.test_createData(foresterProfession, Map.of());
+		mutCreature.newExtendedData = ExtensionVillager.DataBuilder.existing((ExtensionVillager.Data)villagerType.extension().buildDefaultExtendedData(0L))
+			.profession(foresterProfession)
+			.finish()
+		;
 		// (set the time to action so we move immediately)
 		mutCreature.nextMovementPlanMillis = 0L;
 		CreatureEntity forester = mutCreature.freeze();
 		
 		int toolSmithId = -2;
 		mutCreature = MutableCreature.existing(CreatureEntity.create(toolSmithId, villagerType, new EntityLocation(5.5f, 5.5f, 1.0f), 0L));
-		mutCreature.newExtendedData = ExtensionVillager.test_createData(toolSmithProfession, Map.of(hatchet, 1));
+		mutCreature.newExtendedData = ExtensionVillager.DataBuilder.existing((ExtensionVillager.Data)villagerType.extension().buildDefaultExtendedData(0L))
+			.profession(toolSmithProfession)
+			.inventory(Map.of(hatchet, 1))
+			.finish()
+		;
 		CreatureEntity toolSmith = mutCreature.freeze();
 		
 		Consumer<TickSnapshot> snapshotListener = (TickSnapshot completed) -> {};

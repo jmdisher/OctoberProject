@@ -3652,11 +3652,21 @@ public class TestCommonChanges
 		Item coin = ENV.items.getItemById("op.coin");
 		
 		MutableCreature mutFarVillager = MutableCreature.existing(CreatureEntity.create(-1, villager, farLocation, 1000L));
-		mutFarVillager.newExtendedData = ExtensionVillager.test_createData(forester, Map.of());
+		mutFarVillager.newExtendedData = ExtensionVillager.DataBuilder.existing((ExtensionVillager.Data)villager.extension().buildDefaultExtendedData(0L))
+			.profession(forester)
+			.finish()
+		;
 		MutableCreature mutSellLogVillager = MutableCreature.existing(CreatureEntity.create(-2, villager, closeLocation, 1000L));
-		mutSellLogVillager.newExtendedData = ExtensionVillager.test_createData(forester, Map.of(LOG_ITEM, 2));
+		mutSellLogVillager.newExtendedData = ExtensionVillager.DataBuilder.existing((ExtensionVillager.Data)villager.extension().buildDefaultExtendedData(0L))
+			.profession(forester)
+			.inventory(Map.of(LOG_ITEM, 2))
+			.finish()
+		;
 		MutableCreature mutBuyOrdersVillager = MutableCreature.existing(CreatureEntity.create(-3, villager, closeLocation, 1000L));
-		mutBuyOrdersVillager.newExtendedData = ExtensionVillager.test_createData(forester, Map.of());
+		mutBuyOrdersVillager.newExtendedData = ExtensionVillager.DataBuilder.existing((ExtensionVillager.Data)villager.extension().buildDefaultExtendedData(0L))
+			.profession(forester)
+			.finish()
+		;
 		
 		CreatureEntity farVillager = mutFarVillager.freeze();
 		CreatureEntity sellLogVillager = mutSellLogVillager.freeze();
