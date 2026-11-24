@@ -9,24 +9,30 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.TradingRegistry;
 import com.jeffdisher.october.creatures.CommonBreedingLogic;
 import com.jeffdisher.october.creatures.DirectWithTarget;
 import com.jeffdisher.october.creatures.ExtensionVillager;
 import com.jeffdisher.october.creatures.NearToTarget;
+import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.properties.PropertyRegistry;
 import com.jeffdisher.october.subactions.EntitySubActionSendTrade;
+import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
+import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EventRecord;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.IEntityAction;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.ItemSlot;
@@ -37,6 +43,7 @@ import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TargetedAction;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.CuboidGenerator;
 
 
 /**
@@ -733,6 +740,69 @@ public class TestVillagerActions
 		Assert.assertEquals(0, EntitySubActionSendTrade.findKeyOfAcceptableLocalItemToTrade(ENV, player, APPLE));
 		Assert.assertEquals(4, EntitySubActionSendTrade.findKeyOfAcceptableLocalItemToTrade(ENV, player, STONE_HATCHET));
 		Assert.assertEquals(0, EntitySubActionSendTrade.findKeyOfAcceptableLocalItemToTrade(ENV, player, sword));
+	}
+
+	@Test
+	public void findDoor()
+	{
+		// Shows that the villager will find a door as its target, when day breaks.
+		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, VILLAGER, new EntityLocation(6.0f, 6.0f, 1.0f), 1000L));
+		mutable.newExtendedData = ExtensionVillager.DataBuilder.existing((ExtensionVillager.Data)VILLAGER.extension().buildDefaultExtendedData(0L))
+			.profession(TOOL_SMITH)
+			.finish()
+		;
+		
+		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		Block door = ENV.blocks.fromItem(ENV.items.getItemById("op.door"));
+		AbsoluteLocation doorLocation = new AbsoluteLocation(1, 10, 1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, stone);
+		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress(), door.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, doorLocation.getBlockAddress(), FacingDirection.directionToByte(FacingDirection.WEST));
+		
+		long dayTick = 3000L;
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(dayTick)
+			.lookups(ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> {
+				return address.equals(cuboid.getCuboidAddress())
+					? cuboid
+					: null
+				;
+			}), null, null)
+			.finish()
+		;
+		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(), Map.of(-1, mutable.freeze()));
+		
+		EntityType.TargetEntity dayTarget = VILLAGER.extension().findDeliberateTarget(mutable, context, entityCollection);
+		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, dayTarget.optionalId());
+		Assert.assertEquals(doorLocation.getRelative(-1, 0, 0).toEntityLocation(), dayTarget.location());
+		ExtensionVillager.Data data = (ExtensionVillager.Data) mutable.newExtendedData;
+		Assert.assertFalse(data.hasHandledChangeToDay());
+		Assert.assertEquals(doorLocation, data.homeDoorLocation());
+		
+		// Now, show the change to night has no effect since we didn't yet move to the location.
+		long nightTick = 9000L;
+		context = ContextBuilder.build()
+			.tick(nightTick)
+			.lookups(ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> {
+				return address.equals(cuboid.getCuboidAddress())
+					? cuboid
+					: null
+				;
+			}), null, null)
+			.finish()
+		;
+		EntityType.TargetEntity nightTarget = VILLAGER.extension().findDeliberateTarget(mutable, context, entityCollection);
+		Assert.assertNull(nightTarget);
+		
+		// But does work if we set them to having handled the day mode (so they think it just became night).
+		mutable.newExtendedData = ExtensionVillager.DataBuilder.existing((ExtensionVillager.Data)mutable.newExtendedData).handledDay(true).finish();
+		nightTarget = VILLAGER.extension().findDeliberateTarget(mutable, context, entityCollection);
+		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, nightTarget.optionalId());
+		Assert.assertEquals(doorLocation.getRelative(1, 0, 0).toEntityLocation(), nightTarget.location());
+		data = (ExtensionVillager.Data) mutable.newExtendedData;
+		Assert.assertTrue(data.hasHandledChangeToDay());
+		Assert.assertEquals(doorLocation, data.homeDoorLocation());
 	}
 
 

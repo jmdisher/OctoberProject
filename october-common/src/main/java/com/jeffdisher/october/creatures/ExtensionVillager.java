@@ -11,15 +11,20 @@ import java.util.Set;
 import com.jeffdisher.october.actions.EntityActionReceiveTrade;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.TradingRegistry;
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.EntityCollection;
+import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.logic.PropertyHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.EventRecord;
+import com.jeffdisher.october.types.FacingDirection;
 import com.jeffdisher.october.types.FixedRegion;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.Item;
@@ -44,6 +49,24 @@ public class ExtensionVillager implements EntityType.IExtension
 	 * trigger love mode.
 	 */
 	public static final int FOOD_VALUE_TO_LOVE_MODE = 200;
+	/**
+	 * The horizontal distance from their current location a villager will search for their "home door".
+	 * Using 10 and 2 gives us a 21*21*5 volume.
+	 */
+	public static final int DOOR_SEARCH_HORIZONTAL = 10;
+	/**
+	 * The vertical distance from their current location a villager will search for their "home door".
+	 * Using 10 and 2 gives us a 21*21*5 volume.
+	 */
+	public static final int DOOR_SEARCH_VERTICAL = 2;
+	/**
+	 * The day light level a villager should see as a cue to go outside for the day.
+	 */
+	public static final float LIGHT_DAY = 0.8f;
+	/**
+	 * The day light level a villager should see as a cue to go inside for the night.
+	 */
+	public static final float LIGHT_NIGHT = 0.2f;
 
 	private final CommonBreedingLogic _breeding;
 
@@ -64,6 +87,8 @@ public class ExtensionVillager implements EntityType.IExtension
 			, _breeding.buildDefault()
 			, 0
 			
+			, null
+			, false
 			, null
 		);
 	}
@@ -100,6 +125,9 @@ public class ExtensionVillager implements EntityType.IExtension
 		
 		// We never store the item we want to purchase since it depends on the movement plan.
 		Item itemToPurchase = null;
+		// Assume we are in night mode with no known door.
+		boolean hasHandledChangeToDay = false;
+		AbsoluteLocation homeDoorLocation = null;
 		
 		return new Data(profession
 			, Collections.unmodifiableMap(map)
@@ -107,6 +135,8 @@ public class ExtensionVillager implements EntityType.IExtension
 			, foodValueInStomach
 			
 			, itemToPurchase
+			, hasHandledChangeToDay
+			, homeDoorLocation
 		);
 	}
 
@@ -149,8 +179,18 @@ public class ExtensionVillager implements EntityType.IExtension
 		}
 		else
 		{
-			// NOTE:  This will update the internal data object if non-null.
-			newTarget = _findTradingTarget(creature, entityCollection);
+			// First, we need to see if we should move due to time of day.
+			EntityLocation timeOfDayTarget = _findTimeOfDayTarget(creature, context);
+			if (null != timeOfDayTarget)
+			{
+				// This is the special case where we package a target without an entity.
+				newTarget = new EntityType.TargetEntity(CreatureEntity.NO_TARGET_ENTITY_ID, timeOfDayTarget);
+			}
+			else
+			{
+				// NOTE:  This will update the internal data object if it chooses something to buy.
+				newTarget = _findTradingTarget(creature, entityCollection);
+			}
 		}
 		
 		return newTarget;
@@ -849,6 +889,117 @@ public class ExtensionVillager implements EntityType.IExtension
 		return didTakeAction;
 	}
 
+	private EntityLocation _findTimeOfDayTarget(MutableCreature creature, TickProcessingContext context)
+	{
+		Data data = (Data) creature.newExtendedData;
+		
+		// We will check the sky light level to determine if we should consider this day, night, or twilight.
+		// We will then check whether we last satisfied day or night location requirements to determine if we should
+		// find our home door and navigate to the inside or outside of it.
+		float skyLight = PropagationHelpers.skyLightMultiplier(context.currentTick, context.config.ticksPerDay, context.config.dayStartTick);
+		boolean isDay = false;
+		boolean isNight = false;
+		if (skyLight >= LIGHT_DAY)
+		{
+			isDay = true;
+		}
+		else if (skyLight <= LIGHT_NIGHT)
+		{
+			isNight = true;
+		}
+		
+		EntityLocation targetLocation = null;
+		if (isDay && !data.hasHandledChangeToDay)
+		{
+			data = _validateDoorLocation(creature, context, data);
+			if (null != data.homeDoorLocation)
+			{
+				// It has changed to day so pick a target on the outside of home door (the direction it is facing).
+				FacingDirection facing = context.previousBlockLookUp.readBlock(data.homeDoorLocation).getOrientation();
+				AbsoluteLocation outside = facing.getOutputBlockLocation(data.homeDoorLocation);
+				
+				// Make sure that the outside block is air before choosing it.
+				BlockProxy outsideProxy = context.previousBlockLookUp.readBlock(outside);
+				if ((null != outsideProxy) && (Environment.getShared().special.AIR == outsideProxy.getBlock()))
+				{
+					targetLocation = outside.toEntityLocation();
+					
+					// We will need to write back that we handled the day when we enter the block.
+				}
+				else
+				{
+					// Consider this handled since it is invalid.
+					data = DataBuilder.existing(data).handledDay(isDay).finish();
+				}
+			}
+			else
+			{
+				// There is no door so just say we are done.
+				data = DataBuilder.existing(data).handledDay(isDay).finish();
+			}
+		}
+		else if (isNight && data.hasHandledChangeToDay)
+		{
+			data = _validateDoorLocation(creature, context, data);
+			if (null != data.homeDoorLocation)
+			{
+				// It has changed to night so pick a target on the inside of home door (the opposite of the facing direction).
+				FacingDirection outFacing = context.previousBlockLookUp.readBlock(data.homeDoorLocation).getOrientation();
+				FacingDirection inFacing = outFacing.rotateOrientation(FacingDirection.SOUTH);
+				AbsoluteLocation inside = inFacing.getOutputBlockLocation(data.homeDoorLocation);
+				
+				// Make sure that the outside block is air before choosing it.
+				BlockProxy insideProxy = context.previousBlockLookUp.readBlock(inside);
+				if ((null != insideProxy) && (Environment.getShared().special.AIR == insideProxy.getBlock()))
+				{
+					targetLocation = inside.toEntityLocation();
+					
+					// We will need to write back that we handled the day when we enter the block.
+				}
+				else
+				{
+					// Consider this handled since it is invalid.
+					data = DataBuilder.existing(data).handledDay(isDay).finish();
+				}
+			}
+			else
+			{
+				// There is no door so just say we are done.
+				data = DataBuilder.existing(data).handledDay(isDay).finish();
+			}
+		}
+		
+		// We might have changed the data so write it back (usually the same instance).
+		creature.newExtendedData = data;
+		return targetLocation;
+	}
+
+	private Data _validateDoorLocation(MutableCreature creature, TickProcessingContext context, Data data)
+	{
+		Environment env = Environment.getShared();
+		Block doorBlock = env.blocks.fromItem(env.items.getItemById("op.door"));
+		if (null == data.homeDoorLocation)
+		{
+			// Look up the door.
+			AbsoluteLocation creatureFootLocation = creature.newLocation.getBlockLocation();
+			AbsoluteLocation doorLocation = context.previousBlockLookUp.findFirstMatch(creatureFootLocation, DOOR_SEARCH_HORIZONTAL, DOOR_SEARCH_VERTICAL, doorBlock);
+			if (null != doorLocation)
+			{
+				data = DataBuilder.existing(data).homeDoor(doorLocation).finish();
+			}
+		}
+		else
+		{
+			// Validate the door.
+			if (doorBlock != context.previousBlockLookUp.readBlock(data.homeDoorLocation).getBlock())
+			{
+				// Not a door so forget it.
+				data = DataBuilder.existing(data).homeDoor(null).finish();
+			}
+		}
+		return data;
+	}
+
 
 	// Note that the profession defaults to null, since it is late-bound based on the surroundings.
 	// The inventory is just a map since it doesn't care about non-stackable properties, just the total number of items.
@@ -863,6 +1014,10 @@ public class ExtensionVillager implements EntityType.IExtension
 		// Data below here is local ephemeral (not persisted to disk, nor sent over the network).
 		// The item we want to purchase from our target villager.
 		, Item itemToPurchase
+		// True if the villager's last completed time-based navigation was going outside for the day (false meaning it was going inside for the night).
+		, boolean hasHandledChangeToDay
+		// The location of the villager's "home door" block.
+		, AbsoluteLocation homeDoorLocation
 	) {}
 
 	public static class DataBuilder
@@ -874,6 +1029,8 @@ public class ExtensionVillager implements EntityType.IExtension
 				, existing.breeding
 				, existing.foodValueInStomach
 				, existing.itemToPurchase
+				, existing.hasHandledChangeToDay
+				, existing.homeDoorLocation
 			);
 		}
 		private TradingRegistry.Profession _profession;
@@ -881,12 +1038,16 @@ public class ExtensionVillager implements EntityType.IExtension
 		private CommonBreedingLogic.Data _breeding;
 		private int _foodValueInStomach;
 		private Item _itemToPurchase;
+		private boolean _hasHandledChangeToDay;
+		private AbsoluteLocation _homeDoorLocation;
 	
 		private DataBuilder(TradingRegistry.Profession profession
 			, Map<Item, Integer> inventory
 			, CommonBreedingLogic.Data breeding
 			, int foodValueInStomach
 			, Item itemToPurchase
+			, boolean hasHandledChangeToDay
+			, AbsoluteLocation homeDoorLocation
 		)
 		{
 			_profession = profession;
@@ -894,6 +1055,8 @@ public class ExtensionVillager implements EntityType.IExtension
 			_breeding = breeding;
 			_foodValueInStomach = foodValueInStomach;
 			_itemToPurchase = itemToPurchase;
+			_hasHandledChangeToDay = hasHandledChangeToDay;
+			_homeDoorLocation = homeDoorLocation;
 		}
 		public Data finish()
 		{
@@ -902,6 +1065,8 @@ public class ExtensionVillager implements EntityType.IExtension
 				, _breeding
 				, _foodValueInStomach
 				, _itemToPurchase
+				, _hasHandledChangeToDay
+				, _homeDoorLocation
 			);
 		}
 		public DataBuilder profession(TradingRegistry.Profession profession)
@@ -927,6 +1092,16 @@ public class ExtensionVillager implements EntityType.IExtension
 		public DataBuilder purchase(Item itemToPurchase)
 		{
 			_itemToPurchase = itemToPurchase;
+			return this;
+		}
+		public DataBuilder handledDay(boolean hasHandledChangeToDay)
+		{
+			_hasHandledChangeToDay = hasHandledChangeToDay;
+			return this;
+		}
+		public DataBuilder homeDoor(AbsoluteLocation homeDoorLocation)
+		{
+			_homeDoorLocation = homeDoorLocation;;
 			return this;
 		}
 	}

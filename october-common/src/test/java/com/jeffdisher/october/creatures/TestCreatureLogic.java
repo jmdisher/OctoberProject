@@ -1843,6 +1843,54 @@ public class TestCreatureLogic
 		}, stairWalkLocations);
 	}
 
+	@Test
+	public void villagersFindDoor()
+	{
+		// Show that a villager will walk toward a door if there is one nearby and we set the time to mid-day.
+		EntityLocation villagerLocation = new EntityLocation(6.0f, 6.0f, 1.0f);
+		AbsoluteLocation doorLocation = new AbsoluteLocation(1, 10, 1);
+		
+		Block door = ENV.blocks.fromItem(ENV.items.getItemById("op.door"));
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		_setLayer(input, (byte)0, "op.stone");
+		input.setData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress(), door.item().number());
+		input.setData7(AspectRegistry.ORIENTATION, doorLocation.getBlockAddress(), FacingDirection.directionToByte(FacingDirection.SOUTH));
+		
+		CreatureEntity villager = CreatureEntity.create(-1, VILLAGER, villagerLocation, 0L);
+		
+		TickProcessingContext.IBlockFetcher previousBlockLookUp = ContextBuilder.buildSingleFetcher(input);
+		long dayTick = 3000L;
+		TickProcessingContext context = ContextBuilder.build()
+			.tick(dayTick)
+			.lookups(previousBlockLookUp, null, null)
+			.fixedRandom(1)
+			.finish()
+		;
+		EntityCollection entityCollection = EntityCollection.fromMaps(Map.of(), Map.of(villager.id(), villager));
+		
+		// Note that the villager will choose its profession on the first didTakeSpecialActions call.
+		MutableCreature mutableVillager = MutableCreature.existing(villager);
+		// They will also select a home door and set destination on the first createOrUpdatePathFinding call.
+		CreatureLogic.createOrUpdatePathFinding(context, entityCollection, mutableVillager);
+		boolean didAct = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutableVillager);
+		Assert.assertTrue(didAct);
+		ExtensionVillager.Data data = (ExtensionVillager.Data) mutableVillager.newExtendedData;
+		DirectNoTarget plan = (DirectNoTarget)mutableVillager.movementPlan;
+		Assert.assertEquals(ENV.trading.getProfessionById("op.baker"), data.profession());
+		Assert.assertFalse(data.hasHandledChangeToDay());
+		Assert.assertEquals(doorLocation, data.homeDoorLocation());
+		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, plan.targetEntityId());
+		Assert.assertEquals(doorLocation.getRelative(0, -1, 0).toEntityLocation(), plan.test_getDirectLocation());
+		
+		// Show that we can correctly make a movement toward this door.
+		EntityActionSimpleMove<MutableCreature> action = CreatureLogic.planNextAction(context
+			, mutableVillager
+			, 50L
+		);
+		Assert.assertEquals("SimpleMove(WALKING), by -0.09, 0.05, Sub: null", action.toString());
+	}
+
 
 	private void _setLayer(CuboidData input, byte z, String name)
 	{
