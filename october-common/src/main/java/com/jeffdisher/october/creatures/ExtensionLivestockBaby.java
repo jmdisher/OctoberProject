@@ -121,6 +121,13 @@ public class ExtensionLivestockBaby implements EntityType.IExtension
 		((MutableCreature)instance).storeInjuryVector(vector);
 	}
 
+	@Override
+	public boolean isEquivalentPersistentExtendedData(Object extendedData1, Object extendedData2)
+	{
+		// Note that we will assume that a change in the instance means an actual change, since these should be copy-on-write.
+		return extendedData1 == extendedData2;
+	}
+
 
 	public static record BabyData(
 		// The only data we currently track is when to grow up.

@@ -144,4 +144,11 @@ public class ExtensionHostileMelee implements EntityType.IExtension
 	{
 		// Hostiles don't run from danger.
 	}
+
+	@Override
+	public boolean isEquivalentPersistentExtendedData(Object extendedData1, Object extendedData2)
+	{
+		// Note that we will assume that a change in the instance means an actual change, since these should be copy-on-write.
+		return extendedData1 == extendedData2;
+	}
 }

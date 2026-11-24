@@ -306,6 +306,31 @@ public class ExtensionVillager implements EntityType.IExtension
 		((MutableCreature)instance).storeInjuryVector(vector);
 	}
 
+	@Override
+	public boolean isEquivalentPersistentExtendedData(Object extendedData1, Object extendedData2)
+	{
+		Data safe1 = (Data)extendedData1;
+		Data safe2 = (Data)extendedData2;
+		
+		// We only compare the data we serialize.
+		boolean isEquivalent;
+		if (safe1 == safe2)
+		{
+			// Pointer-match is always equivalent.
+			isEquivalent = true;
+		}
+		else
+		{
+			// These are equivalent if all PERSISTENT sub-elements pointer-match.
+			isEquivalent = (safe1.profession == safe2.profession)
+				&& (safe1.inventory == safe2.inventory)
+				&& (safe1.breeding == safe2.breeding)
+				&& (safe1.foodValueInStomach == safe2.foodValueInStomach)
+			;
+		}
+		return isEquivalent;
+	}
+
 	/**
 	 * The number of coins a villager should return when it buys itemSlotForVillagerToBuy, 0 if it didn't buy it.
 	 * NOTE:  This call modifies villager.

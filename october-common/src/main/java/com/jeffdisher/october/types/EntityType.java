@@ -133,6 +133,17 @@ public record EntityType(byte number
 		 * @param vector The vector the receive was pushed by an injury.
 		 */
 		public void applyInjuryVector(IMutableMinimalEntity instance, EntityLocation vector);
+		/**
+		 * A helper to determine if the persistent data from 2 type-specific external data instances should be
+		 * considered equivalent.  This is relevant since in-memory representations are allowed to have changes in
+		 * ephemeral data which are purely internal and shouldn't be sent to the client.  This helper allows for a
+		 * distinction between "equal" and "persistent equivalent".
+		 * 
+		 * @param extendedData1 The extended data of one instance (could be null).
+		 * @param extendedData2 The extended data of another instance (could be null).
+		 * @return True if these 2 instances should be considered to have equivalent persistent representations.
+		 */
+		public boolean isEquivalentPersistentExtendedData(Object extendedData1, Object extendedData2);
 	}
 
 	/**

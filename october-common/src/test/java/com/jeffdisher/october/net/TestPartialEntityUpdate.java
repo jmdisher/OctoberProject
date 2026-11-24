@@ -10,6 +10,8 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.creatures.CommonBreedingLogic;
 import com.jeffdisher.october.creatures.ExtensionLivestock;
+import com.jeffdisher.october.creatures.ExtensionVillager;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -125,5 +127,45 @@ public class TestPartialEntityUpdate
 		PartialEntity output = toUpdate.freeze();
 		
 		Assert.assertTrue(((ExtensionLivestock.LivestockData)output.extendedData()).breeding().inLoveMode());
+	}
+
+	@Test
+	public void extendedDataVillagerChange() throws Throwable
+	{
+		// Show that a change in the villager's non-serialized extension data does not register as a change which needs to be captured.
+		EntityType villager = ENV.creatures.getTypeById("op.villager");
+		CreatureEntity initial = CreatureEntity.create(-1, villager, new EntityLocation(1.2f, -5.6f, 10.0f), 1000L);
+		AbsoluteLocation doorLocation = new AbsoluteLocation(1, 2, 3);
+		MutableCreature mutable = MutableCreature.existing(initial);
+		mutable.newExtendedData = ExtensionVillager.DataBuilder.existing((ExtensionVillager.Data) mutable.newExtendedData)
+			.homeDoor(doorLocation)
+			.finish()
+		;
+		CreatureEntity onlyDoor = mutable.freeze();
+		mutable.newExtendedData = ExtensionVillager.DataBuilder.existing((ExtensionVillager.Data) mutable.newExtendedData)
+			.foodValue(50)
+			.finish()
+		;
+		CreatureEntity doorAndFood = mutable.freeze();
+		
+		Assert.assertFalse(PartialEntityUpdate.canDescribeCreatureChange(initial, onlyDoor));
+		Assert.assertTrue(PartialEntityUpdate.canDescribeCreatureChange(initial, doorAndFood));
+		
+		// Now, try to apply this.
+		PartialEntity partialChanged = PartialEntity.fromCreature(doorAndFood);
+		PartialEntityUpdate update = new PartialEntityUpdate(partialChanged);
+		
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		update.serializeToNetworkBuffer(buffer);
+		Assert.assertEquals(33, buffer.position());
+		buffer.flip();
+		PartialEntityUpdate read = PartialEntityUpdate.deserializeFromNetworkBuffer(buffer);
+		
+		MutablePartialEntity toUpdate = MutablePartialEntity.existing(PartialEntity.fromCreature(initial));
+		read.applyToEntity(toUpdate);
+		PartialEntity output = toUpdate.freeze();
+		
+		Assert.assertNull(((ExtensionVillager.Data)output.extendedData()).homeDoorLocation());
+		Assert.assertEquals(50, ((ExtensionVillager.Data)output.extendedData()).foodValueInStomach());
 	}
 }

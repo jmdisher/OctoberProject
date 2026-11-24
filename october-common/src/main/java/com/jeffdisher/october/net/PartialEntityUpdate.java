@@ -51,8 +51,7 @@ public class PartialEntityUpdate
 			|| (previousCreatureVersion.pitch() != currentCreatureVersion.pitch())
 			|| (previousCreatureVersion.health() != currentCreatureVersion.health())
 			|| (previousCreatureVersion.type() != currentCreatureVersion.type())
-			// Note that we will assume that a change in the instance means an actual change, since these should be copy-on-write.
-			|| (previousCreatureVersion.extendedData() != currentCreatureVersion.extendedData())
+			|| !previousCreatureVersion.type().extension().isEquivalentPersistentExtendedData(previousCreatureVersion.extendedData(), currentCreatureVersion.extendedData())
 		;
 	}
 
