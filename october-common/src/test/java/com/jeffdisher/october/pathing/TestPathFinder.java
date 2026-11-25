@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -765,6 +766,55 @@ public class TestPathFinder
 		Assert.assertEquals(sourceLocation.getRelative(-4, 0, -1), basePath.get(5));
 		Assert.assertEquals(sourceLocation.getRelative(-4, 0, -2), basePath.get(6));
 		Assert.assertEquals(PathLocation.forEntityBase(target), basePath.get(6));
+	}
+
+	@Test
+	public void pathingAroundDoor()
+	{
+		// Show that a closed door will still block path-finding.
+		EntityLocation source = new EntityLocation(8.9f, 7.01f, 1.0f);
+		EntityLocation target = new EntityLocation(8.0f, 5.0f, 1.0f);
+		EntityVolume volume = new EntityVolume(1.7f, 0.4f);
+		
+		// Generate a cuboid for this test.
+		Block door = ENV.blocks.fromItem(ENV.items.getItemById("op.door"));
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0,0, 0), ENV.special.AIR);
+		CuboidGenerator.fillPlane(cuboid, (byte)0, STONE);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(7, 6, 1), STONE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(9, 6, 1), STONE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(8, 6, 1), door.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(8, 6, 2), door.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, BlockAddress.fromInt(8, 6, 1), FacingDirection.directionToByte(FacingDirection.SOUTH));
+		cuboid.setData7(AspectRegistry.ORIENTATION, BlockAddress.fromInt(8, 6, 2), FacingDirection.directionToByte(FacingDirection.SOUTH));
+		cuboid.setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, BlockAddress.fromInt(8, 6, 2), new AbsoluteLocation(8, 6, 1));
+		
+		float limit = 8.0f;
+		TickProcessingContext.IBlockFetcher blockFetcher = ContextBuilder.buildSingleFetcher(cuboid);
+		WalkingNavigator navigator = new WalkingNavigator(blockFetcher
+			, volume
+			, limit
+			, true
+			, true
+			, true
+			, true
+		);
+		List<PathLocation> basePath = PathFinder.findPathWithLimit(navigator, source, target);
+		Assert.assertEquals(12, basePath.size());
+		
+		// Show that we will path through the door if it is open.
+		cuboid.setData7(AspectRegistry.FLAGS, BlockAddress.fromInt(8, 6, 1), FlagsAspect.FLAG_ACTIVE);
+		cuboid.setData7(AspectRegistry.FLAGS, BlockAddress.fromInt(8, 6, 2), FlagsAspect.FLAG_ACTIVE);
+		blockFetcher = ContextBuilder.buildSingleFetcher(cuboid);
+		navigator = new WalkingNavigator(blockFetcher
+			, volume
+			, limit
+			, true
+			, true
+			, true
+			, true
+		);
+		basePath = PathFinder.findPathWithLimit(navigator, source, target);
+		Assert.assertEquals(6, basePath.size());
 	}
 
 
