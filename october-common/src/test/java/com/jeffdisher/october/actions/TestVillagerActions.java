@@ -803,6 +803,32 @@ public class TestVillagerActions
 		data = (ExtensionVillager.Data) mutable.newExtendedData;
 		Assert.assertTrue(data.hasHandledChangeToDay());
 		Assert.assertEquals(doorLocation, data.homeDoorLocation());
+		
+		// Move them to this target location to show that it means that they handled the night and are ready for the day.
+		mutable.newLocation = nightTarget.location();
+		EntityType.TargetEntity noTarget = VILLAGER.extension().findDeliberateTarget(mutable, context, entityCollection);
+		Assert.assertNull(noTarget);
+		data = (ExtensionVillager.Data) mutable.newExtendedData;
+		Assert.assertFalse(data.hasHandledChangeToDay());
+		Assert.assertEquals(doorLocation, data.homeDoorLocation());
+		
+		// Since they handled the night, they will select a new target for day.
+		context = ContextBuilder.build()
+			.tick(dayTick)
+			.lookups(ContextBuilder.buildFunctionFetcher((CuboidAddress address) -> {
+				return address.equals(cuboid.getCuboidAddress())
+					? cuboid
+					: null
+				;
+			}), null, null)
+			.finish()
+		;
+		dayTarget = VILLAGER.extension().findDeliberateTarget(mutable, context, entityCollection);
+		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, dayTarget.optionalId());
+		Assert.assertEquals(doorLocation.getRelative(-1, 0, 0).toEntityLocation(), dayTarget.location());
+		data = (ExtensionVillager.Data) mutable.newExtendedData;
+		Assert.assertFalse(data.hasHandledChangeToDay());
+		Assert.assertEquals(doorLocation, data.homeDoorLocation());
 	}
 
 

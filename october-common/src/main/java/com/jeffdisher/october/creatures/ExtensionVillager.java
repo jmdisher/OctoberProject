@@ -937,12 +937,22 @@ public class ExtensionVillager implements EntityType.IExtension
 		if (isDay && !data.hasHandledChangeToDay)
 		{
 			data = _validateDoorLocation(creature, context, data);
+			
+			// It has changed to day so pick a target on the outside of home door (the direction it is facing).
+			AbsoluteLocation outside = null;
 			if (null != data.homeDoorLocation)
 			{
-				// It has changed to day so pick a target on the outside of home door (the direction it is facing).
 				FacingDirection facing = context.previousBlockLookUp.readBlock(data.homeDoorLocation).getOrientation();
-				AbsoluteLocation outside = facing.getOutputBlockLocation(data.homeDoorLocation);
-				
+				outside = facing.getOutputBlockLocation(data.homeDoorLocation);
+			}
+			
+			if (creature.newLocation.getBlockLocation().equals(outside))
+			{
+				// We have entered the block so say we handled this.
+				data = DataBuilder.existing(data).handledDay(isDay).finish();
+			}
+			else if (null != data.homeDoorLocation)
+			{
 				// Make sure that the outside block is air before choosing it.
 				BlockProxy outsideProxy = context.previousBlockLookUp.readBlock(outside);
 				if ((null != outsideProxy) && (Environment.getShared().special.AIR == outsideProxy.getBlock()))
@@ -966,13 +976,23 @@ public class ExtensionVillager implements EntityType.IExtension
 		else if (isNight && data.hasHandledChangeToDay)
 		{
 			data = _validateDoorLocation(creature, context, data);
+			
+			// It has changed to night so pick a target on the inside of home door (the opposite of the facing direction).
+			AbsoluteLocation inside = null;
 			if (null != data.homeDoorLocation)
 			{
-				// It has changed to night so pick a target on the inside of home door (the opposite of the facing direction).
 				FacingDirection outFacing = context.previousBlockLookUp.readBlock(data.homeDoorLocation).getOrientation();
 				FacingDirection inFacing = outFacing.rotateOrientation(FacingDirection.SOUTH);
-				AbsoluteLocation inside = inFacing.getOutputBlockLocation(data.homeDoorLocation);
-				
+				inside = inFacing.getOutputBlockLocation(data.homeDoorLocation);
+			}
+			
+			if (creature.newLocation.getBlockLocation().equals(inside))
+			{
+				// We have entered the block so say we handled this.
+				data = DataBuilder.existing(data).handledDay(isDay).finish();
+			}
+			else if (null != data.homeDoorLocation)
+			{
 				// Make sure that the outside block is air before choosing it.
 				BlockProxy insideProxy = context.previousBlockLookUp.readBlock(inside);
 				if ((null != insideProxy) && (Environment.getShared().special.AIR == insideProxy.getBlock()))
